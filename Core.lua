@@ -204,7 +204,6 @@ function AddOn:OnInitialize()
 	listFrame:AddChild(spacer)
 	local timeline = Private.Libs.AGUI:Create("EPTimeline")
 	timeline:SetRelativeWidth(0.8)
-	timeline:SetHeight(400)
 	Private.mainFrame:AddChild(listFrame)
 	Private.mainFrame:AddChild(timeline)
 

@@ -13,6 +13,7 @@ local tickWidth                 = 2
 local fontPath                  = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor                 = { 1, 1, 1, 0.75 }
 local tickFontSize              = 10
+local tickTextOffset            = { x = 0, y = 5 }
 local timelineLinePadding       = { x = 25, y = 25 }
 local zoomFactor                = 1
 local minZoomFactor             = 1
@@ -194,6 +195,9 @@ local methods = {
 			table.insert(self.phaseOrder, currentPhase)
 			currentPhase = phases[currentPhase].repeatAfter
 		end
+
+		self:SetHeight(self:CalculateRequiredHeight())
+
 		HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
 	end,
 
@@ -214,7 +218,7 @@ local methods = {
 			for _, abilityData in pairs(self.abilityEntries) do
 				if abilityData.phases[phaseId] then
 					local color = colors[colorIndex]
-					local offset = colorIndex * (barHeight + paddingBetweenBars)
+					local offset = (colorIndex - 1) * (barHeight + paddingBetweenBars)
 					local phaseDetails = abilityData.phases[phaseId]
 					local cumulativePhaseCastTimes = phaseStartTime
 
@@ -349,6 +353,7 @@ local methods = {
 				self.tickMarks[i] = tick
 			end
 			tick:SetPoint("TOP", timelineFrame, "TOPLEFT", position + padding.x, 0)
+			--tick:SetHeight(timelineFrame:GetHeight() - timelineLinePadding.y)
 			tick:SetPoint("BOTTOM", timelineLine, "LEFT", position, 0)
 			tick:Show()
 
@@ -362,13 +367,12 @@ local methods = {
 			local minutes = math.floor(i / 60)
 			local seconds = i % 60
 			label:SetText(string.format("%d:%02d", minutes, seconds))
-			label:SetPoint("TOP", tick, "BOTTOM", 0, -5)
+			label:SetPoint("TOP", tick, "BOTTOM", 0, -tickTextOffset.y)
 			label:Show()
 		end
 	end,
 
 	["OnWidthSet"] = function(self, width)
-		self.timelineFrame:SetWidth(width)
 		HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
 	end,
 
@@ -376,13 +380,21 @@ local methods = {
 		self.timelineFrame:SetHeight(height - horizontalScrollBarHeight)
 		HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
 	end,
+
+	["CalculateRequiredHeight"] = function(self)
+		local totalBarHeight = 0
+		if self.abilityEntries then
+			local count = #self.abilityEntries
+			totalBarHeight = count * (barHeight + paddingBetweenBars) - paddingBetweenBars
+		end
+		return totalBarHeight + horizontalScrollBarHeight + timelineLinePadding.y
+	end,
 }
 
 local function Constructor()
 	local num = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("ScrollFrame", Type .. num, UIParent)
-	frame:SetWidth(frameWidth)
-	frame:SetHeight(frameHeight)
+	frame:SetSize(frameWidth, frameHeight)
 	frame:Hide()
 
 	-- Scrollbar
@@ -408,7 +420,9 @@ local function Constructor()
 	thumbBackground:SetColorTexture(0, 0, 0, 0.7)
 
 	local timelineFrame = CreateFrame("Frame", Type .. num .. "TimelineFrame", frame)
-	timelineFrame:SetPoint("LEFT", frame, "LEFT")
+	timelineFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
+	timelineFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
+	timelineFrame:SetSize(frameWidth, frameHeight)
 	timelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	timelineFrame:EnableMouse(true)
 	timelineFrame:RegisterForDrag("LeftButton", "LeftButtonUp")
@@ -421,9 +435,9 @@ local function Constructor()
 	local timelineLine = timelineFrame:CreateTexture(Type .. num .. "TimelineLine", "ARTWORK")
 	timelineLine:SetColorTexture(0, 0, 0, 0)
 	timelineLine:SetPoint("BOTTOMLEFT", timelineFrame, "BOTTOMLEFT", timelineLinePadding.x,
-		timelineLinePadding.y + horizontalScrollBarHeight)
+		timelineLinePadding.y)
 	timelineLine:SetPoint("BOTTOMRIGHT", timelineFrame, "BOTTOMRIGHT", -timelineLinePadding.x,
-		timelineLinePadding.y + horizontalScrollBarHeight)
+		timelineLinePadding.y)
 
 	local widget = {
 		frame         = frame,
