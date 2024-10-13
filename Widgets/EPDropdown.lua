@@ -1,9 +1,7 @@
---@type string
-local AddOnName = ...
----@using Private
----@class Private
-local Private = select(2, ...)
-local AddOn = Private.AddOn
+local Type    = "EPDropdown"
+local Version = 1
+local AceGUI  = LibStub("AceGUI-3.0")
+local LSM     = LibStub("LibSharedMedia-3.0")
 
 local function CreateBorder(frame, colorTexture, thickness, extendo)
 	for i = 1, 4 do

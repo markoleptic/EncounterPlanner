@@ -1,8 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-	<Script file="AbilityEntry.lua"/>
-	<Script file="MainFrame.lua"/>
-	<Script file="Spacer.lua"/>
-	<Script file="SplitContainer.lua"/>
-	<Script file="Timeline.lua"/>
+	<Script file="EPAbilityEntry.lua"/>
+	<Script file="EPMainFrame.lua"/>
+	<Script file="EPSpacer.lua"/>
+	<Script file="EPSplitContainer.lua"/>
+	<Script file="EPTimeline.lua"/>
 </Ui>
