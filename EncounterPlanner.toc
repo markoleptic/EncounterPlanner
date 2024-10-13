@@ -1,0 +1,14 @@
+## Interface: 110002
+## Version: 0.0.1
+## Title: Encounter Planner
+## Notes: 
+## X-Flavor: Mainline
+## Author: Markoleptic
+## DefaultState: Enabled
+## SavedVariables: EncounterPlannerDB
+## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core
+
+embeds.xml
+Init.lua
+Core.lua
+Options.lua
