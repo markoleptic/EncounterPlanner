@@ -141,7 +141,7 @@ local function Constructor()
 
 	local check = frame:CreateTexture(Type .. "CheckBoxCheck" .. num, "OVERLAY")
 	check:SetAllPoints(checkbg)
-	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64_1_]])
+	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 
 	local highlight = checkbox:CreateTexture(Type .. "CheckBoxHighlight" .. num, "HIGHLIGHT")
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
@@ -149,7 +149,6 @@ local function Constructor()
 	highlight:SetSnapToPixelGrid(false)
 	highlight:SetPoint("TOPLEFT", 4, -4)
 	highlight:SetPoint("BOTTOMRIGHT", -4, 4)
-	highlight:SetSize(iconSize, iconSize)
 	highlight:SetBlendMode("ADD")
 
 	local widget = {

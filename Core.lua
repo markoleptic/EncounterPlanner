@@ -29,7 +29,8 @@ AddOn.Defaults         = {
 					NewBoss("Nexus-Princess Ky'veza", 217748, 2601, 2920),
 					NewBoss("The Silken Court", { 217489, 217491 }, 2608, 2921),
 					NewBoss("Queen Ansurek", 218370, 2602, 2922),
-				}
+				},
+				order = { 1, 2, 3, 4, 5, 6, 7, 8 }
 			}
 		}
 	}
@@ -176,9 +177,18 @@ function AddOn:OnInitialize()
 	local listFrame = Private.Libs.AGUI:Create("SimpleGroup")
 	listFrame:SetRelativeWidth(0.2)
 	listFrame:SetLayout("List")
-	local topSpacer = Private.Libs.AGUI:Create("EPSpacer")
-	topSpacer:SetHeight(34)
-	listFrame:AddChild(topSpacer)
+
+	local dropdown = Private.Libs.AGUI:Create("EPDropdown")
+	local items = {}
+	for index, instance in pairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
+		EJ_SelectEncounter(instance.journalEncounterId)
+		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterId)
+		local iconText = string.format("|T%s:16|t %s", iconImage, instance.name)
+		table.insert(items, index, iconText)
+	end
+	dropdown:SetList(items, AddOn.Defaults.profile.instances["Nerub'ar Palace"].order, "EPDropdownItemToggle")
+	listFrame:AddChild(dropdown)
+
 	local sorted = {}
 	for _, spellID in ipairs(bosses["Ulgrax the Devourer"].sortedAbilityIDs) do
 		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
