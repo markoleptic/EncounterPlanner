@@ -1,11 +1,12 @@
+---@diagnostic disable: invisible
 local AceGUI                  = LibStub("AceGUI-3.0")
 local LSM                     = LibStub("LibSharedMedia-3.0")
 
 local textOffsetX             = 4
-local checkOffsetLeftX        = -2
-local checkOffsetRightX       = -8
-local checkSize               = 16
 local fontSize                = 10
+local dropdownItemHeight      = 20
+local dropdownItemExtraOffset = 0
+local dropdownSliderOffsetX   = -8
 local pulloutBackdrop         = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -13,7 +14,6 @@ local pulloutBackdrop         = {
 	tileSize = 16,
 	edgeSize = 1,
 }
-
 local dropdownBackdrop        = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -21,7 +21,6 @@ local dropdownBackdrop        = {
 	tileSize = 16,
 	edgeSize = 1,
 }
-
 local sliderBackdrop          = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -30,10 +29,6 @@ local sliderBackdrop          = {
 	edgeSize = 1,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 }
 }
-
-local dropdownItemHeight      = 20
-local dropdownItemExtraOffset = 0
-local dropdownSliderOffsetX   = -8
 
 local function fixlevels(parent, ...)
 	local i = 1
@@ -316,6 +311,7 @@ do
 		slider.obj      = widget
 
 		for method, func in pairs(methods) do
+			---@diagnostic disable-next-line: assign-type-mismatch
 			widget[method] = func
 		end
 
@@ -326,8 +322,6 @@ do
 
 	AceGUI:RegisterWidgetType(Type, Constructor, Version)
 end
-
-
 
 do
 	local Type    = "EPDropdown"
@@ -531,7 +525,7 @@ do
 					("The given item type, %q, does not exist within AceGUI-3.0"):format(tostring(itemType)), 2)
 			end
 
-			local item = AceGUI:Create(itemType)
+			local item = AceGUI:Create(itemType) --[[@as AceGUILabel]]
 			item:SetText(text)
 			item.userdata.obj = self
 			item.userdata.value = value
@@ -540,7 +534,7 @@ do
 		end,
 		["AddCloseButton"] = function(self)
 			if not self.hasClose then
-				local close = AceGUI:Create("Dropdown-Item-Execute")
+				local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as AceGUIButton]]
 				close:SetText("Close")
 				self.pullout:AddItem(close)
 				self.hasClose = true
@@ -642,7 +636,6 @@ do
 
 		local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 		label:SetPoint("LEFT", frame, "LEFT", 0, 0)
-		--label:SetJustifyH("LEFT")
 		label:SetHeight(18)
 		label:Hide()
 

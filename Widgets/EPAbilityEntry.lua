@@ -14,8 +14,8 @@ local listItemBackdrop    = {
 	tileSize = 16,
 	edgeSize = 1,
 }
-local AbilityEntryTooltip = CreateFrame("GameTooltip", "AbilityEntryTooltip", UIParent, "GameTooltipTemplate")
 
+local AbilityEntryTooltip = CreateFrame("GameTooltip", "AbilityEntryTooltip", UIParent, "GameTooltipTemplate")
 local function HandleIconEnter(frame)
 	local self = frame.obj
 	if self.spellID then
@@ -55,6 +55,7 @@ local methods = {
 	["OnAcquire"] = function(self)
 		self:SetChecked(true)
 		self:SetWidth(frameWidth)
+		self.spellID = nil
 	end,
 
 	["OnWidthSet"] = function(self, width)
@@ -102,28 +103,28 @@ local methods = {
 }
 
 local function Constructor()
-	local num = AceGUI:GetNextWidgetNum(Type)
+	local count = AceGUI:GetNextWidgetNum(Type)
 
-	local frame = CreateFrame("Frame", Type .. num, UIParent, "BackdropTemplate")
-	frame:Hide()
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(listItemBackdrop)
 	frame:SetBackdropColor(0, 0, 0, 0.9)
 	frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
 	frame:SetSize(frameWidth, frameHeight)
+	frame:Hide()
 
-	local icon = frame:CreateTexture(Type .. "Icon" .. num, "ARTWORK")
+	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", padding.x, -padding.y)
 	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", padding.x, padding.y)
 	icon:SetWidth(iconSize)
 	icon:SetScript("OnEnter", HandleIconEnter)
 	icon:SetScript("OnLeave", HandleIconLeave)
 
-	local text = frame:CreateFontString(Type .. "Text" .. num, "OVERLAY", "GameFontNormal")
+	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then text:SetFont(fPath, 12, "OUTLINE") end
 	text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
 
-	local checkbox = CreateFrame("Button", Type .. "CheckBox" .. num, frame)
+	local checkbox = CreateFrame("Button", Type .. "CheckBox" .. count, frame)
 	checkbox:EnableMouse(true)
 	checkbox:SetScript("OnEnter", HandleCheckBoxEnter)
 	checkbox:SetScript("OnLeave", HandleCheckBoxLeave)
@@ -133,17 +134,17 @@ local function Constructor()
 	checkbox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
 	checkbox:SetWidth(iconSize)
 
-	local checkbg = frame:CreateTexture(Type .. "CheckBoxBackground" .. num, "ARTWORK")
+	local checkbg = frame:CreateTexture(Type .. "CheckBoxBackground" .. count, "ARTWORK")
 	checkbg:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-square-64]])
 	checkbg:SetTexCoord(zoomAmount, 1 - zoomAmount, zoomAmount, 1 - zoomAmount)
 	checkbg:SetAllPoints(checkbox)
 	checkbg:SetVertexColor(0.25, 0.25, 0.25)
 
-	local check = frame:CreateTexture(Type .. "CheckBoxCheck" .. num, "OVERLAY")
+	local check = frame:CreateTexture(Type .. "CheckBoxCheck" .. count, "OVERLAY")
 	check:SetAllPoints(checkbg)
 	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 
-	local highlight = checkbox:CreateTexture(Type .. "CheckBoxHighlight" .. num, "HIGHLIGHT")
+	local highlight = checkbox:CreateTexture(Type .. "CheckBoxHighlight" .. count, "HIGHLIGHT")
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
 	highlight:SetTexelSnappingBias(0.0)
 	highlight:SetSnapToPixelGrid(false)
@@ -152,23 +153,24 @@ local function Constructor()
 	highlight:SetBlendMode("ADD")
 
 	local widget = {
+		frame     = frame,
+		type      = Type,
+		count     = count,
 		checkbg   = checkbg,
 		check     = check,
 		checkbox  = checkbox,
 		text      = text,
 		highlight = highlight,
-		frame     = frame,
-		type      = Type,
 		icon      = icon,
-		spellID   = nil,
 	}
 	checkbox.obj = widget
 	frame.obj = widget
 	---@diagnostic disable-next-line: inject-field
 	icon.obj = widget
 
-	for method, func in pairs(methods) do
-		widget[method] = func
+	for str, func in pairs(methods) do
+		---@diagnostic disable-next-line: assign-type-mismatch
+		widget[str] = func
 	end
 
 	return AceGUI:RegisterAsWidget(widget)
