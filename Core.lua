@@ -283,7 +283,7 @@ function AddOn:OnInitialize()
 	local dropdownListFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
 	dropdownListFrame:SetLayout("List")
 
-	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as AceGUIWidget]]
+	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as EPDropdown]]
 	local items = {}
 	for index, instance in pairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
@@ -298,7 +298,7 @@ function AddOn:OnInitialize()
 	dropdownSpacer:SetHeight(10)
 	dropdownListFrame:AddChild(dropdownSpacer)
 
-	local timeline = Private.Libs.AGUI:Create("EPTimeline")
+	local timeline = Private.Libs.AGUI:Create("EPTimeline") --[[@as EPTimeline]]
 	timeline:SetRelativeWidth(0.8)
 
 	local leftSideFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
@@ -316,7 +316,7 @@ function AddOn:OnInitialize()
 			if boss then
 				listFrame:ReleaseChildren()
 				for _, spellID in ipairs(boss.sortedAbilityIDs) do
-					local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+					local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
 					abilityEntry:SetAbility(spellID)
 					listFrame:AddChild(abilityEntry)
 					local spacer = Private.Libs.AGUI:Create("EPSpacer")
@@ -345,7 +345,6 @@ end
 
 -- slash command functionality
 function AddOn:SlashCommand(input)
-	Private.mainFrame:Show()
 	if AddOn:GetModule("Options") then
 		AddOn.OptionsModule:OpenOptions()
 	end
