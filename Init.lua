@@ -1,5 +1,6 @@
 ---@type string
 local AddOnName = ...
+
 ---@class Private
 local Private = select(2, ...)
 
@@ -13,7 +14,13 @@ do
 	Private.Libs.ADBO = LibStub("AceDBOptions-3.0")
 	Private.Libs.LSM = LibStub("LibSharedMedia-3.0")
 	Private.Libs.AGUI = LibStub("AceGUI-3.0")
+	Private.phaseBasedTimers = {}
+	Private.absoluteTimeBasedTimers = {}
+	Private.customTimers = {}
+	Private.lastEncounterId = nil
 end
 
 ---@class EncounterPlanner
 EncounterPlanner = {}
+
+---@alias GameTooltipTemplate GameTooltip
