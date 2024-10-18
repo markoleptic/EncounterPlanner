@@ -164,21 +164,24 @@ local methods = {
 		self.bars = self.bars or {}
 		self.tickMarks = self.tickMarks or {}
 		self.totalTimelineDuration = 0
+		self.abilityEntryOrder = {}
+		self.abilityEntries = {}
 		self.phases = {}
 		self.phaseOrder = {}
-		self.frame:Show()
 	end,
 
 	["OnRelease"] = function(self)
 		self.private = nil
 		self.totalTimelineDuration = 0
+		self.abilityEntryOrder = nil
 		self.abilityEntries = nil
 		self.phases = nil
 		self.phaseOrder = nil
 	end,
 
-	["SetEntries"] = function(self, abilities, phases)
+	["SetEntries"] = function(self, abilities, abilityOrder, phases)
 		self.abilityEntries = abilities
+		self.abilityEntryOrder = abilityOrder
 		self.phases = phases
 		self.phaseOrder = {} -- Sequence of phases based on repeatAfter
 
@@ -191,7 +194,7 @@ local methods = {
 		self.totalTimelineDuration = totalTimelineDuration
 
 		local currentPhase = 1
-		while #self.phaseOrder < totalOccurances do
+		while #self.phaseOrder < totalOccurances and currentPhase ~= nil do
 			table.insert(self.phaseOrder, currentPhase)
 			currentPhase = phases[currentPhase].repeatAfter
 		end
@@ -213,38 +216,64 @@ local methods = {
 			local phaseData = self.phases[phaseId]
 			local phaseStartTime = cumulativePhaseStartTimes
 
+			-- TODO: Iterate over eventTriggers
+
 			-- Iterate over abilities for the current phase
 			local colorIndex = 1
-			for _, abilityData in pairs(self.abilityEntries) do
+			for _, spellID in pairs(self.abilityEntryOrder) do
+				local abilityData = self.abilityEntries[spellID]
+				local color = colors[colorIndex]
+				local cumulativePhaseCastTimes = phaseStartTime
+				local offset = (colorIndex - 1) * (barHeight + paddingBetweenBars)
 				if abilityData.phases[phaseId] then
-					local color = colors[colorIndex]
-					local offset = (colorIndex - 1) * (barHeight + paddingBetweenBars)
 					local phaseDetails = abilityData.phases[phaseId]
-					local cumulativePhaseCastTimes = phaseStartTime
 
 					-- Iterate over each cast time
-					for _, castTime in ipairs(phaseDetails.castTimes) do
-						cumulativePhaseCastTimes = cumulativePhaseCastTimes + castTime
-						local castStart = cumulativePhaseCastTimes
-						local castEnd = castStart + abilityData.castTime
-						local effectEnd = castEnd + abilityData.duration
+					if phaseDetails.castTimes then
+						for _, castTime in ipairs(phaseDetails.castTimes) do
+							cumulativePhaseCastTimes = cumulativePhaseCastTimes + castTime
+							local castStart = cumulativePhaseCastTimes
+							local castEnd = castStart + abilityData.castTime
+							local effectEnd = castEnd + abilityData.duration
 
-						self:DrawTimelineBar(castStart, effectEnd, color, index, offset)
-						index = index + 1
+							self:DrawTimelineBar(castStart, effectEnd, color, index, offset)
+							index = index + 1
 
-						-- Handle repeat intervals for abilities
-						if phaseDetails.repeatInterval then
-							local repeatInterval = phaseDetails.repeatInterval
-							local nextRepeatStart = castStart + repeatInterval
+							-- Handle repeat intervals for abilities
+							if phaseDetails.repeatInterval then
+								local repeatInterval = phaseDetails.repeatInterval
+								local nextRepeatStart = castStart + repeatInterval
 
-							while nextRepeatStart < phaseStartTime + phaseData.duration do
-								local repeatEnd = nextRepeatStart + abilityData.castTime
-								local repeatEffectEnd = repeatEnd + abilityData.duration
+								while nextRepeatStart < phaseStartTime + phaseData.duration do
+									local repeatEnd = nextRepeatStart + abilityData.castTime
+									local repeatEffectEnd = repeatEnd + abilityData.duration
 
-								self:DrawTimelineBar(nextRepeatStart, repeatEffectEnd, color, index, offset)
-								index = index + 1
+									self:DrawTimelineBar(nextRepeatStart, repeatEffectEnd, color, index, offset)
+									index = index + 1
 
-								nextRepeatStart = nextRepeatStart + repeatInterval
+									nextRepeatStart = nextRepeatStart + repeatInterval
+								end
+							end
+						end
+					end
+				end
+				if abilityData.eventTriggers then
+					for triggerSpellID, eventTriggerData in pairs(abilityData.eventTriggers) do
+						if self.abilityEntries[triggerSpellID] and self.abilityEntries[triggerSpellID].phases[phaseId] then
+							local cumulativeTriggerTime = phaseStartTime
+							for _, triggerCastTime in ipairs(self.abilityEntries[triggerSpellID].phases[phaseId].castTimes) do
+								cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime +
+									self.abilityEntries[triggerSpellID].castTime
+								local cumulativeCastTime = 0
+								for _, castTime in ipairs(eventTriggerData.castTimes) do
+									cumulativeCastTime = cumulativeCastTime + castTime
+									local castStart = cumulativeTriggerTime + cumulativeCastTime
+									local castEnd = castStart + abilityData.castTime
+									local effectEnd = castEnd + abilityData.duration
+
+									self:DrawTimelineBar(castStart, effectEnd, color, index, offset)
+									index = index + 1
+								end
 							end
 						end
 					end
@@ -383,8 +412,8 @@ local methods = {
 
 	["CalculateRequiredHeight"] = function(self)
 		local totalBarHeight = 0
-		if self.abilityEntries then
-			local count = #self.abilityEntries
+		if self.abilityEntryOrder then
+			local count = #self.abilityEntryOrder
 			totalBarHeight = count * (barHeight + paddingBetweenBars) - paddingBetweenBars
 		end
 		return totalBarHeight + horizontalScrollBarHeight + timelineLinePadding.y
@@ -454,6 +483,7 @@ local function Constructor()
 	timelineFrame.obj = widget
 
 	for method, func in pairs(methods) do
+		---@diagnostic disable-next-line: assign-type-mismatch
 		widget[method] = func
 	end
 

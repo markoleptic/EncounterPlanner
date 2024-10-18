@@ -13,7 +13,7 @@ local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	}
 end
 
-AddOn.Defaults         = {
+AddOn.Defaults = {
 	profile = {
 		instances = {
 			["Nerub'ar Palace"] = {
@@ -30,20 +30,15 @@ AddOn.Defaults         = {
 					NewBoss("The Silken Court", { 217489, 217491 }, 2608, 2921),
 					NewBoss("Queen Ansurek", 218370, 2602, 2922),
 				},
-				order = { 1, 2, 3, 4, 5, 6, 7, 8 }
+				order = { 1, 2, 3, 4, 5, 6, 7, 8 },
 			}
 		}
 	}
 }
 
-local colors           = {
-	{ 255, 87,  51, 1 },
-	{ 51,  255, 87, 1 }, { 51, 87, 255, 1 }, { 255, 51, 184, 1 }, { 255, 214, 51, 1 },
-	{ 51, 255, 249, 1 }, { 184, 51, 255, 1 } }
-
-local bosses           = {
+local bosses   = {
 	["Ulgrax the Devourer"] = {
-		["abilities"] = {
+		abilities = {
 			[435136] = { -- Venomous Lash
 				phases = {
 					[1] = {
@@ -115,7 +110,7 @@ local bosses           = {
 				castTime = 3.0,
 			}
 		},
-		["phases"] = {
+		phases = {
 			[1] = {
 				duration = 90,
 				defaultDuration = 90,
@@ -130,34 +125,143 @@ local bosses           = {
 				defaultCount = 3,
 				repeatAfter = 1
 			}
+		}
+	},
+	["Broodtwister Ovi'nax"] = {
+		abilities = {
+			[441362] = { -- Volatile Concoction
+				phases = {
+					[1] = {
+						castTimes = { 2.0 },
+						repeatInterval = nil
+					}
+				},
+				eventTriggers = {
+					[442432] = { -- Ingest Black Blood
+						cleuEventType = "SCS",
+						castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
+					}
+				},
+				duration = 0.0,
+				castTime = 1.5,
+			},
+			[446349] = { -- Sticky Web
+				phases = {
+					[1] = {
+						castTimes = { 15.0 },
+						repeatInterval = nil
+					}
+				},
+				eventTriggers = {
+					[442432] = { -- Ingest Black Blood
+						cleuEventType = "SCS",
+						castTimes = { 30.0, 30.0, 30.0, 30.0 },
+					}
+				},
+				duration = 6.0,
+				castTime = 2.0,
+			},
+			[442432] = { -- Ingest Black Blood
+				phases = {
+					[1] = {
+						castTimes = { 19.0, 152.0, 192.0 },
+						repeatInterval = nil
+					}
+				},
+				duration = 15.0,
+				castTime = 1.0,
+			},
+			[442526] = { -- Experimental Dosage
+				phases = {
+					[1] = {
+						castTimes = nil,
+						repeatInterval = nil
+					}
+				},
+				eventTriggers = {
+					[442432] = { -- Ingest Black Blood
+						cleuEventType = "SCS",
+						castTimes = { 16.0, 50.0, 50.0 },
+					}
+				},
+				duration = 8.0,
+				castTime = 1.5,
+			},
+
 		},
-		sortedAbilityIDs = {}
+		phases = {
+			[1] = {
+				duration = 600,
+				defaultDuration = 600,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil
+			},
+		}
 	}
 }
 
-local firstAppearances = {}
-for spellID, data in pairs(bosses["Ulgrax the Devourer"]["abilities"]) do
-	local earliestCastTime = math.huge
-	for phaseNumber, phase in pairs(data.phases) do
-		for _, castTime in ipairs(phase.castTimes) do
-			if phaseNumber > 1 then
-				earliestCastTime = math.min(earliestCastTime,
-					castTime + bosses["Ulgrax the Devourer"]["phases"][phaseNumber].duration)
-			else
-				earliestCastTime = math.min(earliestCastTime, castTime)
+-- Generate a list of abilities for each boss sorted by their first cast time
+for _, boss in pairs(bosses) do
+	local firstAppearances = {}
+	local firstAppearancesMap = {}
+	for spellID, data in pairs(boss.abilities) do
+		local earliestCastTime = math.huge
+		for phaseNumber, phase in pairs(data.phases) do
+			if phase.castTimes then
+				for _, castTime in ipairs(phase.castTimes) do
+					if phaseNumber > 1 then
+						local phaseTimeOffset = boss.phases[phaseNumber].duration
+						earliestCastTime = math.min(earliestCastTime, phaseTimeOffset + castTime)
+					else
+						earliestCastTime = math.min(earliestCastTime, castTime)
+					end
+				end
 			end
 		end
+		firstAppearancesMap[spellID] = earliestCastTime
+		tinsert(firstAppearances, { spellID = spellID, earliestCastTime = earliestCastTime })
 	end
-	table.insert(firstAppearances, { spellID = spellID, firstAppearance = earliestCastTime })
-end
+	local firstEventTriggerAppearancesMap = {}
+	for spellID, data in pairs(boss.abilities) do
+		local earliestCastTime = math.huge
+		if data.eventTriggers then
+			for triggerSpellID, eventTrigger in pairs(data.eventTriggers) do
+				local earliestTriggerCastTime = firstAppearancesMap[triggerSpellID]
+				local castTime = earliestTriggerCastTime + boss.abilities[triggerSpellID].castTime +
+					eventTrigger.castTimes[1]
+				earliestCastTime = math.min(earliestCastTime, castTime)
+			end
+			firstEventTriggerAppearancesMap[spellID] = earliestCastTime
+		end
+	end
 
--- Step 3: Sort by first appearance time
-table.sort(firstAppearances, function(a, b)
-	return a.firstAppearance < b.firstAppearance
-end)
+	for _, data in pairs(firstAppearances) do
+		if firstEventTriggerAppearancesMap[data.spellID] then
+			data.earliestCastTime = math.min(data.earliestCastTime, firstEventTriggerAppearancesMap[data.spellID])
+		end
+	end
 
-for _, entry in ipairs(firstAppearances) do
-	table.insert(bosses["Ulgrax the Devourer"].sortedAbilityIDs, entry.spellID)
+	for spellID, earliestCastTime in pairs(firstEventTriggerAppearancesMap) do
+		local found = false
+		for _, data in pairs(firstAppearances) do
+			if data.spellID == spellID then
+				found = true
+				break
+			end
+		end
+		if not found then
+			tinsert(firstAppearances, { spellID = spellID, earliestCastTime = earliestCastTime })
+		end
+	end
+
+	table.sort(firstAppearances, function(a, b)
+		return a.earliestCastTime < b.earliestCastTime
+	end)
+	boss.sortedAbilityIDs = {}
+	for _, entry in ipairs(firstAppearances) do
+		table.insert(boss.sortedAbilityIDs, entry.spellID)
+	end
 end
 
 -- Addon is first loaded
@@ -169,16 +273,17 @@ function AddOn:OnInitialize()
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 
-	Private.mainFrame = Private.Libs.AGUI:Create("EPMainFrame")
-	Private.mainFrame:SetLayout("flow")
+	Private.mainFrame = Private.Libs.AGUI:Create("EPMainFrame") --[[@as AceGUIContainer]]
+	Private.mainFrame:SetLayout("EPContentFrameLayout")
 	Private.mainFrame:SetFullWidth(true)
-	Private.selectedBoss = nil
+	Private.mainFrame:SetFullHeight(true)
 
-	local listFrame = Private.Libs.AGUI:Create("SimpleGroup")
-	listFrame:SetRelativeWidth(0.2)
+	local listFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
 	listFrame:SetLayout("List")
+	local dropdownListFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
+	dropdownListFrame:SetLayout("List")
 
-	local dropdown = Private.Libs.AGUI:Create("EPDropdown")
+	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as AceGUIWidget]]
 	local items = {}
 	for index, instance in pairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
@@ -187,27 +292,46 @@ function AddOn:OnInitialize()
 		table.insert(items, index, iconText)
 	end
 	dropdown:SetList(items, AddOn.Defaults.profile.instances["Nerub'ar Palace"].order, "EPDropdownItemToggle")
-	listFrame:AddChild(dropdown)
+	dropdownListFrame:AddChild(dropdown)
 
-	local sorted = {}
-	for _, spellID in ipairs(bosses["Ulgrax the Devourer"].sortedAbilityIDs) do
-		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
-		abilityEntry:SetAbility(spellID)
-		listFrame:AddChild(abilityEntry)
-		local spacer = Private.Libs.AGUI:Create("EPSpacer")
-		spacer:SetHeight(4)
-		listFrame:AddChild(spacer)
-		table.insert(sorted, bosses["Ulgrax the Devourer"]["abilities"][spellID])
-	end
-	local spacer = Private.Libs.AGUI:Create("EPSpacer")
-	spacer:SetHeight(128)
-	listFrame:AddChild(spacer)
+	local dropdownSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	dropdownSpacer:SetHeight(10)
+	dropdownListFrame:AddChild(dropdownSpacer)
+
 	local timeline = Private.Libs.AGUI:Create("EPTimeline")
 	timeline:SetRelativeWidth(0.8)
-	Private.mainFrame:AddChild(listFrame)
+
+	local leftSideFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
+	leftSideFrame:SetRelativeWidth(0.2)
+	leftSideFrame:SetLayout("List")
+	leftSideFrame:AddChild(dropdownListFrame)
+	leftSideFrame:AddChild(listFrame)
+
+	Private.mainFrame:AddChild(leftSideFrame)
 	Private.mainFrame:AddChild(timeline)
 
-	timeline:SetEntries(sorted, bosses["Ulgrax the Devourer"]["phases"])
+	dropdown:SetCallback("OnValueChanged", function(frame, callbackName, value)
+		if AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value] then
+			local boss = bosses[AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name]
+			if boss then
+				listFrame:ReleaseChildren()
+				for _, spellID in ipairs(boss.sortedAbilityIDs) do
+					local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+					abilityEntry:SetAbility(spellID)
+					listFrame:AddChild(abilityEntry)
+					local spacer = Private.Libs.AGUI:Create("EPSpacer")
+					spacer:SetHeight(4)
+					listFrame:AddChild(spacer)
+				end
+				listFrame:DoLayout()
+				timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases)
+			end
+		end
+	end)
+
+	dropdown:SetValue(1)
+
+	Private:Note()
 
 	self.OnInitialize = nil
 end

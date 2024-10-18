@@ -18,6 +18,7 @@ do
 	Private.absoluteTimeBasedTimers = {}
 	Private.customTimers = {}
 	Private.lastEncounterId = nil
+	Private.selectedBoss = nil
 end
 
 ---@class EncounterPlanner
