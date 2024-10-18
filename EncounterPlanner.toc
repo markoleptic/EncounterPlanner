@@ -6,9 +6,10 @@
 ## Author: Markoleptic
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
-## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core
+## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT
 
 embeds.xml
 Init.lua
+Note.lua
 Core.lua
 Options.lua
