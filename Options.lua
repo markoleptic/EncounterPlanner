@@ -1,8 +1,9 @@
---@type string
+---@type string
 local AddOnName = ...
 ---@using Private
 ---@class Private
 local Private = select(2, ...)
+---@class OptionsModule : AceModule
 local OptionsModule = Private.AddOn.OptionsModule
 local ACR = Private.Libs.ACR
 local ACD = Private.Libs.ACD
