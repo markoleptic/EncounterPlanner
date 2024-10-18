@@ -1,16 +1,5 @@
 {
-	"diagnostics.disable": [
-		"lowercase-global",
-		"deprecated",
-		"redundant-parameter",
-		"need-check-nil",
-		"undefined-field",
-		"cast-type-mismatch",
-		"param-type-mismatch",
-		"assign-type-mismatch",
-		"return-type-mismatch",
-		"invisible"
-	],
+	"diagnostics.disable": [],
 	"diagnostics.globals": [
 		"AbbreviateLargeNumbers",
 		"ACCEPT",
@@ -241,7 +230,9 @@
 		"ToggleDropDownMenu",
 		"GetPrimaryTalentTree",
 		"GetTalentTabInfo",
-		"MenuUtil"
+		"MenuUtil",
+		"GMRT",
+		"VMRT"
 	],
 	"runtime.version": "Lua 5.1",
 	"workspace.ignoreDir": [".github", ".vscode", "Libs"]
