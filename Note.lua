@@ -243,48 +243,41 @@ local combatLogEventFromAbbreviation = {
 }
 
 ---@param maxGroup? integer
----@return function
+---@return table<integer, string>
 local function IterateRosterUnits(maxGroup)
+	local units = {}
 	maxGroup = maxGroup or 8
-	local index = 0
 	local numMembers = GetNumGroupMembers()
-	return function()
-		index = index + 1
-
-		if index == 1 and numMembers <= 4 then
-			return "player"
-		end
-
-		if index > numMembers then
-			return nil
-		end
-
-		if IsInRaid() then
-			local _, _, subgroup = GetRaidRosterInfo(index)
+	for i = 1, numMembers do
+		if i == 1 and numMembers <= 4 then
+			units[i] = "player"
+		elseif IsInRaid() then
+			local _, _, subgroup = GetRaidRosterInfo(i)
 			if subgroup and subgroup <= maxGroup then
-				return "raid" .. index
-			else
-				return nil
+				units[i] = "raid" .. i
 			end
 		else
-			return "party" .. (index - 1)
+			units[i] = "party" .. (i - 1)
 		end
 	end
+	return units
 end
 
 -- Creates a table where keys are player names and values are colored names.
 local function GSubAutoColorCreate()
 	wipe(Private.GSubAutoColorData)
-	for unit in IterateRosterUnits() do
+	for _, unit in pairs(IterateRosterUnits()) do
 		if unit then
 			local _, classFileName, _ = UnitClass(unit)
 			local unitName, unitServer = UnitName(unit)
 			local classData = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[classFileName]
-			local coloredName = ("|c%s%s|r"):format(classData.colorStr, unitName)
-			if unitServer then -- nil if on same server
-				Private.GSubAutoColorData[unitName.join("-", unitServer)] = coloredName
+			if classData then
+				local coloredName = ("|c%s%s|r"):format(classData.colorStr, unitName)
+				if unitServer then -- nil if on same server
+					Private.GSubAutoColorData[unitName.join("-", unitServer)] = coloredName
+				end
+				Private.GSubAutoColorData[unitName] = coloredName
 			end
-			Private.GSubAutoColorData[unitName] = coloredName
 		end
 	end
 end
