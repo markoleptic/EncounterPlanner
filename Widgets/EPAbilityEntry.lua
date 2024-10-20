@@ -51,56 +51,90 @@ local function HandleCheckBoxMouseUp(frame)
 	end
 end
 
-local methods = {
-	["OnAcquire"] = function(self)
-		self:SetChecked(true)
-		self:SetWidth(frameWidth)
-		self.spellID = nil
-	end,
+---@class EPAbilityEntry : AceGUIWidget
+---@field frame table|BackdropTemplate|Frame
+---@field type string
+---@field count number
+---@field checkbg Texture
+---@field check table|Frame
+---@field checkbox table|Frame
+---@field text FontString
+---@field highlight Texture
+---@field icon Texture
+---@field spellID number
+---@field disabled boolean
+---@field checked boolean
 
-	["OnWidthSet"] = function(self, width)
-	end,
+---@param self EPAbilityEntry
+local function OnAcquire(self)
+	self.spellID = self.spellID or nil
+	self.disabled = false
+	self:SetChecked(true)
+end
 
-	["SetDisabled"] = function(self, disabled)
-		self.disabled = disabled
-		self.checkbox:SetEnabled(self.disabled)
-		if disabled then
-			self.text:SetTextColor(0.5, 0.5, 0.5)
-		else
-			self.text:SetTextColor(1, 1, 1)
-		end
-	end,
+---@param self EPAbilityEntry
+local function OnRelease(self)
+	self.icon:SetTexture(nil)
+end
 
-	["SetChecked"] = function(self, value)
-		local check = self.check
-		self.checked = value
-		if value then
-			check:Show()
-		else
-			check:Hide()
-		end
-		self:SetDisabled(self.disabled)
-	end,
+---comment
+---@param self EPAbilityEntry
+---@param disabled boolean
+local function SetDisabled(self, disabled)
+	self.disabled = disabled
+	self.checkbox:SetEnabled(self.disabled)
+	if disabled then
+		self.text:SetTextColor(0.5, 0.5, 0.5)
+	else
+		self.text:SetTextColor(1, 1, 1)
+	end
+end
 
-	["GetChecked"] = function(self)
-		return self.checked
-	end,
+---comment
+---@param self EPAbilityEntry
+---@param value boolean
+local function SetChecked(self, value)
+	local check = self.check
+	self.checked = value
+	if value then
+		check:Show()
+	else
+		check:Hide()
+	end
+	self:SetDisabled(self.disabled)
+end
 
-	["ToggleChecked"] = function(self)
-		self:SetChecked(not self:GetChecked())
-	end,
+---@param self EPAbilityEntry
+---@return boolean
+local function GetChecked(self)
+	return self.checked
+end
 
-	["SetAbility"] = function(self, spellID)
-		local icon = self.icon
-		local text = self.text
-		local spellInfo = C_Spell.GetSpellInfo(spellID)
-		if spellInfo then
-			self.spellID = spellID
-			text:SetText(spellInfo.name)
-			icon:SetTexture(spellInfo.iconID)
-		end
-	end,
-}
+---@param self EPAbilityEntry
+local function ToggleChecked(self)
+	self:SetChecked(not self:GetChecked())
+end
+
+---@param self EPAbilityEntry
+---@param spellID number
+local function SetAbility(self, spellID)
+	local spellInfo = C_Spell.GetSpellInfo(spellID)
+	if spellInfo then
+		self.spellID = spellID
+		self.text:SetText(spellInfo.name)
+		self.icon:SetTexture(spellInfo.iconID)
+		self.icon:Show()
+	end
+end
+
+---@param self EPAbilityEntry
+---@param str string
+local function SetText(self, str)
+	self.text:SetText(str)
+	self.spellID = nil
+	self.icon:SetTexture(nil)
+	self.icon:Hide()
+end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
@@ -110,7 +144,6 @@ local function Constructor()
 	frame:SetBackdropColor(0, 0, 0, 0.9)
 	frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
 	frame:SetSize(frameWidth, frameHeight)
-	frame:Hide()
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", padding.x, -padding.y)
@@ -121,7 +154,7 @@ local function Constructor()
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then text:SetFont(fPath, 12, "OUTLINE") end
+	if fPath then text:SetFont(fPath, 12) end
 	text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
 
 	local checkbox = CreateFrame("Button", Type .. "CheckBox" .. count, frame)
@@ -152,26 +185,30 @@ local function Constructor()
 	highlight:SetPoint("BOTTOMRIGHT", -4, 4)
 	highlight:SetBlendMode("ADD")
 
+	---@class EPAbilityEntry
 	local widget = {
-		frame     = frame,
-		type      = Type,
-		count     = count,
-		checkbg   = checkbg,
-		check     = check,
-		checkbox  = checkbox,
-		text      = text,
-		highlight = highlight,
-		icon      = icon,
+		OnAcquire     = OnAcquire,
+		OnRelease     = OnRelease,
+		SetDisabled   = SetDisabled,
+		SetChecked    = SetChecked,
+		GetChecked    = GetChecked,
+		ToggleChecked = ToggleChecked,
+		SetAbility    = SetAbility,
+		SetText       = SetText,
+		frame         = frame,
+		type          = Type,
+		count         = count,
+		checkbg       = checkbg,
+		check         = check,
+		checkbox      = checkbox,
+		text          = text,
+		highlight     = highlight,
+		icon          = icon,
 	}
 	checkbox.obj = widget
 	frame.obj = widget
 	---@diagnostic disable-next-line: inject-field
 	icon.obj = widget
-
-	for str, func in pairs(methods) do
-		---@diagnostic disable-next-line: assign-type-mismatch
-		widget[str] = func
-	end
 
 	return AceGUI:RegisterAsWidget(widget)
 end
