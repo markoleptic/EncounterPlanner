@@ -5,7 +5,7 @@ local textOffsetX       = 4
 local checkOffsetLeftX  = -2
 local checkOffsetRightX = -8
 local checkSize         = 16
-local fontSize          = 10
+local fontSize          = 12
 
 local function fixlevels(parent, ...)
 	local i = 1
@@ -146,7 +146,7 @@ function EPItemBase.Create(type)
 	text:SetPoint("TOPLEFT", frame, "TOPLEFT", textOffsetX, 0)
 	text:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", checkOffsetRightX, 0)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then text:SetFont(fPath, fontSize, "OUTLINE") end
+	if fPath then text:SetFont(fPath, fontSize) end
 	self.text = text
 
 	local highlight = frame:CreateTexture("EPDropdownItemBase" .. count .. "Highlight", "OVERLAY")

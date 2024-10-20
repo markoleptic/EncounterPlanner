@@ -1,9 +1,8 @@
----@diagnostic disable: invisible
 local AceGUI                  = LibStub("AceGUI-3.0")
 local LSM                     = LibStub("LibSharedMedia-3.0")
 
 local textOffsetX             = 4
-local fontSize                = 10
+local fontSize                = 12
 local dropdownItemHeight      = 20
 local dropdownItemExtraOffset = 0
 local dropdownSliderOffsetX   = -8
@@ -62,8 +61,19 @@ local function sortTbl(x, y)
 	end
 end
 
-
 do
+	---@class EPDropdownPullout : AceGUIWidget
+	---@field frame table|BackdropTemplate|Frame
+	---@field scrollFrame ScrollFrame
+	---@field itemFrame table|Frame
+	---@field slider table|BackdropTemplate|Slider
+	---@field type string
+	---@field count integer
+	---@field maxHeight number
+	---@field scrollStatus { scrollvalue: number, offset: number}
+	---@field items table
+	---@field hideOnLeave boolean
+
 	local Type             = "EPDropdownPullout"
 	local Version          = 1
 	local defaultWidth     = 200
@@ -78,7 +88,6 @@ do
 		end
 	end
 
-	-- See the note in Constructor() for each scroll related function
 	local function OnMouseWheel(frame, value)
 		local self = frame.obj
 		if self then
@@ -100,150 +109,162 @@ do
 		end
 	end
 
-	local methods = {
-		["OnAcquire"] = function(self)
-			self.frame:SetParent(UIParent)
-		end,
+	---@param self EPDropdownPullout
+	local function OnAcquire(self)
+		self.frame:SetParent(UIParent)
+	end
 
-		["OnRelease"] = function(self)
-			self:Clear()
-			self.frame:ClearAllPoints()
-			self.frame:Hide()
-		end,
+	---@param self EPDropdownPullout
+	local function OnRelease(self)
+		self:Clear()
+		self.frame:ClearAllPoints()
+		self.frame:Hide()
+	end
 
-		["AddItem"] = function(self, item)
-			self.items[#self.items + 1] = item
+	---@param self EPDropdownPullout
+	---@param item any
+	local function AddItem(self, item)
+		self.items[#self.items + 1] = item
 
-			local h = #self.items * dropdownItemHeight
-			self.itemFrame:SetHeight(h)
-			self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight)) -- +34: 20 for scrollFrame placement (10 offset) and +14 for item placement
+		local h = #self.items * dropdownItemHeight
+		self.itemFrame:SetHeight(h)
+		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
 
-			item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
-			item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
+		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
+		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
 
-			item:SetPullout(self)
-			item:SetOnEnter(OnEnter)
-		end,
+		item:SetPullout(self)
+		item:SetOnEnter(OnEnter)
+	end
 
-		["Open"] = function(self, point, relFrame, relPoint, x, y)
-			local items = self.items
-			local frame = self.frame
-			local itemFrame = self.itemFrame
+	---@param self EPDropdownPullout
+	---@param point string
+	---@param relFrame string|frame
+	---@param relPoint string
+	---@param x number
+	---@param y number
+	local function Open(self, point, relFrame, relPoint, x, y)
+		local items = self.items
+		local frame = self.frame
+		local itemFrame = self.itemFrame
 
-			frame:SetPoint(point, relFrame, relPoint, x, y)
+		frame:SetPoint(point, relFrame, relPoint, x, y)
 
-			local height = --[[8]] 0
-			for i, item in pairs(items) do
-				item:SetPoint("TOP", itemFrame, "TOP", 0, --[[-2+]] (i - 1) * -dropdownItemHeight)
-				item:Show()
+		local height = 0
+		for i, item in pairs(items) do
+			item:SetPoint("TOP", itemFrame, "TOP", 0, (i - 1) * -dropdownItemHeight)
+			item:Show()
+			height = height + dropdownItemHeight
+		end
+		itemFrame:SetHeight(height)
+		fixstrata("TOOLTIP", frame, frame:GetChildren())
+		frame:Show()
+		self:Fire("OnOpen")
+	end
 
-				height = height + dropdownItemHeight
+	---@param self EPDropdownPullout
+	local function Close(self)
+		self.frame:Hide()
+		self:Fire("OnClose")
+	end
+
+	---@param self EPDropdownPullout
+	local function Clear(self)
+		local items = self.items
+		for i, item in pairs(items) do
+			AceGUI:Release(item)
+			items[i] = nil
+		end
+	end
+
+	---@param self EPDropdownPullout
+	local function IterateItems(self)
+		return ipairs(self.items)
+	end
+
+	---@param self EPDropdownPullout
+	---@param val boolean
+	local function SetHideOnLeave(self, val)
+		self.hideOnLeave = val
+	end
+
+	---comment
+	---@param self EPDropdownPullout
+	---@param height number
+	local function SetMaxHeight(self, height)
+		self.maxHeight = height or defaultMaxHeight
+		if self.frame:GetHeight() > height then
+			self.frame:SetHeight(height)
+		elseif (self.itemFrame:GetHeight() + dropdownItemExtraOffset) < height then
+			self.frame:SetHeight(self.itemFrame:GetHeight() + dropdownItemExtraOffset) -- see :AddItem
+		end
+	end
+
+	---@param self EPDropdownPullout
+	---@param value number
+	local function SetScroll(self, value)
+		local status = self.scrollStatus
+		local frame, child = self.scrollFrame, self.itemFrame
+		local height, viewheight = frame:GetHeight(), child:GetHeight()
+
+		local offset
+		if height >= viewheight then
+			offset = 0
+		else
+			offset = floor((viewheight - height) / 1000 * value)
+		end
+		child:ClearAllPoints()
+		child:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, offset)
+		child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", self.slider:IsShown() and -12 or 0, offset)
+		status.offset = offset
+		status.scrollvalue = value
+	end
+
+	---@param self EPDropdownPullout
+	---@param value number
+	local function MoveScroll(self, value)
+		local status = self.scrollStatus
+		local frame, child = self.scrollFrame, self.itemFrame
+		local height, viewheight = frame:GetHeight(), child:GetHeight()
+
+		if height >= viewheight then
+			self.slider:Hide()
+		else
+			self.slider:Show()
+			local diff = height - viewheight
+			local delta = 1
+			if value < 0 then
+				delta = -1
 			end
-			itemFrame:SetHeight(height)
-			fixstrata("TOOLTIP", frame, frame:GetChildren())
-			frame:Show()
-			self:Fire("OnOpen")
-		end,
+			self.slider:SetValue(min(max(status.scrollvalue + delta * (1000 / (diff / 45)), 0), 1000))
+		end
+	end
 
-		["Close"] = function(self)
-			self.frame:Hide()
-			self:Fire("OnClose")
-		end,
+	---@param self EPDropdownPullout
+	local function FixScroll(self)
+		local status = self.scrollStatus
+		local frame, child = self.scrollFrame, self.itemFrame
+		local height, viewheight = frame:GetHeight(), child:GetHeight()
+		local offset = status.offset or 0
 
-		["Clear"] = function(self)
-			local items = self.items
-			for i, item in pairs(items) do
-				AceGUI:Release(item)
-				items[i] = nil
+		if viewheight <= height then
+			self.slider:Hide()
+			child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, offset)
+			self.slider:SetValue(0)
+		else
+			self.slider:Show()
+			local value = (offset / (viewheight - height) * 1000)
+			if value > 1000 then value = 1000 end
+			self.slider:SetValue(value)
+			self:SetScroll(value)
+			if value < 1000 then
+				child:ClearAllPoints()
+				child:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, offset)
+				child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, offset)
+				status.offset = offset
 			end
-		end,
-
-		["IterateItems"] = function(self)
-			return ipairs(self.items)
-		end,
-
-		["SetHideOnLeave"] = function(self, val)
-			self.hideOnLeave = val
-		end,
-
-		["SetMaxHeight"] = function(self, height)
-			self.maxHeight = height or defaultMaxHeight
-			if self.frame:GetHeight() > height then
-				self.frame:SetHeight(height)
-			elseif (self.itemFrame:GetHeight() + dropdownItemExtraOffset) < height then
-				self.frame:SetHeight(self.itemFrame:GetHeight() + dropdownItemExtraOffset) -- see :AddItem
-			end
-		end,
-
-		-- ["GetRightBorderWidth"] = function(self)
-		-- 	return 6 + (self.slider:IsShown() and 12 or 0)
-		-- end,
-
-		-- ["GetLeftBorderWidth"] = function(self, value, text, itemType)
-		-- 	return 6
-		-- end,
-
-		["SetScroll"] = function(self, value)
-			local status = self.scrollStatus
-			local frame, child = self.scrollFrame, self.itemFrame
-			local height, viewheight = frame:GetHeight(), child:GetHeight()
-
-			local offset
-			if height >= viewheight then
-				offset = 0
-			else
-				offset = floor((viewheight - height) / 1000 * value)
-			end
-			child:ClearAllPoints()
-			child:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, offset)
-			child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", self.slider:IsShown() and -12 or 0, offset)
-			status.offset = offset
-			status.scrollvalue = value
-		end,
-
-		["MoveScroll"] = function(self, value)
-			local status = self.scrollStatus
-			local frame, child = self.scrollFrame, self.itemFrame
-			local height, viewheight = frame:GetHeight(), child:GetHeight()
-
-			if height >= viewheight then
-				self.slider:Hide()
-			else
-				self.slider:Show()
-				local diff = height - viewheight
-				local delta = 1
-				if value < 0 then
-					delta = -1
-				end
-				self.slider:SetValue(min(max(status.scrollvalue + delta * (1000 / (diff / 45)), 0), 1000))
-			end
-		end,
-
-		["FixScroll"] = function(self)
-			local status = self.scrollStatus
-			local frame, child = self.scrollFrame, self.itemFrame
-			local height, viewheight = frame:GetHeight(), child:GetHeight()
-			local offset = status.offset or 0
-
-			if viewheight <= height then
-				self.slider:Hide()
-				child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, offset)
-				self.slider:SetValue(0)
-			else
-				self.slider:Show()
-				local value = (offset / (viewheight - height) * 1000)
-				if value > 1000 then value = 1000 end
-				self.slider:SetValue(value)
-				self:SetScroll(value)
-				if value < 1000 then
-					child:ClearAllPoints()
-					child:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, offset)
-					child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, offset)
-					status.offset = offset
-				end
-			end
-		end,
-	}
+		end
+	end
 
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
@@ -291,29 +312,37 @@ do
 		itemFrame:Show()
 		slider:Hide()
 
+		---@class EPDropdownPullout
 		local widget    = {
-			frame        = frame,
-			scrollFrame  = scrollFrame,
-			itemFrame    = itemFrame,
-			slider       = slider,
-			type         = Type,
-			count        = count,
-			maxHeight    = defaultMaxHeight,
-			scrollStatus = {
+			OnAcquire      = OnAcquire,
+			OnRelease      = OnRelease,
+			AddItem        = AddItem,
+			Open           = Open,
+			Close          = Close,
+			Clear          = Clear,
+			IterateItems   = IterateItems,
+			SetHideOnLeave = SetHideOnLeave,
+			SetMaxHeight   = SetMaxHeight,
+			SetScroll      = SetScroll,
+			MoveScroll     = MoveScroll,
+			FixScroll      = FixScroll,
+			frame          = frame,
+			scrollFrame    = scrollFrame,
+			itemFrame      = itemFrame,
+			slider         = slider,
+			type           = Type,
+			count          = count,
+			maxHeight      = defaultMaxHeight,
+			scrollStatus   = {
 				scrollvalue = 0,
 			},
-			items        = {}
+			items          = {}
 		}
 
 		frame.obj       = widget
 		scrollFrame.obj = widget
 		itemFrame.obj   = widget
 		slider.obj      = widget
-
-		for method, func in pairs(methods) do
-			---@diagnostic disable-next-line: assign-type-mismatch
-			widget[method] = func
-		end
 
 		widget:FixScroll()
 
@@ -324,6 +353,25 @@ do
 end
 
 do
+	---@class EPDropdown : AceGUIWidget
+	---@field frame table|BackdropTemplate|Frame
+	---@field dropdown table|Frame
+	---@field text FontString
+	---@field slider table|BackdropTemplate|Slider
+	---@field type string
+	---@field count integer
+	---@field label FontString
+	---@field buttonCover Button
+	---@field button Button
+	---@field pullout EPDropdownPullout
+	---@field value any|nil
+	---@field list any|nil
+	---@field open boolean|nil
+	---@field hasClose boolean|nil
+	---@field disabled boolean|nil
+	---@field multiselect boolean|nil
+	---@field pulloutWidth number
+
 	local Type    = "EPDropdown"
 	local Version = 1
 
@@ -420,170 +468,222 @@ do
 		end
 	end
 
-	local methods = {
-		["OnAcquire"] = function(self)
-			local pullout = AceGUI:Create("EPDropdownPullout")
-			self.pullout = pullout
-			pullout.userdata.obj = self
-			pullout:SetCallback("OnClose", OnPulloutClose)
-			pullout:SetCallback("OnOpen", OnPulloutOpen)
-			self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
-			fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
+	---@param self EPDropdown
+	local function OnAcquire(self)
+		self.pullout = AceGUI:Create("EPDropdownPullout") --[[@as EPDropdownPullout]]
+		---@diagnostic disable-next-line: invisible
+		self.pullout.userdata.obj = self
+		self.pullout:SetCallback("OnClose", OnPulloutClose)
+		self.pullout:SetCallback("OnOpen", OnPulloutOpen)
+		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
+		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
-			self:SetHeight(44)
-			self:SetWidth(200)
-			self:SetLabel()
-			self:SetPulloutWidth(nil)
-			self.list = {}
-		end,
-		["OnRelease"] = function(self)
-			if self.open then
-				self.pullout:Close()
-			end
-			AceGUI:Release(self.pullout)
-			self.pullout = nil
+		self:SetHeight(44)
+		self:SetWidth(200)
+		self:SetLabel()
+		self:SetPulloutWidth(nil)
+		self.list = {}
+	end
 
-			self:SetText("")
-			self:SetDisabled(false)
-			self:SetMultiselect(false)
+	---@param self EPDropdown
+	local function OnRelease(self)
+		if self.open then
+			self.pullout:Close()
+		end
+		AceGUI:Release(self.pullout)
+		self.pullout = nil
 
-			self.value = nil
-			self.list = nil
-			self.open = nil
-			self.hasClose = nil
+		self:SetText("")
+		self:SetDisabled(false)
+		self:SetMultiselect(false)
 
-			self.frame:ClearAllPoints()
-			self.frame:Hide()
-		end,
-		["SetDisabled"] = function(self, disabled)
-			self.disabled = disabled
-			if disabled then
-				self.text:SetTextColor(0.5, 0.5, 0.5)
-				self.button:Disable()
-				self.button_cover:Disable()
-				self.label:SetTextColor(0.5, 0.5, 0.5)
-			else
-				self.button:Enable()
-				self.button_cover:Enable()
-				self.label:SetTextColor(1, .82, 0)
-				self.text:SetTextColor(1, 1, 1)
-			end
-		end,
-		["ClearFocus"] = function(self)
-			if self.open then
-				self.pullout:Close()
-			end
-		end,
-		["SetText"] = function(self, text)
-			self.text:SetText(text or "")
-		end,
-		["SetLabel"] = function(self, text)
-			if text and text ~= "" then
-				self.label:SetText(text)
-				self.label:Show()
-				self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -14)
-				self:SetHeight(40)
-				--self.alignoffset = 26
-			else
-				self.label:SetText("")
-				self.label:Hide()
-				self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", -15, 0)
-				self:SetHeight(26)
-				--self.alignoffset = 12
-			end
-		end,
-		["SetValue"] = function(self, value)
-			self:SetText(self.list[value] or "")
-			self.value = value
-		end,
-		["GetValue"] = function(self)
-			return self.value
-		end,
-		["SetItemValue"] = function(self, item, value)
-			if not self.multiselect then return end
-			for i, widget in self.pullout:IterateItems() do
-				if widget.userdata.value == item then
-					if widget.SetValue then
-						widget:SetValue(value)
-					end
+		self.value = nil
+		self.list = nil
+		self.open = nil
+		self.hasClose = nil
+
+		self.frame:ClearAllPoints()
+		self.frame:Hide()
+	end
+
+	---@param self EPDropdown
+	---@param disabled any
+	local function SetDisabled(self, disabled)
+		self.disabled = disabled
+		if disabled then
+			self.text:SetTextColor(0.5, 0.5, 0.5)
+			self.button:Disable()
+			self.buttonCover:Disable()
+			self.label:SetTextColor(0.5, 0.5, 0.5)
+		else
+			self.button:Enable()
+			self.buttonCover:Enable()
+			self.label:SetTextColor(1, .82, 0)
+			self.text:SetTextColor(1, 1, 1)
+		end
+	end
+
+	---@param self EPDropdown
+	local function ClearFocus(self)
+		if self.open then
+			self.pullout:Close()
+		end
+	end
+
+	---@param self EPDropdown
+	---@param text string
+	local function SetText(self, text)
+		self.text:SetText(text or "")
+	end
+
+	---@param self EPDropdown
+	---@param text string?
+	local function SetLabel(self, text)
+		if text and text ~= "" then
+			self.label:SetText(text)
+			self.label:Show()
+			self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -14)
+			self:SetHeight(40)
+		else
+			self.label:SetText("")
+			self.label:Hide()
+			self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", -15, 0)
+			self:SetHeight(26)
+		end
+	end
+
+	---@param self EPDropdown
+	---@param value any
+	local function SetValue(self, value)
+		self:SetText(self.list[value] or "")
+		self.value = value
+	end
+
+	---@param self EPDropdown
+	---@return unknown
+	local function GetValue(self)
+		return self.value
+	end
+
+	---@param self EPDropdown
+	---@param item any
+	---@param value any
+	local function SetItemValue(self, item, value)
+		if not self.multiselect then return end
+		for i, widget in self.pullout:IterateItems() do
+			if widget.userdata.value == item then
+				if widget.SetValue then
+					widget:SetValue(value)
 				end
 			end
+		end
+		ShowMultiText(self)
+	end
+
+	---@param self EPDropdown
+	---@param item any
+	---@param disabled any
+	local function SetItemDisabled(self, item, disabled)
+		for i, widget in self.pullout:IterateItems() do
+			if widget.userdata.value == item then
+				widget:SetDisabled(disabled)
+			end
+		end
+	end
+
+	---@param self EPDropdown
+	---@param value any
+	---@param text any
+	---@param itemType any
+	local function AddListItem(self, value, text, itemType)
+		if not itemType then itemType = "Dropdown-Item-Toggle" end
+		local exists = AceGUI:GetWidgetVersion(itemType)
+		if not exists then
+			error(
+				("The given item type, %q, does not exist within AceGUI-3.0"):format(tostring(itemType)), 2)
+		end
+
+		local item = AceGUI:Create(itemType) --[[@as AceGUILabel]]
+		item:SetText(text)
+		---@diagnostic disable-next-line: invisible
+		item.userdata.obj = self
+		---@diagnostic disable-next-line: invisible
+		item.userdata.value = value
+		item:SetCallback("OnValueChanged", OnItemValueChanged)
+		self.pullout:AddItem(item)
+	end
+
+	---@param self EPDropdown
+	local function AddCloseButton(self)
+		if not self.hasClose then
+			local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as AceGUIButton]]
+			close:SetText("Close")
+			self.pullout:AddItem(close)
+			self.hasClose = true
+		end
+	end
+
+	---@param self EPDropdown
+	---@param list any
+	---@param order any
+	---@param itemType any
+	local function SetList(self, list, order, itemType)
+		self.list = list or {}
+		self.pullout:Clear()
+		self.hasClose = nil
+		if not list then return end
+
+		if type(order) ~= "table" then
+			for v in pairs(list) do
+				sortlist[#sortlist + 1] = v
+			end
+			table.sort(sortlist, sortTbl)
+
+			for i, key in ipairs(sortlist) do
+				self:AddListItem(key, list[key], itemType)
+				sortlist[i] = nil
+			end
+		else
+			for i, key in ipairs(order) do
+				self:AddListItem(key, list[key], itemType)
+			end
+		end
+		if self.multiselect then
 			ShowMultiText(self)
-		end,
-		["SetItemDisabled"] = function(self, item, disabled)
-			for i, widget in self.pullout:IterateItems() do
-				if widget.userdata.value == item then
-					widget:SetDisabled(disabled)
-				end
-			end
-		end,
-		["AddListItem"] = function(self, value, text, itemType)
-			if not itemType then itemType = "Dropdown-Item-Toggle" end
-			local exists = AceGUI:GetWidgetVersion(itemType)
-			if not exists then
-				error(
-					("The given item type, %q, does not exist within AceGUI-3.0"):format(tostring(itemType)), 2)
-			end
+			self:AddCloseButton()
+		end
+	end
 
-			local item = AceGUI:Create(itemType) --[[@as AceGUILabel]]
-			item:SetText(text)
-			item.userdata.obj = self
-			item.userdata.value = value
-			item:SetCallback("OnValueChanged", OnItemValueChanged)
-			self.pullout:AddItem(item)
-		end,
-		["AddCloseButton"] = function(self)
-			if not self.hasClose then
-				local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as AceGUIButton]]
-				close:SetText("Close")
-				self.pullout:AddItem(close)
-				self.hasClose = true
-			end
-		end,
-		["SetList"] = function(self, list, order, itemType)
-			self.list = list or {}
-			self.pullout:Clear()
-			self.hasClose = nil
-			if not list then return end
+	---@param self EPDropdown
+	---@param value any
+	---@param text any
+	---@param itemType any
+	local function AddItem(self, value, text, itemType)
+		self.list[value] = text
+		self:AddListItem(value, text, itemType)
+	end
 
-			if type(order) ~= "table" then
-				for v in pairs(list) do
-					sortlist[#sortlist + 1] = v
-				end
-				table.sort(sortlist, sortTbl)
+	---@param self EPDropdown
+	---@param multi any
+	local function SetMultiselect(self, multi)
+		self.multiselect = multi
+		if multi then
+			ShowMultiText(self)
+			self:AddCloseButton()
+		end
+	end
 
-				for i, key in ipairs(sortlist) do
-					self:AddListItem(key, list[key], itemType)
-					sortlist[i] = nil
-				end
-			else
-				for i, key in ipairs(order) do
-					self:AddListItem(key, list[key], itemType)
-				end
-			end
-			if self.multiselect then
-				ShowMultiText(self)
-				self:AddCloseButton()
-			end
-		end,
-		["AddItem"] = function(self, value, text, itemType)
-			self.list[value] = text
-			self:AddListItem(value, text, itemType)
-		end,
-		["SetMultiselect"] = function(self, multi)
-			self.multiselect = multi
-			if multi then
-				ShowMultiText(self)
-				self:AddCloseButton()
-			end
-		end,
-		["GetMultiselect"] = function(self)
-			return self.multiselect
-		end,
-		["SetPulloutWidth"] = function(self, width)
-			self.pulloutWidth = width
-		end,
-	}
+	---@param self EPDropdown
+	---@return unknown
+	local function GetMultiselect(self)
+		return self.multiselect
+	end
+
+	---@param self EPDropdown
+	---@param width any
+	local function SetPulloutWidth(self, width)
+		self.pulloutWidth = width
+	end
 
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
@@ -620,45 +720,60 @@ do
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 
-		local button_cover = CreateFrame("Button", nil, frame)
-		button_cover:SetPoint("LEFT", frame, "LEFT")
-		button_cover:SetPoint("RIGHT", frame, "RIGHT")
-		button_cover:SetScript("OnEnter", HandleButtonEnter)
-		button_cover:SetScript("OnLeave", HandleButtonLeave)
-		button_cover:SetScript("OnClick", HandleToggleDropdownPullout)
+		local buttonCover = CreateFrame("Button", nil, frame)
+		buttonCover:SetPoint("LEFT", frame, "LEFT")
+		buttonCover:SetPoint("RIGHT", frame, "RIGHT")
+		buttonCover:SetScript("OnEnter", HandleButtonEnter)
+		buttonCover:SetScript("OnLeave", HandleButtonLeave)
+		buttonCover:SetScript("OnClick", HandleToggleDropdownPullout)
 
 		local text = _G[dropdown:GetName() .. "Text"]
 		text:ClearAllPoints()
 
 		text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
-		if fPath then text:SetFont(fPath, fontSize, "OUTLINE") end
+		if fPath then text:SetFont(fPath, fontSize) end
 
 		local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		if fPath then label:SetFont(fPath, fontSize) end
 		label:SetPoint("LEFT", frame, "LEFT", 0, 0)
 		label:SetHeight(18)
 		label:Hide()
 
-		local widget     = {
-			frame        = frame,
-			type         = Type,
-			count        = count,
-			dropdown     = dropdown,
-			text         = text,
-			label        = label,
-			button_cover = button_cover,
-			button       = button,
+		---@class EPDropdown
+		local widget    = {
+			OnAcquire       = OnAcquire,
+			OnRelease       = OnRelease,
+			SetDisabled     = SetDisabled,
+			ClearFocus      = ClearFocus,
+			SetText         = SetText,
+			SetLabel        = SetLabel,
+			AddItem         = AddItem,
+			SetValue        = SetValue,
+			GetValue        = GetValue,
+			SetItemValue    = SetItemValue,
+			SetItemDisabled = SetItemDisabled,
+			AddListItem     = AddListItem,
+			AddCloseButton  = AddCloseButton,
+			SetList         = SetList,
+			SetMultiselect  = SetMultiselect,
+			GetMultiselect  = GetMultiselect,
+			SetPulloutWidth = SetPulloutWidth,
+			frame           = frame,
+			type            = Type,
+			count           = count,
+			dropdown        = dropdown,
+			text            = text,
+			label           = label,
+			buttonCover     = buttonCover,
+			button          = button,
 		}
 
-		frame.obj        = widget
-		dropdown.obj     = widget
-		text.obj         = widget
-		button_cover.obj = widget
-		button.obj       = widget
-
-		for method, func in pairs(methods) do
-			widget[method] = func
-		end
+		frame.obj       = widget
+		dropdown.obj    = widget
+		text.obj        = widget
+		buttonCover.obj = widget
+		button.obj      = widget
 
 		return AceGUI:RegisterAsWidget(widget)
 	end

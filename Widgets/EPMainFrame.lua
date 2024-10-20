@@ -1,9 +1,10 @@
-local Type             = "EPMainFrame"
-local Version          = 1
-local mainFrameWidth   = 1125
-local mainFrameHeight  = 600
-local windowBarHeight  = 27
-local FrameBackdrop    = {
+local Type                = "EPMainFrame"
+local Version             = 1
+local mainFrameWidth      = 1125
+local mainFrameHeight     = 600
+local windowBarHeight     = 27
+local contentFramePadding = { x = 10, y = 10 }
+local FrameBackdrop       = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
@@ -11,15 +12,15 @@ local FrameBackdrop    = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 27, bottom = 0 }
 }
-local titleBarBackdrop = {
+local titleBarBackdrop    = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
 }
-local AceGUI           = LibStub("AceGUI-3.0")
-local LSM              = LibStub("LibSharedMedia-3.0")
+local AceGUI              = LibStub("AceGUI-3.0")
+local LSM                 = LibStub("LibSharedMedia-3.0")
 
 local function FlashButton_OnLeave(self)
 	local fadeIn = self.fadeIn
@@ -83,12 +84,35 @@ local function CreateFlashButton(parent, text, width, height)
 	return Button
 end
 
-local methods = {
-	["OnAcquire"] = function(self)
-	end,
-	["OnRelease"] = function(self)
-	end,
-}
+---@class EPMainFrame : AceGUIContainer
+---@field frame table|BackdropTemplate|Frame
+---@field type string
+---@field content table|Frame
+---@field windowBar table|Frame
+---@field closebutton table|BackdropTemplate|Button
+
+---@param self EPMainFrame
+local function OnAcquire(self)
+	self.frame:SetParent(UIParent)
+	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	local screenWidth = UIParent:GetWidth()
+	local screenHeight = UIParent:GetHeight()
+	local xPos = (screenWidth / 2) - (self.frame:GetWidth() / 2)
+	local yPos = -(screenHeight / 2) + (self.frame:GetHeight() / 2)
+	self.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
+	self.frame:Show()
+end
+
+---@param self EPMainFrame
+local function OnRelease(self)
+end
+
+---@param self EPMainFrame
+---@param width number|nil
+---@param height number|nil
+local function LayoutFinished(self, width, height)
+	self.frame:SetHeight((height and height + windowBarHeight + (2 * contentFramePadding.y)) or 100)
+end
 
 local function Constructor()
 	local num = AceGUI:GetNextWidgetNum(Type)
@@ -96,19 +120,19 @@ local function Constructor()
 	mainFrame:EnableMouse(true)
 	mainFrame:SetMovable(true)
 	mainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-	mainFrame:SetFrameLevel(100)
 	mainFrame:SetBackdrop(FrameBackdrop)
 	mainFrame:SetBackdropColor(0, 0, 0, 0.9)
 	mainFrame:SetBackdropBorderColor(0, 0, 0)
 	mainFrame:SetSize(mainFrameWidth, mainFrameHeight)
-	mainFrame:SetPoint("CENTER")
 
 	local contentFrameName = "ContentFrame" .. num
 	local contentFrame = CreateFrame("Frame", contentFrameName, mainFrame)
-	contentFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 10, -37)
-	contentFrame:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -10, -37)
-	contentFrame:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", 10, 10)
-	contentFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -10, 10)
+	contentFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", contentFramePadding.x,
+		-(windowBarHeight + contentFramePadding.y))
+	contentFrame:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -contentFramePadding.x,
+		-(windowBarHeight + contentFramePadding.y))
+	contentFrame:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
+	contentFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
 
 	local windowBarName = "WindowBar" .. num
 	local windowBar = CreateFrame("Frame", windowBarName, mainFrame, "BackdropTemplate")
@@ -133,12 +157,12 @@ local function Constructor()
 	end)
 
 	local closebutton = CreateFlashButton(windowBar, "X", 25, 25)
-	closebutton:SetPoint("TOPRIGHT", -1, -1)
-	closebutton:SetScript("OnClick", function()
-		mainFrame:Hide()
-	end)
 
+	---@class EPMainFrame
 	local widget = {
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		LayoutFinished = LayoutFinished,
 		frame = mainFrame,
 		type = Type,
 		content = contentFrame,
@@ -146,10 +170,10 @@ local function Constructor()
 		closebutton = closebutton,
 	}
 
-	for method, func in pairs(methods) do
-		---@diagnostic disable-next-line: assign-type-mismatch
-		widget[method] = func
-	end
+	closebutton:SetPoint("TOPRIGHT", -1, -1)
+	closebutton:SetScript("OnClick", function()
+		widget:Release()
+	end)
 
 	return AceGUI:RegisterAsContainer(widget)
 end
