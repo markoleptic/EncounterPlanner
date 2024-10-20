@@ -1,8 +1,12 @@
+---@module "Options"
+
 --@type string
 local AddOnName = ...
 ---@class Private
-local Private = select(2, ...)
+local Private = select(2, ...) --[[@as Private]]
 local AddOn = Private.AddOn
+
+
 
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	return {
@@ -126,7 +130,7 @@ local bosses   = {
 				repeatAfter = 1
 			}
 		}
-	},
+	} --[[@as Boss]],
 	["Broodtwister Ovi'nax"] = {
 		abilities = {
 			[441362] = { -- Volatile Concoction
@@ -140,6 +144,10 @@ local bosses   = {
 					[442432] = { -- Ingest Black Blood
 						cleuEventType = "SCS",
 						castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
+						repeatCriteria = {
+							castOccurance = 3,
+							castTimes = { 20.0 },
+						}
 					}
 				},
 				duration = 0.0,
@@ -156,6 +164,10 @@ local bosses   = {
 					[442432] = { -- Ingest Black Blood
 						cleuEventType = "SCS",
 						castTimes = { 30.0, 30.0, 30.0, 30.0 },
+						repeatCriteria = {
+							castOccurance = 3,
+							castTimes = { 30.0 },
+						}
 					}
 				},
 				duration = 6.0,
@@ -164,7 +176,7 @@ local bosses   = {
 			[442432] = { -- Ingest Black Blood
 				phases = {
 					[1] = {
-						castTimes = { 19.0, 152.0, 192.0 },
+						castTimes = { 19.0, 171.0, 172.0 },
 						repeatInterval = nil
 					}
 				},
@@ -182,6 +194,10 @@ local bosses   = {
 					[442432] = { -- Ingest Black Blood
 						cleuEventType = "SCS",
 						castTimes = { 16.0, 50.0, 50.0 },
+						repeatCriteria = {
+							castOccurance = 3,
+							castTimes = { 50.0 },
+						}
 					}
 				},
 				duration = 8.0,
@@ -198,7 +214,7 @@ local bosses   = {
 				repeatAfter = nil
 			},
 		}
-	}
+	} --[[@as Boss]]
 }
 
 -- Generate a list of abilities for each boss sorted by their first cast time
@@ -264,26 +280,119 @@ for _, boss in pairs(bosses) do
 	end
 end
 
--- Addon is first loaded
-function AddOn:OnInitialize()
-	self.DB = LibStub("AceDB-3.0"):New(AddOnName .. "DB", self.Defaults)
-	self.DB.RegisterCallback(self, "OnProfileChanged", "Refresh")
-	self.DB.RegisterCallback(self, "OnProfileCopied", "Refresh")
-	self.DB.RegisterCallback(self, "OnProfileReset", "Refresh")
-	self:RegisterChatCommand("ep", "SlashCommand")
-	self:RegisterChatCommand(AddOnName, "SlashCommand")
+---comment
+---@param spellID number
+---@return BossAbility|nil
+local function findBossAbility(spellID)
+	for _, boss in pairs(bosses) do
+		if boss.abilities[spellID] then return boss.abilities[spellID] end
+	end
+	return nil
+end
 
-	Private.mainFrame = Private.Libs.AGUI:Create("EPMainFrame") --[[@as AceGUIContainer]]
+---@generic T
+---@param inTable table<number, T>
+---@return table<number, number>
+local function CreateSortedTable(inTable)
+	local sorted = {}
+	for entry in pairs(inTable) do
+		table.insert(sorted, entry)
+	end
+	table.sort(sorted)
+	return sorted
+end
+
+---@param combatLogEventBasedAssignments CombatLogEventBasedTimers
+---@param absoluteTimeBasedTimers table<integer, table<number, table<integer, AbsoluteTimeBasedTimer>>>
+---@return table<integer, TimelineAssignment>, table<integer, string>
+local function CreateSortedAssignmentTables(combatLogEventBasedAssignments, absoluteTimeBasedTimers)
+	local sortedAssignments = {}
+
+	-- Add combat log event based assignments first, use ipairs and CreateSortedTable to make sure start time is accurate
+	for _, combatLogEvent in pairs(combatLogEventBasedAssignments) do
+		for spellID, spellOccurances in pairs(combatLogEvent) do
+			local ability = findBossAbility(spellID)
+			if ability then
+				local cumTime = 0
+				for _, spellOccuranceNumber in ipairs(CreateSortedTable(spellOccurances)) do
+					cumTime = cumTime + ability.phases[1].castTimes[spellOccuranceNumber] + ability.castTime
+					local timeEntries = spellOccurances[spellOccuranceNumber]
+					for _, time in ipairs(CreateSortedTable(timeEntries)) do
+						for _, entry in pairs(timeEntries[time]) do
+							if entry.spellInfo.spellID == 1044 then
+								print(cumTime, time)
+							end
+							tinsert(sortedAssignments, {
+								assignedUnit = entry.assignedUnit,
+								assigneeNameOrRole = entry.assigneeNameOrRole,
+								spellInfo = entry.spellInfo,
+								strWithIconReplacements = entry.strWithIconReplacements,
+								startTime = cumTime + time,
+								offset = nil
+							})
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- Add absolute time based assignments
+	for _, timerGroup in pairs(absoluteTimeBasedTimers) do
+		for _, entries in pairs(timerGroup) do
+			for _, entry in pairs(entries) do
+				tinsert(sortedAssignments, {
+					assignedUnit = entry.assignedUnit,
+					assigneeNameOrRole = entry.assigneeNameOrRole,
+					spellInfo = entry.spellInfo,
+					strWithIconReplacements = entry.strWithIconReplacements,
+					startTime = entry.time,
+					offset = nil
+				})
+			end
+		end
+	end
+
+	-- Sort by first appearance
+	table.sort(sortedAssignments, function(a, b)
+		return a.startTime < b.startTime
+	end)
+
+	local assigneeIndex = 1
+	local offsets = {}
+	local assigneeOrder = {}
+
+	-- Create assigneeOrder table and assign offsets
+	for _, entry in ipairs(sortedAssignments) do
+		if offsets[entry.assigneeNameOrRole] == nil then
+			local offset = 0
+			if assigneeIndex ~= 1 then
+				offset = (assigneeIndex - 1) * (30 + 2)
+			end
+			assigneeOrder[assigneeIndex] = entry.assigneeNameOrRole
+			offsets[entry.assigneeNameOrRole] = offset
+			assigneeIndex = assigneeIndex + 1
+		end
+		entry.offset = offsets[entry.assigneeNameOrRole]
+	end
+
+	return sortedAssignments, assigneeOrder
+end
+
+function AddOn:CreateGUI()
+	Private.mainFrame = Private.Libs.AGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPContentFrameLayout")
-	Private.mainFrame:SetFullWidth(true)
-	Private.mainFrame:SetFullHeight(true)
+	Private.mainFrame:SetCallback("OnRelease", function()
+		Private.mainFrame = nil
+	end)
 
-	local listFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
-	listFrame:SetLayout("List")
-	local dropdownListFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
-	dropdownListFrame:SetLayout("List")
+	local leftSideFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	leftSideFrame:SetRelativeWidth(0.2)
+	leftSideFrame:SetAutoAdjustHeight(true)
+	leftSideFrame:SetLayout("List")
 
 	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as EPDropdown]]
+	dropdown:SetFullWidth(true)
 	local items = {}
 	for index, instance in pairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
@@ -292,47 +401,95 @@ function AddOn:OnInitialize()
 		table.insert(items, index, iconText)
 	end
 	dropdown:SetList(items, AddOn.Defaults.profile.instances["Nerub'ar Palace"].order, "EPDropdownItemToggle")
-	dropdownListFrame:AddChild(dropdown)
+	leftSideFrame:AddChild(dropdown)
 
 	local dropdownSpacer = Private.Libs.AGUI:Create("EPSpacer")
-	dropdownSpacer:SetHeight(10)
-	dropdownListFrame:AddChild(dropdownSpacer)
+	dropdownSpacer:SetHeight(11)
+	leftSideFrame:AddChild(dropdownSpacer)
+
+	local listFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	listFrame:SetLayout("List")
+	listFrame:SetAutoAdjustHeight(true)
+	listFrame:SetFullWidth(true)
+	leftSideFrame:AddChild(listFrame)
+
+	local listFrameSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	listFrameSpacer:SetHeight(30)
+	leftSideFrame:AddChild(listFrameSpacer)
+
+	local assignmentListFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	assignmentListFrame:SetLayout("List")
+	assignmentListFrame:SetAutoAdjustHeight(true)
+	assignmentListFrame:SetFullWidth(true)
+
+	Private:Note()
+
+	local sortedAssignments, assigneeOrder = CreateSortedAssignmentTables(Private.combatLogEventBasedTimers,
+		Private.absoluteTimeBasedTimers)
+	for index = 1, #assigneeOrder do
+		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
+		abilityEntry:SetText(assigneeOrder[index])
+		abilityEntry:SetFullWidth(true)
+		abilityEntry:SetHeight(30)
+		assignmentListFrame:AddChild(abilityEntry)
+		if index ~= #assigneeOrder then
+			local spacer = Private.Libs.AGUI:Create("EPSpacer")
+			spacer:SetHeight(2)
+			spacer:SetFullWidth(true)
+			assignmentListFrame:AddChild(spacer)
+		end
+	end
+	assignmentListFrame:DoLayout()
+	leftSideFrame:AddChild(assignmentListFrame)
+
+	local timelineSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	timelineSpacer:SetHeight(37)
+	timelineSpacer:SetRelativeWidth(0.8)
 
 	local timeline = Private.Libs.AGUI:Create("EPTimeline") --[[@as EPTimeline]]
 	timeline:SetRelativeWidth(0.8)
 
-	local leftSideFrame = Private.Libs.AGUI:Create("SimpleGroup") --[[@as AceGUIContainer]]
-	leftSideFrame:SetRelativeWidth(0.2)
-	leftSideFrame:SetLayout("List")
-	leftSideFrame:AddChild(dropdownListFrame)
-	leftSideFrame:AddChild(listFrame)
-
 	Private.mainFrame:AddChild(leftSideFrame)
+	Private.mainFrame:AddChild(timelineSpacer)
 	Private.mainFrame:AddChild(timeline)
 
-	dropdown:SetCallback("OnValueChanged", function(frame, callbackName, value)
+	local function dropdownCallback(frame, callbackName, value)
 		if AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value] then
 			local boss = bosses[AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name]
 			if boss then
 				listFrame:ReleaseChildren()
-				for _, spellID in ipairs(boss.sortedAbilityIDs) do
+				for index = 1, #boss.sortedAbilityIDs do
 					local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
-					abilityEntry:SetAbility(spellID)
+					abilityEntry:SetFullWidth(true)
+					abilityEntry:SetAbility(boss.sortedAbilityIDs[index])
 					listFrame:AddChild(abilityEntry)
-					local spacer = Private.Libs.AGUI:Create("EPSpacer")
-					spacer:SetHeight(4)
-					listFrame:AddChild(spacer)
+					if index ~= #boss.sortedAbilityIDs then
+						local spacer = Private.Libs.AGUI:Create("EPSpacer")
+						spacer:SetHeight(4)
+						spacer:SetFullWidth(true)
+						listFrame:AddChild(spacer)
+					end
 				end
 				listFrame:DoLayout()
-				timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases)
+				timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases, sortedAssignments, assigneeOrder)
 			end
 		end
-	end)
+	end
+	dropdown:SetCallback("OnValueChanged", dropdownCallback)
 
-	dropdown:SetValue(1)
+	dropdown:SetValue(5)
+	dropdownCallback(nil, nil, 5)
+end
 
-	Private:Note()
-
+-- Addon is first loaded
+function AddOn:OnInitialize()
+	self.DB = LibStub("AceDB-3.0"):New(AddOnName .. "DB", self.Defaults)
+	self.DB.RegisterCallback(self, "OnProfileChanged", "Refresh")
+	self.DB.RegisterCallback(self, "OnProfileCopied", "Refresh")
+	self.DB.RegisterCallback(self, "OnProfileReset", "Refresh")
+	self:RegisterChatCommand("ep", "SlashCommand")
+	self:RegisterChatCommand(AddOnName, "SlashCommand")
+	self:CreateGUI()
 	self.OnInitialize = nil
 end
 
@@ -343,13 +500,17 @@ end
 function AddOn:Refresh()
 end
 
--- slash command functionality
+-- Slash command functionality
 function AddOn:SlashCommand(input)
-	if AddOn:GetModule("Options") then
-		AddOn.OptionsModule:OpenOptions()
+	DevTool:AddData(Private)
+	if not Private.mainFrame then
+		self:CreateGUI()
+		-- if AddOn:GetModule("Options") then
+		-- 	AddOn.OptionsModule:OpenOptions()
+		-- end
 	end
 end
 
--- loads all the set options after game loads and player enters world
+-- Loads all the set options after game loads and player enters world
 function AddOn:PLAYER_ENTERING_WORLD(eventName)
 end

@@ -1,7 +1,7 @@
 --@type string
 local AddOnName = ...
---@class Private
-local Private = select(2, ...)
+---@class Private
+local Private = select(2, ...) --[[@as Private]]
 local AddOn = Private.AddOn
 
 local lineRegex = "[^\r\n]+"
@@ -23,9 +23,11 @@ local colorStartRegex = "|c........"
 local colorEndRegex = "|r"
 
 local timeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}"
+local nameRegex = "^(%S+)"
 local targetNameRegex = "@(%S+)"
 local spellIconRegex = "{spell:(%d+):?%d*}"
-local displayStringRegex = "(.*){spell:(%d+):?%d*}"
+local namePlaceholderRegex = "^({.-})"
+local spellIDPlaceholderRegex = "(.*){spell:(%d+):?%d*}"
 local raidIconRegex = "{icon:([^}]+)}"
 local ertIconRegex = "{.-}"
 local dashRegex = "{.-}"
@@ -472,54 +474,57 @@ end
 -- Extracts inputs from a line of text.
 ---@param line string
 ---@param time number
----@return table
+---@return table<CombatLogEventBasedTimer>
 local function ExtractInputs(line, time)
-	local inputs = {}
+	local timers = {}
 	for str in (line .. "  "):gmatch(wordSegmentationRegex) do
-		local targetName               = (str:match(targetNameRegex) or "")
-			:gsub(doublePipeRegex, "|")
-			:gsub(colorStartRegex, "")
-			:gsub(colorEndRegex, "")
-		local text                     = str:match(textRegex)
-		local spellinfo                = { spellID = 0, name = "", iconID = 0 }
-		local strWithoutSpell          = str:gsub(displayStringRegex, function(rest, id)
+		local targetName = str:match(targetNameRegex) or ""
+		targetName = targetName:gsub(doublePipeRegex, "|"):gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
+
+		local spellinfo = { spellID = 0, name = "", iconID = 0 }
+		local strWithoutSpell = str:gsub(spellIDPlaceholderRegex, function(rest, id)
 			spellinfo = C_Spell.GetSpellInfo(id)
 			return rest
 		end)
+
+		local nameOrGroup = strWithoutSpell:match(namePlaceholderRegex) or strWithoutSpell:match(nameRegex) or ""
+		nameOrGroup = nameOrGroup:gsub(doublePipeRegex, "|"):gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
+
 		local textWithIconReplacements = nil
+		local text = str:match(textRegex)
 		if text then
-			textWithIconReplacements = text
-				:gsub(spellIconRegex, GSubIcon)
+			textWithIconReplacements = text:gsub(spellIconRegex, GSubIcon)
 				:gsub(raidIconRegex, "|T%1:16|t")
 				:gsub(ertIconRegex, localERTIcons)
 				:gsub(doublePipeRegex, "|")
 				:gsub(dashRegex, "")
 		end
-		local strWithIconReplacements = str
-			:gsub(spellIconRegex, GSubIcon)
+		local strWithIconReplacements = str:gsub(spellIconRegex, GSubIcon)
 			:gsub(raidIconRegex, "|T%1:16|t")
 			:gsub(ertIconRegex, localERTIcons)
 			:gsub(doublePipeRegex, "|")
 			:gsub(dashRegex, "")
-		inputs[#inputs + 1]           = {
+
+		local timer = {
 			time = time,
 			line = str,
 			text = text,
 			textWithIconReplacements = textWithIconReplacements,
 			strWithIconReplacements = strWithIconReplacements, -- Similar to how appear in Note
-			assigneeNameOrRole = strWithoutSpell,
-			spellinfo = spellinfo,
+			assigneeNameOrRole = nameOrGroup or "",
+			spellInfo = spellinfo,
 			assignedUnit = targetName,
 		}
+		tinsert(timers, timer)
 	end
-	return inputs
+	return timers
 end
 
 -- Inserts the timer into the correct table based on options.
----@param timer table
+---@param timers table<number, CombatLogEventBasedTimer>
 ---@param options string
 ---@param noteType string
-function Private:ProcessOptions(timer, options, noteType)
+function Private:ProcessOptions(timers, options, noteType)
 	local regularTimer = true
 	local option = nil
 	while options do
@@ -534,42 +539,57 @@ function Private:ProcessOptions(timer, options, noteType)
 				if not self.customTimers[option] then
 					self.customTimers[option] = {}
 				end
-				tinsert(self.phaseBasedTimers[option], timer)
+				tinsert(self.phaseBasedTimers[option], timers)
 				regularTimer = false
 			end
 		elseif option:sub(1, 1) == "p" then
 			local _, phase = option:match(phaseNumberRegex)
 			if phase and phase ~= "" then
-				phase = tonumber(phase)
-				for _, input in pairs(timer.inputs) do
-					input.phase = phase
+				local phaseNumber = tonumber(phase)
+				if phaseNumber then
+					if not self.phaseBasedTimers[phaseNumber] then
+						self.phaseBasedTimers[phaseNumber] = {}
+					end
+					tinsert(self.phaseBasedTimers[phaseNumber], timers)
 				end
-				local phaseText = "p" .. phase
-				if not self.phaseBasedTimers[phaseText] then
-					self.phaseBasedTimers[phaseText] = {}
-				end
-				tinsert(self.phaseBasedTimers[phaseText], timer)
 				regularTimer = false
 			end
 		else
 			local combatLogEventAbbreviation, spellID, phase = strsplit(":", option, 3)
 			if combatLogEventFromAbbreviation[combatLogEventAbbreviation] then
-				if not self.phaseBasedTimers[combatLogEventAbbreviation] then
-					self.phaseBasedTimers[combatLogEventAbbreviation] = {}
+				if not self.combatLogEventBasedTimers[combatLogEventAbbreviation] then
+					self.combatLogEventBasedTimers[combatLogEventAbbreviation] = {}
 				end
-				if not self.phaseBasedTimers[combatLogEventAbbreviation][spellID] then
-					self.phaseBasedTimers[combatLogEventAbbreviation][spellID] = {}
+				local spellIDNumeric = tonumber(spellID)
+				local phaseNumber = tonumber(phase)
+				if spellIDNumeric and phaseNumber then
+					if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric] then
+						self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric] = {}
+					end
+					if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber] then
+						self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber] = {}
+					end
+
+					for time, timers2 in pairs(timers) do
+						if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber][time] then
+							self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber][time] = {}
+							for _, timer in pairs(timers2) do
+								tinsert(
+									self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric]
+									[phaseNumber]
+									[time],
+									timer)
+							end
+						end
+					end
 				end
-				if not self.phaseBasedTimers[combatLogEventAbbreviation][spellID][phase] then
-					self.phaseBasedTimers[combatLogEventAbbreviation][spellID][phase] = {}
-				end
-				tinsert(self.phaseBasedTimers[combatLogEventAbbreviation][spellID][phase], timer)
+
 				regularTimer = false
 			end
 		end
 	end
 	if regularTimer then
-		self.absoluteTimeBasedTimers[#self.absoluteTimeBasedTimers + 1] = timer
+		self.absoluteTimeBasedTimers[#self.absoluteTimeBasedTimers + 1] = timers
 	end
 end
 
@@ -590,17 +610,21 @@ function Private:ParseNote(text, noteType)
 		end
 		if time then
 			local inputs = ExtractInputs(line, time)
-			self:ProcessOptions(inputs, options, noteType)
+			local inputs2 = { [time] = inputs }
+			self:ProcessOptions(inputs2, options, noteType)
 		end
 	end
 end
 
+-- Parses the shared and personal ERT notes.
 function Private:Note()
 	if not C_AddOns.IsAddOnLoaded("MRT") then return end
 	GSubAutoColorCreate()
 	if GMRT and GMRT.F then
 		self:ParseNote(VMRT.Note.Text1 or "", "shared")
 		self:ParseNote(VMRT.Note.SelfText or "", "personal")
-		DevTool:AddData(self)
+		if DevTool then
+			DevTool:AddData(self)
+		end
 	end
 end

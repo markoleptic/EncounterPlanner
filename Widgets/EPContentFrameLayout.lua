@@ -24,10 +24,14 @@ AceGUI:RegisterLayout(Type,
 			local frame = child.frame
 			frame:ClearAllPoints()
 			frame:Show()
+
 			if i == 1 then
 				frame:SetPoint("TOPLEFT", content)
-			else
-				frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT", 0, -37)
+			elseif i == 2 then
+				frame:SetPoint("TOPLEFT", children[1].frame, "TOPRIGHT", 0, 0)
+				frame:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, 0)
+			elseif i == 3 then
+				frame:SetPoint("TOPLEFT", children[2].frame, "BOTTOMLEFT", 0, 0)
 			end
 
 			if child.width == "fill" then
@@ -44,8 +48,17 @@ AceGUI:RegisterLayout(Type,
 					child:DoLayout()
 				end
 			end
+		end
 
-			height = height + (frame.height or frame:GetHeight() or 0)
+		if #children >= 1 then
+			height = math.max(height, children[1].frame.height or children[1].frame:GetHeight() or 0)
+		end
+		if #children >= 2 then
+			height = math.max(height, children[2].frame.height or children[2].frame:GetHeight() or 0)
+		end
+		if #children >= 3 then
+			height = math.max(height, (children[2].frame.height or children[2].frame:GetHeight() or 0) +
+				(children[3].frame.height or children[3].frame:GetHeight()))
 		end
 		safecall(content.obj.LayoutFinished, content.obj, nil, height)
 	end)
