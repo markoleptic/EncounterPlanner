@@ -1,5 +1,5 @@
 --@type string
 local AddOnName = ...
----@using Private
+
 ---@class Private
-local Private = select(2, ...)
+local Private = select(2, ...) --[[@as Private]]
