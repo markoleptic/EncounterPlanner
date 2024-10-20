@@ -1,91 +1,60 @@
----@meta _
----@alias EPLayoutType
----|"EPContentFrameLayout"
+---@meta
 
----@alias EPWidgetType
----|"EPAbilityEntry"
----|"EPDropdown"
----|"EPMainFrame"
----|"EPDropdownItemToggle"
----|"EPSpacer"
----|"EPTimeline"
----|"Dropdown-Item-Execute"
----|"EPDropdownItemToggle"
----|"EPDropdownPullout"
-
----@alias EPContainerType
----|"EPMainFrame"
-
+---@alias SpellID number
+---@alias CombatLogEventType string
 
 ---@class Private
-local Private = {}
 
-function Private:Note() end
+---@class PhaseData
+---@field castTimes table<number>|nil
+---@field repeatInterval number|nil
 
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0)
----@class AceGUI-3.0
-local AceGUI = {}
+---@class EventTrigger
+---@field cleuEventType string
+---@field castTimes table<number>
+---@field repeatCriteria {castOccurance: number, castTimes: table<number>}|nil
 
----@param type AceGUIWidgetType|AceGUIContainerType|EPWidgetType|EPLayoutType
----@return AceGUIWidget
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
-function AceGUI:Create(type) end
+---@class BossAbility
+---@field phases table<number, PhaseData>
+---@field eventTriggers table<SpellID, EventTrigger>|nil
+---@field duration number
+---@field castTime number
 
----@param Name AceGUILayoutType|EPLayoutType
----@return function
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-4)
-function AceGUI:GetLayout(Name) end
+---@class BossPhase
+---@field duration number
+---@field defaultDuration number
+---@field count number
+---@field defaultCount number
+---@field repeatAfter number|nil
 
----@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-8)
-function AceGUI:RegisterAsContainer(widget) end
+---@class Boss
+---@field abilities table<SpellID, BossAbility>
+---@field phases table<integer, BossPhase>
+---@field sortedAbilityIDs? table<SpellID>
 
----@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-9)
-function AceGUI:RegisterAsWidget(widget) end
+---@class CombatLogEventBasedTimer
+---@field assignedUnit number
+---@field assigneeNameOrRole string
+---@field line string
+---@field spellInfo table
+---@field strWithIconReplacements string
 
----@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-12)
-function AceGUI:Release(widget) end
+---@alias SpellOccurance table<number, table<time_t, table<number, CombatLogEventBasedTimer>>>
+---@alias CombatLogEvent table<SpellID, SpellOccurance>
+---@alias CombatLogEventBasedTimers table<CombatLogEventType, CombatLogEvent>
 
----@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-13)
-function AceGUI:SetFocus(widget) end
+---@class AbsoluteTimeBasedTimer
+---@field assignedUnit number
+---@field assigneeNameOrRole string
+---@field line string
+---@field spellInfo table
+---@field strWithIconReplacements string
+---@field time number
 
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets)
----@class AceGUIWidget
-local AceGUIWidget = {}
-
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets)
----@class AceGUIContainer : AceGUIWidget
-local AceGUIContainer = {}
-
----@param widget AceGUIWidget|EPWidgetType
----@param beforeWidget? AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets#title-3-1)
-function AceGUIContainer:AddChild(widget, beforeWidget) end
-
----@param layout AceGUILayoutType|EPLayoutType
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets#title-3-2)
-function AceGUIContainer:SetLayout(layout) end
-
----@class EPAbilityEntry : AceGUIWidget
-local EPAbilityEntry = {}
-
----@param spellID number
-function EPAbilityEntry:SetAbility(spellID) end
-
----@class EPTimeline : AceGUIWidget
-local EPTimeline = {}
-
----@param abilities table
----@param abilityOrder table
----@param phases table
-function EPTimeline:SetEntries(abilities, abilityOrder, phases) end
-
----@class EPDropdown : AceGUIWidget
-local EPDropdown = {}
-
-function EPDropdown:SetList(list, order, itemType) end
-
-function EPDropdown:SetValue(value) end
+---@class TimelineAssignment
+---@field assignedUnit number
+---@field assigneeNameOrRole string
+---@field spellInfo table
+---@field strWithIconReplacements string
+---@field startTime number
+---@field offset number
