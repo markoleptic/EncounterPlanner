@@ -10,6 +10,7 @@
 
 embeds.xml
 Init.lua
+Widgets\Widgets.xml
 Note.lua
-Core.lua
 Options.lua
+Core.lua

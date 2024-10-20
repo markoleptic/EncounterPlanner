@@ -232,7 +232,8 @@
 		"GetTalentTabInfo",
 		"MenuUtil",
 		"GMRT",
-		"VMRT"
+		"VMRT",
+		"DevTool"
 	],
 	"runtime.version": "Lua 5.1",
 	"workspace.ignoreDir": [".github", ".vscode", "Libs"]

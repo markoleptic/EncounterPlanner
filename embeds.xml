@@ -17,5 +17,4 @@
     <Include file="Libs\Ace3\AceTab-3.0\AceTab-3.0.xml"/>
     <Include file="Libs\Ace3\AceTimer-3.0\AceTimer-3.0.xml"/>
     <Include file="Libs\LibSharedMedia-3.0\lib.xml"/>
-	<Include file="Widgets\Widgets.xml"/>
 </Ui>
