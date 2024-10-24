@@ -7,4 +7,5 @@
 	<Script file="EPMainFrame.lua"/>
 	<Script file="EPSpacer.lua"/>
 	<Script file="EPTimeline.lua"/>
+	<Script file="EPAssignmentEditor.lua"/>
 </Ui>
