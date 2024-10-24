@@ -71,7 +71,7 @@ do
 	---@field count integer
 	---@field maxHeight number
 	---@field scrollStatus { scrollvalue: number, offset: number}
-	---@field items table
+	---@field items table<integer, EPItemBase>
 	---@field hideOnLeave boolean
 
 	local Type             = "EPDropdownPullout"
@@ -88,21 +88,21 @@ do
 		end
 	end
 
-	local function OnMouseWheel(frame, value)
+	local function HandleMouseWheel(frame, value)
 		local self = frame.obj
 		if self then
 			self:MoveScroll(value)
 		end
 	end
 
-	local function OnScrollValueChanged(frame, value)
+	local function HandleScrollValueChanged(frame, value)
 		local self = frame.obj
 		if self then
 			self:SetScroll(value)
 		end
 	end
 
-	local function OnSizeChanged(frame)
+	local function HandleSizeChanged(frame)
 		local self = frame.obj
 		if self then
 			self:FixScroll()
@@ -122,19 +122,31 @@ do
 	end
 
 	---@param self EPDropdownPullout
-	---@param item any
+	---@param item EPItemBase
 	local function AddItem(self, item)
 		self.items[#self.items + 1] = item
-
 		local h = #self.items * dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
-
 		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
 		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
-
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
+	end
+
+	---@param self EPDropdownPullout
+	---@param pulloutItem EPDropdownItemMenu
+	---@param items table<integer, EPItemBase>
+	local function AddPulloutItem(self, pulloutItem, items)
+		self.items[#self.items + 1] = pulloutItem
+		local h = #self.items * dropdownItemHeight
+		self.itemFrame:SetHeight(h)
+		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
+		pulloutItem.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
+		pulloutItem.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
+		pulloutItem:SetPullout(self)
+		pulloutItem:SetOnEnter(OnEnter)
+		pulloutItem:SetMenuItems(items)
 	end
 
 	---@param self EPDropdownPullout
@@ -147,9 +159,7 @@ do
 		local items = self.items
 		local frame = self.frame
 		local itemFrame = self.itemFrame
-
 		frame:SetPoint(point, relFrame, relPoint, x, y)
-
 		local height = 0
 		for i, item in pairs(items) do
 			item:SetPoint("TOP", itemFrame, "TOP", 0, (i - 1) * -dropdownItemHeight)
@@ -188,7 +198,6 @@ do
 		self.hideOnLeave = val
 	end
 
-	---comment
 	---@param self EPDropdownPullout
 	---@param height number
 	local function SetMaxHeight(self, height)
@@ -206,7 +215,6 @@ do
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
-
 		local offset
 		if height >= viewheight then
 			offset = 0
@@ -226,7 +234,6 @@ do
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
-
 		if height >= viewheight then
 			self.slider:Hide()
 		else
@@ -246,7 +253,6 @@ do
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
 		local offset = status.offset or 0
-
 		if viewheight <= height then
 			self.slider:Hide()
 			child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, offset)
@@ -281,8 +287,8 @@ do
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
 		scrollFrame:EnableMouseWheel(true)
-		scrollFrame:SetScript("OnMouseWheel", OnMouseWheel)
-		scrollFrame:SetScript("OnSizeChanged", OnSizeChanged)
+		scrollFrame:SetScript("OnMouseWheel", HandleMouseWheel)
+		scrollFrame:SetScript("OnSizeChanged", HandleSizeChanged)
 		scrollFrame:SetToplevel(true)
 		scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 
@@ -303,7 +309,7 @@ do
 		slider:SetFrameStrata("FULLSCREEN_DIALOG")
 		slider:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", dropdownSliderOffsetX, 0)
 		slider:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", dropdownSliderOffsetX, 0)
-		slider:SetScript("OnValueChanged", OnScrollValueChanged)
+		slider:SetScript("OnValueChanged", HandleScrollValueChanged)
 		slider:SetMinMaxValues(0, 1000)
 		slider:SetValueStep(1)
 		slider:SetValue(0)
@@ -317,6 +323,7 @@ do
 			OnAcquire      = OnAcquire,
 			OnRelease      = OnRelease,
 			AddItem        = AddItem,
+			AddPulloutItem = AddPulloutItem,
 			Open           = Open,
 			Close          = Close,
 			Clear          = Clear,
@@ -371,6 +378,7 @@ do
 	---@field disabled boolean|nil
 	---@field multiselect boolean|nil
 	---@field pulloutWidth number
+	---@field obj any|nil
 
 	local Type    = "EPDropdown"
 	local Version = 1
@@ -408,10 +416,9 @@ do
 		end
 	end
 
-	local function OnPulloutOpen(frame)
+	local function HandlePulloutOpen(frame)
 		local self = frame.userdata.obj
 		local value = self.value
-
 		if not self.multiselect then
 			for i, item in frame:IterateItems() do
 				item:SetValue(item.userdata.value == value)
@@ -424,7 +431,7 @@ do
 		self:Fire("OnOpened")
 	end
 
-	local function OnPulloutClose(frame)
+	local function HandlePulloutClose(frame)
 		local self = frame.userdata.obj
 		self.open = nil
 		self.button:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
@@ -435,7 +442,7 @@ do
 
 	local function ShowMultiText(self)
 		local text
-		for i, widget in self.pullout:IterateItems() do
+		for _, widget in self.pullout:IterateItems() do
 			if widget.type == "Dropdown-Item-Toggle" or widget.type == "EPDropdownItemToggle" then
 				if widget:GetValue() then
 					if text then
@@ -449,16 +456,15 @@ do
 		self:SetText(text)
 	end
 
-	local function OnItemValueChanged(frame, event, checked)
-		local self = frame.userdata.obj
-
+	local function HandleItemValueChanged(frame, event, checked)
+		local self = frame:GetUserDataTable().obj
 		if self.multiselect then
-			self:Fire("OnValueChanged", frame.userdata.value, checked)
+			self:Fire("OnValueChanged", frame:GetUserDataTable().value, checked)
 			ShowMultiText(self)
 		else
 			if checked then
-				self:SetValue(frame.userdata.value)
-				self:Fire("OnValueChanged", frame.userdata.value)
+				self:SetValue(frame:GetUserDataTable().value)
+				self:Fire("OnValueChanged", frame:GetUserDataTable().value)
 			else
 				frame:SetValue(true)
 			end
@@ -471,10 +477,9 @@ do
 	---@param self EPDropdown
 	local function OnAcquire(self)
 		self.pullout = AceGUI:Create("EPDropdownPullout") --[[@as EPDropdownPullout]]
-		---@diagnostic disable-next-line: invisible
-		self.pullout.userdata.obj = self
-		self.pullout:SetCallback("OnClose", OnPulloutClose)
-		self.pullout:SetCallback("OnOpen", OnPulloutOpen)
+		self.pullout:GetUserDataTable().obj = self
+		self.pullout:SetCallback("OnClose", HandlePulloutClose)
+		self.pullout:SetCallback("OnOpen", HandlePulloutOpen)
 		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
@@ -570,8 +575,8 @@ do
 	---@param value any
 	local function SetItemValue(self, item, value)
 		if not self.multiselect then return end
-		for i, widget in self.pullout:IterateItems() do
-			if widget.userdata.value == item then
+		for _, widget in self.pullout:IterateItems() --[[@as EPDropdownItemToggle]] do
+			if widget:GetUserDataTable().value == item then
 				if widget.SetValue then
 					widget:SetValue(value)
 				end
@@ -585,7 +590,7 @@ do
 	---@param disabled any
 	local function SetItemDisabled(self, item, disabled)
 		for i, widget in self.pullout:IterateItems() do
-			if widget.userdata.value == item then
+			if widget:GetUserDataTable().value == item then
 				widget:SetDisabled(disabled)
 			end
 		end
@@ -593,7 +598,7 @@ do
 
 	---@param self EPDropdown
 	---@param value any
-	---@param text any
+	---@param text string
 	---@param itemType any
 	local function AddListItem(self, value, text, itemType)
 		if not itemType then itemType = "Dropdown-Item-Toggle" end
@@ -602,21 +607,31 @@ do
 			error(
 				("The given item type, %q, does not exist within AceGUI-3.0"):format(tostring(itemType)), 2)
 		end
-
-		local item = AceGUI:Create(itemType) --[[@as AceGUILabel]]
+		local item = AceGUI:Create(itemType) --[[@as EPItemBase]]
 		item:SetText(text)
-		---@diagnostic disable-next-line: invisible
-		item.userdata.obj = self
-		---@diagnostic disable-next-line: invisible
-		item.userdata.value = value
-		item:SetCallback("OnValueChanged", OnItemValueChanged)
+		item:GetUserDataTable().obj = self
+		item:GetUserDataTable().value = value
+		item:SetCallback("OnValueChanged", HandleItemValueChanged)
 		self.pullout:AddItem(item)
+	end
+
+	---@param self EPDropdown
+	---@param value any
+	---@param text string
+	---@param items table<integer, EPItemBase>
+	local function AddListItemMenu(self, value, text, items)
+		local item = AceGUI:Create("EPDropdownItemMenu") --[[@as EPDropdownItemMenu]]
+		item:SetText(text)
+		item:GetUserDataTable().obj = self
+		item:GetUserDataTable().value = value
+		item:SetCallback("OnValueChanged", HandleItemValueChanged)
+		self.pullout:AddPulloutItem(item, items)
 	end
 
 	---@param self EPDropdown
 	local function AddCloseButton(self)
 		if not self.hasClose then
-			local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as AceGUIButton]]
+			local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as EPItemBase]]
 			close:SetText("Close")
 			self.pullout:AddItem(close)
 			self.hasClose = true
@@ -754,6 +769,7 @@ do
 			SetItemValue    = SetItemValue,
 			SetItemDisabled = SetItemDisabled,
 			AddListItem     = AddListItem,
+			AddListItemMenu = AddListItemMenu,
 			AddCloseButton  = AddCloseButton,
 			SetList         = SetList,
 			SetMultiselect  = SetMultiselect,
