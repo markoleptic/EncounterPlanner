@@ -465,6 +465,9 @@ function AddOn:CreateGUI()
 	timelineSpacer:SetRelativeWidth(0.8)
 
 	local timeline = Private.Libs.AGUI:Create("EPTimeline") --[[@as EPTimeline]]
+	timeline:SetNewAssignmentFunc(function()
+		return Private.Assignment:new({})
+	end)
 	timeline:SetRelativeWidth(0.8)
 
 	Private.mainFrame:AddChild(leftSideFrame)
@@ -507,7 +510,6 @@ function AddOn:OnInitialize()
 	self.DB.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
-	self:CreateGUI()
 	self.OnInitialize = nil
 end
 

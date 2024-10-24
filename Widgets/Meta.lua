@@ -1,6 +1,8 @@
 ---@meta
 ---@alias EPLayoutType
 ---|"EPContentFrameLayout"
+---|"EPHorizontalLayout"
+---|"EPVerticalLayout"
 
 ---@alias EPWidgetType
 ---|"EPAbilityEntry"
@@ -16,6 +18,10 @@
 
 ---@alias EPContainerType
 ---|"EPMainFrame"
+---|"EPAssignmentEditor"
+
+---@alias EPAssignmentEditorType
+---|"EPAssignmentEditor"
 
 ---[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0)
 ---@class AceGUI-3.0
@@ -31,6 +37,11 @@ local AceGUIContainer = {}
 
 ---@param type AceGUIWidgetType|EPWidgetType|EPLayoutType
 ---@return AceGUIWidget
+---[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
+function AceGUI:Create(type) end
+
+---@param type EPAssignmentEditorType
+---@return EPAssignmentEditor
 ---[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
 function AceGUI:Create(type) end
 

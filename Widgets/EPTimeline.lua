@@ -103,7 +103,7 @@ local function HandleTimelineFrameUpdate(frame)
 	self:UpdateScrollBar()
 end
 
-local function HandleTimelineFrameDragStart(frame)
+local function HandleTimelineFrameDragStart(frame, button)
 	local self = frame.obj
 	self.private.timelineFrameIsDragging = true
 	self.private.timelineFrameDragStartX, _ = GetCursorPosition()
@@ -170,6 +170,32 @@ local function HandleTimelineFrameMouseWheel(frame, delta)
 	self:UpdateAssignments()
 end
 
+local function HandleAssignmentDataChanged(frame, assignment)
+	print("AssignmentDataChanged")
+end
+
+local function HandleAssignmentTimelineFrameMouseDown(frame, button)
+	if button ~= "LeftButton" then return end
+	local self = frame.obj
+
+	local scrollFrame = self.frame
+
+	local currentX, currentY = GetCursorPosition()
+	currentX = currentX / scrollFrame:GetEffectiveScale()
+	currentY = currentY / scrollFrame:GetEffectiveScale()
+
+	if not self.assignmentEditor then
+		self.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
+		self.assignmentEditor.obj = self
+		self.assignmentEditor:SetCallback("AssignmentDataChanged", HandleAssignmentDataChanged)
+		self.assignmentEditor:SetCallback("OnRelease", function()
+			self.assignmentEditor = nil
+		end)
+		self.assignmentEditor.frame:SetFrameLevel(self.frame:GetFrameLevel() + 5)
+	end
+	self.assignmentEditor:SetAssignmentData(self.newAssignmentFunc())
+end
+
 ---@class PrivateTable
 ---@field timelineLinePadding {x:number, y:number},
 ---@field thumbPadding {x:number, y:number},
@@ -183,6 +209,16 @@ end
 ---@class EPTimeline : AceGUIWidget
 ---@field parent AceGUIContainer|nil
 ---@field private PrivateTable
+---@field frame ScrollFrame
+---@field type string
+---@field timelineWrapperFrame table|Frame
+---@field assignmentTimelineFrame table|Frame
+---@field timelineFrame table|Frame
+---@field scrollBar table|Frame
+---@field thumb Button
+---
+---@field assignees table<integer, string>
+---@field assignmentEditor EPAssignmentEditor|nil
 ---@field assignmentTimelineTicks table<number, Texture>
 ---@field assignmentTextures table<number, Texture>
 ---@field bossAbilities table<number, BossAbility>
@@ -192,18 +228,11 @@ end
 ---@field bossPhaseOrder table<number, number> sequence of phases based on repeatAfter
 ---@field bossPhases table<number, BossPhase>
 ---@field timelineAssignments table<integer, TimelineAssignment>
----@field assignees table<integer, string>
 ---@field totalTimelineDuration number
----@field frame ScrollFrame
----@field type string
----@field timelineWrapperFrame table|Frame
----@field assignmentTimelineFrame table|Frame
----@field timelineFrame table|Frame
----@field scrollBar table|Frame
----@field thumb Button
 
 ---@param self EPTimeline
 local function OnAcquire(self)
+	self.assignmentEditor         = self.assignmentEditor or nil
 	self.assignmentTimelineTicks  = self.assignmentTimelineTicks or {}
 	self.assignmentTextures       = self.assignmentTextures or {}
 	self.bossAbilityTextureBars   = self.bossAbilityTextureBars or {}
@@ -231,6 +260,7 @@ end
 local function OnRelease(self)
 	wipe(self.private)
 	self.totalTimelineDuration = 0
+	if self.assignmentEditor then self.assignmentEditor:Release() end
 end
 
 -- Sets the boss ability entries for the timeline.
@@ -633,6 +663,10 @@ local function UpdateHeight(self)
 	end
 end
 
+local function SetNewAssignmentFunc(self, func)
+	self.newAssignmentFunc = func
+end
+
 local function Constructor()
 	local num = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("ScrollFrame", Type .. num, UIParent)
@@ -664,6 +698,7 @@ local function Constructor()
 	assignmentTimelineFrame:RegisterForDrag("LeftButton", "LeftButtonUp")
 	assignmentTimelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
 	assignmentTimelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
+	assignmentTimelineFrame:SetScript("OnMouseDown", HandleAssignmentTimelineFrameMouseDown)
 	assignmentTimelineFrame:Show()
 
 	frame:SetScrollChild(timelineWrapperFrame)
@@ -708,6 +743,7 @@ local function Constructor()
 		CalculateRequiredAssignmentHeight = CalculateRequiredAssignmentHeight,
 		CalculateRequiredHeight           = CalculateRequiredHeight,
 		UpdateHeight                      = UpdateHeight,
+		SetNewAssignmentFunc              = SetNewAssignmentFunc,
 		frame                             = frame,
 		type                              = Type,
 		timelineWrapperFrame              = timelineWrapperFrame,
