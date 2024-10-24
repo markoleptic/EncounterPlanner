@@ -282,12 +282,12 @@ end
 
 ---comment
 ---@param spellID number
----@return BossAbility|nil
+---@return Boss|nil,BossAbility|nil
 local function findBossAbility(spellID)
 	for _, boss in pairs(bosses) do
-		if boss.abilities[spellID] then return boss.abilities[spellID] end
+		if boss.abilities[spellID] then return boss, boss.abilities[spellID] end
 	end
-	return nil
+	return nil, nil
 end
 
 ---@generic T
@@ -302,80 +302,99 @@ local function CreateSortedTable(inTable)
 	return sorted
 end
 
----@param combatLogEventBasedAssignments CombatLogEventBasedTimers
----@param absoluteTimeBasedTimers table<integer, table<number, table<integer, AbsoluteTimeBasedTimer>>>
+-- Sorts assignments based on first appearance in the fight.
+---@param assignments table<integer, Assignment>
 ---@return table<integer, TimelineAssignment>, table<integer, string>
-local function CreateSortedAssignmentTables(combatLogEventBasedAssignments, absoluteTimeBasedTimers)
-	local sortedAssignments = {}
-
-	-- Add combat log event based assignments first, use ipairs and CreateSortedTable to make sure start time is accurate
-	for _, combatLogEvent in pairs(combatLogEventBasedAssignments) do
-		for spellID, spellOccurances in pairs(combatLogEvent) do
-			local ability = findBossAbility(spellID)
+local function CreateSortedAssignmentTables(assignments)
+	local sortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
+	for _, assignment in pairs(assignments) do
+		if getmetatable(assignment) == Private.CombatLogEventAssignment then
+			assignment = assignment --[[@as CombatLogEventAssignment]]
+			local _, ability = findBossAbility(assignment.combatLogEventSpellID)
 			if ability then
-				local cumTime = 0
-				for _, spellOccuranceNumber in ipairs(CreateSortedTable(spellOccurances)) do
-					cumTime = cumTime + ability.phases[1].castTimes[spellOccuranceNumber] + ability.castTime
-					local timeEntries = spellOccurances[spellOccuranceNumber]
-					for _, time in ipairs(CreateSortedTable(timeEntries)) do
-						for _, entry in pairs(timeEntries[time]) do
-							if entry.spellInfo.spellID == 1044 then
-								print(cumTime, time)
-							end
-							tinsert(sortedAssignments, {
-								assignedUnit = entry.assignedUnit,
-								assigneeNameOrRole = entry.assigneeNameOrRole,
-								spellInfo = entry.spellInfo,
-								strWithIconReplacements = entry.strWithIconReplacements,
-								startTime = cumTime + time,
-								offset = nil
-							})
-						end
+				local startTime = assignment.time
+				if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
+					for i = 1, math.min(assignment.spellCount, #ability.phases[1].castTimes) do
+						startTime = startTime + ability.phases[1].castTimes[i]
 					end
+				end
+				if assignment.combatLogEventType == "SCC" then
+					startTime = startTime + ability.castTime
+				end
+				-- TODO: Implement other combat log event types
+				tinsert(sortedAssignments,
+					Private.TimelineAssignment:new({
+						assignment = assignment,
+						startTime = startTime,
+						offset = nil,
+						order = nil
+					}))
+			end
+		elseif getmetatable(assignment) == Private.TimedAssignment then
+			assignment = assignment --[[@as TimedAssignment]]
+			tinsert(sortedAssignments,
+				Private.TimelineAssignment:new({
+					assignment = assignment,
+					startTime = assignment.time,
+					offset = nil,
+					order = nil
+				}))
+		elseif getmetatable(assignment) == Private.PhasedAssignment then
+			assignment = assignment --[[@as PhasedAssignment]]
+			local boss = bosses["Broodtwister Ovi'nax"]
+			if boss then
+				local totalOccurances = 0
+				for _, phaseData in pairs(boss.phases) do
+					totalOccurances = totalOccurances + phaseData.count
+				end
+				local currentPhase = 1
+				local bossPhaseOrder = {}
+				local runningStartTime = 0
+				while #bossPhaseOrder < totalOccurances and currentPhase ~= nil do
+					table.insert(bossPhaseOrder, currentPhase)
+					if currentPhase == assignment.phase then
+						tinsert(sortedAssignments,
+							Private.TimelineAssignment:new({
+								assignment = assignment,
+								startTime = runningStartTime,
+								offset = nil,
+								order = nil
+							})
+						)
+					end
+					runningStartTime = runningStartTime + boss.phases[currentPhase].duration
+					currentPhase = boss.phases[currentPhase].repeatAfter
 				end
 			end
 		end
 	end
 
-	-- Add absolute time based assignments
-	for _, timerGroup in pairs(absoluteTimeBasedTimers) do
-		for _, entries in pairs(timerGroup) do
-			for _, entry in pairs(entries) do
-				tinsert(sortedAssignments, {
-					assignedUnit = entry.assignedUnit,
-					assigneeNameOrRole = entry.assigneeNameOrRole,
-					spellInfo = entry.spellInfo,
-					strWithIconReplacements = entry.strWithIconReplacements,
-					startTime = entry.time,
-					offset = nil
-				})
-			end
-		end
-	end
-
 	-- Sort by first appearance
-	table.sort(sortedAssignments, function(a, b)
+	table.sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
 		return a.startTime < b.startTime
 	end)
 
-	local assigneeIndex = 1
-	local offsets = {}
+	local order = 1
+	local orderAndOffsets = {}
 	local assigneeOrder = {}
 
-	-- Create assigneeOrder table and assign offsets
-	for _, entry in ipairs(sortedAssignments) do
-		if offsets[entry.assigneeNameOrRole] == nil then
+	for _, entry in ipairs(sortedAssignments --[[@as table<integer, TimelineAssignment>]]) do
+		if orderAndOffsets[entry.assignment.assigneeNameOrRole] == nil then
 			local offset = 0
-			if assigneeIndex ~= 1 then
-				offset = (assigneeIndex - 1) * (30 + 2)
+			if order ~= 1 then
+				offset = (order - 1) * (30 + 2)
 			end
-			assigneeOrder[assigneeIndex] = entry.assigneeNameOrRole
-			offsets[entry.assigneeNameOrRole] = offset
-			assigneeIndex = assigneeIndex + 1
+			orderAndOffsets[entry.assignment.assigneeNameOrRole] = { order = order, offset = offset }
+			entry.order = order
+			entry.offset = offset
+			assigneeOrder[order] = entry.assignment.assigneeNameOrRole
+			order = order + 1
 		end
-		entry.offset = offsets[entry.assigneeNameOrRole]
+		entry.offset = orderAndOffsets[entry.assignment.assigneeNameOrRole].offset
+		entry.order = orderAndOffsets[entry.assignment.assigneeNameOrRole].order
 	end
-
+	DevTool:AddData(sortedAssignments)
+	DevTool:AddData(assigneeOrder)
 	return sortedAssignments, assigneeOrder
 end
 
@@ -424,8 +443,7 @@ function AddOn:CreateGUI()
 
 	Private:Note()
 
-	local sortedAssignments, assigneeOrder = CreateSortedAssignmentTables(Private.combatLogEventBasedTimers,
-		Private.absoluteTimeBasedTimers)
+	local sortedAssignments, assigneeOrder = CreateSortedAssignmentTables(Private.assignments)
 	for index = 1, #assigneeOrder do
 		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
 		abilityEntry:SetText(assigneeOrder[index])

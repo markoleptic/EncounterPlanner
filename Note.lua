@@ -464,12 +464,11 @@ local function GSubIcon(spellID)
 	return "|T" .. (spellTexture or "Interface\\Icons\\INV_MISC_QUESTIONMARK") .. ":16|t"
 end
 
--- Extracts inputs from a line of text.
+-- Parses a line of text in the note and creates assignment(s).
 ---@param line string
----@param time number
----@return table<CombatLogEventBasedTimer>
-local function ExtractInputs(line, time)
-	local timers = {}
+---@return table<integer, Assignment>
+local function CreateAssignmentsFromLine(line)
+	local assignments = {}
 	for str in (line .. "  "):gmatch(wordSegmentationRegex) do
 		local targetName = str:match(targetNameRegex) or ""
 		targetName = targetName:gsub(doublePipeRegex, "|"):gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
@@ -498,26 +497,26 @@ local function ExtractInputs(line, time)
 			:gsub(doublePipeRegex, "|")
 			:gsub(dashRegex, "")
 
-		local timer = {
-			time = time,
+		local assignment = Private.Assignment:new({
+			assigneeNameOrRole = nameOrGroup or "",
 			line = str,
 			text = text,
 			textWithIconReplacements = textWithIconReplacements,
-			strWithIconReplacements = strWithIconReplacements, -- Similar to how appear in Note
-			assigneeNameOrRole = nameOrGroup or "",
+			strWithIconReplacements = strWithIconReplacements,
 			spellInfo = spellinfo,
-			assignedUnit = targetName,
-		}
-		tinsert(timers, timer)
+			targetName = targetName,
+		})
+		tinsert(assignments, assignment)
 	end
-	return timers
+	return assignments
 end
 
--- Inserts the timer into the correct table based on options.
----@param timers table<number, CombatLogEventBasedTimer>
+-- Adds an assignment using a more derived type by parsing the options.
+---@param assignments table<integer, Assignment>
+---@param time number
 ---@param options string
 ---@param noteType string
-function Private:ProcessOptions(timers, options, noteType)
+function Private:ProcessOptions(assignments, time, options, noteType)
 	local regularTimer = true
 	local option = nil
 	while options do
@@ -525,64 +524,51 @@ function Private:ProcessOptions(timers, options, noteType)
 		if option == "e" then
 			if options then
 				option, options = strsplit(",", options, 2)
-			else
-				option = nil
-			end
-			if option then -- custom event
-				if not self.customTimers[option] then
-					self.customTimers[option] = {}
+				if option then -- custom event
+					-- TODO: Handle custom event
+					regularTimer = false
 				end
-				tinsert(self.phaseBasedTimers[option], timers)
-				regularTimer = false
 			end
 		elseif option:sub(1, 1) == "p" then
 			local _, phase = option:match(phaseNumberRegex)
 			if phase and phase ~= "" then
 				local phaseNumber = tonumber(phase)
 				if phaseNumber then
-					if not self.phaseBasedTimers[phaseNumber] then
-						self.phaseBasedTimers[phaseNumber] = {}
+					for _, assignment in pairs(assignments) do
+						local phasedAssignment = Private.PhasedAssignment:new(assignment);
+						phasedAssignment.time = time
+						phasedAssignment.phase = phaseNumber
+						tinsert(self.assignments, phasedAssignment)
 					end
-					tinsert(self.phaseBasedTimers[phaseNumber], timers)
 				end
 				regularTimer = false
 			end
 		else
-			local combatLogEventAbbreviation, spellID, phase = strsplit(":", option, 3)
+			local combatLogEventAbbreviation, spellIDStr, spellCountStr = strsplit(":", option, 3)
 			if combatLogEventFromAbbreviation[combatLogEventAbbreviation] then
-				if not self.combatLogEventBasedTimers[combatLogEventAbbreviation] then
-					self.combatLogEventBasedTimers[combatLogEventAbbreviation] = {}
-				end
-				local spellIDNumeric = tonumber(spellID)
-				local phaseNumber = tonumber(phase)
-				if spellIDNumeric and phaseNumber then
-					if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric] then
-						self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric] = {}
-					end
-					if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber] then
-						self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber] = {}
-					end
-
-					for time, timers2 in pairs(timers) do
-						if not self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber][time] then
-							self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric][phaseNumber][time] = {}
-							for _, timer in pairs(timers2) do
-								tinsert(
-									self.combatLogEventBasedTimers[combatLogEventAbbreviation][spellIDNumeric]
-									[phaseNumber]
-									[time],
-									timer)
-							end
-						end
+				local spellID = tonumber(spellIDStr)
+				local spellCount = tonumber(spellCountStr)
+				if spellID and spellCount then
+					for _, assignment in pairs(assignments) do
+						local combatLogEventAssignment = Private.CombatLogEventAssignment:new(assignment);
+						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
+						combatLogEventAssignment.time = time
+						combatLogEventAssignment.phase = nil
+						combatLogEventAssignment.spellCount = spellCount
+						combatLogEventAssignment.combatLogEventSpellID = spellID
+						tinsert(self.assignments, combatLogEventAssignment)
 					end
 				end
-
 				regularTimer = false
 			end
 		end
 	end
 	if regularTimer then
-		self.absoluteTimeBasedTimers[#self.absoluteTimeBasedTimers + 1] = timers
+		for _, assignment in pairs(assignments) do
+			local timedAssignment = Private.TimedAssignment:new(assignment);
+			timedAssignment.time = time
+			tinsert(self.assignments, timedAssignment)
+		end
 	end
 end
 
@@ -602,9 +588,8 @@ function Private:ParseNote(text, noteType)
 			time = tonumber(minute)
 		end
 		if time then
-			local inputs = ExtractInputs(line, time)
-			local inputs2 = { [time] = inputs }
-			self:ProcessOptions(inputs2, options, noteType)
+			local inputs = CreateAssignmentsFromLine(line)
+			self:ProcessOptions(inputs, time, options, noteType)
 		end
 	end
 end

@@ -191,7 +191,7 @@ end
 ---@field bossAbilityTimelineTicks table<number, Texture>
 ---@field bossPhaseOrder table<number, number> sequence of phases based on repeatAfter
 ---@field bossPhases table<number, BossPhase>
----@field combatLogEventBasedAssignments table<integer, TimelineAssignment>
+---@field timelineAssignments table<integer, TimelineAssignment>
 ---@field assignees table<integer, string>
 ---@field totalTimelineDuration number
 ---@field frame ScrollFrame
@@ -204,11 +204,11 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
-	self.assignmentTimelineTicks        = self.assignmentTimelineTicks or {}
-	self.assignmentTextures             = self.assignmentTextures or {}
-	self.bossAbilityTextureBars         = self.bossAbilityTextureBars or {}
-	self.bossAbilityTimelineTicks       = self.bossAbilityTimelineTicks or {}
-	self.private                        = {
+	self.assignmentTimelineTicks  = self.assignmentTimelineTicks or {}
+	self.assignmentTextures       = self.assignmentTextures or {}
+	self.bossAbilityTextureBars   = self.bossAbilityTextureBars or {}
+	self.bossAbilityTimelineTicks = self.bossAbilityTimelineTicks or {}
+	self.private                  = {
 		timelineLinePadding = timelineLinePadding,
 		thumbPadding = scrollBarThumbPadding,
 		timelineFrameIsDragging = false,
@@ -218,13 +218,13 @@ local function OnAcquire(self)
 		thumbWidthWhenThumbClicked = 0,
 		thumbIsDragging = false
 	}
-	self.bossAbilities                  = self.bossAbilities or {}
-	self.bossAbilityOrder               = self.bossAbilityOrder or {}
-	self.bossPhaseOrder                 = self.bossPhaseOrder or {}
-	self.bossPhases                     = self.bossPhases or {}
-	self.combatLogEventBasedAssignments = self.combatLogEventBasedAssignments or {}
-	self.assignees                      = self.assignees or {}
-	self.totalTimelineDuration          = 0
+	self.bossAbilities            = self.bossAbilities or {}
+	self.bossAbilityOrder         = self.bossAbilityOrder or {}
+	self.bossPhaseOrder           = self.bossPhaseOrder or {}
+	self.bossPhases               = self.bossPhases or {}
+	self.timelineAssignments      = self.timelineAssignments or {}
+	self.assignees                = self.assignees or {}
+	self.totalTimelineDuration    = 0
 end
 
 ---@param self EPTimeline
@@ -244,7 +244,7 @@ local function SetEntries(self, abilities, abilityOrder, phases, assignments, as
 	self.bossAbilities = abilities
 	self.bossAbilityOrder = abilityOrder
 	self.bossPhases = phases
-	self.combatLogEventBasedAssignments = assignments
+	self.timelineAssignments = assignments
 	self.assignees = assignees
 
 	local totalOccurances = 0
@@ -274,8 +274,8 @@ local function UpdateAssignments(self)
 		texture:Hide()
 	end
 
-	for index, assignment in ipairs(self.combatLogEventBasedAssignments) do
-		self:DrawAssignment(assignment.startTime, assignment.spellInfo.spellID, index, assignment.offset)
+	for index, assignment in ipairs(self.timelineAssignments) do
+		self:DrawAssignment(assignment.startTime, assignment.assignment.spellInfo.spellID, index, assignment.offset)
 	end
 end
 
@@ -294,6 +294,7 @@ local function DrawAssignment(self, startTime, spellID, index, offset)
 
 	local timelineStartPosition = (startTime / self.totalTimelineDuration) * timelineWidth
 
+	---@class Texture
 	local assignment = self.assignmentTextures[index]
 	if not assignment then
 		assignment = assignmentFrame:CreateTexture(nil, "OVERLAY")

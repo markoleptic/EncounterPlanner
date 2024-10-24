@@ -1,8 +1,5 @@
 ---@meta
 
----@alias SpellID number
----@alias CombatLogEventType string
-
 ---@class Private
 
 ---@class PhaseData
@@ -16,7 +13,7 @@
 
 ---@class BossAbility
 ---@field phases table<number, PhaseData>
----@field eventTriggers table<SpellID, EventTrigger>|nil
+---@field eventTriggers table<integer, EventTrigger>|nil
 ---@field duration number
 ---@field castTime number
 
@@ -28,33 +25,48 @@
 ---@field repeatAfter number|nil
 
 ---@class Boss
----@field abilities table<SpellID, BossAbility>
+---@field abilities table<integer, BossAbility>
 ---@field phases table<integer, BossPhase>
----@field sortedAbilityIDs? table<SpellID>
+---@field sortedAbilityIDs? table<integer>
 
----@class CombatLogEventBasedTimer
----@field assignedUnit number
----@field assigneeNameOrRole string
----@field line string
----@field spellInfo table
----@field strWithIconReplacements string
 
----@alias SpellOccurance table<number, table<time_t, table<number, CombatLogEventBasedTimer>>>
----@alias CombatLogEvent table<SpellID, SpellOccurance>
----@alias CombatLogEventBasedTimers table<CombatLogEventType, CombatLogEvent>
+---@alias CombatLogEventType = {
+---| "SCC" SPELL_CAST_SUCCESS
+---| "SCS" SPELL_CAST_START
+---| "SAA" SPELL_AURA_APPLIED
+---| "SAR" SPELL_AURA_REMOVED
 
----@class AbsoluteTimeBasedTimer
----@field assignedUnit number
----@field assigneeNameOrRole string
----@field line string
----@field spellInfo table
----@field strWithIconReplacements string
----@field time number
+---@alias AssignmentType
+---| "CombatLogEvent"
+---| "Time"
+---| "Phase"
+---| "CustomEvent"
+
+---@class Assignment
+---@field assigneeNameOrRole string Who to assign the assignment to
+---@field line string Originally parsed line in the form: {assigneeNameOrRole} {options}
+---@field text string The originally parsed portion of the assignment containing a {text}{/text} block
+---@field textWithIconReplacements string Text with icons formatted back in
+---@field strWithIconReplacements string Line with icons formatted back in, similar to how it appears in the note
+---@field spellInfo { spellID: integer, name: string, iconID: integer } The spell info for the assignment
+---@field targetName string|nil The target's name if the assignment has a '@'
+
+---@class CombatLogEventAssignment : Assignment
+---@field combatLogEventType CombatLogEventType The type of combat log even the assignment is triggered by
+---@field combatLogEventSpellID integer The spell for the event
+---@field phase number|nil The phase the combat log event must occur in
+---@field spellCount integer|nil The number of times the combat log event must have occurred
+---@field time number The time from the combat log event to trigger the assignment
+
+---@class TimedAssignment : Assignment
+---@field time number The length of time from the beginning of the fight to when this assignment is triggered
+
+---@class PhasedAssignment : Assignment
+---@field phase integer The boss phase this assignment is triggered by
+---@field time number The time from the start of the phase to trigger the assignment
 
 ---@class TimelineAssignment
----@field assignedUnit number
----@field assigneeNameOrRole string
----@field spellInfo table
----@field strWithIconReplacements string
----@field startTime number
----@field offset number
+---@field assignment Assignment The assignment
+---@field startTime number Time used to place the assignment on the timeline
+---@field offset number TODO Get rid of
+---@field order number When sorted by first appearance, this number signifies the order relative to other assignments. This number is the same across assignments with the same assignee.
