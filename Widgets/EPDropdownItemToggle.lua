@@ -123,6 +123,11 @@ function EPItemBase.Hide(self)
 	self.frame:Hide()
 end
 
+---@param self EPItemBase
+---@param val boolean
+function EPItemBase.SetValue(self, val)
+end
+
 -- This is called by a Dropdown-Pullout. Do not call this method directly
 function EPItemBase.SetOnLeave(self, func)
 	self.specialOnLeave = func
@@ -193,7 +198,8 @@ function EPItemBase.Create(type)
 		Show         = EPItemBase.Show,
 		Hide         = EPItemBase.Hide,
 		SetOnLeave   = EPItemBase.SetOnLeave,
-		SetOnEnter   = EPItemBase.SetOnEnter
+		SetOnEnter   = EPItemBase.SetOnEnter,
+		SetValue     = EPItemBase.SetValue
 	}
 
 	frame.obj = widget
@@ -237,6 +243,12 @@ do
 	end
 
 	---@param self EPDropdownItemToggle
+	local function OnAcquire(self)
+		EPItemBase.OnAcquire(self)
+		self:SetValue(nil)
+	end
+
+	---@param self EPDropdownItemToggle
 	local function OnRelease(self)
 		EPItemBase.OnRelease(self)
 		self:SetValue(nil)
@@ -251,9 +263,10 @@ do
 		---@class EPDropdownItemToggle
 		local widget = EPItemBase.Create(widgetType)
 		widget.frame:SetScript("OnClick", HandleFrameClick)
-		widget.SetValue = SetValue
-		widget.GetValue = GetValue
+		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease
+		widget.GetValue = GetValue
+		widget.SetValue = SetValue
 		AceGUI:RegisterAsWidget(widget)
 		return widget
 	end
@@ -264,27 +277,9 @@ end
 ---@class EPDropdownItemMenu : EPItemBase
 ---@field submenu EPDropdownPullout
 ---@field value any
----@field multiselect boolean|nil
 do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
-
-	---@param dropdownItemMenu EPDropdownItemMenu
-	local function ShowMultiText(dropdownItemMenu)
-		local text
-		for _, widget in dropdownItemMenu.submenu:IterateItems() --[[@as EPDropdownItemToggle]] do
-			if widget.type == "Dropdown-Item-Toggle" or widget.type == "EPDropdownItemToggle" then
-				if widget:GetValue() then
-					if text then
-						text = text .. ", " .. widget:GetText()
-					else
-						text = widget:GetText()
-					end
-				end
-			end
-		end
-		dropdownItemMenu:SetText(text)
-	end
 
 	local function HandleFrameEnter(frame)
 		local self = frame.obj
@@ -294,7 +289,7 @@ do
 		end
 		self.highlight:Show()
 		if not self.disabled and self.submenu then
-			self.submenu:Open("TOPLEFT", self.frame, "TOPRIGHT", 0, 0, self.frame:GetFrameLevel() + 100)
+			self.submenu:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 0, self.frame:GetFrameLevel() + 100)
 		end
 	end
 
@@ -305,55 +300,87 @@ do
 		end
 	end
 
-	local function HandlePulloutOpen(frame)
-		local self = frame.userdata.obj
-		local value = self.userdata.value
-		if not self.multiselect then
-			for _, item in frame:IterateItems() do
-				item:SetValue(item.userdata.value == value)
-			end
+	---@param submenu EPDropdownPullout
+	local function HandleSubmenuOpen(submenu)
+		local self = submenu:GetUserDataTable().obj
+		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
+		for _, dropdownItem in submenu:IterateItems() do
+			dropdownItem:SetValue(dropdownItem:GetUserDataTable().value == value)
 		end
 		self.open = true
 		self:Fire("OnOpened")
 	end
 
-	local function HandlePulloutClose(frame)
-		local self = frame.userdata.obj
+	---@param submenu EPDropdownPullout
+	local function HandleSubmenuClose(submenu)
+		local self = submenu:GetUserDataTable().obj
 		self.open = nil
 		self:Fire("OnClosed")
 	end
 
-	local function HandleItemValueChanged(frame, event, checked)
-		local self = frame.userdata.menuObj
-		if self.multiselect then
-			self:Fire("OnValueChanged", frame.userdata.value, checked)
-			ShowMultiText(self)
+	---@param self EPDropdownItemMenu
+	local function CreateSubmenu(self)
+		local submenu = AceGUI:Create("EPDropdownPullout")
+		submenu.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
+		submenu:GetUserDataTable().obj = self
+		submenu:SetCallback("OnOpen", HandleSubmenuOpen)
+		submenu:SetCallback("OnClose", HandleSubmenuClose)
+		return submenu
+	end
+
+	---@param dropdownItem EPDropdownItemMenu
+	---@param event string
+	---@param checked boolean
+	---@param value any
+	local function HandleMenuItemValueChanged(dropdownItem, event, checked, value)
+		local self = dropdownItem:GetUserDataTable().menuItemObj
+		self:GetUserDataTable().childValue = value
+		self:Fire("OnValueChanged", dropdownItem.value, value)
+		if self.open then
+			self.pullout:Close()
+		end
+	end
+
+	---@param dropdownItem EPDropdownItemToggle
+	---@param event string
+	---@param checked boolean
+	local function HandleItemValueChanged(dropdownItem, event, checked)
+		local self = dropdownItem:GetUserDataTable().menuItemObj
+		self:GetUserDataTable().childValue = dropdownItem:GetUserDataTable().value
+		if checked then
+			self:Fire("OnValueChanged", dropdownItem.value, dropdownItem:GetUserDataTable().value)
 		else
-			if checked then
-				self.userdata.value = frame.userdata.value
-				self:SetValue(frame.userdata.value)
-				self:Fire("OnValueChanged", checked)
-			else
-				frame:SetValue(true)
-			end
-			if self.open then
-				self.pullout:Close()
-			end
+			dropdownItem:SetValue(true)
+		end
+		if self.open then
+			self.pullout:Close()
 		end
 	end
 
 	---@param self EPDropdownItemMenu
-	---@param pulloutItems table<integer, EPItemBase>
-	local function SetMenuItems(self, pulloutItems)
-		self.submenu = AceGUI:Create("EPDropdownPullout") --[[@as EPDropdownPullout]]
-		self.submenu.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
-		self.submenu:GetUserDataTable().obj = self
-		self.submenu:SetCallback("OnClose", HandlePulloutClose)
-		self.submenu:SetCallback("OnOpen", HandlePulloutOpen)
-		for _, v in pairs(pulloutItems) do
-			self.submenu:AddItem(v)
-			v:GetUserDataTable().menuObj = self
-			v:SetCallback("OnValueChanged", HandleItemValueChanged)
+	---@param dropdownItemData table<integer, DropdownItemData>
+	---@param dropdownParent EPDropdown
+	local function SetMenuItems(self, dropdownItemData, dropdownParent)
+		self.submenu = CreateSubmenu(self)
+		for _, itemData in pairs(dropdownItemData) do
+			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
+				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+				dropdownMenuItem:SetText(itemData.text)
+				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
+				dropdownMenuItem:GetUserDataTable().menuItemObj = self
+				dropdownMenuItem:GetUserDataTable().value = itemData.itemValue
+				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
+				self.submenu:AddItem(dropdownMenuItem)
+				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
+			else
+				local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+				dropdownItemToggle:SetText(itemData.text)
+				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
+				dropdownItemToggle:GetUserDataTable().menuItemObj = self
+				dropdownItemToggle:GetUserDataTable().value = itemData.itemValue
+				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
+				self.submenu:AddItem(dropdownItemToggle)
+			end
 		end
 		fixlevels(self.submenu.frame, self.submenu.frame:GetChildren())
 	end
@@ -366,20 +393,19 @@ do
 	---@param self EPDropdownItemMenu
 	---@param value any
 	local function SetValue(self, value)
-		self.value = value
-		if self.value then
-			self.sub:SetVertexColor(unpack(checkedVertexColor))
+		local childValue = self:GetUserDataTable().childValue
+		local parentValue = self:GetUserDataTable().obj.value
+		if childValue ~= nil and childValue == parentValue then
+			self.sub:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
 		else
 			self.sub:SetVertexColor(1, 1, 1, 1)
-		end
-		for _, item in self.submenu:IterateItems() --[[@as EPDropdownItemToggle]] do
-			item:SetValue(item:GetUserDataTable().value == value)
 		end
 	end
 
 	---@param self EPDropdownItemMenu
-	local function GetValue(self)
-		return self.value
+	local function OnAcquire(self)
+		EPItemBase.OnAcquire(self)
+		self:GetUserDataTable().childValue = nil
 	end
 
 	---@param self EPDropdownItemMenu
@@ -388,7 +414,7 @@ do
 			self.submenu:Release()
 		end
 		EPItemBase.OnRelease(self)
-		self:SetValue(nil)
+		self:GetUserDataTable().childValue = nil
 	end
 
 	local function Constructor()
@@ -397,9 +423,9 @@ do
 		widget.sub:Show()
 		widget.frame:SetScript("OnEnter", HandleFrameEnter)
 		widget.frame:SetScript("OnHide", HandleFrameHide)
-		widget.SetValue     = SetValue
-		widget.GetValue     = GetValue
+		widget.OnAcquire    = OnAcquire
 		widget.OnRelease    = OnRelease
+		widget.SetValue     = SetValue
 		widget.SetMenuItems = SetMenuItems
 		widget.CloseMenu    = CloseMenu
 		AceGUI:RegisterAsWidget(widget)

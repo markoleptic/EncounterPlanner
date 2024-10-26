@@ -90,32 +90,32 @@ end
 ---@field type string
 ---@field count number
 ---@field titleText FontString
----@field assignmentTypeDropdown EPDropdown|AceGUIWidget
----@field spellAssignmentDropdown EPDropdown|AceGUIWidget
----@field assigneeTypeDropdown EPDropdown|AceGUIWidget
----@field assigneeDropdown EPDropdown|AceGUIWidget
----@field timeEditBox AceGUIEditBox|AceGUIWidget
+---@field assignmentTypeDropdown EPDropdown
+---@field spellAssignmentDropdown EPDropdown
+---@field assigneeTypeDropdown EPDropdown
+---@field assigneeDropdown EPDropdown
+---@field timeEditBox AceGUIWidget
 ---@field assignment Assignment
 ---@field obj any
 
 local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, value)
-	local self = frame.obj
-	self:Fire("AssignmentDataChanged", self.assignment)
+	--local self = frame.obj
+	--self:Fire("AssignmentDataChanged", self.assignment)
 end
 
 local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, value)
-	local self = frame.obj
-	self:Fire("AssignmentDataChanged", self.assignment)
+	--local self = frame.obj
+	--self:Fire("AssignmentDataChanged", self.assignment)
 end
 
 local function HandleAssigneeTypeDropdownValueChanged(frame, callbackName, value)
-	local self = frame.obj
-	self:Fire("AssignmentDataChanged", self.assignment)
+	--local self = frame.obj
+	--self:Fire("AssignmentDataChanged", self.assignment)
 end
 
 local function HandleAssigneeDropdownValueChanged(frame, callbackName, value)
-	local self = frame.obj
-	self:Fire("AssignmentDataChanged", self.assignment)
+	--local self = frame.obj
+	--self:Fire("AssignmentDataChanged", self.assignment)
 end
 
 ---@param self EPAssignmentEditor
@@ -127,25 +127,25 @@ local function OnAcquire(self)
 	self:SetLayout("EPVerticalLayout")
 	self:SetAutoAdjustHeight(true)
 
-	self.assignmentTypeDropdown = AceGUI:Create("EPDropdown"); --[[@as EPDropdown]]
+	self.assignmentTypeDropdown = AceGUI:Create("EPDropdown");
 	self.assignmentTypeDropdown:SetCallback("OnValueChanged", HandleAssignmentTypeDropdownValueChanged)
 	self.assignmentTypeDropdown:SetFullWidth(true)
 	self.assignmentTypeDropdown.obj = self
 	self:AddChild(self.assignmentTypeDropdown)
 
-	self.assigneeTypeDropdown = AceGUI:Create("EPDropdown"); --[[@as EPDropdown]]
+	self.assigneeTypeDropdown = AceGUI:Create("EPDropdown");
 	self.assigneeTypeDropdown:SetCallback("OnValueChanged", HandleAssigneeTypeDropdownValueChanged)
 	self.assigneeTypeDropdown:SetFullWidth(true)
 	self.assigneeTypeDropdown.obj = self
 	self:AddChild(self.assigneeTypeDropdown)
 
-	self.assigneeDropdown = AceGUI:Create("EPDropdown"); --[[@as EPDropdown]]
+	self.assigneeDropdown = AceGUI:Create("EPDropdown");
 	self.assigneeDropdown:SetCallback("OnValueChanged", HandleAssigneeDropdownValueChanged)
 	self.assigneeDropdown:SetFullWidth(true)
 	self.assigneeDropdown.obj = self
 	self:AddChild(self.assigneeDropdown)
 
-	self.spellAssignmentDropdown = AceGUI:Create("EPDropdown"); --[[@as EPDropdown]]
+	self.spellAssignmentDropdown = AceGUI:Create("EPDropdown");
 	self.spellAssignmentDropdown:SetCallback("OnValueChanged", HandleSpellAssignmentDropdownValueChanged)
 	self.spellAssignmentDropdown:SetFullWidth(true)
 	self.spellAssignmentDropdown.obj = self
@@ -178,6 +178,12 @@ end
 ---@param assignment Assignment Should be a deep of the assignment since it is nilled on release.
 local function SetAssignmentData(self, assignment)
 	self.assignment = assignment
+end
+
+---@param self EPAssignmentEditor
+---@return EPDropdown
+local function GetSpellAssignmentDropdown(self)
+	return self.assignmentTypeDropdown
 end
 
 local function Constructor()
@@ -225,15 +231,16 @@ local function Constructor()
 
 	---@class EPAssignmentEditor
 	local widget = {
-		type              = Type,
-		count             = count,
-		frame             = frame,
-		content           = contentFrame,
-		windowBar         = windowBar,
-		OnAcquire         = OnAcquire,
-		OnRelease         = OnRelease,
-		LayoutFinished    = LayoutFinished,
-		SetAssignmentData = SetAssignmentData
+		type                       = Type,
+		count                      = count,
+		frame                      = frame,
+		content                    = contentFrame,
+		windowBar                  = windowBar,
+		OnAcquire                  = OnAcquire,
+		OnRelease                  = OnRelease,
+		LayoutFinished             = LayoutFinished,
+		SetAssignmentData          = SetAssignmentData,
+		GetSpellAssignmentDropdown = GetSpellAssignmentDropdown
 	}
 
 	closebutton:SetPoint("TOPRIGHT", -2, -2)

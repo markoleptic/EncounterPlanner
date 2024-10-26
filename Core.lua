@@ -130,7 +130,7 @@ local bosses   = {
 				repeatAfter = 1
 			}
 		}
-	} --[[@as Boss]],
+	},
 	["Broodtwister Ovi'nax"] = {
 		abilities = {
 			[441362] = { -- Volatile Concoction
@@ -214,8 +214,8 @@ local bosses   = {
 				repeatAfter = nil
 			},
 		}
-	} --[[@as Boss]]
-}
+	}
+} --[[@as table<integer, Boss>]]
 
 -- Generate a list of abilities for each boss sorted by their first cast time
 for _, boss in pairs(bosses) do
@@ -393,9 +393,62 @@ local function CreateSortedAssignmentTables(assignments)
 		entry.offset = orderAndOffsets[entry.assignment.assigneeNameOrRole].offset
 		entry.order = orderAndOffsets[entry.assignment.assigneeNameOrRole].order
 	end
-	DevTool:AddData(sortedAssignments)
-	DevTool:AddData(assigneeOrder)
 	return sortedAssignments, assigneeOrder
+end
+
+---@param data table<integer, DropdownItemData>
+local function SortDropdownDataByItemValue(data)
+	-- Sort the top-level table
+	table.sort(data, function(a, b)
+		return a.itemValue < b.itemValue
+	end)
+
+	-- Recursively sort any nested dropdownItemMenuData tables
+	for _, item in ipairs(data) do
+		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+			SortDropdownDataByItemValue(item.dropdownItemMenuData)
+		end
+	end
+end
+
+---@return table<integer, DropdownItemData>
+local function CreateSpellDropdownItems()
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+	local classIndex = 1
+	for className, classSpells in pairs(Private.spellDB.classes) do
+		local colorMixin = C_ClassColor.GetClassColor(className)
+		local coloredName = colorMixin:WrapTextInColorCode(className)
+		local classDropdownData = {
+			itemValue = className,
+			text = coloredName,
+			dropdownItemMenuData = {}
+		}
+		local spellTypeIndex = 1
+		local spellTypeIndexMap = {}
+		for _, spell in ipairs(classSpells) do
+			if not spellTypeIndexMap[spell["type"]] then
+				classDropdownData.dropdownItemMenuData[spellTypeIndex] =
+				{
+					itemValue = spell["type"],
+					text = spell["type"],
+					dropdownItemMenuData = {}
+				}
+				spellTypeIndexMap[spell["type"]] = spellTypeIndex
+				spellTypeIndex = spellTypeIndex + 1
+			end
+			local iconText = string.format("|T%s:16|t %s", spell["icon"], spell["name"])
+			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
+
+				itemValue = spell["name"],
+				text = iconText,
+				dropdownItemMenuData = {}
+			})
+		end
+		dropdownItems[classIndex] = classDropdownData
+		classIndex = classIndex + 1
+	end
+	SortDropdownDataByItemValue(dropdownItems)
+	return { [1] = { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems } }
 end
 
 function AddOn:CreateGUI()
@@ -412,14 +465,14 @@ function AddOn:CreateGUI()
 
 	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as EPDropdown]]
 	dropdown:SetFullWidth(true)
-	local items = {}
-	for index, instance in pairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
+	local dropdownData = {}
+	for index, instance in ipairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
 		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterId)
 		local iconText = string.format("|T%s:16|t %s", iconImage, instance.name)
-		table.insert(items, index, iconText)
+		tinsert(dropdownData, index, iconText)
 	end
-	dropdown:SetList(items, AddOn.Defaults.profile.instances["Nerub'ar Palace"].order, "EPDropdownItemToggle")
+	dropdown:AddItems(dropdownData, "EPDropdownItemToggle")
 	leftSideFrame:AddChild(dropdown)
 
 	local dropdownSpacer = Private.Libs.AGUI:Create("EPSpacer")
@@ -467,6 +520,9 @@ function AddOn:CreateGUI()
 	local timeline = Private.Libs.AGUI:Create("EPTimeline") --[[@as EPTimeline]]
 	timeline:SetNewAssignmentFunc(function()
 		return Private.Assignment:new({})
+	end)
+	timeline:SetSpellDropdownItemsFunc(function()
+		return CreateSpellDropdownItems()
 	end)
 	timeline:SetRelativeWidth(0.8)
 

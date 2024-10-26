@@ -61,6 +61,11 @@ local function sortTbl(x, y)
 	end
 end
 
+---@class DropdownItemData
+---@field itemValue string|number the internal value used to index a dropdown item
+---@field text string the value shown in the dropdown
+---@field dropdownItemMenuData table<integer, DropdownItemData> nested dropdown item menus
+
 do
 	---@class EPDropdownPullout : AceGUIWidget
 	---@field frame table|BackdropTemplate|Frame
@@ -122,7 +127,7 @@ do
 	end
 
 	---@param self EPDropdownPullout
-	---@param item EPItemBase
+	---@param item EPDropdownItemToggle|EPDropdownItemMenu
 	local function AddItem(self, item)
 		self.items[#self.items + 1] = item
 		local h = #self.items * dropdownItemHeight
@@ -132,21 +137,6 @@ do
 		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
-	end
-
-	---@param self EPDropdownPullout
-	---@param pulloutItem EPDropdownItemMenu
-	---@param items table<integer, EPItemBase>
-	local function AddPulloutItem(self, pulloutItem, items)
-		self.items[#self.items + 1] = pulloutItem
-		local h = #self.items * dropdownItemHeight
-		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
-		pulloutItem.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
-		pulloutItem.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
-		pulloutItem:SetPullout(self)
-		pulloutItem:SetOnEnter(OnEnter)
-		pulloutItem:SetMenuItems(items)
 	end
 
 	---@param self EPDropdownPullout
@@ -216,7 +206,7 @@ do
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
 		local offset
-		if height >= viewheight then
+		if viewheight <= (height + 0.5) then
 			offset = 0
 		else
 			offset = floor((viewheight - height) / 1000 * value)
@@ -234,7 +224,7 @@ do
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
-		if height >= viewheight then
+		if viewheight <= (height + 0.5) then
 			self.slider:Hide()
 		else
 			self.slider:Show()
@@ -253,7 +243,7 @@ do
 		local frame, child = self.scrollFrame, self.itemFrame
 		local height, viewheight = frame:GetHeight(), child:GetHeight()
 		local offset = status.offset or 0
-		if viewheight <= height then
+		if viewheight <= (height + 0.5) then
 			self.slider:Hide()
 			child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, offset)
 			self.slider:SetValue(0)
@@ -323,7 +313,6 @@ do
 			OnAcquire      = OnAcquire,
 			OnRelease      = OnRelease,
 			AddItem        = AddItem,
-			AddPulloutItem = AddPulloutItem,
 			Open           = Open,
 			Close          = Close,
 			Clear          = Clear,
@@ -372,7 +361,6 @@ do
 	---@field button Button
 	---@field pullout EPDropdownPullout
 	---@field value any|nil
-	---@field list any|nil
 	---@field open boolean|nil
 	---@field hasClose boolean|nil
 	---@field disabled boolean|nil
@@ -411,17 +399,17 @@ do
 		else
 			self.open = true
 			self.pullout:SetWidth(self.pulloutWidth or self.frame:GetWidth())
-			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, self.label:IsShown() and -2 or 0)
+			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, self.label:IsShown() and -1 or 1)
 			AceGUI:SetFocus(self)
 		end
 	end
 
 	local function HandlePulloutOpen(frame)
-		local self = frame.userdata.obj
+		local self = frame:GetUserDataTable().obj
 		local value = self.value
 		if not self.multiselect then
-			for i, item in frame:IterateItems() do
-				item:SetValue(item.userdata.value == value)
+			for _, item in frame:IterateItems() do
+				item:SetValue((item:GetUserDataTable().value == value) or item:GetUserDataTable().hasTrueChild == true)
 			end
 		end
 		self.open = true
@@ -432,7 +420,7 @@ do
 	end
 
 	local function HandlePulloutClose(frame)
-		local self = frame.userdata.obj
+		local self = frame:GetUserDataTable().obj
 		self.open = nil
 		self.button:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
 		self.button:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
@@ -456,17 +444,60 @@ do
 		self:SetText(text)
 	end
 
-	local function HandleItemValueChanged(frame, event, checked)
-		local self = frame:GetUserDataTable().obj
+	---@param self EPDropdown
+	---@param value any
+	---@return string|nil
+	local function FindItemText(self, value)
+		local function searchItems(items)
+			for _, item in ipairs(items) do
+				if item:GetUserDataTable().value == value then
+					return item.text:GetText()
+				end
+				if item.submenu then
+					local foundText = searchItems(item.submenu.items)
+					if foundText then
+						return foundText
+					end
+				end
+			end
+		end
+		return searchItems(self.pullout.items)
+	end
+
+	---@param dropdownItem EPDropdownItemMenu
+	---@param event string
+	---@param checked boolean
+	---@param value any
+	local function HandleMenuItemValueChanged(dropdownItem, event, checked, value)
+		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
-			self:Fire("OnValueChanged", frame:GetUserDataTable().value, checked)
+			self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().value, checked)
+			ShowMultiText(self)
+		else
+			self:SetValue(value)
+			self:Fire("OnValueChanged", value)
+
+			if self.open then
+				self.pullout:Close()
+			end
+		end
+	end
+
+	---@param dropdownItem EPDropdownItemToggle
+	---@param event string
+	---@param checked boolean
+	local function HandleItemValueChanged(dropdownItem, event, checked)
+		local self = dropdownItem:GetUserDataTable().obj
+		if self.multiselect then
+			self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().value, checked)
 			ShowMultiText(self)
 		else
 			if checked then
-				self:SetValue(frame:GetUserDataTable().value)
-				self:Fire("OnValueChanged", frame:GetUserDataTable().value)
+				local newValue = dropdownItem:GetUserDataTable().value
+				self:SetValue(newValue)
+				self:Fire("OnValueChanged", newValue)
 			else
-				frame:SetValue(true)
+				dropdownItem:SetValue(true)
 			end
 			if self.open then
 				self.pullout:Close()
@@ -487,7 +518,6 @@ do
 		self:SetWidth(200)
 		self:SetLabel()
 		self:SetPulloutWidth(nil)
-		self.list = {}
 	end
 
 	---@param self EPDropdown
@@ -503,7 +533,6 @@ do
 		self:SetMultiselect(false)
 
 		self.value = nil
-		self.list = nil
 		self.open = nil
 		self.hasClose = nil
 
@@ -560,7 +589,8 @@ do
 	---@param self EPDropdown
 	---@param value any
 	local function SetValue(self, value)
-		self:SetText(self.list[value] or "")
+		local text = FindItemText(self, value) or ""
+		self:SetText(text)
 		self.value = value
 	end
 
@@ -575,107 +605,81 @@ do
 	---@param value any
 	local function SetItemValue(self, item, value)
 		if not self.multiselect then return end
-		for _, widget in self.pullout:IterateItems() --[[@as EPDropdownItemToggle]] do
-			if widget:GetUserDataTable().value == item then
-				if widget.SetValue then
-					widget:SetValue(value)
-				end
+		for _, pulloutItem in self.pullout:IterateItems() do
+			if pulloutItem:GetUserDataTable().value == item then
+				pulloutItem:SetValue(value)
 			end
 		end
 		ShowMultiText(self)
 	end
 
 	---@param self EPDropdown
-	---@param item any
+	---@param itemValue any
 	---@param disabled any
-	local function SetItemDisabled(self, item, disabled)
-		for i, widget in self.pullout:IterateItems() do
-			if widget:GetUserDataTable().value == item then
-				widget:SetDisabled(disabled)
+	local function SetItemDisabled(self, itemValue, disabled)
+		for _, pulloutItem in self.pullout:IterateItems() do
+			if pulloutItem:GetUserDataTable().value == itemValue then
+				pulloutItem:SetDisabled(disabled)
 			end
 		end
 	end
 
 	---@param self EPDropdown
-	---@param value any
-	---@param text string
-	---@param itemType any
-	local function AddListItem(self, value, text, itemType)
-		if not itemType then itemType = "Dropdown-Item-Toggle" end
+	---@param itemValue any the internal value used to index an item
+	---@param text string the value shown on the item
+	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
+	---@param dropdownItemData? table<integer, DropdownItemData> optional table of nested dropdown item menus
+	local function AddItem(self, itemValue, text, itemType, dropdownItemData)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
-			error(
-				("The given item type, %q, does not exist within AceGUI-3.0"):format(tostring(itemType)), 2)
+			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
+			return
 		end
-		local item = AceGUI:Create(itemType) --[[@as EPItemBase]]
-		item:SetText(text)
-		item:GetUserDataTable().obj = self
-		item:GetUserDataTable().value = value
-		item:SetCallback("OnValueChanged", HandleItemValueChanged)
-		self.pullout:AddItem(item)
+
+		if itemType == "EPDropdownItemMenu" then
+			local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+			dropdownMenuItem:GetUserDataTable().obj = self
+			dropdownMenuItem:GetUserDataTable().value = itemValue
+			dropdownMenuItem:SetText(text)
+			dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
+			self.pullout:AddItem(dropdownMenuItem)
+			if dropdownItemData then
+				dropdownMenuItem:SetMenuItems(dropdownItemData, self)
+			end
+		elseif itemType == "EPDropdownItemToggle" then
+			local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+			dropdownItemToggle:GetUserDataTable().obj = self
+			dropdownItemToggle:GetUserDataTable().value = itemValue
+			dropdownItemToggle:SetText(text)
+			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
+			self.pullout:AddItem(dropdownItemToggle)
+		end
 	end
 
 	---@param self EPDropdown
-	---@param value any
-	---@param text string
-	---@param items table<integer, EPItemBase>
-	local function AddListItemMenu(self, value, text, items)
-		local item = AceGUI:Create("EPDropdownItemMenu") --[[@as EPDropdownItemMenu]]
-		item:SetText(text)
-		item:GetUserDataTable().obj = self
-		item:GetUserDataTable().value = value
-		item:SetCallback("OnValueChanged", HandleItemValueChanged)
-		self.pullout:AddPulloutItem(item, items)
+	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
+	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
+	local function AddItems(self, dropdownItemData, leafType)
+		for index, itemData in ipairs(dropdownItemData) do
+			DevTool:AddData(itemData)
+			if type(itemData) == "string" then
+				self:AddItem(index, itemData, leafType)
+			elseif type(itemData) == "table" and #itemData.dropdownItemMenuData > 0 then
+				self:AddItem(itemData.itemValue, itemData.text, "EPDropdownItemMenu", itemData.dropdownItemMenuData)
+			else
+				self:AddItem(itemData.itemValue, itemData.text, leafType)
+			end
+		end
 	end
 
 	---@param self EPDropdown
 	local function AddCloseButton(self)
-		if not self.hasClose then
-			local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as EPItemBase]]
-			close:SetText("Close")
-			self.pullout:AddItem(close)
-			self.hasClose = true
-		end
-	end
-
-	---@param self EPDropdown
-	---@param list any
-	---@param order any
-	---@param itemType any
-	local function SetList(self, list, order, itemType)
-		self.list = list or {}
-		self.pullout:Clear()
-		self.hasClose = nil
-		if not list then return end
-
-		if type(order) ~= "table" then
-			for v in pairs(list) do
-				sortlist[#sortlist + 1] = v
-			end
-			table.sort(sortlist, sortTbl)
-
-			for i, key in ipairs(sortlist) do
-				self:AddListItem(key, list[key], itemType)
-				sortlist[i] = nil
-			end
-		else
-			for i, key in ipairs(order) do
-				self:AddListItem(key, list[key], itemType)
-			end
-		end
-		if self.multiselect then
-			ShowMultiText(self)
-			self:AddCloseButton()
-		end
-	end
-
-	---@param self EPDropdown
-	---@param value any
-	---@param text any
-	---@param itemType any
-	local function AddItem(self, value, text, itemType)
-		self.list[value] = text
-		self:AddListItem(value, text, itemType)
+		-- if not self.hasClose then
+		-- 	local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as EPItemBase]]
+		-- 	close:SetText("Close")
+		-- 	self.pullout:AddItem(close)
+		-- 	self.hasClose = true
+		-- end
 	end
 
 	---@param self EPDropdown
@@ -763,15 +767,13 @@ do
 			ClearFocus      = ClearFocus,
 			SetText         = SetText,
 			SetLabel        = SetLabel,
-			AddItem         = AddItem,
 			SetValue        = SetValue,
 			GetValue        = GetValue,
 			SetItemValue    = SetItemValue,
 			SetItemDisabled = SetItemDisabled,
-			AddListItem     = AddListItem,
-			AddListItemMenu = AddListItemMenu,
+			AddItem         = AddItem,
+			AddItems        = AddItems,
 			AddCloseButton  = AddCloseButton,
-			SetList         = SetList,
 			SetMultiselect  = SetMultiselect,
 			GetMultiselect  = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,
