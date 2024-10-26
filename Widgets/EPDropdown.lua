@@ -2,8 +2,8 @@ local AceGUI                  = LibStub("AceGUI-3.0")
 local LSM                     = LibStub("LibSharedMedia-3.0")
 
 local textOffsetX             = 4
-local fontSize                = 12
-local dropdownItemHeight      = 20
+local fontSize                = 14
+local dropdownItemHeight      = 24
 local dropdownItemExtraOffset = 0
 local dropdownSliderOffsetX   = -8
 local pulloutBackdrop         = {
@@ -271,7 +271,7 @@ do
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
 		frame:SetWidth(defaultWidth)
-		frame:SetHeight(20)
+		frame:SetHeight(dropdownItemHeight)
 
 		local scrollFrame = CreateFrame("ScrollFrame", nil, frame)
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
@@ -355,7 +355,6 @@ do
 	---@field slider table|BackdropTemplate|Slider
 	---@field type string
 	---@field count integer
-	---@field label FontString
 	---@field buttonCover Button
 	---@field button Button
 	---@field pullout EPDropdownPullout
@@ -398,7 +397,7 @@ do
 		else
 			self.open = true
 			self.pullout:SetWidth(self.pulloutWidth or self.frame:GetWidth())
-			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, self.label:IsShown() and -1 or 1)
+			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, 1)
 			AceGUI:SetFocus(self)
 		end
 	end
@@ -537,9 +536,8 @@ do
 		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
-		self:SetHeight(44)
+		self:SetHeight(dropdownItemHeight)
 		self:SetWidth(200)
-		self:SetLabel()
 		self:SetPulloutWidth(nil)
 	end
 
@@ -571,11 +569,9 @@ do
 			self.text:SetTextColor(0.5, 0.5, 0.5)
 			self.button:Disable()
 			self.buttonCover:Disable()
-			self.label:SetTextColor(0.5, 0.5, 0.5)
 		else
 			self.button:Enable()
 			self.buttonCover:Enable()
-			self.label:SetTextColor(1, .82, 0)
 			self.text:SetTextColor(1, 1, 1)
 		end
 	end
@@ -591,22 +587,6 @@ do
 	---@param text string
 	local function SetText(self, text)
 		self.text:SetText(text or "")
-	end
-
-	---@param self EPDropdown
-	---@param text string?
-	local function SetLabel(self, text)
-		if text and text ~= "" then
-			self.label:SetText(text)
-			self.label:Show()
-			self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -14)
-			self:SetHeight(40)
-		else
-			self.label:SetText("")
-			self.label:Hide()
-			self.dropdown:SetPoint("TOPLEFT", self.frame, "TOPLEFT", -15, 0)
-			self:SetHeight(26)
-		end
 	end
 
 	---@param self EPDropdown
@@ -785,16 +765,10 @@ do
 
 		local text = _G[dropdown:GetName() .. "Text"]
 		text:ClearAllPoints()
-
 		text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		if fPath then text:SetFont(fPath, fontSize) end
-
-		local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-		if fPath then label:SetFont(fPath, fontSize) end
-		label:SetPoint("LEFT", frame, "LEFT", 0, 0)
-		label:SetHeight(18)
-		label:Hide()
+		text:SetWordWrap(false)
 
 		---@class EPDropdown
 		local widget    = {
@@ -804,7 +778,6 @@ do
 			ClearFocus                         = ClearFocus,
 			FindItemText                       = FindItemText,
 			SetText                            = SetText,
-			SetLabel                           = SetLabel,
 			SetValue                           = SetValue,
 			GetValue                           = GetValue,
 			SetItemValue                       = SetItemValue,
@@ -821,7 +794,6 @@ do
 			count                              = count,
 			dropdown                           = dropdown,
 			text                               = text,
-			label                              = label,
 			buttonCover                        = buttonCover,
 			button                             = button,
 		}

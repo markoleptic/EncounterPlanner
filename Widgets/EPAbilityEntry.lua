@@ -154,7 +154,7 @@ local function Constructor()
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then text:SetFont(fPath, 12) end
+	if fPath then text:SetFont(fPath, 14) end
 	text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
 
 	local checkbox = CreateFrame("Button", Type .. "CheckBox" .. count, frame)

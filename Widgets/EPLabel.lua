@@ -1,14 +1,14 @@
-local Type                    = "EPLabel"
-local Version                 = 1
-local AceGUI                  = LibStub("AceGUI-3.0")
-local LSM                     = LibStub("LibSharedMedia-3.0")
-local defaultFrameHeight      = 30
-local defaultFrameWidth       = 200
-local defaultFontHeight       = 12
-local defaultIconPadding      = { x = 2, y = 2 }
-local spaceBetweenTextAndIcon = 5
+local Type               = "EPLabel"
+local Version            = 1
+local AceGUI             = LibStub("AceGUI-3.0")
+local LSM                = LibStub("LibSharedMedia-3.0")
+local defaultFrameHeight = 24
+local defaultFrameWidth  = 200
+local defaultFontHeight  = 14
+local defaultIconPadding = { x = 2, y = 2 }
+local defaultTextPadding = { x = 5, y = "none" }
 
-local EPLabelTooltip          = CreateFrame("GameTooltip", "EPLabelTooltip", UIParent, "GameTooltipTemplate")
+local EPLabelTooltip     = CreateFrame("GameTooltip", "EPLabelTooltip", UIParent, "GameTooltipTemplate")
 local function HandleIconEnter(frame)
 	local self = frame.obj
 	if self.spellID then
@@ -76,7 +76,7 @@ local function OnAcquire(self)
 	self.frameHeight = defaultFrameHeight
 	self.frameWidth = defaultFrameWidth
 	self.iconPadding = defaultIconPadding
-	self.textPadding = { x = spaceBetweenTextAndIcon, y = "none" }
+	self.textPadding = defaultTextPadding
 	self:SetHeight(self.frameHeight)
 	self:SetDisabled(false)
 	self:SetTextHeight(defaultFontHeight)
@@ -88,9 +88,9 @@ end
 local function OnRelease(self)
 	self.frameHeight = nil
 	self.frameWidth = nil
-	self.iconPadding = nil
 	self.textPadding = nil
 	self:SetIcon(nil)
+	self.iconPadding = nil
 end
 
 ---@param self EPLabel
@@ -164,7 +164,8 @@ local function Constructor()
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then text:SetFont(fPath, defaultFontHeight) end
-	text:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+	text:SetPoint("LEFT", icon, "RIGHT", defaultTextPadding.x, 0)
+	text:SetWordWrap(false)
 
 	---@class EPLabel
 	local widget = {

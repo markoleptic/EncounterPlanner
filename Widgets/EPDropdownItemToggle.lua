@@ -5,7 +5,9 @@ local textOffsetX        = 4
 local checkOffsetLeftX   = -2
 local checkOffsetRightX  = -8
 local checkSize          = 16
-local fontSize           = 12
+local fontSize           = 14
+local dropdownItemHeight = 24
+local subHeight          = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 
 local function fixlevels(parent, ...)
@@ -142,7 +144,7 @@ function EPItemBase.Create(type)
 	local count = AceGUI:GetNextWidgetNum(type)
 
 	local frame = CreateFrame("Button", "EPDropdownItemBase" .. count)
-	frame:SetHeight(20)
+	frame:SetHeight(dropdownItemHeight)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetScript("OnEnter", HandleItemBaseFrameEnter)
 	frame:SetScript("OnLeave", HandleItemBaseFrameLeave)
@@ -150,8 +152,9 @@ function EPItemBase.Create(type)
 	local text = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	text:SetTextColor(1, 1, 1)
 	text:SetJustifyH("LEFT")
-	text:SetPoint("TOPLEFT", frame, "TOPLEFT", textOffsetX, 0)
-	text:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", checkOffsetRightX, 0)
+	text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
+	text:SetPoint("RIGHT", frame, "RIGHT", checkOffsetRightX, 0)
+	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then text:SetFont(fPath, fontSize) end
 
@@ -172,8 +175,8 @@ function EPItemBase.Create(type)
 	check:Hide()
 
 	local sub = frame:CreateTexture(nil, "OVERLAY")
-	sub:SetWidth(16)
-	sub:SetHeight(16)
+	sub:SetWidth(subHeight)
+	sub:SetHeight(subHeight)
 	sub:SetPoint("RIGHT", frame, "RIGHT", -3, -1)
 	sub:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	sub:SetRotation(math.pi / 2)
