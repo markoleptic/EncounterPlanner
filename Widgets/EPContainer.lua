@@ -2,6 +2,8 @@ local Type           = "EPContainer"
 local Version        = 1
 local AceGUI         = LibStub("AceGUI-3.0")
 local defaultSpacing = { x = 10, y = 10 }
+local defaultHeight  = 100
+local defaultWidth   = 100
 
 ---@class EPContainer : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
@@ -10,27 +12,9 @@ local defaultSpacing = { x = 10, y = 10 }
 
 ---@param self EPContainer
 local function OnAcquire(self)
-	self:SetWidth(300)
-	self:SetHeight(100)
+	self:SetHeight(defaultHeight)
+	self:SetWidth(defaultWidth)
 	self.content.spacing = defaultSpacing
-	self.frame:Show()
-end
-
-
----@param self EPContainer
----@param width number
-local function OnWidthSet(self, width)
-	local content = self.content
-	content:SetWidth(width)
-	content.width = width
-end
-
----@param self EPContainer
----@param height number
-local function OnHeightSet(self, height)
-	local content = self.content
-	content:SetHeight(height)
-	content.height = height
 end
 
 ---@param self EPContainer
@@ -38,11 +22,10 @@ end
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
 	if width and height then
-		self.frame:SetHeight(height)
-		self.frame:SetWidth(width)
+		self:SetHeight(height)
+		self:SetWidth(width)
 	end
 end
-
 
 ---@param self EPContainer
 ---@param horizontal number
@@ -54,6 +37,8 @@ end
 local function Constructor()
 	local frame = CreateFrame("Frame", nil, UIParent)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetHeight(defaultHeight)
+	frame:SetWidth(defaultWidth)
 
 	local content = CreateFrame("Frame", nil, frame)
 	content:SetPoint("TOPLEFT")
@@ -63,8 +48,6 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		LayoutFinished = LayoutFinished,
-		OnWidthSet = OnWidthSet,
-		OnHeightSet = OnHeightSet,
 		SetSpacing = SetSpacing,
 		frame = frame,
 		type = Type,
