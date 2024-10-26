@@ -133,35 +133,72 @@ local function OnAcquire(self)
 	self:SetLayout("EPVerticalLayout")
 	self:SetAutoAdjustHeight(true)
 
+	local assignmentTypeFrame = AceGUI:Create("EPContainer")
+	assignmentTypeFrame:SetLayout("EPVerticalLayout")
+	assignmentTypeFrame:SetAutoAdjustHeight(true)
+	assignmentTypeFrame:SetSpacing(0, 2)
+	local assignmentTypeLabel = AceGUI:Create("EPLabel");
+	assignmentTypeLabel:SetText("Assignment Trigger")
+	assignmentTypeLabel:SetTextPadding(0, 2)
+
 	self.assignmentTypeDropdown = AceGUI:Create("EPDropdown");
 	self.assignmentTypeDropdown:SetCallback("OnValueChanged", HandleAssignmentTypeDropdownValueChanged)
-	self.assignmentTypeDropdown:SetFullWidth(true)
 	self.assignmentTypeDropdown.obj = self
-	self:AddChild(self.assignmentTypeDropdown)
+	assignmentTypeFrame:AddChild(assignmentTypeLabel)
+	assignmentTypeFrame:AddChild(self.assignmentTypeDropdown)
+	self:AddChild(assignmentTypeFrame)
+
+	local assigneeTypeFrame = AceGUI:Create("EPContainer")
+	assigneeTypeFrame:SetLayout("EPVerticalLayout")
+	assigneeTypeFrame:SetAutoAdjustHeight(true)
+	assigneeTypeFrame:SetSpacing(0, 2)
+	local assigneeTypeLabel = AceGUI:Create("EPLabel");
+	assigneeTypeLabel:SetText("Assignment Type")
+	assigneeTypeLabel:SetTextPadding(0, 2)
 
 	self.assigneeTypeDropdown = AceGUI:Create("EPDropdown");
 	self.assigneeTypeDropdown:SetCallback("OnValueChanged", HandleAssigneeTypeDropdownValueChanged)
-	self.assigneeTypeDropdown:SetFullWidth(true)
 	self.assigneeTypeDropdown.obj = self
-	self:AddChild(self.assigneeTypeDropdown)
+	assigneeTypeFrame:AddChild(assigneeTypeLabel)
+	assigneeTypeFrame:AddChild(self.assigneeTypeDropdown)
+	self:AddChild(assigneeTypeFrame)
+
+	local assigneeFrame = AceGUI:Create("EPContainer")
+	assigneeFrame:SetLayout("EPVerticalLayout")
+	assigneeFrame:SetAutoAdjustHeight(true)
+	assigneeFrame:SetSpacing(0, 2)
+	local assigneeLabel = AceGUI:Create("EPLabel");
+	assigneeLabel:SetText("Person to Assign")
+	assigneeLabel:SetTextPadding(0, 2)
 
 	self.assigneeDropdown = AceGUI:Create("EPDropdown");
 	self.assigneeDropdown:SetCallback("OnValueChanged", HandleAssigneeDropdownValueChanged)
-	self.assigneeDropdown:SetFullWidth(true)
 	self.assigneeDropdown.obj = self
-	self:AddChild(self.assigneeDropdown)
+	assigneeFrame:AddChild(assigneeLabel)
+	assigneeFrame:AddChild(self.assigneeDropdown)
+	self:AddChild(assigneeFrame)
+
+	local spellAssignmentFrame = AceGUI:Create("EPContainer")
+	spellAssignmentFrame:SetLayout("EPVerticalLayout")
+	spellAssignmentFrame:SetAutoAdjustHeight(true)
+	spellAssignmentFrame:SetSpacing(0, 2)
+	local spellAssignmentLabel = AceGUI:Create("EPLabel");
+	spellAssignmentLabel:SetText("Spell Assignment")
+	spellAssignmentLabel:SetTextPadding(0, 2)
 
 	self.spellAssignmentDropdown = AceGUI:Create("EPDropdown");
 	self.spellAssignmentDropdown:SetCallback("OnValueChanged", HandleSpellAssignmentDropdownValueChanged)
-	self.spellAssignmentDropdown:SetFullWidth(true)
 	self.spellAssignmentDropdown.obj = self
 	self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
 	self.spellAssignmentDropdown:SetItemDisabled("Recent", true)
-	self:AddChild(self.spellAssignmentDropdown)
+	spellAssignmentFrame:AddChild(spellAssignmentLabel)
+	spellAssignmentFrame:AddChild(self.spellAssignmentDropdown)
+	self:AddChild(spellAssignmentFrame)
 
 	self.timeEditBox = AceGUI:Create("EditBox");
 	---@diagnostic disable-next-line: inject-field
 	self.timeEditBox.obj = self
+	self.timeEditBox:SetLabel("Time")
 	self:AddChild(self.timeEditBox)
 
 	self.frame:Show()

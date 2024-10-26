@@ -196,7 +196,7 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 		local spellDropdown = self.assignmentEditor:GetSpellAssignmentDropdown()
 		spellDropdown:AddItems(self.dropdownItemsFunc(), "EPDropdownItemToggle")
 	end
-	self.assignmentEditor:GetSpellAssignmentDropdown():SetText("Spell to Assign")
+	self.assignmentEditor:GetSpellAssignmentDropdown():SetText("")
 	self.assignmentEditor:SetAssignmentData(self.newAssignmentFunc())
 end
 
