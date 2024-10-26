@@ -191,7 +191,6 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 		self.assignmentEditor:SetCallback("OnRelease", function()
 			self.assignmentEditor = nil
 		end)
-		self.assignmentEditor.frame:SetFrameLevel(self.frame:GetFrameLevel() + 5)
 
 		local spellDropdown = self.assignmentEditor:GetSpellAssignmentDropdown()
 		spellDropdown:AddItems(self.dropdownItemsFunc(), "EPDropdownItemToggle")

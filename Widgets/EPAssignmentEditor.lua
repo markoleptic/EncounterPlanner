@@ -94,7 +94,7 @@ end
 ---@field spellAssignmentDropdown EPDropdown
 ---@field assigneeTypeDropdown EPDropdown
 ---@field assigneeDropdown EPDropdown
----@field timeEditBox AceGUIWidget
+---@field timeEditBox EPLineEdit
 ---@field assignment Assignment
 ---@field obj any
 
@@ -127,21 +127,21 @@ end
 ---@param self EPAssignmentEditor
 local function OnAcquire(self)
 	self.assignment = self.assignment or {}
-
+	self.frame:SetParent(UIParent)
 	self:SetPoint("CENTER")
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	self.frame:SetFrameLevel(10)
 	self:SetLayout("EPVerticalLayout")
-	self:SetAutoAdjustHeight(true)
+	self:ResumeLayout()
 
 	local assignmentTypeFrame = AceGUI:Create("EPContainer")
 	assignmentTypeFrame:SetLayout("EPVerticalLayout")
-	assignmentTypeFrame:SetAutoAdjustHeight(true)
 	assignmentTypeFrame:SetSpacing(0, 2)
-	local assignmentTypeLabel = AceGUI:Create("EPLabel");
+	local assignmentTypeLabel = AceGUI:Create("EPLabel")
 	assignmentTypeLabel:SetText("Assignment Trigger")
 	assignmentTypeLabel:SetTextPadding(0, 2)
 
-	self.assignmentTypeDropdown = AceGUI:Create("EPDropdown");
+	self.assignmentTypeDropdown = AceGUI:Create("EPDropdown")
 	self.assignmentTypeDropdown:SetCallback("OnValueChanged", HandleAssignmentTypeDropdownValueChanged)
 	self.assignmentTypeDropdown.obj = self
 	assignmentTypeFrame:AddChild(assignmentTypeLabel)
@@ -150,13 +150,12 @@ local function OnAcquire(self)
 
 	local assigneeTypeFrame = AceGUI:Create("EPContainer")
 	assigneeTypeFrame:SetLayout("EPVerticalLayout")
-	assigneeTypeFrame:SetAutoAdjustHeight(true)
 	assigneeTypeFrame:SetSpacing(0, 2)
-	local assigneeTypeLabel = AceGUI:Create("EPLabel");
+	local assigneeTypeLabel = AceGUI:Create("EPLabel")
 	assigneeTypeLabel:SetText("Assignment Type")
 	assigneeTypeLabel:SetTextPadding(0, 2)
 
-	self.assigneeTypeDropdown = AceGUI:Create("EPDropdown");
+	self.assigneeTypeDropdown = AceGUI:Create("EPDropdown")
 	self.assigneeTypeDropdown:SetCallback("OnValueChanged", HandleAssigneeTypeDropdownValueChanged)
 	self.assigneeTypeDropdown.obj = self
 	assigneeTypeFrame:AddChild(assigneeTypeLabel)
@@ -165,13 +164,12 @@ local function OnAcquire(self)
 
 	local assigneeFrame = AceGUI:Create("EPContainer")
 	assigneeFrame:SetLayout("EPVerticalLayout")
-	assigneeFrame:SetAutoAdjustHeight(true)
 	assigneeFrame:SetSpacing(0, 2)
-	local assigneeLabel = AceGUI:Create("EPLabel");
+	local assigneeLabel = AceGUI:Create("EPLabel")
 	assigneeLabel:SetText("Person to Assign")
 	assigneeLabel:SetTextPadding(0, 2)
 
-	self.assigneeDropdown = AceGUI:Create("EPDropdown");
+	self.assigneeDropdown = AceGUI:Create("EPDropdown")
 	self.assigneeDropdown:SetCallback("OnValueChanged", HandleAssigneeDropdownValueChanged)
 	self.assigneeDropdown.obj = self
 	assigneeFrame:AddChild(assigneeLabel)
@@ -180,9 +178,8 @@ local function OnAcquire(self)
 
 	local spellAssignmentFrame = AceGUI:Create("EPContainer")
 	spellAssignmentFrame:SetLayout("EPVerticalLayout")
-	spellAssignmentFrame:SetAutoAdjustHeight(true)
 	spellAssignmentFrame:SetSpacing(0, 2)
-	local spellAssignmentLabel = AceGUI:Create("EPLabel");
+	local spellAssignmentLabel = AceGUI:Create("EPLabel")
 	spellAssignmentLabel:SetText("Spell Assignment")
 	spellAssignmentLabel:SetTextPadding(0, 2)
 
@@ -195,15 +192,24 @@ local function OnAcquire(self)
 	spellAssignmentFrame:AddChild(self.spellAssignmentDropdown)
 	self:AddChild(spellAssignmentFrame)
 
-	self.timeEditBox = AceGUI:Create("EditBox");
-	---@diagnostic disable-next-line: inject-field
-	self.timeEditBox.obj = self
-	self.timeEditBox:SetLabel("Time")
-	self:AddChild(self.timeEditBox)
+	local timeEditFrame = AceGUI:Create("EPContainer")
+	timeEditFrame:SetLayout("EPVerticalLayout")
+	timeEditFrame:SetSpacing(0, 2)
+
+	local timeEditLabel = AceGUI:Create("EPLabel")
+	timeEditLabel:SetText("Time")
+	timeEditLabel:SetTextPadding(0, 2)
+
+	local timeEditBox = AceGUI:Create("EPLineEdit")
+	timeEditBox.obj = self
+	self.timeEditBox = timeEditBox
+
+	timeEditFrame:AddChild(timeEditLabel)
+	timeEditFrame:AddChild(timeEditBox)
+
+	self:AddChild(timeEditFrame)
 
 	self.frame:Show()
-
-	self:ResumeLayout()
 	self:DoLayout()
 end
 
