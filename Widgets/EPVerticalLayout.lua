@@ -27,10 +27,8 @@ AceGUI:RegisterLayout(Type,
 
 			if i > 1 then
 				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
-				print(frame:GetPoint())
 			else
 				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
-				print(frame:GetPoint())
 			end
 
 			local childHeight
