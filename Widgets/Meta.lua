@@ -1,81 +1,124 @@
 ---@meta
+
 ---@alias EPLayoutType
 ---|"EPContentFrameLayout"
 ---|"EPHorizontalLayout"
 ---|"EPVerticalLayout"
 
----@alias EPWidgetType
----|"EPAbilityEntry"
----|"EPDropdown"
----|"EPDropdownItemToggle"
+---@alias EPSpacerType
 ---|"EPSpacer"
----|"EPTimeline"
----|"EPItemBase"
----|"Dropdown-Item-Execute"
----|"EPDropdownItemToggle"
----|"EPDropdownItemMenu"
+
+---@alias EPDropdownPulloutType
 ---|"EPDropdownPullout"
 
----@alias EPContainerType
----|"EPMainFrame"
----|"EPAssignmentEditor"
+---@alias EPDropdownItemToggleType
+---|"EPDropdownItemToggle"
+
+---@alias EPDropdownItemMenuType
+---|"EPDropdownItemMenu"
+
+---@alias EPDropdownType
+---|"EPDropdown"
+
+---@alias EPAbilityEntryType
+---|"EPAbilityEntry"
 
 ---@alias EPAssignmentEditorType
 ---|"EPAssignmentEditor"
 
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0)
+---@alias EPTimelineType
+---|"EPTimeline"
+
+---@alias EPMainFrameType
+---|"EPMainFrame"
+
+---@alias EPWidgetType
+---| EPSpacerType
+---| EPDropdownPulloutType
+---| EPDropdownItemToggleType
+---| EPDropdownItemMenuType
+---| EPDropdownType
+---| EPAbilityEntryType
+---| EPAssignmentEditorType
+---| EPTimelineType
+---| EPMainFrameType
+
+---@alias EPContainerType
+---| EPAssignmentEditorType
+---| EPMainFrameType
+
 ---@class AceGUI-3.0
 local AceGUI = {}
 
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets)
 ---@class AceGUIWidget
 local AceGUIWidget = {}
 
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets)
 ---@class AceGUIContainer : AceGUIWidget
 local AceGUIContainer = {}
 
 ---@param type AceGUIWidgetType|EPWidgetType|EPLayoutType
 ---@return AceGUIWidget
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
+function AceGUI:Create(type) end
+
+---@param type EPSpacerType
+---@return EPSpacer
+function AceGUI:Create(type) end
+
+---@param type EPDropdownPulloutType
+---@return EPDropdownPullout
+function AceGUI:Create(type) end
+
+---@param type EPDropdownItemToggleType
+---@return EPDropdownItemToggle
+function AceGUI:Create(type) end
+
+---@param type EPDropdownItemMenuType
+---@return EPDropdownItemMenu
+function AceGUI:Create(type) end
+
+---@param type EPDropdownType
+---@return EPDropdown
+function AceGUI:Create(type) end
+
+---@param type EPAbilityEntryType
+---@return EPAbilityEntry
 function AceGUI:Create(type) end
 
 ---@param type EPAssignmentEditorType
 ---@return EPAssignmentEditor
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
+function AceGUI:Create(type) end
+
+---@param type EPTimelineType
+---@return EPTimeline
+function AceGUI:Create(type) end
+
+---@param type EPMainFrameType
+---@return EPMainFrame
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
 ---@return AceGUIContainer
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-3)
 function AceGUI:Create(type) end
 
 ---@param Name AceGUILayoutType|EPLayoutType
 ---@return function
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-4)
 function AceGUI:GetLayout(Name) end
 
 ---@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-8)
 function AceGUI:RegisterAsContainer(widget) end
 
 ---@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-9)
 function AceGUI:RegisterAsWidget(widget) end
 
 ---@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-12)
 function AceGUI:Release(widget) end
 
 ---@param widget AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/api/ace-gui-3-0#title-13)
 function AceGUI:SetFocus(widget) end
 
 ---@param widget AceGUIWidget|EPWidgetType
 ---@param beforeWidget? AceGUIWidget|EPWidgetType
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets#title-3-1)
 function AceGUIContainer:AddChild(widget, beforeWidget) end
 
 ---@param layout AceGUILayoutType|EPLayoutType
----[Documentation](https://www.wowace.com/projects/ace3/pages/ace-gui-3-0-widgets#title-3-2)
 function AceGUIContainer:SetLayout(layout) end

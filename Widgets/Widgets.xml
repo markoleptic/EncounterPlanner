@@ -3,10 +3,10 @@
 	<Script file="EPContentFrameLayout.lua"/>
 	<Script file="EPHorizontalLayout.lua"/>
 	<Script file="EPVerticalLayout.lua"/>
-	<Script file="EPAbilityEntry.lua"/>
+	<Script file="EPSpacer.lua"/>
 	<Script file="EPDropdownItemToggle.lua"/>
 	<Script file="EPDropdown.lua"/>
-	<Script file="EPSpacer.lua"/>
+	<Script file="EPAbilityEntry.lua"/>
 	<Script file="EPAssignmentEditor.lua"/>
 	<Script file="EPTimeline.lua"/>
 	<Script file="EPMainFrame.lua"/>
