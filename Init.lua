@@ -73,13 +73,6 @@ Private.TimelineAssignment = setmetatable({
 }, { __index = Private.TimelineAssignment })
 Private.TimelineAssignment.__index = Private.TimelineAssignment
 
----@return TimelineAssignment
-function Private.TimelineAssignment:new(o)
-	o = o or Private.TimelineAssignment:new(o)
-	setmetatable(o, self)
-	return o
-end
-
 ---@return Assignment
 function Private.Assignment:new(o)
 	o = o or {}
@@ -104,6 +97,13 @@ end
 ---@return PhasedAssignment
 function Private.PhasedAssignment:new(o)
 	o = o or Private.Assignment:new(o)
+	setmetatable(o, self)
+	return o
+end
+
+---@return TimelineAssignment
+function Private.TimelineAssignment:new(o)
+	o = o or Private.TimelineAssignment:new(o)
 	setmetatable(o, self)
 	return o
 end
