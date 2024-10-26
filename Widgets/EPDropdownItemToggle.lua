@@ -209,13 +209,14 @@ end
 
 ---@class EPDropdownItemToggle : EPItemBase
 ---@field value any
+---@field neverShowItemsAsSelected boolean
 do
 	local widgetType = "EPDropdownItemToggle"
 	local widgetVersion = 1
 
 	---@param dropdownItemToggle EPDropdownItemToggle
 	local function UpdateToggle(dropdownItemToggle)
-		if dropdownItemToggle.value then
+		if dropdownItemToggle.value and not dropdownItemToggle.neverShowItemsAsSelected then
 			dropdownItemToggle.check:Show()
 		else
 			dropdownItemToggle.check:Hide()
@@ -226,11 +227,6 @@ do
 		local self = frame.obj
 		if self.disabled then return end
 		self.value = not self.value
-		if self.value then
-			PlaySound(856)
-		else
-			PlaySound(857)
-		end
 		UpdateToggle(self)
 		self:Fire("OnValueChanged", self.value)
 	end
@@ -243,14 +239,22 @@ do
 	end
 
 	---@param self EPDropdownItemToggle
+	---@param value any
+	local function SetNeverShowItemsAsSelected(self, value)
+		self.neverShowItemsAsSelected = value
+	end
+
+	---@param self EPDropdownItemToggle
 	local function OnAcquire(self)
 		EPItemBase.OnAcquire(self)
+		self.neverShowItemsAsSelected = false
 		self:SetValue(nil)
 	end
 
 	---@param self EPDropdownItemToggle
 	local function OnRelease(self)
 		EPItemBase.OnRelease(self)
+		self.neverShowItemsAsSelected = nil
 		self:SetValue(nil)
 	end
 
@@ -267,6 +271,7 @@ do
 		widget.OnRelease = OnRelease
 		widget.GetValue = GetValue
 		widget.SetValue = SetValue
+		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
 		AceGUI:RegisterAsWidget(widget)
 		return widget
 	end
@@ -277,6 +282,7 @@ end
 ---@class EPDropdownItemMenu : EPItemBase
 ---@field submenu EPDropdownPullout
 ---@field value any
+---@field neverShowItemsAsSelected boolean
 do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
@@ -287,7 +293,11 @@ do
 		if self.specialOnEnter then
 			self.specialOnEnter(self)
 		end
-		self.highlight:Show()
+		if self.useHighlight then
+			self.highlight:Show()
+		else
+			self.highlight:Hide()
+		end
 		if not self.disabled and self.submenu then
 			self.submenu:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 0, self.frame:GetFrameLevel() + 100)
 		end
@@ -349,6 +359,9 @@ do
 		self:GetUserDataTable().childValue = dropdownItem:GetUserDataTable().value
 		if checked then
 			self:Fire("OnValueChanged", dropdownItem.value, dropdownItem:GetUserDataTable().value)
+			if self.neverShowItemsAsSelected == true then
+				dropdownItem:SetValue(false)
+			end
 		else
 			dropdownItem:SetValue(true)
 		end
@@ -386,6 +399,49 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
+	---@param dropdownItemData table<integer, DropdownItemData>
+	---@param dropdownParent EPDropdown
+	local function AddMenuItems(self, dropdownItemData, dropdownParent)
+		if not self.submenu then self.submenu = CreateSubmenu(self) end
+		for _, itemData in pairs(dropdownItemData) do
+			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
+				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+				dropdownMenuItem:SetText(itemData.text)
+				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
+				dropdownMenuItem:GetUserDataTable().menuItemObj = self
+				dropdownMenuItem:GetUserDataTable().value = itemData.itemValue
+				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
+				self.submenu:AddItem(dropdownMenuItem)
+				if self.neverShowItemsAsSelected == true then
+					dropdownMenuItem:SetNeverShowItemsAsSelected(true)
+				end
+				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
+			else
+				local alreadyExists = false
+				for _, item in ipairs(self.submenu.items) do
+					if item:GetUserDataTable().value == itemData.itemValue then
+						alreadyExists = true
+						break
+					end
+				end
+				if not alreadyExists then
+					local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+					dropdownItemToggle:SetText(itemData.text)
+					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
+					dropdownItemToggle:GetUserDataTable().menuItemObj = self
+					dropdownItemToggle:GetUserDataTable().value = itemData.itemValue
+					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
+					if self.neverShowItemsAsSelected == true then
+						dropdownItemToggle:SetNeverShowItemsAsSelected(true)
+					end
+					self.submenu:AddItem(dropdownItemToggle)
+				end
+			end
+		end
+		fixlevels(self.submenu.frame, self.submenu.frame:GetChildren())
+	end
+
+	---@param self EPDropdownItemMenu
 	local function CloseMenu(self)
 		self.submenu:Close()
 	end
@@ -395,7 +451,8 @@ do
 	local function SetValue(self, value)
 		local childValue = self:GetUserDataTable().childValue
 		local parentValue = self:GetUserDataTable().obj.value
-		if childValue ~= nil and childValue == parentValue then
+		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
+		if childValue ~= nil and childValue == parentValue and not neverShowItemsAsSelected then
 			self.sub:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
 		else
 			self.sub:SetVertexColor(1, 1, 1, 1)
@@ -403,9 +460,16 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
+	---@param value any
+	local function SetNeverShowItemsAsSelected(self, value)
+		self.neverShowItemsAsSelected = value
+	end
+
+	---@param self EPDropdownItemMenu
 	local function OnAcquire(self)
 		EPItemBase.OnAcquire(self)
 		self:GetUserDataTable().childValue = nil
+		self.neverShowItemsAsSelected = false
 	end
 
 	---@param self EPDropdownItemMenu
@@ -415,6 +479,7 @@ do
 		end
 		EPItemBase.OnRelease(self)
 		self:GetUserDataTable().childValue = nil
+		self.neverShowItemsAsSelected = nil
 	end
 
 	local function Constructor()
@@ -423,11 +488,13 @@ do
 		widget.sub:Show()
 		widget.frame:SetScript("OnEnter", HandleFrameEnter)
 		widget.frame:SetScript("OnHide", HandleFrameHide)
-		widget.OnAcquire    = OnAcquire
-		widget.OnRelease    = OnRelease
-		widget.SetValue     = SetValue
-		widget.SetMenuItems = SetMenuItems
-		widget.CloseMenu    = CloseMenu
+		widget.OnAcquire                   = OnAcquire
+		widget.OnRelease                   = OnRelease
+		widget.SetValue                    = SetValue
+		widget.SetMenuItems                = SetMenuItems
+		widget.AddMenuItems                = AddMenuItems
+		widget.CloseMenu                   = CloseMenu
+		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
 		AceGUI:RegisterAsWidget(widget)
 		return widget
 	end

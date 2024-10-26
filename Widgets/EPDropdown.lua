@@ -271,7 +271,7 @@ do
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
 		frame:SetWidth(defaultWidth)
-		frame:SetHeight(defaultMaxHeight)
+		frame:SetHeight(20)
 
 		local scrollFrame = CreateFrame("ScrollFrame", nil, frame)
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
@@ -285,7 +285,6 @@ do
 		local itemFrame = CreateFrame("Frame", nil, scrollFrame)
 		itemFrame:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
 		itemFrame:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", 0, 0)
-		itemFrame:SetHeight(400)
 		itemFrame:SetToplevel(true)
 		itemFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 		scrollFrame:SetScrollChild(itemFrame)
@@ -409,7 +408,7 @@ do
 		local value = self.value
 		if not self.multiselect then
 			for _, item in frame:IterateItems() do
-				item:SetValue((item:GetUserDataTable().value == value) or item:GetUserDataTable().hasTrueChild == true)
+				item:SetValue(item:GetUserDataTable().value == value)
 			end
 		end
 		self.open = true
@@ -450,13 +449,37 @@ do
 	local function FindItemText(self, value)
 		local function searchItems(items)
 			for _, item in ipairs(items) do
-				if item:GetUserDataTable().value == value then
-					return item.text:GetText()
+				if not item:GetUserDataTable().neverShowItemsAsSelected then
+					if item:GetUserDataTable().value == value then
+						return item.text:GetText()
+					end
+					if item.submenu then
+						local foundText = searchItems(item.submenu.items)
+						if foundText then
+							return foundText
+						end
+					end
 				end
-				if item.submenu then
-					local foundText = searchItems(item.submenu.items)
-					if foundText then
-						return foundText
+			end
+		end
+		return searchItems(self.pullout.items)
+	end
+
+	---@param self EPDropdown
+	---@param value any
+	---@return EPDropdownItemMenu|nil
+	local function FindItemFromValue(self, value)
+		local function searchItems(items)
+			for _, item in ipairs(items) do
+				if not item:GetUserDataTable().neverShowItemsAsSelected then
+					if item:GetUserDataTable().value == value then
+						return item
+					end
+					if item.submenu then
+						local foundItem = searchItems(item.submenu.items)
+						if foundItem then
+							return foundItem
+						end
 					end
 				end
 			end
@@ -589,7 +612,7 @@ do
 	---@param self EPDropdown
 	---@param value any
 	local function SetValue(self, value)
-		local text = FindItemText(self, value) or ""
+		local text = self:FindItemText(value) or ""
 		self:SetText(text)
 		self.value = value
 	end
@@ -629,7 +652,8 @@ do
 	---@param text string the value shown on the item
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
 	---@param dropdownItemData? table<integer, DropdownItemData> optional table of nested dropdown item menus
-	local function AddItem(self, itemValue, text, itemType, dropdownItemData)
+	---@param neverShowItemsAsSelected? boolean
+	local function AddItem(self, itemValue, text, itemType, dropdownItemData, neverShowItemsAsSelected)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -643,6 +667,9 @@ do
 			dropdownMenuItem:SetText(text)
 			dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 			self.pullout:AddItem(dropdownMenuItem)
+			if neverShowItemsAsSelected == true then
+				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
+			end
 			if dropdownItemData then
 				dropdownMenuItem:SetMenuItems(dropdownItemData, self)
 			end
@@ -669,6 +696,16 @@ do
 			else
 				self:AddItem(itemData.itemValue, itemData.text, leafType)
 			end
+		end
+	end
+
+	---@param self EPDropdown
+	---@param existingItemValue any the internal value used to index an item
+	---@param dropdownItemData table<integer, DropdownItemData> table of nested dropdown item data
+	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
+		local existingDropdownMenuItem = FindItemFromValue(self, existingItemValue)
+		if existingDropdownMenuItem then
+			existingDropdownMenuItem:AddMenuItems(dropdownItemData, self)
 		end
 	end
 
@@ -761,30 +798,32 @@ do
 
 		---@class EPDropdown
 		local widget    = {
-			OnAcquire       = OnAcquire,
-			OnRelease       = OnRelease,
-			SetDisabled     = SetDisabled,
-			ClearFocus      = ClearFocus,
-			SetText         = SetText,
-			SetLabel        = SetLabel,
-			SetValue        = SetValue,
-			GetValue        = GetValue,
-			SetItemValue    = SetItemValue,
-			SetItemDisabled = SetItemDisabled,
-			AddItem         = AddItem,
-			AddItems        = AddItems,
-			AddCloseButton  = AddCloseButton,
-			SetMultiselect  = SetMultiselect,
-			GetMultiselect  = GetMultiselect,
-			SetPulloutWidth = SetPulloutWidth,
-			frame           = frame,
-			type            = Type,
-			count           = count,
-			dropdown        = dropdown,
-			text            = text,
-			label           = label,
-			buttonCover     = buttonCover,
-			button          = button,
+			OnAcquire                          = OnAcquire,
+			OnRelease                          = OnRelease,
+			SetDisabled                        = SetDisabled,
+			ClearFocus                         = ClearFocus,
+			FindItemText                       = FindItemText,
+			SetText                            = SetText,
+			SetLabel                           = SetLabel,
+			SetValue                           = SetValue,
+			GetValue                           = GetValue,
+			SetItemValue                       = SetItemValue,
+			SetItemDisabled                    = SetItemDisabled,
+			AddItem                            = AddItem,
+			AddItems                           = AddItems,
+			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
+			AddCloseButton                     = AddCloseButton,
+			SetMultiselect                     = SetMultiselect,
+			GetMultiselect                     = GetMultiselect,
+			SetPulloutWidth                    = SetPulloutWidth,
+			frame                              = frame,
+			type                               = Type,
+			count                              = count,
+			dropdown                           = dropdown,
+			text                               = text,
+			label                              = label,
+			buttonCover                        = buttonCover,
+			button                             = button,
 		}
 
 		frame.obj       = widget
