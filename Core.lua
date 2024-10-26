@@ -411,7 +411,7 @@ local function SortDropdownDataByItemValue(data)
 	end
 end
 
----@return table<integer, DropdownItemData>
+---@return DropdownItemData
 local function CreateSpellDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	local classIndex = 1
@@ -439,7 +439,7 @@ local function CreateSpellDropdownItems()
 			local iconText = string.format("|T%s:16|t %s", spell["icon"], spell["name"])
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
 
-				itemValue = spell["name"],
+				itemValue = spell["spellID"],
 				text = iconText,
 				dropdownItemMenuData = {}
 			})
@@ -448,7 +448,37 @@ local function CreateSpellDropdownItems()
 		classIndex = classIndex + 1
 	end
 	SortDropdownDataByItemValue(dropdownItems)
-	return { [1] = { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems } }
+	return { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems }
+end
+
+---@return DropdownItemData
+local function CreateRacialDropdownItems()
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+	for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
+		local iconText = string.format("|T%s:16|t %s", racialInfo["icon"], racialInfo["name"])
+		tinsert(dropdownItems, {
+			itemValue = racialInfo["spellID"],
+			text = iconText,
+			dropdownItemMenuData = {}
+		})
+	end
+	SortDropdownDataByItemValue(dropdownItems)
+	return { itemValue = "Racial", text = "Racial", dropdownItemMenuData = dropdownItems }
+end
+
+---@return DropdownItemData
+local function CreateTrinketDropdownItems()
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+	for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
+		local iconText = string.format("|T%s:16|t %s", trinketInfo["icon"], trinketInfo["name"])
+		tinsert(dropdownItems, {
+			itemValue = trinketInfo["spellID"],
+			text = iconText,
+			dropdownItemMenuData = {}
+		})
+	end
+	SortDropdownDataByItemValue(dropdownItems)
+	return { itemValue = "Trinket", text = "Trinket", dropdownItemMenuData = dropdownItems }
 end
 
 function AddOn:CreateGUI()
@@ -521,8 +551,8 @@ function AddOn:CreateGUI()
 	timeline:SetNewAssignmentFunc(function()
 		return Private.Assignment:new({})
 	end)
-	timeline:SetSpellDropdownItemsFunc(function()
-		return CreateSpellDropdownItems()
+	timeline:SetDropdownItemsFunc(function()
+		return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
 	end)
 	timeline:SetRelativeWidth(0.8)
 
