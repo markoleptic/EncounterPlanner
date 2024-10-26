@@ -17,7 +17,7 @@ AceGUI:RegisterLayout(Type,
 	function(content, children)
 		local totalHeight = 0
 		local maxWidth = 0
-		local paddingY = 10
+		local paddingY = (content.spacing and content.spacing.y) or 10
 
 		for i = 1, #children do
 			local child = children[i]
