@@ -194,7 +194,7 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 		self.assignmentEditor.frame:SetFrameLevel(self.frame:GetFrameLevel() + 5)
 
 		local spellDropdown = self.assignmentEditor:GetSpellAssignmentDropdown()
-		spellDropdown:AddItems(self.spellDropdownItemsFunc(), "EPDropdownItemToggle")
+		spellDropdown:AddItems(self.dropdownItemsFunc(), "EPDropdownItemToggle")
 	end
 	self.assignmentEditor:GetSpellAssignmentDropdown():SetText("Spell to Assign")
 	self.assignmentEditor:SetAssignmentData(self.newAssignmentFunc())
@@ -671,8 +671,8 @@ local function SetNewAssignmentFunc(self, func)
 	self.newAssignmentFunc = func
 end
 
-local function SetSpellDropdownItemsFunc(self, func)
-	self.spellDropdownItemsFunc = func
+local function SetDropdownItemsFunc(self, func)
+	self.dropdownItemsFunc = func
 end
 
 local function Constructor()
@@ -752,7 +752,7 @@ local function Constructor()
 		CalculateRequiredHeight           = CalculateRequiredHeight,
 		UpdateHeight                      = UpdateHeight,
 		SetNewAssignmentFunc              = SetNewAssignmentFunc,
-		SetSpellDropdownItemsFunc         = SetSpellDropdownItemsFunc,
+		SetDropdownItemsFunc              = SetDropdownItemsFunc,
 		frame                             = frame,
 		type                              = Type,
 		timelineWrapperFrame              = timelineWrapperFrame,

@@ -104,7 +104,13 @@ local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, val
 end
 
 local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, value)
-	--local self = frame.obj
+	local self = frame.obj --[[@as EPAssignmentEditor]]
+	local itemText = self.spellAssignmentDropdown:FindItemText(value)
+	if itemText then
+		self.spellAssignmentDropdown:SetItemDisabled("Recent", false)
+		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Recent",
+			{ { itemValue = value, text = itemText, dropdownItemMenuData = {} } })
+	end
 	--self:Fire("AssignmentDataChanged", self.assignment)
 end
 
@@ -149,6 +155,8 @@ local function OnAcquire(self)
 	self.spellAssignmentDropdown:SetCallback("OnValueChanged", HandleSpellAssignmentDropdownValueChanged)
 	self.spellAssignmentDropdown:SetFullWidth(true)
 	self.spellAssignmentDropdown.obj = self
+	self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
+	self.spellAssignmentDropdown:SetItemDisabled("Recent", true)
 	self:AddChild(self.spellAssignmentDropdown)
 
 	self.timeEditBox = AceGUI:Create("EditBox");
@@ -183,7 +191,7 @@ end
 ---@param self EPAssignmentEditor
 ---@return EPDropdown
 local function GetSpellAssignmentDropdown(self)
-	return self.assignmentTypeDropdown
+	return self.spellAssignmentDropdown
 end
 
 local function Constructor()
