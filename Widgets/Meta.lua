@@ -5,8 +5,17 @@
 ---|"EPHorizontalLayout"
 ---|"EPVerticalLayout"
 
+---@alias EPBaseContainerType
+---|"EPContainer"
+
 ---@alias EPSpacerType
 ---|"EPSpacer"
+
+---@alias EPLabelType
+---|"EPLabel"
+
+---@alias EPLineEditType
+---|"EPLineEdit"
 
 ---@alias EPDropdownPulloutType
 ---|"EPDropdownPullout"
@@ -34,6 +43,8 @@
 
 ---@alias EPWidgetType
 ---| EPSpacerType
+---| EPLabelType
+---| EPLineEditType
 ---| EPDropdownPulloutType
 ---| EPDropdownItemToggleType
 ---| EPDropdownItemMenuType
@@ -46,6 +57,7 @@
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
 ---| EPMainFrameType
+---| EPBaseContainerType
 
 ---@class AceGUI-3.0
 local AceGUI = {}
@@ -60,8 +72,20 @@ local AceGUIContainer = {}
 ---@return AceGUIWidget
 function AceGUI:Create(type) end
 
+---@param type EPBaseContainerType
+---@return EPContainer
+function AceGUI:Create(type) end
+
 ---@param type EPSpacerType
 ---@return EPSpacer
+function AceGUI:Create(type) end
+
+---@param type EPLabelType
+---@return EPLabel
+function AceGUI:Create(type) end
+
+---@param type EPLineEditType
+---@return EPLineEdit
 function AceGUI:Create(type) end
 
 ---@param type EPDropdownPulloutType
