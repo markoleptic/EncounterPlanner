@@ -26,18 +26,60 @@ local colors                             = {
 	{ 51,  255, 87, 1 }, { 51, 87, 255, 1 }, { 255, 51, 184, 1 }, { 255, 214, 51, 1 },
 	{ 51, 255, 249, 1 }, { 184, 51, 255, 1 } }
 
-
-
-local TimlineTooltip = CreateFrame("GameTooltip", "AbilityEntryTooltip", UIParent, "GameTooltipTemplate")
-local function HandleIconEnter(frame)
-	if frame.spellID and frame.spellID ~= 0 then
-		TimlineTooltip:SetOwner(frame.assignmentFrame, "ANCHOR_TOPRIGHT", 0, 0)
-		TimlineTooltip:SetSpellByID(frame.spellID)
+local function HandleTimelineTooltipOnUpdate(frame, elapsed)
+	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
+	if frame.updateTooltipTimer > 0 then
+		return
+	end
+	frame.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
+	local owner = frame:GetOwner()
+	if owner and frame.spellID then
+		frame:SetSpellByID(frame.spellID)
 	end
 end
 
-local function HandleIconLeave(frame)
-	TimlineTooltip:Hide()
+local function UpdateLinePosition(frame)
+	local self = frame.obj
+	local xPosition, _ = GetCursorPosition()
+	local newOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
+
+	self.assignmentTimelineVerticalPositionLine:SetPoint("TOP", self.assignmentTimelineFrame, "TOPLEFT",
+		newOffset, 0)
+	self.assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", self.assignmentTimelineFrame, "BOTTOMLEFT",
+		newOffset, 0)
+	self.assignmentTimelineVerticalPositionLine:Show()
+
+	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT",
+		newOffset, 0)
+	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT",
+		newOffset, 0)
+	self.timelineVerticalPositionLine:Show()
+end
+
+local function HandleTimelineFrameEnter(frame)
+	frame:SetScript("OnUpdate", function() UpdateLinePosition(frame) end)
+end
+
+local function HandleTimelineFrameLeave(frame)
+	local self = frame.obj
+	self.timelineVerticalPositionLine:Hide()
+	self.assignmentTimelineVerticalPositionLine:Hide()
+	frame:SetScript("OnUpdate", nil)
+end
+
+local function HandleIconEnter(frame, motion, epTimeline)
+	if frame.spellID and frame.spellID ~= 0 then
+		EncounterPlanner.tooltip:ClearLines()
+		EncounterPlanner.tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
+		EncounterPlanner.tooltip:SetSpellByID(frame.spellID)
+		HandleTimelineFrameLeave(epTimeline.timelineFrame) -- hide vertical lines when hovering spell
+		EncounterPlanner.tooltip:SetScript("OnUpdate", HandleTimelineTooltipOnUpdate)
+	end
+end
+
+local function HandleIconLeave(frame, motion, epTimeline)
+	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
+	EncounterPlanner.tooltip:Hide()
 end
 
 local function HandleThumbUpdate(frame)
@@ -222,6 +264,8 @@ end
 ---@field timelineWrapperFrame table|Frame
 ---@field assignmentTimelineFrame table|Frame
 ---@field timelineFrame table|Frame
+---@field assignmentTimelineVerticalPositionLine table|Texture
+---@field timelineVerticalPositionLine table|Texture
 ---@field scrollBar table|Frame
 ---@field thumb Button
 ---
@@ -342,8 +386,8 @@ local function DrawAssignment(self, startTime, spellID, index, offset)
 	local assignment = self.assignmentTextures[index]
 	if not assignment then
 		assignment = assignmentFrame:CreateTexture(nil, "OVERLAY")
-		assignment:SetScript("OnEnter", HandleIconEnter)
-		assignment:SetScript("OnLeave", HandleIconLeave)
+		assignment:SetScript("OnEnter", function(frame, motion) HandleIconEnter(frame, motion, self) end)
+		assignment:SetScript("OnLeave", function(frame, motion) HandleIconLeave(frame, motion, self) end)
 		assignment.assignmentFrame = assignmentFrame
 		assignment.spellID = spellID
 		self.assignmentTextures[index] = assignment
@@ -705,11 +749,13 @@ local function Constructor()
 	timelineFrame:SetPoint("TOPLEFT", timelineWrapperFrame, "TOPLEFT")
 	timelineFrame:SetPoint("TOPRIGHT", timelineWrapperFrame, "TOPRIGHT")
 	timelineFrame:SetSize(frameWidth, (timelineWrapperFrame:GetHeight() - paddingBetweenTimelines) / 2.0)
-	timelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	timelineFrame:EnableMouse(true)
 	timelineFrame:RegisterForDrag("LeftButton", "LeftButtonUp")
+	timelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	timelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
 	timelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
+	timelineFrame:SetScript("OnEnter", HandleTimelineFrameEnter)
+	timelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
 	timelineFrame:Show()
 
 	local assignmentTimelineFrame = CreateFrame("Frame", Type .. num .. "AssignmentTimelineFrame", timelineWrapperFrame)
@@ -718,16 +764,34 @@ local function Constructor()
 	assignmentTimelineFrame:SetPoint("BOTTOMLEFT", timelineWrapperFrame, "BOTTOMLEFT")
 	assignmentTimelineFrame:SetPoint("BOTTOMRIGHT", timelineWrapperFrame, "BOTTOMRIGHT")
 	assignmentTimelineFrame:SetSize(frameWidth, (timelineWrapperFrame:GetHeight() - paddingBetweenTimelines) / 2.0)
-	assignmentTimelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	assignmentTimelineFrame:EnableMouse(true)
 	assignmentTimelineFrame:RegisterForDrag("LeftButton", "LeftButtonUp")
+	assignmentTimelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	assignmentTimelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
 	assignmentTimelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
 	assignmentTimelineFrame:SetScript("OnMouseDown", HandleAssignmentTimelineFrameMouseDown)
+	assignmentTimelineFrame:SetScript("OnEnter", HandleTimelineFrameEnter)
+	assignmentTimelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
 	assignmentTimelineFrame:Show()
 
 	frame:SetScrollChild(timelineWrapperFrame)
 	frame:EnableMouseWheel(true)
+
+	local timelineVerticalPositionLine = timelineFrame:CreateTexture(Type .. num .. "AbilityPositionLine", "OVERLAY")
+	timelineVerticalPositionLine:SetColorTexture(1, 0.82, 1, 1)
+	timelineVerticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT")
+	timelineVerticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT")
+	timelineVerticalPositionLine:SetWidth(1)
+	timelineVerticalPositionLine:Hide()
+
+	local assignmentTimelineVerticalPositionLine = assignmentTimelineFrame:CreateTexture(
+		Type .. num .. "AssignmentPositionLine",
+		"OVERLAY")
+	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 1, 1, 1)
+	assignmentTimelineVerticalPositionLine:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT")
+	assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT")
+	assignmentTimelineVerticalPositionLine:SetWidth(1)
+	assignmentTimelineVerticalPositionLine:Hide()
 
 	local scrollBar = CreateFrame("Frame", Type .. num .. "HorizontalScrollBar", frame)
 	scrollBar:SetHeight(horizontalScrollBarHeight)
@@ -752,32 +816,35 @@ local function Constructor()
 
 	---@class EPTimeline
 	local widget = {
-		OnAcquire                           = OnAcquire,
-		OnRelease                           = OnRelease,
-		SetEntries                          = SetEntries,
-		CountUniqueAssignees                = CountUniqueAssignees,
-		UpdateAssignments                   = UpdateAssignments,
-		DrawAssignment                      = DrawAssignment,
-		UpdateBossAbilityBars               = UpdateBossAbilityBars,
-		DrawBossAbilityBar                  = DrawBossAbilityBar,
-		UpdateScrollBar                     = UpdateScrollBar,
-		UpdateTickMarks                     = UpdateTickMarks,
-		OnWidthSet                          = OnWidthSet,
-		OnHeightSet                         = OnHeightSet,
-		CalculateRequiredBarHeight          = CalculateRequiredBarHeight,
-		CalculateRequiredAssignmentHeight   = CalculateRequiredAssignmentHeight,
-		CalculateRequiredHeight             = CalculateRequiredHeight,
-		UpdateHeight                        = UpdateHeight,
-		SetNewAssignmentFunc                = SetNewAssignmentFunc,
-		SetSpellAssigmentsDropdownItemsFunc = SetSpellAssigmentsDropdownItemsFunc,
-		SetAssignmentTypesDropdownItemsFunc = SetAssignmentTypesDropdownItemsFunc,
-		frame                               = frame,
-		type                                = Type,
-		timelineWrapperFrame                = timelineWrapperFrame,
-		assignmentTimelineFrame             = assignmentTimelineFrame,
-		timelineFrame                       = timelineFrame,
-		scrollBar                           = scrollBar,
-		thumb                               = thumb,
+		OnAcquire                              = OnAcquire,
+		OnRelease                              = OnRelease,
+		SetEntries                             = SetEntries,
+		CountUniqueAssignees                   = CountUniqueAssignees,
+		UpdateAssignments                      = UpdateAssignments,
+		DrawAssignment                         = DrawAssignment,
+		UpdateBossAbilityBars                  = UpdateBossAbilityBars,
+		DrawBossAbilityBar                     = DrawBossAbilityBar,
+		UpdateScrollBar                        = UpdateScrollBar,
+		UpdateTickMarks                        = UpdateTickMarks,
+		OnWidthSet                             = OnWidthSet,
+		OnHeightSet                            = OnHeightSet,
+		CalculateRequiredBarHeight             = CalculateRequiredBarHeight,
+		CalculateRequiredAssignmentHeight      = CalculateRequiredAssignmentHeight,
+		CalculateRequiredHeight                = CalculateRequiredHeight,
+		UpdateHeight                           = UpdateHeight,
+		SetNewAssignmentFunc                   = SetNewAssignmentFunc,
+		SetSpellAssigmentsDropdownItemsFunc    = SetSpellAssigmentsDropdownItemsFunc,
+		SetAssignmentTypesDropdownItemsFunc    = SetAssignmentTypesDropdownItemsFunc,
+		frame                                  = frame,
+		type                                   = Type,
+		timelineWrapperFrame                   = timelineWrapperFrame,
+		assignmentTimelineFrame                = assignmentTimelineFrame,
+		timelineFrame                          = timelineFrame,
+		scrollBar                              = scrollBar,
+		thumb                                  = thumb,
+		timelineVerticalPositionLine           = timelineVerticalPositionLine,
+		assignmentTimelineVerticalPositionLine = assignmentTimelineVerticalPositionLine
+
 	}
 
 	frame.obj = widget
