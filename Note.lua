@@ -592,6 +592,15 @@ function Private:ParseNote(text, noteType)
 			self:ProcessOptions(inputs, time, options, noteType)
 		end
 	end
+
+	for _, assignment in ipairs(self.assignments) do
+		if assignment.assigneeNameOrRole and assignment.assigneeNameOrRole ~= "" then
+			if not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:") then
+				self.roster[assignment.assigneeNameOrRole] = Private.GSubAutoColorData[assignment.assigneeNameOrRole] or
+					assignment.assigneeNameOrRole
+			end
+		end
+	end
 end
 
 -- Parses the shared and personal ERT notes.
