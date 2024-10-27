@@ -10,6 +10,7 @@
 
 embeds.xml
 Init.lua
+Spells.lua
 Widgets\Widgets.xml
 Note.lua
 Options.lua
