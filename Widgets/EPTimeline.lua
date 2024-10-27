@@ -192,11 +192,16 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 			self.assignmentEditor = nil
 		end)
 
-		local spellDropdown = self.assignmentEditor:GetSpellAssignmentDropdown()
-		spellDropdown:AddItems(self.dropdownItemsFunc(), "EPDropdownItemToggle")
+		local spellDropdown = self.assignmentEditor.spellAssignmentDropdown
+		spellDropdown:AddItems(self.spellAssignmentDropdownItemsFunc(), "EPDropdownItemToggle")
+
+		local assigneeTypeDropdown = self.assignmentEditor.assigneeTypeDropdown
+		assigneeTypeDropdown:AddItems(self.assignmentTypesDropdownItemsFunc(), "EPDropdownItemToggle")
+
+		local assigneeDropdown = self.assignmentEditor.assigneeDropdown
+		assigneeDropdown:AddItems(self.assigneeDropdownItemsFunc(), "EPDropdownItemToggle")
+		self.assignmentEditor:SetAssignmentData(self.newAssignmentFunc())
 	end
-	self.assignmentEditor:GetSpellAssignmentDropdown():SetText("")
-	self.assignmentEditor:SetAssignmentData(self.newAssignmentFunc())
 end
 
 ---@class PrivateTable
@@ -232,6 +237,12 @@ end
 ---@field bossPhases table<number, BossPhase>
 ---@field timelineAssignments table<integer, TimelineAssignment>
 ---@field totalTimelineDuration number
+---
+---@field assignmentTypesDropdownItemsFunc any
+---@field assigneeDropdownItemsFunc any
+---@field spellAssignmentDropdownItemsFunc any
+---@field newAssignmentFunc any
+
 
 ---@param self EPTimeline
 local function OnAcquire(self)
@@ -666,12 +677,19 @@ local function UpdateHeight(self)
 	end
 end
 
+---@param self EPTimeline
 local function SetNewAssignmentFunc(self, func)
 	self.newAssignmentFunc = func
 end
 
-local function SetDropdownItemsFunc(self, func)
-	self.dropdownItemsFunc = func
+---@param self EPTimeline
+local function SetSpellAssigmentsDropdownItemsFunc(self, func)
+	self.spellAssignmentDropdownItemsFunc = func
+end
+
+---@param self EPTimeline
+local function SetAssignmentTypesDropdownItemsFunc(self, func)
+	self.assignmentTypesDropdownItemsFunc = func
 end
 
 local function Constructor()
@@ -734,31 +752,32 @@ local function Constructor()
 
 	---@class EPTimeline
 	local widget = {
-		OnAcquire                         = OnAcquire,
-		OnRelease                         = OnRelease,
-		SetEntries                        = SetEntries,
-		CountUniqueAssignees              = CountUniqueAssignees,
-		UpdateAssignments                 = UpdateAssignments,
-		DrawAssignment                    = DrawAssignment,
-		UpdateBossAbilityBars             = UpdateBossAbilityBars,
-		DrawBossAbilityBar                = DrawBossAbilityBar,
-		UpdateScrollBar                   = UpdateScrollBar,
-		UpdateTickMarks                   = UpdateTickMarks,
-		OnWidthSet                        = OnWidthSet,
-		OnHeightSet                       = OnHeightSet,
-		CalculateRequiredBarHeight        = CalculateRequiredBarHeight,
-		CalculateRequiredAssignmentHeight = CalculateRequiredAssignmentHeight,
-		CalculateRequiredHeight           = CalculateRequiredHeight,
-		UpdateHeight                      = UpdateHeight,
-		SetNewAssignmentFunc              = SetNewAssignmentFunc,
-		SetDropdownItemsFunc              = SetDropdownItemsFunc,
-		frame                             = frame,
-		type                              = Type,
-		timelineWrapperFrame              = timelineWrapperFrame,
-		assignmentTimelineFrame           = assignmentTimelineFrame,
-		timelineFrame                     = timelineFrame,
-		scrollBar                         = scrollBar,
-		thumb                             = thumb,
+		OnAcquire                           = OnAcquire,
+		OnRelease                           = OnRelease,
+		SetEntries                          = SetEntries,
+		CountUniqueAssignees                = CountUniqueAssignees,
+		UpdateAssignments                   = UpdateAssignments,
+		DrawAssignment                      = DrawAssignment,
+		UpdateBossAbilityBars               = UpdateBossAbilityBars,
+		DrawBossAbilityBar                  = DrawBossAbilityBar,
+		UpdateScrollBar                     = UpdateScrollBar,
+		UpdateTickMarks                     = UpdateTickMarks,
+		OnWidthSet                          = OnWidthSet,
+		OnHeightSet                         = OnHeightSet,
+		CalculateRequiredBarHeight          = CalculateRequiredBarHeight,
+		CalculateRequiredAssignmentHeight   = CalculateRequiredAssignmentHeight,
+		CalculateRequiredHeight             = CalculateRequiredHeight,
+		UpdateHeight                        = UpdateHeight,
+		SetNewAssignmentFunc                = SetNewAssignmentFunc,
+		SetSpellAssigmentsDropdownItemsFunc = SetSpellAssigmentsDropdownItemsFunc,
+		SetAssignmentTypesDropdownItemsFunc = SetAssignmentTypesDropdownItemsFunc,
+		frame                               = frame,
+		type                                = Type,
+		timelineWrapperFrame                = timelineWrapperFrame,
+		assignmentTimelineFrame             = assignmentTimelineFrame,
+		timelineFrame                       = timelineFrame,
+		scrollBar                           = scrollBar,
+		thumb                               = thumb,
 	}
 
 	frame.obj = widget
