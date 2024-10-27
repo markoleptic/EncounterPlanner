@@ -400,7 +400,21 @@ end
 local function SortDropdownDataByItemValue(data)
 	-- Sort the top-level table
 	table.sort(data, function(a, b)
-		return a.itemValue < b.itemValue
+		local itemValueA = a.itemValue
+		local itemValueB = b.itemValue
+		if type(itemValueA) == "number" then
+			local spellName = a.text:match("|T.-|t%s(.+)")
+			if spellName then
+				itemValueA = spellName
+			end
+		end
+		if type(itemValueB) == "number" then
+			local spellName = b.text:match("|T.-|t%s(.+)")
+			if spellName then
+				itemValueB = spellName
+			end
+		end
+		return itemValueA < itemValueB
 	end)
 
 	-- Recursively sort any nested dropdownItemMenuData tables
@@ -414,10 +428,17 @@ end
 ---@return DropdownItemData
 local function CreateSpellDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	local classIndex = 1
 	for className, classSpells in pairs(Private.spellDB.classes) do
 		local colorMixin = C_ClassColor.GetClassColor(className)
-		local coloredName = colorMixin:WrapTextInColorCode(className)
+		local actualClassName
+		if actualClassName == "DEATHKNIGHT" then
+			actualClassName = "Death Knight"
+		elseif actualClassName == "DEMONHUNTER" then
+			actualClassName = "Demon Hunter"
+		else
+			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+		end
+		local coloredName = colorMixin:WrapTextInColorCode(actualClassName)
 		local classDropdownData = {
 			itemValue = className,
 			text = coloredName,
@@ -438,14 +459,12 @@ local function CreateSpellDropdownItems()
 			end
 			local iconText = string.format("|T%s:16|t %s", spell["icon"], spell["name"])
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
-
 				itemValue = spell["spellID"],
 				text = iconText,
 				dropdownItemMenuData = {}
 			})
 		end
-		dropdownItems[classIndex] = classDropdownData
-		classIndex = classIndex + 1
+		tinsert(dropdownItems, classDropdownData)
 	end
 	SortDropdownDataByItemValue(dropdownItems)
 	return { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems }
@@ -479,6 +498,127 @@ local function CreateTrinketDropdownItems()
 	end
 	SortDropdownDataByItemValue(dropdownItems)
 	return { itemValue = "Trinket", text = "Trinket", dropdownItemMenuData = dropdownItems }
+end
+
+---@return table<integer, DropdownItemData>
+local function createAssignmentTypeDropdownItems()
+	local assignmentTypes = {
+		{
+			text = "Group",
+			itemValue = "Group",
+			dropdownItemMenuData = {
+				{
+					text = "Everyone",
+					itemValue = "Everyone",
+					dropdownItemMenuData = {}
+				},
+				{
+					text = "Role",
+					itemValue = "Role",
+					dropdownItemMenuData = {
+						{
+							text = "Damagers",
+							itemValue = "Damagers",
+							dropdownItemMenuData = {}
+						},
+						{
+							text = "Healers",
+							itemValue = "Healers",
+							dropdownItemMenuData = {}
+						},
+						{
+							text = "Tanks",
+							itemValue = "Tanks",
+							dropdownItemMenuData = {}
+						}
+					}
+				},
+				{
+					text = "Group Number",
+					itemValue = "Group Number",
+					dropdownItemMenuData = {
+						{
+							text = "1",
+							itemValue = "GroupNumber1",
+							dropdownItemMenuData = {}
+						},
+						{
+							text = "2",
+							itemValue = "GroupNumber2",
+							dropdownItemMenuData = {}
+						},
+						{
+							text = "3",
+							itemValue = "GroupNumber3",
+							dropdownItemMenuData = {}
+						},
+						{
+							text = "4",
+							itemValue = "GroupNumber4",
+							dropdownItemMenuData = {}
+						},
+					}
+				}
+			},
+		},
+		{
+			text = "Individual",
+			itemValue = "Individual",
+			dropdownItemMenuData = {}
+		},
+		-- {
+		-- 	text = "Personal",
+		-- 	itemValue = "Personal",
+		-- 	dropdownItemMenuData = {}
+		-- }
+	} --[[@as table<integer, DropdownItemData>]]
+
+	local classAssignmentTypes = {
+		text = "Class",
+		itemValue = "Class",
+		dropdownItemMenuData = {}
+	} --[[@as DropdownItemData]]
+
+	for className, _ in pairs(Private.spellDB.classes) do
+		local colorMixin = C_ClassColor.GetClassColor(className)
+		local actualClassName
+		if className == "DEATHKNIGHT" then
+			actualClassName = "Death Knight"
+		elseif className == "DEMONHUNTER" then
+			actualClassName = "Demon Hunter"
+		else
+			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+		end
+		local coloredName = colorMixin:WrapTextInColorCode(actualClassName)
+		local classDropdownData = {
+			itemValue = className,
+			text = coloredName,
+			dropdownItemMenuData = {}
+		}
+		tinsert(classAssignmentTypes.dropdownItemMenuData, classDropdownData)
+	end
+
+	tinsert(assignmentTypes, classAssignmentTypes)
+
+	SortDropdownDataByItemValue(assignmentTypes)
+	return assignmentTypes
+end
+
+---@return table<integer, DropdownItemData>
+local function createAssigneeDropdownItems()
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+
+	for name, coloredName in pairs(Private.roster) do
+		local assigneeDropdownData = {
+			itemValue = name,
+			text = coloredName,
+			dropdownItemMenuData = {}
+		}
+		tinsert(dropdownItems, assigneeDropdownData)
+	end
+
+	SortDropdownDataByItemValue(dropdownItems)
+	return dropdownItems
 end
 
 function AddOn:CreateGUI()
@@ -551,9 +691,15 @@ function AddOn:CreateGUI()
 	timeline:SetNewAssignmentFunc(function()
 		return Private.Assignment:new({})
 	end)
-	timeline:SetDropdownItemsFunc(function()
+	timeline:SetSpellAssigmentsDropdownItemsFunc(function()
 		return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
 	end)
+	timeline:SetAssignmentTypesDropdownItemsFunc(function()
+		return createAssignmentTypeDropdownItems()
+	end)
+	timeline.assigneeDropdownItemsFunc = function()
+		return createAssigneeDropdownItems()
+	end
 	timeline:SetRelativeWidth(0.8)
 
 	Private.mainFrame:AddChild(leftSideFrame)

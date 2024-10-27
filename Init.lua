@@ -138,6 +138,7 @@ do
 		bit.bor(Private.Libs.LSM.LOCALE_BIT_western, Private.Libs.LSM.LOCALE_BIT_ruRU))
 	Private.Libs.AGUI = LibStub("AceGUI-3.0")
 	Private.assignments = {} --[[@as table<integer, Assignment>]]
+	Private.roster = {} --[[@as table<string, string>]]
 	Private.lastEncounterId = nil
 	Private.selectedBoss = nil
 end
