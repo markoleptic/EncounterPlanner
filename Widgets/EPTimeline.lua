@@ -38,41 +38,11 @@ local function HandleTimelineTooltipOnUpdate(frame, elapsed)
 	end
 end
 
-local function UpdateLinePosition(frame)
-	local self = frame.obj
-	local xPosition, _ = GetCursorPosition()
-	local newOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
-
-	self.assignmentTimelineVerticalPositionLine:SetPoint("TOP", self.assignmentTimelineFrame, "TOPLEFT",
-		newOffset, 0)
-	self.assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", self.assignmentTimelineFrame, "BOTTOMLEFT",
-		newOffset, 0)
-	self.assignmentTimelineVerticalPositionLine:Show()
-
-	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT",
-		newOffset, 0)
-	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT",
-		newOffset, 0)
-	self.timelineVerticalPositionLine:Show()
-end
-
-local function HandleTimelineFrameEnter(frame)
-	frame:SetScript("OnUpdate", function() UpdateLinePosition(frame) end)
-end
-
-local function HandleTimelineFrameLeave(frame)
-	local self = frame.obj
-	self.timelineVerticalPositionLine:Hide()
-	self.assignmentTimelineVerticalPositionLine:Hide()
-	frame:SetScript("OnUpdate", nil)
-end
-
 local function HandleIconEnter(frame, motion, epTimeline)
 	if frame.spellID and frame.spellID ~= 0 then
 		EncounterPlanner.tooltip:ClearLines()
 		EncounterPlanner.tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
 		EncounterPlanner.tooltip:SetSpellByID(frame.spellID)
-		HandleTimelineFrameLeave(epTimeline.timelineFrame) -- hide vertical lines when hovering spell
 		EncounterPlanner.tooltip:SetScript("OnUpdate", HandleTimelineTooltipOnUpdate)
 	end
 end
@@ -80,6 +50,39 @@ end
 local function HandleIconLeave(frame, motion, epTimeline)
 	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
 	EncounterPlanner.tooltip:Hide()
+end
+
+local function UpdateLinePosition(frame)
+	local self = frame.obj
+	local xPosition, _ = GetCursorPosition()
+	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.timelineFrame:GetLeft()
+	local newassignmentTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
+
+	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT",
+		newTimeOffset, 0)
+	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT",
+		newTimeOffset, 0)
+	self.timelineVerticalPositionLine:Show()
+
+	self.assignmentTimelineVerticalPositionLine:SetPoint("TOP", self.assignmentTimelineFrame, "TOPLEFT",
+		newassignmentTimeOffset, 0)
+	self.assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", self.assignmentTimelineFrame, "BOTTOMLEFT",
+		newassignmentTimeOffset, 0)
+	self.assignmentTimelineVerticalPositionLine:Show()
+end
+
+local function HandleTimelineFrameEnter(frame)
+	local self = frame.obj
+	if self.private.timelineFrameIsDragging then return end
+	frame:SetScript("OnUpdate", function() UpdateLinePosition(frame) end)
+end
+
+local function HandleTimelineFrameLeave(frame)
+	local self = frame.obj
+	if self.private.timelineFrameIsDragging then return end
+	frame:SetScript("OnUpdate", nil)
+	self.timelineVerticalPositionLine:Hide()
+	self.assignmentTimelineVerticalPositionLine:Hide()
 end
 
 local function HandleThumbUpdate(frame)
@@ -148,16 +151,61 @@ end
 local function HandleTimelineFrameDragStart(frame, button)
 	local self = frame.obj
 	self.private.timelineFrameIsDragging = true
-	self.private.timelineFrameDragStartX, _ = GetCursorPosition()
+	local x, _ = GetCursorPosition()
+	self.private.timelineFrameDragStartX = x
 	self.timelineFrame:SetScript("OnUpdate", HandleTimelineFrameUpdate)
+	self.timelineVerticalPositionLine:Hide()
+	self.assignmentTimelineVerticalPositionLine:Hide()
+end
+
+local function HandleTimelineAssignmentFrameDragStart(frame, button)
+	local self = frame.obj
+	self.private.timelineFrameIsDragging = true
+	local x, _ = GetCursorPosition()
+	self.private.timelineFrameDragStartX = x
 	self.assignmentTimelineFrame:SetScript("OnUpdate", HandleTimelineFrameUpdate)
+	self.timelineVerticalPositionLine:Hide()
+	self.assignmentTimelineVerticalPositionLine:Hide()
 end
 
 local function HandleTimelineFrameDragStop(frame)
 	local self = frame.obj
 	self.private.timelineFrameIsDragging = nil
 	self.timelineFrame:SetScript("OnUpdate", nil)
+
+	local x, y = GetCursorPosition()
+	x = x / UIParent:GetEffectiveScale()
+	y = y / UIParent:GetEffectiveScale()
+
+	if x > self.assignmentTimelineFrame:GetLeft() and x < self.assignmentTimelineFrame:GetRight() and
+		y < self.assignmentTimelineFrame:GetTop() and y > self.assignmentTimelineFrame:GetBottom() then
+		self.assignmentTimelineFrame:SetScript("OnUpdate",
+			function() UpdateLinePosition(self.assignmentTimelineFrame) end)
+	elseif x > self.timelineFrame:GetLeft() and x < self.timelineFrame:GetRight() and
+		y < self.timelineFrame:GetTop() and y > self.timelineFrame:GetBottom() then
+		self.timelineFrame:SetScript("OnUpdate",
+			function() UpdateLinePosition(self.timelineFrame) end)
+	end
+end
+
+local function HandleTimelineAssignmentFrameDragStop(frame, button)
+	local self = frame.obj
+	self.private.timelineFrameIsDragging = nil
 	self.assignmentTimelineFrame:SetScript("OnUpdate", nil)
+
+	local x, y = GetCursorPosition()
+	x = x / UIParent:GetEffectiveScale()
+	y = y / UIParent:GetEffectiveScale()
+
+	if x > self.assignmentTimelineFrame:GetLeft() and x < self.assignmentTimelineFrame:GetRight() and
+		y < self.assignmentTimelineFrame:GetTop() and y > self.assignmentTimelineFrame:GetBottom() then
+		self.assignmentTimelineFrame:SetScript("OnUpdate",
+			function() UpdateLinePosition(self.assignmentTimelineFrame) end)
+	elseif x > self.timelineFrame:GetLeft() and x < self.timelineFrame:GetRight() and
+		y < self.timelineFrame:GetTop() and y > self.timelineFrame:GetBottom() then
+		self.timelineFrame:SetScript("OnUpdate",
+			function() UpdateLinePosition(self.timelineFrame) end)
+	end
 end
 
 local function HandleTimelineFrameMouseWheel(frame, delta)
@@ -217,7 +265,7 @@ local function HandleAssignmentDataChanged(frame, assignment)
 end
 
 local function HandleAssignmentTimelineFrameMouseDown(frame, button)
-	if button ~= "LeftButton" then return end
+	if button ~= "RightButton" then return end
 	local self = frame.obj
 
 	local scrollFrame = self.frame
@@ -767,8 +815,8 @@ local function Constructor()
 	assignmentTimelineFrame:EnableMouse(true)
 	assignmentTimelineFrame:RegisterForDrag("LeftButton", "LeftButtonUp")
 	assignmentTimelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
-	assignmentTimelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
-	assignmentTimelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
+	assignmentTimelineFrame:SetScript("OnDragStart", HandleTimelineAssignmentFrameDragStart)
+	assignmentTimelineFrame:SetScript("OnDragStop", HandleTimelineAssignmentFrameDragStop)
 	assignmentTimelineFrame:SetScript("OnMouseDown", HandleAssignmentTimelineFrameMouseDown)
 	assignmentTimelineFrame:SetScript("OnEnter", HandleTimelineFrameEnter)
 	assignmentTimelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
@@ -778,7 +826,7 @@ local function Constructor()
 	frame:EnableMouseWheel(true)
 
 	local timelineVerticalPositionLine = timelineFrame:CreateTexture(Type .. num .. "AbilityPositionLine", "OVERLAY")
-	timelineVerticalPositionLine:SetColorTexture(1, 0.82, 1, 1)
+	timelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	timelineVerticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT")
 	timelineVerticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT")
 	timelineVerticalPositionLine:SetWidth(1)
@@ -787,7 +835,7 @@ local function Constructor()
 	local assignmentTimelineVerticalPositionLine = assignmentTimelineFrame:CreateTexture(
 		Type .. num .. "AssignmentPositionLine",
 		"OVERLAY")
-	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 1, 1, 1)
+	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	assignmentTimelineVerticalPositionLine:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT")
 	assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT")
 	assignmentTimelineVerticalPositionLine:SetWidth(1)
