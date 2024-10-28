@@ -10,6 +10,11 @@ local Private = select(2, ...)
 ---| "SAA" SPELL_AURA_APPLIED
 ---| "SAR" SPELL_AURA_REMOVED
 
+---@alias AssignmentType
+---| "CombatLogEventAssignment"
+---| "TimedAssignment"
+---| "PhasedAssignment"
+
 ---@class Assignment
 ---@field assigneeNameOrRole string Who to assign the assignment to
 ---@field line string Originally parsed line in the form: {assigneeNameOrRole} {options}
