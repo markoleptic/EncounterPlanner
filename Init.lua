@@ -15,6 +15,14 @@ local Private = select(2, ...)
 ---| "TimedAssignment"
 ---| "PhasedAssignment"
 
+---@alias AssigneeType
+---| "Everyone"
+---| "Role"
+---| "GroupNumber"
+---| "Tanks"
+---| "Class"
+---| "Individual"
+
 ---@class Assignment
 ---@field assigneeNameOrRole string Who to assign the assignment to
 ---@field line string Originally parsed line in the form: {assigneeNameOrRole} {options}
@@ -146,6 +154,7 @@ do
 	Private.roster = {} --[[@as table<string, string>]]
 	Private.lastEncounterId = nil
 	Private.selectedBoss = nil
+	Private.prettyClassNames = {} --[[@as table<string, string>]]
 end
 
 ---@class EncounterPlanner
