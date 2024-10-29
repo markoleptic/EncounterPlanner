@@ -490,12 +490,14 @@ local function CreateAssignmentsFromLine(line)
 				:gsub(ertIconRegex, localERTIcons)
 				:gsub(doublePipeRegex, "|")
 				:gsub(dashRegex, "")
+				:gsub(nonSymbolRegex, ReplaceNamesWithColoredNamesIfFound)
 		end
 		local strWithIconReplacements = str:gsub(spellIconRegex, GSubIcon)
 			:gsub(raidIconRegex, "|T%1:16|t")
 			:gsub(ertIconRegex, localERTIcons)
 			:gsub(doublePipeRegex, "|")
 			:gsub(dashRegex, "")
+			:gsub(nonSymbolRegex, ReplaceNamesWithColoredNamesIfFound)
 
 		local assignment = Private.Assignment:new({
 			assigneeNameOrRole = nameOrGroup or "",
@@ -607,6 +609,8 @@ end
 function Private:Note()
 	if not C_AddOns.IsAddOnLoaded("MRT") then return end
 	GSubAutoColorCreate()
+	wipe(Private.assignments)
+	wipe(Private.roster)
 	if GMRT and GMRT.F then
 		self:ParseNote(VMRT.Note.Text1 or "", "shared")
 		self:ParseNote(VMRT.Note.SelfText or "", "personal")

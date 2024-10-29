@@ -6,8 +6,6 @@ local AddOnName = ...
 local Private = select(2, ...) --[[@as Private]]
 local AddOn = Private.AddOn
 
-
-
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	return {
 		name = name,
@@ -302,6 +300,42 @@ local function CreateSortedTable(inTable)
 	return sorted
 end
 
+local function CreatePrettyClassNames()
+	wipe(Private.prettyClassNames)
+	setmetatable(Private.prettyClassNames, {
+		__index = function(tbl, key)
+			if type(key) == "string" then
+				key = key:lower()
+			end
+			return rawget(tbl, key)
+		end,
+		__newindex = function(tbl, key, value)
+			if type(key) == "string" then
+				key = key:lower()
+			end
+			rawset(tbl, key, value)
+		end
+	})
+	for className, _ in pairs(Private.spellDB.classes) do
+		local colorMixin = C_ClassColor.GetClassColor(className)
+		local pascalCaseClassName
+		if className == "DEATHKNIGHT" then
+			pascalCaseClassName = "Death Knight"
+		elseif className == "DEMONHUNTER" then
+			pascalCaseClassName = "Demon Hunter"
+		else
+			pascalCaseClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+		end
+		local prettyClassName = colorMixin:WrapTextInColorCode(pascalCaseClassName)
+		if className == "DEATHKNIGHT" then
+			Private.prettyClassNames["Death Knight"] = prettyClassName
+		elseif className == "DEMONHUNTER" then
+			Private.prettyClassNames["Demon Hunter"] = prettyClassName
+		end
+		Private.prettyClassNames[className] = prettyClassName
+	end
+end
+
 -- Sorts assignments based on first appearance in the fight.
 ---@param assignments table<integer, Assignment>
 ---@return table<integer, TimelineAssignment>, table<integer, string>
@@ -431,9 +465,9 @@ local function CreateSpellDropdownItems()
 	for className, classSpells in pairs(Private.spellDB.classes) do
 		local colorMixin = C_ClassColor.GetClassColor(className)
 		local actualClassName
-		if actualClassName == "DEATHKNIGHT" then
+		if className == "DEATHKNIGHT" then
 			actualClassName = "Death Knight"
-		elseif actualClassName == "DEMONHUNTER" then
+		elseif className == "DEMONHUNTER" then
 			actualClassName = "Demon Hunter"
 		else
 			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
@@ -591,7 +625,7 @@ local function createAssignmentTypeDropdownItems()
 		end
 		local coloredName = colorMixin:WrapTextInColorCode(actualClassName)
 		local classDropdownData = {
-			itemValue = className,
+			itemValue = actualClassName,
 			text = coloredName,
 			dropdownItemMenuData = {}
 		}
@@ -602,6 +636,76 @@ local function createAssignmentTypeDropdownItems()
 
 	SortDropdownDataByItemValue(assignmentTypes)
 	return assignmentTypes
+end
+
+---@param value number|string
+---@param timeline EPTimeline
+---@param listFrame AceGUIContainer
+---@param sortedAssignments table<integer, TimelineAssignment>
+---@param assigneeOrder table<integer, string>
+local function HandleBossDropdownValueChanged(value, timeline, listFrame, sortedAssignments, assigneeOrder)
+	if AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value] then
+		local boss = bosses[AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name]
+		if boss then
+			listFrame:ReleaseChildren()
+			for index = 1, #boss.sortedAbilityIDs do
+				local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+				abilityEntry:SetFullWidth(true)
+				abilityEntry:SetAbility(boss.sortedAbilityIDs[index])
+				listFrame:AddChild(abilityEntry)
+				if index ~= #boss.sortedAbilityIDs then
+					local spacer = Private.Libs.AGUI:Create("EPSpacer")
+					spacer:SetHeight(4)
+					spacer:SetFullWidth(true)
+					listFrame:AddChild(spacer)
+				end
+			end
+			listFrame:DoLayout()
+			timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases, sortedAssignments, assigneeOrder)
+		end
+	end
+end
+
+---@param timeline EPTimeline
+---@param assignmentIndex number
+---@param sortedAssignments table<integer, TimelineAssignment>
+local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sortedAssignments)
+	local assignment = sortedAssignments[assignmentIndex].assignment
+	local assigneeName = string.match(assignment.assigneeNameOrRole, "class:%s*(%a+)")
+	-- todo: handle more types of groups
+	if assigneeName then
+		timeline.assignmentEditor:SetAssigneeType("Class")
+		timeline.assignmentEditor.assigneeTypeDropdown:SetValue(assigneeName)
+		timeline.assignmentEditor.assigneeDropdown:SetValue("")
+	else
+		timeline.assignmentEditor:SetAssigneeType("Individual")
+		timeline.assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
+		timeline.assignmentEditor.assigneeDropdown:SetValue(assignment.assigneeNameOrRole)
+	end
+	timeline.assignmentEditor.previewLabel:SetText(assignment.strWithIconReplacements)
+	timeline.assignmentEditor.targetDropdown:SetValue(assignment.targetName)
+	timeline.assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
+	timeline.assignmentEditor.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
+
+	if getmetatable(assignment) == Private.CombatLogEventAssignment then
+		assignment = assignment --[[@as CombatLogEventAssignment]]
+		timeline.assignmentEditor:SetAssignmentType("CombatLogEventAssignment")
+		timeline.assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
+		timeline.assignmentEditor.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
+		timeline.assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
+		timeline.assignmentEditor.phaseNumberDropdown:SetValue(assignment.phase)
+		timeline.assignmentEditor.timeEditBox:SetText(assignment.time)
+	elseif getmetatable(assignment) == Private.TimedAssignment then
+		assignment = assignment --[[@as TimedAssignment]]
+		timeline.assignmentEditor:SetAssignmentType("TimedAssignment")
+		timeline.assignmentEditor.assignmentTypeDropdown:SetValue("Absolute Time")
+		timeline.assignmentEditor.timeEditBox:SetText(assignment.time)
+	elseif getmetatable(assignment) == Private.PhasedAssignment then
+		assignment = assignment --[[@as PhasedAssignment]]
+		timeline.assignmentEditor:SetAssignmentType("PhasedAssignment")
+		timeline.assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
+		timeline.assignmentEditor.timeEditBox:SetText(assignment.time)
+	end
 end
 
 ---@return table<integer, DropdownItemData>
@@ -633,7 +737,7 @@ function AddOn:CreateGUI()
 	leftSideFrame:SetAutoAdjustHeight(true)
 	leftSideFrame:SetLayout("List")
 
-	local dropdown = Private.Libs.AGUI:Create("EPDropdown") --[[@as EPDropdown]]
+	local dropdown = Private.Libs.AGUI:Create("EPDropdown")
 	dropdown:SetFullWidth(true)
 	local dropdownData = {}
 	for index, instance in ipairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
@@ -665,11 +769,19 @@ function AddOn:CreateGUI()
 	assignmentListFrame:SetFullWidth(true)
 
 	Private:Note()
+	CreatePrettyClassNames()
 
 	local sortedAssignments, assigneeOrder = CreateSortedAssignmentTables(Private.assignments)
 	for index = 1, #assigneeOrder do
-		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
-		abilityEntry:SetText(assigneeOrder[index])
+		local assigneeNameOrRole = string.match(assigneeOrder[index], "class:%s*(%a+)")
+		if not assigneeNameOrRole or assigneeNameOrRole == "" then
+			assigneeNameOrRole = Private.roster[assigneeOrder[index]]
+		else
+			assigneeNameOrRole = Private.prettyClassNames[assigneeNameOrRole] or assigneeNameOrRole
+		end
+		-- todo: handle more types of groups
+		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+		abilityEntry:SetText(assigneeNameOrRole)
 		abilityEntry:SetFullWidth(true)
 		abilityEntry:SetHeight(30)
 		assignmentListFrame:AddChild(abilityEntry)
@@ -687,51 +799,35 @@ function AddOn:CreateGUI()
 	timelineSpacer:SetHeight(37)
 	timelineSpacer:SetRelativeWidth(0.8)
 
-	local timeline = Private.Libs.AGUI:Create("EPTimeline") --[[@as EPTimeline]]
-	timeline:SetNewAssignmentFunc(function()
-		return Private.Assignment:new({})
+	local timeline = Private.Libs.AGUI:Create("EPTimeline")
+	timeline:SetCallback("AssignmentEditorCreated", function(frame, _)
+		local assignmentEditor = frame.assignmentEditor --[[@as EPAssignmentEditor]]
+		local spellDropdown = assignmentEditor.spellAssignmentDropdown
+		spellDropdown:AddItems({ CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() },
+			"EPDropdownItemToggle")
+		local assigneeTypeDropdown = assignmentEditor.assigneeTypeDropdown
+		assigneeTypeDropdown:AddItems(createAssignmentTypeDropdownItems(), "EPDropdownItemToggle")
+		local assigneeDropdown = assignmentEditor.assigneeDropdown
+		assigneeDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
+		local targetDropdown = assignmentEditor.targetDropdown
+		targetDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 	end)
-	timeline:SetSpellAssigmentsDropdownItemsFunc(function()
-		return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
+
+	timeline:SetCallback("AssignmentClicked", function(frame, _, sortedAssignmentIndex)
+		HandleTimelineAssignmentClicked(frame, sortedAssignmentIndex, sortedAssignments)
 	end)
-	timeline:SetAssignmentTypesDropdownItemsFunc(function()
-		return createAssignmentTypeDropdownItems()
-	end)
-	timeline.assigneeDropdownItemsFunc = function()
-		return createAssigneeDropdownItems()
-	end
 	timeline:SetRelativeWidth(0.8)
 
 	Private.mainFrame:AddChild(leftSideFrame)
 	Private.mainFrame:AddChild(timelineSpacer)
 	Private.mainFrame:AddChild(timeline)
 
-	local function dropdownCallback(frame, callbackName, value)
-		if AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value] then
-			local boss = bosses[AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name]
-			if boss then
-				listFrame:ReleaseChildren()
-				for index = 1, #boss.sortedAbilityIDs do
-					local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry") --[[@as EPAbilityEntry]]
-					abilityEntry:SetFullWidth(true)
-					abilityEntry:SetAbility(boss.sortedAbilityIDs[index])
-					listFrame:AddChild(abilityEntry)
-					if index ~= #boss.sortedAbilityIDs then
-						local spacer = Private.Libs.AGUI:Create("EPSpacer")
-						spacer:SetHeight(4)
-						spacer:SetFullWidth(true)
-						listFrame:AddChild(spacer)
-					end
-				end
-				listFrame:DoLayout()
-				timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases, sortedAssignments, assigneeOrder)
-			end
-		end
-	end
-	dropdown:SetCallback("OnValueChanged", dropdownCallback)
+	dropdown:SetCallback("OnValueChanged", function(_, _, value)
+		HandleBossDropdownValueChanged(value, timeline, listFrame, sortedAssignments, assigneeOrder)
+	end)
 
 	dropdown:SetValue(5)
-	dropdownCallback(nil, nil, 5)
+	HandleBossDropdownValueChanged(5, timeline, listFrame, sortedAssignments, assigneeOrder)
 end
 
 -- Addon is first loaded

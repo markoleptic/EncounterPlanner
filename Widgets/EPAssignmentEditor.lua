@@ -173,6 +173,14 @@ local assignmentTriggers = {
 ---@field phaseNumberContainer EPContainer
 ---@field phaseNumberLabel EPLabel
 ---@field phaseNumberDropdown EPDropdown
+---@field optionalTextContainer EPContainer
+---@field optionalTextLineEdit EPLineEdit
+---@field optionalTextLabel EPLabel
+---@field targetContainer EPContainer
+---@field targetLabel EPLabel
+---@field targetDropdown EPDropdown
+---@field previewContainer EPContainer
+---@field previewLabel EPLabel
 ---@field obj any
 
 local function HandleOkayButtonClicked(frame, mouseButtonType, down)
@@ -249,14 +257,50 @@ local function HandleAssigneeDropdownValueChanged(frame, callbackName, value)
 	self:Fire("AssigneeChanged", value)
 end
 
+local function HandleTimeLineEditValueChanged(frame, callbackName, value)
+	local self = frame.obj
+	self:Fire("TimeLineEditValueChanged", value)
+end
+
+local function HandleOptionalTextLineEditValueChanged(frame, callbackName, value)
+	local self = frame.obj
+	self:Fire("OptionalTextLineEditValueChanged", value)
+end
+
+local function HandleTargetDropdownValueChanged(frame, callbackName, value)
+	local self = frame.obj
+	self:Fire("TargetChanged", value)
+end
+
+---@param self EPAssignmentEditor
+---@param assignmentType AssignmentType
+local function SetAssignmentType(self, assignmentType)
+	if assignmentType == "CombatLogEventAssignment" then
+		self.combatLogEventContainer.frame:Show()
+		self.phaseNumberContainer.frame:Show()
+	elseif assignmentType == "TimedAssignment" then
+		self.combatLogEventContainer.frame:Hide()
+		self.phaseNumberContainer.frame:Hide()
+	elseif assignmentType == "TimedAssignment" then
+		self.combatLogEventContainer.frame:Hide()
+		self.phaseNumberContainer.frame:Show()
+	end
+	--self:DoLayout() -- todo make it ignore frames with a variable indicating they should be ignored
+end
+
+---@param assigneeType AssigneeType
+local function SetAssigneeType(self, assigneeType)
+	if assigneeType == "Individual" then
+		self.assigneeContainer.frame:Show()
+	else
+		self.assigneeContainer.frame:Hide()
+	end
+	--self:DoLayout() -- todo make it ignore frames with a variable indicating they should be ignored
+end
+
 ---@param self EPAssignmentEditor
 local function OnAcquire(self)
-	self.frame:SetParent(UIParent)
-	self:SetPoint("CENTER")
-	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	self.frame:SetFrameLevel(10)
 	self:SetLayout("EPVerticalLayout")
-	self:ResumeLayout()
 
 	self.assignmentTypeContainer = AceGUI:Create("EPContainer")
 	self.assignmentTypeContainer:SetLayout("EPVerticalLayout")
@@ -356,9 +400,51 @@ local function OnAcquire(self)
 	self.timeLabel:SetTextPadding(0, 2)
 	self.timeEditBox = AceGUI:Create("EPLineEdit")
 	self.timeEditBox.obj = self
+	self.timeEditBox:SetCallback("OnValueChanged", HandleTimeLineEditValueChanged)
 	self.timeContainer:AddChild(self.timeLabel)
 	self.timeContainer:AddChild(self.timeEditBox)
 	self:AddChild(self.timeContainer)
+
+	self.optionalTextContainer = AceGUI:Create("EPContainer")
+	self.optionalTextContainer:SetLayout("EPVerticalLayout")
+	self.optionalTextContainer:SetSpacing(0, 2)
+	self.optionalTextLabel = AceGUI:Create("EPLabel")
+	self.optionalTextLabel:SetText("Assignment Text (Optional)")
+	self.optionalTextLabel:SetTextPadding(0, 2)
+	self.optionalTextLineEdit = AceGUI:Create("EPLineEdit")
+	self.optionalTextLineEdit.obj = self
+	self.optionalTextLineEdit:SetCallback("OnValueChanged", HandleOptionalTextLineEditValueChanged)
+	self.optionalTextContainer:AddChild(self.optionalTextLabel)
+	self.optionalTextContainer:AddChild(self.optionalTextLineEdit)
+	self:AddChild(self.optionalTextContainer)
+
+	self.targetContainer = AceGUI:Create("EPContainer")
+	self.targetContainer:SetLayout("EPVerticalLayout")
+	self.targetContainer:SetSpacing(0, 2)
+	self.targetLabel = AceGUI:Create("EPLabel")
+	self.targetLabel:SetText("Spell Target")
+	self.targetLabel:SetTextPadding(0, 2)
+	self.targetDropdown = AceGUI:Create("EPDropdown");
+	self.targetDropdown:SetCallback("OnValueChanged", HandleTargetDropdownValueChanged)
+	self.targetDropdown.obj = self
+	self.targetDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
+	self.targetDropdown:SetItemDisabled("Recent", true)
+	self.targetContainer:AddChild(self.targetLabel)
+	self.targetContainer:AddChild(self.targetDropdown)
+	self:AddChild(self.targetContainer)
+
+	self.previewContainer = AceGUI:Create("EPContainer")
+	self.previewContainer:SetLayout("EPVerticalLayout")
+	self.previewContainer:SetSpacing(0, 2)
+	local previewLabelLabel = AceGUI:Create("EPLabel")
+	previewLabelLabel:SetText("Preview")
+	previewLabelLabel:SetTextPadding(0, 2)
+	self.previewLabel = AceGUI:Create("EPLabel")
+	self.previewLabel:SetText("Spell Target")
+	self.previewLabel:SetTextPadding(0, 2)
+	self.previewContainer:AddChild(previewLabelLabel)
+	self.previewContainer:AddChild(self.previewLabel)
+	self:AddChild(self.previewContainer)
 
 	self.frame:Show()
 	self:DoLayout()
@@ -374,12 +460,6 @@ local function LayoutFinished(self, width, height)
 		self.frame:SetSize(width + contentFramePadding.x * 2,
 			buttonFrameHeight + height + windowBarHeight + contentFramePadding.y * 2)
 	end
-end
-
----@param self EPAssignmentEditor
----@param assignment Assignment Should be a deep of the assignment since it is nilled on release.
-local function SetAssignmentData(self, assignment)
-	-- todo: populate UI with existing assignment info, or create a new one
 end
 
 local function Constructor()
@@ -477,10 +557,12 @@ local function Constructor()
 		OnAcquire         = OnAcquire,
 		OnRelease         = OnRelease,
 		LayoutFinished    = LayoutFinished,
-		SetAssignmentData = SetAssignmentData,
+		SetAssignmentType = SetAssignmentType,
+		SetAssigneeType   = SetAssigneeType,
 		buttonFrame       = buttonFrame,
 		okayButton        = okayButton,
 		deleteButton      = deleteButton,
+
 	}
 
 	closebutton:SetPoint("TOPRIGHT", -2, -2)
