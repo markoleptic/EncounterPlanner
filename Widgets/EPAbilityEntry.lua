@@ -1,10 +1,10 @@
-local Type             = "EPAbilityEntry"
-local Version          = 1
-local AceGUI           = LibStub("AceGUI-3.0")
-local frameWidth       = 200
-local frameHeight      = 30
-local padding          = { x = 2, y = 2 }
-local zoomAmount       = 0.15
+local Type = "EPAbilityEntry"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
+local frameWidth = 200
+local frameHeight = 30
+local padding = { x = 2, y = 2 }
+local zoomAmount = 0.15
 local listItemBackdrop = {
 	bgFile = nil,
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -127,21 +127,21 @@ local function Constructor()
 
 	---@class EPAbilityEntry
 	local widget = {
-		OnAcquire     = OnAcquire,
-		OnRelease     = OnRelease,
-		SetDisabled   = SetDisabled,
-		SetChecked    = SetChecked,
-		GetChecked    = GetChecked,
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		SetDisabled = SetDisabled,
+		SetChecked = SetChecked,
+		GetChecked = GetChecked,
 		ToggleChecked = ToggleChecked,
-		SetAbility    = SetAbility,
-		SetText       = SetText,
-		frame         = frame,
-		type          = Type,
-		count         = count,
-		checkbg       = checkbg,
-		check         = check,
-		checkbox      = checkbox,
-		highlight     = highlight,
+		SetAbility = SetAbility,
+		SetText = SetText,
+		frame = frame,
+		type = Type,
+		count = count,
+		checkbg = checkbg,
+		check = check,
+		checkbox = checkbox,
+		highlight = highlight,
 	}
 
 	checkbox.obj = widget

@@ -1,32 +1,32 @@
-local AceGUI                  = LibStub("AceGUI-3.0")
-local LSM                     = LibStub("LibSharedMedia-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 
-local textOffsetX             = 4
-local fontSize                = 14
-local dropdownItemHeight      = 24
+local textOffsetX = 4
+local fontSize = 14
+local dropdownItemHeight = 24
 local dropdownItemExtraOffset = 0
-local dropdownSliderOffsetX   = -8
-local pulloutBackdrop         = {
+local dropdownSliderOffsetX = -8
+local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 1,
 }
-local dropdownBackdrop        = {
+local dropdownBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 1,
 }
-local sliderBackdrop          = {
+local sliderBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 1,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
 local function fixlevels(parent, ...)
@@ -56,7 +56,7 @@ local function sortTbl(x, y)
 	local num1, num2 = tonumber(x), tonumber(y)
 	if num1 and num2 then -- numeric comparison, either two numbers or numeric strings
 		return num1 < num2
-	else               -- compare everything else tostring'ed
+	else -- compare everything else tostring'ed
 		return tostring(x) < tostring(y)
 	end
 end
@@ -79,9 +79,9 @@ do
 	---@field items table<integer, EPItemBase>
 	---@field hideOnLeave boolean
 
-	local Type             = "EPDropdownPullout"
-	local Version          = 1
-	local defaultWidth     = 200
+	local Type = "EPDropdownPullout"
+	local Version = 1
+	local defaultWidth = 200
 	local defaultMaxHeight = 600
 
 	local function OnEnter(item)
@@ -250,7 +250,9 @@ do
 		else
 			self.slider:Show()
 			local value = (offset / (viewheight - height) * 1000)
-			if value > 1000 then value = 1000 end
+			if value > 1000 then
+				value = 1000
+			end
 			self.slider:SetValue(value)
 			self:SetScroll(value)
 			if value < 1000 then
@@ -308,36 +310,36 @@ do
 		slider:Hide()
 
 		---@class EPDropdownPullout
-		local widget    = {
-			OnAcquire      = OnAcquire,
-			OnRelease      = OnRelease,
-			AddItem        = AddItem,
-			Open           = Open,
-			Close          = Close,
-			Clear          = Clear,
-			IterateItems   = IterateItems,
+		local widget = {
+			OnAcquire = OnAcquire,
+			OnRelease = OnRelease,
+			AddItem = AddItem,
+			Open = Open,
+			Close = Close,
+			Clear = Clear,
+			IterateItems = IterateItems,
 			SetHideOnLeave = SetHideOnLeave,
-			SetMaxHeight   = SetMaxHeight,
-			SetScroll      = SetScroll,
-			MoveScroll     = MoveScroll,
-			FixScroll      = FixScroll,
-			frame          = frame,
-			scrollFrame    = scrollFrame,
-			itemFrame      = itemFrame,
-			slider         = slider,
-			type           = Type,
-			count          = count,
-			maxHeight      = defaultMaxHeight,
-			scrollStatus   = {
+			SetMaxHeight = SetMaxHeight,
+			SetScroll = SetScroll,
+			MoveScroll = MoveScroll,
+			FixScroll = FixScroll,
+			frame = frame,
+			scrollFrame = scrollFrame,
+			itemFrame = itemFrame,
+			slider = slider,
+			type = Type,
+			count = count,
+			maxHeight = defaultMaxHeight,
+			scrollStatus = {
 				scrollvalue = 0,
 			},
-			items          = {}
+			items = {},
 		}
 
-		frame.obj       = widget
+		frame.obj = widget
 		scrollFrame.obj = widget
-		itemFrame.obj   = widget
-		slider.obj      = widget
+		itemFrame.obj = widget
+		slider.obj = widget
 
 		widget:FixScroll()
 
@@ -366,7 +368,7 @@ do
 	---@field pulloutWidth number
 	---@field obj any|nil
 
-	local Type    = "EPDropdown"
+	local Type = "EPDropdown"
 	local Version = 1
 
 	local function HandleDropdownHide(frame)
@@ -600,7 +602,9 @@ do
 	---@param item any
 	---@param value any
 	local function SetItemValue(self, item, value)
-		if not self.multiselect then return end
+		if not self.multiselect then
+			return
+		end
 		for _, pulloutItem in self.pullout:IterateItems() do
 			if pulloutItem:GetUserDataTable().value == item then
 				pulloutItem:SetValue(value)
@@ -760,42 +764,44 @@ do
 		text:ClearAllPoints()
 		text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
-		if fPath then text:SetFont(fPath, fontSize) end
+		if fPath then
+			text:SetFont(fPath, fontSize)
+		end
 		text:SetWordWrap(false)
 
 		---@class EPDropdown
-		local widget    = {
-			OnAcquire                          = OnAcquire,
-			OnRelease                          = OnRelease,
-			SetDisabled                        = SetDisabled,
-			ClearFocus                         = ClearFocus,
-			FindItemAndText                    = FindItemAndText,
-			SetText                            = SetText,
-			SetValue                           = SetValue,
-			GetValue                           = GetValue,
-			SetItemValue                       = SetItemValue,
-			SetItemDisabled                    = SetItemDisabled,
-			AddItem                            = AddItem,
-			AddItems                           = AddItems,
+		local widget = {
+			OnAcquire = OnAcquire,
+			OnRelease = OnRelease,
+			SetDisabled = SetDisabled,
+			ClearFocus = ClearFocus,
+			FindItemAndText = FindItemAndText,
+			SetText = SetText,
+			SetValue = SetValue,
+			GetValue = GetValue,
+			SetItemValue = SetItemValue,
+			SetItemDisabled = SetItemDisabled,
+			AddItem = AddItem,
+			AddItems = AddItems,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
-			AddCloseButton                     = AddCloseButton,
-			SetMultiselect                     = SetMultiselect,
-			GetMultiselect                     = GetMultiselect,
-			SetPulloutWidth                    = SetPulloutWidth,
-			frame                              = frame,
-			type                               = Type,
-			count                              = count,
-			dropdown                           = dropdown,
-			text                               = text,
-			buttonCover                        = buttonCover,
-			button                             = button,
+			AddCloseButton = AddCloseButton,
+			SetMultiselect = SetMultiselect,
+			GetMultiselect = GetMultiselect,
+			SetPulloutWidth = SetPulloutWidth,
+			frame = frame,
+			type = Type,
+			count = count,
+			dropdown = dropdown,
+			text = text,
+			buttonCover = buttonCover,
+			button = button,
 		}
 
-		frame.obj       = widget
-		dropdown.obj    = widget
-		text.obj        = widget
+		frame.obj = widget
+		dropdown.obj = widget
+		text.obj = widget
 		buttonCover.obj = widget
-		button.obj      = widget
+		button.obj = widget
 
 		return AceGUI:RegisterAsWidget(widget)
 	end

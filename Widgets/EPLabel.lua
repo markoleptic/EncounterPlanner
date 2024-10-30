@@ -1,10 +1,10 @@
-local Type               = "EPLabel"
-local Version            = 1
-local AceGUI             = LibStub("AceGUI-3.0")
-local LSM                = LibStub("LibSharedMedia-3.0")
+local Type = "EPLabel"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 local defaultFrameHeight = 24
-local defaultFrameWidth  = 200
-local defaultFontHeight  = 14
+local defaultFrameWidth = 200
+local defaultFontHeight = 14
 local defaultIconPadding = { x = 2, y = 2 }
 local defaultTextPadding = { x = 5, y = "none" }
 
@@ -88,7 +88,7 @@ end
 local function OnAcquire(self)
 	self.iconPadding = defaultIconPadding
 	self.textPadding = defaultTextPadding
-	self.frame:Show();
+	self.frame:Show()
 	self:SetHeight(defaultFrameHeight)
 	self:SetDisabled(false)
 	self:SetTextHeight(defaultFontHeight)
@@ -156,8 +156,7 @@ end
 ---@param self EPLabel
 ---@param width number|nil
 ---@param height number|nil
-local function LayoutFinished(self, width, height)
-end
+local function LayoutFinished(self, width, height) end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
@@ -171,30 +170,36 @@ local function Constructor()
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then text:SetFont(fPath, defaultFontHeight) end
+	if fPath then
+		text:SetFont(fPath, defaultFontHeight)
+	end
 	text:SetPoint("LEFT", icon, "RIGHT", defaultTextPadding.x, 0)
 	text:SetWordWrap(false)
 
 	---@class EPLabel
 	local widget = {
-		OnAcquire      = OnAcquire,
-		OnRelease      = OnRelease,
-		SetDisabled    = SetDisabled,
-		SetIcon        = SetIcon,
-		SetText        = SetText,
-		SetTextHeight  = SetTextHeight,
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		SetDisabled = SetDisabled,
+		SetIcon = SetIcon,
+		SetText = SetText,
+		SetTextHeight = SetTextHeight,
 		LayoutFinished = LayoutFinished,
 		SetTextPadding = SetTextPadding,
 		SetIconPadding = SetIconPadding,
-		frame          = frame,
-		type           = Type,
-		icon           = icon,
-		text           = text,
-		spellID        = nil
+		frame = frame,
+		type = Type,
+		icon = icon,
+		text = text,
+		spellID = nil,
 	}
 
-	icon:SetScript("OnEnter", function() HandleIconEnter(widget) end)
-	icon:SetScript("OnLeave", function() HandleIconLeave(widget) end)
+	icon:SetScript("OnEnter", function()
+		HandleIconEnter(widget)
+	end)
+	icon:SetScript("OnLeave", function()
+		HandleIconLeave(widget)
+	end)
 
 	frame.obj = widget
 

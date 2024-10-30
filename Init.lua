@@ -49,11 +49,11 @@ Private.Assignment.__index = Private.Assignment
 ---@field spellCount integer|nil The number of times the combat log event must have occurred
 ---@field time number|nil The time from the combat log event to trigger the assignment
 Private.CombatLogEventAssignment = setmetatable({
-	combatLogEventType    = nil,
+	combatLogEventType = nil,
 	combatLogEventSpellID = nil,
-	phase                 = nil,
-	spellCount            = nil,
-	time                  = nil,
+	phase = nil,
+	spellCount = nil,
+	time = nil,
 }, { __index = Private.Assignment })
 Private.CombatLogEventAssignment.__index = Private.CombatLogEventAssignment
 
@@ -142,19 +142,24 @@ do
 	Private.AddOn.OptionsModule = Private.AddOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
 	Private.Libs = {}
 	Private.Libs.ACD = LibStub("AceConfigDialog-3.0")
-	Private.Libs.AC = LibStub("AceConfig-3.0");
+	Private.Libs.AC = LibStub("AceConfig-3.0")
 	Private.Libs.ACR = LibStub("AceConfigRegistry-3.0")
 	Private.Libs.ADBO = LibStub("AceDBOptions-3.0")
 	Private.Libs.LSM = LibStub("LibSharedMedia-3.0")
-	Private.Libs.LSM:Register("font", "PT Sans Narrow",
+	Private.Libs.LSM:Register(
+		"font",
+		"PT Sans Narrow",
 		"Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
-		bit.bor(Private.Libs.LSM.LOCALE_BIT_western, Private.Libs.LSM.LOCALE_BIT_ruRU))
+		bit.bor(Private.Libs.LSM.LOCALE_BIT_western, Private.Libs.LSM.LOCALE_BIT_ruRU)
+	)
 	Private.Libs.AGUI = LibStub("AceGUI-3.0")
 	Private.assignments = {} --[[@as table<integer, Assignment>]]
 	Private.roster = {} --[[@as table<string, string>]]
 	Private.lastEncounterId = nil
 	Private.selectedBoss = nil
+	Private.mainFrame = nil --[[@as EPMainFrame]]
 	Private.prettyClassNames = {} --[[@as table<string, string>]]
+	Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
 end
 
 ---@class EncounterPlanner
@@ -191,7 +196,6 @@ EncounterPlanner.tooltip.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
 -- 	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
 -- 	EncounterPlanner.tooltip:Hide()
 -- end
-
 
 -- function EncounterPlanner:BindFrameEnterAndLeaveToTooltip(frame, anchorFrame, anchor, xOffset, yOffset)
 -- 	frame:SetScript("OnEnter", function(f, motion) HandleIconEnter(f, motion, anchorFrame, anchor, xOffset, yOffset) end)

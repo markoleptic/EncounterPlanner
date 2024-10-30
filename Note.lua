@@ -33,7 +33,6 @@ local ertIconRegex = "{.-}"
 local dashRegex = "{.-}"
 local phaseNumberRegex = "^p(g?):?(.-)$"
 
-
 local classList = {
 	[GetClassInfo(1):lower()] = 1,
 	[GetClassInfo(2):lower()] = 2,
@@ -84,7 +83,7 @@ local classList = {
 	["10"] = 10,
 	["11"] = 11,
 	["12"] = 12,
-	["13"] = 13
+	["13"] = 13,
 }
 
 local localERTIcons = {
@@ -187,46 +186,32 @@ local localERTIcons = {
 	["{healer}"] = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:1:20|t",
 	["{dps}"] = "|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:16:16:0:0:64:64:20:39:22:41|t",
 	--- Class Icons
-	["{" .. GetClassInfo(1) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:0:64|t",
+	["{" .. GetClassInfo(1) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:0:64|t",
 	["{Warrior}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:0:64|t",
-	["{" .. GetClassInfo(2) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:128:192|t",
+	["{" .. GetClassInfo(2) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:128:192|t",
 	["{Paladin}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:128:192|t",
-	["{" .. GetClassInfo(3) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:64:128|t",
+	["{" .. GetClassInfo(3) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:64:128|t",
 	["{Hunter}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:0:64:64:128|t",
-	["{" .. GetClassInfo(4) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:0:64|t",
+	["{" .. GetClassInfo(4) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:0:64|t",
 	["{Rogue}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:0:64|t",
-	["{" .. GetClassInfo(5) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:64:128|t",
+	["{" .. GetClassInfo(5) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:64:128|t",
 	["{Priest}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:127:190:64:128|t",
-	["{" .. (GetClassInfo(6) or "unk") .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:128:128:192|t",
-	["{Death Knight}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:128:128:192|t",
-	["{" .. GetClassInfo(7) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:64:128|t",
+	["{" .. (GetClassInfo(6) or "unk") .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:128:128:192|t",
+	["{Death Knight}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:128:128:192|t",
+	["{" .. GetClassInfo(7) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:64:128|t",
 	["{Shaman}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:64:128|t",
-	["{" .. GetClassInfo(8) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:0:64|t",
+	["{" .. GetClassInfo(8) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:0:64|t",
 	["{Mage}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:64:127:0:64|t",
-	["{" .. GetClassInfo(9) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:64:128|t",
+	["{" .. GetClassInfo(9) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:64:128|t",
 	["{Warlock}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:64:128|t",
-	["{" .. (GetClassInfo(10) or "unk") .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:128:189:128:192|t",
+	["{" .. (GetClassInfo(10) or "unk") .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:128:189:128:192|t",
 	["{Monk}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:128:189:128:192|t",
-	["{" .. GetClassInfo(11) .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:0:64|t",
+	["{" .. GetClassInfo(11) .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:0:64|t",
 	["{Druid}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:0:64|t",
-	["{" .. (GetClassInfo(12) or "unk") .. "}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:128:192|t",
-	["{Demon Hunter}"] =
-	"|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:128:192|t",
+	["{" .. (GetClassInfo(12) or "unk") .. "}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:128:192|t",
+	["{Demon Hunter}"] = "|TInterface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES:16:16:0:0:256:256:190:253:128:192|t",
 	["{" .. (GetClassInfo(13) or "unk") .. "}"] = "interface/icons/classicon_evoker",
-	["{Evoker}"] = "|Tinterface/icons/classicon_evoker:16|t"
+	["{Evoker}"] = "|Tinterface/icons/classicon_evoker:16|t",
 }
 localERTIcons["{unk}"] = nil
 
@@ -239,7 +224,7 @@ local combatLogEventFromAbbreviation = {
 	SCC = "SPELL_CAST_SUCCESS",
 	SCS = "SPELL_CAST_START",
 	SAA = "SPELL_AURA_APPLIED",
-	SAR = "SPELL_AURA_REMOVED"
+	SAR = "SPELL_AURA_REMOVED",
 }
 
 ---@param maxGroup? integer
@@ -341,9 +326,7 @@ local function GSubEncounter(list, msg)
 	local tableList = strsplittable(",", list)
 	local found = false
 	for i = 1, #tableList do
-		tableList[i] = tableList[i]
-			:gsub("|?|c........", "")
-			:gsub("|?|r", ""):lower()
+		tableList[i] = tableList[i]:gsub("|?|c........", ""):gsub("|?|r", ""):lower()
 		noteEncounters[tableList[i]] = true
 		if encounterIds[tableList[i]] then
 			found = true
@@ -537,7 +520,7 @@ function Private:ProcessOptions(assignments, time, options, noteType)
 				local phaseNumber = tonumber(phase)
 				if phaseNumber then
 					for _, assignment in pairs(assignments) do
-						local phasedAssignment = Private.PhasedAssignment:new(assignment);
+						local phasedAssignment = Private.PhasedAssignment:new(assignment)
 						phasedAssignment.time = time
 						phasedAssignment.phase = phaseNumber
 						tinsert(self.assignments, phasedAssignment)
@@ -552,7 +535,7 @@ function Private:ProcessOptions(assignments, time, options, noteType)
 				local spellCount = tonumber(spellCountStr)
 				if spellID and spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = Private.CombatLogEventAssignment:new(assignment);
+						local combatLogEventAssignment = Private.CombatLogEventAssignment:new(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.phase = nil
@@ -567,7 +550,7 @@ function Private:ProcessOptions(assignments, time, options, noteType)
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = Private.TimedAssignment:new(assignment);
+			local timedAssignment = Private.TimedAssignment:new(assignment)
 			timedAssignment.time = time
 			tinsert(self.assignments, timedAssignment)
 		end
@@ -597,9 +580,11 @@ function Private:ParseNote(text, noteType)
 
 	for _, assignment in ipairs(self.assignments) do
 		if assignment.assigneeNameOrRole and assignment.assigneeNameOrRole ~= "" then
-			if not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:") then
-				self.roster[assignment.assigneeNameOrRole] = Private.GSubAutoColorData[assignment.assigneeNameOrRole] or
-					assignment.assigneeNameOrRole
+			if
+				not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:")
+			then
+				self.roster[assignment.assigneeNameOrRole] = Private.GSubAutoColorData[assignment.assigneeNameOrRole]
+					or assignment.assigneeNameOrRole
 			end
 		end
 	end
@@ -607,7 +592,9 @@ end
 
 -- Parses the shared and personal ERT notes.
 function Private:Note()
-	if not C_AddOns.IsAddOnLoaded("MRT") then return end
+	if not C_AddOns.IsAddOnLoaded("MRT") then
+		return
+	end
 	GSubAutoColorCreate()
 	wipe(Private.assignments)
 	wipe(Private.roster)

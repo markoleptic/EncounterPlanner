@@ -1,13 +1,13 @@
-local AceGUI             = LibStub("AceGUI-3.0")
-local LSM                = LibStub("LibSharedMedia-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 
-local textOffsetX        = 4
-local checkOffsetLeftX   = -2
-local checkOffsetRightX  = -8
-local checkSize          = 16
-local fontSize           = 14
+local textOffsetX = 4
+local checkOffsetLeftX = -2
+local checkOffsetRightX = -8
+local checkSize = 16
+local fontSize = 14
 local dropdownItemHeight = 24
-local subHeight          = 18
+local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 
 local function fixlevels(parent, ...)
@@ -127,8 +127,7 @@ end
 
 ---@param self EPItemBase
 ---@param val boolean
-function EPItemBase.SetValue(self, val)
-end
+function EPItemBase.SetValue(self, val) end
 
 -- This is called by a Dropdown-Pullout. Do not call this method directly
 function EPItemBase.SetOnLeave(self, func)
@@ -156,7 +155,9 @@ function EPItemBase.Create(type)
 	text:SetPoint("RIGHT", frame, "RIGHT", checkOffsetRightX, 0)
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then text:SetFont(fPath, fontSize) end
+	if fPath then
+		text:SetFont(fPath, fontSize)
+	end
 
 	local highlight = frame:CreateTexture("EPDropdownItemBase" .. count .. "Highlight", "OVERLAY")
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
@@ -184,25 +185,25 @@ function EPItemBase.Create(type)
 
 	---@class EPItemBase
 	local widget = {
-		frame        = frame,
-		type         = type,
+		frame = frame,
+		type = type,
 		useHighlight = true,
-		check        = check,
-		sub          = sub,
-		highlight    = highlight,
-		text         = text,
-		OnAcquire    = EPItemBase.OnAcquire,
-		OnRelease    = EPItemBase.OnRelease,
-		SetPullout   = EPItemBase.SetPullout,
-		GetText      = EPItemBase.GetText,
-		SetText      = EPItemBase.SetText,
-		SetDisabled  = EPItemBase.SetDisabled,
-		SetPoint     = EPItemBase.SetPoint,
-		Show         = EPItemBase.Show,
-		Hide         = EPItemBase.Hide,
-		SetOnLeave   = EPItemBase.SetOnLeave,
-		SetOnEnter   = EPItemBase.SetOnEnter,
-		SetValue     = EPItemBase.SetValue
+		check = check,
+		sub = sub,
+		highlight = highlight,
+		text = text,
+		OnAcquire = EPItemBase.OnAcquire,
+		OnRelease = EPItemBase.OnRelease,
+		SetPullout = EPItemBase.SetPullout,
+		GetText = EPItemBase.GetText,
+		SetText = EPItemBase.SetText,
+		SetDisabled = EPItemBase.SetDisabled,
+		SetPoint = EPItemBase.SetPoint,
+		Show = EPItemBase.Show,
+		Hide = EPItemBase.Hide,
+		SetOnLeave = EPItemBase.SetOnLeave,
+		SetOnEnter = EPItemBase.SetOnEnter,
+		SetValue = EPItemBase.SetValue,
 	}
 
 	frame.obj = widget
@@ -228,7 +229,9 @@ do
 
 	local function HandleFrameClick(frame, _)
 		local self = frame.obj
-		if self.disabled then return end
+		if self.disabled then
+			return
+		end
 		self.value = not self.value
 		UpdateToggle(self)
 		self:Fire("OnValueChanged", self.value)
@@ -405,7 +408,9 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
 	local function AddMenuItems(self, dropdownItemData, dropdownParent)
-		if not self.submenu then self.submenu = CreateSubmenu(self) end
+		if not self.submenu then
+			self.submenu = CreateSubmenu(self)
+		end
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
@@ -502,14 +507,14 @@ do
 		widget.sub:Show()
 		widget.frame:SetScript("OnEnter", HandleFrameEnter)
 		widget.frame:SetScript("OnHide", HandleFrameHide)
-		widget.OnAcquire                    = OnAcquire
-		widget.OnRelease                    = OnRelease
+		widget.OnAcquire = OnAcquire
+		widget.OnRelease = OnRelease
 		widget.SetValueWithoutParentCompare = SetValueWithoutParentCompare
-		widget.SetValue                     = SetValue
-		widget.SetMenuItems                 = SetMenuItems
-		widget.AddMenuItems                 = AddMenuItems
-		widget.CloseMenu                    = CloseMenu
-		widget.SetNeverShowItemsAsSelected  = SetNeverShowItemsAsSelected
+		widget.SetValue = SetValue
+		widget.SetMenuItems = SetMenuItems
+		widget.AddMenuItems = AddMenuItems
+		widget.CloseMenu = CloseMenu
+		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
 		AceGUI:RegisterAsWidget(widget)
 		return widget
 	end

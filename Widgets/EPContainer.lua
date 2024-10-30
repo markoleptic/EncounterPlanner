@@ -1,9 +1,9 @@
-local Type           = "EPContainer"
-local Version        = 1
-local AceGUI         = LibStub("AceGUI-3.0")
+local Type = "EPContainer"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
 local defaultSpacing = { x = 10, y = 10 }
-local defaultHeight  = 100
-local defaultWidth   = 100
+local defaultHeight = 100
+local defaultWidth = 100
 
 ---@class EPContainer : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
@@ -64,7 +64,7 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		content = content,
-		hidden = false
+		hidden = false,
 	}
 
 	return AceGUI:RegisterAsContainer(widget)

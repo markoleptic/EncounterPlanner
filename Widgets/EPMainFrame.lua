@@ -1,26 +1,26 @@
-local Type                = "EPMainFrame"
-local Version             = 1
-local mainFrameWidth      = 1125
-local mainFrameHeight     = 600
-local windowBarHeight     = 27
+local Type = "EPMainFrame"
+local Version = 1
+local mainFrameWidth = 1125
+local mainFrameHeight = 600
+local windowBarHeight = 27
 local contentFramePadding = { x = 10, y = 10 }
-local FrameBackdrop       = {
+local FrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 27, bottom = 0 }
+	insets = { left = 0, right = 0, top = 27, bottom = 0 },
 }
-local titleBarBackdrop    = {
+local titleBarBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
 }
-local AceGUI              = LibStub("AceGUI-3.0")
-local LSM                 = LibStub("LibSharedMedia-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 
 local function FlashButton_OnLeave(self)
 	local fadeIn = self.fadeIn
@@ -66,7 +66,9 @@ local function CreateFlashButton(parent, text, width, height)
 	Button.bg:Hide()
 
 	Button.fadeIn = Button.bg:CreateAnimationGroup()
-	Button.fadeIn:SetScript("OnPlay", function() Button.bg:Show() end)
+	Button.fadeIn:SetScript("OnPlay", function()
+		Button.bg:Show()
+	end)
 	local fadeIn = Button.fadeIn:CreateAnimation("Alpha")
 	fadeIn:SetFromAlpha(0)
 	fadeIn:SetToAlpha(1)
@@ -74,7 +76,9 @@ local function CreateFlashButton(parent, text, width, height)
 	fadeIn:SetSmoothing("OUT")
 
 	Button.fadeOut = Button.bg:CreateAnimationGroup()
-	Button.fadeOut:SetScript("OnFinished", function() Button.bg:Hide() end)
+	Button.fadeOut:SetScript("OnFinished", function()
+		Button.bg:Hide()
+	end)
 	local fadeOut = Button.fadeOut:CreateAnimation("Alpha")
 	fadeOut:SetFromAlpha(1)
 	fadeOut:SetToAlpha(0)
@@ -104,8 +108,7 @@ local function OnAcquire(self)
 end
 
 ---@param self EPMainFrame
-local function OnRelease(self)
-end
+local function OnRelease(self) end
 
 ---@param self EPMainFrame
 ---@param width number|nil
@@ -127,10 +130,20 @@ local function Constructor()
 
 	local contentFrameName = "ContentFrame" .. num
 	local contentFrame = CreateFrame("Frame", contentFrameName, mainFrame)
-	contentFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y))
-	contentFrame:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y))
+	contentFrame:SetPoint(
+		"TOPLEFT",
+		mainFrame,
+		"TOPLEFT",
+		contentFramePadding.x,
+		-(windowBarHeight + contentFramePadding.y)
+	)
+	contentFrame:SetPoint(
+		"TOPRIGHT",
+		mainFrame,
+		"TOPRIGHT",
+		-contentFramePadding.x,
+		-(windowBarHeight + contentFramePadding.y)
+	)
 	contentFrame:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
 	contentFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
 
@@ -148,7 +161,9 @@ local function Constructor()
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then windowBarText:SetFont(fPath, h) end
+	if fPath then
+		windowBarText:SetFont(fPath, h)
+	end
 	windowBar:SetScript("OnMouseDown", function()
 		mainFrame:StartMoving()
 	end)

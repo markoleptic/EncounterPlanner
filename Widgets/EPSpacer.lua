@@ -1,6 +1,6 @@
-local Type          = "EPSpacer"
-local Version       = 1
-local AceGUI        = LibStub("AceGUI-3.0")
+local Type = "EPSpacer"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
 local defaultHeight = 4
 
 ---@class EPSpacer : AceGUIWidget
@@ -13,8 +13,7 @@ local function OnAcquire(self)
 end
 
 ---@param self EPSpacer
-local function OnRelease(self)
-end
+local function OnRelease(self) end
 
 local function Constructor()
 	local num = AceGUI:GetNextWidgetNum(Type)
@@ -26,8 +25,8 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		frame     = frame,
-		type      = Type,
+		frame = frame,
+		type = Type,
 	}
 	frame.obj = widget
 

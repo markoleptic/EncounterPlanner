@@ -24,8 +24,7 @@ function OptionsModule:GetOptions()
 		name = AddOnName,
 		type = "group",
 		childGroups = "tab",
-		args = {
-		}
+		args = {},
 	}
 	return options
 end

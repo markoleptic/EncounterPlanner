@@ -1,49 +1,54 @@
-local Type                               = "EPTimeline"
-local Version                            = 1
-local AceGUI                             = LibStub("AceGUI-3.0")
-local LSM                                = LibStub("LibSharedMedia-3.0")
+local Type = "EPTimeline"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 
-local frameWidth                         = 900
-local frameHeight                        = 400
-local paddingBetweenTimelines            = 30
-local paddingBetweenBars                 = 4
+local frameWidth = 900
+local frameHeight = 400
+local paddingBetweenTimelines = 30
+local paddingBetweenBars = 4
 local paddingBetweenTimelineAndScrollBar = 25
-local barHeight                          = 30
-local horizontalScrollBarHeight          = 20
-local tickWidth                          = 2
-local assignmentSpellIconSize            = { x = 30, y = 30 }
-local fontPath                           = LSM:Fetch("font", "PT Sans Narrow")
-local tickColor                          = { 1, 1, 1, 0.75 }
-local tickFontSize                       = 10
-local zoomFactor                         = 1
-local minZoomFactor                      = 1
-local maxZoomFactor                      = 10
-local zoomStep                           = 0.05
-local colors                             = {
-	{ 255, 87,  51, 1 },
-	{ 51,  255, 87, 1 }, { 51, 87, 255, 1 }, { 255, 51, 184, 1 }, { 255, 214, 51, 1 },
-	{ 51, 255, 249, 1 }, { 184, 51, 255, 1 } }
+local barHeight = 30
+local horizontalScrollBarHeight = 20
+local tickWidth = 2
+local assignmentSpellIconSize = { x = 30, y = 30 }
+local fontPath = LSM:Fetch("font", "PT Sans Narrow")
+local tickColor = { 1, 1, 1, 0.75 }
+local tickFontSize = 10
+local zoomFactor = 1
+local minZoomFactor = 1
+local maxZoomFactor = 10
+local zoomStep = 0.05
+local colors = {
+	{ 255, 87, 51, 1 },
+	{ 51, 255, 87, 1 },
+	{ 51, 87, 255, 1 },
+	{ 255, 51, 184, 1 },
+	{ 255, 214, 51, 1 },
+	{ 51, 255, 249, 1 },
+	{ 184, 51, 255, 1 },
+}
 
-local thumbPadding                       = { x = 2, y = 2 }
-local timelineLinePadding                = { x = 25, y = 25 }
-local timelineFrameIsDragging            = false
-local timelineFrameDragStartX            = 0
-local thumbOffsetWhenThumbClicked        = 0
-local scrollBarWidthWhenThumbClicked     = 0
-local thumbWidthWhenThumbClicked         = 0
-local thumbIsDragging                    = false
-local totalTimelineDuration              = 0
+local thumbPadding = { x = 2, y = 2 }
+local timelineLinePadding = { x = 25, y = 25 }
+local timelineFrameIsDragging = false
+local timelineFrameDragStartX = 0
+local thumbOffsetWhenThumbClicked = 0
+local scrollBarWidthWhenThumbClicked = 0
+local thumbWidthWhenThumbClicked = 0
+local thumbIsDragging = false
+local totalTimelineDuration = 0
 
 local function ResetLocalVariables()
-	thumbPadding                   = { x = 2, y = 2 }
-	timelineLinePadding            = { x = 25, y = 25 }
-	timelineFrameIsDragging        = false
-	timelineFrameDragStartX        = 0
-	thumbOffsetWhenThumbClicked    = 0
+	thumbPadding = { x = 2, y = 2 }
+	timelineLinePadding = { x = 25, y = 25 }
+	timelineFrameIsDragging = false
+	timelineFrameDragStartX = 0
+	thumbOffsetWhenThumbClicked = 0
 	scrollBarWidthWhenThumbClicked = 0
-	thumbWidthWhenThumbClicked     = 0
-	thumbIsDragging                = false
-	totalTimelineDuration          = 0
+	thumbWidthWhenThumbClicked = 0
+	thumbIsDragging = false
+	totalTimelineDuration = 0
 end
 
 local function HandleTimelineTooltipOnUpdate(frame, elapsed)
@@ -73,7 +78,9 @@ local function HandleIconLeave(_, _)
 end
 
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
-	if mouseButton ~= "RightButton" then return end
+	if mouseButton ~= "RightButton" then
+		return
+	end
 	if frame.assignmentIndex then
 		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
 	end
@@ -85,27 +92,41 @@ local function UpdateLinePosition(frame)
 	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.timelineFrame:GetLeft()
 	local newassignmentTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
 
-	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT",
-		newTimeOffset, 0)
-	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT",
-		newTimeOffset, 0)
+	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT", newTimeOffset, 0)
+	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
 	self.timelineVerticalPositionLine:Show()
 
-	self.assignmentTimelineVerticalPositionLine:SetPoint("TOP", self.assignmentTimelineFrame, "TOPLEFT",
-		newassignmentTimeOffset, 0)
-	self.assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", self.assignmentTimelineFrame, "BOTTOMLEFT",
-		newassignmentTimeOffset, 0)
+	self.assignmentTimelineVerticalPositionLine:SetPoint(
+		"TOP",
+		self.assignmentTimelineFrame,
+		"TOPLEFT",
+		newassignmentTimeOffset,
+		0
+	)
+	self.assignmentTimelineVerticalPositionLine:SetPoint(
+		"BOTTOM",
+		self.assignmentTimelineFrame,
+		"BOTTOMLEFT",
+		newassignmentTimeOffset,
+		0
+	)
 	self.assignmentTimelineVerticalPositionLine:Show()
 end
 
 local function HandleTimelineFrameEnter(frame)
-	if timelineFrameIsDragging then return end
-	frame:SetScript("OnUpdate", function() UpdateLinePosition(frame) end)
+	if timelineFrameIsDragging then
+		return
+	end
+	frame:SetScript("OnUpdate", function()
+		UpdateLinePosition(frame)
+	end)
 end
 
 local function HandleTimelineFrameLeave(frame)
 	local self = frame.obj
-	if timelineFrameIsDragging then return end
+	if timelineFrameIsDragging then
+		return
+	end
 	frame:SetScript("OnUpdate", nil)
 	self.timelineVerticalPositionLine:Hide()
 	self.assignmentTimelineVerticalPositionLine:Hide()
@@ -113,7 +134,9 @@ end
 
 local function HandleThumbUpdate(frame)
 	local self = frame.obj
-	if not thumbIsDragging then return end
+	if not thumbIsDragging then
+		return
+	end
 
 	local paddingX = thumbPadding.x
 	local currentOffset = thumbOffsetWhenThumbClicked
@@ -157,7 +180,9 @@ end
 
 local function HandleTimelineFrameUpdate(frame)
 	local self = frame.obj
-	if not timelineFrameIsDragging then return end
+	if not timelineFrameIsDragging then
+		return
+	end
 
 	local timelineWrapperFrame = self.timelineWrapperFrame
 	local scrollFrame = self.frame
@@ -191,14 +216,24 @@ local function HandleTimelineFrameDragStop(frame)
 	x = x / UIParent:GetEffectiveScale()
 	y = y / UIParent:GetEffectiveScale()
 
-	if x > self.assignmentTimelineFrame:GetLeft() and x < self.assignmentTimelineFrame:GetRight() and
-		y < self.assignmentTimelineFrame:GetTop() and y > self.assignmentTimelineFrame:GetBottom() then
-		self.assignmentTimelineFrame:SetScript("OnUpdate",
-			function() UpdateLinePosition(self.assignmentTimelineFrame) end)
-	elseif x > self.timelineFrame:GetLeft() and x < self.timelineFrame:GetRight() and
-		y < self.timelineFrame:GetTop() and y > self.timelineFrame:GetBottom() then
-		self.timelineFrame:SetScript("OnUpdate",
-			function() UpdateLinePosition(self.timelineFrame) end)
+	if
+		x > self.assignmentTimelineFrame:GetLeft()
+		and x < self.assignmentTimelineFrame:GetRight()
+		and y < self.assignmentTimelineFrame:GetTop()
+		and y > self.assignmentTimelineFrame:GetBottom()
+	then
+		self.assignmentTimelineFrame:SetScript("OnUpdate", function()
+			UpdateLinePosition(self.assignmentTimelineFrame)
+		end)
+	elseif
+		x > self.timelineFrame:GetLeft()
+		and x < self.timelineFrame:GetRight()
+		and y < self.timelineFrame:GetTop()
+		and y > self.timelineFrame:GetBottom()
+	then
+		self.timelineFrame:SetScript("OnUpdate", function()
+			UpdateLinePosition(self.timelineFrame)
+		end)
 	end
 end
 
@@ -209,8 +244,7 @@ local function HandleTimelineFrameMouseWheel(frame, delta)
 	local scrollFrame = self.frame
 
 	local visibleDuration = timelineDuration / zoomFactor
-	local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineWrapperFrame:GetWidth()) *
-		timelineDuration
+	local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineWrapperFrame:GetWidth()) * timelineDuration
 	local visibleEndTime = visibleStartTime + visibleDuration
 	local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
 
@@ -255,7 +289,9 @@ local function HandleTimelineFrameMouseWheel(frame, delta)
 end
 
 local function HandleAssignmentTimelineFrameMouseDown(frame, button)
-	if button ~= "RightButton" then return end
+	if button ~= "RightButton" then
+		return
+	end
 	local self = frame.obj
 
 	local scrollFrame = self.frame
@@ -292,16 +328,16 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
-	self.assignmentTimelineTicks  = self.assignmentTimelineTicks or {}
-	self.assignmentTextures       = self.assignmentTextures or {}
-	self.bossAbilityTextureBars   = self.bossAbilityTextureBars or {}
+	self.assignmentTimelineTicks = self.assignmentTimelineTicks or {}
+	self.assignmentTextures = self.assignmentTextures or {}
+	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
 	self.bossAbilityTimelineTicks = self.bossAbilityTimelineTicks or {}
-	self.bossAbilities            = self.bossAbilities or {}
-	self.bossAbilityOrder         = self.bossAbilityOrder or {}
-	self.bossPhaseOrder           = self.bossPhaseOrder or {}
-	self.bossPhases               = self.bossPhases or {}
-	self.timelineAssignments      = self.timelineAssignments or {}
-	self.assignees                = self.assignees or {}
+	self.bossAbilities = self.bossAbilities or {}
+	self.bossAbilityOrder = self.bossAbilityOrder or {}
+	self.bossPhaseOrder = self.bossPhaseOrder or {}
+	self.bossPhases = self.bossPhases or {}
+	self.timelineAssignments = self.timelineAssignments or {}
+	self.assignees = self.assignees or {}
 end
 
 ---@param self EPTimeline
@@ -362,15 +398,21 @@ end
 ---@param index integer index into the assignments table.
 ---@param offsetY number offset from the top of the timeline frame.
 local function DrawAssignment(self, startTime, spellID, index, offsetY)
-	if totalTimelineDuration <= 0.0 then return end
+	if totalTimelineDuration <= 0.0 then
+		return
+	end
 
 	---@class Texture
 	local assignment = self.assignmentTextures[index]
 	if not assignment then
 		assignment = self.assignmentTimelineFrame:CreateTexture(nil, "OVERLAY")
 		assignment.assignmentFrame = self.assignmentTimelineFrame
-		assignment:SetScript("OnEnter", function(frame, motion) HandleIconEnter(frame, motion) end)
-		assignment:SetScript("OnLeave", function(frame, motion) HandleIconLeave(frame, motion) end)
+		assignment:SetScript("OnEnter", function(frame, motion)
+			HandleIconEnter(frame, motion)
+		end)
+		assignment:SetScript("OnLeave", function(frame, motion)
+			HandleIconLeave(frame, motion)
+		end)
 		assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
 			HandleAssignmentMouseUp(frame, mouseButton, self)
 		end)
@@ -458,8 +500,9 @@ local function UpdateBossAbilityBars(self)
 							local cumulativeTriggerTime = phaseStartTime
 							-- iterate through the trigger ability cast times
 							for castOccurance, triggerCastTime in ipairs(triggerPhaseDetails.castTimes) do
-								cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime +
-									triggerAbilityData.castTime
+								cumulativeTriggerTime = cumulativeTriggerTime
+									+ triggerCastTime
+									+ triggerAbilityData.castTime
 								local cumulativeCastTime = 0
 								-- iterate through the dependent ability cast times
 								for _, castTime in ipairs(eventTriggerData.castTimes) do
@@ -470,7 +513,10 @@ local function UpdateBossAbilityBars(self)
 									self:DrawBossAbilityBar(castStart, effectEnd, color, index, offset)
 									index = index + 1
 								end
-								if eventTriggerData.repeatCriteria and eventTriggerData.repeatCriteria.castOccurance == castOccurance then
+								if
+									eventTriggerData.repeatCriteria
+									and eventTriggerData.repeatCriteria.castOccurance == castOccurance
+								then
 									cumulativeCastTime = cumulativeCastTime + cumulativeTriggerTime
 									while cumulativeCastTime < totalTimelineDuration do
 										for _, repeatCastTime in ipairs(eventTriggerData.repeatCriteria.castTimes) do
@@ -502,7 +548,9 @@ end
 ---@param index integer index into the bars table.
 ---@param offset number offset from the top of the timeline frame.
 local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset)
-	if totalTimelineDuration <= 0.0 then return end
+	if totalTimelineDuration <= 0.0 then
+		return
+	end
 
 	local padding = timelineLinePadding
 	local timelineFrame = self.timelineFrame
@@ -570,7 +618,9 @@ local function UpdateTickMarks(self)
 		tick:Hide()
 	end
 
-	if totalTimelineDuration <= 0.0 then return end
+	if totalTimelineDuration <= 0.0 then
+		return
+	end
 
 	-- Define visible range in time (based on zoomFactor)
 	local visibleDuration = totalTimelineDuration / zoomFactor
@@ -632,7 +682,9 @@ local function UpdateTickMarks(self)
 		if not label then
 			label = timelineWrapperFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 			self.bossAbilityTimelineTicks["label" .. i] = label
-			if fontPath then label:SetFont(fontPath, tickFontSize) end
+			if fontPath then
+				label:SetFont(fontPath, tickFontSize)
+			end
 		end
 		local minutes = math.floor(i / 60)
 		local seconds = i % 60
@@ -649,7 +701,6 @@ end
 local function OnWidthSet(self, width)
 	HandleTimelineFrameMouseWheel(self.timelineWrapperFrame, 0)
 end
-
 
 -- Called when the height is set for EPTimeline widget.
 ---@param self EPTimeline
@@ -701,15 +752,18 @@ end
 local function CalculateRequiredHeight(self)
 	local totalBarHeight = self:CalculateRequiredBarHeight()
 	local totalAssignmentHeight = self:CalculateRequiredAssignmentHeight()
-	return totalBarHeight + paddingBetweenTimelines + totalAssignmentHeight + paddingBetweenTimelineAndScrollBar +
-		horizontalScrollBarHeight
+	return totalBarHeight
+		+ paddingBetweenTimelines
+		+ totalAssignmentHeight
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
 end
 
 ---@param self EPTimeline
 local function UpdateHeight(self)
 	self:SetHeight(self:CalculateRequiredHeight())
 	if self.parent and self.parent.DoLayout then
-		self.parent:DoLayout();
+		self.parent:DoLayout()
 	end
 end
 
@@ -720,7 +774,10 @@ local function Constructor()
 
 	local timelineWrapperFrame = CreateFrame("Frame", Type .. num .. "TimelineWrapperFrame", frame)
 	timelineWrapperFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	timelineWrapperFrame:SetSize(frameWidth, frameHeight - horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar)
+	timelineWrapperFrame:SetSize(
+		frameWidth,
+		frameHeight - horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar
+	)
 
 	local timelineFrame = CreateFrame("Frame", Type .. num .. "TimelineFrame", timelineWrapperFrame)
 	timelineFrame:SetPoint("TOPLEFT", timelineWrapperFrame, "TOPLEFT")
@@ -761,9 +818,8 @@ local function Constructor()
 	timelineVerticalPositionLine:SetWidth(1)
 	timelineVerticalPositionLine:Hide()
 
-	local assignmentTimelineVerticalPositionLine = assignmentTimelineFrame:CreateTexture(
-		Type .. num .. "AssignmentPositionLine",
-		"OVERLAY")
+	local assignmentTimelineVerticalPositionLine =
+		assignmentTimelineFrame:CreateTexture(Type .. num .. "AssignmentPositionLine", "OVERLAY")
 	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	assignmentTimelineVerticalPositionLine:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT")
 	assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT")
@@ -781,8 +837,7 @@ local function Constructor()
 
 	local thumb = CreateFrame("Button", Type .. num .. "ScrollBarThumb", scrollBar)
 	thumb:SetPoint("LEFT", thumbPadding.x, 0)
-	thumb:SetSize(scrollBar:GetWidth() - 2 * thumbPadding.x,
-		horizontalScrollBarHeight - (2 * thumbPadding.y))
+	thumb:SetSize(scrollBar:GetWidth() - 2 * thumbPadding.x, horizontalScrollBarHeight - (2 * thumbPadding.y))
 	thumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
 	thumb:SetScript("OnMouseDown", HandleThumbMouseDown)
 	thumb:SetScript("OnMouseUp", HandleThumbMouseUp)
@@ -793,31 +848,31 @@ local function Constructor()
 
 	---@class EPTimeline
 	local widget = {
-		OnAcquire                              = OnAcquire,
-		OnRelease                              = OnRelease,
-		SetEntries                             = SetEntries,
-		CountUniqueAssignees                   = CountUniqueAssignees,
-		UpdateAssignments                      = UpdateAssignments,
-		DrawAssignment                         = DrawAssignment,
-		UpdateBossAbilityBars                  = UpdateBossAbilityBars,
-		DrawBossAbilityBar                     = DrawBossAbilityBar,
-		UpdateScrollBar                        = UpdateScrollBar,
-		UpdateTickMarks                        = UpdateTickMarks,
-		OnWidthSet                             = OnWidthSet,
-		OnHeightSet                            = OnHeightSet,
-		CalculateRequiredBarHeight             = CalculateRequiredBarHeight,
-		CalculateRequiredAssignmentHeight      = CalculateRequiredAssignmentHeight,
-		CalculateRequiredHeight                = CalculateRequiredHeight,
-		UpdateHeight                           = UpdateHeight,
-		frame                                  = frame,
-		type                                   = Type,
-		timelineWrapperFrame                   = timelineWrapperFrame,
-		assignmentTimelineFrame                = assignmentTimelineFrame,
-		timelineFrame                          = timelineFrame,
-		scrollBar                              = scrollBar,
-		thumb                                  = thumb,
-		timelineVerticalPositionLine           = timelineVerticalPositionLine,
-		assignmentTimelineVerticalPositionLine = assignmentTimelineVerticalPositionLine
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		SetEntries = SetEntries,
+		CountUniqueAssignees = CountUniqueAssignees,
+		UpdateAssignments = UpdateAssignments,
+		DrawAssignment = DrawAssignment,
+		UpdateBossAbilityBars = UpdateBossAbilityBars,
+		DrawBossAbilityBar = DrawBossAbilityBar,
+		UpdateScrollBar = UpdateScrollBar,
+		UpdateTickMarks = UpdateTickMarks,
+		OnWidthSet = OnWidthSet,
+		OnHeightSet = OnHeightSet,
+		CalculateRequiredBarHeight = CalculateRequiredBarHeight,
+		CalculateRequiredAssignmentHeight = CalculateRequiredAssignmentHeight,
+		CalculateRequiredHeight = CalculateRequiredHeight,
+		UpdateHeight = UpdateHeight,
+		frame = frame,
+		type = Type,
+		timelineWrapperFrame = timelineWrapperFrame,
+		assignmentTimelineFrame = assignmentTimelineFrame,
+		timelineFrame = timelineFrame,
+		scrollBar = scrollBar,
+		thumb = thumb,
+		timelineVerticalPositionLine = timelineVerticalPositionLine,
+		assignmentTimelineVerticalPositionLine = assignmentTimelineVerticalPositionLine,
 	}
 
 	frame.obj = widget

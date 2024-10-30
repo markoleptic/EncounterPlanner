@@ -1,10 +1,10 @@
-local Type               = "EPLineEdit"
-local Version            = 1
-local AceGUI             = LibStub("AceGUI-3.0")
-local LSM                = LibStub("LibSharedMedia-3.0")
+local Type = "EPLineEdit"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 local defaultFrameHeight = 24
-local defaultFrameWidth  = 200
-local backdrop           = {
+local defaultFrameWidth = 200
+local backdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
@@ -165,22 +165,24 @@ local function Constructor()
 	editBox:SetPoint("BOTTOMRIGHT")
 	editBox:SetTextInsets(8, 8, 0, 0)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then editBox:SetFont(fPath, 14, "") end
+	if fPath then
+		editBox:SetFont(fPath, 14, "")
+	end
 
 	---@class EPLineEdit
 	local widget = {
-		OnAcquire     = OnAcquire,
-		OnRelease     = OnRelease,
-		SetDisabled   = SetDisabled,
-		SetText       = SetText,
-		GetText       = GetText,
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		SetDisabled = SetDisabled,
+		SetText = SetText,
+		GetText = GetText,
 		SetMaxLetters = SetMaxLetters,
-		ClearFocus    = ClearFocus,
-		SetFocus      = SetFocus,
+		ClearFocus = ClearFocus,
+		SetFocus = SetFocus,
 		HighlightText = HighlightText,
-		frame         = frame,
-		type          = Type,
-		editBox       = editBox,
+		frame = frame,
+		type = Type,
+		editBox = editBox,
 	}
 
 	frame.obj = widget

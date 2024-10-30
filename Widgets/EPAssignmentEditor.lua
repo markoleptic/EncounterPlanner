@@ -1,29 +1,29 @@
-local Type                = "EPAssignmentEditor"
-local Version             = 1
-local AceGUI              = LibStub("AceGUI-3.0")
-local LSM                 = LibStub("LibSharedMedia-3.0")
-local frameWidth          = 200
-local frameHeight         = 200
-local buttonFrameHeight   = 24
-local windowBarHeight     = 24
+local Type = "EPAssignmentEditor"
+local Version = 1
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
+local frameWidth = 200
+local frameHeight = 200
+local buttonFrameHeight = 24
+local windowBarHeight = 24
 local contentFramePadding = { x = 15, y = 15 }
-local title               = "Assignment Editor"
+local title = "Assignment Editor"
 
-local FrameBackdrop       = {
+local FrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local titleBarBackdrop    = {
+local titleBarBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 local ButtonFrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -31,14 +31,14 @@ local ButtonFrameBackdrop = {
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local buttonBackdrop      = {
+local buttonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tileSize = 16,
 	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
 local function FlashButton_OnLeave(self)
@@ -85,7 +85,9 @@ local function CreateFlashButton(parent, text, width, height)
 	Button.bg:Hide()
 
 	Button.fadeIn = Button.bg:CreateAnimationGroup()
-	Button.fadeIn:SetScript("OnPlay", function() Button.bg:Show() end)
+	Button.fadeIn:SetScript("OnPlay", function()
+		Button.bg:Show()
+	end)
 	local fadeIn = Button.fadeIn:CreateAnimation("Alpha")
 	fadeIn:SetFromAlpha(0)
 	fadeIn:SetToAlpha(1)
@@ -93,7 +95,9 @@ local function CreateFlashButton(parent, text, width, height)
 	fadeIn:SetSmoothing("OUT")
 
 	Button.fadeOut = Button.bg:CreateAnimationGroup()
-	Button.fadeOut:SetScript("OnFinished", function() Button.bg:Hide() end)
+	Button.fadeOut:SetScript("OnFinished", function()
+		Button.bg:Hide()
+	end)
 	local fadeOut = Button.fadeOut:CreateAnimation("Alpha")
 	fadeOut:SetFromAlpha(1)
 	fadeOut:SetToAlpha(0)
@@ -111,35 +115,35 @@ local assignmentTriggers = {
 			{
 				text = "SPELL_CAST_SUCCESS",
 				itemValue = "SCC",
-				dropdownItemMenuData = {}
+				dropdownItemMenuData = {},
 			},
 			{
 				text = "SPELL_CAST_START",
 				itemValue = "SCS",
-				dropdownItemMenuData = {}
+				dropdownItemMenuData = {},
 			},
 			{
 				text = "SPELL_AURA_APPLIED",
 				itemValue = "SAA",
-				dropdownItemMenuData = {}
+				dropdownItemMenuData = {},
 			},
 			{
 				text = "SPELL_AURA_REMOVED",
 				itemValue = "SAR",
-				dropdownItemMenuData = {}
-			}
+				dropdownItemMenuData = {},
+			},
 		},
 	},
 	{
 		text = "Absolute Time",
 		itemValue = "Absolute Time",
-		dropdownItemMenuData = {}
+		dropdownItemMenuData = {},
 	},
 	{
 		text = "Boss Phase",
 		itemValue = "Boss Phase",
-		dropdownItemMenuData = {}
-	}
+		dropdownItemMenuData = {},
+	},
 }
 
 ---@class EPAssignmentEditor : AceGUIContainer
@@ -183,23 +187,17 @@ local assignmentTriggers = {
 ---@field previewLabel EPLabel
 ---@field obj any
 
-local function HandleOkayButtonClicked(frame, mouseButtonType, down)
-end
+local function HandleOkayButtonClicked(frame, mouseButtonType, down) end
 
-local function HandleOkayButtonEnter(frame, motion)
-end
+local function HandleOkayButtonEnter(frame, motion) end
 
-local function HandleOkayButtonLeave(frame, motion)
-end
+local function HandleOkayButtonLeave(frame, motion) end
 
-local function HandleDeleteButtonClicked(frame, mouseButtonType, down)
-end
+local function HandleDeleteButtonClicked(frame, mouseButtonType, down) end
 
-local function HandleDeleteButtonEnter(frame, motion)
-end
+local function HandleDeleteButtonEnter(frame, motion) end
 
-local function HandleDeleteButtonLeave(frame, motion)
-end
+local function HandleDeleteButtonLeave(frame, motion) end
 
 local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
@@ -236,8 +234,10 @@ local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, va
 	local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
 	if itemText then
 		self.spellAssignmentDropdown:SetItemDisabled("Recent", false)
-		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Recent",
-			{ { itemValue = value, text = itemText, dropdownItemMenuData = {} } })
+		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+			"Recent",
+			{ { itemValue = value, text = itemText, dropdownItemMenuData = {} } }
+		)
 	end
 	self:Fire("SpellAssignmentChanged", value)
 end
@@ -383,7 +383,7 @@ local function OnAcquire(self)
 	self.spellAssignmentLabel = AceGUI:Create("EPLabel")
 	self.spellAssignmentLabel:SetText("Spell Assignment")
 	self.spellAssignmentLabel:SetTextPadding(0, 2)
-	self.spellAssignmentDropdown = AceGUI:Create("EPDropdown");
+	self.spellAssignmentDropdown = AceGUI:Create("EPDropdown")
 	self.spellAssignmentDropdown:SetCallback("OnValueChanged", HandleSpellAssignmentDropdownValueChanged)
 	self.spellAssignmentDropdown.obj = self
 	self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
@@ -424,7 +424,7 @@ local function OnAcquire(self)
 	self.targetLabel = AceGUI:Create("EPLabel")
 	self.targetLabel:SetText("Spell Target")
 	self.targetLabel:SetTextPadding(0, 2)
-	self.targetDropdown = AceGUI:Create("EPDropdown");
+	self.targetDropdown = AceGUI:Create("EPDropdown")
 	self.targetDropdown:SetCallback("OnValueChanged", HandleTargetDropdownValueChanged)
 	self.targetDropdown.obj = self
 	self.targetDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
@@ -451,14 +451,15 @@ local function OnAcquire(self)
 end
 
 ---@param self EPAssignmentEditor
-local function OnRelease(self)
-end
+local function OnRelease(self) end
 
 ---@param self EPAssignmentEditor
 local function LayoutFinished(self, width, height)
 	if width and height then
-		self.frame:SetSize(width + contentFramePadding.x * 2,
-			buttonFrameHeight + height + windowBarHeight + contentFramePadding.y * 2)
+		self.frame:SetSize(
+			width + contentFramePadding.x * 2,
+			buttonFrameHeight + height + windowBarHeight + contentFramePadding.y * 2
+		)
 	end
 end
 
@@ -487,7 +488,9 @@ local function Constructor()
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then windowBarText:SetFont(fPath, h) end
+	if fPath then
+		windowBarText:SetFont(fPath, h)
+	end
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()
 	end)
@@ -506,8 +509,13 @@ local function Constructor()
 	local contentFrameName = Type .. "ContentFrame" .. count
 	local contentFrame = CreateFrame("Frame", contentFrameName, frame)
 	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", contentFramePadding.x, -contentFramePadding.y - windowBarHeight)
-	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -contentFramePadding.x,
-		contentFramePadding.y + buttonFrameHeight)
+	contentFrame:SetPoint(
+		"BOTTOMRIGHT",
+		frame,
+		"BOTTOMRIGHT",
+		-contentFramePadding.x,
+		contentFramePadding.y + buttonFrameHeight
+	)
 
 	local deleteButton = CreateFrame("Button", Type .. "DeleteButton" .. count, buttonFrame, "BackdropTemplate")
 	deleteButton:EnableMouse(true)
@@ -523,7 +531,9 @@ local function Constructor()
 	deleteText:SetPoint("CENTER")
 	deleteText:SetJustifyV("MIDDLE")
 	deleteText:SetJustifyH("CENTER")
-	if fPath then deleteText:SetFont(fPath, 14) end
+	if fPath then
+		deleteText:SetFont(fPath, 14)
+	end
 	deleteText:SetText("Delete")
 	deleteButton:SetSize(75, 24)
 
@@ -541,7 +551,9 @@ local function Constructor()
 	text:SetPoint("CENTER")
 	text:SetJustifyV("MIDDLE")
 	text:SetJustifyH("CENTER")
-	if fPath then text:SetFont(fPath, 14) end
+	if fPath then
+		text:SetFont(fPath, 14)
+	end
 	text:SetText("Okay")
 	okayButton:SetSize(75, 24)
 
@@ -549,20 +561,19 @@ local function Constructor()
 
 	---@class EPAssignmentEditor
 	local widget = {
-		type              = Type,
-		count             = count,
-		frame             = frame,
-		content           = contentFrame,
-		windowBar         = windowBar,
-		OnAcquire         = OnAcquire,
-		OnRelease         = OnRelease,
-		LayoutFinished    = LayoutFinished,
+		type = Type,
+		count = count,
+		frame = frame,
+		content = contentFrame,
+		windowBar = windowBar,
+		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
+		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
-		SetAssigneeType   = SetAssigneeType,
-		buttonFrame       = buttonFrame,
-		okayButton        = okayButton,
-		deleteButton      = deleteButton,
-
+		SetAssigneeType = SetAssigneeType,
+		buttonFrame = buttonFrame,
+		okayButton = okayButton,
+		deleteButton = deleteButton,
 	}
 
 	closebutton:SetPoint("TOPRIGHT", -2, -2)
