@@ -25,18 +25,6 @@ local function HandleCheckBoxMouseUp(frame)
 	end
 end
 
----@class EPAbilityEntry : AceGUIWidget
----@field frame table|BackdropTemplate|Frame
----@field type string
----@field count number
----@field checkbg Texture
----@field check table|Frame
----@field checkbox table|Frame
----@field label EPLabel
----@field highlight Texture
----@field disabled boolean
----@field checked boolean
-
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.label = AceGUI:Create("EPLabel")
