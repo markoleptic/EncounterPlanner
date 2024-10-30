@@ -444,40 +444,18 @@ do
 
 	---@param self EPDropdown
 	---@param value any
-	---@return string|nil
-	local function FindItemText(self, value)
+	---@return EPDropdownItemMenu|nil, string|nil
+	local function FindItemAndText(self, value)
 		local function searchItems(items)
 			for _, item in ipairs(items) do
 				if not item:GetUserDataTable().neverShowItemsAsSelected then
 					if item:GetUserDataTable().value == value then
-						return item.text:GetText()
+						return item, item.text:GetText()
 					end
 					if item.submenu then
-						local foundText = searchItems(item.submenu.items)
-						if foundText then
-							return foundText
-						end
-					end
-				end
-			end
-		end
-		return searchItems(self.pullout.items)
-	end
-
-	---@param self EPDropdown
-	---@param value any
-	---@return EPDropdownItemMenu|nil
-	local function FindItemFromValue(self, value)
-		local function searchItems(items)
-			for _, item in ipairs(items) do
-				if not item:GetUserDataTable().neverShowItemsAsSelected then
-					if item:GetUserDataTable().value == value then
-						return item
-					end
-					if item.submenu then
-						local foundItem = searchItems(item.submenu.items)
-						if foundItem then
-							return foundItem
+						local foundItem, foundText = searchItems(item.submenu.items)
+						if foundItem and foundText then
+							return foundItem, foundText
 						end
 					end
 				end
@@ -491,6 +469,7 @@ do
 	---@param checked boolean
 	---@param value any
 	local function HandleMenuItemValueChanged(dropdownItem, event, checked, value)
+		print(value)
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
 			self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().value, checked)
@@ -592,7 +571,21 @@ do
 	---@param self EPDropdown
 	---@param value any
 	local function SetValue(self, value)
-		local text = self:FindItemText(value) or ""
+		local item, text = self:FindItemAndText(value)
+		if item then
+			local parent = item:GetUserDataTable().menuItemObj
+			if parent then
+				parent:GetUserDataTable().childValue = value
+				while parent and parent ~= self and parent.SetValueWithoutParentCompare do
+					parent:GetUserDataTable().childValue = value
+					parent:SetValueWithoutParentCompare()
+					parent = parent:GetUserDataTable().menuItemObj
+				end
+			end
+		end
+		if not text then
+			text = ""
+		end
 		self:SetText(text)
 		self.value = value
 	end
@@ -683,7 +676,7 @@ do
 	---@param existingItemValue any the internal value used to index an item
 	---@param dropdownItemData table<integer, DropdownItemData> table of nested dropdown item data
 	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
-		local existingDropdownMenuItem = FindItemFromValue(self, existingItemValue)
+		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue)
 		if existingDropdownMenuItem then
 			existingDropdownMenuItem:AddMenuItems(dropdownItemData, self)
 		end
@@ -776,7 +769,7 @@ do
 			OnRelease                          = OnRelease,
 			SetDisabled                        = SetDisabled,
 			ClearFocus                         = ClearFocus,
-			FindItemText                       = FindItemText,
+			FindItemAndText                    = FindItemAndText,
 			SetText                            = SetText,
 			SetValue                           = SetValue,
 			GetValue                           = GetValue,

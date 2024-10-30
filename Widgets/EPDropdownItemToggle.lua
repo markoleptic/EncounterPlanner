@@ -450,6 +450,17 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
+	local function SetValueWithoutParentCompare(self)
+		local childValue = self:GetUserDataTable().childValue
+		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
+		if childValue ~= nil and not neverShowItemsAsSelected then
+			self.sub:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
+		else
+			self.sub:SetVertexColor(1, 1, 1, 1)
+		end
+	end
+
+	---@param self EPDropdownItemMenu
 	---@param value any
 	local function SetValue(self, value)
 		local childValue = self:GetUserDataTable().childValue
@@ -491,13 +502,14 @@ do
 		widget.sub:Show()
 		widget.frame:SetScript("OnEnter", HandleFrameEnter)
 		widget.frame:SetScript("OnHide", HandleFrameHide)
-		widget.OnAcquire                   = OnAcquire
-		widget.OnRelease                   = OnRelease
-		widget.SetValue                    = SetValue
-		widget.SetMenuItems                = SetMenuItems
-		widget.AddMenuItems                = AddMenuItems
-		widget.CloseMenu                   = CloseMenu
-		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
+		widget.OnAcquire                    = OnAcquire
+		widget.OnRelease                    = OnRelease
+		widget.SetValueWithoutParentCompare = SetValueWithoutParentCompare
+		widget.SetValue                     = SetValue
+		widget.SetMenuItems                 = SetMenuItems
+		widget.AddMenuItems                 = AddMenuItems
+		widget.CloseMenu                    = CloseMenu
+		widget.SetNeverShowItemsAsSelected  = SetNeverShowItemsAsSelected
 		AceGUI:RegisterAsWidget(widget)
 		return widget
 	end

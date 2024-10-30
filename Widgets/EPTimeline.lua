@@ -75,19 +75,6 @@ end
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
 	if mouseButton ~= "RightButton" then return end
 	if frame.assignmentIndex then
-		if not epTimeline.assignmentEditor then
-			epTimeline.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
-			epTimeline.assignmentEditor.frame:SetParent(epTimeline.frame)
-			epTimeline.assignmentEditor.frame:SetFrameLevel(10)
-			epTimeline.assignmentEditor:SetPoint("TOP", epTimeline.frame, "TOP")
-			epTimeline.assignmentEditor:SetLayout("EPVerticalLayout")
-			epTimeline.assignmentEditor:DoLayout()
-			epTimeline.assignmentEditor.obj = epTimeline
-			epTimeline.assignmentEditor:SetCallback("OnRelease", function()
-				epTimeline.assignmentEditor = nil
-			end)
-			epTimeline:Fire("AssignmentEditorCreated")
-		end
 		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
 	end
 end
@@ -293,7 +280,6 @@ end
 ---@field thumb Button
 ---
 ---@field assignees table<integer, string>
----@field assignmentEditor EPAssignmentEditor|nil
 ---@field assignmentTimelineTicks table<number, Texture>
 ---@field assignmentTextures table<number, Texture>
 ---@field bossAbilities table<number, BossAbility>
@@ -306,7 +292,6 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
-	self.assignmentEditor         = self.assignmentEditor or nil
 	self.assignmentTimelineTicks  = self.assignmentTimelineTicks or {}
 	self.assignmentTextures       = self.assignmentTextures or {}
 	self.bossAbilityTextureBars   = self.bossAbilityTextureBars or {}
@@ -322,7 +307,6 @@ end
 ---@param self EPTimeline
 local function OnRelease(self)
 	ResetLocalVariables()
-	if self.assignmentEditor then self.assignmentEditor:Release() end
 end
 
 -- Sets the boss ability entries for the timeline.

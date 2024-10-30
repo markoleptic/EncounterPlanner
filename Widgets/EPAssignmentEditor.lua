@@ -233,7 +233,7 @@ end
 
 local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj --[[@as EPAssignmentEditor]]
-	local itemText = self.spellAssignmentDropdown:FindItemText(value)
+	local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
 	if itemText then
 		self.spellAssignmentDropdown:SetItemDisabled("Recent", false)
 		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Recent",
