@@ -1,5 +1,10 @@
 local Type = "EPMainFrame"
 local Version = 1
+
+local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
+local CreateFrame = CreateFrame
+
 local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local windowBarHeight = 27
@@ -19,8 +24,6 @@ local titleBarBackdrop = {
 	tileSize = 16,
 	edgeSize = 2,
 }
-local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 
 local function FlashButton_OnLeave(self)
 	local fadeIn = self.fadeIn

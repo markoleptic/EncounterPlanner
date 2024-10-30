@@ -1,6 +1,11 @@
 local Type = "EPAbilityEntry"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+local GetSpellInfo = C_Spell.GetSpellInfo
+
 local frameWidth = 200
 local frameHeight = 30
 local padding = { x = 2, y = 2 }
@@ -76,7 +81,7 @@ end
 ---@param self EPAbilityEntry
 ---@param spellID number
 local function SetAbility(self, spellID)
-	local spellInfo = C_Spell.GetSpellInfo(spellID)
+	local spellInfo = GetSpellInfo(spellID)
 	if spellInfo then
 		self.label:SetText(spellInfo.name)
 		self.label:SetIcon(spellInfo.iconID, spellInfo.spellID)

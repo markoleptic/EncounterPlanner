@@ -1,5 +1,8 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local CreateFrame = CreateFrame
+local ipairs = ipairs
+local pairs = pairs
 
 local textOffsetX = 4
 local fontSize = 14
@@ -510,7 +513,7 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
-		self.pullout = AceGUI:Create("EPDropdownPullout") --[[@as EPDropdownPullout]]
+		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
 		self.pullout:SetCallback("OnClose", HandlePulloutClose)
 		self.pullout:SetCallback("OnOpen", HandlePulloutOpen)

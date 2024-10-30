@@ -1,5 +1,8 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local CreateFrame = CreateFrame
+local ipairs = ipairs
+local pairs = pairs
 
 local textOffsetX = 4
 local checkOffsetLeftX = -2

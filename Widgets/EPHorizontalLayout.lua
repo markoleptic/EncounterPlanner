@@ -1,6 +1,7 @@
 local Type = "EPHorizontalLayout"
-local AceGUI = LibStub("AceGUI-3.0")
 
+local AceGUI = LibStub("AceGUI-3.0")
+local geterrorhandler = geterrorhandler
 local xpcall = xpcall
 
 local function errorhandler(err)

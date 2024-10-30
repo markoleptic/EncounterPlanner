@@ -1,14 +1,17 @@
 local Type = "EPAssignmentEditor"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+
 local frameWidth = 200
 local frameHeight = 200
 local buttonFrameHeight = 24
 local windowBarHeight = 24
 local contentFramePadding = { x = 15, y = 15 }
 local title = "Assignment Editor"
-
 local FrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",

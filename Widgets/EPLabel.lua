@@ -1,19 +1,27 @@
 local Type = "EPLabel"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+local tooltip = EncounterPlanner.tooltip
+local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
+
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultFontHeight = 14
 local defaultIconPadding = { x = 2, y = 2 }
 local defaultTextPadding = { x = 5, y = "none" }
 
+---@param frame table|GameTooltip
+---@param elapsed number
 local function HandleTooltipOnUpdate(frame, elapsed)
 	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
 	if frame.updateTooltipTimer > 0 then
 		return
 	end
-	frame.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
+	frame.updateTooltipTimer = tooltipUpdateTime
 	local owner = frame:GetOwner()
 	if owner and frame.spellID then
 		frame:SetSpellByID(frame.spellID)
@@ -23,17 +31,16 @@ end
 ---@param epLabel EPLabel
 local function HandleIconEnter(epLabel)
 	if epLabel.spellID then
-		EncounterPlanner.tooltip:ClearLines()
-		EncounterPlanner.tooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
-		EncounterPlanner.tooltip:SetSpellByID(epLabel.spellID)
-		EncounterPlanner.tooltip:SetScript("OnUpdate", HandleTooltipOnUpdate)
+		tooltip:ClearLines()
+		tooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
+		tooltip:SetSpellByID(epLabel.spellID)
+		tooltip:SetScript("OnUpdate", HandleTooltipOnUpdate)
 	end
 end
 
----@param epLabel EPLabel
-local function HandleIconLeave(epLabel)
-	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
-	EncounterPlanner.tooltip:Hide()
+local function HandleIconLeave(_)
+	tooltip:SetScript("OnUpdate", nil)
+	tooltip:Hide()
 end
 
 ---@param self EPLabel
@@ -194,14 +201,14 @@ local function Constructor()
 		spellID = nil,
 	}
 
+	frame.obj = widget
+
 	icon:SetScript("OnEnter", function()
 		HandleIconEnter(widget)
 	end)
 	icon:SetScript("OnLeave", function()
 		HandleIconLeave(widget)
 	end)
-
-	frame.obj = widget
 
 	return AceGUI:RegisterAsWidget(widget)
 end

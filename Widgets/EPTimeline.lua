@@ -1,7 +1,15 @@
 local Type = "EPTimeline"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+local GetCursorPosition = GetCursorPosition
+local GetSpellTexture = C_Spell.GetSpellTexture
+local ipairs = ipairs
+local pairs = pairs
+local unpack = unpack
 
 local frameWidth = 900
 local frameHeight = 400
@@ -19,6 +27,8 @@ local zoomFactor = 1
 local minZoomFactor = 1
 local maxZoomFactor = 10
 local zoomStep = 0.05
+local tooltip = EncounterPlanner.tooltip
+local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
 local colors = {
 	{ 255, 87, 51, 1 },
 	{ 51, 255, 87, 1 },
@@ -56,7 +66,7 @@ local function HandleTimelineTooltipOnUpdate(frame, elapsed)
 	if frame.updateTooltipTimer > 0 then
 		return
 	end
-	frame.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
+	frame.updateTooltipTimer = tooltipUpdateTime
 	local owner = frame:GetOwner()
 	if owner and frame.spellID then
 		frame:SetSpellByID(frame.spellID)
@@ -65,16 +75,16 @@ end
 
 local function HandleIconEnter(frame, _)
 	if frame.spellID and frame.spellID ~= 0 then
-		EncounterPlanner.tooltip:ClearLines()
-		EncounterPlanner.tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
-		EncounterPlanner.tooltip:SetSpellByID(frame.spellID)
-		EncounterPlanner.tooltip:SetScript("OnUpdate", HandleTimelineTooltipOnUpdate)
+		tooltip:ClearLines()
+		tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
+		tooltip:SetSpellByID(frame.spellID)
+		tooltip:SetScript("OnUpdate", HandleTimelineTooltipOnUpdate)
 	end
 end
 
 local function HandleIconLeave(_, _)
-	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
-	EncounterPlanner.tooltip:Hide()
+	tooltip:SetScript("OnUpdate", nil)
+	tooltip:Hide()
 end
 
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
@@ -424,7 +434,7 @@ local function DrawAssignment(self, startTime, spellID, index, offsetY)
 	if spellID == 0 or spellID == nil then
 		assignment:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
 	else
-		local iconID, _ = C_Spell.GetSpellTexture(spellID)
+		local iconID, _ = GetSpellTexture(spellID)
 		assignment:SetTexture(iconID)
 	end
 

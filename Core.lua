@@ -2,9 +2,25 @@
 
 --@type string
 local AddOnName = ...
+
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
+
 local AddOn = Private.AddOn
+local AceGUI = Private.Libs.AGUI
+local ipairs = ipairs
+local min = math.min
+local pairs = pairs
+local rawget = rawget
+local rawset = rawset
+local getmetatable = getmetatable
+local setmetatable = setmetatable
+local sort = sort
+local tinsert = tinsert
+local type = type
+local wipe = wipe
+local GetClassColor = C_ClassColor.GetClassColor
+local format = format
 
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	return {
@@ -225,9 +241,9 @@ for _, boss in pairs(bosses) do
 				for _, castTime in ipairs(phase.castTimes) do
 					if phaseNumber > 1 then
 						local phaseTimeOffset = boss.phases[phaseNumber].duration
-						earliestCastTime = math.min(earliestCastTime, phaseTimeOffset + castTime)
+						earliestCastTime = min(earliestCastTime, phaseTimeOffset + castTime)
 					else
-						earliestCastTime = math.min(earliestCastTime, castTime)
+						earliestCastTime = min(earliestCastTime, castTime)
 					end
 				end
 			end
@@ -244,7 +260,7 @@ for _, boss in pairs(bosses) do
 				local castTime = earliestTriggerCastTime
 					+ boss.abilities[triggerSpellID].castTime
 					+ eventTrigger.castTimes[1]
-				earliestCastTime = math.min(earliestCastTime, castTime)
+				earliestCastTime = min(earliestCastTime, castTime)
 			end
 			firstEventTriggerAppearancesMap[spellID] = earliestCastTime
 		end
@@ -252,7 +268,7 @@ for _, boss in pairs(bosses) do
 
 	for _, data in pairs(firstAppearances) do
 		if firstEventTriggerAppearancesMap[data.spellID] then
-			data.earliestCastTime = math.min(data.earliestCastTime, firstEventTriggerAppearancesMap[data.spellID])
+			data.earliestCastTime = min(data.earliestCastTime, firstEventTriggerAppearancesMap[data.spellID])
 		end
 	end
 
@@ -269,12 +285,12 @@ for _, boss in pairs(bosses) do
 		end
 	end
 
-	table.sort(firstAppearances, function(a, b)
+	sort(firstAppearances, function(a, b)
 		return a.earliestCastTime < b.earliestCastTime
 	end)
 	boss.sortedAbilityIDs = {}
 	for _, entry in ipairs(firstAppearances) do
-		table.insert(boss.sortedAbilityIDs, entry.spellID)
+		tinsert(boss.sortedAbilityIDs, entry.spellID)
 	end
 end
 
@@ -296,9 +312,9 @@ end
 local function CreateSortedTable(inTable)
 	local sorted = {}
 	for entry in pairs(inTable) do
-		table.insert(sorted, entry)
+		tinsert(sorted, entry)
 	end
-	table.sort(sorted)
+	sort(sorted)
 	return sorted
 end
 
@@ -319,7 +335,7 @@ local function CreatePrettyClassNames()
 		end,
 	})
 	for className, _ in pairs(Private.spellDB.classes) do
-		local colorMixin = C_ClassColor.GetClassColor(className)
+		local colorMixin = GetClassColor(className)
 		local pascalCaseClassName
 		if className == "DEATHKNIGHT" then
 			pascalCaseClassName = "Death Knight"
@@ -350,7 +366,7 @@ local function CreateSortedAssignmentTables(assignments)
 			if ability then
 				local startTime = assignment.time
 				if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
-					for i = 1, math.min(assignment.spellCount, #ability.phases[1].castTimes) do
+					for i = 1, min(assignment.spellCount, #ability.phases[1].castTimes) do
 						startTime = startTime + ability.phases[1].castTimes[i]
 					end
 				end
@@ -391,7 +407,7 @@ local function CreateSortedAssignmentTables(assignments)
 				local bossPhaseOrder = {}
 				local runningStartTime = 0
 				while #bossPhaseOrder < totalOccurances and currentPhase ~= nil do
-					table.insert(bossPhaseOrder, currentPhase)
+					tinsert(bossPhaseOrder, currentPhase)
 					if currentPhase == assignment.phase then
 						tinsert(
 							sortedAssignments,
@@ -411,7 +427,7 @@ local function CreateSortedAssignmentTables(assignments)
 	end
 
 	-- Sort by first appearance
-	table.sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
+	sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
 		return a.startTime < b.startTime
 	end)
 
@@ -442,7 +458,7 @@ end
 ---@param data table<integer, DropdownItemData>
 local function SortDropdownDataByItemValue(data)
 	-- Sort the top-level table
-	table.sort(data, function(a, b)
+	sort(data, function(a, b)
 		local itemValueA = a.itemValue
 		local itemValueB = b.itemValue
 		if type(itemValueA) == "number" then
@@ -472,7 +488,7 @@ end
 local function CreateSpellDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for className, classSpells in pairs(Private.spellDB.classes) do
-		local colorMixin = C_ClassColor.GetClassColor(className)
+		local colorMixin = GetClassColor(className)
 		local actualClassName
 		if className == "DEATHKNIGHT" then
 			actualClassName = "Death Knight"
@@ -499,7 +515,7 @@ local function CreateSpellDropdownItems()
 				spellTypeIndexMap[spell["type"]] = spellTypeIndex
 				spellTypeIndex = spellTypeIndex + 1
 			end
-			local iconText = string.format("|T%s:16|t %s", spell["icon"], spell["name"])
+			local iconText = format("|T%s:16|t %s", spell["icon"], spell["name"])
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
 				itemValue = spell["spellID"],
 				text = iconText,
@@ -516,7 +532,7 @@ end
 local function CreateRacialDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
-		local iconText = string.format("|T%s:16|t %s", racialInfo["icon"], racialInfo["name"])
+		local iconText = format("|T%s:16|t %s", racialInfo["icon"], racialInfo["name"])
 		tinsert(dropdownItems, {
 			itemValue = racialInfo["spellID"],
 			text = iconText,
@@ -531,7 +547,7 @@ end
 local function CreateTrinketDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
-		local iconText = string.format("|T%s:16|t %s", trinketInfo["icon"], trinketInfo["name"])
+		local iconText = format("|T%s:16|t %s", trinketInfo["icon"], trinketInfo["name"])
 		tinsert(dropdownItems, {
 			itemValue = trinketInfo["spellID"],
 			text = iconText,
@@ -622,7 +638,7 @@ local function createAssignmentTypeDropdownItems()
 	} --[[@as DropdownItemData]]
 
 	for className, _ in pairs(Private.spellDB.classes) do
-		local colorMixin = C_ClassColor.GetClassColor(className)
+		local colorMixin = GetClassColor(className)
 		local actualClassName
 		if className == "DEATHKNIGHT" then
 			actualClassName = "Death Knight"
@@ -674,12 +690,12 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame, sorted
 		if boss then
 			listFrame:ReleaseChildren()
 			for index = 1, #boss.sortedAbilityIDs do
-				local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+				local abilityEntry = AceGUI:Create("EPAbilityEntry")
 				abilityEntry:SetFullWidth(true)
 				abilityEntry:SetAbility(boss.sortedAbilityIDs[index])
 				listFrame:AddChild(abilityEntry)
 				if index ~= #boss.sortedAbilityIDs then
-					local spacer = Private.Libs.AGUI:Create("EPSpacer")
+					local spacer = AceGUI:Create("EPSpacer")
 					spacer:SetHeight(4)
 					spacer:SetFullWidth(true)
 					listFrame:AddChild(spacer)
@@ -696,7 +712,7 @@ end
 ---@param sortedAssignments table<integer, TimelineAssignment>
 local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sortedAssignments)
 	if not Private.assignmentEditor then
-		Private.assignmentEditor = Private.Libs.AGUI:Create("EPAssignmentEditor")
+		Private.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		Private.assignmentEditor.obj = Private.mainFrame
 		Private.assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.assignmentEditor.frame:SetFrameLevel(10)
@@ -756,44 +772,44 @@ local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sorted
 end
 
 function AddOn:CreateGUI()
-	Private.mainFrame = Private.Libs.AGUI:Create("EPMainFrame")
+	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPContentFrameLayout")
 	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
 	end)
 
-	local leftSideFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	local leftSideFrame = AceGUI:Create("SimpleGroup")
 	leftSideFrame:SetRelativeWidth(0.2)
 	leftSideFrame:SetAutoAdjustHeight(true)
 	leftSideFrame:SetLayout("List")
 
-	local dropdown = Private.Libs.AGUI:Create("EPDropdown")
+	local dropdown = AceGUI:Create("EPDropdown")
 	dropdown:SetFullWidth(true)
 	local dropdownData = {}
 	for index, instance in ipairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
 		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterId)
-		local iconText = string.format("|T%s:16|t %s", iconImage, instance.name)
+		local iconText = format("|T%s:16|t %s", iconImage, instance.name)
 		tinsert(dropdownData, index, iconText)
 	end
 	dropdown:AddItems(dropdownData, "EPDropdownItemToggle")
 	leftSideFrame:AddChild(dropdown)
 
-	local dropdownSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	local dropdownSpacer = AceGUI:Create("EPSpacer")
 	dropdownSpacer:SetHeight(11)
 	leftSideFrame:AddChild(dropdownSpacer)
 
-	local listFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	local listFrame = AceGUI:Create("SimpleGroup")
 	listFrame:SetLayout("List")
 	listFrame:SetAutoAdjustHeight(true)
 	listFrame:SetFullWidth(true)
 	leftSideFrame:AddChild(listFrame)
 
-	local listFrameSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	local listFrameSpacer = AceGUI:Create("EPSpacer")
 	listFrameSpacer:SetHeight(30)
 	leftSideFrame:AddChild(listFrameSpacer)
 
-	local assignmentListFrame = Private.Libs.AGUI:Create("SimpleGroup")
+	local assignmentListFrame = AceGUI:Create("SimpleGroup")
 	assignmentListFrame:SetLayout("List")
 	assignmentListFrame:SetAutoAdjustHeight(true)
 	assignmentListFrame:SetFullWidth(true)
@@ -810,13 +826,13 @@ function AddOn:CreateGUI()
 			assigneeNameOrRole = Private.prettyClassNames[assigneeNameOrRole] or assigneeNameOrRole
 		end
 		-- todo: handle more types of groups
-		local abilityEntry = Private.Libs.AGUI:Create("EPAbilityEntry")
+		local abilityEntry = AceGUI:Create("EPAbilityEntry")
 		abilityEntry:SetText(assigneeNameOrRole)
 		abilityEntry:SetFullWidth(true)
 		abilityEntry:SetHeight(30)
 		assignmentListFrame:AddChild(abilityEntry)
 		if index ~= #assigneeOrder then
-			local spacer = Private.Libs.AGUI:Create("EPSpacer")
+			local spacer = AceGUI:Create("EPSpacer")
 			spacer:SetHeight(2)
 			spacer:SetFullWidth(true)
 			assignmentListFrame:AddChild(spacer)
@@ -825,11 +841,11 @@ function AddOn:CreateGUI()
 	assignmentListFrame:DoLayout()
 	leftSideFrame:AddChild(assignmentListFrame)
 
-	local timelineSpacer = Private.Libs.AGUI:Create("EPSpacer")
+	local timelineSpacer = AceGUI:Create("EPSpacer")
 	timelineSpacer:SetHeight(37)
 	timelineSpacer:SetRelativeWidth(0.8)
 
-	local timeline = Private.Libs.AGUI:Create("EPTimeline")
+	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetCallback("AssignmentClicked", function(frame, _, sortedAssignmentIndex)
 		HandleTimelineAssignmentClicked(frame, sortedAssignmentIndex, sortedAssignments)
 	end)
@@ -856,8 +872,6 @@ function AddOn:OnInitialize()
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self.OnInitialize = nil
-	DevTools_Dump(C_Spell.GetSpellInfo(106898))
-	DevTools_Dump(C_Spell.GetSpellInfo(77764))
 end
 
 function AddOn:OnEnable()

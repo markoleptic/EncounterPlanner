@@ -1,8 +1,26 @@
---@type string
-local AddOnName = ...
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
-local AddOn = Private.AddOn
+
+local GetClassInfo = GetClassInfo
+local GetNumGroupMembers = GetNumGroupMembers
+local GetRaidRosterInfo = GetRaidRosterInfo
+local GetSpecialization = GetSpecialization
+local GetSpecializationInfo = GetSpecializationInfo
+local GetSpellInfo = C_Spell.GetSpellInfo
+local GetSpellTexture = C_Spell.GetSpellTexture
+local ipairs = ipairs
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+local IsInRaid = IsInRaid
+local pairs = pairs
+local select = select
+local strsplit = strsplit
+local strsplittable = strsplittable
+local tinsert = tinsert
+local tonumber = tonumber
+local tostring = tostring
+local UnitClass = UnitClass
+local UnitName = UnitName
+local wipe = wipe
 
 local lineRegex = "[^\r\n]+"
 local wordSegmentationRegex = "([^ \n-][^\n-]-)  +"
@@ -443,7 +461,7 @@ end
 ---@param spellID string
 ---@return string
 local function GSubIcon(spellID)
-	local spellTexture = C_Spell.GetSpellTexture(spellID)
+	local spellTexture = GetSpellTexture(spellID)
 	return "|T" .. (spellTexture or "Interface\\Icons\\INV_MISC_QUESTIONMARK") .. ":16|t"
 end
 
@@ -458,7 +476,7 @@ local function CreateAssignmentsFromLine(line)
 
 		local spellinfo = { spellID = 0, name = "", iconID = 0 }
 		local strWithoutSpell = str:gsub(spellIDPlaceholderRegex, function(rest, id)
-			spellinfo = C_Spell.GetSpellInfo(id)
+			spellinfo = GetSpellInfo(id)
 			return rest
 		end)
 
@@ -592,7 +610,7 @@ end
 
 -- Parses the shared and personal ERT notes.
 function Private:Note()
-	if not C_AddOns.IsAddOnLoaded("MRT") then
+	if IsAddOnLoaded("MRT") then
 		return
 	end
 	GSubAutoColorCreate()

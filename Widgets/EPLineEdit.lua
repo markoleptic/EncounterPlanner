@@ -1,7 +1,14 @@
 local Type = "EPLineEdit"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
+local ClearCursor = ClearCursor
+local CreateFrame = CreateFrame
+local GetSpellInfo = C_Spell.GetSpellInfo
+local tostring = tostring
+
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local backdrop = {
@@ -52,7 +59,7 @@ local function HandleEditBoxReceiveDrag(frame)
 	if type == "item" then
 		name = info
 	elseif type == "spell" then
-		local spellInfo = C_Spell.GetSpellInfo(tostring(id))
+		local spellInfo = GetSpellInfo(tostring(id))
 		if spellInfo then
 			name = spellInfo.name
 		end

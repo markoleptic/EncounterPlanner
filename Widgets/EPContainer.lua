@@ -1,6 +1,10 @@
 local Type = "EPContainer"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+
 local defaultSpacing = { x = 10, y = 10 }
 local defaultHeight = 100
 local defaultWidth = 100

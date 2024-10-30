@@ -1,5 +1,5 @@
 local Type = "EPContentFrameLayout"
-local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
 
 local xpcall = xpcall

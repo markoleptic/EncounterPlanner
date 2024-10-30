@@ -4,6 +4,12 @@ local AddOnName = ...
 ---@class Private
 local Private = select(2, ...)
 
+local CreateFrame = CreateFrame
+local LibStub = LibStub
+local pairs = pairs
+local setmetatable = setmetatable
+local type = type
+
 ---@alias CombatLogEventType = {
 ---| "SCC" SPELL_CAST_SUCCESS
 ---| "SCS" SPELL_CAST_START

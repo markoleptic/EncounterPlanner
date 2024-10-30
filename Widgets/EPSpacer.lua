@@ -1,6 +1,10 @@
 local Type = "EPSpacer"
 local Version = 1
+
 local AceGUI = LibStub("AceGUI-3.0")
+local UIParent = UIParent
+local CreateFrame = CreateFrame
+
 local defaultHeight = 4
 
 ---@class EPSpacer : AceGUIWidget
