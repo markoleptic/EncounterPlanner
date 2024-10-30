@@ -488,19 +488,9 @@ end
 local function CreateSpellDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for className, classSpells in pairs(Private.spellDB.classes) do
-		local colorMixin = GetClassColor(className)
-		local actualClassName
-		if className == "DEATHKNIGHT" then
-			actualClassName = "Death Knight"
-		elseif className == "DEMONHUNTER" then
-			actualClassName = "Demon Hunter"
-		else
-			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		local coloredName = colorMixin:WrapTextInColorCode(actualClassName)
 		local classDropdownData = {
 			itemValue = className,
-			text = coloredName,
+			text = Private.prettyClassNames[className],
 			dropdownItemMenuData = {},
 		}
 		local spellTypeIndex = 1
@@ -638,7 +628,6 @@ local function createAssignmentTypeDropdownItems()
 	} --[[@as DropdownItemData]]
 
 	for className, _ in pairs(Private.spellDB.classes) do
-		local colorMixin = GetClassColor(className)
 		local actualClassName
 		if className == "DEATHKNIGHT" then
 			actualClassName = "Death Knight"
@@ -647,10 +636,9 @@ local function createAssignmentTypeDropdownItems()
 		else
 			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
 		end
-		local coloredName = colorMixin:WrapTextInColorCode(actualClassName)
 		local classDropdownData = {
 			itemValue = actualClassName,
-			text = coloredName,
+			text = Private.prettyClassNames[className],
 			dropdownItemMenuData = {},
 		}
 		tinsert(classAssignmentTypes.dropdownItemMenuData, classDropdownData)
