@@ -3712,6 +3712,7 @@ Private.spellDB = {
 				["duration"] = 120,
 				["icon"] = 464343,
 				["spellID"] = 106898,
+				["commonSpellID"] = 77764,
 			},
 			{
 				["class"] = "DRUID",
@@ -4876,6 +4877,7 @@ Private.spellDB = {
 				["duration"] = 120,
 				["icon"] = 615099,
 				["spellID"] = 451235,
+				["commonSpellID"] = 451234,
 			},
 		},
 		["PALADIN"] = {
@@ -5602,6 +5604,7 @@ Private.spellDB = {
 				["duration"] = 180,
 				["icon"] = 135791,
 				["spellID"] = 114050,
+				["commonSpellID"] = 114049,
 			},
 			{
 				["class"] = "SHAMAN",
@@ -5612,6 +5615,7 @@ Private.spellDB = {
 				["duration"] = 180,
 				["icon"] = 135791,
 				["spellID"] = 114051,
+				["commonSpellID"] = 114049,
 			},
 			{
 				["class"] = "SHAMAN",
@@ -5622,6 +5626,7 @@ Private.spellDB = {
 				["duration"] = 180,
 				["icon"] = 135791,
 				["spellID"] = 114052,
+				["commonSpellID"] = 114049,
 			},
 			{
 				["class"] = "SHAMAN",
