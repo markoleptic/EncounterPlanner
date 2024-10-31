@@ -20,7 +20,12 @@ local tinsert = tinsert
 local type = type
 local wipe = wipe
 local GetClassColor = C_ClassColor.GetClassColor
+local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
+
+local currentAssignmentIndex = 0
+local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
+local firstAppearanceAssigneeOrder = {} --[[@as table<integer, TimelineAssignment>]]
 
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	return {
@@ -506,8 +511,9 @@ local function CreateSpellDropdownItems()
 				spellTypeIndex = spellTypeIndex + 1
 			end
 			local iconText = format("|T%s:16|t %s", spell["icon"], spell["name"])
+			local spellID = spell["commonSpellID"] or spell["spellID"]
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
-				itemValue = spell["spellID"],
+				itemValue = spellID,
 				text = iconText,
 				dropdownItemMenuData = {},
 			})
@@ -557,7 +563,7 @@ local function createAssignmentTypeDropdownItems()
 			dropdownItemMenuData = {
 				{
 					text = "Everyone",
-					itemValue = "Everyone",
+					itemValue = "{everyone}",
 					dropdownItemMenuData = {},
 				},
 				{
@@ -566,17 +572,17 @@ local function createAssignmentTypeDropdownItems()
 					dropdownItemMenuData = {
 						{
 							text = "Damagers",
-							itemValue = "Damagers",
+							itemValue = "role:damager",
 							dropdownItemMenuData = {},
 						},
 						{
 							text = "Healers",
-							itemValue = "Healers",
+							itemValue = "role:healer",
 							dropdownItemMenuData = {},
 						},
 						{
 							text = "Tanks",
-							itemValue = "Tanks",
+							itemValue = "role:tank",
 							dropdownItemMenuData = {},
 						},
 					},
@@ -587,22 +593,22 @@ local function createAssignmentTypeDropdownItems()
 					dropdownItemMenuData = {
 						{
 							text = "1",
-							itemValue = "GroupNumber1",
+							itemValue = "group:1",
 							dropdownItemMenuData = {},
 						},
 						{
 							text = "2",
-							itemValue = "GroupNumber2",
+							itemValue = "group:2",
 							dropdownItemMenuData = {},
 						},
 						{
 							text = "3",
-							itemValue = "GroupNumber3",
+							itemValue = "group:3",
 							dropdownItemMenuData = {},
 						},
 						{
 							text = "4",
-							itemValue = "GroupNumber4",
+							itemValue = "group:4",
 							dropdownItemMenuData = {},
 						},
 					},
@@ -630,14 +636,14 @@ local function createAssignmentTypeDropdownItems()
 	for className, _ in pairs(Private.spellDB.classes) do
 		local actualClassName
 		if className == "DEATHKNIGHT" then
-			actualClassName = "Death Knight"
+			actualClassName = "DeathKnight"
 		elseif className == "DEMONHUNTER" then
-			actualClassName = "Demon Hunter"
+			actualClassName = "DemonHunter"
 		else
 			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
 		end
 		local classDropdownData = {
-			itemValue = actualClassName,
+			itemValue = "class:" .. actualClassName:gsub("%s", ""),
 			text = Private.prettyClassNames[className],
 			dropdownItemMenuData = {},
 		}
@@ -670,9 +676,7 @@ end
 ---@param value number|string
 ---@param timeline EPTimeline
 ---@param listFrame AceGUIContainer
----@param sortedAssignments table<integer, TimelineAssignment>
----@param assigneeOrder table<integer, string>
-local function HandleBossDropdownValueChanged(value, timeline, listFrame, sortedAssignments, assigneeOrder)
+local function HandleBossDropdownValueChanged(value, timeline, listFrame)
 	if AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value] then
 		local boss = bosses[AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name]
 		if boss then
@@ -690,15 +694,77 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame, sorted
 				end
 			end
 			listFrame:DoLayout()
-			timeline:SetEntries(boss.abilities, boss.sortedAbilityIDs, boss.phases, sortedAssignments, assigneeOrder)
+			timeline:SetEntries(
+				boss.abilities,
+				boss.sortedAbilityIDs,
+				boss.phases,
+				firstAppearanceSortedAssignments,
+				firstAppearanceAssigneeOrder
+			)
 		end
 	end
 end
 
----@param timeline EPTimeline
----@param assignmentIndex number
----@param sortedAssignments table<integer, TimelineAssignment>
-local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sortedAssignments)
+local function HandleAssignmentEditorDataChanged(dataType, value)
+	local assignment = firstAppearanceSortedAssignments[currentAssignmentIndex].assignment --[[@as Assignment]]
+	if dataType == "AssignmentType" then
+		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
+			if getmetatable(assignment) ~= Private.CombatLogEventAssignment then
+				assignment = Private.CombatLogEventAssignment:new(assignment)
+			end
+		elseif value == "Absolute Time" then
+			if getmetatable(assignment) ~= Private.TimedAssignment then
+				assignment = Private.TimedAssignment:new(assignment)
+			end
+		elseif value == "Boss Phase" then
+			if getmetatable(assignment) ~= Private.PhasedAssignment then
+				assignment = Private.PhasedAssignment:new(assignment)
+			end
+		end
+	elseif dataType == "CombatLogEventSpellID" then
+		if getmetatable(assignment) == Private.CombatLogEventAssignment then
+			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = value
+		end
+	elseif dataType == "CombatLogEventSpellCount" then
+		if getmetatable(assignment) == Private.CombatLogEventAssignment then
+			assignment--[[@as CombatLogEventAssignment]].spellCount = value
+		end
+	elseif dataType == "PhaseNumber" then
+		if
+			getmetatable(assignment) == Private.CombatLogEventAssignment
+			or getmetatable(assignment) == Private.PhasedAssignment
+		then
+			assignment--[[@as CombatLogEventAssignment|PhasedAssignment]].phase = value
+		end
+	elseif dataType == "SpellAssignment" then
+		local spellInfo = GetSpellInfo(value)
+		if spellInfo then
+			assignment.spellInfo.iconID = spellInfo.iconID
+			assignment.spellInfo.spellID = spellInfo.spellID
+			assignment.spellInfo.name = spellInfo.name
+		end
+	elseif dataType == "AssigneeType" then
+		if value ~= "Individual" then
+			assignment.assigneeNameOrRole = value
+		end
+	elseif dataType == "Assignee" then
+		assignment.assigneeNameOrRole = value
+	elseif dataType == "Time" then
+		if
+			getmetatable(assignment) == Private.CombatLogEventAssignment
+			or getmetatable(assignment) == Private.PhasedAssignment
+			or getmetatable(assignment) == Private.TimedAssignment
+		then
+			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = value
+		end
+	elseif dataType == "OptionalText" then
+		assignment.text = value -- TODO: update textWithIconReplacements
+	elseif dataType == "Target" then
+		assignment.targetName = value
+	end
+end
+
+local function HandleTimelineAssignmentClicked()
 	if not Private.assignmentEditor then
 		Private.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		Private.assignmentEditor.obj = Private.mainFrame
@@ -709,6 +775,9 @@ local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sorted
 		Private.assignmentEditor:DoLayout()
 		Private.assignmentEditor:SetCallback("OnRelease", function()
 			Private.assignmentEditor = nil
+		end)
+		Private.assignmentEditor:SetCallback("DataChanged", function(_, _, dataType, value)
+			HandleAssignmentEditorDataChanged(dataType, value)
 		end)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
 			{ CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() },
@@ -721,12 +790,12 @@ local function HandleTimelineAssignmentClicked(timeline, assignmentIndex, sorted
 		Private.assignmentEditor.assigneeDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 	end
-	local assignment = sortedAssignments[assignmentIndex].assignment
+	local assignment = firstAppearanceSortedAssignments[currentAssignmentIndex].assignment
 	local assigneeName = string.match(assignment.assigneeNameOrRole, "class:%s*(%a+)")
 	-- todo: handle more types of groups
 	if assigneeName then
 		Private.assignmentEditor:SetAssigneeType("Class")
-		Private.assignmentEditor.assigneeTypeDropdown:SetValue(assigneeName)
+		Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
 		Private.assignmentEditor.assigneeDropdown:SetValue("")
 	else
 		Private.assignmentEditor:SetAssigneeType("Individual")
@@ -805,11 +874,12 @@ function AddOn:CreateGUI()
 	Private:Note()
 	CreatePrettyClassNames()
 
-	local sortedAssignments, assigneeOrder = CreateSortedAssignmentTables(Private.assignments)
-	for index = 1, #assigneeOrder do
-		local assigneeNameOrRole = string.match(assigneeOrder[index], "class:%s*(%a+)")
+	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = CreateSortedAssignmentTables(Private.assignments)
+
+	for index = 1, #firstAppearanceAssigneeOrder do
+		local assigneeNameOrRole = string.match(firstAppearanceAssigneeOrder[index], "class:%s*(%a+)")
 		if not assigneeNameOrRole or assigneeNameOrRole == "" then
-			assigneeNameOrRole = Private.roster[assigneeOrder[index]]
+			assigneeNameOrRole = Private.roster[firstAppearanceAssigneeOrder[index]]
 		else
 			assigneeNameOrRole = Private.prettyClassNames[assigneeNameOrRole] or assigneeNameOrRole
 		end
@@ -819,7 +889,7 @@ function AddOn:CreateGUI()
 		abilityEntry:SetFullWidth(true)
 		abilityEntry:SetHeight(30)
 		assignmentListFrame:AddChild(abilityEntry)
-		if index ~= #assigneeOrder then
+		if index ~= #firstAppearanceAssigneeOrder then
 			local spacer = AceGUI:Create("EPSpacer")
 			spacer:SetHeight(2)
 			spacer:SetFullWidth(true)
@@ -834,8 +904,9 @@ function AddOn:CreateGUI()
 	timelineSpacer:SetRelativeWidth(0.8)
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetCallback("AssignmentClicked", function(frame, _, sortedAssignmentIndex)
-		HandleTimelineAssignmentClicked(frame, sortedAssignmentIndex, sortedAssignments)
+	timeline:SetCallback("AssignmentClicked", function(_, _, sortedAssignmentIndex)
+		currentAssignmentIndex = sortedAssignmentIndex
+		HandleTimelineAssignmentClicked()
 	end)
 	timeline:SetRelativeWidth(0.8)
 
@@ -844,11 +915,11 @@ function AddOn:CreateGUI()
 	Private.mainFrame:AddChild(timeline)
 
 	dropdown:SetCallback("OnValueChanged", function(_, _, value)
-		HandleBossDropdownValueChanged(value, timeline, listFrame, sortedAssignments, assigneeOrder)
+		HandleBossDropdownValueChanged(value, timeline, listFrame)
 	end)
 
 	dropdown:SetValue(5)
-	HandleBossDropdownValueChanged(5, timeline, listFrame, sortedAssignments, assigneeOrder)
+	HandleBossDropdownValueChanged(5, timeline, listFrame)
 end
 
 -- Addon is first loaded
