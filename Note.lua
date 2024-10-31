@@ -610,7 +610,7 @@ end
 
 -- Parses the shared and personal ERT notes.
 function Private:Note()
-	if IsAddOnLoaded("MRT") then
+	if not IsAddOnLoaded("MRT") then
 		return
 	end
 	GSubAutoColorCreate()
