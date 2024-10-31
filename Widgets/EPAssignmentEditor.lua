@@ -214,22 +214,22 @@ local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, val
 		self.combatLogEventContainer.frame:Hide()
 		self.phaseNumberContainer.frame:Show()
 	end
-	self:Fire("AssignmentTypeChanged", value)
+	self:Fire("DataChanged", "AssignmentType", value)
 end
 
 local function HandleCombatLogEventSpellIDDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("CombatLogEventSpellIDChanged", value)
+	self:Fire("DataChanged", "CombatLogEventSpellID", value)
 end
 
 local function HandleCombatLogEventSpellCountValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("CombatLogEventSpellCountChanged", value)
+	self:Fire("DataChanged", "CombatLogEventSpellCount", value)
 end
 
 local function HandlePhaseNumberDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("PhaseNumberChanged", value)
+	self:Fire("DataChanged", "PhaseNumber", value)
 end
 
 local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, value)
@@ -242,7 +242,7 @@ local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, va
 			{ { itemValue = value, text = itemText, dropdownItemMenuData = {} } }
 		)
 	end
-	self:Fire("SpellAssignmentChanged", value)
+	self:Fire("DataChanged", "SpellAssignment", value)
 end
 
 local function HandleAssigneeTypeDropdownValueChanged(frame, callbackName, value)
@@ -252,27 +252,27 @@ local function HandleAssigneeTypeDropdownValueChanged(frame, callbackName, value
 	else
 		self.assigneeContainer.frame:Show()
 	end
-	self:Fire("AssigneeTypeChanged", value)
+	self:Fire("DataChanged", "AssigneeType", value)
 end
 
 local function HandleAssigneeDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("AssigneeChanged", value)
+	self:Fire("DataChanged", "Assignee", value)
 end
 
 local function HandleTimeLineEditValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("TimeLineEditValueChanged", value)
+	self:Fire("DataChanged", "Time", value)
 end
 
 local function HandleOptionalTextLineEditValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("OptionalTextLineEditValueChanged", value)
+	self:Fire("DataChanged", "OptionalText", value)
 end
 
 local function HandleTargetDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
-	self:Fire("TargetChanged", value)
+	self:Fire("DataChanged", "Target", value)
 end
 
 ---@param self EPAssignmentEditor
@@ -284,7 +284,7 @@ local function SetAssignmentType(self, assignmentType)
 	elseif assignmentType == "TimedAssignment" then
 		self.combatLogEventContainer.frame:Hide()
 		self.phaseNumberContainer.frame:Hide()
-	elseif assignmentType == "TimedAssignment" then
+	elseif assignmentType == "PhasedAssignment" then
 		self.combatLogEventContainer.frame:Hide()
 		self.phaseNumberContainer.frame:Show()
 	end
