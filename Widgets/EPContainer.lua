@@ -28,8 +28,10 @@ end
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
 	if width and height then
-		self:SetHeight(height)
-		self:SetWidth(width)
+		if self.frame:GetHeight() ~= height or self.frame:GetWidth() ~= width then
+			self:SetHeight(height)
+			self:SetWidth(width)
+		end
 	end
 end
 
