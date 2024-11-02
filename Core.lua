@@ -804,18 +804,31 @@ local function HandleTimelineAssignmentClicked(timeline)
 		Private.assignmentEditor.assigneeDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 	end
+
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex]
-	local assigneeName = string.match(assignment.assigneeNameOrRole, "class:%s*(%a+)")
-	-- todo: handle more types of groups
-	if assigneeName then
-		Private.assignmentEditor:SetAssigneeType("Class")
+
+	if assignment.assigneeNameOrRole == "{everyone}" then
+		Private.assignmentEditor:SetAssigneeType("Everyone")
 		Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
 		Private.assignmentEditor.assigneeDropdown:SetValue("")
 	else
-		Private.assignmentEditor:SetAssigneeType("Individual")
-		Private.assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
-		Private.assignmentEditor.assigneeDropdown:SetValue(assignment.assigneeNameOrRole)
+		local classMatch = assignment.assigneeNameOrRole:match("class:%s*(%a+)")
+		local roleMatch = assignment.assigneeNameOrRole:match("role:%s*(%a+)")
+		if classMatch then
+			Private.assignmentEditor:SetAssigneeType("Class")
+			Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
+			Private.assignmentEditor.assigneeDropdown:SetValue("")
+		elseif roleMatch then
+			Private.assignmentEditor:SetAssigneeType("Role")
+			Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
+			Private.assignmentEditor.assigneeDropdown:SetValue("")
+		else
+			Private.assignmentEditor:SetAssigneeType("Individual")
+			Private.assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
+			Private.assignmentEditor.assigneeDropdown:SetValue(assignment.assigneeNameOrRole)
+		end
 	end
+
 	Private.assignmentEditor.previewLabel:SetText(assignment.strWithIconReplacements)
 	Private.assignmentEditor.targetDropdown:SetValue(assignment.targetName)
 	Private.assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
