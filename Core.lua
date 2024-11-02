@@ -22,6 +22,7 @@ local wipe = wipe
 local GetClassColor = C_ClassColor.GetClassColor
 local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
+local tonumber = tonumber
 
 local currentAssignmentIndex = 0
 local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
@@ -730,18 +731,18 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		end
 	elseif dataType == "CombatLogEventSpellID" then
 		if getmetatable(assignment) == Private.CombatLogEventAssignment then
-			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = value
+			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = tonumber(value)
 		end
 	elseif dataType == "CombatLogEventSpellCount" then
 		if getmetatable(assignment) == Private.CombatLogEventAssignment then
-			assignment--[[@as CombatLogEventAssignment]].spellCount = value
+			assignment--[[@as CombatLogEventAssignment]].spellCount = tonumber(value)
 		end
 	elseif dataType == "PhaseNumber" then
 		if
 			getmetatable(assignment) == Private.CombatLogEventAssignment
 			or getmetatable(assignment) == Private.PhasedAssignment
 		then
-			assignment--[[@as CombatLogEventAssignment|PhasedAssignment]].phase = value
+			assignment--[[@as CombatLogEventAssignment|PhasedAssignment]].phase = tonumber(value)
 		end
 	elseif dataType == "SpellAssignment" then
 		local spellInfo = GetSpellInfo(value)
@@ -757,12 +758,15 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 	elseif dataType == "Assignee" then
 		assignment.assigneeNameOrRole = value
 	elseif dataType == "Time" then
+		if not tonumber(value) then
+			return
+		end
 		if
 			getmetatable(assignment) == Private.CombatLogEventAssignment
 			or getmetatable(assignment) == Private.PhasedAssignment
 			or getmetatable(assignment) == Private.TimedAssignment
 		then
-			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = value
+			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = tonumber(value)
 		end
 	elseif dataType == "OptionalText" then
 		assignment.text = value -- TODO: update textWithIconReplacements
