@@ -216,7 +216,7 @@ local function HandleCombatLogEventSpellIDDropdownValueChanged(frame, callbackNa
 	self:Fire("DataChanged", "CombatLogEventSpellID", value)
 end
 
-local function HandleCombatLogEventSpellCountValueChanged(frame, callbackName, value)
+local function HandleCombatLogEventSpellCountTextChanged(frame, callbackName, value)
 	local self = frame.obj
 	self:Fire("DataChanged", "CombatLogEventSpellCount", value)
 end
@@ -254,12 +254,12 @@ local function HandleAssigneeDropdownValueChanged(frame, callbackName, value)
 	self:Fire("DataChanged", "Assignee", value)
 end
 
-local function HandleTimeLineEditValueChanged(frame, callbackName, value)
+local function HandleTimeTextChanged(frame, callbackName, value)
 	local self = frame.obj
 	self:Fire("DataChanged", "Time", value)
 end
 
-local function HandleOptionalTextLineEditValueChanged(frame, callbackName, value)
+local function HandleOptionalTextChanged(frame, callbackName, value)
 	local self = frame.obj
 	self:Fire("DataChanged", "OptionalText", value)
 end
@@ -329,7 +329,7 @@ local function OnAcquire(self)
 	self.combatLogEventSpellCountLabel:SetText("Spell Count")
 	self.combatLogEventSpellCountLabel:SetTextPadding(0, 2)
 	self.combatLogEventSpellCountLineEdit = AceGUI:Create("EPLineEdit")
-	self.combatLogEventSpellCountLineEdit:SetCallback("OnValueChanged", HandleCombatLogEventSpellCountValueChanged)
+	self.combatLogEventSpellCountLineEdit:SetCallback("OnTextChanged", HandleCombatLogEventSpellCountTextChanged)
 	self.combatLogEventSpellCountLineEdit.obj = self
 	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLabel)
 	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLineEdit)
@@ -397,7 +397,7 @@ local function OnAcquire(self)
 	self.timeLabel:SetTextPadding(0, 2)
 	self.timeEditBox = AceGUI:Create("EPLineEdit")
 	self.timeEditBox.obj = self
-	self.timeEditBox:SetCallback("OnValueChanged", HandleTimeLineEditValueChanged)
+	self.timeEditBox:SetCallback("OnTextChanged", HandleTimeTextChanged)
 	self.timeContainer:AddChild(self.timeLabel)
 	self.timeContainer:AddChild(self.timeEditBox)
 	self:AddChild(self.timeContainer)
@@ -410,7 +410,7 @@ local function OnAcquire(self)
 	self.optionalTextLabel:SetTextPadding(0, 2)
 	self.optionalTextLineEdit = AceGUI:Create("EPLineEdit")
 	self.optionalTextLineEdit.obj = self
-	self.optionalTextLineEdit:SetCallback("OnValueChanged", HandleOptionalTextLineEditValueChanged)
+	self.optionalTextLineEdit:SetCallback("OnTextChanged", HandleOptionalTextChanged)
 	self.optionalTextContainer:AddChild(self.optionalTextLabel)
 	self.optionalTextContainer:AddChild(self.optionalTextLineEdit)
 	self:AddChild(self.optionalTextContainer)
