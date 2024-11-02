@@ -272,7 +272,7 @@ do
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(pulloutBackdrop)
 		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-		frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
 		frame:SetWidth(defaultWidth)
@@ -726,7 +726,7 @@ do
 		local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(dropdownBackdrop)
 		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-		frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 		frame:SetScript("OnHide", HandleDropdownHide)
 
 		local dropdown = CreateFrame("Frame", Type .. count, frame, "UIDropDownMenuTemplate")

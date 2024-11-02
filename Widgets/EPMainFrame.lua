@@ -42,30 +42,17 @@ local function FlashButton_OnEnter(self)
 end
 
 local function CreateFlashButton(parent, text, width, height)
-	local Button = CreateFrame("Button", nil, parent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+	local Button = CreateFrame("Button", nil, parent)
 	Button:SetSize(width or 80, height or 20)
-	Button:SetBackdrop({
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		edgeSize = 1,
-	})
-	Button:SetBackdropColor(0.725, 0.008, 0.008)
-	Button:SetBackdropBorderColor(0, 0, 0)
 	Button:SetScript("OnEnter", FlashButton_OnEnter)
 	Button:SetScript("OnLeave", FlashButton_OnLeave)
 	Button:SetNormalFontObject("GameFontNormal")
 	Button:SetText(text or "")
 
 	Button.bg = Button:CreateTexture(nil, "BORDER")
-	if WOW_PROJECT_ID == WOW_PROJECT_CLASSIC then
-		Button.bg:SetAllPoints()
-	else
-		Button.bg:SetTexelSnappingBias(0.0)
-		Button.bg:SetSnapToPixelGrid(false)
-		Button.bg:SetPoint("TOPLEFT", Button.TopEdge, "BOTTOMLEFT")
-		Button.bg:SetPoint("BOTTOMRIGHT", Button.BottomEdge, "TOPRIGHT")
-	end
-	Button.bg:SetColorTexture(0.0, 0.6, 0.4)
+	Button.bg:SetAllPoints()
+
+	Button.bg:SetColorTexture(0.725, 0.008, 0.008)
 	Button.bg:Hide()
 
 	Button.fadeIn = Button.bg:CreateAnimationGroup()
@@ -128,7 +115,7 @@ local function Constructor()
 	mainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 	mainFrame:SetBackdrop(FrameBackdrop)
 	mainFrame:SetBackdropColor(0, 0, 0, 0.9)
-	mainFrame:SetBackdropBorderColor(0, 0, 0)
+	mainFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	mainFrame:SetSize(mainFrameWidth, mainFrameHeight)
 
 	local contentFrameName = "ContentFrame" .. num
@@ -157,7 +144,7 @@ local function Constructor()
 	windowBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT")
 	windowBar:SetBackdrop(titleBarBackdrop)
 	windowBar:SetBackdropColor(0, 0, 0, 0.9)
-	windowBar:SetBackdropBorderColor(0, 0, 0)
+	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText("Encounter Planner")
@@ -174,7 +161,12 @@ local function Constructor()
 		mainFrame:StopMovingOrSizing()
 	end)
 
-	local closebutton = CreateFlashButton(windowBar, "X", 25, 25)
+	local closebutton = CreateFlashButton(
+		windowBar,
+		"X",
+		windowBarHeight - 2 * FrameBackdrop.edgeSize,
+		windowBarHeight - 2 * FrameBackdrop.edgeSize
+	)
 
 	---@class EPMainFrame
 	local widget = {
@@ -188,7 +180,7 @@ local function Constructor()
 		closebutton = closebutton,
 	}
 
-	closebutton:SetPoint("TOPRIGHT", -1, -1)
+	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
 	closebutton:SetScript("OnClick", function()
 		widget:Release()
 	end)

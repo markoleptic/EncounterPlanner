@@ -63,28 +63,14 @@ end
 local function CreateFlashButton(parent, text, width, height)
 	local Button = CreateFrame("Button", nil, parent, BackdropTemplateMixin and "BackdropTemplate" or nil)
 	Button:SetSize(width or 80, height or 20)
-	Button:SetBackdrop({
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		edgeSize = 1,
-	})
-	Button:SetBackdropColor(0.725, 0.008, 0.008)
-	Button:SetBackdropBorderColor(0, 0, 0)
 	Button:SetScript("OnEnter", FlashButton_OnEnter)
 	Button:SetScript("OnLeave", FlashButton_OnLeave)
 	Button:SetNormalFontObject("GameFontNormal")
 	Button:SetText(text or "")
 
 	Button.bg = Button:CreateTexture(nil, "BORDER")
-	if WOW_PROJECT_ID == WOW_PROJECT_CLASSIC then
-		Button.bg:SetAllPoints()
-	else
-		Button.bg:SetTexelSnappingBias(0.0)
-		Button.bg:SetSnapToPixelGrid(false)
-		Button.bg:SetPoint("TOPLEFT", Button.TopEdge, "BOTTOMLEFT")
-		Button.bg:SetPoint("BOTTOMRIGHT", Button.BottomEdge, "TOPRIGHT")
-	end
-	Button.bg:SetColorTexture(0.0, 0.6, 0.4)
+	Button.bg:SetAllPoints()
+	Button.bg:SetColorTexture(0.725, 0.008, 0.008)
 	Button.bg:Hide()
 
 	Button.fadeIn = Button.bg:CreateAnimationGroup()
@@ -192,15 +178,23 @@ local assignmentTriggers = {
 
 local function HandleOkayButtonClicked(frame, mouseButtonType, down) end
 
-local function HandleOkayButtonEnter(frame, motion) end
+local function HandleOkayButtonEnter(frame, motion)
+	FlashButton_OnEnter(frame)
+end
 
-local function HandleOkayButtonLeave(frame, motion) end
+local function HandleOkayButtonLeave(frame, motion)
+	FlashButton_OnLeave(frame)
+end
 
 local function HandleDeleteButtonClicked(frame, mouseButtonType, down) end
 
-local function HandleDeleteButtonEnter(frame, motion) end
+local function HandleDeleteButtonEnter(frame, motion)
+	FlashButton_OnEnter(frame)
+end
 
-local function HandleDeleteButtonLeave(frame, motion) end
+local function HandleDeleteButtonLeave(frame, motion)
+	FlashButton_OnLeave(frame)
+end
 
 local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, value)
 	local self = frame.obj
@@ -471,8 +465,8 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(FrameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 1.0)
-	frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+	frame:SetBackdropColor(0, 0, 0, 0.9)
+	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
@@ -482,17 +476,16 @@ local function Constructor()
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetHeight(windowBarHeight)
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0.05, 0.05, 0.05, 1.0)
-	windowBar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1.0)
+	windowBar:SetBackdropColor(0, 0, 0, 0.9)
+	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(title)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		windowBarText:SetFont(fPath, h)
+		windowBarText:SetFont(fPath, 12)
 	end
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()
@@ -504,10 +497,11 @@ local function Constructor()
 	local buttonFrame = CreateFrame("Frame", Type .. "ButtonFrame" .. count, frame, "BackdropTemplate")
 	buttonFrame:SetBackdrop(ButtonFrameBackdrop)
 	buttonFrame:SetBackdropColor(0.1, 0.1, 0.1, 1.0)
-	buttonFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1.0)
+	buttonFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	buttonFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
 	buttonFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 	buttonFrame:SetHeight(buttonFrameHeight)
+	buttonFrame:EnableMouse(true)
 
 	local contentFrameName = Type .. "ContentFrame" .. count
 	local contentFrame = CreateFrame("Frame", contentFrameName, frame)
@@ -520,47 +514,38 @@ local function Constructor()
 		contentFramePadding.y + buttonFrameHeight
 	)
 
-	local deleteButton = CreateFrame("Button", Type .. "DeleteButton" .. count, buttonFrame, "BackdropTemplate")
-	deleteButton:EnableMouse(true)
+	local deleteButton = CreateFlashButton(
+		buttonFrame,
+		"Delete",
+		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
+		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
+	)
 	deleteButton:SetScript("OnClick", HandleOkayButtonClicked)
 	deleteButton:SetScript("OnEnter", HandleOkayButtonEnter)
 	deleteButton:SetScript("OnLeave", HandleOkayButtonLeave)
-	deleteButton:SetPoint("LEFT")
-	deleteButton:SetBackdrop(buttonBackdrop)
-	deleteButton:SetBackdropColor(1, 0, 0, 1)
-	deleteButton:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
-	local deleteText = deleteButton:CreateFontString(Type .. "DeleteText" .. count, "OVERLAY", "GameFontNormal")
-	deleteText:ClearAllPoints()
-	deleteText:SetPoint("CENTER")
-	deleteText:SetJustifyV("MIDDLE")
-	deleteText:SetJustifyH("CENTER")
-	if fPath then
-		deleteText:SetFont(fPath, 14)
-	end
-	deleteText:SetText("Delete")
-	deleteButton:SetSize(75, 24)
+	deleteButton:SetPoint("TOPLEFT", ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
+	deleteButton:SetPoint("BOTTOMLEFT", ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
+	deleteButton:SetWidth(75)
 
-	local okayButton = CreateFrame("Button", Type .. "OkButton" .. count, buttonFrame, "BackdropTemplate")
-	okayButton:EnableMouse(true)
+	local okayButton = CreateFlashButton(
+		buttonFrame,
+		"Okay",
+		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
+		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
+	)
 	okayButton:SetScript("OnClick", HandleDeleteButtonClicked)
 	okayButton:SetScript("OnEnter", HandleDeleteButtonEnter)
 	okayButton:SetScript("OnLeave", HandleDeleteButtonLeave)
-	okayButton:SetPoint("RIGHT")
-	okayButton:SetBackdrop(buttonBackdrop)
-	okayButton:SetBackdropColor(0, 1, 0, 1)
-	okayButton:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
-	local text = okayButton:CreateFontString(Type .. "OkText" .. count, "OVERLAY", "GameFontNormal")
-	text:ClearAllPoints()
-	text:SetPoint("CENTER")
-	text:SetJustifyV("MIDDLE")
-	text:SetJustifyH("CENTER")
-	if fPath then
-		text:SetFont(fPath, 14)
-	end
-	text:SetText("Okay")
-	okayButton:SetSize(75, 24)
+	okayButton:SetPoint("TOPRIGHT", -ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
+	okayButton:SetPoint("BOTTOMRIGHT", -ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
+	okayButton:SetWidth(75)
 
-	local closebutton = CreateFlashButton(windowBar, "X", 20, 20)
+	local closebutton = CreateFlashButton(
+		windowBar,
+		"X",
+		windowBarHeight - 2 * FrameBackdrop.edgeSize,
+		windowBarHeight - 2 * FrameBackdrop.edgeSize
+	)
 
 	---@class EPAssignmentEditor
 	local widget = {
@@ -579,7 +564,7 @@ local function Constructor()
 		deleteButton = deleteButton,
 	}
 
-	closebutton:SetPoint("TOPRIGHT", -2, -2)
+	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
 	closebutton:SetScript("OnClick", function()
 		widget:Release()
 	end)

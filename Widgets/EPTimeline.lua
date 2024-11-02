@@ -858,7 +858,7 @@ local function Constructor()
 
 	local scrollBarBackground = scrollBar:CreateTexture(Type .. num .. "ScrollBarBackground", "BACKGROUND")
 	scrollBarBackground:SetAllPoints()
-	scrollBarBackground:SetColorTexture(1, 0, 0, 0.7)
+	scrollBarBackground:SetColorTexture(0.25, 0.25, 0.25, 1)
 
 	local thumb = CreateFrame("Button", Type .. num .. "ScrollBarThumb", scrollBar)
 	thumb:SetPoint("LEFT", thumbPadding.x, 0)
@@ -869,7 +869,7 @@ local function Constructor()
 
 	local thumbBackground = thumb:CreateTexture(Type .. num .. "ScrollBarThumbBackground", "BACKGROUND")
 	thumbBackground:SetAllPoints()
-	thumbBackground:SetColorTexture(0, 0, 0, 0.7)
+	thumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
 
 	---@class EPTimeline
 	local widget = {

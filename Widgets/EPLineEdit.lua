@@ -153,7 +153,7 @@ local function Constructor()
 	local frame = CreateFrame("Frame", Type .. num, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(backdrop)
 	frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-	frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 
 	local editBox = CreateFrame("EditBox", Type .. num .. "EditBox", frame)

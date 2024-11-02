@@ -103,7 +103,7 @@ local function Constructor()
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(listItemBackdrop)
 	frame:SetBackdropColor(0, 0, 0, 0.9)
-	frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 
