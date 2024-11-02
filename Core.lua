@@ -24,6 +24,9 @@ local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
 local tonumber = tonumber
 
+local bossAbilityPadding = 4
+local assignmentPadding = 2
+
 local currentAssignmentIndex = 0
 local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
 local firstAppearanceAssigneeOrder = {} --[[@as table<integer, TimelineAssignment>]]
@@ -691,12 +694,6 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame)
 				abilityEntry:SetFullWidth(true)
 				abilityEntry:SetAbility(boss.sortedAbilityIDs[index])
 				listFrame:AddChild(abilityEntry)
-				if index ~= #boss.sortedAbilityIDs then
-					local spacer = AceGUI:Create("EPSpacer")
-					spacer:SetHeight(4)
-					spacer:SetFullWidth(true)
-					listFrame:AddChild(spacer)
-				end
 			end
 			listFrame:DoLayout()
 			timeline:SetEntries(
@@ -883,10 +880,10 @@ function AddOn:CreateGUI()
 	dropdownSpacer:SetHeight(12)
 	leftSideFrame:AddChild(dropdownSpacer)
 
-	local listFrame = AceGUI:Create("SimpleGroup")
-	listFrame:SetLayout("List")
-	listFrame:SetAutoAdjustHeight(true)
+	local listFrame = AceGUI:Create("EPContainer")
+	listFrame:SetLayout("EPVerticalLayout")
 	listFrame:SetFullWidth(true)
+	listFrame:SetSpacing(0, bossAbilityPadding)
 	leftSideFrame:AddChild(listFrame)
 
 	local assignmentSortDropdownTopSpacer = AceGUI:Create("EPSpacer")
@@ -904,10 +901,10 @@ function AddOn:CreateGUI()
 	assignmentSortDropdownBottomSpacer:SetHeight(6)
 	leftSideFrame:AddChild(assignmentSortDropdownBottomSpacer)
 
-	local assignmentListFrame = AceGUI:Create("SimpleGroup")
-	assignmentListFrame:SetLayout("List")
-	assignmentListFrame:SetAutoAdjustHeight(true)
+	local assignmentListFrame = AceGUI:Create("EPContainer")
+	assignmentListFrame:SetLayout("EPVerticalLayout")
 	assignmentListFrame:SetFullWidth(true)
+	assignmentListFrame:SetSpacing(0, assignmentPadding)
 
 	Private:Note()
 	for _, ass in ipairs(Private.assignments) do
@@ -930,12 +927,6 @@ function AddOn:CreateGUI()
 		abilityEntry:SetFullWidth(true)
 		abilityEntry:SetHeight(30)
 		assignmentListFrame:AddChild(abilityEntry)
-		if index ~= #firstAppearanceAssigneeOrder then
-			local spacer = AceGUI:Create("EPSpacer")
-			spacer:SetHeight(2)
-			spacer:SetFullWidth(true)
-			assignmentListFrame:AddChild(spacer)
-		end
 	end
 	assignmentListFrame:DoLayout()
 	leftSideFrame:AddChild(assignmentListFrame)
