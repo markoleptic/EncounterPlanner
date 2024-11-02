@@ -2,6 +2,7 @@ local Type = "EPContentFrameLayout"
 
 local AceGUI = LibStub("AceGUI-3.0")
 
+local geterrorhandler = geterrorhandler
 local xpcall = xpcall
 
 local function errorhandler(err)
@@ -30,7 +31,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:SetPoint("TOPLEFT", children[1].frame, "TOPRIGHT", 0, 0)
 			frame:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, 0)
 		elseif i == 3 then
-			frame:SetPoint("TOPLEFT", children[2].frame, "BOTTOMLEFT", 0, 0)
+			frame:SetPoint("TOPLEFT", children[2].frame, "BOTTOMLEFT", 6, 0)
 		end
 
 		if child.width == "fill" then

@@ -13,7 +13,7 @@ local unpack = unpack
 
 local frameWidth = 900
 local frameHeight = 400
-local paddingBetweenTimelines = 30
+local paddingBetweenTimelines = 36
 local paddingBetweenBars = 4
 local paddingBetweenTimelineAndScrollBar = 25
 local barHeight = 30
@@ -22,7 +22,7 @@ local tickWidth = 2
 local assignmentSpellIconSize = { x = 30, y = 30 }
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
-local tickFontSize = 10
+local tickFontSize = 12
 local zoomFactor = 1
 local minZoomFactor = 1
 local maxZoomFactor = 10

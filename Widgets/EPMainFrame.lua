@@ -7,7 +7,7 @@ local CreateFrame = CreateFrame
 
 local mainFrameWidth = 1125
 local mainFrameHeight = 600
-local windowBarHeight = 27
+local windowBarHeight = 30
 local contentFramePadding = { x = 10, y = 10 }
 local FrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",

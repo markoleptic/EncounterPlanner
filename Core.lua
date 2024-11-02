@@ -784,7 +784,7 @@ local function HandleTimelineAssignmentClicked(timeline)
 		Private.assignmentEditor.obj = Private.mainFrame
 		Private.assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.assignmentEditor.frame:SetFrameLevel(10)
-		Private.assignmentEditor:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -6, 0)
+		Private.assignmentEditor:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		Private.assignmentEditor:SetLayout("EPVerticalLayout")
 		Private.assignmentEditor:DoLayout()
 		Private.assignmentEditor:SetCallback("OnRelease", function()
@@ -867,7 +867,7 @@ function AddOn:CreateGUI()
 	leftSideFrame:AddChild(dropdown)
 
 	local dropdownSpacer = AceGUI:Create("EPSpacer")
-	dropdownSpacer:SetHeight(11)
+	dropdownSpacer:SetHeight(12)
 	leftSideFrame:AddChild(dropdownSpacer)
 
 	local listFrame = AceGUI:Create("SimpleGroup")
@@ -876,9 +876,20 @@ function AddOn:CreateGUI()
 	listFrame:SetFullWidth(true)
 	leftSideFrame:AddChild(listFrame)
 
-	local listFrameSpacer = AceGUI:Create("EPSpacer")
-	listFrameSpacer:SetHeight(30)
-	leftSideFrame:AddChild(listFrameSpacer)
+	local assignmentSortDropdownTopSpacer = AceGUI:Create("EPSpacer")
+	assignmentSortDropdownTopSpacer:SetHeight(6)
+	leftSideFrame:AddChild(assignmentSortDropdownTopSpacer)
+	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
+	assignmentSortDropdown:AddItems({
+		{ itemValue = "First Appearance", text = "First Appearance", dropdownItemMenuData = {} },
+		{ itemValue = "Alphabetical", text = "Alphabetical", dropdownItemMenuData = {} },
+		{ itemValue = "Role", text = "Role", dropdownItemMenuData = {} },
+	}, "EPDropdownItemToggle")
+	assignmentSortDropdown:SetFullWidth(true)
+	leftSideFrame:AddChild(assignmentSortDropdown)
+	local assignmentSortDropdownBottomSpacer = AceGUI:Create("EPSpacer")
+	assignmentSortDropdownBottomSpacer:SetHeight(6)
+	leftSideFrame:AddChild(assignmentSortDropdownBottomSpacer)
 
 	local assignmentListFrame = AceGUI:Create("SimpleGroup")
 	assignmentListFrame:SetLayout("List")
@@ -917,7 +928,7 @@ function AddOn:CreateGUI()
 	leftSideFrame:AddChild(assignmentListFrame)
 
 	local timelineSpacer = AceGUI:Create("EPSpacer")
-	timelineSpacer:SetHeight(37)
+	timelineSpacer:SetHeight(36)
 	timelineSpacer:SetRelativeWidth(0.8)
 
 	local timeline = AceGUI:Create("EPTimeline")
