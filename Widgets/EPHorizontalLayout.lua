@@ -16,6 +16,7 @@ end
 
 AceGUI:RegisterLayout(Type, function(content, children)
 	local totalWidth = 0
+	local contentHeight = content.height or content:GetHeight() or 0
 	local maxHeight = 0
 	local paddingX = (content.spacing and content.spacing.x) or 10
 
@@ -31,14 +32,14 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:SetPoint("TOPLEFT", content, "TOPLEFT")
 		end
 
-		local childWidth
-		if child.width == "relative" then
-			childWidth = (content:GetWidth() * child.relWidth)
-			child:SetWidth(childWidth)
-		else
-			childWidth = frame:GetWidth()
+		if child.height == "fill" then
+			child:SetHeight(contentHeight)
+			frame:SetPoint("BOTTOM", content)
+		elseif child.width == "relative" then
+			child:SetHeight(contentHeight * child.relWidth)
 		end
 
+		local childWidth = frame:GetWidth()
 		totalWidth = totalWidth + childWidth + (i > 1 and paddingX or 0)
 		maxHeight = math.max(maxHeight, frame:GetHeight())
 
