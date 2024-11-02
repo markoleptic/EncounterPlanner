@@ -26,6 +26,7 @@ local format = format
 local currentAssignmentIndex = 0
 local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
 local firstAppearanceAssigneeOrder = {} --[[@as table<integer, TimelineAssignment>]]
+local uniqueAssignmentTable = {} --[[@as table<integer, Assignment>]]
 
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
 	return {
@@ -708,8 +709,11 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame)
 	end
 end
 
-local function HandleAssignmentEditorDataChanged(dataType, value)
-	local assignment = firstAppearanceSortedAssignments[currentAssignmentIndex].assignment --[[@as Assignment]]
+---@param dataType string
+---@param value string
+---@param timeline EPTimeline
+local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
+	local assignment = uniqueAssignmentTable[currentAssignmentIndex] --[[@as Assignment]]
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 			if getmetatable(assignment) ~= Private.CombatLogEventAssignment then
@@ -765,9 +769,12 @@ local function HandleAssignmentEditorDataChanged(dataType, value)
 	elseif dataType == "Target" then
 		assignment.targetName = value
 	end
+	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = CreateSortedAssignmentTables(Private.assignments)
+	timeline:updateAssignmentsAndAssignees(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
 end
 
-local function HandleTimelineAssignmentClicked()
+---@param timeline EPTimeline
+local function HandleTimelineAssignmentClicked(timeline)
 	if not Private.assignmentEditor then
 		Private.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		Private.assignmentEditor.obj = Private.mainFrame
@@ -780,7 +787,7 @@ local function HandleTimelineAssignmentClicked()
 			Private.assignmentEditor = nil
 		end)
 		Private.assignmentEditor:SetCallback("DataChanged", function(_, _, dataType, value)
-			HandleAssignmentEditorDataChanged(dataType, value)
+			HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		end)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
 			{ CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() },
@@ -793,7 +800,7 @@ local function HandleTimelineAssignmentClicked()
 		Private.assignmentEditor.assigneeDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(createAssigneeDropdownItems(), "EPDropdownItemToggle")
 	end
-	local assignment = firstAppearanceSortedAssignments[currentAssignmentIndex].assignment
+	local assignment = uniqueAssignmentTable[currentAssignmentIndex]
 	local assigneeName = string.match(assignment.assigneeNameOrRole, "class:%s*(%a+)")
 	-- todo: handle more types of groups
 	if assigneeName then
@@ -875,6 +882,9 @@ function AddOn:CreateGUI()
 	assignmentListFrame:SetFullWidth(true)
 
 	Private:Note()
+	for _, ass in ipairs(Private.assignments) do
+		uniqueAssignmentTable[ass.uniqueID] = ass
+	end
 	CreatePrettyClassNames()
 
 	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = CreateSortedAssignmentTables(Private.assignments)
@@ -907,9 +917,9 @@ function AddOn:CreateGUI()
 	timelineSpacer:SetRelativeWidth(0.8)
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetCallback("AssignmentClicked", function(_, _, sortedAssignmentIndex)
-		currentAssignmentIndex = sortedAssignmentIndex
-		HandleTimelineAssignmentClicked()
+	timeline:SetCallback("AssignmentClicked", function(_, _, uniqueID)
+		currentAssignmentIndex = uniqueID
+		HandleTimelineAssignmentClicked(timeline)
 	end)
 	timeline:SetRelativeWidth(0.8)
 

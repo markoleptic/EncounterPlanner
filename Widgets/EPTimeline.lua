@@ -388,6 +388,15 @@ local function SetEntries(self, abilities, abilityOrder, phases, assignments, as
 	HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
 end
 
+local function updateAssignmentsAndAssignees(self, assignments, assignees)
+	self.timelineAssignments = assignments
+	self.assignees = assignees
+
+	self:UpdateHeight()
+
+	HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
+end
+
 -- Updates the rendering of assignments on the timeline.
 ---@param self EPTimeline
 local function UpdateAssignments(self)
@@ -397,7 +406,13 @@ local function UpdateAssignments(self)
 	end
 
 	for index, assignment in ipairs(self.timelineAssignments) do
-		self:DrawAssignment(assignment.startTime, assignment.assignment.spellInfo.spellID, index, assignment.offset)
+		self:DrawAssignment(
+			assignment.startTime,
+			assignment.assignment.spellInfo.spellID,
+			index,
+			assignment.assignment.uniqueID,
+			assignment.offset
+		)
 	end
 end
 
@@ -407,7 +422,7 @@ end
 ---@param spellID integer spellID of the spell being assigned.
 ---@param index integer index into the assignments table.
 ---@param offsetY number offset from the top of the timeline frame.
-local function DrawAssignment(self, startTime, spellID, index, offsetY)
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, offsetY)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -430,7 +445,7 @@ local function DrawAssignment(self, startTime, spellID, index, offsetY)
 	end
 
 	assignment.spellID = spellID
-	assignment.assignmentIndex = index
+	assignment.assignmentIndex = uniqueID
 	if spellID == 0 or spellID == nil then
 		assignment:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
 	else
@@ -863,6 +878,7 @@ local function Constructor()
 		SetEntries = SetEntries,
 		CountUniqueAssignees = CountUniqueAssignees,
 		UpdateAssignments = UpdateAssignments,
+		updateAssignmentsAndAssignees = updateAssignmentsAndAssignees,
 		DrawAssignment = DrawAssignment,
 		UpdateBossAbilityBars = UpdateBossAbilityBars,
 		DrawBossAbilityBar = DrawBossAbilityBar,

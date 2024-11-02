@@ -29,6 +29,8 @@ local type = type
 ---| "Class"
 ---| "Individual"
 
+local assignmentIDCounter = 0
+
 ---@class Assignment
 ---@field assigneeNameOrRole string Who to assign the assignment to
 ---@field line string Originally parsed line in the form: {assigneeNameOrRole} {options}
@@ -45,6 +47,7 @@ Private.Assignment = {
 	strWithIconReplacements = "",
 	spellInfo = { spellID = 0, name = "", iconID = 0 },
 	targetName = "",
+	uniqueID = nil,
 }
 Private.Assignment.__index = Private.Assignment
 
@@ -96,6 +99,10 @@ Private.TimelineAssignment.__index = Private.TimelineAssignment
 function Private.Assignment:new(o)
 	o = o or {}
 	setmetatable(o, self)
+	if not o.uniqueID then
+		assignmentIDCounter = assignmentIDCounter + 1
+		o.uniqueID = assignmentIDCounter
+	end
 	return o
 end
 
