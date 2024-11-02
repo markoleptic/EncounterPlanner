@@ -87,6 +87,13 @@ local function HandleIconLeave(_, _)
 	tooltip:Hide()
 end
 
+local function HandleAssignmentMouseDown(frame, mouseButton, epTimeline)
+	if mouseButton ~= "LeftButton" then
+		return
+	end
+	-- TODO: Implement dragging an assignement spell icon to change the time
+end
+
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
 	if mouseButton ~= "RightButton" then
 		return
@@ -437,6 +444,9 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, offsetY
 		end)
 		assignment:SetScript("OnLeave", function(frame, motion)
 			HandleIconLeave(frame, motion)
+		end)
+		assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
+			HandleAssignmentMouseDown(frame, mouseButton, self)
 		end)
 		assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
 			HandleAssignmentMouseUp(frame, mouseButton, self)
