@@ -179,6 +179,7 @@ local assignmentTriggers = {
 local function HandleOkayButtonClicked(frame, mouseButtonType, down)
 	local self = frame.obj
 	self:Fire("OkayButtonClicked")
+	self:Release()
 end
 
 local function HandleOkayButtonEnter(frame, motion)
@@ -577,6 +578,7 @@ local function Constructor()
 	okayButton:SetScript("OnClick", HandleOkayButtonClicked)
 	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
 	closebutton:SetScript("OnClick", function()
+		widget:Fire("OkayButtonClicked")
 		widget:Release()
 	end)
 

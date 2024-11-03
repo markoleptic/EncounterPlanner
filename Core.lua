@@ -137,6 +137,51 @@ local function calculateTimelineAssignment(assignment)
 	return nil
 end
 
+---@param timelineAssignment TimelineAssignment
+local function UpdateTimelineAssignment(timelineAssignment)
+	local assignment = timelineAssignment.assignment
+	if getmetatable(assignment) == Private.CombatLogEventAssignment then
+		assignment = assignment --[[@as CombatLogEventAssignment]]
+		local ability = AddOn:FindBossAbility(assignment.combatLogEventSpellID)
+		local startTime = assignment.time
+		if ability and startTime then
+			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
+				for i = 1, min(assignment.spellCount, #ability.phases[1].castTimes) do
+					startTime = startTime + ability.phases[1].castTimes[i]
+				end
+			end
+			if assignment.combatLogEventType == "SCC" then
+				startTime = startTime + ability.castTime
+			end
+			timelineAssignment.startTime = startTime
+		end
+	elseif getmetatable(assignment) == Private.TimedAssignment then
+		assignment = assignment --[[@as TimedAssignment]]
+		timelineAssignment.startTime = assignment.time
+	elseif getmetatable(assignment) == Private.PhasedAssignment then
+		assignment = assignment --[[@as PhasedAssignment]]
+		local boss = AddOn:GetBoss("Broodtwister Ovi'nax")
+		if boss then
+			local totalOccurances = 0
+			for _, phaseData in pairs(boss.phases) do
+				totalOccurances = totalOccurances + phaseData.count
+			end
+			local currentPhase = 1
+			local bossPhaseOrder = {}
+			local runningStartTime = 0
+			while #bossPhaseOrder < totalOccurances and currentPhase ~= nil do
+				tinsert(bossPhaseOrder, currentPhase)
+				if currentPhase == assignment.phase then
+					timelineAssignment.startTime = runningStartTime
+					return
+				end
+				runningStartTime = runningStartTime + boss.phases[currentPhase].duration
+				currentPhase = boss.phases[currentPhase].repeatAfter
+			end
+		end
+	end
+end
+
 local function createAssigneeOrder(sortedAssignments)
 	-- Clear and rebuild the order and offset mappings
 	local order = 1
@@ -471,7 +516,18 @@ local function HandleAssignmentEditorDeleteButtonClicked(frame, _)
 	end
 end
 
-local function HandleAssignmentEditorOkayButtonClicked(frame, _) end
+local function HandleAssignmentEditorOkayButtonClicked(_, _)
+	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = SortAssignments(Private.assignments)
+	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
+	if assignmentContainer then
+		updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentContainer)
+	end
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+		timeline:UpdateTimeline()
+	end
+end
 
 ---@param dataType string
 ---@param value string
@@ -537,12 +593,13 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		assignment.targetName = value
 	end
 
-	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = SortAssignments(Private.assignments)
-	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
-	if assignmentContainer then
-		updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentContainer)
+	for _, timelineAssignment in ipairs(firstAppearanceSortedAssignments) do
+		if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
+			UpdateTimelineAssignment(timelineAssignment)
+			break
+		end
 	end
-	timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+
 	timeline:UpdateTimeline()
 end
 
