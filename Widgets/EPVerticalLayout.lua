@@ -35,17 +35,19 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		if child.width == "fill" then
 			child:SetWidth(contentWidth)
 			frame:SetPoint("RIGHT", content)
+			if child.DoLayout then
+				child:DoLayout()
+			end
 		elseif child.width == "relative" then
 			child:SetWidth(contentWidth * child.relWidth)
+			if child.DoLayout then
+				child:DoLayout()
+			end
 		end
 
 		local childHeight = frame:GetHeight()
 		totalHeight = totalHeight + childHeight + (i > 1 and paddingY or 0)
 		maxWidth = math.max(maxWidth, frame:GetWidth())
-
-		if child.DoLayout then
-			child:DoLayout()
-		end
 	end
 
 	content:SetHeight(totalHeight)

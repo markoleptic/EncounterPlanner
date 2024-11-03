@@ -28,11 +28,21 @@ end
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
 	if width and height then
-		if self.frame:GetHeight() ~= height or self.frame:GetWidth() ~= width then
-			self:SetHeight(height)
+		if width > 0 then
 			self:SetWidth(width)
 		end
+		self:SetHeight(height)
 	end
+end
+
+local function OnHeightSet(self, width)
+	self.content:SetHeight(width)
+	self.content.height = width
+end
+
+local function OnWidthSet(self, width)
+	self.content:SetWidth(width)
+	self.content.width = width
 end
 
 ---@param self EPContainer
@@ -67,6 +77,8 @@ local function Constructor()
 		LayoutFinished = LayoutFinished,
 		SetSpacing = SetSpacing,
 		SetHidden = SetHidden,
+		OnWidthSet = OnWidthSet,
+		OnHeightSet = OnHeightSet,
 		frame = frame,
 		type = Type,
 		content = content,

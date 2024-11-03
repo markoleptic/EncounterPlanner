@@ -1,9 +1,11 @@
 local Type = "EPContentFrameLayout"
 
 local AceGUI = LibStub("AceGUI-3.0")
-
 local geterrorhandler = geterrorhandler
 local xpcall = xpcall
+local max = math.max
+local listTimelinePadding = 6
+local topContainerPaddingPadding = 12
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -16,8 +18,8 @@ local function safecall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
-	local height = 0
 	local width = content.width or content:GetWidth() or 0
+
 	for i = 1, #children do
 		local child = children[i]
 
@@ -25,13 +27,15 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		frame:ClearAllPoints()
 		frame:Show()
 
-		if i == 1 then
-			frame:SetPoint("TOPLEFT", content)
-		elseif i == 2 then
-			frame:SetPoint("TOPLEFT", children[1].frame, "TOPRIGHT", 0, 0)
-			frame:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, 0)
-		elseif i == 3 then
-			frame:SetPoint("TOPLEFT", children[2].frame, "BOTTOMLEFT", 6, 0)
+		if i == 1 then -- top container
+			frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+			frame:SetPoint("TOPRIGHT", content, "TOPRIGHT")
+		elseif i == 2 then -- list
+			frame:SetPoint("TOPLEFT", children[1].frame, "BOTTOMLEFT", 0, -topContainerPaddingPadding)
+			frame:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT")
+		elseif i == 3 then -- timeline
+			frame:SetPoint("TOPLEFT", children[2].frame, "TOPRIGHT", listTimelinePadding, 0)
+			frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT")
 		end
 
 		if child.width == "fill" then
@@ -50,18 +54,19 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		end
 	end
 
+	local height = 0
 	if #children >= 1 then
-		height = math.max(height, children[1].frame.height or children[1].frame:GetHeight() or 0)
+		local topContainerHeight = children[1].frame.height or children[1].frame:GetHeight() or 0
+		height = max(height, topContainerHeight)
+		if #children >= 2 then
+			local leftContainerHeight = children[2].frame.height or children[2].frame:GetHeight() or 0
+			height = max(height, leftContainerHeight + topContainerHeight)
+			if #children >= 3 then
+				local rightContainerHeight = children[3].frame.height or children[3].frame:GetHeight() or 0
+				height = max(height, rightContainerHeight + topContainerHeight)
+			end
+		end
 	end
-	if #children >= 2 then
-		height = math.max(height, children[2].frame.height or children[2].frame:GetHeight() or 0)
-	end
-	if #children >= 3 then
-		height = math.max(
-			height,
-			(children[2].frame.height or children[2].frame:GetHeight() or 0)
-				+ (children[3].frame.height or children[3].frame:GetHeight())
-		)
-	end
+
 	safecall(content.obj.LayoutFinished, content.obj, nil, height)
 end)

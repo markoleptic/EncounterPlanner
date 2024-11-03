@@ -26,10 +26,15 @@ local tonumber = tonumber
 
 local bossAbilityPadding = 4
 local assignmentPadding = 2
+local paddingBetweenBossAbilitiesAndAssignments = 36
+local bottomLeftContainerWidth = 200
+local topContainerHeight = 36
+local dropdownContainerSpacing = { 0, 2 }
+local dropdownContainerLabelSpacing = { 0, 2 }
 
 local currentAssignmentIndex = 0
 local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
-local firstAppearanceAssigneeOrder = {} --[[@as table<integer, TimelineAssignment>]]
+local firstAppearanceAssigneeOrder = {} --[[@as table<integer, string>]]
 local uniqueAssignmentTable = {} --[[@as table<integer, Assignment>]]
 
 local function NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
@@ -707,6 +712,9 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame)
 	end
 end
 
+---@param value number|string
+local function HandleAssignmentDropdownValueChanged(value) end
+
 ---@param dataType string
 ---@param value string
 ---@param timeline EPTimeline
@@ -775,7 +783,8 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 end
 
 ---@param timeline EPTimeline
-local function HandleTimelineAssignmentClicked(timeline)
+local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
+	currentAssignmentIndex = uniqueID
 	if not Private.assignmentEditor then
 		Private.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		Private.assignmentEditor.obj = Private.mainFrame
@@ -852,106 +861,144 @@ local function HandleTimelineAssignmentClicked(timeline)
 	end
 end
 
-function AddOn:CreateGUI()
-	Private.mainFrame = AceGUI:Create("EPMainFrame")
-	Private.mainFrame:SetLayout("EPContentFrameLayout")
-	Private.mainFrame:SetCallback("OnRelease", function()
-		Private.mainFrame = nil
-	end)
+---@param assigneeOrder table<integer, string>]]
+---@param assignmentListContainer EPContainer
+local function updateAssignmentListEntries(assigneeOrder, assignmentListContainer)
+	assignmentListContainer:ReleaseChildren()
+	for index = 1, #assigneeOrder do
+		local abilityEntryText
+		local assigneeNameOrRole = assigneeOrder[index]
+		if assigneeNameOrRole == "{everyone}" then
+			abilityEntryText = "Everyone"
+		else
+			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+			if classMatch then
+				local prettyClassName = Private.prettyClassNames[classMatch]
+				if prettyClassName then
+					abilityEntryText = prettyClassName
+				else
+					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
+				end
+			elseif roleMatch then
+				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+			else
+				abilityEntryText = Private.roster[assigneeOrder[index]]
+			end
+		end
+		local assigneeEntry = AceGUI:Create("EPAbilityEntry")
+		assigneeEntry:SetText(abilityEntryText)
+		assigneeEntry:SetHeight(30)
+		assignmentListContainer:AddChild(assigneeEntry)
+	end
+end
 
-	local leftSideFrame = AceGUI:Create("SimpleGroup")
-	leftSideFrame:SetRelativeWidth(0.2)
-	leftSideFrame:SetAutoAdjustHeight(true)
-	leftSideFrame:SetLayout("List")
+---@param topContainer EPContainer
+---@param bossContainer EPContainer
+local function SetupTopContainer(topContainer, bossContainer, bossDropdown, timeline, bossAbilityContainer)
+	topContainer:SetLayout("EPHorizontalLayout")
+	topContainer:SetHeight(topContainerHeight)
+	topContainer:SetFullWidth(true)
 
-	local dropdown = AceGUI:Create("EPDropdown")
-	dropdown:SetFullWidth(true)
-	local dropdownData = {}
+	bossContainer:SetLayout("EPVerticalLayout")
+	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
+
+	local bossLabel = AceGUI:Create("EPLabel")
+	bossLabel:SetText("Boss:")
+	bossLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+
+	local bossDropdownData = {}
 	for index, instance in ipairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterId)
 		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterId)
 		local iconText = format("|T%s:16|t %s", iconImage, instance.name)
-		tinsert(dropdownData, index, iconText)
+		tinsert(bossDropdownData, index, iconText)
 	end
-	dropdown:AddItems(dropdownData, "EPDropdownItemToggle")
-	leftSideFrame:AddChild(dropdown)
+	bossDropdown:AddItems(bossDropdownData, "EPDropdownItemToggle")
+	bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		HandleBossDropdownValueChanged(value, timeline, bossAbilityContainer)
+	end)
 
-	local dropdownSpacer = AceGUI:Create("EPSpacer")
-	dropdownSpacer:SetHeight(12)
-	leftSideFrame:AddChild(dropdownSpacer)
+	local assignmentSortContainer = AceGUI:Create("EPContainer")
+	assignmentSortContainer:SetLayout("EPVerticalLayout")
+	assignmentSortContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
-	local listFrame = AceGUI:Create("EPContainer")
-	listFrame:SetLayout("EPVerticalLayout")
-	listFrame:SetFullWidth(true)
-	listFrame:SetSpacing(0, bossAbilityPadding)
-	leftSideFrame:AddChild(listFrame)
+	local assignmentSortLabel = AceGUI:Create("EPLabel")
+	assignmentSortLabel:SetText("Sort Assignment By:")
+	assignmentSortLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
-	local assignmentSortDropdownTopSpacer = AceGUI:Create("EPSpacer")
-	assignmentSortDropdownTopSpacer:SetHeight(6)
-	leftSideFrame:AddChild(assignmentSortDropdownTopSpacer)
 	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
 	assignmentSortDropdown:AddItems({
 		{ itemValue = "First Appearance", text = "First Appearance", dropdownItemMenuData = {} },
 		{ itemValue = "Alphabetical", text = "Alphabetical", dropdownItemMenuData = {} },
 		{ itemValue = "Role", text = "Role", dropdownItemMenuData = {} },
 	}, "EPDropdownItemToggle")
-	assignmentSortDropdown:SetFullWidth(true)
-	leftSideFrame:AddChild(assignmentSortDropdown)
-	local assignmentSortDropdownBottomSpacer = AceGUI:Create("EPSpacer")
-	assignmentSortDropdownBottomSpacer:SetHeight(6)
-	leftSideFrame:AddChild(assignmentSortDropdownBottomSpacer)
+	assignmentSortDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		HandleAssignmentDropdownValueChanged(value)
+	end)
 
-	local assignmentListFrame = AceGUI:Create("EPContainer")
-	assignmentListFrame:SetLayout("EPVerticalLayout")
-	assignmentListFrame:SetFullWidth(true)
-	assignmentListFrame:SetSpacing(0, assignmentPadding)
+	bossContainer:AddChild(bossLabel)
+	bossContainer:AddChild(bossDropdown)
+	assignmentSortContainer:AddChild(assignmentSortLabel)
+	assignmentSortContainer:AddChild(assignmentSortDropdown)
+	topContainer:AddChild(bossContainer)
+	topContainer:AddChild(assignmentSortContainer)
+end
 
+---@param bottomLeftContainer EPContainer
+---@param bossAbilityContainer EPContainer
+---@param assignmentListContainer EPContainer
+local function SetupBottomLeftContainer(bottomLeftContainer, bossAbilityContainer, assignmentListContainer)
+	bottomLeftContainer:SetLayout("EPVerticalLayout")
+	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
+	bottomLeftContainer:SetSpacing(0, paddingBetweenBossAbilitiesAndAssignments)
+
+	bossAbilityContainer:SetLayout("EPVerticalLayout")
+	bossAbilityContainer:SetFullWidth(true)
+	bossAbilityContainer:SetSpacing(0, bossAbilityPadding)
+
+	assignmentListContainer:SetLayout("EPVerticalLayout")
+	assignmentListContainer:SetFullWidth(true)
+	assignmentListContainer:SetSpacing(0, assignmentPadding)
+
+	bottomLeftContainer:AddChild(bossAbilityContainer)
+	bottomLeftContainer:AddChild(assignmentListContainer)
+end
+
+function AddOn:CreateGUI()
 	Private:Note()
 	for _, ass in ipairs(Private.assignments) do
 		uniqueAssignmentTable[ass.uniqueID] = ass
 	end
-	CreatePrettyClassNames()
-
 	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = CreateSortedAssignmentTables(Private.assignments)
 
-	for index = 1, #firstAppearanceAssigneeOrder do
-		local assigneeNameOrRole = string.match(firstAppearanceAssigneeOrder[index], "class:%s*(%a+)")
-		if not assigneeNameOrRole or assigneeNameOrRole == "" then
-			assigneeNameOrRole = Private.roster[firstAppearanceAssigneeOrder[index]]
-		else
-			assigneeNameOrRole = Private.prettyClassNames[assigneeNameOrRole] or assigneeNameOrRole
-		end
-		-- todo: handle more types of groups
-		local abilityEntry = AceGUI:Create("EPAbilityEntry")
-		abilityEntry:SetText(assigneeNameOrRole)
-		abilityEntry:SetFullWidth(true)
-		abilityEntry:SetHeight(30)
-		assignmentListFrame:AddChild(abilityEntry)
-	end
-	assignmentListFrame:DoLayout()
-	leftSideFrame:AddChild(assignmentListFrame)
-
-	local timelineSpacer = AceGUI:Create("EPSpacer")
-	timelineSpacer:SetHeight(36)
-	timelineSpacer:SetRelativeWidth(0.8)
+	Private.mainFrame = AceGUI:Create("EPMainFrame")
+	Private.mainFrame:SetLayout("EPContentFrameLayout")
+	Private.mainFrame:SetCallback("OnRelease", function()
+		Private.mainFrame = nil
+	end)
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetCallback("AssignmentClicked", function(_, _, uniqueID)
-		currentAssignmentIndex = uniqueID
-		HandleTimelineAssignmentClicked(timeline)
-	end)
-	timeline:SetRelativeWidth(0.8)
+	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 
-	Private.mainFrame:AddChild(leftSideFrame)
-	Private.mainFrame:AddChild(timelineSpacer)
+	local topContainer = AceGUI:Create("EPContainer")
+	local bossContainer = AceGUI:Create("EPContainer")
+	local bottomLeftContainer = AceGUI:Create("EPContainer")
+	local bossAbilityContainer = AceGUI:Create("EPContainer")
+	local bossDropdown = AceGUI:Create("EPDropdown")
+	local assignmentListContainer = AceGUI:Create("EPContainer")
+
+	SetupTopContainer(topContainer, bossContainer, bossDropdown, timeline, bossAbilityContainer)
+	SetupBottomLeftContainer(bottomLeftContainer, bossAbilityContainer, assignmentListContainer)
+	updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentListContainer)
+
+	Private.mainFrame:AddChild(topContainer)
+	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
 
-	dropdown:SetCallback("OnValueChanged", function(_, _, value)
-		HandleBossDropdownValueChanged(value, timeline, listFrame)
-	end)
-
-	dropdown:SetValue(5)
-	HandleBossDropdownValueChanged(5, timeline, listFrame)
+	-- Set default selected boss
+	bossDropdown:SetValue(1)
+	HandleBossDropdownValueChanged(1, timeline, bossAbilityContainer)
 end
 
 -- Addon is first loaded
@@ -962,6 +1009,7 @@ function AddOn:OnInitialize()
 	self.DB.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
+	CreatePrettyClassNames()
 	self.OnInitialize = nil
 end
 

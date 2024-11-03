@@ -474,7 +474,6 @@ do
 	---@param checked boolean
 	---@param value any
 	local function HandleMenuItemValueChanged(dropdownItem, event, checked, value)
-		print(value)
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
 			self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().value, checked)
