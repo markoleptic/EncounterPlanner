@@ -3,6 +3,8 @@ local Type = "EPHorizontalLayout"
 local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler
 local xpcall = xpcall
+local max = math.max
+local defaultSpacing = 10
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -16,9 +18,11 @@ end
 
 AceGUI:RegisterLayout(Type, function(content, children)
 	local totalWidth = 0
-	local contentHeight = content.height or content:GetHeight() or 0
 	local maxHeight = 0
-	local paddingX = (content.spacing and content.spacing.x) or 10
+	local paddingX = defaultSpacing
+	if content.spacing then
+		paddingX = content.spacing.x
+	end
 
 	for i = 1, #children do
 		local child = children[i]
@@ -31,26 +35,14 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		else
 			frame:SetPoint("TOPLEFT", content, "TOPLEFT")
 		end
-		if i == #children then
-			frame:SetPoint("RIGHT", content, "RIGHT")
-		end
 
-		if child.height == "fill" then
-			child:SetHeight(contentHeight)
-			frame:SetPoint("BOTTOM", content)
-			if child.DoLayout then
-				child:DoLayout()
-			end
-		elseif child.width == "relative" then
-			child:SetHeight(contentHeight * child.relWidth)
-			if child.DoLayout then
-				child:DoLayout()
-			end
+		if child.DoLayout then
+			child:DoLayout()
 		end
 
 		local childWidth = frame:GetWidth()
 		totalWidth = totalWidth + childWidth + (i > 1 and paddingX or 0)
-		maxHeight = math.max(maxHeight, frame:GetHeight())
+		maxHeight = max(maxHeight, frame:GetHeight())
 	end
 
 	content:SetHeight(maxHeight)

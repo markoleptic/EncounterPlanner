@@ -5,7 +5,7 @@ local geterrorhandler = geterrorhandler
 local xpcall = xpcall
 local max = math.max
 local listTimelinePadding = 6
-local topContainerPaddingPadding = 12
+local topContainerPadding = 12
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -31,26 +31,21 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:SetPoint("TOPLEFT", content, "TOPLEFT")
 			frame:SetPoint("TOPRIGHT", content, "TOPRIGHT")
 		elseif i == 2 then -- list
-			frame:SetPoint("TOPLEFT", children[1].frame, "BOTTOMLEFT", 0, -topContainerPaddingPadding)
+			frame:SetPoint("TOPLEFT", children[1].frame, "BOTTOMLEFT", 0, -topContainerPadding)
 			frame:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT")
 		elseif i == 3 then -- timeline
 			frame:SetPoint("TOPLEFT", children[2].frame, "TOPRIGHT", listTimelinePadding, 0)
-			frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT")
 		end
 
 		if child.width == "fill" then
 			child:SetWidth(width)
 			frame:SetPoint("RIGHT", content)
-
-			if child.DoLayout then
-				child:DoLayout()
-			end
 		elseif child.width == "relative" then
 			child:SetWidth(width * child.relWidth)
+		end
 
-			if child.DoLayout then
-				child:DoLayout()
-			end
+		if child.DoLayout then
+			child:DoLayout()
 		end
 	end
 
@@ -59,11 +54,11 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		local topContainerHeight = children[1].frame.height or children[1].frame:GetHeight() or 0
 		height = max(height, topContainerHeight)
 		if #children >= 2 then
-			local leftContainerHeight = children[2].frame.height or children[2].frame:GetHeight() or 0
-			height = max(height, leftContainerHeight + topContainerHeight)
+			local listHeight = children[2].frame.height or children[2].frame:GetHeight() or 0
+			height = max(height, listHeight + topContainerHeight + topContainerPadding)
 			if #children >= 3 then
-				local rightContainerHeight = children[3].frame.height or children[3].frame:GetHeight() or 0
-				height = max(height, rightContainerHeight + topContainerHeight)
+				local timelineHeight = children[3].frame.height or children[3].frame:GetHeight() or 0
+				height = max(height, timelineHeight + topContainerHeight + topContainerPadding)
 			end
 		end
 	end

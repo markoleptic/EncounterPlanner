@@ -796,6 +796,7 @@ end
 
 ---@param self EPTimeline
 local function UpdateHeight(self)
+	print("UpdateHeight", self:CalculateRequiredHeight())
 	self:SetHeight(self:CalculateRequiredHeight())
 	if self.parent and self.parent.DoLayout then
 		self.parent:DoLayout()
