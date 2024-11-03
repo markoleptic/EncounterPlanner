@@ -176,7 +176,10 @@ local assignmentTriggers = {
 ---@field previewLabel EPLabel
 ---@field obj any
 
-local function HandleOkayButtonClicked(frame, mouseButtonType, down) end
+local function HandleOkayButtonClicked(frame, mouseButtonType, down)
+	local self = frame.obj
+	self:Fire("OkayButtonClicked")
+end
 
 local function HandleOkayButtonEnter(frame, motion)
 	FlashButton_OnEnter(frame)
@@ -186,7 +189,10 @@ local function HandleOkayButtonLeave(frame, motion)
 	FlashButton_OnLeave(frame)
 end
 
-local function HandleDeleteButtonClicked(frame, mouseButtonType, down) end
+local function HandleDeleteButtonClicked(frame, mouseButtonType, down)
+	local self = frame.obj
+	self:Fire("DeleteButtonClicked")
+end
 
 local function HandleDeleteButtonEnter(frame, motion)
 	FlashButton_OnEnter(frame)
@@ -520,9 +526,9 @@ local function Constructor()
 		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
 		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
 	)
-	deleteButton:SetScript("OnClick", HandleOkayButtonClicked)
-	deleteButton:SetScript("OnEnter", HandleOkayButtonEnter)
-	deleteButton:SetScript("OnLeave", HandleOkayButtonLeave)
+	deleteButton:RegisterForClicks("LeftButtonUp")
+	deleteButton:SetScript("OnEnter", HandleDeleteButtonEnter)
+	deleteButton:SetScript("OnLeave", HandleDeleteButtonLeave)
 	deleteButton:SetPoint("TOPLEFT", ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
 	deleteButton:SetPoint("BOTTOMLEFT", ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
 	deleteButton:SetWidth(75)
@@ -533,9 +539,9 @@ local function Constructor()
 		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
 		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
 	)
-	okayButton:SetScript("OnClick", HandleDeleteButtonClicked)
-	okayButton:SetScript("OnEnter", HandleDeleteButtonEnter)
-	okayButton:SetScript("OnLeave", HandleDeleteButtonLeave)
+	okayButton:RegisterForClicks("LeftButtonUp")
+	okayButton:SetScript("OnEnter", HandleOkayButtonEnter)
+	okayButton:SetScript("OnLeave", HandleOkayButtonLeave)
 	okayButton:SetPoint("TOPRIGHT", -ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
 	okayButton:SetPoint("BOTTOMRIGHT", -ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
 	okayButton:SetWidth(75)
@@ -564,6 +570,11 @@ local function Constructor()
 		deleteButton = deleteButton,
 	}
 
+	deleteButton.obj = widget
+	okayButton.obj = widget
+
+	deleteButton:SetScript("OnClick", HandleDeleteButtonClicked)
+	okayButton:SetScript("OnClick", HandleOkayButtonClicked)
 	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
 	closebutton:SetScript("OnClick", function()
 		widget:Release()

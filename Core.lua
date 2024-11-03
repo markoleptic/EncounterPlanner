@@ -16,6 +16,7 @@ local rawget = rawget
 local rawset = rawset
 local getmetatable = getmetatable
 local setmetatable = setmetatable
+local tremove = tremove
 local sort = sort
 local tinsert = tinsert
 local type = type
@@ -391,6 +392,39 @@ local function createAssigneeDropdownItems()
 	return dropdownItems
 end
 
+---@param assigneeOrder table<integer, string>]]
+---@param assignmentListContainer EPContainer
+local function updateAssignmentListEntries(assigneeOrder, assignmentListContainer)
+	assignmentListContainer:ReleaseChildren()
+	for index = 1, #assigneeOrder do
+		local abilityEntryText
+		local assigneeNameOrRole = assigneeOrder[index]
+		if assigneeNameOrRole == "{everyone}" then
+			abilityEntryText = "Everyone"
+		else
+			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+			if classMatch then
+				local prettyClassName = Private.prettyClassNames[classMatch]
+				if prettyClassName then
+					abilityEntryText = prettyClassName
+				else
+					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
+				end
+			elseif roleMatch then
+				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+			else
+				abilityEntryText = Private.roster[assigneeOrder[index]]
+			end
+		end
+		local assigneeEntry = AceGUI:Create("EPAbilityEntry")
+		assigneeEntry:SetText(abilityEntryText)
+		assigneeEntry:SetHeight(30)
+		assignmentListContainer:AddChild(assigneeEntry)
+	end
+	assignmentListContainer:DoLayout()
+end
+
 ---@param value number|string
 ---@param timeline EPTimeline
 ---@param listFrame AceGUIContainer
@@ -413,6 +447,31 @@ end
 
 ---@param value number|string
 local function HandleAssignmentDropdownValueChanged(value) end
+
+local function HandleAssignmentEditorDeleteButtonClicked(frame, _)
+	Private.assignmentEditor:Release()
+	local assignmentToRemove = uniqueAssignmentTable[currentAssignmentIndex]
+	currentAssignmentIndex = 0
+	for i, v in ipairs(Private.assignments) do
+		if v == assignmentToRemove then
+			table.remove(Private.assignments, i)
+			break
+		end
+	end
+	tremove(uniqueAssignmentTable, currentAssignmentIndex)
+	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = SortAssignments(Private.assignments)
+	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
+	if assignmentContainer then
+		updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentContainer)
+	end
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+		timeline:UpdateTimeline()
+	end
+end
+
+local function HandleAssignmentEditorOkayButtonClicked(frame, _) end
 
 ---@param dataType string
 ---@param value string
@@ -477,7 +536,12 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 	elseif dataType == "Target" then
 		assignment.targetName = value
 	end
+
 	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = SortAssignments(Private.assignments)
+	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
+	if assignmentContainer then
+		updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentContainer)
+	end
 	timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
 	timeline:UpdateTimeline()
 end
@@ -493,12 +557,15 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 		Private.assignmentEditor:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		Private.assignmentEditor:SetLayout("EPVerticalLayout")
 		Private.assignmentEditor:DoLayout()
+
 		Private.assignmentEditor:SetCallback("OnRelease", function()
 			Private.assignmentEditor = nil
 		end)
 		Private.assignmentEditor:SetCallback("DataChanged", function(_, _, dataType, value)
 			HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		end)
+		Private.assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
+		Private.assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
 			{ CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() },
 			"EPDropdownItemToggle"
@@ -558,38 +625,6 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 		Private.assignmentEditor:SetAssignmentType("PhasedAssignment")
 		Private.assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
 		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
-	end
-end
-
----@param assigneeOrder table<integer, string>]]
----@param assignmentListContainer EPContainer
-local function updateAssignmentListEntries(assigneeOrder, assignmentListContainer)
-	assignmentListContainer:ReleaseChildren()
-	for index = 1, #assigneeOrder do
-		local abilityEntryText
-		local assigneeNameOrRole = assigneeOrder[index]
-		if assigneeNameOrRole == "{everyone}" then
-			abilityEntryText = "Everyone"
-		else
-			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-			if classMatch then
-				local prettyClassName = Private.prettyClassNames[classMatch]
-				if prettyClassName then
-					abilityEntryText = prettyClassName
-				else
-					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
-				end
-			elseif roleMatch then
-				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
-			else
-				abilityEntryText = Private.roster[assigneeOrder[index]]
-			end
-		end
-		local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-		assigneeEntry:SetText(abilityEntryText)
-		assigneeEntry:SetHeight(30)
-		assignmentListContainer:AddChild(assigneeEntry)
 	end
 end
 
