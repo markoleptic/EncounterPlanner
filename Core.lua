@@ -838,6 +838,13 @@ function AddOn:CreateGUI()
 	bossDropdown:SetValue(1)
 	HandleBossDropdownValueChanged(1, timeline, bossAbilityContainer)
 	assignmentSortDropdown:SetValue("First Appearance")
+
+	-- Center frame in middle of screen
+	local screenWidth = UIParent:GetWidth()
+	local screenHeight = UIParent:GetHeight()
+	local xPos = (screenWidth / 2) - (Private.mainFrame.frame:GetWidth() / 2)
+	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
+	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
 end
 
 -- Addon is first loaded

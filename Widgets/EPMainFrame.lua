@@ -90,11 +90,6 @@ end
 local function OnAcquire(self)
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	local screenWidth = UIParent:GetWidth()
-	local screenHeight = UIParent:GetHeight()
-	local xPos = (screenWidth / 2) - (self.frame:GetWidth() / 2)
-	local yPos = -(screenHeight / 2) + (self.frame:GetHeight() / 2)
-	self.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
 	self.frame:Show()
 end
 
