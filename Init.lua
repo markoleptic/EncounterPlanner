@@ -29,6 +29,11 @@ local type = type
 ---| "Class"
 ---| "Individual"
 
+---@alias AssignmentSortType
+---| "Alphabetical"
+---| "First Appearance"
+---| "Role"
+
 local assignmentIDCounter = 0
 
 ---@class Assignment
