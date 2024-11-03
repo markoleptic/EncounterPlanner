@@ -204,6 +204,50 @@ local function createAssigneeOrder(sortedAssignments)
 	return assigneeOrder
 end
 
+---@param assignments table<integer, Assignment>
+local function DetermineRolesFromAssignments(assignments)
+	local assigneeAssignments = {}
+	local healerClasses =
+		{ ["DRUID"] = 1, ["EVOKER"] = 1, ["MONK"] = 1, ["PALADIN"] = 1, ["PRIEST"] = 1, ["SHAMAN"] = 1 }
+	for _, assignment in ipairs(assignments) do
+		local assignee = assignment.assigneeNameOrRole
+		if not assigneeAssignments[assignee] then
+			assigneeAssignments[assignee] = {}
+		end
+		tinsert(assigneeAssignments[assignee], assignment)
+	end
+	local determinedRoles = {}
+	for assignee, currentAssigneeAssignments in pairs(assigneeAssignments) do
+		for _, currentAssigneeAssignment in pairs(currentAssigneeAssignments) do
+			if determinedRoles[assignee] then
+				break
+			end
+			local spellID = currentAssigneeAssignment.spellInfo.spellID
+			if spellID == 98008 or spellID == 108280 then -- Shaming healing bc classified as raid defensive
+				determinedRoles[assignee] = 0
+				break
+			end
+			for className, classData in pairs(Private.spellDB.classes) do
+				if determinedRoles[assignee] then
+					break
+				end
+				for _, spellInfo in pairs(classData) do
+					if spellInfo["spellID"] == spellID then
+						if spellInfo["type"] == "heal" and healerClasses[className] then
+							determinedRoles[assignee] = 0
+							break
+						end
+					end
+				end
+			end
+		end
+		if not determinedRoles[assignee] then
+			determinedRoles[assignee] = 1
+		end
+	end
+	return determinedRoles
+end
+
 -- Sorts assignments based on first appearance in the fight.
 ---@param assignments table<integer, Assignment>
 ---@param assignmentSortType AssignmentSortType|nil
@@ -232,10 +276,26 @@ local function SortAssignments(assignments, assignmentSortType)
 		end)
 	elseif assignmentSortType == "First Appearance" then
 		sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			if a.startTime == b.startTime then
+				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+			end
 			return a.startTime < b.startTime
 		end)
-	elseif assignmentSortType == "Role" then
-		-- TODO: Implement a way to find a class and spec from spellIDs
+	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
+		local determinedRoles = DetermineRolesFromAssignments(assignments)
+		sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			if determinedRoles[a.assignment.assigneeNameOrRole] == determinedRoles[b.assignment.assigneeNameOrRole] then
+				if assignmentSortType == "Role > Alphabetical" then
+					return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+					end
+					return a.startTime < b.startTime
+				end
+			end
+			return determinedRoles[a.assignment.assigneeNameOrRole] < determinedRoles[b.assignment.assigneeNameOrRole]
+		end)
 	end
 
 	return sortedAssignments, createAssigneeOrder(sortedAssignments)
@@ -764,9 +824,10 @@ local function SetupTopContainer(
 	assignmentSortLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
 	assignmentSortDropdown:AddItems({
-		{ itemValue = "First Appearance", text = "First Appearance", dropdownItemMenuData = {} },
 		{ itemValue = "Alphabetical", text = "Alphabetical", dropdownItemMenuData = {} },
-		{ itemValue = "Role", text = "Role", dropdownItemMenuData = {} },
+		{ itemValue = "First Appearance", text = "First Appearance", dropdownItemMenuData = {} },
+		{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical", dropdownItemMenuData = {} },
+		{ itemValue = "Role > First Appearance", text = "Role > First Appearance", dropdownItemMenuData = {} },
 	}, "EPDropdownItemToggle")
 	assignmentSortDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		HandleAssignmentSortDropdownValueChanged(value)

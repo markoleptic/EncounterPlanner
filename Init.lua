@@ -32,7 +32,8 @@ local type = type
 ---@alias AssignmentSortType
 ---| "Alphabetical"
 ---| "First Appearance"
----| "Role"
+---| "Role > Alphabetical"
+---| "Role > First Appearance"
 
 local assignmentIDCounter = 0
 
