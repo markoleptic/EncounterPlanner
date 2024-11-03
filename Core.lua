@@ -405,13 +405,9 @@ local function HandleBossDropdownValueChanged(value, timeline, listFrame)
 			listFrame:AddChild(abilityEntry)
 		end
 		listFrame:DoLayout()
-		timeline:SetEntries(
-			boss.abilities,
-			boss.sortedAbilityIDs,
-			boss.phases,
-			firstAppearanceSortedAssignments,
-			firstAppearanceAssigneeOrder
-		)
+		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
+		timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+		timeline:UpdateTimeline()
 	end
 end
 
@@ -482,7 +478,8 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		assignment.targetName = value
 	end
 	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder = SortAssignments(Private.assignments)
-	timeline:updateAssignmentsAndAssignees(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+	timeline:SetAssignments(firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder)
+	timeline:UpdateTimeline()
 end
 
 ---@param timeline EPTimeline
