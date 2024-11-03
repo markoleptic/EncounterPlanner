@@ -261,13 +261,28 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 	end
 	local self = frame.obj
 
-	local scrollFrame = self.frame
+	local currentX, _ = GetCursorPosition()
+	currentX = currentX / UIParent:GetEffectiveScale()
 
-	local currentX, currentY = GetCursorPosition()
-	currentX = currentX / scrollFrame:GetEffectiveScale()
-	currentY = currentY / scrollFrame:GetEffectiveScale()
+	--local timelineFrame = self.timelineFrame
+	--local frameX = timelineFrame:GetLeft()
+	--local relativeCursorX = currentX - frameX
 
-	-- todo: Choose the nearest boss ability based on horizontal distance from the cursor and create a new assignment
+	local nearestBarIndex = nil
+	local minDistance = math.huge
+
+	for index, bar in ipairs(self.bossAbilityTextureBars) do
+		if bar:IsShown() then
+			local distance = math.abs(bar:GetLeft() - currentX)
+			if distance < minDistance then
+				minDistance = distance
+				nearestBarIndex = index
+			end
+		end
+	end
+	if nearestBarIndex then
+		self:Fire("CreateNewAssignment", self.bossAbilityTextureBars[nearestBarIndex].abilityData)
+	end
 end
 
 -- Helper function to draw a boss ability timeline bar.
@@ -277,7 +292,8 @@ end
 ---@param color integer[] color of the bar.
 ---@param index integer index into the bars table.
 ---@param offset number offset from the top of the timeline frame.
-local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset)
+---@param abilityData table
+local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset, abilityData)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -289,11 +305,14 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
 	local timelinetimeEndPosition = (endTime / totalTimelineDuration) * timelineWidth
 
+	---@class Texture
 	local bar = self.bossAbilityTextureBars[index]
 	if not bar then
 		bar = timelineFrame:CreateTexture(nil, "OVERLAY")
 		self.bossAbilityTextureBars[index] = bar
 	end
+
+	bar.abilityData = abilityData
 
 	local r, g, b, a = unpack(color)
 	bar:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
@@ -405,22 +424,38 @@ local function UpdateBossAbilityBars(self)
 							local castEnd = castStart + abilityData.castTime
 							local effectEnd = castEnd + abilityData.duration
 
-							DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset)
+							DrawBossAbilityBar(
+								self,
+								castStart,
+								effectEnd,
+								color,
+								index,
+								offset,
+								{ spellID = spellID, phase = phaseId, phaseCastTime = castTime }
+							)
+
 							index = index + 1
 
 							-- Handle repeat intervals for abilities
 							if phaseDetails.repeatInterval then
 								local repeatInterval = phaseDetails.repeatInterval
 								local nextRepeatStart = castStart + repeatInterval
+								local repeatInstance = 1
 
 								while nextRepeatStart < phaseStartTime + phaseData.duration do
 									local repeatEnd = nextRepeatStart + abilityData.castTime
 									local repeatEffectEnd = repeatEnd + abilityData.duration
 
-									DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, index, offset)
-									index = index + 1
+									DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, index, offset, {
+										spellID = spellID,
+										phase = phaseId,
+										phaseCastTime = castTime,
+										repeatInstance = repeatInstance,
+									})
 
+									index = index + 1
 									nextRepeatStart = nextRepeatStart + repeatInterval
+									repeatInstance = repeatInstance + 1
 								end
 							end
 						end
@@ -444,7 +479,14 @@ local function UpdateBossAbilityBars(self)
 									local castStart = cumulativeTriggerTime + cumulativeCastTime
 									local castEnd = castStart + abilityData.castTime
 									local effectEnd = castEnd + abilityData.duration
-									DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset)
+									DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
+										cleuEventType = eventTriggerData.cleuEventType,
+										spellID = spellID,
+										phase = phaseId,
+										triggerSpellID = triggerSpellID,
+										triggerCastTime = castTime,
+										castOccurance = castOccurance,
+									})
 									index = index + 1
 								end
 								if
@@ -453,14 +495,28 @@ local function UpdateBossAbilityBars(self)
 								then
 									cumulativeCastTime = cumulativeCastTime + cumulativeTriggerTime
 									while cumulativeCastTime < totalTimelineDuration do
+										local repeatInstance = 1
 										for _, repeatCastTime in ipairs(eventTriggerData.repeatCriteria.castTimes) do
 											cumulativeCastTime = cumulativeCastTime + repeatCastTime
 											local castStart = cumulativeCastTime
 											local castEnd = cumulativeCastTime + abilityData.castTime
 											local effectEnd = castEnd + abilityData.duration
-											DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset)
+											local castOccuranceRepeatInstance = 1
+
+											DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
+												cleuEventType = eventTriggerData.cleuEventType,
+												spellID = spellID,
+												phase = phaseId,
+												triggerSpellID = triggerSpellID,
+												castOccurance = castOccurance,
+												repeatInstance = repeatInstance,
+												castOccuranceRepeatInstance = castOccuranceRepeatInstance,
+											})
+
 											index = index + 1
+											castOccuranceRepeatInstance = castOccuranceRepeatInstance + 1
 										end
+										repeatInstance = repeatInstance + 1
 									end
 								end
 							end

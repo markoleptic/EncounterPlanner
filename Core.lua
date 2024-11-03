@@ -628,6 +628,11 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 	end
 end
 
+---@param timeline EPTimeline
+local function HandleCreateNewAssignment(timeline, _, abilityData)
+	-- TODO: Find the boss ability using abilityData to create a new assignment and open assignment editor
+end
+
 ---@param topContainer EPContainer
 ---@param bossContainer EPContainer
 local function SetupTopContainer(topContainer, bossContainer, bossDropdown, timeline, bossAbilityContainer)
@@ -715,6 +720,7 @@ function AddOn:CreateGUI()
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
+	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
 
 	local topContainer = AceGUI:Create("EPContainer")
 	local bossContainer = AceGUI:Create("EPContainer")
