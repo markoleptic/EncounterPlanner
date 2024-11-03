@@ -667,7 +667,6 @@ do
 	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
 	local function AddItems(self, dropdownItemData, leafType)
 		for index, itemData in ipairs(dropdownItemData) do
-			DevTool:AddData(itemData)
 			if type(itemData) == "string" then
 				self:AddItem(index, itemData, leafType)
 			elseif type(itemData) == "table" and #itemData.dropdownItemMenuData > 0 then

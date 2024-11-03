@@ -619,8 +619,5 @@ function Private:Note()
 	if GMRT and GMRT.F then
 		self:ParseNote(VMRT.Note.Text1 or "", "shared")
 		self:ParseNote(VMRT.Note.SelfText or "", "personal")
-		if DevTool then
-			DevTool:AddData(self)
-		end
 	end
 end

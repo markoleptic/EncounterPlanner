@@ -10,6 +10,7 @@
 
 embeds.xml
 Init.lua
+NerubarPalace.lua
 Spells.lua
 Widgets\Widgets.xml
 Note.lua
