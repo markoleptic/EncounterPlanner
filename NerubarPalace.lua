@@ -11,213 +11,239 @@ local pairs = pairs
 local sort = sort
 local tinsert = tinsert
 
-function AddOn:NewBoss(name, bossIds, journalEncounterId, dungeonEncounterId)
-	return {
-		name = name,
-		bossIds = bossIds,
-		journalEncounterId = journalEncounterId,
-		dungeonEncounterId = dungeonEncounterId,
-	}
-end
-
-AddOn.Defaults = {
-	profile = {
-		instances = {
-			["Nerub'ar Palace"] = {
-				name = "Nerub'ar Palace",
-				journalInstanceId = 1273, -- all bosses share same JournalInstanceID
-				instanceId = 2657, -- the instance id for the zone the boss is located in (?)
-				bosses = {
-					AddOn:NewBoss("Ulgrax the Devourer", 215657, 2607, 2902),
-					AddOn:NewBoss("The Bloodbound Horror", 214502, 2611, 2917),
-					AddOn:NewBoss("Sikran, Captain of the Sureki", 214503, 2599, 2898),
-					AddOn:NewBoss("Rasha'nan", 214504, 2609, 2918),
-					AddOn:NewBoss("Broodtwister Ovi'nax", 214506, 2612, 2919),
-					AddOn:NewBoss("Nexus-Princess Ky'veza", 217748, 2601, 2920),
-					AddOn:NewBoss("The Silken Court", { 217489, 217491 }, 2608, 2921),
-					AddOn:NewBoss("Queen Ansurek", 218370, 2602, 2922),
-				},
-				order = { 1, 2, 3, 4, 5, 6, 7, 8 },
-			},
+Private.raidInstances = {
+	["Nerub'ar Palace"] = Private.classes.RaidInstance:new({
+		name = "Nerub'ar Palace",
+		journalInstanceId = 1273,
+		instanceId = 2657,
+		bosses = {
+			Private.classes.BossDefinition:new({
+				name = "Ulgrax the Devourer",
+				bossID = 215657,
+				journalEncounterID = 2607,
+				dungeonEncounterID = 2902,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "The Bloodbound Horror",
+				bossID = 214502,
+				journalEncounterID = 2611,
+				dungeonEncounterID = 2917,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "Sikran, Captain of the Sureki",
+				bossID = 214503,
+				journalEncounterID = 2599,
+				dungeonEncounterID = 2898,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "Rasha'nan",
+				bossID = 214504,
+				journalEncounterID = 2609,
+				dungeonEncounterID = 2918,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "Broodtwister Ovi'nax",
+				bossID = 214506,
+				journalEncounterID = 2612,
+				dungeonEncounterID = 2919,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "Nexus-Princess Ky'veza",
+				bossID = 217748,
+				journalEncounterID = 2601,
+				dungeonEncounterID = 2920,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "The Silken Court",
+				bossID = { 217489, 217491 },
+				journalEncounterID = 2608,
+				dungeonEncounterID = 2921,
+			}),
+			Private.classes.BossDefinition:new({
+				name = "Queen Ansurek",
+				bossID = 218370,
+				journalEncounterID = 2602,
+				dungeonEncounterID = 2922,
+			}),
 		},
-	},
+	}),
 }
 
 local bosses = {
-	["Ulgrax the Devourer"] = {
+	["Ulgrax the Devourer"] = Private.classes.Boss:new({
 		abilities = {
-			[435136] = { -- Venomous Lash
+			[435136] = Private.classes.BossAbility:new({ -- Venomous Lash
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 5.0, 25.0, 28.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 6.0,
 				castTime = 2.0,
-			},
-			[435138] = { -- Digestive Acid
+			}),
+			[435138] = Private.classes.BossAbility:new({ -- Digestive Acid
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 20.0, 47.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 6.0,
 				castTime = 2.0,
-			},
-			[434803] = { -- Carnivorous Contest
+			}),
+			[434803] = Private.classes.BossAbility:new({ -- Carnivorous Contest
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 38.0, 36.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 6.0,
 				castTime = 4.0,
-			},
-			[445123] = { -- Hulking Crash
+			}),
+			[445123] = Private.classes.BossAbility:new({ -- Hulking Crash
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 90.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 0.0,
 				castTime = 5.0,
-			},
-			[436200] = { -- Juggernaut Charge
+			}),
+			[436200] = Private.classes.BossAbility:new({ -- Juggernaut Charge
 				phases = {
-					[2] = {
+					[2] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 16.7, 7.1, 7.1, 7.1 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 8.0,
 				castTime = 4.0,
-			},
-			[438012] = { -- Hungering Bellows
+			}),
+			[438012] = Private.classes.BossAbility:new({ -- Hungering Bellows
 				phases = {
-					[2] = {
+					[2] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 60.8 },
 						repeatInterval = 7,
-					},
+					}),
 				},
 				duration = 3.0,
 				castTime = 3.0,
-			},
-			[445052] = { -- Chittering Swarm
+			}),
+			[445052] = Private.classes.BossAbility:new({ -- Chittering Swarm
 				phases = {
-					[2] = {
+					[2] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 6 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 0.0,
 				castTime = 3.0,
-			},
+			}),
 		},
 		phases = {
-			[1] = {
+			[1] = Private.classes.BossPhase:new({
 				duration = 90,
 				defaultDuration = 90,
 				count = 3,
 				defaultCount = 3,
 				repeatAfter = 2,
-			},
-			[2] = {
+			}),
+			[2] = Private.classes.BossPhase:new({
 				duration = 80,
 				defaultDuration = 80,
 				count = 3,
 				defaultCount = 3,
 				repeatAfter = 1,
-			},
+			}),
 		},
-	},
-	["Broodtwister Ovi'nax"] = {
+	}),
+	["Broodtwister Ovi'nax"] = Private.classes.Boss:new({
 		abilities = {
-			[441362] = { -- Volatile Concoction
+			[441362] = Private.classes.BossAbility:new({ -- Volatile Concoction
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 2.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				eventTriggers = {
-					[442432] = { -- Ingest Black Blood
-						cleuEventType = "SCS",
+					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
+						combatLogEventType = "SCS",
 						castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
 						repeatCriteria = {
 							castOccurance = 3,
 							castTimes = { 20.0 },
 						},
-					},
+					}),
 				},
 				duration = 0.0,
 				castTime = 1.5,
-			},
-			[446349] = { -- Sticky Web
+			}),
+			[446349] = Private.classes.BossAbility:new({ -- Sticky Web
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 15.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				eventTriggers = {
-					[442432] = { -- Ingest Black Blood
-						cleuEventType = "SCS",
+					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
+						combatLogEventType = "SCS",
 						castTimes = { 30.0, 30.0, 30.0, 30.0 },
 						repeatCriteria = {
 							castOccurance = 3,
 							castTimes = { 30.0 },
 						},
-					},
+					}),
 				},
 				duration = 6.0,
 				castTime = 2.0,
-			},
-			[442432] = { -- Ingest Black Blood
+			}),
+			[442432] = Private.classes.BossAbility:new({ -- Ingest Black Blood
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = { 19.0, 171.0, 172.0 },
 						repeatInterval = nil,
-					},
+					}),
 				},
 				duration = 15.0,
 				castTime = 1.0,
-			},
-			[442526] = { -- Experimental Dosage
+			}),
+			[442526] = Private.classes.BossAbility:new({ -- Experimental Dosage
 				phases = {
-					[1] = {
+					[1] = Private.classes.BossAbilityPhase:new({
 						castTimes = nil,
 						repeatInterval = nil,
-					},
+					}),
 				},
 				eventTriggers = {
-					[442432] = { -- Ingest Black Blood
-						cleuEventType = "SCS",
+					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
+						combatLogEventType = "SCS",
 						castTimes = { 16.0, 50.0, 50.0 },
 						repeatCriteria = {
 							castOccurance = 3,
 							castTimes = { 50.0 },
 						},
-					},
+					}),
 				},
 				duration = 8.0,
 				castTime = 1.5,
-			},
+			}),
 		},
 		phases = {
-			[1] = {
+			[1] = Private.classes.BossPhase:new({
 				duration = 600,
 				defaultDuration = 600,
 				count = 1,
 				defaultCount = 1,
 				repeatAfter = nil,
-			},
+			}),
 		},
-	},
-} --[[@as table<integer, Boss>]]
+	}),
+}
 
 -- Generate a list of abilities for each boss sorted by their first cast time
 for _, boss in pairs(bosses) do
@@ -284,18 +310,19 @@ for _, boss in pairs(bosses) do
 end
 
 ---@param bossName string
----@return table|nil
-function AddOn:GetBossDefinition(bossName)
-	local bossDefinition = AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[bossName]
-	if bossDefinition then
-		return bossDefinition
+---@return BossDefinition|nil
+function Private:GetBossDefinition(bossName)
+	for _, bossDefinition in pairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
+		if bossDefinition.name == bossName then
+			return bossDefinition
+		end
 	end
 	return nil
 end
 
 ---@param bossName string
 ---@return Boss|nil
-function AddOn:GetBoss(bossName)
+function Private:GetBoss(bossName)
 	local boss = bosses[bossName]
 	if boss then
 		return boss
@@ -305,7 +332,7 @@ end
 
 ---@param spellID number
 ---@return BossAbility|nil
-function AddOn:FindBossAbility(spellID)
+function Private:FindBossAbility(spellID)
 	for _, boss in pairs(bosses) do
 		if boss.abilities[spellID] then
 			return boss.abilities[spellID]

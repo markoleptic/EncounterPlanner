@@ -480,7 +480,7 @@ local function UpdateBossAbilityBars(self)
 									local castEnd = castStart + abilityData.castTime
 									local effectEnd = castEnd + abilityData.duration
 									DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
-										cleuEventType = eventTriggerData.cleuEventType,
+										combatLogEventType = eventTriggerData.combatLogEventType,
 										spellID = spellID,
 										phase = phaseId,
 										triggerSpellID = triggerSpellID,
@@ -504,7 +504,7 @@ local function UpdateBossAbilityBars(self)
 											local castOccuranceRepeatInstance = 1
 
 											DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
-												cleuEventType = eventTriggerData.cleuEventType,
+												combatLogEventType = eventTriggerData.combatLogEventType,
 												spellID = spellID,
 												phase = phaseId,
 												triggerSpellID = triggerSpellID,

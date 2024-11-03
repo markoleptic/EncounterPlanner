@@ -79,9 +79,9 @@ end
 ---@param assignment Assignment
 ---@return TimelineAssignment|nil
 local function calculateTimelineAssignment(assignment)
-	if getmetatable(assignment) == Private.CombatLogEventAssignment then
+	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local ability = AddOn:FindBossAbility(assignment.combatLogEventSpellID)
+		local ability = Private:FindBossAbility(assignment.combatLogEventSpellID)
 		if ability then
 			local startTime = assignment.time
 			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
@@ -93,24 +93,24 @@ local function calculateTimelineAssignment(assignment)
 				startTime = startTime + ability.castTime
 			end
 			-- TODO: Implement other combat log event types
-			return Private.TimelineAssignment:new({
+			return Private.classes.TimelineAssignment:new({
 				assignment = assignment,
 				startTime = startTime,
 				offset = nil,
 				order = nil,
 			})
 		end
-	elseif getmetatable(assignment) == Private.TimedAssignment then
+	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
-		return Private.TimelineAssignment:new({
+		return Private.classes.TimelineAssignment:new({
 			assignment = assignment,
 			startTime = assignment.time,
 			offset = nil,
 			order = nil,
 		})
-	elseif getmetatable(assignment) == Private.PhasedAssignment then
+	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
-		local boss = AddOn:GetBoss("Broodtwister Ovi'nax")
+		local boss = Private:GetBoss("Broodtwister Ovi'nax")
 		if boss then
 			local totalOccurances = 0
 			for _, phaseData in pairs(boss.phases) do
@@ -123,7 +123,7 @@ local function calculateTimelineAssignment(assignment)
 				tinsert(bossPhaseOrder, currentPhase)
 				if currentPhase == assignment.phase then
 					-- TODO: This should maybe return an array
-					return Private.TimelineAssignment:new({
+					return Private.classes.TimelineAssignment:new({
 						assignment = assignment,
 						startTime = runningStartTime,
 						offset = nil,
@@ -141,9 +141,9 @@ end
 ---@param timelineAssignment TimelineAssignment
 local function UpdateTimelineAssignment(timelineAssignment)
 	local assignment = timelineAssignment.assignment
-	if getmetatable(assignment) == Private.CombatLogEventAssignment then
+	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local ability = AddOn:FindBossAbility(assignment.combatLogEventSpellID)
+		local ability = Private:FindBossAbility(assignment.combatLogEventSpellID)
 		local startTime = assignment.time
 		if ability and startTime then
 			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
@@ -156,12 +156,12 @@ local function UpdateTimelineAssignment(timelineAssignment)
 			end
 			timelineAssignment.startTime = startTime
 		end
-	elseif getmetatable(assignment) == Private.TimedAssignment then
+	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
 		timelineAssignment.startTime = assignment.time
-	elseif getmetatable(assignment) == Private.PhasedAssignment then
+	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
-		local boss = AddOn:GetBoss("Broodtwister Ovi'nax")
+		local boss = Private:GetBoss("Broodtwister Ovi'nax")
 		if boss then
 			local totalOccurances = 0
 			for _, phaseData in pairs(boss.phases) do
@@ -454,7 +454,7 @@ local function createAssigneeDropdownItems()
 	return dropdownItems
 end
 
----@param assigneeOrder table<integer, string>]]
+---@param assigneeOrder table<integer, string>
 ---@param assignmentListContainer EPContainer
 local function updateAssignmentListEntries(assigneeOrder, assignmentListContainer)
 	assignmentListContainer:ReleaseChildren()
@@ -491,7 +491,7 @@ end
 ---@param timeline EPTimeline
 ---@param listFrame AceGUIContainer
 local function HandleBossDropdownValueChanged(value, timeline, listFrame)
-	local boss = AddOn:GetBoss(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses[value].name)
+	local boss = Private:GetBoss(Private.raidInstances["Nerub'ar Palace"].bosses[tonumber(value)].name)
 	if boss then
 		listFrame:ReleaseChildren()
 		for index = 1, #boss.sortedAbilityIDs do
@@ -564,30 +564,30 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex] --[[@as Assignment]]
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
-			if getmetatable(assignment) ~= Private.CombatLogEventAssignment then
-				assignment = Private.CombatLogEventAssignment:new(assignment)
+			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
+				assignment = Private.classes.CombatLogEventAssignment:new(assignment)
 			end
 		elseif value == "Absolute Time" then
-			if getmetatable(assignment) ~= Private.TimedAssignment then
-				assignment = Private.TimedAssignment:new(assignment)
+			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
+				assignment = Private.classes.TimedAssignment:new(assignment)
 			end
 		elseif value == "Boss Phase" then
-			if getmetatable(assignment) ~= Private.PhasedAssignment then
-				assignment = Private.PhasedAssignment:new(assignment)
+			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
+				assignment = Private.classes.PhasedAssignment:new(assignment)
 			end
 		end
 	elseif dataType == "CombatLogEventSpellID" then
-		if getmetatable(assignment) == Private.CombatLogEventAssignment then
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = tonumber(value)
 		end
 	elseif dataType == "CombatLogEventSpellCount" then
-		if getmetatable(assignment) == Private.CombatLogEventAssignment then
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			assignment--[[@as CombatLogEventAssignment]].spellCount = tonumber(value)
 		end
 	elseif dataType == "PhaseNumber" then
 		if
-			getmetatable(assignment) == Private.CombatLogEventAssignment
-			or getmetatable(assignment) == Private.PhasedAssignment
+			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
+			or getmetatable(assignment) == Private.classes.PhasedAssignment
 		then
 			assignment--[[@as CombatLogEventAssignment|PhasedAssignment]].phase = tonumber(value)
 		end
@@ -609,9 +609,9 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 			return
 		end
 		if
-			getmetatable(assignment) == Private.CombatLogEventAssignment
-			or getmetatable(assignment) == Private.PhasedAssignment
-			or getmetatable(assignment) == Private.TimedAssignment
+			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
+			or getmetatable(assignment) == Private.classes.PhasedAssignment
+			or getmetatable(assignment) == Private.classes.TimedAssignment
 		then
 			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = tonumber(value)
 		end
@@ -692,7 +692,7 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 	Private.assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
 	Private.assignmentEditor.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
 
-	if getmetatable(assignment) == Private.CombatLogEventAssignment then
+	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
 		Private.assignmentEditor:SetAssignmentType("CombatLogEventAssignment")
 		Private.assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
@@ -700,12 +700,12 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 		Private.assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
 		Private.assignmentEditor.phaseNumberDropdown:SetValue(assignment.phase)
 		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
-	elseif getmetatable(assignment) == Private.TimedAssignment then
+	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
 		Private.assignmentEditor:SetAssignmentType("TimedAssignment")
 		Private.assignmentEditor.assignmentTypeDropdown:SetValue("Absolute Time")
 		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
-	elseif getmetatable(assignment) == Private.PhasedAssignment then
+	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
 		Private.assignmentEditor:SetAssignmentType("PhasedAssignment")
 		Private.assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
@@ -744,9 +744,9 @@ local function SetupTopContainer(
 	bossLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
 	local bossDropdownData = {}
-	for index, instance in ipairs(AddOn.Defaults.profile.instances["Nerub'ar Palace"].bosses) do
-		EJ_SelectEncounter(instance.journalEncounterId)
-		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterId)
+	for index, instance in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
+		EJ_SelectEncounter(instance.journalEncounterID)
+		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterID)
 		local iconText = format("|T%s:16|t %s", iconImage, instance.name)
 		tinsert(bossDropdownData, index, iconText)
 	end
