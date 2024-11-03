@@ -84,6 +84,7 @@ end
 ---@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closebutton table|BackdropTemplate|Button
+---@field children table<integer, AceGUIWidget>
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
@@ -105,6 +106,30 @@ local function OnRelease(self) end
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
 	self.frame:SetHeight((height and height + windowBarHeight + (2 * contentFramePadding.y)) or 100)
+end
+
+---@param self EPMainFrame
+---@return EPContainer|nil
+local function GetAssignmentContainer(self)
+	local bottomLeftContainer = self.children[2]
+	if bottomLeftContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local assignmentContainer = bottomLeftContainer.children[2]
+		if assignmentContainer then
+			return assignmentContainer
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPTimeline|nil
+local function GetTimeline(self)
+	local timeline = self.children[3] --[[@as EPTimeline]]
+	if timeline then
+		return timeline
+	end
+	return nil
 end
 
 local function Constructor()
@@ -173,6 +198,8 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
+		GetAssignmentContainer = GetAssignmentContainer,
+		GetTimeline = GetTimeline,
 		frame = mainFrame,
 		type = Type,
 		content = contentFrame,
