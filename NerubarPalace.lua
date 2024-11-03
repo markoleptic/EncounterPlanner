@@ -243,6 +243,89 @@ local bosses = {
 			}),
 		},
 	}),
+	["Nexus-Princess Ky'veza"] = Private.classes.Boss:new({
+		abilities = {
+			[436867] = Private.classes.BossAbility:new({ -- Assassination
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 15.0, 130.0, 130.0, 130.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 0.0,
+				duration = 8.0,
+			}),
+			[440377] = Private.classes.BossAbility:new({ -- Void Shredders
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 10.0, 30.0, 30.0, 70.0, 30.0, 30.0, 70.0, 30.0, 30.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 0.0,
+				duration = 5.0,
+			}),
+			[437620] = Private.classes.BossAbility:new({ -- Nether Rift
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 22.0, 30.0, 30.0, 70.0, 30.0, 30.0, 70.0, 30.0, 30.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.0,
+				duration = 6.0,
+			}),
+			[438245] = Private.classes.BossAbility:new({ -- Twilight Massacre
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 34.0, 30.0, 100.0, 30.0, 100.0, 30.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 5.0,
+				duration = 0.0,
+			}),
+			[439576] = Private.classes.BossAbility:new({ -- Nexus Daggers
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 45.0, 30.0, 100.0, 30.0, 100.0, 30.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 1.5,
+				duration = 5.0,
+			}),
+			[435405] = Private.classes.BossAbility:new({ -- Starless Night
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 96.1, 130.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 5.0,
+				duration = 24.0,
+			}),
+			[442277] = Private.classes.BossAbility:new({ -- Eternal Night
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:new({
+						castTimes = { 356.1 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 5.0,
+				duration = 24.0,
+			}),
+		},
+		phases = {
+			[1] = Private.classes.BossPhase:new({
+				duration = 385,
+				defaultDuration = 385,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+		},
+	}),
 }
 
 -- Generate a list of abilities for each boss sorted by their first cast time
