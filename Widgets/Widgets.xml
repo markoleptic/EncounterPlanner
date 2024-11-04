@@ -7,6 +7,7 @@
 	<Script file="EPSpacer.lua"/>
 	<Script file="EPLabel.lua"/>
 	<Script file="EPLineEdit.lua"/>
+    <Script file="EPButton.lua"/>
 	<Script file="EPDropdownItemToggle.lua"/>
 	<Script file="EPDropdown.lua"/>
 	<Script file="EPAbilityEntry.lua"/>
