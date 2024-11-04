@@ -17,6 +17,9 @@
 ---@alias EPLineEditType
 ---|"EPLineEdit"
 
+---@alias EPButtonType
+---|"EPButton"
+
 ---@alias EPDropdownPulloutType
 ---|"EPDropdownPullout"
 
@@ -98,6 +101,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPLineEditType
 ---@return EPLineEdit
+function AceGUI:Create(type) end
+
+---@param type EPButtonType
+---@return EPButton
 function AceGUI:Create(type) end
 
 ---@param type EPDropdownPulloutType

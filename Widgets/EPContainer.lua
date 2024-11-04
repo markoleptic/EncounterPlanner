@@ -53,6 +53,12 @@ local function SetSpacing(self, horizontal, vertical)
 end
 
 ---@param self EPContainer
+---@param alignment string
+local function SetAlignment(self, alignment)
+	self.content.alignment = alignment
+end
+
+---@param self EPContainer
 ---@param hidden boolean
 local function SetHidden(self, hidden)
 	self:SetHeight(0)
@@ -79,6 +85,7 @@ local function Constructor()
 		SetHidden = SetHidden,
 		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,
+		SetAlignment = SetAlignment,
 		frame = frame,
 		type = Type,
 		content = content,
