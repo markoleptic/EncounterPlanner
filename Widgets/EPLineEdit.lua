@@ -170,7 +170,7 @@ local function Constructor()
 	editBox:SetMaxLetters(256)
 	editBox:SetPoint("TOPLEFT")
 	editBox:SetPoint("BOTTOMRIGHT")
-	editBox:SetTextInsets(8, 8, 0, 0)
+	editBox:SetTextInsets(4, 4, 0, 0)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		editBox:SetFont(fPath, 14, "")
