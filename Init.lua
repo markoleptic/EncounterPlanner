@@ -313,11 +313,12 @@ local defaults = {
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
+-- The assignments for the currently selected note
 Private.assignments = {} --[[@as table<integer, Assignment>]]
+-- A map of plain text names (or group type) mapped to class colored names
 Private.roster = {} --[[@as table<string, string>]]
-Private.lastEncounterId = nil
-Private.selectedBoss = nil
 Private.mainFrame = nil --[[@as EPMainFrame]]
+-- A map of class names to class pascal case colored class names with spaces if needed
 Private.prettyClassNames = {} --[[@as table<string, string>]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
 
