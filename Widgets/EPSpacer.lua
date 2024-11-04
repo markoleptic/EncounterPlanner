@@ -10,14 +10,20 @@ local defaultHeight = 4
 ---@class EPSpacer : AceGUIWidget
 ---@field frame table|Frame
 ---@field type string
+---@field fillSpace boolean
 
 ---@param self EPSpacer
 local function OnAcquire(self)
 	self:SetHeight(defaultHeight)
+	self.fillSpace = false
 end
 
 ---@param self EPSpacer
 local function OnRelease(self) end
+
+local function SetFillSpace(self, fill)
+	self.fillSpace = fill
+end
 
 local function Constructor()
 	local num = AceGUI:GetNextWidgetNum(Type)
@@ -29,6 +35,7 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
+		SetFillSpace = SetFillSpace,
 		frame = frame,
 		type = Type,
 	}
