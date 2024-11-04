@@ -20,9 +20,13 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	local totalHeight = 0
 	local contentWidth = content.width or content:GetWidth() or 0
 	local maxWidth = 0
+	local alignment = "default"
 	local paddingY = defaultSpacing
 	if content.spacing then
 		paddingY = content.spacing.y
+	end
+	if content.alignment then
+		alignment = content.alignment
 	end
 
 	for i = 1, #children do
@@ -32,9 +36,17 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		frame:Show()
 
 		if i > 1 then
-			frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
+			if alignment == "default" then
+				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
+			elseif alignment == "center" then
+				frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
+			end
 		else
-			frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+			if alignment == "default" then
+				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+			elseif alignment == "center" then
+				frame:SetPoint("TOP", content, "TOP")
+			end
 		end
 
 		if child.width == "fill" then

@@ -12,6 +12,7 @@ local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 local ipairs = ipairs
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local min = math.min
 local pairs = pairs
 local rawget = rawget
@@ -33,8 +34,8 @@ local assignmentPadding = 2
 local paddingBetweenBossAbilitiesAndAssignments = 36
 local bottomLeftContainerWidth = 200
 local topContainerHeight = 36
-local dropdownContainerSpacing = { 0, 2 }
-local dropdownContainerLabelSpacing = { 0, 2 }
+local dropdownContainerSpacing = { 2, 2 }
+local dropdownContainerLabelSpacing = { 2, 2 }
 
 local currentAssignmentIndex = 0
 local firstAppearanceSortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
@@ -875,14 +876,24 @@ local function SetupTopContainer(
 		HandleAssignmentSortDropdownValueChanged(value)
 	end)
 
+	local spacer = AceGUI:Create("EPSpacer")
+	spacer:SetFillSpace(true)
+
+	local outerNoteContainer = AceGUI:Create("EPContainer")
+	outerNoteContainer:SetLayout("EPVerticalLayout")
+	outerNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+
 	local noteContainer = AceGUI:Create("EPContainer")
-	noteContainer:SetLayout("EPVerticalLayout")
-	noteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+	noteContainer:SetAlignment("center")
+	noteContainer:SetLayout("EPHorizontalLayout")
+	noteContainer:SetFullWidth(true)
+	noteContainer:SetSpacing(5, 2)
 
 	local noteLabel = AceGUI:Create("EPLabel")
 	noteLabel:SetText("Current Note:")
 	noteLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
+	noteDropdown:SetWidth(150)
 	local noteDropdownData = {}
 	noteDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		HandleNoteDropdownValueChanged(value, renameNoteLineEdit, assignmentListContainer)
@@ -893,16 +904,35 @@ local function SetupTopContainer(
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
 
 	local renameNoteContainer = AceGUI:Create("EPContainer")
-	renameNoteContainer:SetLayout("EPVerticalLayout")
-	renameNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+	renameNoteContainer:SetAlignment("center")
+	renameNoteContainer:SetLayout("EPHorizontalLayout")
+	renameNoteContainer:SetSpacing(5, 2)
 
 	local renameNoteLabel = AceGUI:Create("EPLabel")
 	renameNoteLabel:SetText("Rename Current Note:")
 	renameNoteLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
+	renameNoteLineEdit:SetWidth(150)
 	renameNoteLineEdit:SetCallback("OnTextChanged", function(lineEdit, _, value)
 		HandleNoteTextChanged(lineEdit, value, noteDropdown)
 	end)
+
+	local noteButtonContainer = AceGUI:Create("EPContainer")
+	noteButtonContainer:SetAlignment("center")
+	noteButtonContainer:SetLayout("EPVerticalLayout")
+	noteButtonContainer:SetSpacing(unpack(dropdownContainerSpacing))
+
+	local createNewButton = AceGUI:Create("EPButton")
+	createNewButton:SetCallback("Clicked", function(button, _)
+		print("Button clicked")
+	end)
+	createNewButton:SetText("New Note")
+
+	local deleteButton = AceGUI:Create("EPButton")
+	deleteButton:SetCallback("Clicked", function(button, _)
+		print("Button clicked")
+	end)
+	deleteButton:SetText("Delete Note")
 
 	bossContainer:AddChild(bossLabel)
 	bossContainer:AddChild(bossDropdown)
@@ -912,10 +942,15 @@ local function SetupTopContainer(
 	noteContainer:AddChild(noteDropdown)
 	renameNoteContainer:AddChild(renameNoteLabel)
 	renameNoteContainer:AddChild(renameNoteLineEdit)
+	outerNoteContainer:AddChild(noteContainer)
+	outerNoteContainer:AddChild(renameNoteContainer)
+	noteButtonContainer:AddChild(createNewButton)
+	noteButtonContainer:AddChild(deleteButton)
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortContainer)
-	topContainer:AddChild(noteContainer)
-	topContainer:AddChild(renameNoteContainer)
+	topContainer:AddChild(spacer)
+	topContainer:AddChild(outerNoteContainer)
+	topContainer:AddChild(createNewButton)
 end
 
 ---@param bottomLeftContainer EPContainer
@@ -943,9 +978,13 @@ function Private:CreateGUI()
 		local noteName = AddOn.db.profile.lastOpenNote
 		Private:Note(AddOn.db.profile.notes[noteName])
 	else
+		if not IsAddOnLoaded("MRT") then
+			print(AddOnName, "No note was loaded due to MRT not being installed.")
+			return
+		end
 		local sharedNote = Private:Note()
-		AddOn.db.profile.notes["Unnamed"] = sharedNote
-		AddOn.db.profile.lastOpenNote = "Unnamed"
+		AddOn.db.profile.notes["SharedERTNote"] = sharedNote
+		AddOn.db.profile.lastOpenNote = "SharedERTNote"
 	end
 	for _, ass in pairs(Private.assignments) do
 		uniqueAssignmentTable[ass.uniqueID] = ass

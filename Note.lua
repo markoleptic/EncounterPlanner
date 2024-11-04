@@ -1,6 +1,5 @@
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
-local AddOn = Private.addOn
 
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
@@ -10,7 +9,6 @@ local GetSpecializationInfo = GetSpecializationInfo
 local GetSpellInfo = C_Spell.GetSpellInfo
 local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
-local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInRaid = IsInRaid
 local pairs = pairs
 local select = select
@@ -594,35 +592,39 @@ function Private:ParseNote(text)
 			self:ProcessOptions(inputs, time, options)
 		end
 	end
+end
 
+function Private:UpdateRoster()
 	for _, assignment in ipairs(self.assignments) do
 		if assignment.assigneeNameOrRole and assignment.assigneeNameOrRole ~= "" then
 			if
 				not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:")
 			then
-				self.roster[assignment.assigneeNameOrRole] = Private.GSubAutoColorData[assignment.assigneeNameOrRole]
-					or assignment.assigneeNameOrRole
+				if Private.GSubAutoColorData[assignment.assigneeNameOrRole] then
+					self.roster[assignment.assigneeNameOrRole] =
+						Private.GSubAutoColorData[assignment.assigneeNameOrRole]
+				end
+				self.roster[assignment.assigneeNameOrRole] = assignment.assigneeNameOrRole
 			end
 		end
 	end
 end
 
--- Parses the shared and personal ERT notes.
+-- Clears the current assignments and repopulates it. Parses the given string if provided, otherwise parses the active
+-- MRT shared note. Updates the roster.
 ---@param note string?
 ---@return string?
 function Private:Note(note)
-	if not IsAddOnLoaded("MRT") then
-		return
-	end
 	GSubAutoColorCreate()
-	wipe(Private.assignments)
-	wipe(Private.roster)
+	wipe(self.assignments)
 	if note then
 		self:ParseNote(note)
+		self:UpdateRoster()
 	else
 		if GMRT and GMRT.F then
 			local sharedNoteCopy = VMRT.Note.Text1
 			self:ParseNote(sharedNoteCopy or "")
+			self:UpdateRoster()
 			return sharedNoteCopy
 		end
 	end
