@@ -7,8 +7,10 @@ local AddOnName = ...
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
 
-local AddOn = Private.AddOn
-local AceGUI = Private.Libs.AGUI
+local AddOn = Private.addOn
+local LibStub = LibStub
+local AceDB = LibStub("AceDB-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
 local ipairs = ipairs
 local min = math.min
 local pairs = pairs
@@ -189,7 +191,7 @@ local function createAssigneeOrder(sortedAssignments)
 	local orderAndOffsets = {}
 	local assigneeOrder = {}
 
-	for _, entry in ipairs(sortedAssignments) do
+	for _, entry in pairs(sortedAssignments) do
 		local assignee = entry.assignment.assigneeNameOrRole
 		if not orderAndOffsets[assignee] then
 			local offset = (order - 1) * (30 + 2)
@@ -209,7 +211,7 @@ local function DetermineRolesFromAssignments(assignments)
 	local assigneeAssignments = {}
 	local healerClasses =
 		{ ["DRUID"] = 1, ["EVOKER"] = 1, ["MONK"] = 1, ["PALADIN"] = 1, ["PRIEST"] = 1, ["SHAMAN"] = 1 }
-	for _, assignment in ipairs(assignments) do
+	for _, assignment in pairs(assignments) do
 		local assignee = assignment.assigneeNameOrRole
 		if not assigneeAssignments[assignee] then
 			assigneeAssignments[assignee] = {}
@@ -323,7 +325,7 @@ local function SortDropdownDataByItemValue(data)
 	end)
 
 	-- Recursively sort any nested dropdownItemMenuData tables
-	for _, item in ipairs(data) do
+	for _, item in pairs(data) do
 		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
 			SortDropdownDataByItemValue(item.dropdownItemMenuData)
 		end
@@ -341,7 +343,7 @@ local function CreateSpellDropdownItems()
 		}
 		local spellTypeIndex = 1
 		local spellTypeIndexMap = {}
-		for _, spell in ipairs(classSpells) do
+		for _, spell in pairs(classSpells) do
 			if not spellTypeIndexMap[spell["type"]] then
 				classDropdownData.dropdownItemMenuData[spellTypeIndex] = {
 					itemValue = spell["type"],
@@ -581,11 +583,45 @@ local function HandleAssignmentSortDropdownValueChanged(value)
 	end
 end
 
+---@param value string
+---@param renameNoteLineEdit EPLineEdit
+---@param assignmentListContainer EPContainer
+local function HandleNoteDropdownValueChanged(value, renameNoteLineEdit, assignmentListContainer)
+	AddOn.db.profile.lastOpenNote = value
+	local noteName = AddOn.db.profile.lastOpenNote
+	Private:Note(AddOn.db.profile.notes[noteName])
+	wipe(uniqueAssignmentTable)
+	for _, ass in pairs(Private.assignments) do
+		uniqueAssignmentTable[ass.uniqueID] = ass
+	end
+	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder =
+		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
+	updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentListContainer)
+	renameNoteLineEdit:SetText(value)
+end
+
+---@param lineEdit EPLineEdit
+---@param value string
+---@param noteDropdown EPDropdown
+local function HandleNoteTextChanged(lineEdit, value, noteDropdown)
+	local currentNoteName = AddOn.db.profile.lastOpenNote
+	if value == currentNoteName then
+		return
+	elseif AddOn.db.profile.notes[value] then
+		lineEdit:SetText(currentNoteName)
+		return
+	end
+	AddOn.db.profile.notes[value] = AddOn.db.profile.notes[currentNoteName]
+	AddOn.db.profile.notes[currentNoteName] = nil
+	AddOn.db.profile.lastOpenNote = value
+	noteDropdown:EditItemText(currentNoteName, currentNoteName, value, value)
+end
+
 local function HandleAssignmentEditorDeleteButtonClicked(frame, _)
 	Private.assignmentEditor:Release()
 	local assignmentToRemove = uniqueAssignmentTable[currentAssignmentIndex]
 	currentAssignmentIndex = 0
-	for i, v in ipairs(Private.assignments) do
+	for i, v in pairs(Private.assignments) do
 		if v == assignmentToRemove then
 			table.remove(Private.assignments, i)
 			break
@@ -681,7 +717,7 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 		assignment.targetName = value
 	end
 
-	for _, timelineAssignment in ipairs(firstAppearanceSortedAssignments) do
+	for _, timelineAssignment in pairs(firstAppearanceSortedAssignments) do
 		if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
 			UpdateTimelineAssignment(timelineAssignment)
 			break
@@ -699,7 +735,7 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 		Private.assignmentEditor.obj = Private.mainFrame
 		Private.assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.assignmentEditor.frame:SetFrameLevel(10)
-		Private.assignmentEditor:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
+		Private.assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		Private.assignmentEditor:SetLayout("EPVerticalLayout")
 		Private.assignmentEditor:DoLayout()
 
@@ -784,13 +820,19 @@ end
 ---@param timeline EPTimeline
 ---@param bossAbilityContainer EPContainer
 ---@param assignmentSortDropdown EPDropdown
+---@param noteDropdown EPDropdown
+---@param renameNoteLineEdit EPLineEdit
+---@param assignmentListContainer EPContainer
 local function SetupTopContainer(
 	topContainer,
 	bossContainer,
 	bossDropdown,
 	timeline,
 	bossAbilityContainer,
-	assignmentSortDropdown
+	assignmentSortDropdown,
+	noteDropdown,
+	renameNoteLineEdit,
+	assignmentListContainer
 )
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetHeight(topContainerHeight)
@@ -833,12 +875,47 @@ local function SetupTopContainer(
 		HandleAssignmentSortDropdownValueChanged(value)
 	end)
 
+	local noteContainer = AceGUI:Create("EPContainer")
+	noteContainer:SetLayout("EPVerticalLayout")
+	noteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+
+	local noteLabel = AceGUI:Create("EPLabel")
+	noteLabel:SetText("Current Note:")
+	noteLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+
+	local noteDropdownData = {}
+	noteDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		HandleNoteDropdownValueChanged(value, renameNoteLineEdit, assignmentListContainer)
+	end)
+	for noteName, _ in pairs(AddOn.db.profile.notes) do
+		tinsert(noteDropdownData, { itemValue = noteName, text = noteName, dropdownItemMenuData = {} })
+	end
+	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
+
+	local renameNoteContainer = AceGUI:Create("EPContainer")
+	renameNoteContainer:SetLayout("EPVerticalLayout")
+	renameNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+
+	local renameNoteLabel = AceGUI:Create("EPLabel")
+	renameNoteLabel:SetText("Rename Current Note:")
+	renameNoteLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+
+	renameNoteLineEdit:SetCallback("OnTextChanged", function(lineEdit, _, value)
+		HandleNoteTextChanged(lineEdit, value, noteDropdown)
+	end)
+
 	bossContainer:AddChild(bossLabel)
 	bossContainer:AddChild(bossDropdown)
 	assignmentSortContainer:AddChild(assignmentSortLabel)
 	assignmentSortContainer:AddChild(assignmentSortDropdown)
+	noteContainer:AddChild(noteLabel)
+	noteContainer:AddChild(noteDropdown)
+	renameNoteContainer:AddChild(renameNoteLabel)
+	renameNoteContainer:AddChild(renameNoteLineEdit)
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortContainer)
+	topContainer:AddChild(noteContainer)
+	topContainer:AddChild(renameNoteContainer)
 end
 
 ---@param bottomLeftContainer EPContainer
@@ -861,13 +938,20 @@ local function SetupBottomLeftContainer(bottomLeftContainer, bossAbilityContaine
 	bottomLeftContainer:AddChild(assignmentListContainer)
 end
 
-function AddOn:CreateGUI()
-	Private:Note()
-	for _, ass in ipairs(Private.assignments) do
+function Private:CreateGUI()
+	if AddOn.db.profile.lastOpenNote and AddOn.db.profile.lastOpenNote ~= "" then
+		local noteName = AddOn.db.profile.lastOpenNote
+		Private:Note(AddOn.db.profile.notes[noteName])
+	else
+		local sharedNote = Private:Note()
+		AddOn.db.profile.notes["Unnamed"] = sharedNote
+		AddOn.db.profile.lastOpenNote = "Unnamed"
+	end
+	for _, ass in pairs(Private.assignments) do
 		uniqueAssignmentTable[ass.uniqueID] = ass
 	end
 	firstAppearanceSortedAssignments, firstAppearanceAssigneeOrder =
-		SortAssignments(Private.assignments, "First Appearance")
+		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPContentFrameLayout")
@@ -886,8 +970,20 @@ function AddOn:CreateGUI()
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	local assignmentListContainer = AceGUI:Create("EPContainer")
 	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
+	local noteDropdown = AceGUI:Create("EPDropdown")
+	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
 
-	SetupTopContainer(topContainer, bossContainer, bossDropdown, timeline, bossAbilityContainer, assignmentSortDropdown)
+	SetupTopContainer(
+		topContainer,
+		bossContainer,
+		bossDropdown,
+		timeline,
+		bossAbilityContainer,
+		assignmentSortDropdown,
+		noteDropdown,
+		renameNoteLineEdit,
+		assignmentListContainer
+	)
 	SetupBottomLeftContainer(bottomLeftContainer, bossAbilityContainer, assignmentListContainer)
 	updateAssignmentListEntries(firstAppearanceAssigneeOrder, assignmentListContainer)
 
@@ -898,7 +994,9 @@ function AddOn:CreateGUI()
 	-- Set default values
 	bossDropdown:SetValue(1)
 	HandleBossDropdownValueChanged(1, timeline, bossAbilityContainer)
-	assignmentSortDropdown:SetValue("First Appearance")
+	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
+	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 
 	-- Center frame in middle of screen
 	local screenWidth = UIParent:GetWidth()
@@ -910,10 +1008,10 @@ end
 
 -- Addon is first loaded
 function AddOn:OnInitialize()
-	self.DB = LibStub("AceDB-3.0"):New(AddOnName .. "DB", self.Defaults)
-	self.DB.RegisterCallback(self, "OnProfileChanged", "Refresh")
-	self.DB.RegisterCallback(self, "OnProfileCopied", "Refresh")
-	self.DB.RegisterCallback(self, "OnProfileReset", "Refresh")
+	self.db = AceDB:New(AddOnName .. "DB", self.defaults)
+	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
+	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
+	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	CreatePrettyClassNames()
@@ -932,10 +1030,7 @@ function AddOn:SlashCommand(input)
 		DevTool:AddData(Private)
 	end
 	if not Private.mainFrame then
-		self:CreateGUI()
-		-- if AddOn:GetModule("Options") then
-		-- 	AddOn.OptionsModule:OpenOptions()
-		-- end
+		Private:CreateGUI()
 	end
 end
 

@@ -5,9 +5,11 @@ local AddOnName = ...
 local Private = select(2, ...) --[[@as Private]]
 
 ---@class OptionsModule : AceModule
-local OptionsModule = Private.AddOn.OptionsModule
-local ACR = Private.Libs.ACR
-local ACD = Private.Libs.ACD
+local OptionsModule = Private.addOn.optionsModule
+
+local LibStub = LibStub
+local ACR = LibStub("AceConfigRegistry-3.0")
+local ACD = LibStub("AceConfigDialog-3.0")
 
 function OptionsModule:OnInitialize()
 	self:CreateOptions()

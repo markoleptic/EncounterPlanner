@@ -4,7 +4,6 @@ local AddOnName = ...
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
 
-local AddOn = Private.AddOn
 local ipairs = ipairs
 local min = math.min
 local pairs = pairs

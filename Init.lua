@@ -4,8 +4,10 @@ local AddOnName = ...
 ---@class Private
 local Private = select(2, ...)
 
-local CreateFrame = CreateFrame
 local LibStub = LibStub
+local AceAddon = LibStub("AceAddon-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
+local CreateFrame = CreateFrame
 local pairs = pairs
 local setmetatable = setmetatable
 local type = type
@@ -34,6 +36,8 @@ local type = type
 ---| "First Appearance"
 ---| "Role > Alphabetical"
 ---| "Role > First Appearance"
+
+---@alias GameTooltipTemplate GameTooltip
 
 local assignmentIDCounter = 0
 
@@ -292,68 +296,41 @@ function Private:DeepCopy(inTable)
 	return copy
 end
 
-do
-	Private.AddOn = LibStub("AceAddon-3.0"):NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
-	Private.AddOn.Defaults = { profile = {} }
-	Private.AddOn.OptionsModule = Private.AddOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
-	Private.Libs = {}
-	Private.Libs.ACD = LibStub("AceConfigDialog-3.0")
-	Private.Libs.AC = LibStub("AceConfig-3.0")
-	Private.Libs.ACR = LibStub("AceConfigRegistry-3.0")
-	Private.Libs.ADBO = LibStub("AceDBOptions-3.0")
-	Private.Libs.LSM = LibStub("LibSharedMedia-3.0")
-	Private.Libs.LSM:Register(
-		"font",
-		"PT Sans Narrow",
-		"Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
-		bit.bor(Private.Libs.LSM.LOCALE_BIT_western, Private.Libs.LSM.LOCALE_BIT_ruRU)
-	)
-	Private.Libs.AGUI = LibStub("AceGUI-3.0")
-	Private.assignments = {} --[[@as table<integer, Assignment>]]
-	Private.roster = {} --[[@as table<string, string>]]
-	Private.lastEncounterId = nil
-	Private.selectedBoss = nil
-	Private.mainFrame = nil --[[@as EPMainFrame]]
-	Private.prettyClassNames = {} --[[@as table<string, string>]]
-	Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
-end
+local defaults = {
+	--[[@class EncounterPlannerOptions]]
+	---@field assignmentSortType AssignmentSortType
+	---@field notes table
+	---@field roster table
+	---@field lastOpenNote string
+	profile = {
+		assignmentSortType = "First Appearance",
+		notes = {},
+		roster = {},
+		lastOpenNote = "",
+	},
+}
+
+Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
+Private.addOn.defaults = defaults
+Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
+Private.assignments = {} --[[@as table<integer, Assignment>]]
+Private.roster = {} --[[@as table<string, string>]]
+Private.lastEncounterId = nil
+Private.selectedBoss = nil
+Private.mainFrame = nil --[[@as EPMainFrame]]
+Private.prettyClassNames = {} --[[@as table<string, string>]]
+Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
+
+LSM:Register(
+	"font",
+	"PT Sans Narrow",
+	"Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+	bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU)
+)
 
 ---@class EncounterPlanner
 EncounterPlanner = {}
 
----@alias GameTooltipTemplate GameTooltip
-
 EncounterPlanner.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 EncounterPlanner.tooltipUpdateTime = 0.2
 EncounterPlanner.tooltip.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
-
--- local function HandleTooltipOnUpdate(frame, elapsed)
--- 	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
--- 	if frame.updateTooltipTimer > 0 then
--- 		return
--- 	end
--- 	frame.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime
--- 	local owner = frame:GetOwner()
--- 	if owner and frame.spellID then
--- 		frame:SetSpellByID(frame.spellID)
--- 	end
--- end
-
--- local function HandleIconEnter(frame, motion, anchorFrame, anchor, xOffset, yOffset)
--- 	if frame.spellID and frame.spellID ~= 0 then
--- 		EncounterPlanner.tooltip:ClearLines()
--- 		EncounterPlanner.tooltip:SetOwner(anchorFrame, anchor, xOffset or xOffset() or 0, yOffset or yOffset() or 0)
--- 		EncounterPlanner.tooltip:SetSpellByID(frame.spellID)
--- 		EncounterPlanner.tooltip:SetScript("OnUpdate", HandleTooltipOnUpdate)
--- 	end
--- end
-
--- local function HandleIconLeave(frame, motion)
--- 	EncounterPlanner.tooltip:SetScript("OnUpdate", nil)
--- 	EncounterPlanner.tooltip:Hide()
--- end
-
--- function EncounterPlanner:BindFrameEnterAndLeaveToTooltip(frame, anchorFrame, anchor, xOffset, yOffset)
--- 	frame:SetScript("OnEnter", function(f, motion) HandleIconEnter(f, motion, anchorFrame, anchor, xOffset, yOffset) end)
--- 	frame:SetScript("OnLeave", function(f, motion) HandleIconLeave(f, motion) end)
--- end

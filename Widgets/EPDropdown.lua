@@ -615,6 +615,22 @@ do
 		ShowMultiText(self)
 	end
 
+	-- Only works for non-nested dropdowns
+	---@param self EPDropdown
+	---@param currentValue any
+	---@param currentText any
+	---@param newValue any
+	---@param newText any
+	local function EditItemText(self, currentValue, currentText, newValue, newText)
+		for _, pulloutItem in self.pullout:IterateItems() do
+			if pulloutItem:GetUserDataTable().value == currentValue then
+				pulloutItem:GetUserDataTable().value = newValue
+				pulloutItem:SetText(newText)
+				self:SetValue(newValue)
+			end
+		end
+	end
+
 	---@param self EPDropdown
 	---@param itemValue any
 	---@param disabled any
@@ -784,6 +800,7 @@ do
 			SetItemDisabled = SetItemDisabled,
 			AddItem = AddItem,
 			AddItems = AddItems,
+			EditItemText = EditItemText,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
 			AddCloseButton = AddCloseButton,
 			SetMultiselect = SetMultiselect,

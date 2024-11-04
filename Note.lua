@@ -1,5 +1,6 @@
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
+local AddOn = Private.addOn
 
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
@@ -518,8 +519,7 @@ end
 ---@param assignments table<integer, Assignment>
 ---@param time number
 ---@param options string
----@param noteType string
-function Private:ProcessOptions(assignments, time, options, noteType)
+function Private:ProcessOptions(assignments, time, options)
 	local regularTimer = true
 	local option = nil
 	while options do
@@ -576,8 +576,7 @@ function Private:ProcessOptions(assignments, time, options, noteType)
 end
 
 ---@param text string
----@param noteType string
-function Private:ParseNote(text, noteType)
+function Private:ParseNote(text)
 	--self.filteredText = Filter(text)
 	--self.filteredText = FilterByCurrentRole(self.filteredText)
 	--self.filteredText = ReplaceNamesWithColoredNamesIfFound(self.filteredText)
@@ -592,7 +591,7 @@ function Private:ParseNote(text, noteType)
 		end
 		if time then
 			local inputs = CreateAssignmentsFromLine(line)
-			self:ProcessOptions(inputs, time, options, noteType)
+			self:ProcessOptions(inputs, time, options)
 		end
 	end
 
@@ -609,15 +608,22 @@ function Private:ParseNote(text, noteType)
 end
 
 -- Parses the shared and personal ERT notes.
-function Private:Note()
+---@param note string?
+---@return string?
+function Private:Note(note)
 	if not IsAddOnLoaded("MRT") then
 		return
 	end
 	GSubAutoColorCreate()
 	wipe(Private.assignments)
 	wipe(Private.roster)
-	if GMRT and GMRT.F then
-		self:ParseNote(VMRT.Note.Text1 or "", "shared")
-		self:ParseNote(VMRT.Note.SelfText or "", "personal")
+	if note then
+		self:ParseNote(note)
+	else
+		if GMRT and GMRT.F then
+			local sharedNoteCopy = VMRT.Note.Text1
+			self:ParseNote(sharedNoteCopy or "")
+			return sharedNoteCopy
+		end
 	end
 end
