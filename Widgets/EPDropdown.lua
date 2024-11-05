@@ -675,6 +675,9 @@ do
 			dropdownItemToggle:SetText(text)
 			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 			self.pullout:AddItem(dropdownItemToggle)
+			if neverShowItemsAsSelected == true then
+				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
+			end
 		end
 	end
 
