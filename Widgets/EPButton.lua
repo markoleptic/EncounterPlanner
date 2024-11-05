@@ -63,7 +63,10 @@ local function OnAcquire(self)
 end
 
 ---@param self EPButton
-local function OnRelease(self) end
+local function OnRelease(self)
+	print("Releasing buton")
+	self.frame:Hide()
+end
 
 ---@param self EPButton
 ---@param text string

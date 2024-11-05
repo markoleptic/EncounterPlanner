@@ -950,7 +950,7 @@ local function SetupTopContainer(
 	topContainer:AddChild(assignmentSortContainer)
 	topContainer:AddChild(spacer)
 	topContainer:AddChild(outerNoteContainer)
-	topContainer:AddChild(createNewButton)
+	topContainer:AddChild(noteButtonContainer)
 end
 
 ---@param bottomLeftContainer EPContainer
