@@ -196,6 +196,41 @@ local function HandleThumbMouseUp(frame)
 	self.thumb:SetScript("OnUpdate", nil)
 end
 
+-- Updates the scroll bar width and offset based on the visible area of the timeline.
+---@param self EPTimeline
+local function UpdateScrollBar(self)
+	local scrollFrame = self.frame
+	local scrollFrameWidth = scrollFrame:GetWidth()
+	local timelineWidth = self.timelineWrapperFrame:GetWidth()
+	local scrollBarWidth = self.scrollBar:GetWidth()
+	local thumbPaddingX = thumbPadding.x
+
+	-- Calculate the scroll bar thumb size based on the visible area
+	local thumbWidth = (scrollFrameWidth / timelineWidth) * (scrollBarWidth - (2 * thumbPaddingX))
+	thumbWidth = math.max(thumbWidth, 20) -- Minimum size so it's always visible
+	thumbWidth = math.min(thumbWidth, scrollFrameWidth - (2 * thumbPaddingX))
+
+	local thumb = self.thumb
+	thumb:SetWidth(thumbWidth)
+
+	local scrollOffset = scrollFrame:GetHorizontalScroll()
+
+	-- Calculate the thumb's relative position in the scroll bar
+	local maxScroll = timelineWidth - scrollFrameWidth
+	local maxThumbPosition = scrollBarWidth - thumbWidth - (2 * thumbPaddingX)
+
+	-- Prevent division by zero if maxScroll is 0
+	if maxScroll > 0 then
+		local thumbPosition = (scrollOffset / maxScroll) * maxThumbPosition
+
+		-- Update the thumb's position based on the scroll offset
+		thumb:SetPoint("LEFT", thumbPaddingX + thumbPosition, 0)
+	else
+		-- If no scrolling is possible, reset the thumb to the start
+		thumb:SetPoint("LEFT", thumbPaddingX, 0)
+	end
+end
+
 local function HandleTimelineFrameUpdate(frame)
 	local self = frame.obj
 	if not timelineFrameIsDragging then
@@ -527,41 +562,6 @@ local function UpdateBossAbilityBars(self)
 			end
 			cumulativePhaseStartTimes = cumulativePhaseStartTimes + phaseData.duration
 		end
-	end
-end
-
--- Updates the scroll bar width and offset based on the visible area of the timeline.
----@param self EPTimeline
-local function UpdateScrollBar(self)
-	local scrollFrame = self.frame
-	local scrollFrameWidth = scrollFrame:GetWidth()
-	local timelineWidth = self.timelineWrapperFrame:GetWidth()
-	local scrollBarWidth = self.scrollBar:GetWidth()
-	local thumbPaddingX = thumbPadding.x
-
-	-- Calculate the scroll bar thumb size based on the visible area
-	local thumbWidth = (scrollFrameWidth / timelineWidth) * (scrollBarWidth - (2 * thumbPaddingX))
-	thumbWidth = math.max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = math.min(thumbWidth, scrollFrameWidth - (2 * thumbPaddingX))
-
-	local thumb = self.thumb
-	thumb:SetWidth(thumbWidth)
-
-	local scrollOffset = scrollFrame:GetHorizontalScroll()
-
-	-- Calculate the thumb's relative position in the scroll bar
-	local maxScroll = timelineWidth - scrollFrameWidth
-	local maxThumbPosition = scrollBarWidth - thumbWidth - (2 * thumbPaddingX)
-
-	-- Prevent division by zero if maxScroll is 0
-	if maxScroll > 0 then
-		local thumbPosition = (scrollOffset / maxScroll) * maxThumbPosition
-
-		-- Update the thumb's position based on the scroll offset
-		thumb:SetPoint("LEFT", thumbPaddingX + thumbPosition, 0)
-	else
-		-- If no scrolling is possible, reset the thumb to the start
-		thumb:SetPoint("LEFT", thumbPaddingX, 0)
 	end
 end
 
