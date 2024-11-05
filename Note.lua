@@ -236,7 +236,7 @@ local noteEncounters = {}
 local encounterIds = {}
 
 -- Create autocolor table like most "stolen" from ERT/KAZE
-Private.GSubAutoColorData = {}
+local GSubAutoColorData = {}
 local combatLogEventFromAbbreviation = {
 	SCC = "SPELL_CAST_SUCCESS",
 	SCS = "SPELL_CAST_START",
@@ -267,7 +267,7 @@ end
 
 -- Creates a table where keys are player names and values are colored names.
 local function GSubAutoColorCreate()
-	wipe(Private.GSubAutoColorData)
+	wipe(GSubAutoColorData)
 	for _, unit in pairs(IterateRosterUnits()) do
 		if unit then
 			local _, classFileName, _ = UnitClass(unit)
@@ -276,9 +276,9 @@ local function GSubAutoColorCreate()
 			if classData then
 				local coloredName = ("|c%s%s|r"):format(classData.colorStr, unitName)
 				if unitServer then -- nil if on same server
-					Private.GSubAutoColorData[unitName.join("-", unitServer)] = coloredName
+					GSubAutoColorData[unitName.join("-", unitServer)] = coloredName
 				end
-				Private.GSubAutoColorData[unitName] = coloredName
+				GSubAutoColorData[unitName] = coloredName
 			end
 		end
 	end
@@ -418,7 +418,7 @@ end
 ---@return string
 local function ReplaceNamesWithColoredNamesIfFound(lines)
 	local result, _ = lines:gsub(nonSymbolRegex, function(word)
-		return Private.GSubAutoColorData[word] or word
+		return GSubAutoColorData[word] or word
 	end)
 	return result
 end
@@ -600,11 +600,11 @@ function Private:UpdateRoster()
 			if
 				not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:")
 			then
-				if Private.GSubAutoColorData[assignment.assigneeNameOrRole] then
-					self.roster[assignment.assigneeNameOrRole] =
-						Private.GSubAutoColorData[assignment.assigneeNameOrRole]
+				if GSubAutoColorData[assignment.assigneeNameOrRole] then
+					self.roster[assignment.assigneeNameOrRole] = GSubAutoColorData[assignment.assigneeNameOrRole]
+				else
+					self.roster[assignment.assigneeNameOrRole] = assignment.assigneeNameOrRole
 				end
-				self.roster[assignment.assigneeNameOrRole] = assignment.assigneeNameOrRole
 			end
 		end
 	end
