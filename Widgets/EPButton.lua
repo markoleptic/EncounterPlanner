@@ -63,10 +63,7 @@ local function OnAcquire(self)
 end
 
 ---@param self EPButton
-local function OnRelease(self)
-	print("Releasing buton")
-	self.frame:Hide()
-end
+local function OnRelease(self) end
 
 ---@param self EPButton
 ---@param text string
@@ -90,11 +87,12 @@ local function LayoutFinished(self, width, height) end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("Frame", nil, UIParent)
+	local frame = CreateFrame("Frame", Type .. count, UIParent)
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:EnableMouse(true)
 
-	local button = CreateFrame("Button", Type .. count, frame, BackdropTemplateMixin and "BackdropTemplate" or nil)
+	local button =
+		CreateFrame("Button", Type .. "Button" .. count, frame, BackdropTemplateMixin and "BackdropTemplate" or nil)
 	button:SetBackdrop(buttonBackdrop)
 	button:SetBackdropColor(0.25, 0.25, 0.25, 1)
 	button:RegisterForClicks("LeftButtonUp")
@@ -107,7 +105,7 @@ local function Constructor()
 		fontString:SetFont(fPath, defaultFontHeight)
 	end
 
-	button.bg = button:CreateTexture(nil, "BORDER")
+	button.bg = button:CreateTexture(Type .. "Background" .. count, "BORDER")
 	button.bg:SetAllPoints()
 	button.bg:SetColorTexture(0.725, 0.008, 0.008)
 	button.bg:Hide()

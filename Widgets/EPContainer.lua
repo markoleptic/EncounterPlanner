@@ -21,6 +21,7 @@ local function OnAcquire(self)
 	self:SetWidth(defaultWidth)
 	self.hidden = false
 	self.content.spacing = defaultSpacing
+	self.content.alignment = nil
 end
 
 ---@param self EPContainer

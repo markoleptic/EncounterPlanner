@@ -860,18 +860,18 @@ local function OnHeightSet(self, height)
 end
 
 local function Constructor()
-	local num = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("ScrollFrame", Type .. num, UIParent)
+	local count = AceGUI:GetNextWidgetNum(Type)
+	local frame = CreateFrame("ScrollFrame", Type .. count, UIParent)
 	frame:SetSize(frameWidth, frameHeight)
 
-	local timelineWrapperFrame = CreateFrame("Frame", Type .. num .. "TimelineWrapperFrame", frame)
+	local timelineWrapperFrame = CreateFrame("Frame", Type .. "WrapperFrame" .. count, frame)
 	timelineWrapperFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	timelineWrapperFrame:SetSize(
 		frameWidth,
 		frameHeight - horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar
 	)
 
-	local timelineFrame = CreateFrame("Frame", Type .. num .. "TimelineFrame", timelineWrapperFrame)
+	local timelineFrame = CreateFrame("Frame", Type .. "AbilityFrame" .. count, timelineWrapperFrame)
 	timelineFrame:SetPoint("TOPLEFT", timelineWrapperFrame, "TOPLEFT")
 	timelineFrame:SetPoint("TOPRIGHT", timelineWrapperFrame, "TOPRIGHT")
 	timelineFrame:SetSize(frameWidth, (timelineWrapperFrame:GetHeight() - paddingBetweenTimelines) / 2.0)
@@ -884,7 +884,7 @@ local function Constructor()
 	timelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
 	timelineFrame:Show()
 
-	local assignmentTimelineFrame = CreateFrame("Frame", Type .. num .. "AssignmentTimelineFrame", timelineWrapperFrame)
+	local assignmentTimelineFrame = CreateFrame("Frame", Type .. "AssignmentFrame" .. count, timelineWrapperFrame)
 	assignmentTimelineFrame:SetPoint("TOPLEFT", timelineFrame, "BOTTOMLEFT", 0, -paddingBetweenTimelines)
 	assignmentTimelineFrame:SetPoint("TOPRIGHT", timelineFrame, "BOTTOMRIGHT", 0, -paddingBetweenTimelines)
 	assignmentTimelineFrame:SetPoint("BOTTOMLEFT", timelineWrapperFrame, "BOTTOMLEFT")
@@ -903,7 +903,7 @@ local function Constructor()
 	frame:SetScrollChild(timelineWrapperFrame)
 	frame:EnableMouseWheel(true)
 
-	local timelineVerticalPositionLine = timelineFrame:CreateTexture(Type .. num .. "AbilityPositionLine", "OVERLAY")
+	local timelineVerticalPositionLine = timelineFrame:CreateTexture(Type .. "AbilityPositionLine" .. count, "OVERLAY")
 	timelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	timelineVerticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT")
 	timelineVerticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT")
@@ -911,30 +911,30 @@ local function Constructor()
 	timelineVerticalPositionLine:Hide()
 
 	local assignmentTimelineVerticalPositionLine =
-		assignmentTimelineFrame:CreateTexture(Type .. num .. "AssignmentPositionLine", "OVERLAY")
+		assignmentTimelineFrame:CreateTexture(Type .. "AssignmentPositionLine" .. count, "OVERLAY")
 	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	assignmentTimelineVerticalPositionLine:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT")
 	assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT")
 	assignmentTimelineVerticalPositionLine:SetWidth(1)
 	assignmentTimelineVerticalPositionLine:Hide()
 
-	local scrollBar = CreateFrame("Frame", Type .. num .. "HorizontalScrollBar", frame)
+	local scrollBar = CreateFrame("Frame", Type .. "HorizontalScrollBar" .. count, frame)
 	scrollBar:SetHeight(horizontalScrollBarHeight)
 	scrollBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
 	scrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 
-	local scrollBarBackground = scrollBar:CreateTexture(Type .. num .. "ScrollBarBackground", "BACKGROUND")
+	local scrollBarBackground = scrollBar:CreateTexture(Type .. "ScrollBarBackground" .. count, "BACKGROUND")
 	scrollBarBackground:SetAllPoints()
 	scrollBarBackground:SetColorTexture(0.25, 0.25, 0.25, 1)
 
-	local thumb = CreateFrame("Button", Type .. num .. "ScrollBarThumb", scrollBar)
+	local thumb = CreateFrame("Button", Type .. "ScrollBarThumb" .. count, scrollBar)
 	thumb:SetPoint("LEFT", thumbPadding.x, 0)
 	thumb:SetSize(scrollBar:GetWidth() - 2 * thumbPadding.x, horizontalScrollBarHeight - (2 * thumbPadding.y))
 	thumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
 	thumb:SetScript("OnMouseDown", HandleThumbMouseDown)
 	thumb:SetScript("OnMouseUp", HandleThumbMouseUp)
 
-	local thumbBackground = thumb:CreateTexture(Type .. num .. "ScrollBarThumbBackground", "BACKGROUND")
+	local thumbBackground = thumb:CreateTexture(Type .. "ScrollBarThumbBackground" .. count, "BACKGROUND")
 	thumbBackground:SetAllPoints()
 	thumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
 

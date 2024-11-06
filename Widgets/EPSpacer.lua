@@ -26,8 +26,8 @@ local function SetFillSpace(self, fill)
 end
 
 local function Constructor()
-	local num = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("Frame", Type .. num, UIParent)
+	local count = AceGUI:GetNextWidgetNum(Type)
+	local frame = CreateFrame("Frame", Type .. count, UIParent)
 	frame:SetWidth(1)
 	frame:Hide()
 

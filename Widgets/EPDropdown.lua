@@ -278,7 +278,7 @@ do
 		frame:SetWidth(defaultWidth)
 		frame:SetHeight(dropdownItemHeight)
 
-		local scrollFrame = CreateFrame("ScrollFrame", nil, frame)
+		local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
 		scrollFrame:EnableMouseWheel(true)
@@ -287,14 +287,14 @@ do
 		scrollFrame:SetToplevel(true)
 		scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 
-		local itemFrame = CreateFrame("Frame", nil, scrollFrame)
+		local itemFrame = CreateFrame("Frame", Type .. "ItemFrame" .. count, scrollFrame)
 		itemFrame:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
 		itemFrame:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", 0, 0)
 		itemFrame:SetToplevel(true)
 		itemFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 		scrollFrame:SetScrollChild(itemFrame)
 
-		local slider = CreateFrame("Slider", Type .. count .. "ScrollBar", scrollFrame, "BackdropTemplate")
+		local slider = CreateFrame("Slider", Type .. "ScrollBar" .. count, scrollFrame, "BackdropTemplate")
 		slider:SetOrientation("VERTICAL")
 		slider:SetHitRectInsets(0, 0, -10, 0)
 		slider:SetBackdrop(sliderBackdrop)
@@ -740,13 +740,13 @@ do
 
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
-		local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(dropdownBackdrop)
 		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
 		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 		frame:SetScript("OnHide", HandleDropdownHide)
 
-		local dropdown = CreateFrame("Frame", Type .. count, frame, "UIDropDownMenuTemplate")
+		local dropdown = CreateFrame("Frame", Type .. "Dropdown" .. count, frame, "UIDropDownMenuTemplate")
 		dropdown:ClearAllPoints()
 		dropdown:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 		dropdown:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
@@ -773,7 +773,7 @@ do
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 
-		local buttonCover = CreateFrame("Button", nil, frame)
+		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)
 		buttonCover:SetPoint("LEFT", frame, "LEFT")
 		buttonCover:SetPoint("RIGHT", frame, "RIGHT")
 		buttonCover:SetScript("OnEnter", HandleButtonEnter)

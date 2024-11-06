@@ -149,14 +149,14 @@ local function HighlightText(self, from, to)
 end
 
 local function Constructor()
-	local num = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("Frame", Type .. num, UIParent, "BackdropTemplate")
+	local count = AceGUI:GetNextWidgetNum(Type)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(backdrop)
 	frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
 	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 
-	local editBox = CreateFrame("EditBox", Type .. num .. "EditBox", frame)
+	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
 	editBox:SetAutoFocus(false)
 
 	editBox:SetScript("OnEnter", HandleEditBoxEnter)

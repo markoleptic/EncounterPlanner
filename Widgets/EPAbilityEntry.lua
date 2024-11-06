@@ -107,7 +107,7 @@ local function Constructor()
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 
-	local checkbox = CreateFrame("CheckButton", nil, frame)
+	local checkbox = CreateFrame("CheckButton", Type .. "CheckBox" .. count, frame)
 	checkbox:SetPoint("RIGHT", frame, "RIGHT", -padding.x, 0)
 	checkbox:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
 	checkbox:EnableMouse(true)

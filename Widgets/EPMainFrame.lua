@@ -108,9 +108,11 @@ end
 local function GetAssignmentContainer(self)
 	local bottomLeftContainer = self.children[2]
 	if bottomLeftContainer then
+		print("bottomLeftContainer")
 		---@diagnostic disable-next-line: undefined-field
 		local assignmentContainer = bottomLeftContainer.children[2]
 		if assignmentContainer then
+			print("assignmentContainer")
 			return assignmentContainer
 		end
 	end
@@ -128,8 +130,8 @@ local function GetTimeline(self)
 end
 
 local function Constructor()
-	local num = AceGUI:GetNextWidgetNum(Type)
-	local mainFrame = CreateFrame("Frame", "MainFrame" .. num, UIParent, "BackdropTemplate")
+	local count = AceGUI:GetNextWidgetNum(Type)
+	local mainFrame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	mainFrame:EnableMouse(true)
 	mainFrame:SetMovable(true)
 	mainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -138,8 +140,7 @@ local function Constructor()
 	mainFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	mainFrame:SetSize(mainFrameWidth, mainFrameHeight)
 
-	local contentFrameName = "ContentFrame" .. num
-	local contentFrame = CreateFrame("Frame", contentFrameName, mainFrame)
+	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, mainFrame)
 	contentFrame:SetPoint(
 		"TOPLEFT",
 		mainFrame,
@@ -157,8 +158,7 @@ local function Constructor()
 	contentFrame:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
 	contentFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
 
-	local windowBarName = "WindowBar" .. num
-	local windowBar = CreateFrame("Frame", windowBarName, mainFrame, "BackdropTemplate")
+	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, mainFrame, "BackdropTemplate")
 	windowBar:SetHeight(windowBarHeight)
 	windowBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT")
