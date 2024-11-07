@@ -466,7 +466,7 @@ do
 
 	---@param self EPDropdown
 	---@param value any
-	---@return EPDropdownItemMenu|nil, string|nil
+	---@return EPDropdownItemMenu|EPDropdownItemToggle|nil, string|nil
 	local function FindItemAndText(self, value)
 		local function searchItems(items)
 			for _, item in ipairs(items) do
@@ -474,7 +474,7 @@ do
 					if item:GetUserDataTable().value == value then
 						return item, item.text:GetText()
 					end
-					if item.submenu then
+					if item.submenu and item.submenu.items and #item.submenu.items > 0 then
 						local foundItem, foundText = searchItems(item.submenu.items)
 						if foundItem and foundText then
 							return foundItem, foundText
@@ -593,15 +593,13 @@ do
 	---@param value any
 	local function SetValue(self, value)
 		local item, text = self:FindItemAndText(value)
-		if item then
-			local parent = item:GetUserDataTable().menuItemObj
-			if parent then
-				parent:GetUserDataTable().childValue = value
-				while parent and parent ~= self and parent.SetValueWithoutParentCompare do
-					parent:GetUserDataTable().childValue = value
-					parent:SetValueWithoutParentCompare()
-					parent = parent:GetUserDataTable().menuItemObj
-				end
+		while item and item.type == "EPDropdownItemMenu" do
+			local menuItemParent = item:GetUserDataTable().menuItemObj
+			menuItemParent:GetUserDataTable().childValue = value
+			menuItemParent:SetValueWithoutParentCompare()
+			item = menuItemParent:GetUserDataTable().menuItemObj
+			if not item then
+				break
 			end
 		end
 		if not text then
@@ -727,8 +725,8 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData> table of nested dropdown item data
 	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue)
-		if existingDropdownMenuItem then
-			existingDropdownMenuItem:AddMenuItems(dropdownItemData, self)
+		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
+			existingDropdownMenuItem--[[@as EPDropdownItemMenu]]:AddMenuItems(dropdownItemData, self)
 		end
 	end
 
