@@ -143,6 +143,22 @@ do
 	end
 
 	---@param self EPDropdownPullout
+	---@param value any
+	local function RemoveItem(self, value)
+		local items = self.items
+		for i, item in pairs(items) do
+			if item:GetUserDataTable().value == value then
+				AceGUI:Release(item)
+				tremove(items, i)
+				break
+			end
+		end
+		local h = #self.items * dropdownItemHeight
+		self.itemFrame:SetHeight(h)
+		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
+	end
+
+	---@param self EPDropdownPullout
 	---@param point string
 	---@param relFrame string|frame
 	---@param relPoint string
@@ -317,6 +333,7 @@ do
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
 			AddItem = AddItem,
+			RemoveItem = RemoveItem,
 			Open = Open,
 			Close = Close,
 			Clear = Clear,
@@ -682,6 +699,15 @@ do
 	end
 
 	---@param self EPDropdown
+	---@param itemValue any the internal value used to index an item
+	local function RemoveItem(self, itemValue)
+		local item, _ = FindItemAndText(self, itemValue)
+		if item then
+			item.pullout:RemoveItem(itemValue)
+		end
+	end
+
+	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
 	local function AddItems(self, dropdownItemData, leafType)
@@ -802,6 +828,7 @@ do
 			SetItemValue = SetItemValue,
 			SetItemDisabled = SetItemDisabled,
 			AddItem = AddItem,
+			RemoveItem = RemoveItem,
 			AddItems = AddItems,
 			EditItemText = EditItemText,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
