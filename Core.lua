@@ -827,8 +827,11 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 end
 
 ---@param timeline EPTimeline
-local function HandleCreateNewAssignment(timeline, _, abilityData)
-	-- TODO: Find the boss ability using abilityData to create a new assignment and open assignment editor
+---@param _ any
+---@param abilityInstance BossAbilityInstance
+---@param assigneeIndex integer
+local function HandleCreateNewAssignment(timeline, _, abilityInstance, assigneeIndex)
+	-- TODO: Find the boss ability using abilityInstance to create a new assignment and open assignment editor
 end
 
 ---@param noteDropdown EPDropdown

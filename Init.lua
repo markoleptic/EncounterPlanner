@@ -190,6 +190,27 @@ Private.classes.BossPhase = {
 }
 Private.classes.BossPhase.__index = Private.classes.BossPhase
 
+---@class BossAbilityInstance
+---@field spellID number
+---@field phase number
+---@field phaseCastTime number|nil
+---@field combatLogEventType CombatLogEventType|nil
+---@field triggerSpellID number|nil
+---@field castOccurance number|nil
+---@field repeatInstance number|nil
+---@field castOccuranceRepeatInstance number|nil
+Private.classes.BossAbilityInstance = {
+	spellID = 0,
+	phase = 1,
+	phaseCastTime = nil,
+	combatLogEventType = nil,
+	triggerSpellID = nil,
+	castOccurance = nil,
+	repeatInstance = nil,
+	castOccuranceRepeatInstance = nil,
+}
+Private.classes.BossAbilityInstance.__index = Private.classes.BossAbilityInstance
+
 ---@return Assignment
 function Private.classes.Assignment:new(o)
 	o = o or {}

@@ -4,7 +4,9 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
+local abs = math.abs
 local CreateFrame = CreateFrame
+local floor = math.floor
 local GetCursorPosition = GetCursorPosition
 local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
@@ -18,6 +20,9 @@ local paddingBetweenBossAbilityBars = 4
 local paddingBetweenTimelineAndScrollBar = 10
 local bossAbilityBarHeight = 30
 local assignmentTextureSize = { x = 30, y = 30 }
+local assignmentTextureSubLevel = 0
+local bossAbilityTextureSubLevel = 0
+local verticalPositionLineSubLevel = -8
 local paddingBetweenAssignmentTextures = 2
 local horizontalScrollBarHeight = 20
 local tickWidth = 2
@@ -290,25 +295,20 @@ local function HandleTimelineFrameDragStop(frame)
 	end
 end
 
-local function HandleAssignmentTimelineFrameMouseDown(frame, button)
+local function HandleAssignmentTimelineFrameMouseUp(frame, button)
 	if button ~= "RightButton" then
 		return
 	end
 	local self = frame.obj --[[@as EPTimeline]]
 
-	local currentX, _ = GetCursorPosition()
+	local currentX, currentY = GetCursorPosition()
 	currentX = currentX / UIParent:GetEffectiveScale()
-
-	--local timelineFrame = self.timelineFrame
-	--local frameX = timelineFrame:GetLeft()
-	--local relativeCursorX = currentX - frameX
-
+	currentY = currentY / UIParent:GetEffectiveScale()
 	local nearestBarIndex = nil
 	local minDistance = math.huge
-
 	for index, bar in ipairs(self.bossAbilityTextureBars) do
 		if bar:IsShown() then
-			local distance = math.abs(bar:GetLeft() - currentX)
+			local distance = abs(bar:GetLeft() - currentX)
 			if distance < minDistance then
 				minDistance = distance
 				nearestBarIndex = index
@@ -316,7 +316,11 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 		end
 	end
 	if nearestBarIndex then
-		self:Fire("CreateNewAssignment", self.bossAbilityTextureBars[nearestBarIndex].abilityData)
+		local relativeDistanceFromTop = abs(self.assignmentTimelineFrame:GetTop() - currentY)
+		local assigneeIndex = floor(
+			relativeDistanceFromTop / (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
+		) + 1
+		self:Fire("CreateNewAssignment", self.bossAbilityTextureBars[nearestBarIndex].abilityInstance, assigneeIndex)
 	end
 end
 
@@ -327,8 +331,8 @@ end
 ---@param color integer[] color of the bar.
 ---@param index integer index into the bars table.
 ---@param offset number offset from the top of the timeline frame.
----@param abilityData table
-local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset, abilityData)
+---@param abilityInstance BossAbilityInstance
+local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset, abilityInstance)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -343,11 +347,11 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 	---@class Texture
 	local bar = self.bossAbilityTextureBars[index]
 	if not bar then
-		bar = timelineFrame:CreateTexture(nil, "OVERLAY")
+		bar = timelineFrame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
 		self.bossAbilityTextureBars[index] = bar
 	end
 
-	bar.abilityData = abilityData
+	bar.abilityInstance = abilityInstance
 
 	local r, g, b, a = unpack(color)
 	bar:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
@@ -371,7 +375,7 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 	---@class Texture
 	local assignment = self.assignmentTextures[index]
 	if not assignment then
-		assignment = self.assignmentTimelineFrame:CreateTexture(nil, "OVERLAY")
+		assignment = self.assignmentTimelineFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
 		assignment.assignmentFrame = self.assignmentTimelineFrame
 		assignment:SetScript("OnEnter", function(frame, motion)
 			HandleIconEnter(frame, motion)
@@ -897,7 +901,7 @@ local function Constructor()
 	assignmentTimelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	assignmentTimelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
 	assignmentTimelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
-	assignmentTimelineFrame:SetScript("OnMouseDown", HandleAssignmentTimelineFrameMouseDown)
+	assignmentTimelineFrame:SetScript("OnMouseDown", HandleAssignmentTimelineFrameMouseUp)
 	assignmentTimelineFrame:SetScript("OnEnter", HandleTimelineFrameEnter)
 	assignmentTimelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
 	assignmentTimelineFrame:Show()
@@ -905,15 +909,24 @@ local function Constructor()
 	frame:SetScrollChild(timelineWrapperFrame)
 	frame:EnableMouseWheel(true)
 
-	local timelineVerticalPositionLine = timelineFrame:CreateTexture(Type .. "AbilityPositionLine" .. count, "OVERLAY")
+	local timelineVerticalPositionLine = timelineFrame:CreateTexture(
+		Type .. "AbilityPositionLine" .. count,
+		"OVERLAY",
+		nil,
+		verticalPositionLineSubLevel
+	)
 	timelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	timelineVerticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT")
 	timelineVerticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT")
 	timelineVerticalPositionLine:SetWidth(1)
 	timelineVerticalPositionLine:Hide()
 
-	local assignmentTimelineVerticalPositionLine =
-		assignmentTimelineFrame:CreateTexture(Type .. "AssignmentPositionLine" .. count, "OVERLAY")
+	local assignmentTimelineVerticalPositionLine = assignmentTimelineFrame:CreateTexture(
+		Type .. "AssignmentPositionLine" .. count,
+		"OVERLAY",
+		nil,
+		verticalPositionLineSubLevel
+	)
 	assignmentTimelineVerticalPositionLine:SetColorTexture(1, 0.82, 0, 1)
 	assignmentTimelineVerticalPositionLine:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT")
 	assignmentTimelineVerticalPositionLine:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT")
