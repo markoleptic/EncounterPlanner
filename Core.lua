@@ -598,7 +598,8 @@ end
 
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(value)
-	SortAssignments(Private.assignments, value)
+	AddOn.db.profile.assignmentSortType = value
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 	UpdateAssignmentListEntries()
 
 	local timeline = Private.mainFrame:GetTimeline()
@@ -1143,6 +1144,7 @@ function Private:CreateGUI()
 	local xPos = (screenWidth / 2) - (Private.mainFrame.frame:GetWidth() / 2)
 	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
 	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
+	timeline:UpdateTimeline()
 end
 
 -- Addon is first loaded
