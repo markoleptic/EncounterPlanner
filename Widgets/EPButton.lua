@@ -58,6 +58,7 @@ end
 
 ---@param self EPButton
 local function OnAcquire(self)
+	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	self.frame:Show()
 	self:SetDisabled(false)
 end
