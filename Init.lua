@@ -97,12 +97,10 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@class TimelineAssignment
 ---@field assignment Assignment The assignment
 ---@field startTime number Time used to place the assignment on the timeline
----@field offset number TODO Get rid of
 ---@field order number When sorted by first appearance, this number signifies the order relative to other assignments. This number is the same across assignments with the same assignee.
 Private.classes.TimelineAssignment = setmetatable({
 	assignment = nil,
 	startTime = nil,
-	offset = nil,
 	order = nil,
 }, { __index = Private.classes.TimelineAssignment })
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment

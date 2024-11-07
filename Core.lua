@@ -102,7 +102,7 @@ local function CreateTimelineAssignment(assignment)
 		assignment = assignment --[[@as CombatLogEventAssignment]]
 		local ability = Private:FindBossAbility(assignment.combatLogEventSpellID)
 		if ability then
-			local startTime = assignment.time
+			local startTime = assignment.time or 0 -- TODO: Implement combat log events with no time
 			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
 				for i = 1, min(assignment.spellCount, #ability.phases[1].castTimes) do
 					startTime = startTime + ability.phases[1].castTimes[i]
@@ -115,8 +115,7 @@ local function CreateTimelineAssignment(assignment)
 			return Private.classes.TimelineAssignment:new({
 				assignment = assignment,
 				startTime = startTime,
-				offset = nil,
-				order = nil,
+				order = 0,
 			})
 		end
 	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
@@ -124,8 +123,7 @@ local function CreateTimelineAssignment(assignment)
 		return Private.classes.TimelineAssignment:new({
 			assignment = assignment,
 			startTime = assignment.time,
-			offset = nil,
-			order = nil,
+			order = 0,
 		})
 	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
@@ -145,8 +143,7 @@ local function CreateTimelineAssignment(assignment)
 					return Private.classes.TimelineAssignment:new({
 						assignment = assignment,
 						startTime = runningStartTime,
-						offset = nil,
-						order = nil,
+						order = 0,
 					})
 				end
 				runningStartTime = runningStartTime + boss.phases[currentPhase].duration
@@ -205,21 +202,18 @@ end
 
 -- Updates the order of timeline assignments based on sortedTimelineAssignments
 local function CreateAssigneeOrder()
-	-- Clear and rebuild the order and offset mappings
 	local order = 1
-	local orderAndOffsets = {}
+	local assigneeMap = {}
 	local assigneeOrder = {}
 
-	for _, entry in pairs(sortedTimelineAssignments) do
+	for _, entry in ipairs(sortedTimelineAssignments) do
 		local assignee = entry.assignment.assigneeNameOrRole
-		if not orderAndOffsets[assignee] then
-			local offset = (order - 1) * (30 + 2)
-			orderAndOffsets[assignee] = { order = order, offset = offset }
+		if not assigneeMap[assignee] then
+			assigneeMap[assignee] = order
 			assigneeOrder[order] = assignee
 			order = order + 1
 		end
-		entry.order = orderAndOffsets[assignee].order
-		entry.offset = orderAndOffsets[assignee].offset
+		entry.order = assigneeMap[assignee]
 	end
 
 	return assigneeOrder

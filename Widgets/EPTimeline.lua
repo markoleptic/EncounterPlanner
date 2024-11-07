@@ -17,8 +17,8 @@ local paddingBetweenTimelines = 36
 local paddingBetweenBossAbilityBars = 4
 local paddingBetweenTimelineAndScrollBar = 25
 local bossAbilityBarHeight = 30
-local assignmentSpellIconSize = { x = 30, y = 30 }
-local paddingBetweenAssignmentSpellIcons = 2
+local assignmentTextureSize = { x = 30, y = 30 }
+local paddingBetweenAssignmentTextures = 2
 local horizontalScrollBarHeight = 20
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -358,11 +358,12 @@ end
 
 -- Helper function to draw a spell icon for an assignment.
 ---@param self EPTimeline
----@param startTime number absolute start time of the assignment.
----@param spellID integer spellID of the spell being assigned.
----@param index integer unique index of the assignment
----@param offsetY number offset from the top of the timeline frame.
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, offsetY)
+---@param startTime number absolute start time of the assignment
+---@param spellID integer spellID of the spell being assigned
+---@param index integer index of the assignment texture
+---@param uniqueID integer unique index of the assignment
+---@param order number the relative order of the assignee of the assignment
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -399,8 +400,9 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, offsetY
 	local timelineWidth = self.timelineWrapperFrame:GetWidth() - 2 * timelineLinePadding.x
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
 	local offsetX = timelineStartPosition + timelineLinePadding.x
+	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
 
-	assignment:SetSize(assignmentSpellIconSize.x, assignmentSpellIconSize.y)
+	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
 	assignment:SetPoint("TOPLEFT", self.assignmentTimelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignment:Show()
 end
@@ -420,7 +422,7 @@ local function UpdateAssignments(self)
 			assignment.assignment.spellInfo.spellID,
 			index,
 			assignment.assignment.uniqueID,
-			assignment.offset
+			assignment.order
 		)
 	end
 end
@@ -725,8 +727,8 @@ local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentHeight = 0
 	if self.assignees then
 		local count = #self.assignees
-		totalAssignmentHeight = count * (assignmentSpellIconSize.y + paddingBetweenAssignmentSpellIcons)
-			- paddingBetweenAssignmentSpellIcons
+		totalAssignmentHeight = count * (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
+			- paddingBetweenAssignmentTextures
 	end
 	return totalAssignmentHeight
 end
