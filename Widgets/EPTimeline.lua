@@ -105,7 +105,7 @@ local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
 end
 
 local function UpdateLinePosition(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	local xPosition, _ = GetCursorPosition()
 	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.timelineFrame:GetLeft()
 	local newassignmentTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
@@ -141,7 +141,7 @@ local function HandleTimelineFrameEnter(frame)
 end
 
 local function HandleTimelineFrameLeave(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	if timelineFrameIsDragging then
 		return
 	end
@@ -151,7 +151,7 @@ local function HandleTimelineFrameLeave(frame)
 end
 
 local function HandleThumbUpdate(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	if not thumbIsDragging then
 		return
 	end
@@ -181,7 +181,7 @@ local function HandleThumbUpdate(frame)
 end
 
 local function HandleThumbMouseDown(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	local x, _ = GetCursorPosition()
 	thumbOffsetWhenThumbClicked = (x / UIParent:GetEffectiveScale()) - self.thumb:GetLeft()
 	scrollBarWidthWhenThumbClicked = self.scrollBar:GetWidth()
@@ -232,7 +232,7 @@ local function UpdateScrollBar(self)
 end
 
 local function HandleTimelineFrameUpdate(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	if not timelineFrameIsDragging then
 		return
 	end
@@ -247,11 +247,11 @@ local function HandleTimelineFrameUpdate(frame)
 
 	scrollFrame:SetHorizontalScroll(math.min(math.max(0, newScrollH), maxScrollH))
 	timelineFrameDragStartX = currentX
-	self:UpdateScrollBar()
+	UpdateScrollBar(self)
 end
 
 local function HandleTimelineFrameDragStart(frame, button)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	timelineFrameIsDragging = true
 	local x, _ = GetCursorPosition()
 	timelineFrameDragStartX = x
@@ -261,7 +261,7 @@ local function HandleTimelineFrameDragStart(frame, button)
 end
 
 local function HandleTimelineFrameDragStop(frame)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	timelineFrameIsDragging = false
 	frame:SetScript("OnUpdate", nil)
 
@@ -294,7 +294,7 @@ local function HandleAssignmentTimelineFrameMouseDown(frame, button)
 	if button ~= "RightButton" then
 		return
 	end
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 
 	local currentX, _ = GetCursorPosition()
 	currentX = currentX / UIParent:GetEffectiveScale()
@@ -656,7 +656,7 @@ end
 -- Sets the width of the timelineWrapperFrame and the horizontal scroll of the scrollFrame. Also updates the scroll bar
 -- size and position, tick mark positions, boss ability bars, and assignment icon positions.
 local function HandleTimelineFrameMouseWheel(frame, delta)
-	local self = frame.obj
+	local self = frame.obj --[[@as EPTimeline]]
 	local timelineWrapperFrame = self.timelineWrapperFrame
 	local timelineDuration = totalTimelineDuration
 	local scrollFrame = self.frame
