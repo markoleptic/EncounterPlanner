@@ -15,7 +15,7 @@ local frameWidth = 900
 local frameHeight = 400
 local paddingBetweenTimelines = 36
 local paddingBetweenBossAbilityBars = 4
-local paddingBetweenTimelineAndScrollBar = 25
+local paddingBetweenTimelineAndScrollBar = 10
 local bossAbilityBarHeight = 30
 local assignmentTextureSize = { x = 30, y = 30 }
 local paddingBetweenAssignmentTextures = 2

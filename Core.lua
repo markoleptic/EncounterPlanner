@@ -834,6 +834,9 @@ end
 ---@param noteDropdown EPDropdown
 ---@param renameNoteLineEdit EPLineEdit
 local function HandleCreateNewEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
 	local newNoteName = CreateUniqueNoteName()
 	Private:Note("")
 	AddOn.db.profile.notes[newNoteName] = ""
@@ -854,6 +857,9 @@ end
 ---@param noteDropdown EPDropdown
 ---@param renameNoteLineEdit EPLineEdit
 local function HandleDeleteCurrentEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
 	local beforeRemovalCount = 0
 	for _, _ in pairs(AddOn.db.profile.notes) do
 		beforeRemovalCount = beforeRemovalCount + 1
@@ -900,6 +906,9 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, value, no
 	if value == "Override current EP note" then
 		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote] = sharedNote
 	elseif value == "Create new EP note" then
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
 		local newNoteName = CreateUniqueNoteName()
 		AddOn.db.profile.notes[newNoteName] = sharedNote
 		AddOn.db.profile.lastOpenNote = newNoteName
