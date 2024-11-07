@@ -536,6 +536,7 @@ do
 		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
+		self:SetTextCentered(false)
 		self:SetHeight(dropdownItemHeight)
 		self:SetWidth(200)
 		self:SetPulloutWidth(nil)
@@ -587,6 +588,16 @@ do
 	---@param text string
 	local function SetText(self, text)
 		self.text:SetText(text or "")
+	end
+
+	---@param self EPDropdown
+	---@param center boolean
+	local function SetTextCentered(self, center)
+		if center then
+			self.text:SetJustifyH("CENTER")
+		else
+			self.text:SetJustifyH("LEFT")
+		end
 	end
 
 	---@param self EPDropdown
@@ -807,6 +818,7 @@ do
 		local text = _G[dropdown:GetName() .. "Text"]
 		text:ClearAllPoints()
 		text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
+		text:SetPoint("RIGHT", frame, "RIGHT", -textOffsetX, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		if fPath then
 			text:SetFont(fPath, fontSize)
@@ -821,6 +833,7 @@ do
 			ClearFocus = ClearFocus,
 			FindItemAndText = FindItemAndText,
 			SetText = SetText,
+			SetTextCentered = SetTextCentered,
 			SetValue = SetValue,
 			GetValue = GetValue,
 			SetItemValue = SetItemValue,
