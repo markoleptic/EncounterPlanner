@@ -831,6 +831,18 @@ end
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
 local function HandleCreateNewAssignment(timeline, _, abilityInstance, assigneeIndex)
+	print(
+		abilityInstance.spellID,
+		abilityInstance.phase,
+		abilityInstance.phaseCastTime,
+		abilityInstance.triggerSpellID,
+		abilityInstance.castOccurance,
+		abilityInstance.repeatInstance,
+		abilityInstance.castOccuranceRepeatInstance
+	)
+	if sortedAssignees[assigneeIndex] then
+		print(sortedAssignees[assigneeIndex])
+	end
 	-- TODO: Find the boss ability using abilityInstance to create a new assignment and open assignment editor
 end
 
@@ -955,6 +967,9 @@ function Private:CreateGUI()
 	Private.mainFrame:SetLayout("EPContentFrameLayout")
 	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
 	end)
 
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
@@ -1113,7 +1128,6 @@ function Private:CreateGUI()
 	topContainer:AddChild(outerNoteContainer)
 	topContainer:AddChild(noteButtonContainer)
 	topContainer:AddChild(importExportContainer)
-	Private.mainFrame:AddChild(topContainer)
 
 	local bottomLeftContainer = AceGUI:Create("EPContainer")
 	bottomLeftContainer:SetLayout("EPVerticalLayout")
@@ -1132,6 +1146,7 @@ function Private:CreateGUI()
 	bottomLeftContainer:AddChild(bossAbilityContainer)
 	bottomLeftContainer:AddChild(assignmentListContainer)
 
+	Private.mainFrame:AddChild(topContainer)
 	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
 
