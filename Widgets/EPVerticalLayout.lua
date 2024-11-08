@@ -38,19 +38,21 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		if i > 1 then
 			if alignment == "default" then
 				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
+				frame:SetPoint("RIGHT", content)
 			elseif alignment == "center" then
 				frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
 			end
 		else
 			if alignment == "default" then
 				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+				frame:SetPoint("RIGHT", content)
 			elseif alignment == "center" then
 				frame:SetPoint("TOP", content, "TOP")
 			end
 		end
 
 		if child.width == "fill" then
-			child:SetWidth(contentWidth)
+			--child:SetWidth(contentWidth)
 			frame:SetPoint("RIGHT", content)
 			if child.DoLayout then
 				child:DoLayout()
