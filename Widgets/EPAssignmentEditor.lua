@@ -12,7 +12,7 @@ local buttonFrameHeight = 24
 local windowBarHeight = 24
 local contentFramePadding = { x = 15, y = 15 }
 local title = "Assignment Editor"
-local FrameBackdrop = {
+local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
@@ -28,7 +28,7 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local ButtonFrameBackdrop = {
+local buttonFrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
@@ -36,65 +36,6 @@ local ButtonFrameBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local buttonBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-
-local function FlashButton_OnLeave(self)
-	local fadeIn = self.fadeIn
-	if fadeIn:IsPlaying() then
-		fadeIn:Stop()
-	end
-	self.fadeOut:Play()
-end
-
-local function FlashButton_OnEnter(self)
-	local fadeOut = self.fadeOut
-	if fadeOut:IsPlaying() then
-		fadeOut:Stop()
-	end
-	self.fadeIn:Play()
-end
-
-local function CreateFlashButton(parent, text, width, height)
-	local Button = CreateFrame("Button", nil, parent, BackdropTemplateMixin and "BackdropTemplate" or nil)
-	Button:SetSize(width or 80, height or 20)
-	Button:SetScript("OnEnter", FlashButton_OnEnter)
-	Button:SetScript("OnLeave", FlashButton_OnLeave)
-	Button:SetNormalFontObject("GameFontNormal")
-	Button:SetText(text or "")
-
-	Button.bg = Button:CreateTexture(nil, "BORDER")
-	Button.bg:SetAllPoints()
-	Button.bg:SetColorTexture(0.725, 0.008, 0.008)
-	Button.bg:Hide()
-
-	Button.fadeIn = Button.bg:CreateAnimationGroup()
-	Button.fadeIn:SetScript("OnPlay", function()
-		Button.bg:Show()
-	end)
-	local fadeIn = Button.fadeIn:CreateAnimation("Alpha")
-	fadeIn:SetFromAlpha(0)
-	fadeIn:SetToAlpha(1)
-	fadeIn:SetDuration(0.4)
-	fadeIn:SetSmoothing("OUT")
-
-	Button.fadeOut = Button.bg:CreateAnimationGroup()
-	Button.fadeOut:SetScript("OnFinished", function()
-		Button.bg:Hide()
-	end)
-	local fadeOut = Button.fadeOut:CreateAnimation("Alpha")
-	fadeOut:SetFromAlpha(1)
-	fadeOut:SetToAlpha(0)
-	fadeOut:SetDuration(0.3)
-	fadeOut:SetSmoothing("OUT")
-
-	return Button
-end
 
 local assignmentTriggers = {
 	{
@@ -139,9 +80,10 @@ local assignmentTriggers = {
 ---@field type string
 ---@field count number
 ---@field frame Frame|BackdropTemplate|table
----@field buttonFrame Frame|BackdropTemplate|table
----@field okayButton Button|BackdropTemplate|table
----@field deleteButton Button|BackdropTemplate|table
+---@field buttonFrame Frame|table
+---@field okayButton EPButton
+---@field deleteButton EPButton
+---@field closeButton EPButton
 ---@field titleText FontString
 ---@field assignmentTypeContainer EPContainer
 ---@field assignmentTypeDropdown EPDropdown
@@ -174,6 +116,7 @@ local assignmentTriggers = {
 ---@field targetDropdown EPDropdown
 ---@field previewContainer EPContainer
 ---@field previewLabel EPLabel
+---@field windowBar Frame|table
 ---@field obj any
 
 local function HandleOkayButtonClicked(frame, mouseButtonType, down)
@@ -182,25 +125,9 @@ local function HandleOkayButtonClicked(frame, mouseButtonType, down)
 	self:Release()
 end
 
-local function HandleOkayButtonEnter(frame, motion)
-	FlashButton_OnEnter(frame)
-end
-
-local function HandleOkayButtonLeave(frame, motion)
-	FlashButton_OnLeave(frame)
-end
-
 local function HandleDeleteButtonClicked(frame, mouseButtonType, down)
 	local self = frame.obj
 	self:Fire("DeleteButtonClicked")
-end
-
-local function HandleDeleteButtonEnter(frame, motion)
-	FlashButton_OnEnter(frame)
-end
-
-local function HandleDeleteButtonLeave(frame, motion)
-	FlashButton_OnLeave(frame)
 end
 
 local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, value)
@@ -450,12 +377,81 @@ local function OnAcquire(self)
 	self.previewContainer:AddChild(self.previewLabel)
 	self:AddChild(self.previewContainer)
 
+	self.okayButton = AceGUI:Create("EPButton")
+	self.okayButton:SetText("Okay")
+	self.okayButton:SetWidth(75)
+	self.okayButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.okayButton:SetCallback("OnClick", HandleOkayButtonClicked)
+	self.okayButton.frame:SetParent(self.buttonFrame)
+	self.okayButton:SetPoint(
+		"TOPRIGHT",
+		self.buttonFrame,
+		"TOPRIGHT",
+		-buttonFrameBackdrop.edgeSize,
+		-buttonFrameBackdrop.edgeSize
+	)
+	self.okayButton:SetPoint(
+		"BOTTOMRIGHT",
+		self.buttonFrame,
+		"BOTTOMRIGHT",
+		-buttonFrameBackdrop.edgeSize,
+		buttonFrameBackdrop.edgeSize
+	)
+	self.okayButton.obj = self
+
+	self.deleteButton = AceGUI:Create("EPButton")
+	self.deleteButton:SetText("Delete")
+	self.deleteButton:SetWidth(75)
+	self.deleteButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.deleteButton:SetCallback("Clicked", HandleDeleteButtonClicked)
+	self.deleteButton.frame:SetParent(self.buttonFrame)
+	self.deleteButton.frame:SetPoint(
+		"TOPLEFT",
+		self.buttonFrame,
+		"TOPLEFT",
+		buttonFrameBackdrop.edgeSize,
+		-buttonFrameBackdrop.edgeSize
+	)
+	self.deleteButton.frame:SetPoint(
+		"BOTTOMLEFT",
+		self.buttonFrame,
+		"BOTTOMLEFT",
+		buttonFrameBackdrop.edgeSize,
+		buttonFrameBackdrop.edgeSize
+	)
+	self.deleteButton.obj = self
+
+	self.closeButton = AceGUI:Create("EPButton")
+	self.closeButton:SetText("X")
+	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton.frame:SetParent(self.windowBar)
+	self.closeButton:SetPoint("TOPRIGHT", self.windowBar, "TOPRIGHT", -frameBackdrop.edgeSize, -frameBackdrop.edgeSize)
+	self.closeButton:SetCallback("Clicked", function()
+		self:Fire("OkayButtonClicked")
+		self:Release()
+	end)
+
 	self.frame:Show()
 	self:DoLayout()
 end
 
 ---@param self EPAssignmentEditor
-local function OnRelease(self) end
+local function OnRelease(self)
+	if self.okayButton then
+		self.okayButton:Release()
+	end
+	if self.closeButton then
+		self.closeButton:Release()
+	end
+	if self.deleteButton then
+		self.deleteButton:Release()
+	end
+	self.okayButton = nil
+	self.deleteButton = nil
+	self.closeButton = nil
+end
 
 ---@param self EPAssignmentEditor
 local function LayoutFinished(self, width, height)
@@ -471,7 +467,7 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetBackdrop(FrameBackdrop)
+	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(0, 0, 0, 0.9)
 	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	frame:SetSize(frameWidth, frameHeight)
@@ -502,7 +498,7 @@ local function Constructor()
 	end)
 
 	local buttonFrame = CreateFrame("Frame", Type .. "ButtonFrame" .. count, frame, "BackdropTemplate")
-	buttonFrame:SetBackdrop(ButtonFrameBackdrop)
+	buttonFrame:SetBackdrop(buttonFrameBackdrop)
 	buttonFrame:SetBackdropColor(0.1, 0.1, 0.1, 1.0)
 	buttonFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	buttonFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
@@ -521,39 +517,6 @@ local function Constructor()
 		contentFramePadding.y + buttonFrameHeight
 	)
 
-	local deleteButton = CreateFlashButton(
-		buttonFrame,
-		"Delete",
-		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
-		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
-	)
-	deleteButton:RegisterForClicks("LeftButtonUp")
-	deleteButton:SetScript("OnEnter", HandleDeleteButtonEnter)
-	deleteButton:SetScript("OnLeave", HandleDeleteButtonLeave)
-	deleteButton:SetPoint("TOPLEFT", ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
-	deleteButton:SetPoint("BOTTOMLEFT", ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
-	deleteButton:SetWidth(75)
-
-	local okayButton = CreateFlashButton(
-		buttonFrame,
-		"Okay",
-		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize,
-		buttonFrameHeight - 2 * ButtonFrameBackdrop.edgeSize
-	)
-	okayButton:RegisterForClicks("LeftButtonUp")
-	okayButton:SetScript("OnEnter", HandleOkayButtonEnter)
-	okayButton:SetScript("OnLeave", HandleOkayButtonLeave)
-	okayButton:SetPoint("TOPRIGHT", -ButtonFrameBackdrop.edgeSize, -ButtonFrameBackdrop.edgeSize)
-	okayButton:SetPoint("BOTTOMRIGHT", -ButtonFrameBackdrop.edgeSize, ButtonFrameBackdrop.edgeSize)
-	okayButton:SetWidth(75)
-
-	local closebutton = CreateFlashButton(
-		windowBar,
-		"X",
-		windowBarHeight - 2 * FrameBackdrop.edgeSize,
-		windowBarHeight - 2 * FrameBackdrop.edgeSize
-	)
-
 	---@class EPAssignmentEditor
 	local widget = {
 		type = Type,
@@ -567,20 +530,7 @@ local function Constructor()
 		SetAssignmentType = SetAssignmentType,
 		SetAssigneeType = SetAssigneeType,
 		buttonFrame = buttonFrame,
-		okayButton = okayButton,
-		deleteButton = deleteButton,
 	}
-
-	deleteButton.obj = widget
-	okayButton.obj = widget
-
-	deleteButton:SetScript("OnClick", HandleDeleteButtonClicked)
-	okayButton:SetScript("OnClick", HandleOkayButtonClicked)
-	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
-	closebutton:SetScript("OnClick", function()
-		widget:Fire("OkayButtonClicked")
-		widget:Release()
-	end)
 
 	return AceGUI:RegisterAsContainer(widget)
 end

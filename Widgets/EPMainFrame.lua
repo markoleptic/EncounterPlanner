@@ -9,7 +9,7 @@ local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local windowBarHeight = 30
 local contentFramePadding = { x = 10, y = 10 }
-local FrameBackdrop = {
+local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
@@ -25,65 +25,12 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
-local function FlashButton_OnLeave(self)
-	local fadeIn = self.fadeIn
-	if fadeIn:IsPlaying() then
-		fadeIn:Stop()
-	end
-	self.fadeOut:Play()
-end
-
-local function FlashButton_OnEnter(self)
-	local fadeOut = self.fadeOut
-	if fadeOut:IsPlaying() then
-		fadeOut:Stop()
-	end
-	self.fadeIn:Play()
-end
-
-local function CreateFlashButton(parent, text, width, height)
-	local Button = CreateFrame("Button", nil, parent)
-	Button:SetSize(width or 80, height or 20)
-	Button:SetScript("OnEnter", FlashButton_OnEnter)
-	Button:SetScript("OnLeave", FlashButton_OnLeave)
-	Button:SetNormalFontObject("GameFontNormal")
-	Button:SetText(text or "")
-
-	Button.bg = Button:CreateTexture(nil, "BORDER")
-	Button.bg:SetAllPoints()
-
-	Button.bg:SetColorTexture(0.725, 0.008, 0.008)
-	Button.bg:Hide()
-
-	Button.fadeIn = Button.bg:CreateAnimationGroup()
-	Button.fadeIn:SetScript("OnPlay", function()
-		Button.bg:Show()
-	end)
-	local fadeIn = Button.fadeIn:CreateAnimation("Alpha")
-	fadeIn:SetFromAlpha(0)
-	fadeIn:SetToAlpha(1)
-	fadeIn:SetDuration(0.4)
-	fadeIn:SetSmoothing("OUT")
-
-	Button.fadeOut = Button.bg:CreateAnimationGroup()
-	Button.fadeOut:SetScript("OnFinished", function()
-		Button.bg:Hide()
-	end)
-	local fadeOut = Button.fadeOut:CreateAnimation("Alpha")
-	fadeOut:SetFromAlpha(1)
-	fadeOut:SetToAlpha(0)
-	fadeOut:SetDuration(0.3)
-	fadeOut:SetSmoothing("OUT")
-
-	return Button
-end
-
 ---@class EPMainFrame : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
 ---@field type string
 ---@field content table|Frame
 ---@field windowBar table|Frame
----@field closebutton table|BackdropTemplate|Button
+---@field closeButton EPButton
 ---@field children table<integer, AceGUIWidget>
 
 ---@param self EPMainFrame
@@ -91,10 +38,32 @@ local function OnAcquire(self)
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
+
+	self.closeButton = AceGUI:Create("EPButton")
+	self.closeButton:SetText("X")
+	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton.frame:SetParent(self.windowBar)
+	self.closeButton.frame:SetPoint(
+		"TOPRIGHT",
+		self.windowBar,
+		"TOPRIGHT",
+		-frameBackdrop.edgeSize,
+		-frameBackdrop.edgeSize
+	)
+	self.closeButton:SetCallback("Clicked", function()
+		self:Release()
+	end)
 end
 
 ---@param self EPMainFrame
-local function OnRelease(self) end
+local function OnRelease(self)
+	if self.closeButton then
+		self.closeButton:Release()
+	end
+	self.closeButton = nil
+end
 
 ---@param self EPMainFrame
 ---@param width number|nil
@@ -133,7 +102,7 @@ local function Constructor()
 	mainFrame:EnableMouse(true)
 	mainFrame:SetMovable(true)
 	mainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-	mainFrame:SetBackdrop(FrameBackdrop)
+	mainFrame:SetBackdrop(frameBackdrop)
 	mainFrame:SetBackdropColor(0, 0, 0, 0.9)
 	mainFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
 	mainFrame:SetSize(mainFrameWidth, mainFrameHeight)
@@ -179,13 +148,6 @@ local function Constructor()
 		mainFrame:StopMovingOrSizing()
 	end)
 
-	local closebutton = CreateFlashButton(
-		windowBar,
-		"X",
-		windowBarHeight - 2 * FrameBackdrop.edgeSize,
-		windowBarHeight - 2 * FrameBackdrop.edgeSize
-	)
-
 	---@class EPMainFrame
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -197,13 +159,7 @@ local function Constructor()
 		type = Type,
 		content = contentFrame,
 		windowBar = windowBar,
-		closebutton = closebutton,
 	}
-
-	closebutton:SetPoint("TOPRIGHT", -FrameBackdrop.edgeSize, -FrameBackdrop.edgeSize)
-	closebutton:SetScript("OnClick", function()
-		widget:Release()
-	end)
 
 	return AceGUI:RegisterAsContainer(widget)
 end

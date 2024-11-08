@@ -368,7 +368,6 @@ do
 		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
 		self:SetChildValue(value)
 		self:Fire("OnValueChanged", selected, value)
-		print("MenuItem", self.open, dropdownItem.selected, value)
 		if self.open then
 			self.parentPullout:Close()
 		end
@@ -388,7 +387,6 @@ do
 		else
 			dropdownItem:SetIsSelected(true)
 		end
-		print("Toggle", self.open, dropdownItem.selected, dropdownItem:GetValue())
 		if self.open then
 			self.parentPullout:Close()
 		end
