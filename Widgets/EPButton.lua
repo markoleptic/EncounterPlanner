@@ -44,6 +44,7 @@ end
 ---@field button table|BackdropTemplate|Button
 ---@field type string
 ---@field disabled boolean
+---@field obj any
 
 ---@param self EPButton
 local function SetDisabled(self, disable)
@@ -59,6 +60,8 @@ end
 ---@param self EPButton
 local function OnAcquire(self)
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self:SetBackdropColor(0.25, 0.25, 0.25, 1)
+	self:SetColor(0.725, 0.008, 0.008, 1)
 	self.frame:Show()
 	self:SetDisabled(false)
 end
@@ -70,6 +73,15 @@ local function OnRelease(self) end
 ---@param text string
 local function SetText(self, text)
 	self.button:SetText(text or "")
+end
+
+---@param self EPButton
+---@param r number
+---@param g number
+---@param b number
+---@param a number
+local function SetBackdropColor(self, r, g, b, a)
+	self.button:SetBackdropColor(r, g, b, a)
 end
 
 ---@param self EPButton
@@ -138,6 +150,7 @@ local function Constructor()
 		SetDisabled = SetDisabled,
 		SetText = SetText,
 		LayoutFinished = LayoutFinished,
+		SetBackdropColor = SetBackdropColor,
 		SetColor = SetColor,
 		frame = frame,
 		type = Type,
