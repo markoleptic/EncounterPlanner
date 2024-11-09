@@ -514,6 +514,7 @@ local function UpdateAssignmentListEntries()
 			else
 				local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
 				local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+				local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
 				if classMatch then
 					local prettyClassName = Private.prettyClassNames[classMatch]
 					if prettyClassName then
@@ -523,6 +524,8 @@ local function UpdateAssignmentListEntries()
 					end
 				elseif roleMatch then
 					abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+				elseif groupMatch then
+					abilityEntryText = "Group " .. groupMatch
 				else
 					abilityEntryText = Private.roster[sortedAssignees[index]]
 				end
