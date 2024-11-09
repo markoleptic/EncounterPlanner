@@ -391,12 +391,27 @@ for _, boss in pairs(bosses) do
 	end
 end
 
----@param bossName string
+---@param bossNameOrIndex string|integer
 ---@return BossDefinition|nil
-function Private:GetBossDefinition(bossName)
-	for _, bossDefinition in pairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
+function Private:GetBossDefinition(bossNameOrIndex)
+	if type(bossNameOrIndex) == "number" then
+		return Private.raidInstances["Nerub'ar Palace"].bosses[bossNameOrIndex]
+	elseif type(bossNameOrIndex) == "string" then
+		for _, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
+			if bossDefinition.name == bossNameOrIndex then
+				return bossDefinition
+			end
+		end
+	end
+	return nil
+end
+
+---@param bossName string
+---@return integer|nil
+function Private:GetBossDefinitionIndex(bossName)
+	for index, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
 		if bossDefinition.name == bossName then
-			return bossDefinition
+			return index
 		end
 	end
 	return nil
@@ -408,6 +423,27 @@ function Private:GetBoss(bossName)
 	local boss = bosses[bossName]
 	if boss then
 		return boss
+	end
+	return nil
+end
+
+---@param spellID integer
+---@return string|nil
+function Private:GetBossFromSpellID(spellID)
+	for bossName, boss in pairs(bosses) do
+		if boss.abilities[spellID] then
+			return bossName
+		end
+	end
+	return nil
+end
+
+---@param bossDefinitionIndex integer
+---@return Boss|nil
+function Private:GetBossFromBossDefinitionIndex(bossDefinitionIndex)
+	local bossDef = self:GetBossDefinition(bossDefinitionIndex)
+	if bossDef then
+		return bosses[bossDef.name]
 	end
 	return nil
 end

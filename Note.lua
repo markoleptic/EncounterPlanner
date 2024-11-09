@@ -1,5 +1,6 @@
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
+local AddOn = Private.addOn
 
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
@@ -22,7 +23,8 @@ local UnitName = UnitName
 local wipe = wipe
 
 local lineRegex = "[^\r\n]+"
-local wordSegmentationRegex = "([^ \n-][^\n-]-)  +"
+local postOptionsPreDashRegex = "}({spell:(%d+)}(.-) %-)"
+local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
 local doublePipeRegex = "||"
 
@@ -469,7 +471,7 @@ end
 ---@return table<integer, Assignment>
 local function CreateAssignmentsFromLine(line)
 	local assignments = {}
-	for str in (line .. "  "):gmatch(wordSegmentationRegex) do
+	for str in (line .. "  "):gmatch(postDashRegex) do
 		local targetName = str:match(targetNameRegex) or ""
 		targetName = targetName:gsub(doublePipeRegex, "|"):gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
 
@@ -513,7 +515,7 @@ local function CreateAssignmentsFromLine(line)
 	return assignments
 end
 
--- Adds an assignment using a more derived type by parsing the options.
+-- Adds an assignment using a more derived type by parsing the options (comma-separated list after time).
 ---@param assignments table<integer, Assignment>
 ---@param time number
 ---@param options string
@@ -536,7 +538,7 @@ function Private:ProcessOptions(assignments, time, options)
 				local phaseNumber = tonumber(phase)
 				if phaseNumber then
 					for _, assignment in pairs(assignments) do
-						local phasedAssignment = Private.classes.PhasedAssignment:new(assignment)
+						local phasedAssignment = self.classes.PhasedAssignment:new(assignment)
 						phasedAssignment.time = time
 						phasedAssignment.phase = phaseNumber
 						tinsert(self.assignments, phasedAssignment)
@@ -551,7 +553,7 @@ function Private:ProcessOptions(assignments, time, options)
 				local spellCount = tonumber(spellCountStr)
 				if spellID and spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:new(assignment)
+						local combatLogEventAssignment = self.classes.CombatLogEventAssignment:new(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.phase = nil
@@ -566,19 +568,22 @@ function Private:ProcessOptions(assignments, time, options)
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = Private.classes.TimedAssignment:new(assignment)
+			local timedAssignment = self.classes.TimedAssignment:new(assignment)
 			timedAssignment.time = time
 			tinsert(self.assignments, timedAssignment)
 		end
 	end
 end
 
+-- Parses the given text and creates assignments from it. Returns a boss name if one was found using spellIDs in the
+-- text.
 ---@param text string
+---@return string|nil bossName
 function Private:ParseNote(text)
 	--self.filteredText = Filter(text)
 	--self.filteredText = FilterByCurrentRole(self.filteredText)
 	--self.filteredText = ReplaceNamesWithColoredNamesIfFound(self.filteredText)
-
+	local spellIDs = {}
 	for line in text:gmatch(lineRegex) do
 		local minute, sec, options = line:match(timeOptionsSplitRegex)
 		local time = nil
@@ -587,11 +592,26 @@ function Private:ParseNote(text)
 		elseif minute and (sec == nil or sec == "") then
 			time = tonumber(minute)
 		end
+
+		local fullMatch, spellID, maybeColoredSpellText = line:match(postOptionsPreDashRegex)
+		if fullMatch and spellID then
+			local spellIDNumber = tonumber(spellID)
+			if spellIDNumber then
+				tinsert(spellIDs, spellIDNumber)
+			end
+		end
 		if time then
 			local inputs = CreateAssignmentsFromLine(line)
 			self:ProcessOptions(inputs, time, options)
 		end
 	end
+	for _, spellID in pairs(spellIDs) do
+		local bossName = self:GetBossFromSpellID(spellID)
+		if bossName then
+			return bossName
+		end
+	end
+	return nil
 end
 
 function Private:UpdateRoster()
@@ -610,22 +630,28 @@ function Private:UpdateRoster()
 	end
 end
 
--- Clears the current assignments and repopulates it. Parses the given string if provided, otherwise parses the active
--- MRT shared note. Updates the roster.
----@param note string?
----@return string?
-function Private:Note(note)
+-- Clears the current assignments and repopulates it. Updates the roster.
+---@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
+-- an empty note will be created
+---@param parseMRTNote boolean? If true, the MRT shared note will be parsed, otherwise the existing note in the database
+-- will be parsed.
+---@return string|nil
+function Private:Note(epNoteName, parseMRTNote)
 	GSubAutoColorCreate()
 	wipe(self.assignments)
-	if note then
-		self:ParseNote(note)
-		self:UpdateRoster()
-	else
+	local bossName = nil
+	if parseMRTNote then
 		if GMRT and GMRT.F then
-			local sharedNoteCopy = VMRT.Note.Text1
-			self:ParseNote(sharedNoteCopy or "")
-			self:UpdateRoster()
-			return sharedNoteCopy
+			local sharedNoteCopy = VMRT.Note.Text1 or ""
+			AddOn.db.profile.notes[epNoteName] = sharedNoteCopy
+			bossName = self:ParseNote(sharedNoteCopy)
 		end
+	elseif AddOn.db.profile.notes[epNoteName] then
+		bossName = self:ParseNote(AddOn.db.profile.notes[epNoteName])
+	else
+		bossName = self:ParseNote("")
+		AddOn.db.profile.notes[epNoteName] = ""
 	end
+	self:UpdateRoster()
+	return bossName
 end

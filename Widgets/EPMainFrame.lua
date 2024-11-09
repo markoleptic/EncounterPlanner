@@ -87,6 +87,73 @@ local function GetAssignmentContainer(self)
 end
 
 ---@param self EPMainFrame
+---@return EPContainer|nil
+local function GetBossAbilityContainer(self)
+	local bottomLeftContainer = self.children[2]
+	if bottomLeftContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local bossAbilityContainer = bottomLeftContainer.children[1]
+		if bossAbilityContainer then
+			return bossAbilityContainer
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPDropdown|nil
+local function GetBossDropdown(self)
+	local topContainer = self.children[1]
+	if topContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local bossContainer = topContainer.children[1]
+		if bossContainer then
+			---@diagnostic disable-next-line: undefined-field
+			return bossContainer.children[2]
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPDropdown|nil
+local function GetNoteDropdown(self)
+	local topContainer = self.children[1]
+	if topContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local outerNoteContainer = topContainer.children[4]
+		if outerNoteContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local noteContainer = outerNoteContainer.children[1]
+			if noteContainer then
+				---@diagnostic disable-next-line: undefined-field
+				return noteContainer.children[2]
+			end
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPLineEdit|nil
+local function GetNoteLineEdit(self)
+	local topContainer = self.children[1]
+	if topContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local outerNoteContainer = topContainer.children[4]
+		if outerNoteContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local renameNoteContainer = outerNoteContainer.children[2]
+			if renameNoteContainer then
+				---@diagnostic disable-next-line: undefined-field
+				return renameNoteContainer.children[2]
+			end
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
 ---@return EPTimeline|nil
 local function GetTimeline(self)
 	local timeline = self.children[3] --[[@as EPTimeline]]
@@ -154,6 +221,10 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		GetAssignmentContainer = GetAssignmentContainer,
+		GetBossAbilityContainer = GetBossAbilityContainer,
+		GetBossDropdown = GetBossDropdown,
+		GetNoteDropdown = GetNoteDropdown,
+		GetNoteLineEdit = GetNoteLineEdit,
 		GetTimeline = GetTimeline,
 		frame = mainFrame,
 		type = Type,

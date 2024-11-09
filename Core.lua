@@ -510,6 +510,31 @@ local function UpdateAssignmentListEntries()
 	end
 end
 
+-- Clears and repopulates the boss ability container based on the boss name.
+---@param bossName string The name of the boss
+local function UpdateCurrentBoss(bossName)
+	local boss = Private:GetBoss(bossName)
+	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
+	local timeline = Private.mainFrame:GetTimeline()
+	local bossDropdown = Private.mainFrame:GetBossDropdown()
+	if boss and bossAbilityContainer and timeline and bossDropdown then
+		local bossIndex = Private:GetBossDefinitionIndex(bossName)
+		if bossIndex and bossDropdown:GetValue() ~= bossIndex then
+			bossDropdown:SetValue(bossIndex)
+		end
+		bossAbilityContainer:ReleaseChildren()
+		for _, ID in pairs(boss.sortedAbilityIDs) do
+			local abilityEntry = AceGUI:Create("EPAbilityEntry")
+			abilityEntry:SetFullWidth(true)
+			abilityEntry:SetAbility(ID)
+			bossAbilityContainer:AddChild(abilityEntry)
+		end
+		bossAbilityContainer:DoLayout()
+		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
+		timeline:UpdateTimeline()
+	end
+end
+
 -- Sorts assignments based on the assignmentSortType and updates firstAppearanceSortedAssignments and
 -- firstAppearanceAssigneeOrder
 ---@param assignments table<integer, Assignment>
@@ -571,27 +596,18 @@ local function UpdateUniqueAssignmentTable()
 end
 
 ---@param value number|string
----@param timeline EPTimeline
----@param listFrame AceGUIContainer
-local function HandleBossDropdownValueChanged(value, timeline, listFrame)
-	local boss = Private:GetBoss(Private.raidInstances["Nerub'ar Palace"].bosses[tonumber(value)].name)
-	if boss then
-		listFrame:ReleaseChildren()
-		for _, ID in pairs(boss.sortedAbilityIDs) do
-			local abilityEntry = AceGUI:Create("EPAbilityEntry")
-			abilityEntry:SetFullWidth(true)
-			abilityEntry:SetAbility(ID)
-			listFrame:AddChild(abilityEntry)
+local function HandleBossDropdownValueChanged(value)
+	local bossIndex = tonumber(value)
+	if bossIndex then
+		local bossDef = Private:GetBossDefinition(bossIndex)
+		if bossDef then
+			UpdateCurrentBoss(bossDef.name)
 		end
-		listFrame:DoLayout()
-		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
 	end
 end
 
 ---@param value string
-local function HandleAssignmentSortDropdownValueChanged(value)
+local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 	UpdateAssignmentListEntries()
@@ -604,10 +620,12 @@ local function HandleAssignmentSortDropdownValueChanged(value)
 end
 
 ---@param value string
----@param renameNoteLineEdit EPLineEdit
-local function HandleNoteDropdownValueChanged(value, renameNoteLineEdit)
+local function HandleNoteDropdownValueChanged(_, _, value)
 	AddOn.db.profile.lastOpenNote = value
-	Private:Note(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
+	local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
+	if bossName then
+		UpdateCurrentBoss(bossName)
+	end
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 	UpdateUniqueAssignmentTable()
 	UpdateAssignmentListEntries()
@@ -617,14 +635,15 @@ local function HandleNoteDropdownValueChanged(value, renameNoteLineEdit)
 		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
 		timeline:UpdateTimeline()
 	end
-
-	renameNoteLineEdit:SetText(value)
+	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+	if renameNoteLineEdit then
+		renameNoteLineEdit:SetText(value)
+	end
 end
 
 ---@param lineEdit EPLineEdit
 ---@param value string
----@param noteDropdown EPDropdown
-local function HandleNoteTextChanged(lineEdit, value, noteDropdown)
+local function HandleNoteTextChanged(lineEdit, _, value)
 	local currentNoteName = AddOn.db.profile.lastOpenNote
 	if value == currentNoteName then
 		return
@@ -635,7 +654,10 @@ local function HandleNoteTextChanged(lineEdit, value, noteDropdown)
 	AddOn.db.profile.notes[value] = AddOn.db.profile.notes[currentNoteName]
 	AddOn.db.profile.notes[currentNoteName] = nil
 	AddOn.db.profile.lastOpenNote = value
-	noteDropdown:EditItemText(currentNoteName, currentNoteName, value, value)
+	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	if noteDropdown then
+		noteDropdown:EditItemText(currentNoteName, currentNoteName, value, value)
+	end
 end
 
 local function HandleAssignmentEditorDeleteButtonClicked()
@@ -672,8 +694,7 @@ end
 
 ---@param dataType string
 ---@param value string
----@param timeline EPTimeline
-local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
+local function HandleAssignmentEditorDataChanged(_, _, dataType, value)
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex] --[[@as Assignment]]
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
@@ -740,12 +761,14 @@ local function HandleAssignmentEditorDataChanged(dataType, value, timeline)
 			break
 		end
 	end
-
-	timeline:UpdateTimeline()
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:UpdateTimeline()
+	end
 end
 
----@param timeline EPTimeline
-local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
+---@param uniqueID integer
+local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	currentAssignmentIndex = uniqueID
 	if not Private.assignmentEditor then
 		Private.assignmentEditor = AceGUI:Create("EPAssignmentEditor")
@@ -759,9 +782,7 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 		Private.assignmentEditor:SetCallback("OnRelease", function()
 			Private.assignmentEditor = nil
 		end)
-		Private.assignmentEditor:SetCallback("DataChanged", function(_, _, dataType, value)
-			HandleAssignmentEditorDataChanged(dataType, value, timeline)
-		end)
+		Private.assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
 		Private.assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		Private.assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
@@ -826,11 +847,9 @@ local function HandleTimelineAssignmentClicked(timeline, _, uniqueID)
 	end
 end
 
----@param timeline EPTimeline
----@param _ any
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
-local function HandleCreateNewAssignment(timeline, _, abilityInstance, assigneeIndex)
+local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 	print(
 		abilityInstance.spellID,
 		abilityInstance.phase,
@@ -846,15 +865,12 @@ local function HandleCreateNewAssignment(timeline, _, abilityInstance, assigneeI
 	-- TODO: Find the boss ability using abilityInstance to create a new assignment and open assignment editor
 end
 
----@param noteDropdown EPDropdown
----@param renameNoteLineEdit EPLineEdit
-local function HandleCreateNewEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
+local function HandleCreateNewEPNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
 	local newNoteName = CreateUniqueNoteName()
-	Private:Note("")
-	AddOn.db.profile.notes[newNoteName] = ""
+	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 	UpdateUniqueAssignmentTable()
@@ -864,14 +880,18 @@ local function HandleCreateNewEPNoteButtonClicked(noteDropdown, renameNoteLineEd
 		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
 		timeline:UpdateTimeline()
 	end
-	noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-	noteDropdown:SetValue(newNoteName)
-	renameNoteLineEdit:SetText(newNoteName)
+	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	if noteDropdown then
+		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+		noteDropdown:SetValue(newNoteName)
+	end
+	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+	if renameNoteLineEdit then
+		renameNoteLineEdit:SetText(newNoteName)
+	end
 end
 
----@param noteDropdown EPDropdown
----@param renameNoteLineEdit EPLineEdit
-local function HandleDeleteCurrentEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
+local function HandleDeleteCurrentEPNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
@@ -879,57 +899,71 @@ local function HandleDeleteCurrentEPNoteButtonClicked(noteDropdown, renameNoteLi
 	for _, _ in pairs(AddOn.db.profile.notes) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	if lastOpenNote then
-		AddOn.db.profile.notes[lastOpenNote] = nil
-		noteDropdown:RemoveItem(lastOpenNote)
-	end
-	if beforeRemovalCount > 1 then
-		for name, _ in pairs(AddOn.db.profile.notes) do
-			AddOn.db.profile.lastOpenNote = name
-			Private:Note(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
-			-- TODO: parse note to try to find appropriate boss
-			break
+	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	if noteDropdown then
+		local lastOpenNote = AddOn.db.profile.lastOpenNote
+		if lastOpenNote then
+			AddOn.db.profile.notes[lastOpenNote] = nil
+			noteDropdown:RemoveItem(lastOpenNote)
 		end
-	else
-		Private:Note("")
-		local newNoteName = CreateUniqueNoteName()
-		AddOn.db.profile.notes[newNoteName] = ""
-		AddOn.db.profile.lastOpenNote = newNoteName
-	end
-	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
-	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
-	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateUniqueAssignmentTable()
-	UpdateAssignmentListEntries()
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
+		if beforeRemovalCount > 1 then
+			for name, _ in pairs(AddOn.db.profile.notes) do
+				AddOn.db.profile.lastOpenNote = name
+				local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
+				if bossName then
+					UpdateCurrentBoss(bossName)
+				end
+				break
+			end
+		else
+			local newNoteName = CreateUniqueNoteName()
+			Private:Note(newNoteName)
+			AddOn.db.profile.lastOpenNote = newNoteName
+		end
+		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+		if renameNoteLineEdit then
+			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
+		end
+		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
+		UpdateUniqueAssignmentTable()
+		UpdateAssignmentListEntries()
+		local timeline = Private.mainFrame:GetTimeline()
+		if timeline then
+			timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
+			timeline:UpdateTimeline()
+		end
 	end
 end
 
 ---@param importDropdown EPDropdown
 ---@param value any
----@param noteDropdown EPDropdown
----@param renameNoteLineEdit EPLineEdit
-local function HandleImportMRTNoteDropdownValueChanged(importDropdown, value, noteDropdown, renameNoteLineEdit)
+local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 	if value == "Import MRT note" then
 		return
 	end
-	local sharedNote = Private:Note()
+	local bossName = nil
 	if value == "Override current EP note" then
-		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote] = sharedNote
+		bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
 	elseif value == "Create new EP note" then
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
 		local newNoteName = CreateUniqueNoteName()
-		AddOn.db.profile.notes[newNoteName] = sharedNote
+		bossName = Private:Note(newNoteName, true)
 		AddOn.db.profile.lastOpenNote = newNoteName
-		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
-		renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
+		local noteDropdown = Private.mainFrame:GetNoteDropdown()
+		if noteDropdown then
+			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+			noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+		end
+		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+		if renameNoteLineEdit then
+			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
+		end
+	end
+	if bossName then
+		UpdateCurrentBoss(bossName)
 	end
 
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
@@ -949,17 +983,18 @@ local function HandleExportEPNoteButtonClicked()
 end
 
 function Private:CreateGUI()
+	local bossName = nil
 	if AddOn.db.profile.lastOpenNote and AddOn.db.profile.lastOpenNote ~= "" then
 		local noteName = AddOn.db.profile.lastOpenNote
-		Private:Note(AddOn.db.profile.notes[noteName])
+		bossName = Private:Note(noteName)
 	else
 		if not IsAddOnLoaded("MRT") then
 			print(AddOnName, "No note was loaded due to MRT not being installed.")
 			return
 		end
-		local sharedNote = Private:Note()
-		AddOn.db.profile.notes["SharedMRTNote"] = sharedNote
-		AddOn.db.profile.lastOpenNote = "SharedMRTNote"
+		local defualtNoteName = "SharedMRTNote"
+		bossName = Private:Note(defualtNoteName, true)
+		AddOn.db.profile.lastOpenNote = defualtNoteName
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -975,15 +1010,6 @@ function Private:CreateGUI()
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
 	UpdateUniqueAssignmentTable()
 
-	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
-	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
-
-	local topContainer = AceGUI:Create("EPContainer")
-	topContainer:SetLayout("EPHorizontalLayout")
-	topContainer:SetHeight(topContainerHeight)
-	topContainer:SetFullWidth(true)
-
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
 	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
@@ -991,8 +1017,6 @@ function Private:CreateGUI()
 	local bossLabel = AceGUI:Create("EPLabel")
 	bossLabel:SetText("Boss:")
 	bossLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
-
-	local bossAbilityContainer = AceGUI:Create("EPContainer")
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	local bossDropdownData = {}
@@ -1004,7 +1028,7 @@ function Private:CreateGUI()
 	end
 	bossDropdown:AddItems(bossDropdownData, "EPDropdownItemToggle")
 	bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		HandleBossDropdownValueChanged(value, timeline, bossAbilityContainer)
+		HandleBossDropdownValueChanged(value)
 	end)
 
 	local assignmentSortContainer = AceGUI:Create("EPContainer")
@@ -1023,9 +1047,7 @@ function Private:CreateGUI()
 		{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical", dropdownItemMenuData = {} },
 		{ itemValue = "Role > First Appearance", text = "Role > First Appearance", dropdownItemMenuData = {} },
 	}, "EPDropdownItemToggle")
-	assignmentSortDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		HandleAssignmentSortDropdownValueChanged(value)
-	end)
+	assignmentSortDropdown:SetCallback("OnValueChanged", HandleAssignmentSortDropdownValueChanged)
 
 	local spacer = AceGUI:Create("EPSpacer")
 	spacer:SetFillSpace(true)
@@ -1045,20 +1067,17 @@ function Private:CreateGUI()
 	noteLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
 
 	local noteDropdown = AceGUI:Create("EPDropdown")
-	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
 	noteDropdown:SetWidth(topContainerDropdownWidth)
 	local noteDropdownData = {}
-	noteDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		HandleNoteDropdownValueChanged(value, renameNoteLineEdit)
-	end)
+	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
 	for noteName, _ in pairs(AddOn.db.profile.notes) do
 		tinsert(noteDropdownData, { itemValue = noteName, text = noteName, dropdownItemMenuData = {} })
 	end
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
+
+	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
 	renameNoteLineEdit:SetWidth(topContainerDropdownWidth)
-	renameNoteLineEdit:SetCallback("OnTextChanged", function(lineEdit, _, value)
-		HandleNoteTextChanged(lineEdit, value, noteDropdown)
-	end)
+	renameNoteLineEdit:SetCallback("OnTextChanged", HandleNoteTextChanged)
 
 	local renameNoteContainer = AceGUI:Create("EPContainer")
 	renameNoteContainer:SetAlignment("center")
@@ -1075,15 +1094,11 @@ function Private:CreateGUI()
 	noteButtonContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local createNewButton = AceGUI:Create("EPButton")
-	createNewButton:SetCallback("Clicked", function(button, _)
-		HandleCreateNewEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
-	end)
+	createNewButton:SetCallback("Clicked", HandleCreateNewEPNoteButtonClicked)
 	createNewButton:SetText("New EP note")
 
 	local deleteButton = AceGUI:Create("EPButton")
-	deleteButton:SetCallback("Clicked", function(button, _)
-		HandleDeleteCurrentEPNoteButtonClicked(noteDropdown, renameNoteLineEdit)
-	end)
+	deleteButton:SetCallback("Clicked", HandleDeleteCurrentEPNoteButtonClicked)
 	deleteButton:SetText("Delete EP note")
 
 	local importExportContainer = AceGUI:Create("EPContainer")
@@ -1094,18 +1109,14 @@ function Private:CreateGUI()
 	local importDropdown = AceGUI:Create("EPDropdown")
 	importDropdown:SetWidth(topContainerDropdownWidth)
 	importDropdown:SetTextCentered(true)
-	importDropdown:SetCallback("OnValueChanged", function(dropdown, _, value)
-		HandleImportMRTNoteDropdownValueChanged(dropdown, value, noteDropdown, renameNoteLineEdit)
-	end)
+	importDropdown:SetCallback("OnValueChanged", HandleImportMRTNoteDropdownValueChanged)
 	importDropdown:SetText("Import MRT note")
 	importDropdown:AddItem("Override current EP note", "Override current EP note", "EPDropdownItemToggle", nil, true)
 	importDropdown:AddItem("Create new EP note", "Create new EP note", "EPDropdownItemToggle", nil, true)
 
 	local exportButton = AceGUI:Create("EPButton")
 	exportButton:SetWidth(topContainerDropdownWidth)
-	exportButton:SetCallback("Clicked", function(button, _)
-		HandleExportEPNoteButtonClicked()
-	end)
+	exportButton:SetCallback("Clicked", HandleExportEPNoteButtonClicked)
 	exportButton:SetText("Export EP note")
 
 	bossContainer:AddChild(bossLabel)
@@ -1122,6 +1133,12 @@ function Private:CreateGUI()
 	noteButtonContainer:AddChild(deleteButton)
 	importExportContainer:AddChild(importDropdown)
 	importExportContainer:AddChild(exportButton)
+
+	local topContainer = AceGUI:Create("EPContainer")
+	topContainer:SetLayout("EPHorizontalLayout")
+	topContainer:SetHeight(topContainerHeight)
+	topContainer:SetFullWidth(true)
+
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortContainer)
 	topContainer:AddChild(spacer)
@@ -1134,6 +1151,7 @@ function Private:CreateGUI()
 	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
 	bottomLeftContainer:SetSpacing(0, paddingBetweenBossAbilitiesAndAssignments)
 
+	local bossAbilityContainer = AceGUI:Create("EPContainer")
 	bossAbilityContainer:SetLayout("EPVerticalLayout")
 	bossAbilityContainer:SetFullWidth(true)
 	bossAbilityContainer:SetSpacing(0, bossAbilityPadding)
@@ -1146,6 +1164,10 @@ function Private:CreateGUI()
 	bottomLeftContainer:AddChild(bossAbilityContainer)
 	bottomLeftContainer:AddChild(assignmentListContainer)
 
+	local timeline = AceGUI:Create("EPTimeline")
+	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
+	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+
 	Private.mainFrame:AddChild(topContainer)
 	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
@@ -1153,8 +1175,8 @@ function Private:CreateGUI()
 	UpdateAssignmentListEntries()
 
 	-- Set default values
-	bossDropdown:SetValue(1)
-	HandleBossDropdownValueChanged(1, timeline, bossAbilityContainer)
+	UpdateCurrentBoss(bossName or "Ulgrax the Devourer")
+	timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
 	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
@@ -1165,6 +1187,7 @@ function Private:CreateGUI()
 	local xPos = (screenWidth / 2) - (Private.mainFrame.frame:GetWidth() / 2)
 	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
 	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
+
 	timeline:UpdateTimeline()
 end
 
