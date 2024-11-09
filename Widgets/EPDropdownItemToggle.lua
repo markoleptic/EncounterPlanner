@@ -400,19 +400,21 @@ do
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+				dropdownMenuItem:SetValue(itemData.itemValue)
 				dropdownMenuItem:SetText(itemData.text)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
-				dropdownMenuItem:SetValue(itemData.itemValue)
+				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 				self.childPullout:AddItem(dropdownMenuItem)
 				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
 			else
 				local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+				dropdownItemToggle:SetValue(itemData.itemValue)
 				dropdownItemToggle:SetText(itemData.text)
 				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
-				dropdownItemToggle:SetValue(itemData.itemValue)
+				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 				self.childPullout:AddItem(dropdownItemToggle)
 			end
@@ -430,15 +432,13 @@ do
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+				dropdownMenuItem:SetValue(itemData.itemValue)
 				dropdownMenuItem:SetText(itemData.text)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
-				dropdownMenuItem:SetValue(itemData.itemValue)
+				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 				self.childPullout:AddItem(dropdownMenuItem)
-				if self.neverShowItemsAsSelected == true then
-					dropdownMenuItem:SetNeverShowItemsAsSelected(true)
-				end
 				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
 			else
 				local alreadyExists = false
@@ -450,14 +450,12 @@ do
 				end
 				if not alreadyExists then
 					local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+					dropdownItemToggle:SetValue(itemData.itemValue)
 					dropdownItemToggle:SetText(itemData.text)
 					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
-					dropdownItemToggle:SetValue(itemData.itemValue)
+					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
-					if self.neverShowItemsAsSelected == true then
-						dropdownItemToggle:SetNeverShowItemsAsSelected(true)
-					end
 					self.childPullout:AddItem(dropdownItemToggle)
 				end
 			end

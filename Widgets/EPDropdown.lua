@@ -651,8 +651,8 @@ do
 	---@param itemValue any the internal value used to index an item
 	---@param text string the value shown on the item
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
-	---@param dropdownItemData? table<integer, DropdownItemData> optional table of nested dropdown item menus
-	---@param neverShowItemsAsSelected? boolean
+	---@param dropdownItemData table<integer, DropdownItemData>? optional table of nested dropdown item menus
+	---@param neverShowItemsAsSelected boolean?
 	local function AddItem(self, itemValue, text, itemType, dropdownItemData, neverShowItemsAsSelected)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
@@ -698,14 +698,21 @@ do
 	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
-	local function AddItems(self, dropdownItemData, leafType)
+	---@param neverShowItemsAsSelected boolean?
+	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected)
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
 				self:AddItem(index, itemData, leafType)
 			elseif type(itemData) == "table" and #itemData.dropdownItemMenuData > 0 then
-				self:AddItem(itemData.itemValue, itemData.text, "EPDropdownItemMenu", itemData.dropdownItemMenuData)
+				self:AddItem(
+					itemData.itemValue,
+					itemData.text,
+					"EPDropdownItemMenu",
+					itemData.dropdownItemMenuData,
+					neverShowItemsAsSelected
+				)
 			else
-				self:AddItem(itemData.itemValue, itemData.text, leafType)
+				self:AddItem(itemData.itemValue, itemData.text, leafType, nil, neverShowItemsAsSelected)
 			end
 		end
 	end
