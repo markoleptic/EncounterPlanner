@@ -78,7 +78,7 @@ local function GetAssignmentContainer(self)
 	local bottomLeftContainer = self.children[2]
 	if bottomLeftContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local assignmentContainer = bottomLeftContainer.children[2]
+		local assignmentContainer = bottomLeftContainer.children[3]
 		if assignmentContainer then
 			return assignmentContainer
 		end

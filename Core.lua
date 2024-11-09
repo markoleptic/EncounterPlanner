@@ -460,6 +460,30 @@ local function CreateAssignmentTypeDropdownItems()
 end
 
 ---@return table<integer, DropdownItemData>
+local function CreateAssignmentTypeWithRosterDropdownItems()
+	local assignmentTypes = CreateAssignmentTypeDropdownItems()
+
+	local individualIndex = nil
+	for index, assignmentType in ipairs(assignmentTypes) do
+		if assignmentType.itemValue == "Individual" then
+			individualIndex = index
+			break
+		end
+	end
+	for normalName, colorName in pairs(Private.roster) do
+		local memberDropdownData = {
+			itemValue = normalName,
+			text = colorName,
+			dropdownItemMenuData = {},
+		}
+		tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
+	end
+
+	SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
+	return assignmentTypes
+end
+
+---@return table<integer, DropdownItemData>
 local function CreateAssigneeDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 
@@ -480,9 +504,11 @@ local function UpdateAssignmentListEntries()
 	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
 	if assignmentContainer then
 		assignmentContainer:ReleaseChildren()
+		print("#UpdateAssignmentListEntries", #sortedAssignees)
 		for index = 1, #sortedAssignees do
 			local abilityEntryText
 			local assigneeNameOrRole = sortedAssignees[index]
+			print("assigneeNameOrRole", assigneeNameOrRole)
 			if assigneeNameOrRole == "{everyone}" then
 				abilityEntryText = "Everyone"
 			else
@@ -847,6 +873,8 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	end
 end
 
+local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value) end
+
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
 local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
@@ -974,7 +1002,6 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
 		timeline:UpdateTimeline()
 	end
-	-- TODO: parse note to try to find appropriate boss
 	importDropdown:SetText("Import MRT note")
 end
 
@@ -1149,12 +1176,18 @@ function Private:CreateGUI()
 	local bottomLeftContainer = AceGUI:Create("EPContainer")
 	bottomLeftContainer:SetLayout("EPVerticalLayout")
 	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
-	bottomLeftContainer:SetSpacing(0, paddingBetweenBossAbilitiesAndAssignments)
+	bottomLeftContainer:SetSpacing(0, 6)
 
 	local bossAbilityContainer = AceGUI:Create("EPContainer")
 	bossAbilityContainer:SetLayout("EPVerticalLayout")
 	bossAbilityContainer:SetFullWidth(true)
 	bossAbilityContainer:SetSpacing(0, bossAbilityPadding)
+
+	local addAssigneeRowDropdown = AceGUI:Create("EPDropdown")
+	addAssigneeRowDropdown:SetFullWidth(true)
+	addAssigneeRowDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
+	addAssigneeRowDropdown:SetText("Add Assignee")
+	addAssigneeRowDropdown:AddItems(CreateAssignmentTypeWithRosterDropdownItems(), "EPDropdownItemToggle", true)
 
 	local assignmentListContainer = AceGUI:Create("EPContainer")
 	assignmentListContainer:SetLayout("EPVerticalLayout")
@@ -1162,6 +1195,7 @@ function Private:CreateGUI()
 	assignmentListContainer:SetSpacing(0, assignmentPadding)
 
 	bottomLeftContainer:AddChild(bossAbilityContainer)
+	bottomLeftContainer:AddChild(addAssigneeRowDropdown)
 	bottomLeftContainer:AddChild(assignmentListContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
