@@ -626,6 +626,9 @@ end
 
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
 	local bossIndex = tonumber(value)
 	if bossIndex then
 		local bossDef = Private:GetBossDefinition(bossIndex)
@@ -650,6 +653,9 @@ end
 
 ---@param value string
 local function HandleNoteDropdownValueChanged(_, _, value)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
 	AddOn.db.profile.lastOpenNote = value
 	local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
 	if bossName then
