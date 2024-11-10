@@ -172,8 +172,8 @@ local bosses = {
 					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
 						combatLogEventType = "SCS",
 						castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
-						repeatCriteria = {
-							castOccurance = 3,
+						repeatInterval = {
+							triggerCastIndex = 3,
 							castTimes = { 20.0 },
 						},
 					}),
@@ -192,8 +192,8 @@ local bosses = {
 					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
 						combatLogEventType = "SCS",
 						castTimes = { 30.0, 30.0, 30.0, 30.0 },
-						repeatCriteria = {
-							castOccurance = 3,
+						repeatInterval = {
+							triggerCastIndex = 3,
 							castTimes = { 30.0 },
 						},
 					}),
@@ -222,8 +222,8 @@ local bosses = {
 					[442432] = Private.classes.EventTrigger:new({ -- Ingest Black Blood
 						combatLogEventType = "SCS",
 						castTimes = { 16.0, 50.0, 50.0 },
-						repeatCriteria = {
-							castOccurance = 3,
+						repeatInterval = {
+							triggerCastIndex = 3,
 							castTimes = { 50.0 },
 						},
 					}),

@@ -431,6 +431,156 @@ local function UpdateAssignments(self)
 	end
 end
 
+---@param self EPTimeline
+---@param bossAbility BossAbility
+---@param bossPhaseIndex integer
+---@param bossAbilitySpellID integer
+---@param bossPhaseStartTime number
+---@param bossPhaseDuration number
+---@param bossAbilityOrderIndex integer
+---@param bossAbilityInstanceIndex integer
+---@return integer
+local function DrawPhaseOrTimeBasedBossAbility(
+	self,
+	bossAbility,
+	bossPhaseIndex,
+	bossAbilitySpellID,
+	bossPhaseStartTime,
+	bossPhaseDuration,
+	bossAbilityOrderIndex,
+	bossAbilityInstanceIndex
+)
+	if not bossAbility.phases[bossPhaseIndex] then
+		return bossAbilityInstanceIndex
+	end
+
+	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
+	local offset = (bossAbilityOrderIndex - 1) * (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+	local cumulativePhaseCastTimes = bossPhaseStartTime
+	local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
+	for _, castTime in ipairs(bossAbilityPhase.castTimes) do
+		local castStart = cumulativePhaseCastTimes + castTime
+		local castEnd = castStart + bossAbility.castTime
+		local effectEnd = castEnd + bossAbility.duration
+		DrawBossAbilityBar(
+			self,
+			castStart,
+			effectEnd,
+			color,
+			bossAbilityInstanceIndex,
+			offset,
+			{ spellID = bossAbilitySpellID, phase = bossPhaseIndex, phaseCastTime = castTime }
+		)
+		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+		if bossAbilityPhase.repeatInterval then
+			local repeatInterval = bossAbilityPhase.repeatInterval
+			local nextRepeatStart = castStart + repeatInterval
+			local repeatInstance = 1
+			while nextRepeatStart < bossPhaseStartTime + bossPhaseDuration do
+				local repeatEnd = nextRepeatStart + bossAbility.castTime
+				local repeatEffectEnd = repeatEnd + bossAbility.duration
+				DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, bossAbilityInstanceIndex, offset, {
+					spellID = bossAbilitySpellID,
+					phase = bossPhaseIndex,
+					phaseCastTime = castTime,
+					repeatInstance = repeatInstance,
+				})
+				bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+				nextRepeatStart = nextRepeatStart + repeatInterval
+				repeatInstance = repeatInstance + 1
+			end
+		end
+		cumulativePhaseCastTimes = castStart
+	end
+
+	return bossAbilityInstanceIndex
+end
+
+---@param self EPTimeline
+---@param bossAbility BossAbility
+---@param bossPhaseIndex integer
+---@param bossAbilitySpellID integer
+---@param bossPhaseStartTime number
+---@param bossPhaseEndTime number
+---@param bossAbilityOrderIndex integer
+---@param bossAbilityInstanceIndex integer
+---@return integer
+local function DrawEventTriggerBossAbility(
+	self,
+	bossAbility,
+	bossPhaseIndex,
+	bossAbilitySpellID,
+	bossPhaseStartTime,
+	bossPhaseEndTime,
+	bossAbilityOrderIndex,
+	bossAbilityInstanceIndex
+)
+	if not bossAbility.eventTriggers then
+		return bossAbilityInstanceIndex
+	end
+
+	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
+	local offset = (bossAbilityOrderIndex - 1) * (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+
+	for triggerSpellID, eventTrigger in pairs(bossAbility.eventTriggers) do
+		local bossAbilityTrigger = self.bossAbilities[triggerSpellID]
+		if bossAbilityTrigger and bossAbilityTrigger.phases[bossPhaseIndex] then
+			local cumulativeTriggerTime = bossPhaseStartTime
+			for triggerCastIndex, triggerCastTime in ipairs(bossAbilityTrigger.phases[bossPhaseIndex].castTimes) do
+				local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime + bossAbilityTrigger.castTime
+				for _, castTime in ipairs(eventTrigger.castTimes) do
+					local castStart = cumulativeCastTime + castTime
+					local castEnd = castStart + bossAbility.castTime
+					local effectEnd = castEnd + bossAbility.duration
+					DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
+						combatLogEventType = eventTrigger.combatLogEventType,
+						spellID = bossAbilitySpellID,
+						phase = bossPhaseIndex,
+						triggerSpellID = triggerSpellID,
+						triggerCastIndex = triggerCastIndex,
+					})
+					bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+					cumulativeCastTime = cumulativeCastTime + castTime
+				end
+				if eventTrigger.repeatInterval and eventTrigger.repeatInterval.triggerCastIndex == triggerCastIndex then
+					local repeatInstance = 1
+					while cumulativeCastTime < bossPhaseEndTime do
+						for repeatCastIndex, castTime in ipairs(eventTrigger.repeatInterval.castTimes) do
+							local castStart = cumulativeCastTime + castTime
+							local castEnd = castStart + bossAbility.castTime
+							local effectEnd = castEnd + bossAbility.duration
+							if effectEnd < bossPhaseEndTime then
+								DrawBossAbilityBar(
+									self,
+									castStart,
+									effectEnd,
+									color,
+									bossAbilityInstanceIndex,
+									offset,
+									{
+										combatLogEventType = eventTrigger.combatLogEventType,
+										spellID = bossAbilitySpellID,
+										phase = bossPhaseIndex,
+										triggerSpellID = triggerSpellID,
+										triggerCastIndex = triggerCastIndex,
+										repeatInstance = repeatInstance,
+										repeatCastIndex = repeatCastIndex,
+									}
+								)
+								bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+								repeatInstance = repeatInstance + 1
+							end
+							cumulativeCastTime = cumulativeCastTime + castTime
+						end
+					end
+				end
+				cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime + bossAbilityTrigger.castTime
+			end
+		end
+	end
+	return bossAbilityInstanceIndex
+end
+
 -- Updates the rendering of boss abilities on the timeline.
 ---@param self EPTimeline
 local function UpdateBossAbilityBars(self)
@@ -439,134 +589,41 @@ local function UpdateBossAbilityBars(self)
 		texture:Hide()
 	end
 
-	local cumulativePhaseStartTimes = 0
-	local index = 1
+	local cumulativePhaseStartTime = 0
+	local bossAbilityInstanceIndex = 1
 
-	for _, phaseId in ipairs(self.bossPhaseOrder) do
-		local phaseData = self.bossPhases[phaseId]
-		if phaseData then
-			local phaseStartTime = cumulativePhaseStartTimes
-
-			-- Iterate over abilities for the current phase
-			local colorIndex = 1
-			for _, spellID in pairs(self.bossAbilityOrder) do
-				local abilityData = self.bossAbilities[spellID]
-				local color = colors[colorIndex]
-				local cumulativePhaseCastTimes = phaseStartTime
-				local offset = (colorIndex - 1) * (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
-				if abilityData.phases[phaseId] then -- phase based timers
-					local phaseDetails = abilityData.phases[phaseId]
-
-					-- Iterate over each cast time
-					if phaseDetails.castTimes then
-						for _, castTime in ipairs(phaseDetails.castTimes) do
-							cumulativePhaseCastTimes = cumulativePhaseCastTimes + castTime
-							local castStart = cumulativePhaseCastTimes
-							local castEnd = castStart + abilityData.castTime
-							local effectEnd = castEnd + abilityData.duration
-
-							DrawBossAbilityBar(
-								self,
-								castStart,
-								effectEnd,
-								color,
-								index,
-								offset,
-								{ spellID = spellID, phase = phaseId, phaseCastTime = castTime }
-							)
-
-							index = index + 1
-
-							-- Handle repeat intervals for abilities
-							if phaseDetails.repeatInterval then
-								local repeatInterval = phaseDetails.repeatInterval
-								local nextRepeatStart = castStart + repeatInterval
-								local repeatInstance = 1
-
-								while nextRepeatStart < phaseStartTime + phaseData.duration do
-									local repeatEnd = nextRepeatStart + abilityData.castTime
-									local repeatEffectEnd = repeatEnd + abilityData.duration
-
-									DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, index, offset, {
-										spellID = spellID,
-										phase = phaseId,
-										phaseCastTime = castTime,
-										repeatInstance = repeatInstance,
-									})
-
-									index = index + 1
-									nextRepeatStart = nextRepeatStart + repeatInterval
-									repeatInstance = repeatInstance + 1
-								end
-							end
-						end
-					end
-				end
-				if abilityData.eventTriggers then -- event based timers
-					for triggerSpellID, eventTriggerData in pairs(abilityData.eventTriggers) do
-						local triggerAbilityData = self.bossAbilities[triggerSpellID]
-						if triggerAbilityData and triggerAbilityData.phases[phaseId] then
-							local triggerPhaseDetails = triggerAbilityData.phases[phaseId]
-							local cumulativeTriggerTime = phaseStartTime
-							-- iterate through the trigger ability cast times
-							for castOccurance, triggerCastTime in ipairs(triggerPhaseDetails.castTimes) do
-								cumulativeTriggerTime = cumulativeTriggerTime
-									+ triggerCastTime
-									+ triggerAbilityData.castTime
-								local cumulativeCastTime = 0
-								-- iterate through the dependent ability cast times
-								for _, castTime in ipairs(eventTriggerData.castTimes) do
-									cumulativeCastTime = cumulativeCastTime + castTime
-									local castStart = cumulativeTriggerTime + cumulativeCastTime
-									local castEnd = castStart + abilityData.castTime
-									local effectEnd = castEnd + abilityData.duration
-									DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
-										combatLogEventType = eventTriggerData.combatLogEventType,
-										spellID = spellID,
-										phase = phaseId,
-										triggerSpellID = triggerSpellID,
-										triggerCastTime = castTime,
-										castOccurance = castOccurance,
-									})
-									index = index + 1
-								end
-								if
-									eventTriggerData.repeatCriteria
-									and eventTriggerData.repeatCriteria.castOccurance == castOccurance
-								then
-									cumulativeCastTime = cumulativeCastTime + cumulativeTriggerTime
-									while cumulativeCastTime < totalTimelineDuration do
-										local repeatInstance = 1
-										for _, repeatCastTime in ipairs(eventTriggerData.repeatCriteria.castTimes) do
-											cumulativeCastTime = cumulativeCastTime + repeatCastTime
-											local castStart = cumulativeCastTime
-											local castEnd = cumulativeCastTime + abilityData.castTime
-											local effectEnd = castEnd + abilityData.duration
-											local castOccuranceRepeatInstance = 1
-
-											DrawBossAbilityBar(self, castStart, effectEnd, color, index, offset, {
-												combatLogEventType = eventTriggerData.combatLogEventType,
-												spellID = spellID,
-												phase = phaseId,
-												triggerSpellID = triggerSpellID,
-												castOccurance = castOccurance,
-												repeatInstance = repeatInstance,
-												castOccuranceRepeatInstance = castOccuranceRepeatInstance,
-											})
-
-											index = index + 1
-											castOccuranceRepeatInstance = castOccuranceRepeatInstance + 1
-										end
-										repeatInstance = repeatInstance + 1
-									end
-								end
-							end
-						end
-					end
-				end
-				colorIndex = colorIndex + 1
+	for bossPhaseOrderIndex, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
+		local bossPhase = self.bossPhases[bossPhaseIndex]
+		if bossPhase then
+			local phaseEndTime = totalTimelineDuration
+			local nextBossPhaseIndex = self.bossPhaseOrder[bossPhaseOrderIndex + 1]
+			if nextBossPhaseIndex and self.bossPhases[nextBossPhaseIndex] then
+				phaseEndTime = self.bossPhases[nextBossPhaseIndex].duration
 			end
-			cumulativePhaseStartTimes = cumulativePhaseStartTimes + phaseData.duration
+			for bossAbilityOrderIndex, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
+				local bossAbility = self.bossAbilities[bossAbilitySpellID]
+				bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
+					self,
+					bossAbility,
+					bossPhaseIndex,
+					bossAbilitySpellID,
+					cumulativePhaseStartTime,
+					bossPhase.duration,
+					bossAbilityOrderIndex,
+					bossAbilityInstanceIndex
+				)
+				bossAbilityInstanceIndex = DrawEventTriggerBossAbility(
+					self,
+					bossAbility,
+					bossPhaseIndex,
+					bossAbilitySpellID,
+					cumulativePhaseStartTime,
+					phaseEndTime,
+					bossAbilityOrderIndex,
+					bossAbilityInstanceIndex
+				)
+			end
+			cumulativePhaseStartTime = cumulativePhaseStartTime + bossPhase.duration
 		end
 	end
 end

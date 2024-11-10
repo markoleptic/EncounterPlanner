@@ -167,11 +167,11 @@ Private.classes.BossAbilityPhase.__index = Private.classes.BossAbilityPhase
 ---@class EventTrigger
 ---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger
 ---@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
----@field repeatCriteria {castOccurance: number, castTimes: table<number>}|nil Describes criteria for repeating casts
+---@field repeatInterval {triggerCastIndex: number, castTimes: table<number>}|nil Describes criteria for repeating casts
 Private.classes.EventTrigger = {
 	combatLogEventType = "SCS",
 	castTimes = {},
-	repeatCriteria = nil,
+	repeatInterval = nil,
 }
 Private.classes.EventTrigger.__index = Private.classes.EventTrigger
 
@@ -196,18 +196,18 @@ Private.classes.BossPhase.__index = Private.classes.BossPhase
 ---@field phaseCastTime number|nil
 ---@field combatLogEventType CombatLogEventType|nil
 ---@field triggerSpellID number|nil
----@field castOccurance number|nil
+---@field triggerCastIndex number|nil
 ---@field repeatInstance number|nil
----@field castOccuranceRepeatInstance number|nil
+---@field repeatCastIndex number|nil
 Private.classes.BossAbilityInstance = {
 	spellID = 0,
 	phase = 1,
 	phaseCastTime = nil,
 	combatLogEventType = nil,
 	triggerSpellID = nil,
-	castOccurance = nil,
+	triggerCastIndex = nil,
 	repeatInstance = nil,
-	castOccuranceRepeatInstance = nil,
+	repeatCastIndex = nil,
 }
 Private.classes.BossAbilityInstance.__index = Private.classes.BossAbilityInstance
 
