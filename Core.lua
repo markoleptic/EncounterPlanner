@@ -6,40 +6,35 @@ local AddOnName = ...
 
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
-
+---@class Utilities
+local utilities = Private.utilities
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
 local format = format
-local GetClassColor = C_ClassColor.GetClassColor
+local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
-local min = math.min
 local pairs = pairs
-local rawget = rawget
-local rawset = rawset
-local getmetatable = getmetatable
-local setmetatable = setmetatable
-local tremove = tremove
 local sort = sort
 local tinsert = tinsert
 local tonumber = tonumber
-local type = type
+local tremove = tremove
 local unpack = unpack
 local wipe = wipe
 
-local bossAbilityPadding = 4
 local assignmentPadding = 2
-local paddingBetweenBossAbilitiesAndAssignments = 36
+local bossAbilityPadding = 4
+local bottomLeftContainerSpacing = { 0, 6 }
 local bottomLeftContainerWidth = 200
+local dropdownContainerLabelSpacing = { 2, 2 }
+local dropdownContainerSpacing = { 2, 2 }
+local noteContainerSpacing = { 5, 2 }
 local topContainerDropdownWidth = 150
 local topContainerHeight = 36
-local dropdownContainerSpacing = { 2, 2 }
-local dropdownContainerLabelSpacing = { 2, 2 }
-local noteContainerSpacing = { 5, 2 }
 
 local currentAssignmentIndex = 0
 local sortedTimelineAssignments = {} --[[@as table<integer, TimelineAssignment>]]
@@ -48,516 +43,13 @@ local sortedAssignees = {} --[[@as table<integer, string>]]
 local uniqueAssignmentTable = {} --[[@as table<integer, Assignment>]]
 local lastAssignmentSortType = "First Appearance" --[[@as AssignmentSortType]]
 
-local function CreatePrettyClassNames()
-	wipe(Private.prettyClassNames)
-	setmetatable(Private.prettyClassNames, {
-		__index = function(tbl, key)
-			if type(key) == "string" then
-				key = key:lower()
-			end
-			return rawget(tbl, key)
-		end,
-		__newindex = function(tbl, key, value)
-			if type(key) == "string" then
-				key = key:lower()
-			end
-			rawset(tbl, key, value)
-		end,
-	})
-	for className, _ in pairs(Private.spellDB.classes) do
-		local colorMixin = GetClassColor(className)
-		local pascalCaseClassName
-		if className == "DEATHKNIGHT" then
-			pascalCaseClassName = "Death Knight"
-		elseif className == "DEMONHUNTER" then
-			pascalCaseClassName = "Demon Hunter"
-		else
-			pascalCaseClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		local prettyClassName = colorMixin:WrapTextInColorCode(pascalCaseClassName)
-		if className == "DEATHKNIGHT" then
-			Private.prettyClassNames["Death Knight"] = prettyClassName
-		elseif className == "DEMONHUNTER" then
-			Private.prettyClassNames["Demon Hunter"] = prettyClassName
-		end
-		Private.prettyClassNames[className] = prettyClassName
-	end
-end
-
----@return string
-local function CreateUniqueNoteName()
-	local newNoteName = "Unnamed"
-	local num = 2
-	while AddOn.db.profile.notes[newNoteName] do
-		newNoteName = newNoteName:sub(1, 7) .. num
-		num = num + 1
-	end
-	return newNoteName
-end
-
--- Creates a timeline assignment from an assignment and calculates the start time of the timeline assignment.
----@param assignment Assignment
----@return TimelineAssignment|nil
-local function CreateTimelineAssignment(assignment)
-	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local ability = Private:FindBossAbility(assignment.combatLogEventSpellID)
-		if ability then
-			local startTime = assignment.time or 0 -- TODO: Implement combat log events with no time
-			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
-				for i = 1, min(assignment.spellCount, #ability.phases[1].castTimes) do
-					startTime = startTime + ability.phases[1].castTimes[i]
-				end
-			end
-			if assignment.combatLogEventType == "SCC" then
-				startTime = startTime + ability.castTime
-			end
-			-- TODO: Implement other combat log event types
-			return Private.classes.TimelineAssignment:new({
-				assignment = assignment,
-				startTime = startTime,
-				order = 0,
-			})
-		end
-	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
-		assignment = assignment --[[@as TimedAssignment]]
-		return Private.classes.TimelineAssignment:new({
-			assignment = assignment,
-			startTime = assignment.time,
-			order = 0,
-		})
-	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
-		assignment = assignment --[[@as PhasedAssignment]]
-		local boss = Private:GetBoss("Broodtwister Ovi'nax")
-		if boss then
-			local totalOccurances = 0
-			for _, phaseData in pairs(boss.phases) do
-				totalOccurances = totalOccurances + phaseData.count
-			end
-			local currentPhase = 1
-			local bossPhaseOrder = {}
-			local runningStartTime = 0
-			while #bossPhaseOrder < totalOccurances and currentPhase ~= nil do
-				tinsert(bossPhaseOrder, currentPhase)
-				if currentPhase == assignment.phase then
-					-- TODO: This should maybe return an array
-					return Private.classes.TimelineAssignment:new({
-						assignment = assignment,
-						startTime = runningStartTime,
-						order = 0,
-					})
-				end
-				runningStartTime = runningStartTime + boss.phases[currentPhase].duration
-				currentPhase = boss.phases[currentPhase].repeatAfter
-			end
-		end
-	end
-	return nil
-end
-
--- Updates a timeline assignment's start time
----@param timelineAssignment TimelineAssignment
-local function UpdateTimelineAssignment(timelineAssignment)
-	local assignment = timelineAssignment.assignment
-	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local ability = Private:FindBossAbility(assignment.combatLogEventSpellID)
-		local startTime = assignment.time
-		if ability and startTime then
-			if assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SCS" then
-				for i = 1, min(assignment.spellCount, #ability.phases[1].castTimes) do
-					startTime = startTime + ability.phases[1].castTimes[i]
-				end
-			end
-			if assignment.combatLogEventType == "SCC" then
-				startTime = startTime + ability.castTime
-			end
-			timelineAssignment.startTime = startTime
-		end
-	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
-		assignment = assignment --[[@as TimedAssignment]]
-		timelineAssignment.startTime = assignment.time
-	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
-		assignment = assignment --[[@as PhasedAssignment]]
-		local boss = Private:GetBoss("Broodtwister Ovi'nax")
-		if boss then
-			local totalOccurances = 0
-			for _, phaseData in pairs(boss.phases) do
-				totalOccurances = totalOccurances + phaseData.count
-			end
-			local currentPhase = 1
-			local bossPhaseOrder = {}
-			local runningStartTime = 0
-			while #bossPhaseOrder < totalOccurances and currentPhase ~= nil do
-				tinsert(bossPhaseOrder, currentPhase)
-				if currentPhase == assignment.phase then
-					timelineAssignment.startTime = runningStartTime
-					return
-				end
-				runningStartTime = runningStartTime + boss.phases[currentPhase].duration
-				currentPhase = boss.phases[currentPhase].repeatAfter
-			end
-		end
-	end
-end
-
--- Updates the order of timeline assignments based on sortedTimelineAssignments
-local function CreateAssigneeOrder()
-	local order = 1
-	local assigneeMap = {}
-	local assigneeOrder = {}
-
-	sort(emptyAssignees, function(a, b)
-		return a < b
-	end)
-
-	for _, entry in ipairs(emptyAssignees) do
-		if not assigneeMap[entry] then
-			assigneeMap[entry] = order
-			assigneeOrder[order] = entry
-			order = order + 1
-		end
-	end
-
-	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assigneeNameOrRole
-		if not assigneeMap[assignee] then
-			assigneeMap[assignee] = order
-			assigneeOrder[order] = assignee
-			order = order + 1
-		end
-		entry.order = assigneeMap[assignee]
-	end
-
-	return assigneeOrder
-end
-
----@param assignments table<integer, Assignment>
-local function DetermineRolesFromAssignments(assignments)
-	local assigneeAssignments = {}
-	local healerClasses =
-		{ ["DRUID"] = 1, ["EVOKER"] = 1, ["MONK"] = 1, ["PALADIN"] = 1, ["PRIEST"] = 1, ["SHAMAN"] = 1 }
-	for _, assignment in pairs(assignments) do
-		local assignee = assignment.assigneeNameOrRole
-		if not assigneeAssignments[assignee] then
-			assigneeAssignments[assignee] = {}
-		end
-		tinsert(assigneeAssignments[assignee], assignment)
-	end
-	local determinedRoles = {}
-	for assignee, currentAssigneeAssignments in pairs(assigneeAssignments) do
-		for _, currentAssigneeAssignment in pairs(currentAssigneeAssignments) do
-			if determinedRoles[assignee] then
-				break
-			end
-			local spellID = currentAssigneeAssignment.spellInfo.spellID
-			if spellID == 98008 or spellID == 108280 then -- Shaming healing bc classified as raid defensive
-				determinedRoles[assignee] = 0
-				break
-			end
-			for className, classData in pairs(Private.spellDB.classes) do
-				if determinedRoles[assignee] then
-					break
-				end
-				for _, spellInfo in pairs(classData) do
-					if spellInfo["spellID"] == spellID then
-						if spellInfo["type"] == "heal" and healerClasses[className] then
-							determinedRoles[assignee] = 0
-							break
-						end
-					end
-				end
-			end
-		end
-		if not determinedRoles[assignee] then
-			determinedRoles[assignee] = 1
-		end
-	end
-	return determinedRoles
-end
-
----@param data table<integer, DropdownItemData>
-local function SortDropdownDataByItemValue(data)
-	-- Sort the top-level table
-	sort(data, function(a, b)
-		local itemValueA = a.itemValue
-		local itemValueB = b.itemValue
-		if type(itemValueA) == "number" then
-			local spellName = a.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueA = spellName
-			end
-		end
-		if type(itemValueB) == "number" then
-			local spellName = b.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueB = spellName
-			end
-		end
-		return itemValueA < itemValueB
-	end)
-
-	-- Recursively sort any nested dropdownItemMenuData tables
-	for _, item in pairs(data) do
-		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
-			SortDropdownDataByItemValue(item.dropdownItemMenuData)
-		end
-	end
-end
-
----@return DropdownItemData
-local function CreateSpellDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for className, classSpells in pairs(Private.spellDB.classes) do
-		local classDropdownData = {
-			itemValue = className,
-			text = Private.prettyClassNames[className],
-			dropdownItemMenuData = {},
-		}
-		local spellTypeIndex = 1
-		local spellTypeIndexMap = {}
-		for _, spell in pairs(classSpells) do
-			if not spellTypeIndexMap[spell["type"]] then
-				classDropdownData.dropdownItemMenuData[spellTypeIndex] = {
-					itemValue = spell["type"],
-					text = spell["type"],
-					dropdownItemMenuData = {},
-				}
-				spellTypeIndexMap[spell["type"]] = spellTypeIndex
-				spellTypeIndex = spellTypeIndex + 1
-			end
-			local iconText = format("|T%s:16|t %s", spell["icon"], spell["name"])
-			local spellID = spell["commonSpellID"] or spell["spellID"]
-			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
-				itemValue = spellID,
-				text = iconText,
-				dropdownItemMenuData = {},
-			})
-		end
-		tinsert(dropdownItems, classDropdownData)
-	end
-	SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems }
-end
-
----@return DropdownItemData
-local function CreateRacialDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
-		local iconText = format("|T%s:16|t %s", racialInfo["icon"], racialInfo["name"])
-		tinsert(dropdownItems, {
-			itemValue = racialInfo["spellID"],
-			text = iconText,
-			dropdownItemMenuData = {},
-		})
-	end
-	SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Racial", text = "Racial", dropdownItemMenuData = dropdownItems }
-end
-
----@return DropdownItemData
-local function CreateTrinketDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
-		local iconText = format("|T%s:16|t %s", trinketInfo["icon"], trinketInfo["name"])
-		tinsert(dropdownItems, {
-			itemValue = trinketInfo["spellID"],
-			text = iconText,
-			dropdownItemMenuData = {},
-		})
-	end
-	SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Trinket", text = "Trinket", dropdownItemMenuData = dropdownItems }
-end
-
----@return table<integer, DropdownItemData>
-local function CreateAssignmentTypeDropdownItems()
-	local assignmentTypes = {
-		{
-			text = "Group",
-			itemValue = "Group",
-			dropdownItemMenuData = {
-				{
-					text = "Everyone",
-					itemValue = "{everyone}",
-					dropdownItemMenuData = {},
-				},
-				{
-					text = "Role",
-					itemValue = "Role",
-					dropdownItemMenuData = {
-						{
-							text = "Damagers",
-							itemValue = "role:damager",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "Healers",
-							itemValue = "role:healer",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "Tanks",
-							itemValue = "role:tank",
-							dropdownItemMenuData = {},
-						},
-					},
-				},
-				{
-					text = "Group Number",
-					itemValue = "Group Number",
-					dropdownItemMenuData = {
-						{
-							text = "1",
-							itemValue = "group:1",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "2",
-							itemValue = "group:2",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "3",
-							itemValue = "group:3",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "4",
-							itemValue = "group:4",
-							dropdownItemMenuData = {},
-						},
-					},
-				},
-			},
-		},
-		{
-			text = "Individual",
-			itemValue = "Individual",
-			dropdownItemMenuData = {},
-		},
-		-- {
-		-- 	text = "Personal",
-		-- 	itemValue = "Personal",
-		-- 	dropdownItemMenuData = {}
-		-- }
-	} --[[@as table<integer, DropdownItemData>]]
-
-	local classAssignmentTypes = {
-		text = "Class",
-		itemValue = "Class",
-		dropdownItemMenuData = {},
-	} --[[@as DropdownItemData]]
-
-	for className, _ in pairs(Private.spellDB.classes) do
-		local actualClassName
-		if className == "DEATHKNIGHT" then
-			actualClassName = "DeathKnight"
-		elseif className == "DEMONHUNTER" then
-			actualClassName = "DemonHunter"
-		else
-			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		local classDropdownData = {
-			itemValue = "class:" .. actualClassName:gsub("%s", ""),
-			text = Private.prettyClassNames[className],
-			dropdownItemMenuData = {},
-		}
-		tinsert(classAssignmentTypes.dropdownItemMenuData, classDropdownData)
-	end
-
-	tinsert(assignmentTypes, classAssignmentTypes)
-
-	SortDropdownDataByItemValue(assignmentTypes)
-	return assignmentTypes
-end
-
----@return table<integer, DropdownItemData>
-local function CreateAssignmentTypeWithRosterDropdownItems()
-	local assignmentTypes = CreateAssignmentTypeDropdownItems()
-
-	local individualIndex = nil
-	for index, assignmentType in ipairs(assignmentTypes) do
-		if assignmentType.itemValue == "Individual" then
-			individualIndex = index
-			break
-		end
-	end
-	for normalName, colorName in pairs(Private.roster) do
-		local memberDropdownData = {
-			itemValue = normalName,
-			text = colorName,
-			dropdownItemMenuData = {},
-		}
-		tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
-	end
-
-	SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
-	return assignmentTypes
-end
-
----@return table<integer, DropdownItemData>
-local function CreateAssigneeDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-
-	for name, coloredName in pairs(Private.roster) do
-		tinsert(dropdownItems, {
-			itemValue = name,
-			text = coloredName,
-			dropdownItemMenuData = {},
-		})
-	end
-
-	SortDropdownDataByItemValue(dropdownItems)
-	return dropdownItems
-end
-
--- Clears and repopulates the list of assignments based on sortedAssignees
-local function UpdateAssignmentListEntries()
-	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
-	if assignmentContainer then
-		assignmentContainer:ReleaseChildren()
-		for index = 1, #sortedAssignees do
-			local abilityEntryText
-			local assigneeNameOrRole = sortedAssignees[index]
-			if assigneeNameOrRole == "{everyone}" then
-				abilityEntryText = "Everyone"
-			else
-				local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-				local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-				local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-				if classMatch then
-					local prettyClassName = Private.prettyClassNames[classMatch]
-					if prettyClassName then
-						abilityEntryText = prettyClassName
-					else
-						abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
-					end
-				elseif roleMatch then
-					abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
-				elseif groupMatch then
-					abilityEntryText = "Group " .. groupMatch
-				else
-					abilityEntryText = Private.roster[sortedAssignees[index]]
-				end
-			end
-			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-			assigneeEntry:SetText(abilityEntryText)
-			assigneeEntry:SetHeight(30)
-			assignmentContainer:AddChild(assigneeEntry)
-		end
-		assignmentContainer:DoLayout()
-	end
-end
-
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
-local function UpdateCurrentBoss(bossName)
+local function UpdateBossAbilityList(bossName)
 	local boss = Private:GetBoss(bossName)
 	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
-	local timeline = Private.mainFrame:GetTimeline()
 	local bossDropdown = Private.mainFrame:GetBossDropdown()
-	if boss and bossAbilityContainer and timeline and bossDropdown then
+	if boss and bossAbilityContainer and bossDropdown then
 		local bossIndex = Private:GetBossDefinitionIndex(bossName)
 		if bossIndex and bossDropdown:GetValue() ~= bossIndex then
 			bossDropdown:SetValue(bossIndex)
@@ -570,16 +62,50 @@ local function UpdateCurrentBoss(bossName)
 			bossAbilityContainer:AddChild(abilityEntry)
 		end
 		bossAbilityContainer:DoLayout()
+	end
+end
+
+-- Sets the boss abilities for the timeline and rerenders it.
+---@param bossName string The name of the boss
+local function UpdateTimelineBossAbilities(bossName)
+	local boss = Private:GetBoss(bossName)
+	local timeline = Private.mainFrame:GetTimeline()
+	if boss and timeline then
 		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
 		timeline:UpdateTimeline()
 	end
 end
 
--- Sorts assignments based on the assignmentSortType and updates firstAppearanceSortedAssignments and
--- firstAppearanceAssigneeOrder
+-- Clears and repopulates the list of assignments based on sortedAssignees
+local function UpdateAssignmentList()
+	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
+	if assignmentContainer then
+		assignmentContainer:ReleaseChildren()
+		local assignmentTextTable = utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
+		for _, text in ipairs(assignmentTextTable) do
+			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
+			assigneeEntry:SetText(text)
+			assigneeEntry:SetHeight(30)
+			assignmentContainer:AddChild(assigneeEntry)
+		end
+		assignmentContainer:DoLayout()
+	end
+end
+
+-- Sets the assignments and assignees for the timeline and rerenders it.
+local function UpdateTimelineAssignments()
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
+		timeline:UpdateTimeline()
+	end
+end
+
+-- Sorts assignments based on the assignmentSortType and updates sortedTimelineAssignments and sortedAssignees.
 ---@param assignments table<integer, Assignment>
 ---@param assignmentSortType AssignmentSortType|nil
-local function SortAssignments(assignments, assignmentSortType)
+---@param updateUniqueAssignments boolean|nil
+local function SortAssignments(assignments, assignmentSortType, updateUniqueAssignments)
 	if assignmentSortType then
 		lastAssignmentSortType = assignmentSortType
 	else
@@ -589,7 +115,7 @@ local function SortAssignments(assignments, assignmentSortType)
 	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
 
 	for _, assignment in pairs(assignments) do
-		local timelineAssignment = CreateTimelineAssignment(assignment)
+		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
 		if timelineAssignment then
 			tinsert(sorted, timelineAssignment)
 		end
@@ -607,7 +133,7 @@ local function SortAssignments(assignments, assignmentSortType)
 			return a.startTime < b.startTime
 		end)
 	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
-		local determinedRoles = DetermineRolesFromAssignments(assignments)
+		local determinedRoles = utilities:DetermineRolesFromAssignments(assignments)
 		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
 			if determinedRoles[a.assignment.assigneeNameOrRole] == determinedRoles[b.assignment.assigneeNameOrRole] then
 				if assignmentSortType == "Role > Alphabetical" then
@@ -624,14 +150,12 @@ local function SortAssignments(assignments, assignmentSortType)
 	end
 
 	sortedTimelineAssignments = sorted
-	sortedAssignees = CreateAssigneeOrder()
-end
-
--- Clears and updates the uniqueAssignmentTable from Private.assignments
-local function UpdateUniqueAssignmentTable()
-	wipe(uniqueAssignmentTable)
-	for _, ass in pairs(Private.assignments) do
-		uniqueAssignmentTable[ass.uniqueID] = ass
+	sortedAssignees = utilities:SortAssignees(sortedTimelineAssignments, emptyAssignees)
+	if updateUniqueAssignments then
+		wipe(uniqueAssignmentTable)
+		for _, ass in pairs(Private.assignments) do
+			uniqueAssignmentTable[ass.uniqueID] = ass
+		end
 	end
 end
 
@@ -644,7 +168,8 @@ local function HandleBossDropdownValueChanged(value)
 	if bossIndex then
 		local bossDef = Private:GetBossDefinition(bossIndex)
 		if bossDef then
-			UpdateCurrentBoss(bossDef.name)
+			UpdateBossAbilityList(bossDef.name)
+			UpdateTimelineBossAbilities(bossDef.name)
 		end
 	end
 end
@@ -653,13 +178,8 @@ end
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateAssignmentListEntries()
-
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 end
 
 ---@param value string
@@ -670,17 +190,12 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	AddOn.db.profile.lastOpenNote = value
 	local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
 	if bossName then
-		UpdateCurrentBoss(bossName)
+		UpdateBossAbilityList(bossName)
+		UpdateTimelineBossAbilities(bossName)
 	end
-	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateUniqueAssignmentTable()
-	UpdateAssignmentListEntries()
-
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
@@ -718,42 +233,33 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 	end
 	tremove(uniqueAssignmentTable, currentAssignmentIndex)
 	SortAssignments(Private.assignments)
-	UpdateAssignmentListEntries()
-
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
 	SortAssignments(Private.assignments)
-	UpdateAssignmentListEntries()
-
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 end
 
 ---@param dataType string
 ---@param value string
 local function HandleAssignmentEditorDataChanged(_, _, dataType, value)
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex] --[[@as Assignment]]
+	print(assignment)
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
-				assignment = Private.classes.CombatLogEventAssignment:new(assignment)
+				assignment = Private.classes.CombatLogEventAssignment:New(assignment)
 			end
 		elseif value == "Absolute Time" then
 			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
-				assignment = Private.classes.TimedAssignment:new(assignment)
+				assignment = Private.classes.TimedAssignment:New(assignment)
 			end
 		elseif value == "Boss Phase" then
 			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
-				assignment = Private.classes.PhasedAssignment:new(assignment)
+				assignment = Private.classes.PhasedAssignment:New(assignment)
 			end
 		end
 	elseif dataType == "CombatLogEventSpellID" then
@@ -803,7 +309,7 @@ local function HandleAssignmentEditorDataChanged(_, _, dataType, value)
 
 	for _, timelineAssignment in pairs(sortedTimelineAssignments) do
 		if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-			UpdateTimelineAssignment(timelineAssignment)
+			timelineAssignment:Update()
 			break
 		end
 	end
@@ -832,15 +338,16 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		Private.assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
-			{ CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() },
+			utilities:CreateSpellAssignmentDropdownItems(),
 			"EPDropdownItemToggle"
 		)
 		Private.assignmentEditor.assigneeTypeDropdown:AddItems(
-			CreateAssignmentTypeDropdownItems(),
+			utilities:CreateAssignmentTypeDropdownItems(),
 			"EPDropdownItemToggle"
 		)
-		Private.assignmentEditor.assigneeDropdown:AddItems(CreateAssigneeDropdownItems(), "EPDropdownItemToggle")
-		Private.assignmentEditor.targetDropdown:AddItems(CreateAssigneeDropdownItems(), "EPDropdownItemToggle")
+		local assigneeDropdownItems = utilities:CreateAssigneeDropdownItems()
+		Private.assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+		Private.assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		local dropdownItems = {}
 		local boss = Private:GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
 		if boss then
@@ -860,6 +367,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	end
 
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex]
+	print(assignment)
 
 	if assignment.assigneeNameOrRole == "{everyone}" then
 		Private.assignmentEditor:SetAssigneeType("Everyone")
@@ -930,13 +438,8 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		if not alreadyExists then
 			tinsert(emptyAssignees, value)
 			SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-			UpdateAssignmentListEntries()
-
-			local timeline = Private.mainFrame:GetTimeline()
-			if timeline then
-				timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-				timeline:UpdateTimeline()
-			end
+			UpdateAssignmentList()
+			UpdateTimelineAssignments()
 		end
 	end
 
@@ -946,36 +449,45 @@ end
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
 local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
-	print(
-		abilityInstance.spellID,
-		abilityInstance.phase,
-		abilityInstance.phaseCastTime,
-		abilityInstance.triggerSpellID,
-		abilityInstance.castOccurance,
-		abilityInstance.repeatInstance,
-		abilityInstance.castOccuranceRepeatInstance
-	)
-	if sortedAssignees[assigneeIndex] then
-		print(sortedAssignees[assigneeIndex])
+	if not assigneeIndex then
+		return
 	end
-	-- TODO: Find the boss ability using abilityInstance to create a new assignment and open assignment editor
+	local assignment = Private.classes.Assignment:New()
+	assignment.assigneeNameOrRole = sortedAssignees[assigneeIndex] or ""
+	if abilityInstance.combatLogEventType and abilityInstance.triggerSpellID and abilityInstance.triggerCastIndex then
+		-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
+		-- else
+		local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:New(assignment)
+		combatLogEventAssignment.combatLogEventType = abilityInstance.combatLogEventType
+		combatLogEventAssignment.time = abilityInstance.castTime
+		combatLogEventAssignment.phase = abilityInstance.phase
+		combatLogEventAssignment.spellCount = abilityInstance.triggerCastIndex
+		combatLogEventAssignment.combatLogEventSpellID = abilityInstance.triggerSpellID
+		tinsert(Private.assignments, combatLogEventAssignment)
+		-- end
+		-- elseif abilityInstance.repeatInstance then
+	else
+		local timedAssignment = Private.classes.TimedAssignment:New(assignment)
+		timedAssignment.time = abilityInstance.castTime
+		tinsert(Private.assignments, timedAssignment)
+	end
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
+	if Private.assignmentEditor then
+	end
 end
 
 local function HandleCreateNewEPNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local newNoteName = CreateUniqueNoteName()
+	local newNoteName = Private.utilities:CreateUniqueNoteName()
 	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
-	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateUniqueAssignmentTable()
-	UpdateAssignmentListEntries()
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 	local noteDropdown = Private.mainFrame:GetNoteDropdown()
 	if noteDropdown then
 		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
@@ -1007,12 +519,13 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 				AddOn.db.profile.lastOpenNote = name
 				local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
 				if bossName then
-					UpdateCurrentBoss(bossName)
+					UpdateBossAbilityList(bossName)
+					UpdateTimelineBossAbilities(bossName)
 				end
 				break
 			end
 		else
-			local newNoteName = CreateUniqueNoteName()
+			local newNoteName = utilities:CreateUniqueNoteName()
 			Private:Note(newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 		end
@@ -1021,14 +534,9 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
-		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-		UpdateUniqueAssignmentTable()
-		UpdateAssignmentListEntries()
-		local timeline = Private.mainFrame:GetTimeline()
-		if timeline then
-			timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-			timeline:UpdateTimeline()
-		end
+		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+		UpdateAssignmentList()
+		UpdateTimelineAssignments()
 	end
 end
 
@@ -1045,7 +553,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
-		local newNoteName = CreateUniqueNoteName()
+		local newNoteName = utilities:CreateUniqueNoteName()
 		bossName = Private:Note(newNoteName, true)
 		AddOn.db.profile.lastOpenNote = newNoteName
 		local noteDropdown = Private.mainFrame:GetNoteDropdown()
@@ -1059,17 +567,13 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		end
 	end
 	if bossName then
-		UpdateCurrentBoss(bossName)
+		UpdateBossAbilityList(bossName)
+		UpdateTimelineBossAbilities(bossName)
 	end
 
-	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateUniqueAssignmentTable()
-	UpdateAssignmentListEntries()
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
 	importDropdown:SetText("Import MRT note")
 end
 
@@ -1102,8 +606,7 @@ function Private:CreateGUI()
 		end
 	end)
 
-	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
-	UpdateUniqueAssignmentTable()
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
@@ -1244,7 +747,7 @@ function Private:CreateGUI()
 	local bottomLeftContainer = AceGUI:Create("EPContainer")
 	bottomLeftContainer:SetLayout("EPVerticalLayout")
 	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
-	bottomLeftContainer:SetSpacing(0, 6)
+	bottomLeftContainer:SetSpacing(unpack(bottomLeftContainerSpacing))
 
 	local bossAbilityContainer = AceGUI:Create("EPContainer")
 	bossAbilityContainer:SetLayout("EPVerticalLayout")
@@ -1255,7 +758,11 @@ function Private:CreateGUI()
 	addAssigneeRowDropdown:SetFullWidth(true)
 	addAssigneeRowDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeRowDropdown:SetText("Add Assignee")
-	addAssigneeRowDropdown:AddItems(CreateAssignmentTypeWithRosterDropdownItems(), "EPDropdownItemToggle", true)
+	addAssigneeRowDropdown:AddItems(
+		utilities:CreateAssignmentTypeWithRosterDropdownItems(),
+		"EPDropdownItemToggle",
+		true
+	)
 
 	local assignmentListContainer = AceGUI:Create("EPContainer")
 	assignmentListContainer:SetLayout("EPVerticalLayout")
@@ -1274,11 +781,11 @@ function Private:CreateGUI()
 	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
 
-	UpdateAssignmentListEntries()
+	UpdateAssignmentList()
 
 	-- Set default values
-	UpdateCurrentBoss(bossName or "Ulgrax the Devourer")
-	timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
+	UpdateBossAbilityList(bossName or "Ulgrax the Devourer")
+	UpdateTimelineBossAbilities(bossName or "Ulgrax the Devourer")
 	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
@@ -1290,7 +797,7 @@ function Private:CreateGUI()
 	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
 	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
 
-	timeline:UpdateTimeline()
+	UpdateTimelineAssignments()
 end
 
 -- Addon is first loaded
@@ -1301,7 +808,7 @@ function AddOn:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
-	CreatePrettyClassNames()
+	utilities:CreatePrettyClassNames()
 	self.OnInitialize = nil
 end
 

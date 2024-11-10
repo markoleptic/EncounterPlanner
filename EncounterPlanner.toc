@@ -13,6 +13,7 @@ Init.lua
 NerubarPalace.lua
 Spells.lua
 Widgets\Widgets.xml
+Utilities.lua
 Note.lua
 Options.lua
 Core.lua

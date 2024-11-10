@@ -501,7 +501,7 @@ local function CreateAssignmentsFromLine(line)
 			:gsub(dashRegex, "")
 			:gsub(nonSymbolRegex, ReplaceNamesWithColoredNamesIfFound)
 
-		local assignment = Private.classes.Assignment:new({
+		local assignment = Private.classes.Assignment:New({
 			assigneeNameOrRole = nameOrGroup or "",
 			line = str,
 			text = text,
@@ -538,7 +538,7 @@ function Private:ProcessOptions(assignments, time, options)
 				local phaseNumber = tonumber(phase)
 				if phaseNumber then
 					for _, assignment in pairs(assignments) do
-						local phasedAssignment = self.classes.PhasedAssignment:new(assignment)
+						local phasedAssignment = self.classes.PhasedAssignment:New(assignment)
 						phasedAssignment.time = time
 						phasedAssignment.phase = phaseNumber
 						tinsert(self.assignments, phasedAssignment)
@@ -553,7 +553,7 @@ function Private:ProcessOptions(assignments, time, options)
 				local spellCount = tonumber(spellCountStr)
 				if spellID and spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = self.classes.CombatLogEventAssignment:new(assignment)
+						local combatLogEventAssignment = self.classes.CombatLogEventAssignment:New(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.phase = nil
@@ -568,7 +568,7 @@ function Private:ProcessOptions(assignments, time, options)
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = self.classes.TimedAssignment:new(assignment)
+			local timedAssignment = self.classes.TimedAssignment:New(assignment)
 			timedAssignment.time = time
 			tinsert(self.assignments, timedAssignment)
 		end

@@ -98,11 +98,7 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@field assignment Assignment The assignment
 ---@field startTime number Time used to place the assignment on the timeline
 ---@field order number When sorted by first appearance, this number signifies the order relative to other assignments. This number is the same across assignments with the same assignee.
-Private.classes.TimelineAssignment = setmetatable({
-	assignment = nil,
-	startTime = nil,
-	order = nil,
-}, { __index = Private.classes.TimelineAssignment })
+Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
 ---@class RaidInstance
@@ -230,7 +226,7 @@ function Private:DeepCopy(inTable)
 end
 
 ---@return Assignment
-function Private.classes.Assignment:new(o)
+function Private.classes.Assignment:New(o)
 	o = o or {}
 	assignmentIDCounter = assignmentIDCounter + 1
 	o.uniqueID = assignmentIDCounter
@@ -244,77 +240,70 @@ function Private.classes.Assignment:new(o)
 end
 
 ---@return CombatLogEventAssignment
-function Private.classes.CombatLogEventAssignment:new(o)
-	o = o or Private.classes.Assignment:new(o)
+function Private.classes.CombatLogEventAssignment:New(o)
+	o = o or Private.classes.Assignment:New(o)
 	setmetatable(o, self)
 	return o
 end
 
 ---@return TimedAssignment
-function Private.classes.TimedAssignment:new(o)
-	o = o or Private.classes.Assignment:new(o)
+function Private.classes.TimedAssignment:New(o)
+	o = o or Private.classes.Assignment:New(o)
 	setmetatable(o, self)
 	return o
 end
 
 ---@return PhasedAssignment
-function Private.classes.PhasedAssignment:new(o)
-	o = o or Private.classes.Assignment:new(o)
-	setmetatable(o, self)
-	return o
-end
-
----@return TimelineAssignment
-function Private.classes.TimelineAssignment:new(o)
-	o = o or Private.classes.TimelineAssignment:new(o)
+function Private.classes.PhasedAssignment:New(o)
+	o = o or Private.classes.Assignment:New(o)
 	setmetatable(o, self)
 	return o
 end
 
 ---@return RaidInstance
-function Private.classes.RaidInstance:new(o)
+function Private.classes.RaidInstance:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return BossDefinition
-function Private.classes.BossDefinition:new(o)
+function Private.classes.BossDefinition:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return Boss
-function Private.classes.Boss:new(o)
+function Private.classes.Boss:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return BossAbility
-function Private.classes.BossAbility:new(o)
+function Private.classes.BossAbility:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return BossAbilityPhase
-function Private.classes.BossAbilityPhase:new(o)
+function Private.classes.BossAbilityPhase:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return EventTrigger
-function Private.classes.EventTrigger:new(o)
+function Private.classes.EventTrigger:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
 end
 
 ---@return BossPhase
-function Private.classes.BossPhase:new(o)
+function Private.classes.BossPhase:New(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
@@ -337,6 +326,7 @@ local defaults = {
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
+Private.utilities = {}
 -- The assignments for the currently selected note
 Private.assignments = {} --[[@as table<integer, Assignment>]]
 -- A map of plain text names (or group type) mapped to class colored names
