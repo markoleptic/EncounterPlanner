@@ -894,7 +894,6 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
 		Private.assignmentEditor.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
 		Private.assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
-		Private.assignmentEditor.phaseNumberDropdown:SetValue(assignment.phase)
 		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
 	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]

@@ -69,11 +69,6 @@ local assignmentTriggers = {
 		itemValue = "Absolute Time",
 		dropdownItemMenuData = {},
 	},
-	{
-		text = "Boss Phase",
-		itemValue = "Boss Phase",
-		dropdownItemMenuData = {},
-	},
 }
 
 ---@class EPAssignmentEditor : AceGUIContainer
@@ -105,9 +100,6 @@ local assignmentTriggers = {
 ---@field timeContainer EPContainer
 ---@field timeEditBox EPLineEdit
 ---@field timeLabel EPLabel
----@field phaseNumberContainer EPContainer
----@field phaseNumberLabel EPLabel
----@field phaseNumberDropdown EPDropdown
 ---@field optionalTextContainer EPContainer
 ---@field optionalTextLineEdit EPLineEdit
 ---@field optionalTextLabel EPLabel
@@ -134,13 +126,10 @@ local function HandleAssignmentTypeDropdownValueChanged(frame, callbackName, val
 	local self = frame.obj
 	if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 		self.combatLogEventContainer.frame:Show()
-		self.phaseNumberContainer.frame:Show()
 	elseif value == "Absolute Time" then
 		self.combatLogEventContainer.frame:Hide()
-		self.phaseNumberContainer.frame:Hide()
 	elseif value == "Boss Phase" then
 		self.combatLogEventContainer.frame:Hide()
-		self.phaseNumberContainer.frame:Show()
 	end
 	self:Fire("DataChanged", "AssignmentType", value)
 end
@@ -153,11 +142,6 @@ end
 local function HandleCombatLogEventSpellCountTextChanged(frame, callbackName, value)
 	local self = frame.obj
 	self:Fire("DataChanged", "CombatLogEventSpellCount", value)
-end
-
-local function HandlePhaseNumberDropdownValueChanged(frame, callbackName, value)
-	local self = frame.obj
-	self:Fire("DataChanged", "PhaseNumber", value)
 end
 
 local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, value)
@@ -208,13 +192,10 @@ end
 local function SetAssignmentType(self, assignmentType)
 	if assignmentType == "CombatLogEventAssignment" then
 		self.combatLogEventContainer.frame:Show()
-		self.phaseNumberContainer.frame:Show()
 	elseif assignmentType == "TimedAssignment" then
 		self.combatLogEventContainer.frame:Hide()
-		self.phaseNumberContainer.frame:Hide()
 	elseif assignmentType == "PhasedAssignment" then
 		self.combatLogEventContainer.frame:Hide()
-		self.phaseNumberContainer.frame:Show()
 	end
 	--self:DoLayout() -- todo make it ignore frames with a variable indicating they should be ignored
 end
@@ -268,19 +249,6 @@ local function OnAcquire(self)
 	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLabel)
 	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLineEdit)
 	self:AddChild(self.combatLogEventContainer)
-
-	self.phaseNumberContainer = AceGUI:Create("EPContainer")
-	self.phaseNumberContainer:SetLayout("EPVerticalLayout")
-	self.phaseNumberContainer:SetSpacing(0, 2)
-	self.phaseNumberLabel = AceGUI:Create("EPLabel")
-	self.phaseNumberLabel:SetText("Phase Number")
-	self.phaseNumberLabel:SetTextPadding(0, 2)
-	self.phaseNumberDropdown = AceGUI:Create("EPDropdown")
-	self.phaseNumberDropdown:SetCallback("OnValueChanged", HandlePhaseNumberDropdownValueChanged)
-	self.phaseNumberDropdown.obj = self
-	self.phaseNumberContainer:AddChild(self.phaseNumberLabel)
-	self.phaseNumberContainer:AddChild(self.phaseNumberDropdown)
-	self:AddChild(self.phaseNumberContainer)
 
 	self.assigneeTypeContainer = AceGUI:Create("EPContainer")
 	self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
