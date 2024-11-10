@@ -841,6 +841,22 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		)
 		Private.assignmentEditor.assigneeDropdown:AddItems(CreateAssigneeDropdownItems(), "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(CreateAssigneeDropdownItems(), "EPDropdownItemToggle")
+		local dropdownItems = {}
+		local boss = Private:GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+		if boss then
+			for _, ID in pairs(boss.sortedAbilityIDs) do
+				local spellInfo = GetSpellInfo(ID)
+				if spellInfo then
+					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+					tinsert(dropdownItems, {
+						itemValue = ID,
+						text = iconText,
+						dropdownItemMenuData = {},
+					})
+				end
+			end
+		end
+		Private.assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
 	end
 
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex]
