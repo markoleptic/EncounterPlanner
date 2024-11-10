@@ -43,6 +43,7 @@ local noteContainerSpacing = { 5, 2 }
 
 local currentAssignmentIndex = 0
 local sortedTimelineAssignments = {} --[[@as table<integer, TimelineAssignment>]]
+local emptyAssignees = {} --[[@as table<integer, string>]]
 local sortedAssignees = {} --[[@as table<integer, string>]]
 local uniqueAssignmentTable = {} --[[@as table<integer, Assignment>]]
 local lastAssignmentSortType = "First Appearance" --[[@as AssignmentSortType]]
@@ -205,6 +206,18 @@ local function CreateAssigneeOrder()
 	local order = 1
 	local assigneeMap = {}
 	local assigneeOrder = {}
+
+	sort(emptyAssignees, function(a, b)
+		return a < b
+	end)
+
+	for _, entry in ipairs(emptyAssignees) do
+		if not assigneeMap[entry] then
+			assigneeMap[entry] = order
+			assigneeOrder[order] = entry
+			order = order + 1
+		end
+	end
 
 	for _, entry in ipairs(sortedTimelineAssignments) do
 		local assignee = entry.assignment.assigneeNameOrRole
@@ -504,11 +517,9 @@ local function UpdateAssignmentListEntries()
 	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
 	if assignmentContainer then
 		assignmentContainer:ReleaseChildren()
-		print("#UpdateAssignmentListEntries", #sortedAssignees)
 		for index = 1, #sortedAssignees do
 			local abilityEntryText
 			local assigneeNameOrRole = sortedAssignees[index]
-			print("assigneeNameOrRole", assigneeNameOrRole)
 			if assigneeNameOrRole == "{everyone}" then
 				abilityEntryText = "Everyone"
 			else
@@ -882,7 +893,40 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	end
 end
 
-local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value) end
+local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
+	if value == "Add Assignee" then
+		return
+	end
+
+	local alreadyExists = false
+	for _, assigneeNameOrRole in ipairs(sortedAssignees) do
+		if assigneeNameOrRole == value then
+			alreadyExists = true
+			break
+		end
+	end
+	if not alreadyExists then
+		for _, emptyAssignee in ipairs(emptyAssignees) do
+			if emptyAssignee == value then
+				alreadyExists = true
+				break
+			end
+		end
+		if not alreadyExists then
+			tinsert(emptyAssignees, value)
+			SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType)
+			UpdateAssignmentListEntries()
+
+			local timeline = Private.mainFrame:GetTimeline()
+			if timeline then
+				timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
+				timeline:UpdateTimeline()
+			end
+		end
+	end
+
+	dropdown:SetText("Add Assignee")
+end
 
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
