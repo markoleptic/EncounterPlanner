@@ -469,7 +469,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 			color,
 			bossAbilityInstanceIndex,
 			offset,
-			{ spellID = bossAbilitySpellID, phase = bossPhaseIndex, phaseCastTime = castTime }
+			{ spellID = bossAbilitySpellID, phase = bossPhaseIndex, castTime = castStart }
 		)
 		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 		if bossAbilityPhase.repeatInterval then
@@ -482,7 +482,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 				DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, bossAbilityInstanceIndex, offset, {
 					spellID = bossAbilitySpellID,
 					phase = bossPhaseIndex,
-					phaseCastTime = castTime,
+					castTime = nextRepeatStart,
 					repeatInstance = repeatInstance,
 				})
 				bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
@@ -536,6 +536,7 @@ local function DrawEventTriggerBossAbility(
 						combatLogEventType = eventTrigger.combatLogEventType,
 						spellID = bossAbilitySpellID,
 						phase = bossPhaseIndex,
+						castTime = castStart - cumulativeCastTime,
 						triggerSpellID = triggerSpellID,
 						triggerCastIndex = triggerCastIndex,
 					})
@@ -561,6 +562,7 @@ local function DrawEventTriggerBossAbility(
 										combatLogEventType = eventTrigger.combatLogEventType,
 										spellID = bossAbilitySpellID,
 										phase = bossPhaseIndex,
+										castTime = castStart - cumulativeCastTime,
 										triggerSpellID = triggerSpellID,
 										triggerCastIndex = triggerCastIndex,
 										repeatInstance = repeatInstance,

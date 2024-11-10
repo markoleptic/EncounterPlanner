@@ -193,7 +193,7 @@ Private.classes.BossPhase.__index = Private.classes.BossPhase
 ---@class BossAbilityInstance
 ---@field spellID number
 ---@field phase number
----@field phaseCastTime number|nil
+---@field castTime number|nil
 ---@field combatLogEventType CombatLogEventType|nil
 ---@field triggerSpellID number|nil
 ---@field triggerCastIndex number|nil
@@ -202,7 +202,7 @@ Private.classes.BossPhase.__index = Private.classes.BossPhase
 Private.classes.BossAbilityInstance = {
 	spellID = 0,
 	phase = 1,
-	phaseCastTime = nil,
+	castTime = nil,
 	combatLogEventType = nil,
 	triggerSpellID = nil,
 	triggerCastIndex = nil,
@@ -211,14 +211,35 @@ Private.classes.BossAbilityInstance = {
 }
 Private.classes.BossAbilityInstance.__index = Private.classes.BossAbilityInstance
 
+--- Copies a table
+---@generic T
+---@param inTable table<any, T> A table with any keys and values of type T
+---@return table<any, T>
+function Private:DeepCopy(inTable)
+	local copy = {}
+	if type(inTable) == "table" then
+		for k, v in pairs(inTable) do
+			if k ~= "__index" then
+				copy[k] = self:DeepCopy(v)
+			end
+		end
+	else
+		copy = inTable
+	end
+	return copy
+end
+
 ---@return Assignment
 function Private.classes.Assignment:new(o)
 	o = o or {}
-	setmetatable(o, self)
-	if not o.uniqueID then
-		assignmentIDCounter = assignmentIDCounter + 1
-		o.uniqueID = assignmentIDCounter
+	assignmentIDCounter = assignmentIDCounter + 1
+	o.uniqueID = assignmentIDCounter
+	for key, value in pairs(Private:DeepCopy(self)) do
+		if o[key] == nil then
+			o[key] = value
+		end
 	end
+	setmetatable(o, self)
 	return o
 end
 
@@ -297,22 +318,6 @@ function Private.classes.BossPhase:new(o)
 	o = o or {}
 	setmetatable(o, self)
 	return o
-end
-
---- Copies a table
----@generic T
----@param inTable table<any, T> A table with any keys and values of type T
----@return table<any, T>
-function Private:DeepCopy(inTable)
-	local copy = {}
-	if type(inTable) == "table" then
-		for k, v in pairs(inTable) do
-			copy[k] = self:DeepCopy(v)
-		end
-	else
-		copy = inTable
-	end
-	return copy
 end
 
 local defaults = {
