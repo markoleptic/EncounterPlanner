@@ -616,7 +616,7 @@ end
 
 function Private:UpdateRoster()
 	for _, assignment in ipairs(self.assignments) do
-		if assignment.assigneeNameOrRole and assignment.assigneeNameOrRole ~= "" then
+		if assignment.assigneeNameOrRole then
 			if
 				not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:")
 			then
