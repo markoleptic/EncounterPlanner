@@ -114,7 +114,6 @@ local assignmentTriggers = {
 local function HandleOkayButtonClicked(frame, mouseButtonType, down)
 	local self = frame.obj
 	self:Fire("OkayButtonClicked")
-	self:Release()
 end
 
 local function HandleDeleteButtonClicked(frame, mouseButtonType, down)
@@ -349,7 +348,7 @@ local function OnAcquire(self)
 	self.okayButton:SetText("Okay")
 	self.okayButton:SetWidth(75)
 	self.okayButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.okayButton:SetCallback("OnClick", HandleOkayButtonClicked)
+	self.okayButton:SetCallback("Clicked", HandleOkayButtonClicked)
 	self.okayButton.frame:SetParent(self.buttonFrame)
 	self.okayButton:SetPoint(
 		"TOPRIGHT",
@@ -397,7 +396,6 @@ local function OnAcquire(self)
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton:SetPoint("TOPRIGHT", self.windowBar, "TOPRIGHT", -frameBackdrop.edgeSize, -frameBackdrop.edgeSize)
 	self.closeButton:SetCallback("Clicked", function()
-		self:Fire("OkayButtonClicked")
 		self:Release()
 	end)
 
