@@ -473,7 +473,7 @@ function TimelineAssignment:New(assignment)
 		order = 0,
 	}
 	setmetatable(timelineAssignment, self)
-	self:Update()
+	timelineAssignment:Update()
 	return timelineAssignment
 end
 
