@@ -8,6 +8,7 @@
 	<Script file="EPLabel.lua"/>
 	<Script file="EPLineEdit.lua"/>
     <Script file="EPButton.lua"/>
+    <Script file="EPEditBox.lua"/>
 	<Script file="EPDropdownItemToggle.lua"/>
 	<Script file="EPDropdown.lua"/>
 	<Script file="EPAbilityEntry.lua"/>

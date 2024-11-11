@@ -20,6 +20,9 @@
 ---@alias EPButtonType
 ---|"EPButton"
 
+---@alias EPEditBoxType
+---|"EPEditBox"
+
 ---@alias EPDropdownPulloutType
 ---|"EPDropdownPullout"
 
@@ -60,6 +63,7 @@
 ---| EPSpacerType
 ---| EPLabelType
 ---| EPLineEditType
+---| EPEditBoxType
 ---| EPDropdownPulloutType
 ---| EPDropdownItemToggleType
 ---| EPDropdownItemMenuType
@@ -105,6 +109,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPButtonType
 ---@return EPButton
+function AceGUI:Create(type) end
+
+---@param type EPEditBoxType
+---@return EPEditBox
 function AceGUI:Create(type) end
 
 ---@param type EPDropdownPulloutType
