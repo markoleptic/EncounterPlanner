@@ -2,6 +2,7 @@
 local Private = select(2, ...) --[[@as Private]]
 local AddOn = Private.addOn
 
+local concat = table.concat
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
@@ -23,6 +24,7 @@ local UnitName = UnitName
 local wipe = wipe
 
 local lineRegex = "[^\r\n]+"
+local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}({spell:(%d+)}(.-) %-)"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
@@ -577,14 +579,16 @@ end
 
 -- Parses the given text and creates assignments from it. Returns a boss name if one was found using spellIDs in the
 -- text.
----@param text string
----@return string|nil bossName
+---@param text string|table<integer,string>
+---@return table<integer, string>,string|nil bossName
 function Private:ParseNote(text)
 	--self.filteredText = Filter(text)
 	--self.filteredText = FilterByCurrentRole(self.filteredText)
 	--self.filteredText = ReplaceNamesWithColoredNamesIfFound(self.filteredText)
+	local noteTable = {}
 	local spellIDs = {}
-	for line in text:gmatch(lineRegex) do
+	local function inner(line)
+		tinsert(noteTable, line)
 		local minute, sec, options = line:match(timeOptionsSplitRegex)
 		local time = nil
 		if minute and sec then
@@ -592,7 +596,6 @@ function Private:ParseNote(text)
 		elseif minute and (sec == nil or sec == "") then
 			time = tonumber(minute)
 		end
-
 		local fullMatch, spellID, maybeColoredSpellText = line:match(postOptionsPreDashRegex)
 		if fullMatch and spellID then
 			local spellIDNumber = tonumber(spellID)
@@ -605,13 +608,22 @@ function Private:ParseNote(text)
 			self:ProcessOptions(inputs, time, options)
 		end
 	end
+	if type(text) == "string" then
+		for line in text:gmatch(lineMatchRegex) do
+			inner(line)
+		end
+	elseif type(text) == "table" then
+		for _, line in ipairs(text) do
+			inner(line)
+		end
+	end
 	for _, spellID in pairs(spellIDs) do
 		local bossName = self:GetBossFromSpellID(spellID)
 		if bossName then
-			return bossName
+			return noteTable, bossName
 		end
 	end
-	return nil
+	return noteTable, nil
 end
 
 function Private:UpdateRoster()
@@ -630,6 +642,95 @@ function Private:UpdateRoster()
 	end
 end
 
+---@return string|nil
+function Private:ExportNote()
+	local sortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
+	for _, assignment in pairs(self.assignments) do
+		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
+		if timelineAssignment then
+			tinsert(sortedAssignments, timelineAssignment)
+		end
+	end
+	sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
+		if a.startTime == b.startTime then
+			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+		end
+		return a.startTime < b.startTime
+	end)
+
+	local inStringTable = {}
+	local stringTable = {}
+	for _, timelineAssignment in ipairs(sortedAssignments) do
+		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
+			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+			local minutes = math.floor(assignment.time / 60)
+			local seconds = assignment.time - (minutes * 60)
+			local timeAndOptionsString = string.format(
+				"{time:%d:%02d,%s:%d:%d}{spell:%d} - ",
+				minutes,
+				seconds,
+				assignment.combatLogEventType,
+				assignment.combatLogEventSpellID,
+				assignment.spellCount,
+				assignment.combatLogEventSpellID
+			)
+			local assignmentString = assignment.assigneeNameOrRole
+			if assignment.targetName ~= nil and assignment.targetName ~= "" then
+				local targetString = string.format(" @%s", assignment.targetName)
+				assignmentString = assignmentString .. targetString
+			end
+			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
+				assignmentString = assignmentString .. spellString
+			end
+			if assignment.text ~= nil and assignment.text ~= "" then
+				local textString = string.format(" {text}%s{/text}", assignment.text)
+				assignmentString = assignmentString .. textString
+			end
+
+			local stringTableIndex = inStringTable[timeAndOptionsString]
+			if stringTableIndex then
+				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+			else
+				tinsert(stringTable, timeAndOptionsString .. assignmentString)
+				inStringTable[timeAndOptionsString] = #stringTable
+			end
+		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
+			local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+			local minutes = math.floor(assignment.time / 60)
+			local seconds = assignment.time - (minutes * 60)
+			local timeString = string.format("{time:%d:%02d} - ", minutes, seconds)
+
+			local assignmentString = assignment.assigneeNameOrRole
+			if assignment.targetName ~= nil and assignment.targetName ~= "" then
+				local targetString = string.format(" @%s", assignment.targetName)
+				assignmentString = assignmentString .. targetString
+			end
+			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
+				assignmentString = assignmentString .. spellString
+			end
+			if assignment.text ~= nil and assignment.text ~= "" then
+				local textString = string.format(" {text}%s{/text}", assignment.text)
+				assignmentString = assignmentString .. textString
+			end
+
+			local stringTableIndex = inStringTable[timeString]
+			if stringTableIndex then
+				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+			else
+				tinsert(stringTable, timeString .. assignmentString)
+				inStringTable[timeString] = #stringTable
+			end
+		elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
+		end
+	end
+	if #stringTable == 0 then
+		return nil
+	end
+	return concat(stringTable, "\n")
+end
+
 -- Clears the current assignments and repopulates it. Updates the roster.
 ---@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
 -- an empty note will be created
@@ -640,18 +741,18 @@ function Private:Note(epNoteName, parseMRTNote)
 	GSubAutoColorCreate()
 	wipe(self.assignments)
 	local bossName = nil
+	local noteTable = {}
 	if parseMRTNote then
 		if GMRT and GMRT.F then
 			local sharedNoteCopy = VMRT.Note.Text1 or ""
-			AddOn.db.profile.notes[epNoteName] = sharedNoteCopy
-			bossName = self:ParseNote(sharedNoteCopy)
+			noteTable, bossName = self:ParseNote(sharedNoteCopy)
 		end
 	elseif AddOn.db.profile.notes[epNoteName] then
-		bossName = self:ParseNote(AddOn.db.profile.notes[epNoteName])
+		noteTable, bossName = self:ParseNote(AddOn.db.profile.notes[epNoteName])
 	else
-		bossName = self:ParseNote("")
-		AddOn.db.profile.notes[epNoteName] = ""
+		noteTable, bossName = self:ParseNote("")
 	end
+	AddOn.db.profile.notes[epNoteName] = noteTable
 	self:UpdateRoster()
 	return bossName
 end

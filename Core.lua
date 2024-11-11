@@ -580,7 +580,20 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 end
 
 local function HandleExportEPNoteButtonClicked()
-	-- TODO: Open editbox widget with current note
+	if not Private.exportEditBox then
+		Private.exportEditBox = AceGUI:Create("EPEditBox")
+		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.exportEditBox.frame:SetFrameLevel(12)
+		Private.exportEditBox.frame:SetPoint("CENTER")
+		Private.exportEditBox:SetCallback("OnRelease", function()
+			Private.exportEditBox = nil
+		end)
+	end
+	local text = Private:ExportNote()
+	if text then
+		Private.exportEditBox:SetText(text)
+		Private.exportEditBox:HightlightTextAndFocus()
+	end
 end
 
 function Private:CreateGUI()

@@ -335,6 +335,7 @@ Private.mainFrame = nil --[[@as EPMainFrame]]
 -- A map of class names to class pascal case colored class names with spaces if needed
 Private.prettyClassNames = {} --[[@as table<string, string>]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
+Private.exportEditBox = nil --[[@as EPEditBox]]
 
 LSM:Register(
 	"font",
