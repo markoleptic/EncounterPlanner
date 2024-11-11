@@ -193,6 +193,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 		UpdateBossAbilityList(bossName)
 		UpdateTimelineBossAbilities(bossName)
 	end
+	wipe(emptyAssignees)
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 	UpdateAssignmentList()
 	UpdateTimelineAssignments()
@@ -238,6 +239,7 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
+	Private.assignmentEditor:Release()
 	SortAssignments(Private.assignments)
 	UpdateAssignmentList()
 	UpdateTimelineAssignments()
@@ -247,7 +249,6 @@ end
 ---@param value string
 local function HandleAssignmentEditorDataChanged(_, _, dataType, value)
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex] --[[@as Assignment]]
-	print(assignment)
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
@@ -367,7 +368,6 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	end
 
 	local assignment = uniqueAssignmentTable[currentAssignmentIndex]
-	print(assignment)
 
 	if assignment.assigneeNameOrRole == "{everyone}" then
 		Private.assignmentEditor:SetAssigneeType("Everyone")
@@ -474,8 +474,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 	UpdateAssignmentList()
 	UpdateTimelineAssignments()
-	if Private.assignmentEditor then
-	end
+	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
 local function HandleCreateNewEPNoteButtonClicked()
@@ -485,6 +484,7 @@ local function HandleCreateNewEPNoteButtonClicked()
 	local newNoteName = Private.utilities:CreateUniqueNoteName()
 	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
+	wipe(emptyAssignees)
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 	UpdateAssignmentList()
 	UpdateTimelineAssignments()
@@ -534,6 +534,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
+		wipe(emptyAssignees)
 		SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 		UpdateAssignmentList()
 		UpdateTimelineAssignments()
@@ -571,6 +572,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		UpdateTimelineBossAbilities(bossName)
 	end
 
+	wipe(emptyAssignees)
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 	UpdateAssignmentList()
 	UpdateTimelineAssignments()
@@ -606,6 +608,7 @@ function Private:CreateGUI()
 		end
 	end)
 
+	wipe(emptyAssignees)
 	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
 
 	local bossContainer = AceGUI:Create("EPContainer")
