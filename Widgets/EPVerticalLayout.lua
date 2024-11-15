@@ -32,20 +32,21 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	for i = 1, #children do
 		local child = children[i]
 		local frame = child.frame
+
 		frame:ClearAllPoints()
 		frame:Show()
 
 		if i > 1 then
 			if alignment == "default" then
 				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
-				frame:SetPoint("RIGHT", content)
+				-- frame:SetPoint("RIGHT", content)
 			elseif alignment == "center" then
 				frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
 			end
 		else
 			if alignment == "default" then
 				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
-				frame:SetPoint("RIGHT", content)
+				-- frame:SetPoint("RIGHT", content)
 			elseif alignment == "center" then
 				frame:SetPoint("TOP", content, "TOP")
 			end
@@ -54,18 +55,19 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		if child.width == "fill" then
 			--child:SetWidth(contentWidth)
 			frame:SetPoint("RIGHT", content)
-			if child.DoLayout then
-				child:DoLayout()
-			end
 		elseif child.width == "relative" then
 			child:SetWidth(contentWidth * child.relWidth)
-			if child.DoLayout then
-				child:DoLayout()
-			end
+		end
+
+		if child.DoLayout then
+			child:DoLayout()
 		end
 
 		local childHeight = frame:GetHeight()
-		totalHeight = totalHeight + childHeight + (i > 1 and paddingY or 0)
+		totalHeight = totalHeight + childHeight
+		if i > 1 then
+			totalHeight = totalHeight + paddingY
+		end
 		maxWidth = max(maxWidth, frame:GetWidth())
 	end
 
