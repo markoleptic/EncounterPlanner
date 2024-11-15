@@ -13,13 +13,12 @@ local defaultWidth = 100
 ---@field frame table|BackdropTemplate|Frame
 ---@field type string
 ---@field content table|Frame
----@field hidden boolean
+---@field children table<AceGUIWidget>
 
 ---@param self EPContainer
 local function OnAcquire(self)
 	self:SetHeight(defaultHeight)
 	self:SetWidth(defaultWidth)
-	self.hidden = false
 	self.content.spacing = defaultSpacing
 	self.content.alignment = nil
 end
@@ -59,22 +58,14 @@ local function SetAlignment(self, alignment)
 	self.content.alignment = alignment
 end
 
----@param self EPContainer
----@param hidden boolean
-local function SetHidden(self, hidden)
-	self:SetHeight(0)
-	self:SetWidth(0)
-	self.hidden = hidden
-	-- update parent layout?
-end
-
 local function Constructor()
-	local frame = CreateFrame("Frame", nil, UIParent)
+	local count = AceGUI:GetNextWidgetNum(Type)
+	local frame = CreateFrame("Frame", Type .. count, UIParent)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetHeight(defaultHeight)
 	frame:SetWidth(defaultWidth)
 
-	local content = CreateFrame("Frame", nil, frame)
+	local content = CreateFrame("Frame", Type .. "Content" .. count, frame)
 	content:SetPoint("TOPLEFT")
 	content:SetPoint("BOTTOMRIGHT")
 
@@ -83,14 +74,12 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		LayoutFinished = LayoutFinished,
 		SetSpacing = SetSpacing,
-		SetHidden = SetHidden,
 		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,
 		SetAlignment = SetAlignment,
 		frame = frame,
 		type = Type,
 		content = content,
-		hidden = false,
 	}
 
 	return AceGUI:RegisterAsContainer(widget)
