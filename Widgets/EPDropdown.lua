@@ -124,6 +124,7 @@ do
 	---@param item EPDropdownItemToggle|EPDropdownItemMenu
 	local function AddItem(self, item)
 		self.items[#self.items + 1] = item
+		item:SetHeight(dropdownItemHeight)
 		local h = #self.items * dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
@@ -207,6 +208,17 @@ do
 		elseif (self.itemFrame:GetHeight() + dropdownItemExtraOffset) < height then
 			self.frame:SetHeight(self.itemFrame:GetHeight() + dropdownItemExtraOffset) -- see :AddItem
 		end
+	end
+
+	---@param self EPDropdownPullout
+	---@param height number
+	local function SetItemHeight(self, height)
+		for _, item in pairs(self.items) do
+			item:SetHeight(dropdownItemHeight)
+		end
+		local h = #self.items * dropdownItemHeight
+		self.itemFrame:SetHeight(h)
+		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
 	end
 
 	---@param self EPDropdownPullout
@@ -331,6 +343,7 @@ do
 			IterateItems = IterateItems,
 			SetHideOnLeave = SetHideOnLeave,
 			SetMaxHeight = SetMaxHeight,
+			SetItemHeight = SetItemHeight,
 			SetScroll = SetScroll,
 			MoveScroll = MoveScroll,
 			FixScroll = FixScroll,
@@ -523,6 +536,7 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
+		dropdownItemHeight = 24
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
 		self.pullout:SetCallback("OnClose", HandlePulloutClose)
@@ -759,6 +773,14 @@ do
 		self.pulloutWidth = width
 	end
 
+	---@param self EPDropdown
+	---@param height number
+	local function SetDropdownItemHeight(self, height)
+		dropdownItemHeight = height
+		self:SetHeight(height)
+		self.pullout:SetItemHeight(height)
+	end
+
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -827,6 +849,7 @@ do
 			RemoveItem = RemoveItem,
 			AddItems = AddItems,
 			EditItemText = EditItemText,
+			SetDropdownItemHeight = SetDropdownItemHeight,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
 			AddCloseButton = AddCloseButton,
 			SetMultiselect = SetMultiselect,
