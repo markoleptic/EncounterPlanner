@@ -14,5 +14,7 @@
 	<Script file="EPAbilityEntry.lua"/>
 	<Script file="EPAssignmentEditor.lua"/>
 	<Script file="EPTimeline.lua"/>
+    <Script file="EPRosterEntry.lua"/>
+    <Script file="EPRosterEditor.lua"/>
 	<Script file="EPMainFrame.lua"/>
 </Ui>

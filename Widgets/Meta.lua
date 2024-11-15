@@ -53,11 +53,17 @@
 ---@alias EPAssignmentEditorType
 ---|"EPAssignmentEditor"
 
+---@alias EPRosterEntryType
+---|"EPRosterEntry"
+
 ---@alias EPTimelineType
 ---|"EPTimeline"
 
 ---@alias EPMainFrameType
 ---|"EPMainFrame"
+
+---@alias EPRosterEditorType
+---|"EPRosterEditor"
 
 ---@alias EPWidgetType
 ---| EPSpacerType
@@ -77,6 +83,7 @@
 ---| EPAssignmentEditorType
 ---| EPMainFrameType
 ---| EPBaseContainerType
+---| EPRosterEditorType
 
 ---@class AceGUI-3.0
 local AceGUI = {}
@@ -145,6 +152,14 @@ function AceGUI:Create(type) end
 
 ---@param type EPMainFrameType
 ---@return EPMainFrame
+function AceGUI:Create(type) end
+
+---@param type EPRosterEditorType
+---@return EPRosterEditor
+function AceGUI:Create(type) end
+
+---@param type EPRosterEntryType
+---@return EPRosterEntry
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
