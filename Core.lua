@@ -159,6 +159,22 @@ local function SortAssignments(assignments, assignmentSortType, updateUniqueAssi
 	end
 end
 
+local function CreateRosterEditor()
+	if not Private.rosterEditor then
+		Private.rosterEditor = AceGUI:Create("EPRosterEditor")
+		Private.rosterEditor:SetCallback("OnRelease", function()
+			Private.rosterEditor = nil
+		end)
+		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.rosterEditor.frame:SetFrameLevel(20)
+		Private.rosterEditor:SetLayout("EPVerticalLayout")
+		Private.rosterEditor:SetClassDropdownData(utilities:CreateClassDropdownItemData())
+		Private.rosterEditor:DoLayout()
+		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
+		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+	end
+end
+
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
 	if Private.assignmentEditor then
@@ -619,6 +635,12 @@ function Private:CreateGUI()
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
+		if Private.exportEditBox then
+			Private.exportEditBox:Release()
+		end
+		if Private.rosterEditor then
+			Private.rosterEditor:Release()
+		end
 	end)
 
 	wipe(emptyAssignees)
@@ -748,6 +770,11 @@ function Private:CreateGUI()
 	importExportContainer:AddChild(importDropdown)
 	importExportContainer:AddChild(exportButton)
 
+	local editRosterButton = AceGUI:Create("EPButton")
+	editRosterButton:SetWidth(topContainerDropdownWidth)
+	editRosterButton:SetCallback("Clicked", CreateRosterEditor)
+	editRosterButton:SetText("Edit Roster")
+
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetHeight(topContainerHeight)
@@ -755,6 +782,7 @@ function Private:CreateGUI()
 
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortContainer)
+	topContainer:AddChild(editRosterButton)
 	topContainer:AddChild(spacer)
 	topContainer:AddChild(outerNoteContainer)
 	topContainer:AddChild(noteButtonContainer)
