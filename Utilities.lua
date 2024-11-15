@@ -244,6 +244,31 @@ function Utilities:CreateSpellAssignmentDropdownItems()
 end
 
 ---@return table<integer, DropdownItemData>
+function Utilities:CreateClassDropdownItemData()
+	local dropdownData = {}
+
+	for className, _ in pairs(Private.spellDB.classes) do
+		local actualClassName
+		if className == "DEATHKNIGHT" then
+			actualClassName = "DeathKnight"
+		elseif className == "DEMONHUNTER" then
+			actualClassName = "DemonHunter"
+		else
+			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+		end
+		local classDropdownData = {
+			itemValue = "class:" .. actualClassName:gsub("%s", ""),
+			text = Private.prettyClassNames[className],
+			dropdownItemMenuData = {},
+		}
+		tinsert(dropdownData, classDropdownData)
+	end
+
+	self:SortDropdownDataByItemValue(dropdownData)
+	return dropdownData
+end
+
+---@return table<integer, DropdownItemData>
 function Utilities:CreateAssignmentTypeDropdownItems()
 	local assignmentTypes = {
 		{
@@ -314,25 +339,8 @@ function Utilities:CreateAssignmentTypeDropdownItems()
 	local classAssignmentTypes = {
 		text = "Class",
 		itemValue = "Class",
-		dropdownItemMenuData = {},
-	} --[[@as DropdownItemData]]
-
-	for className, _ in pairs(Private.spellDB.classes) do
-		local actualClassName
-		if className == "DEATHKNIGHT" then
-			actualClassName = "DeathKnight"
-		elseif className == "DEMONHUNTER" then
-			actualClassName = "DemonHunter"
-		else
-			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		local classDropdownData = {
-			itemValue = "class:" .. actualClassName:gsub("%s", ""),
-			text = Private.prettyClassNames[className],
-			dropdownItemMenuData = {},
-		}
-		tinsert(classAssignmentTypes.dropdownItemMenuData, classDropdownData)
-	end
+		dropdownItemMenuData = self:CreateClassDropdownItemData(),
+	}
 
 	tinsert(assignmentTypes, classAssignmentTypes)
 
