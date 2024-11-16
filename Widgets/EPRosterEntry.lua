@@ -9,18 +9,6 @@ local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local contentFramePadding = { x = 4, y = 4 }
 
-local function handleNameLineEditChanged(value, self)
-	self:Fire("NameChanged", value)
-end
-
-local function handleClassDropdownValueChanged(value, self)
-	self:Fire("ClassChanged", value)
-end
-
-local function handleRoleDropdownValueChanged(value, self)
-	self:Fire("RoleChanged", value)
-end
-
 ---@class EPRosterEntry : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
 ---@field content table|Frame
@@ -39,25 +27,25 @@ local function OnAcquire(self)
 	self:SetLayout("EPHorizontalLayout")
 
 	self.nameLineEdit = AceGUI:Create("EPLineEdit")
-	self.nameLineEdit:SetCallback("OnValueChanged", function(_, _, value)
-		handleNameLineEditChanged(value, self)
+	self.nameLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		self:Fire("NameChanged", value)
 	end)
 	self.nameLineEdit:SetHeight(20)
 	self.nameLineEdit:SetMaxLetters(12)
 	self.classDropdown = AceGUI:Create("EPDropdown")
-	self.classDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		handleClassDropdownValueChanged(value, self)
+	self.classDropdown:SetCallback("OnTextSubmitted", function(_, _, value)
+		self:Fire("ClassChanged", value)
 	end)
 	self.classDropdown:SetDropdownItemHeight(20)
 	self.groupDropdown = AceGUI:Create("EPDropdown")
 	self.groupDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		handleRoleDropdownValueChanged(value, self)
+		self:Fire("RoleChanged", value)
 	end)
 	self.groupDropdown:SetDropdownItemHeight(20)
 	self.groupDropdown:AddItems({
-		{ itemValue = "Tank", text = "Tank", dropdownItemMenuData = {} },
-		{ itemValue = "Healer", text = "Healer", dropdownItemMenuData = {} },
-		{ itemValue = "Damager", text = "Damager", dropdownItemMenuData = {} },
+		{ itemValue = "role:tank", text = "Tank", dropdownItemMenuData = {} },
+		{ itemValue = "role:healer", text = "Healer", dropdownItemMenuData = {} },
+		{ itemValue = "role:damager", text = "Damager", dropdownItemMenuData = {} },
 	}, "EPDropdownItemToggle")
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetText("X")
@@ -96,6 +84,13 @@ local function PopulateClassDropdown(self, dropdownItemData)
 	self.classDropdown:AddItems(dropdownItemData, "EPDropdownItemToggle")
 end
 
+---@param self EPRosterEntry
+local function SetData(self, name, class, group)
+	self.nameLineEdit:SetText(name)
+	self.classDropdown:SetValue(class)
+	self.groupDropdown:SetValue(group)
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -114,6 +109,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		PopulateClassDropdown = PopulateClassDropdown,
+		SetData = SetData,
 		frame = frame,
 		content = content,
 		type = Type,

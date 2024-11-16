@@ -180,18 +180,54 @@ local function SortAssignments(assignments, assignmentSortType, updateUniqueAssi
 	end
 end
 
+---@param currentRosterMap table<integer, RosterWidgetMapping>
+---@param sharedRosterMap table<integer, RosterWidgetMapping>
+local function HandleRosterEditingFinished(currentRosterMap, sharedRosterMap)
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	if lastOpenNote then
+		local tempRoster = {}
+		for _, rosterWidgetMapping in ipairs(currentRosterMap) do
+			tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+		end
+		AddOn.db.profile.notes[lastOpenNote].roster = tempRoster
+	end
+
+	local tempRoster = {}
+	for _, rosterWidgetMapping in ipairs(sharedRosterMap) do
+		tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+	end
+	AddOn.db.profile.sharedRoster = tempRoster
+
+	Private.rosterEditor:Release()
+
+	SortAssignments(Private.assignments, AddOn.db.profile.assignmentSortType, true)
+	UpdateAssignmentList()
+	UpdateTimelineAssignments()
+end
+
 local function CreateRosterEditor()
 	if not Private.rosterEditor then
 		Private.rosterEditor = AceGUI:Create("EPRosterEditor")
 		Private.rosterEditor:SetCallback("OnRelease", function()
 			Private.rosterEditor = nil
 		end)
+		Private.rosterEditor:SetCallback("EditingFinished", function(_, _, currentRosterMap, sharedRosterMap)
+			HandleRosterEditingFinished(currentRosterMap, sharedRosterMap)
+		end)
 		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.rosterEditor.frame:SetFrameLevel(20)
+		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
+		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+
 		Private.rosterEditor:SetLayout("EPVerticalLayout")
 		Private.rosterEditor:SetClassDropdownData(utilities:CreateClassDropdownItemData())
+		Private.rosterEditor:SetRosters(
+			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster,
+			AddOn.db.profile.sharedRoster
+		)
+		Private.rosterEditor:SetCurrentTab("CurrentBossRoster")
 		Private.rosterEditor:DoLayout()
-		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
+		yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 	end
 end
