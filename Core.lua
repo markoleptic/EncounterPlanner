@@ -41,6 +41,13 @@ local function GetCurrentRoster()
 	return note.roster
 end
 
+---@return table<integer, Assignment>
+local function GetCurrentAssignments()
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	local note = AddOn.db.profile.notes[lastOpenNote]
+	return note.assignments
+end
+
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
 local function UpdateBossAbilityList(bossName)
@@ -136,7 +143,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	Private.rosterEditor:Release()
 
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -193,7 +200,7 @@ end
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -211,7 +218,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 		UpdateTimelineBossAbilities(bossName)
 	end
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -244,14 +251,14 @@ end
 local function HandleAssignmentEditorDeleteButtonClicked()
 	local assignmentID = Private.assignmentEditor:GetAssignmentID()
 	Private.assignmentEditor:Release()
-	for i, v in pairs(Private.assignments) do
+	for i, v in pairs(GetCurrentAssignments()) do
 		if v.uniqueID == assignmentID then
-			tremove(Private.assignments, i)
+			tremove(GetCurrentAssignments(), i)
 			break
 		end
 	end
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -261,7 +268,7 @@ end
 local function HandleAssignmentEditorOkayButtonClicked()
 	Private.assignmentEditor:Release()
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -276,7 +283,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	if not assignmentID then
 		return
 	end
-	local assignment = utilities:FindAssignmentByUniqueID(Private.assignments, assignmentID)
+	local assignment = utilities:FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 	if not assignment then
 		return
 	end
@@ -397,7 +404,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
 	end
 	Private.assignmentEditor:SetAssignmentID(uniqueID)
-	local assignment = utilities:FindAssignmentByUniqueID(Private.assignments, uniqueID)
+	local assignment = utilities:FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
 	if not assignment then
 		return
 	end
@@ -456,7 +463,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 
 	local alreadyExists = false
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	for _, assigneeNameOrRole in ipairs(sortedAssignees) do
 		if assigneeNameOrRole == value then
@@ -467,8 +474,9 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	if not alreadyExists then
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = value
-		tinsert(Private.assignments, assignment)
-		sorted = utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		tinsert(GetCurrentAssignments(), assignment)
+		sorted =
+			utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 		sortedAssignees = utilities:SortAssignees(sorted)
 		UpdateAssignmentList(sortedAssignees)
 		UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -486,7 +494,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 	end
 	local assignment = Private.classes.Assignment:New()
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	assignment.assigneeNameOrRole = sortedAssignees[assigneeIndex] or ""
 	if abilityInstance.combatLogEventType and abilityInstance.triggerSpellID and abilityInstance.triggerCastIndex then
@@ -498,15 +506,15 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		combatLogEventAssignment.phase = abilityInstance.phase
 		combatLogEventAssignment.spellCount = abilityInstance.triggerCastIndex
 		combatLogEventAssignment.combatLogEventSpellID = abilityInstance.triggerSpellID
-		tinsert(Private.assignments, combatLogEventAssignment)
+		tinsert(GetCurrentAssignments(), combatLogEventAssignment)
 		-- end
 		-- elseif abilityInstance.repeatInstance then
 	else
 		local timedAssignment = Private.classes.TimedAssignment:New(assignment)
 		timedAssignment.time = abilityInstance.castTime
-		tinsert(Private.assignments, timedAssignment)
+		tinsert(GetCurrentAssignments(), timedAssignment)
 	end
-	sorted = utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+	sorted = utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -521,7 +529,7 @@ local function HandleCreateNewEPNoteButtonClicked()
 	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -573,7 +581,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
 		local sorted =
-			utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+			utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 		local sortedAssignees = utilities:SortAssignees(sorted)
 		UpdateAssignmentList(sortedAssignees)
 		UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -589,7 +597,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 	end
 	local bossName = nil
 	if value == "Override current EP note" then
-		bossName = Private:Note(AddOn.db.profile.lastOpenNote)
+		bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
 	elseif value == "Create new EP note" then
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
@@ -613,7 +621,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 	end
 
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 	local sortedAssignees = utilities:SortAssignees(sorted)
 	UpdateAssignmentList(sortedAssignees)
 	UpdateTimelineAssignments(sorted, sortedAssignees)
@@ -631,7 +639,7 @@ local function HandleExportEPNoteButtonClicked()
 			Private.exportEditBox = nil
 		end)
 	end
-	local text = Private:ExportNote()
+	local text = Private:ExportNote(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
 	if text then
 		Private.exportEditBox:SetText(text)
 		Private.exportEditBox:HightlightTextAndFocus()
@@ -670,7 +678,7 @@ function Private:CreateGUI()
 	end)
 
 	local sorted =
-		utilities:SortAssignments(Private.assignments, GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
@@ -900,10 +908,24 @@ function AddOn:OnInitialize()
 				local noteTable = {
 					content = stringNote,
 					roster = {},
+					assignments = {},
 				}
 				newNotesTable[noteName] = noteTable
 			end
 			profile.notes = newNotesTable
+		end
+		for _, note in pairs(profile.notes) do
+			if type(note) == "table" then
+				if not note.content then
+					note.content = {}
+				end
+				if not note.roster then
+					note.roster = {}
+				end
+				if not note.assignments then
+					note.assignments = {}
+				end
+			end
 		end
 	end
 	--self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")

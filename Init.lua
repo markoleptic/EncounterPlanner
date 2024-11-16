@@ -60,6 +60,7 @@ Private.classes.Assignment = {
 	spellInfo = { spellID = 0, name = "", iconID = 0 },
 	targetName = "",
 	uniqueID = nil,
+	generalText = "",
 }
 Private.classes.Assignment.__index = Private.classes.Assignment
 
@@ -112,7 +113,6 @@ Private.classes.RaidInstance = {
 	instanceId = 0,
 	bosses = {},
 }
-Private.classes.RaidInstance.__index = Private.classes.RaidInstance
 
 ---@class BossDefinition
 ---@field name string Name of the boss
@@ -125,7 +125,6 @@ Private.classes.BossDefinition = {
 	journalEncounterID = 0,
 	dungeonEncounterID = 0,
 }
-Private.classes.BossDefinition.__index = Private.classes.BossDefinition
 
 ---@class Boss
 ---@field abilities table<integer, BossAbility> A list of abilities
@@ -136,7 +135,6 @@ Private.classes.Boss = {
 	phases = {},
 	sortedAbilityIDs = nil,
 }
-Private.classes.Boss.__index = Private.classes.Boss
 
 ---@class BossAbility
 ---@field phases table<number, BossAbilityPhase> Describes at which times in which phases the ability occurs in
@@ -149,27 +147,6 @@ Private.classes.BossAbility = {
 	duration = 0,
 	castTime = 0,
 }
-Private.classes.BossAbility.__index = Private.classes.BossAbility
-
----@class BossAbilityPhase
----@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
----@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time
-Private.classes.BossAbilityPhase = {
-	castTimes = {},
-	repeatInterval = nil,
-}
-Private.classes.BossAbilityPhase.__index = Private.classes.BossAbilityPhase
-
----@class EventTrigger
----@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger
----@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
----@field repeatInterval {triggerCastIndex: number, castTimes: table<number>}|nil Describes criteria for repeating casts
-Private.classes.EventTrigger = {
-	combatLogEventType = "SCS",
-	castTimes = {},
-	repeatInterval = nil,
-}
-Private.classes.EventTrigger.__index = Private.classes.EventTrigger
 
 ---@class BossPhase
 ---@field duration number The duration of the boss phase
@@ -184,7 +161,24 @@ Private.classes.BossPhase = {
 	defaultCount = 0,
 	repeatAfter = nil,
 }
-Private.classes.BossPhase.__index = Private.classes.BossPhase
+
+---@class BossAbilityPhase
+---@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
+---@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time
+Private.classes.BossAbilityPhase = {
+	castTimes = {},
+	repeatInterval = nil,
+}
+
+---@class EventTrigger
+---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger
+---@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
+---@field repeatInterval {triggerCastIndex: number, castTimes: table<number>}|nil Describes criteria for repeating casts
+Private.classes.EventTrigger = {
+	combatLogEventType = "SCS",
+	castTimes = {},
+	repeatInterval = nil,
+}
 
 ---@class BossAbilityInstance
 ---@field spellID number
@@ -205,12 +199,27 @@ Private.classes.BossAbilityInstance = {
 	repeatInstance = nil,
 	repeatCastIndex = nil,
 }
-Private.classes.BossAbilityInstance.__index = Private.classes.BossAbilityInstance
+
+---@class EncounterPlannerDbRosterEntry
+---@field class string|nil
+---@field classColoredName string|nil
+---@field role RaidGroupRole|nil
+Private.classes.EncounterPlannerDbRosterEntry = {}
+
+---@class EncounterPlannerDbNote
+---@field content table<integer, string>
+---@field assignments table<integer, Assignment>
+---@field roster table<string, EncounterPlannerDbRosterEntry>
+Private.classes.EncounterPlannerDbNote = {
+	content = {},
+	assignments = {},
+	roster = {},
+}
 
 --- Copies a table
 ---@generic T
----@param inTable table<any, T> A table with any keys and values of type T
----@return table<any, T>
+---@param inTable T A table with any keys and values of type T
+---@return T
 function Private:DeepCopy(inTable)
 	local copy = {}
 	if type(inTable) == "table" then
@@ -225,108 +234,97 @@ function Private:DeepCopy(inTable)
 	return copy
 end
 
----@return Assignment
-function Private.classes.Assignment:New(o)
+---@generic T : table
+---@param classTable T
+---@param o table|nil
+---@return T
+local function CreateNewInstance(classTable, o)
 	o = o or {}
-	assignmentIDCounter = assignmentIDCounter + 1
-	o.uniqueID = assignmentIDCounter
-	for key, value in pairs(Private:DeepCopy(self)) do
+	for key, value in pairs(Private:DeepCopy(classTable)) do
 		if o[key] == nil then
 			o[key] = value
 		end
 	end
-	setmetatable(o, self)
+	setmetatable(o, classTable)
 	return o
+end
+
+---@return Assignment
+function Private.classes.Assignment:New(o)
+	local instance = CreateNewInstance(self, o)
+	assignmentIDCounter = assignmentIDCounter + 1
+	instance.uniqueID = assignmentIDCounter
+	return instance
 end
 
 ---@return CombatLogEventAssignment
 function Private.classes.CombatLogEventAssignment:New(o)
 	o = o or Private.classes.Assignment:New(o)
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return TimedAssignment
 function Private.classes.TimedAssignment:New(o)
 	o = o or Private.classes.Assignment:New(o)
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return PhasedAssignment
 function Private.classes.PhasedAssignment:New(o)
 	o = o or Private.classes.Assignment:New(o)
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return RaidInstance
 function Private.classes.RaidInstance:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return BossDefinition
 function Private.classes.BossDefinition:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return Boss
 function Private.classes.Boss:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return BossAbility
 function Private.classes.BossAbility:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return BossAbilityPhase
 function Private.classes.BossAbilityPhase:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return EventTrigger
 function Private.classes.EventTrigger:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
 end
 
 ---@return BossPhase
 function Private.classes.BossPhase:New(o)
-	o = o or {}
-	setmetatable(o, self)
-	return o
+	return CreateNewInstance(self, o)
+end
+
+---@return EncounterPlannerDbNote
+function Private.classes.EncounterPlannerDbNote:New(o)
+	return CreateNewInstance(self, o)
 end
 
 ---@alias RaidGroupRole
 ---| "role:damager"
 ---| "role:healer"
 ---| "role:tank"
-
----@class EncounterPlannerDbRosterEntry
----@field class string
----@field classColoredName string
----@field role RaidGroupRole
-
----@class EncounterPlannerDbNote
----@field content table<integer, string>
----@field roster table<string, EncounterPlannerDbRosterEntry>
+---| ""
 
 local defaults = {
 	--[[@class EncounterPlannerOptions]]
 	---@field assignmentSortType AssignmentSortType
-	---@field notes table<integer, EncounterPlannerDbNote>
+	---@field notes table<string, EncounterPlannerDbNote>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
 	profile = {
@@ -341,8 +339,6 @@ Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
 Private.utilities = {}
--- The assignments for the currently selected note
-Private.assignments = {} --[[@as table<integer, Assignment>]]
 Private.mainFrame = nil --[[@as EPMainFrame]]
 -- A map of class names to class pascal case colored class names with spaces if needed
 Private.prettyClassNames = {} --[[@as table<string, string>]]
