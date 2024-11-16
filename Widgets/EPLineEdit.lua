@@ -45,9 +45,6 @@ local function HandleEditBoxEscapePressed(frame)
 end
 
 local function HandleEditBoxEnterPressed(frame)
-	local self = frame.obj
-	local value = frame:GetText()
-	self:Fire("OnEnterPressed", value)
 	ClearCursor()
 	AceGUI:ClearFocus()
 end
@@ -85,6 +82,12 @@ end
 
 local function HandleEditBoxFocusGained(frame)
 	AceGUI:SetFocus(frame.obj)
+end
+
+local function HandleEditBoxFocusLost(frame)
+	local self = frame.obj
+	local value = frame:GetText()
+	self:Fire("OnTextSubmitted", value)
 end
 
 ---@param self EPLineEdit
@@ -167,6 +170,7 @@ local function Constructor()
 	editBox:SetScript("OnReceiveDrag", HandleEditBoxReceiveDrag)
 	editBox:SetScript("OnMouseDown", HandleEditBoxReceiveDrag)
 	editBox:SetScript("OnEditFocusGained", HandleEditBoxFocusGained)
+	editBox:SetScript("OnEditFocusLost", HandleEditBoxFocusLost)
 	editBox:SetMaxLetters(256)
 	editBox:SetPoint("TOPLEFT")
 	editBox:SetPoint("BOTTOMRIGHT")
