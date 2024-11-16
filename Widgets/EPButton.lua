@@ -45,6 +45,8 @@ end
 ---@field type string
 ---@field disabled boolean
 ---@field obj any
+---@field toggleable boolean|nil
+---@field toggled boolean|nil
 
 ---@param self EPButton
 local function SetDisabled(self, disable)
@@ -59,6 +61,10 @@ end
 
 ---@param self EPButton
 local function OnAcquire(self)
+	self:SetIsToggleable(false)
+	self.button.toggleIndicator:Hide()
+	self.button.bg:ClearAllPoints()
+	self.button.bg:SetAllPoints()
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	self:SetBackdropColor(0.25, 0.25, 0.25, 1)
 	self:SetColor(0.725, 0.008, 0.008, 1)
@@ -67,12 +73,47 @@ local function OnAcquire(self)
 end
 
 ---@param self EPButton
-local function OnRelease(self) end
+local function OnRelease(self)
+	self.toggleable = nil
+	self.toggled = nil
+end
 
 ---@param self EPButton
 ---@param text string
 local function SetText(self, text)
 	self.button:SetText(text or "")
+end
+
+---@param self EPButton
+---@param toggleable boolean?
+local function SetIsToggleable(self, toggleable)
+	self.toggleable = toggleable
+end
+
+---@param self EPButton
+local function Toggle(self)
+	if not self.toggleable then
+		return
+	end
+	self.toggled = not self.toggled
+	if not self.toggled then
+		self.button.toggleIndicator:Hide()
+		self.button.bg:ClearAllPoints()
+		self.button.bg:SetAllPoints()
+		self.button:SetBackdropColor(0.25, 0.25, 0.25, 1)
+	else
+		self.button.bg:ClearAllPoints()
+		self.button.bg:SetPoint("BOTTOMLEFT", 0, 0)
+		self.button.bg:SetPoint("BOTTOMRIGHT", 0, 0)
+		self.button.bg:SetPoint("TOP", 0, -2)
+		self.button:SetBackdropColor(0.35, 0.35, 0.35, 1)
+		self.button.toggleIndicator:Show()
+	end
+end
+
+---@param self EPButton
+local function IsToggled(self)
+	return self.toggled
 end
 
 ---@param self EPButton
@@ -123,6 +164,13 @@ local function Constructor()
 	button.bg:SetColorTexture(0.725, 0.008, 0.008)
 	button.bg:Hide()
 
+	button.toggleIndicator = button:CreateTexture(Type .. "ToggleIndicator" .. count, "BORDER")
+	button.toggleIndicator:SetPoint("TOPLEFT")
+	button.toggleIndicator:SetPoint("TOPRIGHT")
+	button.toggleIndicator:SetColorTexture(74 / 255.0, 174 / 255.0, 242 / 255.0)
+	button.toggleIndicator:Hide()
+	button.toggleIndicator:SetHeight(2)
+
 	button.fadeIn = button.bg:CreateAnimationGroup()
 	button.fadeIn:SetScript("OnPlay", function()
 		button.bg:Show()
@@ -152,6 +200,9 @@ local function Constructor()
 		LayoutFinished = LayoutFinished,
 		SetBackdropColor = SetBackdropColor,
 		SetColor = SetColor,
+		SetIsToggleable = SetIsToggleable,
+		Toggle = Toggle,
+		IsToggled = IsToggled,
 		frame = frame,
 		type = Type,
 		button = button,
