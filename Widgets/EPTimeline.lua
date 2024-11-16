@@ -898,6 +898,12 @@ local function SetAssignments(self, assignments, assignees)
 end
 
 ---@param self EPTimeline
+---@return table<integer, TimelineAssignment>
+local function GetAssignments(self)
+	return self.timelineAssignments
+end
+
+---@param self EPTimeline
 local function UpdateTimeline(self)
 	HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
 end
@@ -1018,6 +1024,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetBossAbilities = SetBossAbilities,
 		SetAssignments = SetAssignments,
+		GetAssignments = GetAssignments,
 		UpdateTimeline = UpdateTimeline,
 		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,
