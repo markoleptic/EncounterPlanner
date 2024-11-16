@@ -102,6 +102,20 @@ end
 
 ---@param self EPMainFrame
 ---@return EPDropdown|nil
+local function GetAddAssigneeDropdown(self)
+	local bottomLeftContainer = self.children[2]
+	if bottomLeftContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local assigneeDropdown = bottomLeftContainer.children[2]
+		if assigneeDropdown then
+			return assigneeDropdown
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPDropdown|nil
 local function GetBossDropdown(self)
 	local topContainer = self.children[1]
 	if topContainer then
@@ -222,6 +236,7 @@ local function Constructor()
 		LayoutFinished = LayoutFinished,
 		GetAssignmentContainer = GetAssignmentContainer,
 		GetBossAbilityContainer = GetBossAbilityContainer,
+		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
 		GetBossDropdown = GetBossDropdown,
 		GetNoteDropdown = GetNoteDropdown,
 		GetNoteLineEdit = GetNoteLineEdit,
