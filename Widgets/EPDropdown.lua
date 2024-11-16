@@ -6,7 +6,7 @@ local pairs = pairs
 
 local textOffsetX = 4
 local fontSize = 14
-local dropdownItemHeight = 24
+local defaultDropdownItemHeight = 24
 local dropdownItemExtraOffset = 0
 local dropdownSliderOffsetX = -8
 local pulloutBackdrop = {
@@ -71,6 +71,7 @@ do
 	---@field scrollStatus { scrollvalue: number, offset: number}
 	---@field items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
 	---@field hideOnLeave boolean
+	---@field dropdownItemHeight number
 
 	local Type = "EPDropdownPullout"
 	local Version = 1
@@ -110,6 +111,7 @@ do
 
 	---@param self EPDropdownPullout
 	local function OnAcquire(self)
+		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.frame:SetParent(UIParent)
 	end
 
@@ -124,8 +126,8 @@ do
 	---@param item EPDropdownItemToggle|EPDropdownItemMenu
 	local function AddItem(self, item)
 		self.items[#self.items + 1] = item
-		item:SetHeight(dropdownItemHeight)
-		local h = #self.items * dropdownItemHeight
+		item:SetHeight(self.dropdownItemHeight)
+		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
 		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
@@ -145,7 +147,7 @@ do
 				break
 			end
 		end
-		local h = #self.items * dropdownItemHeight
+		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
 	end
@@ -163,9 +165,9 @@ do
 		frame:SetPoint(point, relFrame, relPoint, x, y)
 		local height = 0
 		for i, item in pairs(items) do
-			item:SetPoint("TOP", itemFrame, "TOP", 0, (i - 1) * -dropdownItemHeight)
+			item:SetPoint("TOP", itemFrame, "TOP", 0, (i - 1) * -self.dropdownItemHeight)
 			item:Show()
-			height = height + dropdownItemHeight
+			height = height + self.dropdownItemHeight
 		end
 		itemFrame:SetHeight(height)
 		fixstrata("TOOLTIP", frame, frame:GetChildren())
@@ -213,10 +215,11 @@ do
 	---@param self EPDropdownPullout
 	---@param height number
 	local function SetItemHeight(self, height)
+		self.dropdownItemHeight = height
 		for _, item in pairs(self.items) do
-			item:SetHeight(dropdownItemHeight)
+			item:SetHeight(self.dropdownItemHeight)
 		end
-		local h = #self.items * dropdownItemHeight
+		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
 	end
@@ -295,7 +298,7 @@ do
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
 		frame:SetWidth(defaultWidth)
-		frame:SetHeight(dropdownItemHeight)
+		frame:SetHeight(defaultDropdownItemHeight)
 
 		local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
@@ -390,6 +393,7 @@ do
 	---@field disabled boolean|nil
 	---@field multiselect boolean|nil
 	---@field pulloutWidth number
+	---@field dropdownItemHeight number
 	---@field obj any|nil
 
 	local Type = "EPDropdown"
@@ -536,7 +540,7 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
-		dropdownItemHeight = 24
+		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
 		self.pullout:SetCallback("OnClose", HandlePulloutClose)
@@ -545,7 +549,7 @@ do
 		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
 		self:SetTextCentered(false)
-		self:SetHeight(dropdownItemHeight)
+		self:SetHeight(self.dropdownItemHeight)
 		self:SetWidth(200)
 		self:SetPulloutWidth(nil)
 	end
@@ -629,7 +633,7 @@ do
 	end
 
 	---@param self EPDropdown
-	---@return unknown
+	---@return any
 	local function GetValue(self)
 		return self.value
 	end
@@ -637,10 +641,9 @@ do
 	-- Only works for non-nested dropdowns
 	---@param self EPDropdown
 	---@param currentValue any
-	---@param currentText any
 	---@param newValue any
-	---@param newText any
-	local function EditItemText(self, currentValue, currentText, newValue, newText)
+	---@param newText string
+	local function EditItemText(self, currentValue, newValue, newText)
 		for _, pulloutItem in self.pullout:IterateItems() do
 			if pulloutItem:GetValue() == currentValue then
 				pulloutItem:SetValue(newValue)
@@ -710,6 +713,14 @@ do
 	end
 
 	---@param self EPDropdown
+	local function Clear(self)
+		self:ClearFocus()
+		self.pullout:Clear()
+		self.value = nil
+		self:SetText("")
+	end
+
+	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
 	---@param neverShowItemsAsSelected boolean?
@@ -776,7 +787,7 @@ do
 	---@param self EPDropdown
 	---@param height number
 	local function SetDropdownItemHeight(self, height)
-		dropdownItemHeight = height
+		self.dropdownItemHeight = height
 		self:SetHeight(height)
 		self.pullout:SetItemHeight(height)
 	end
@@ -855,6 +866,7 @@ do
 			SetMultiselect = SetMultiselect,
 			GetMultiselect = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,
+			Clear = Clear,
 			frame = frame,
 			type = Type,
 			count = count,
