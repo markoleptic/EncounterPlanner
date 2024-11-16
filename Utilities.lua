@@ -6,7 +6,6 @@ local Private = select(2, ...) --[[@as Private]]
 
 ---@class Utilities
 local Utilities = Private.utilities
-local AddOn = Private.addOn
 
 local GetClassColor = C_ClassColor.GetClassColor
 local ipairs = ipairs
@@ -19,13 +18,16 @@ local tinsert = table.insert
 local type = type
 local wipe = table.wipe
 
+---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
-function Utilities:CreateUniqueNoteName()
+function Utilities:CreateUniqueNoteName(notes)
 	local newNoteName = "Unnamed"
 	local num = 2
-	while AddOn.db.profile.notes[newNoteName] do
-		newNoteName = newNoteName:sub(1, 7) .. num
-		num = num + 1
+	if notes then
+		while notes[newNoteName] do
+			newNoteName = newNoteName:sub(1, 7) .. num
+			num = num + 1
+		end
 	end
 	return newNoteName
 end
@@ -68,24 +70,11 @@ end
 
 -- Sorts the assignees based on sortedTimelineAssignments. All empty assignees will appear before regular assignees.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment>
----@param emptyAssignees table<integer, string>
 ---@return table<integer, string>
-function Utilities:SortAssignees(sortedTimelineAssignments, emptyAssignees)
+function Utilities:SortAssignees(sortedTimelineAssignments)
 	local order = 1
 	local assigneeMap = {}
 	local assigneeOrder = {}
-
-	sort(emptyAssignees, function(a, b)
-		return a < b
-	end)
-
-	for _, entry in ipairs(emptyAssignees) do
-		if not assigneeMap[entry] then
-			assigneeMap[entry] = order
-			assigneeOrder[order] = entry
-			order = order + 1
-		end
-	end
 
 	for _, entry in ipairs(sortedTimelineAssignments) do
 		local assignee = entry.assignment.assigneeNameOrRole
@@ -98,6 +87,72 @@ function Utilities:SortAssignees(sortedTimelineAssignments, emptyAssignees)
 	end
 
 	return assigneeOrder
+end
+
+-- Sorts assignments based on the assignmentSortType and updates sortedTimelineAssignments and sortedAssignees.
+---@param assignments table<integer, Assignment>
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param assignmentSortType AssignmentSortType
+---@return table<integer, TimelineAssignment>
+function Utilities:SortAssignments(assignments, roster, assignmentSortType)
+	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
+
+	for _, assignment in pairs(assignments) do
+		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
+		if timelineAssignment then
+			tinsert(sorted, timelineAssignment)
+		end
+	end
+
+	if assignmentSortType == "Alphabetical" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+		end)
+	elseif assignmentSortType == "First Appearance" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			if a.startTime == b.startTime then
+				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+			end
+			return a.startTime < b.startTime
+		end)
+	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			local nameOrRoleA = a.assignment.assigneeNameOrRole
+			local nameOrRoleB = b.assignment.assigneeNameOrRole
+			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
+				if assignmentSortType == "Role > Alphabetical" then
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+				return false
+			end
+			if roster[nameOrRoleA].role == roster[nameOrRoleB].role then
+				if assignmentSortType == "Role > Alphabetical" then
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+			elseif roster[nameOrRoleA].role == "role:healer" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:healer" then
+				return false
+			elseif roster[nameOrRoleA].role == "role:tank" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:tank" then
+				return false
+			end
+			return roster[nameOrRoleA] < roster[nameOrRoleB]
+		end)
+	end
+
+	return sorted
 end
 
 ---@param assignments table<integer, Assignment>
@@ -354,8 +409,9 @@ function Utilities:CreateAssignmentTypeDropdownItems()
 	return assignmentTypes
 end
 
+---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateAssignmentTypeWithRosterDropdownItems()
+function Utilities:CreateAssignmentTypeWithRosterDropdownItems(roster)
 	local assignmentTypes = self:CreateAssignmentTypeDropdownItems()
 
 	local individualIndex = nil
@@ -365,34 +421,30 @@ function Utilities:CreateAssignmentTypeWithRosterDropdownItems()
 			break
 		end
 	end
-	if individualIndex then
-		local lastOpenNote = AddOn.db.profile.lastOpenNote
-		if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
-			local roster = AddOn.db.profile.notes[lastOpenNote].roster
-			for normalName, rosterTable in pairs(roster) do
-				local memberDropdownData = {
-					itemValue = normalName,
-					text = rosterTable.coloredClassName or normalName,
-					dropdownItemMenuData = {},
-				}
-				tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
-			end
+	if individualIndex and roster then
+		for normalName, rosterTable in pairs(roster) do
+			local memberDropdownData = {
+				itemValue = normalName,
+				text = rosterTable.classColoredName or normalName,
+				dropdownItemMenuData = {},
+			}
+			tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
 		end
+
 		self:SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
 	return assignmentTypes
 end
 
+---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateAssigneeDropdownItems()
+function Utilities:CreateAssigneeDropdownItems(roster)
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
-		local roster = AddOn.db.profile.notes[lastOpenNote].roster
+	if roster then
 		for normalName, rosterTable in pairs(roster) do
 			tinsert(dropdownItems, {
 				itemValue = normalName,
-				text = rosterTable.coloredClassName or normalName,
+				text = rosterTable.classColoredName or normalName,
 				dropdownItemMenuData = {},
 			})
 		end
@@ -402,15 +454,10 @@ function Utilities:CreateAssigneeDropdownItems()
 end
 
 ---@param sortedAssignees table<integer, string>
+---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, string>
-function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
+function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 	local textTable = {}
-
-	local roster = nil
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
-		roster = AddOn.db.profile.notes[lastOpenNote].roster
-	end
 
 	for index = 1, #sortedAssignees do
 		local abilityEntryText
@@ -433,8 +480,8 @@ function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
 			elseif groupMatch then
 				abilityEntryText = "Group " .. groupMatch
 			else
-				if roster and roster[sortedAssignees[index]] and roster[sortedAssignees[index]].coloredClassName then
-					abilityEntryText = roster[sortedAssignees[index]].coloredClassName
+				if roster and roster[sortedAssignees[index]] and roster[sortedAssignees[index]].classColoredName then
+					abilityEntryText = roster[sortedAssignees[index]].classColoredName
 				else
 					abilityEntryText = sortedAssignees[index]
 				end
@@ -444,4 +491,15 @@ function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
 	end
 
 	return textTable
+end
+
+---@param assignments table<integer, Assignment>
+---@param ID integer
+---@return Assignment|nil
+function Utilities:FindAssignmentByUniqueID(assignments, ID)
+	for _, assignment in pairs(assignments) do
+		if assignment.uniqueID == ID then
+			return assignment
+		end
+	end
 end
