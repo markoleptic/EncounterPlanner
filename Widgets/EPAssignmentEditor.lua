@@ -110,6 +110,7 @@ local assignmentTriggers = {
 ---@field previewLabel EPLabel
 ---@field windowBar Frame|table
 ---@field obj any
+---@field assignmentID integer|nil
 
 local function HandleOkayButtonClicked(frame, mouseButtonType, down)
 	local self = frame.obj
@@ -199,6 +200,7 @@ local function SetAssignmentType(self, assignmentType)
 	--self:DoLayout() -- todo make it ignore frames with a variable indicating they should be ignored
 end
 
+---@param self EPAssignmentEditor
 ---@param assigneeType AssigneeType
 local function SetAssigneeType(self, assigneeType)
 	if assigneeType == "Individual" then
@@ -210,7 +212,20 @@ local function SetAssigneeType(self, assigneeType)
 end
 
 ---@param self EPAssignmentEditor
+---@param ID integer
+local function SetAssignmentID(self, ID)
+	self.assignmentID = ID
+end
+
+---@param self EPAssignmentEditor
+---@return integer|nil
+local function GetAssignmentID(self)
+	return self.assignmentID
+end
+
+---@param self EPAssignmentEditor
 local function OnAcquire(self)
+	self.assignmentID = nil
 	self:SetLayout("EPVerticalLayout")
 
 	self.assignmentTypeContainer = AceGUI:Create("EPContainer")
@@ -495,6 +510,8 @@ local function Constructor()
 		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
 		SetAssigneeType = SetAssigneeType,
+		SetAssignmentID = SetAssignmentID,
+		GetAssignmentID = GetAssignmentID,
 		buttonFrame = buttonFrame,
 	}
 
