@@ -133,19 +133,40 @@ local function SortAssignments(assignments, assignmentSortType, updateUniqueAssi
 			return a.startTime < b.startTime
 		end)
 	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
-		local determinedRoles = utilities:DetermineRolesFromAssignments(assignments)
+		local roster = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster
 		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
-			if determinedRoles[a.assignment.assigneeNameOrRole] == determinedRoles[b.assignment.assigneeNameOrRole] then
+			local nameOrRoleA = a.assignment.assigneeNameOrRole
+			local nameOrRoleB = b.assignment.assigneeNameOrRole
+			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
 				if assignmentSortType == "Role > Alphabetical" then
-					return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+					return nameOrRoleA < nameOrRoleB
 				elseif assignmentSortType == "Role > First Appearance" then
 					if a.startTime == b.startTime then
-						return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+						return nameOrRoleA < nameOrRoleB
 					end
 					return a.startTime < b.startTime
 				end
+				return false
 			end
-			return determinedRoles[a.assignment.assigneeNameOrRole] < determinedRoles[b.assignment.assigneeNameOrRole]
+			if roster[nameOrRoleA].role == roster[nameOrRoleB].role then
+				if assignmentSortType == "Role > Alphabetical" then
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+			elseif roster[nameOrRoleA].role == "role:healer" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:healer" then
+				return false
+			elseif roster[nameOrRoleA].role == "role:tank" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:tank" then
+				return false
+			end
+			return roster[nameOrRoleA] < roster[nameOrRoleB]
 		end)
 	end
 
@@ -846,10 +867,41 @@ end
 
 -- Addon is first loaded
 function AddOn:OnInitialize()
-	self.db = AceDB:New(AddOnName .. "DB", self.defaults)
+	self.db = AceDB:New(AddOnName .. "DB", self.defaults --[[,true]])
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
-	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
-	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
+	local profile = self.db.profile
+	if profile then
+		if profile.roster then
+			profile.sharedRoster = profile.roster
+			profile.roster = nil
+		end
+		local convertToNewNoteTable = nil
+		if profile.notes and type(profile.notes) == "table" then
+			for _, note in pairs(profile.notes) do
+				if note and type(note) == "table" then
+					for _, line in pairs(note) do
+						if type(line) == "string" then
+							convertToNewNoteTable = true
+						end
+						break
+					end
+				end
+			end
+		end
+		if convertToNewNoteTable then
+			local newNotesTable = {}
+			for noteName, stringNote in pairs(profile.notes) do
+				local noteTable = {
+					content = stringNote,
+					roster = {},
+				}
+				newNotesTable[noteName] = noteTable
+			end
+			profile.notes = newNotesTable
+		end
+	end
+	--self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
+	--self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	utilities:CreatePrettyClassNames()
@@ -857,10 +909,10 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	self:Refresh()
+	--self:Refresh()
 end
 
-function AddOn:Refresh() end
+function AddOn:Refresh(db, newProfile) end
 
 -- Slash command functionality
 function AddOn:SlashCommand(input)

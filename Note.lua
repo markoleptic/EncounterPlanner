@@ -1,6 +1,7 @@
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
 local AddOn = Private.addOn
+local utilities = Private.utilities
 
 local concat = table.concat
 local GetClassInfo = GetClassInfo
@@ -280,9 +281,11 @@ local function GSubAutoColorCreate()
 			if classData then
 				local coloredName = ("|c%s%s|r"):format(classData.colorStr, unitName)
 				if unitServer then -- nil if on same server
-					GSubAutoColorData[unitName.join("-", unitServer)] = coloredName
+					GSubAutoColorData[unitName.join("-", unitServer)].class = classFileName
+					GSubAutoColorData[unitName.join("-", unitServer)].classColoredName = coloredName
 				end
-				GSubAutoColorData[unitName] = coloredName
+				GSubAutoColorData[unitName].class = classFileName
+				GSubAutoColorData[unitName].classColoredName = coloredName
 			end
 		end
 	end
@@ -422,7 +425,10 @@ end
 ---@return string
 local function ReplaceNamesWithColoredNamesIfFound(lines)
 	local result, _ = lines:gsub(nonSymbolRegex, function(word)
-		return GSubAutoColorData[word] or word
+		if GSubAutoColorData[word] and GSubAutoColorData[word].classColoredName then
+			return GSubAutoColorData[word].classColoredName
+		end
+		return word
 	end)
 	return result
 end
@@ -626,17 +632,37 @@ function Private:ParseNote(text)
 	return noteTable, nil
 end
 
-function Private:UpdateRoster()
+function Private:UpdateRoster(epNoteName)
+	local roster = AddOn.db.profile.notes[epNoteName].roster
+	local determinedRoles = utilities:DetermineRolesFromAssignments(self.assignments)
 	for _, assignment in ipairs(self.assignments) do
 		if assignment.assigneeNameOrRole then
 			if
 				not assignment.assigneeNameOrRole:find("class:") and not assignment.assigneeNameOrRole:find("group:")
 			then
-				if GSubAutoColorData[assignment.assigneeNameOrRole] then
-					self.roster[assignment.assigneeNameOrRole] = GSubAutoColorData[assignment.assigneeNameOrRole]
-				else
-					self.roster[assignment.assigneeNameOrRole] = assignment.assigneeNameOrRole
+				if not roster[assignment.assigneeNameOrRole] then
+					roster[assignment.assigneeNameOrRole] = {}
 				end
+				local rosterMember = roster[assignment.assigneeNameOrRole]
+				if GSubAutoColorData[assignment.assigneeNameOrRole] then
+					if type(GSubAutoColorData[assignment.assigneeNameOrRole].class) == "string" then
+						local className = GSubAutoColorData[assignment.assigneeNameOrRole].class
+						local actualClassName
+						if className == "DEATHKNIGHT" then
+							actualClassName = "DeathKnight"
+						elseif className == "DEMONHUNTER" then
+							actualClassName = "DemonHunter"
+						else
+							actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+						end
+						rosterMember.class = "class:" .. actualClassName:gsub("%s", "")
+					end
+					rosterMember.classColoredName = GSubAutoColorData[assignment.assigneeNameOrRole].classColoredName
+				else
+					rosterMember.class = nil
+					rosterMember.classColoredName = nil
+				end
+				rosterMember.role = determinedRoles[assignment.assigneeNameOrRole] or ""
 			end
 		end
 	end
@@ -748,11 +774,12 @@ function Private:Note(epNoteName, parseMRTNote)
 			noteTable, bossName = self:ParseNote(sharedNoteCopy)
 		end
 	elseif AddOn.db.profile.notes[epNoteName] then
-		noteTable, bossName = self:ParseNote(AddOn.db.profile.notes[epNoteName])
+		noteTable, bossName = self:ParseNote(AddOn.db.profile.notes[epNoteName].content)
 	else
 		noteTable, bossName = self:ParseNote("")
 	end
-	AddOn.db.profile.notes[epNoteName] = noteTable
-	self:UpdateRoster()
+	AddOn.db.profile.notes[epNoteName].content = noteTable
+	AddOn.db.profile.notes[epNoteName].roster = AddOn.db.profile.notes[epNoteName].roster or {}
+	self:UpdateRoster(epNoteName)
 	return bossName
 end

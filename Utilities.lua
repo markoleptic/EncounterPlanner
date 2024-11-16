@@ -103,8 +103,14 @@ end
 ---@param assignments table<integer, Assignment>
 function Utilities:DetermineRolesFromAssignments(assignments)
 	local assigneeAssignments = {}
-	local healerClasses =
-		{ ["DRUID"] = 1, ["EVOKER"] = 1, ["MONK"] = 1, ["PALADIN"] = 1, ["PRIEST"] = 1, ["SHAMAN"] = 1 }
+	local healerClasses = {
+		["DRUID"] = "role:healer",
+		["EVOKER"] = "role:healer",
+		["MONK"] = "role:healer",
+		["PALADIN"] = "role:healer",
+		["PRIEST"] = "role:healer",
+		["SHAMAN"] = "role:healer",
+	}
 	for _, assignment in pairs(assignments) do
 		local assignee = assignment.assigneeNameOrRole
 		if not assigneeAssignments[assignee] then
@@ -120,7 +126,7 @@ function Utilities:DetermineRolesFromAssignments(assignments)
 			end
 			local spellID = currentAssigneeAssignment.spellInfo.spellID
 			if spellID == 98008 or spellID == 108280 then -- Shaman healing bc classified as raid defensive
-				determinedRoles[assignee] = 0
+				determinedRoles[assignee] = "role:healer"
 				break
 			end
 			for className, classData in pairs(Private.spellDB.classes) do
@@ -130,7 +136,7 @@ function Utilities:DetermineRolesFromAssignments(assignments)
 				for _, spellInfo in pairs(classData) do
 					if spellInfo["spellID"] == spellID then
 						if spellInfo["type"] == "heal" and healerClasses[className] then
-							determinedRoles[assignee] = 0
+							determinedRoles[assignee] = "role:healer"
 							break
 						end
 					end
@@ -138,7 +144,7 @@ function Utilities:DetermineRolesFromAssignments(assignments)
 			end
 		end
 		if not determinedRoles[assignee] then
-			determinedRoles[assignee] = 1
+			determinedRoles[assignee] = ""
 		end
 	end
 	return determinedRoles
@@ -285,17 +291,17 @@ function Utilities:CreateAssignmentTypeDropdownItems()
 					itemValue = "Role",
 					dropdownItemMenuData = {
 						{
-							text = "Damagers",
+							text = "Damager",
 							itemValue = "role:damager",
 							dropdownItemMenuData = {},
 						},
 						{
-							text = "Healers",
+							text = "Healer",
 							itemValue = "role:healer",
 							dropdownItemMenuData = {},
 						},
 						{
-							text = "Tanks",
+							text = "Tank",
 							itemValue = "role:tank",
 							dropdownItemMenuData = {},
 						},
@@ -359,31 +365,38 @@ function Utilities:CreateAssignmentTypeWithRosterDropdownItems()
 			break
 		end
 	end
-	for normalName, colorName in pairs(Private.roster) do
-		local memberDropdownData = {
-			itemValue = normalName,
-			text = colorName,
-			dropdownItemMenuData = {},
-		}
-		tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
+	if individualIndex then
+		local lastOpenNote = AddOn.db.profile.lastOpenNote
+		if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
+			local roster = AddOn.db.profile.notes[lastOpenNote].roster
+			for normalName, rosterTable in pairs(roster) do
+				local memberDropdownData = {
+					itemValue = normalName,
+					text = rosterTable.coloredClassName or normalName,
+					dropdownItemMenuData = {},
+				}
+				tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
+			end
+		end
+		self:SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
-
-	self:SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	return assignmentTypes
 end
 
 ---@return table<integer, DropdownItemData>
 function Utilities:CreateAssigneeDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-
-	for name, coloredName in pairs(Private.roster) do
-		tinsert(dropdownItems, {
-			itemValue = name,
-			text = coloredName,
-			dropdownItemMenuData = {},
-		})
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
+		local roster = AddOn.db.profile.notes[lastOpenNote].roster
+		for normalName, rosterTable in pairs(roster) do
+			tinsert(dropdownItems, {
+				itemValue = normalName,
+				text = rosterTable.coloredClassName or normalName,
+				dropdownItemMenuData = {},
+			})
+		end
 	end
-
 	self:SortDropdownDataByItemValue(dropdownItems)
 	return dropdownItems
 end
@@ -392,6 +405,13 @@ end
 ---@return table<integer, string>
 function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
 	local textTable = {}
+
+	local roster = nil
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	if lastOpenNote and AddOn.db.profile.notes[lastOpenNote] then
+		roster = AddOn.db.profile.notes[lastOpenNote].roster
+	end
+
 	for index = 1, #sortedAssignees do
 		local abilityEntryText
 		local assigneeNameOrRole = sortedAssignees[index]
@@ -413,10 +433,15 @@ function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees)
 			elseif groupMatch then
 				abilityEntryText = "Group " .. groupMatch
 			else
-				abilityEntryText = Private.roster[sortedAssignees[index]]
+				if roster and roster[sortedAssignees[index]] and roster[sortedAssignees[index]].coloredClassName then
+					abilityEntryText = roster[sortedAssignees[index]].coloredClassName
+				else
+					abilityEntryText = sortedAssignees[index]
+				end
 			end
 		end
 		tinsert(textTable, abilityEntryText)
 	end
+
 	return textTable
 end

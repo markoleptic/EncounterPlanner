@@ -309,16 +309,30 @@ function Private.classes.BossPhase:New(o)
 	return o
 end
 
+---@alias RaidGroupRole
+---| "role:damager"
+---| "role:healer"
+---| "role:tank"
+
+---@class EncounterPlannerDbRosterEntry
+---@field class string
+---@field classColoredName string
+---@field role RaidGroupRole
+
+---@class EncounterPlannerDbNote
+---@field content table<integer, string>
+---@field roster table<string, EncounterPlannerDbRosterEntry>
+
 local defaults = {
 	--[[@class EncounterPlannerOptions]]
 	---@field assignmentSortType AssignmentSortType
-	---@field notes table
-	---@field roster table
+	---@field notes table<integer, EncounterPlannerDbNote>
+	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
 	profile = {
 		assignmentSortType = "First Appearance",
 		notes = {},
-		roster = {},
+		sharedRoster = {},
 		lastOpenNote = "",
 	},
 }
@@ -329,8 +343,6 @@ Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0
 Private.utilities = {}
 -- The assignments for the currently selected note
 Private.assignments = {} --[[@as table<integer, Assignment>]]
--- A map of plain text names (or group type) mapped to class colored names
-Private.roster = {} --[[@as table<string, string>]]
 Private.mainFrame = nil --[[@as EPMainFrame]]
 -- A map of class names to class pascal case colored class names with spaces if needed
 Private.prettyClassNames = {} --[[@as table<string, string>]]
