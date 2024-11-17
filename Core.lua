@@ -71,12 +71,63 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	AddOn.db.profile.sharedRoster = tempRoster
 
 	Private.rosterEditor:Release()
+	utilities.UpdateRoster(GetCurrentAssignments(), GetCurrentRoster())
 	interfaceUpdater.UpdateAllAssignments(true)
 end
 
-local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab) end
+---@param rosterTab EPRosterEditorTab
+local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab)
+	local currentGroupRoster = utilities.CreateRosterFromCurrentGroup()
+	if rosterTab == "SharedRoster" then
+		for _, name in pairs(currentGroupRoster) do
+			if not AddOn.db.profile.sharedRoster[name] then
+				AddOn.db.profile.sharedRoster[name] = {}
+			end
+		end
+	elseif rosterTab == "CurrentBossRoster" then
+		local roster = GetCurrentRoster()
+		for _, name in pairs(currentGroupRoster) do
+			if not roster[name] then
+				roster[name] = {}
+			end
+		end
+	end
+	utilities.UpdateRoster(GetCurrentAssignments(), GetCurrentRoster())
+	interfaceUpdater.UpdateAddAssigneeDropdown()
+	Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
+	Private.rosterEditor:SetCurrentTab(rosterTab)
+end
 
-local function HandleImportRosterButtonClicked(_, _, rosterTab) end
+local function HandleImportRosterButtonClicked(_, _, rosterTab)
+	local fromRoster = nil
+	local toRoster = nil
+	if rosterTab == "SharedRoster" then
+		fromRoster = GetCurrentRoster()
+		toRoster = AddOn.db.profile.sharedRoster
+	elseif rosterTab == "CurrentBossRoster" then
+		fromRoster = AddOn.db.profile.sharedRoster
+		toRoster = GetCurrentRoster()
+	end
+	if fromRoster and toRoster then
+		for name, rosterMember in pairs(fromRoster) do
+			if not toRoster[name] then
+				toRoster[name] = Private.DeepCopy(rosterMember)
+			else
+				if (not toRoster[name].class or toRoster[name].class == "") and rosterMember.class then
+					toRoster[name].class = rosterMember.class
+					toRoster[name].classColoredName = nil
+				end
+				if (not toRoster[name].role or toRoster[name].role == "") and rosterMember.role then
+					toRoster[name].role = rosterMember.role
+				end
+			end
+		end
+	end
+	utilities.UpdateRoster(GetCurrentAssignments(), GetCurrentRoster())
+	interfaceUpdater.UpdateAddAssigneeDropdown()
+	Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
+	Private.rosterEditor:SetCurrentTab(rosterTab)
+end
 
 local function CreateRosterEditor()
 	if not Private.rosterEditor then
@@ -94,14 +145,11 @@ local function CreateRosterEditor()
 
 		Private.rosterEditor:SetLayout("EPVerticalLayout")
 		Private.rosterEditor:SetClassDropdownData(utilities.CreateClassDropdownItemData())
-		Private.rosterEditor:SetRosters(
-			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster,
-			AddOn.db.profile.sharedRoster
-		)
+		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 		Private.rosterEditor:SetCurrentTab("CurrentBossRoster")
-		Private.rosterEditor:DoLayout()
 		yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+		Private.rosterEditor:DoLayout()
 	end
 end
 
@@ -272,8 +320,6 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor.frame:SetFrameLevel(10)
 		Private.assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		Private.assignmentEditor:SetLayout("EPVerticalLayout")
-		Private.assignmentEditor:DoLayout()
-
 		Private.assignmentEditor:SetCallback("OnRelease", function()
 			Private.assignmentEditor = nil
 		end)
@@ -307,6 +353,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			end
 		end
 		Private.assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+		Private.assignmentEditor:DoLayout()
 	end
 	Private.assignmentEditor:SetAssignmentID(uniqueID)
 	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
@@ -569,8 +616,10 @@ function Private:CreateGUI()
 	local bossLabel = AceGUI:Create("EPLabel")
 	bossLabel:SetText("Boss:")
 	bossLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+	bossLabel:SetFullWidth(true)
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
+	bossDropdown:SetFullWidth(true)
 	local bossDropdownData = {}
 	for index, instance in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterID)
@@ -590,6 +639,7 @@ function Private:CreateGUI()
 	local assignmentSortLabel = AceGUI:Create("EPLabel")
 	assignmentSortLabel:SetText("Assignment Sort Priority:")
 	assignmentSortLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+	assignmentSortLabel:SetFullWidth(true)
 
 	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
 	assignmentSortDropdown:SetWidth(topContainerDropdownWidth)
