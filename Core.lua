@@ -114,6 +114,7 @@ local function UpdateAddAssigneeDropdown()
 	local addAssigneeDropdown = Private.mainFrame:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
+		addAssigneeDropdown:SetText("Add Assignee")
 		addAssigneeDropdown:AddItems(
 			utilities:CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 			"EPDropdownItemToggle",
@@ -832,11 +833,11 @@ function Private:CreateGUI()
 	bossAbilityContainer:SetFullWidth(true)
 	bossAbilityContainer:SetSpacing(0, bossAbilityPadding)
 
-	local addAssigneeRowDropdown = AceGUI:Create("EPDropdown")
-	addAssigneeRowDropdown:SetFullWidth(true)
-	addAssigneeRowDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
-	addAssigneeRowDropdown:SetText("Add Assignee")
-	addAssigneeRowDropdown:AddItems(
+	local addAssigneeDropdown = AceGUI:Create("EPDropdown")
+	addAssigneeDropdown:SetFullWidth(true)
+	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
+	addAssigneeDropdown:SetText("Add Assignee")
+	addAssigneeDropdown:AddItems(
 		utilities:CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 		"EPDropdownItemToggle",
 		true
@@ -848,7 +849,7 @@ function Private:CreateGUI()
 	assignmentListContainer:SetSpacing(0, assignmentPadding)
 
 	bottomLeftContainer:AddChild(bossAbilityContainer)
-	bottomLeftContainer:AddChild(addAssigneeRowDropdown)
+	bottomLeftContainer:AddChild(addAssigneeDropdown)
 	bottomLeftContainer:AddChild(assignmentListContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
