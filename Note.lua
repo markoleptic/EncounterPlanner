@@ -364,18 +364,17 @@ local function GSubRace(anti, list, msg)
 	end
 end
 
-local function ParseTime(preText, t, msg, newlinesym)
-	local timeText, opts = strsplit(",", t, 2)
-
-	local time = tonumber(timeText)
-	if not time then
-		local min, sec = strsplit(":", timeText)
-		if min and sec then
-			time = (tonumber(min) or 0) * 60 + (tonumber(sec) or 0)
-		else
-			time = -1
-		end
+---@param line string
+---@return number|nil, string|nil
+local function ParseTime(line)
+	local minute, sec, options = line:match(timeOptionsSplitRegex)
+	local time = nil
+	if minute and sec then
+		time = tonumber(sec) + (tonumber(minute) * 60)
+	elseif minute and (sec == nil or sec == "") then
+		time = tonumber(minute)
 	end
+	return time, options
 end
 
 -- Replaces regular name text with class-colored name text.
@@ -550,57 +549,42 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 	end
 end
 
--- Parses the given text and creates assignments from it. Returns a boss name if one was found using spellIDs in the
--- text.
-
----@param note EncounterPlannerDbNote
----@param text string | table<integer, string> | nil
+-- Repopulates assignments for the note based on the note content or optionally provided text. Returns a boss name if
+-- one was found using spellIDs in the text.
+---@param note EncounterPlannerDbNote Note to repopulate
+---@param text string|nil Optional text to parse instead of using note.content
 ---@return string|nil
 function Private:ParseNote(note, text)
-	--self.filteredText = Filter(text)
-	--self.filteredText = FilterByCurrentRole(self.filteredText)
-	--self.filteredText = ReplaceNamesWithColoredNamesIfFound(self.filteredText)
-
-	wipe(note.assignments)
+	wipe(note.assignments) -- temporary until assignments are more stable
 
 	local content = {}
 	local spellIDs = {}
 	local classColoredNameTable = utilities:CreateClassColoredNamesFromCurrentGroup()
 
-	local function inner(line)
+	---@param line string
+	local function parseNoteLine(line)
 		tinsert(content, line)
-		local minute, sec, options = line:match(timeOptionsSplitRegex)
-		local time = nil
-		if minute and sec then
-			time = tonumber(sec) + (tonumber(minute) * 60)
-		elseif minute and (sec == nil or sec == "") then
-			time = tonumber(minute)
-		end
-		if time then
-			local fullMatch, spellID, generalText = line:match(postOptionsPreDashRegex)
+		local time, options = ParseTime(line)
+		if time and options then
+			local _, spellID, generalText = line:match(postOptionsPreDashRegex)
 			if spellID then
 				local spellIDNumber = tonumber(spellID)
 				if spellIDNumber then
 					tinsert(spellIDs, spellIDNumber)
 				end
 			end
-
 			local inputs = CreateAssignmentsFromLine(line, generalText, classColoredNameTable)
 			self:ProcessOptions(inputs, note.assignments, time, options)
 		end
 	end
 
 	if type(text) == "nil" then
-		text = note.content
-	end
-
-	if type(text) == "string" then
-		for line in text:gmatch(lineMatchRegex) do
-			inner(line)
+		for _, line in ipairs(note.content) do
+			parseNoteLine(line)
 		end
-	elseif type(text) == "table" then
-		for _, line in ipairs(text) do
-			inner(line)
+	elseif type(text) == "string" then
+		for line in text:gmatch(lineMatchRegex) do
+			parseNoteLine(line)
 		end
 	end
 
