@@ -224,6 +224,7 @@ end
 ---@alias EPRosterEditorTab
 ---| "SharedRoster"
 ---| "CurrentBossRoster"
+---| ""
 
 ---@class EPRosterEditor : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame

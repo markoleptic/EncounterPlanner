@@ -123,7 +123,7 @@ local function GetBossDropdown(self)
 		local bossContainer = topContainer.children[1]
 		if bossContainer then
 			---@diagnostic disable-next-line: undefined-field
-			return bossContainer.children[2]
+			return bossContainer.children[3]
 		end
 	end
 	return nil

@@ -29,46 +29,76 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		alignment = content.alignment
 	end
 
+	local hitFirstNonSpacer = false
+	local spacers = {}
 	for i = 1, #children do
 		local child = children[i]
 		local frame = child.frame
-
 		frame:ClearAllPoints()
 		frame:Show()
 
-		if i > 1 then
-			if alignment == "default" then
-				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
-				-- frame:SetPoint("RIGHT", content)
-			elseif alignment == "center" then
-				frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
-			end
+		if child.type == "EPSpacer" and child.fillSpace then
+			tinsert(spacers, i)
 		else
-			if alignment == "default" then
-				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+			if i > 1 then
+				if alignment == "default" then
+					frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
 				-- frame:SetPoint("RIGHT", content)
-			elseif alignment == "center" then
-				frame:SetPoint("TOP", content, "TOP")
+				elseif alignment == "center" then
+					frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
+				end
+			else
+				if alignment == "default" then
+					frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+				-- frame:SetPoint("RIGHT", content)
+				elseif alignment == "center" then
+					frame:SetPoint("TOP", content, "TOP")
+				end
+			end
+
+			if child.width == "fill" then
+				--child:SetWidth(contentWidth)
+				frame:SetPoint("RIGHT", content)
+			elseif child.width == "relative" then
+				child:SetWidth(contentWidth * child.relWidth)
+			end
+
+			if child.DoLayout then
+				child:DoLayout()
+			end
+
+			local childHeight = frame:GetHeight()
+			totalHeight = totalHeight + childHeight
+			if hitFirstNonSpacer == true then
+				totalHeight = totalHeight + paddingY
+			end
+			maxWidth = max(maxWidth, frame:GetWidth())
+			hitFirstNonSpacer = true
+		end
+	end
+
+	if #spacers > 0 then
+		local remainingHeight = content:GetHeight() or 0
+		remainingHeight = remainingHeight - totalHeight
+		local splitHeight = remainingHeight / #spacers
+
+		for _, i in pairs(spacers) do
+			local spacer = children[i]
+			spacer.frame:ClearAllPoints()
+			if remainingHeight > 1 then
+				spacer.frame:SetHeight(splitHeight)
+			end
+			if i == 1 then
+				spacer.frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+			else
+				spacer.frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT")
+			end
+			if i == #children then
+				--spacer.frame:SetPoint("RIGHT", content, "RIGHT")
+			else
+				children[i + 1].frame:SetPoint("TOPLEFT", spacer.frame, "BOTTOMLEFT")
 			end
 		end
-
-		if child.width == "fill" then
-			--child:SetWidth(contentWidth)
-			frame:SetPoint("RIGHT", content)
-		elseif child.width == "relative" then
-			child:SetWidth(contentWidth * child.relWidth)
-		end
-
-		if child.DoLayout then
-			child:DoLayout()
-		end
-
-		local childHeight = frame:GetHeight()
-		totalHeight = totalHeight + childHeight
-		if i > 1 then
-			totalHeight = totalHeight + paddingY
-		end
-		maxWidth = max(maxWidth, frame:GetWidth())
 	end
 
 	content:SetHeight(totalHeight)
