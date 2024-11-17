@@ -22,7 +22,7 @@ local wipe = table.wipe
 
 ---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
-function Utilities:CreateUniqueNoteName(notes)
+function Utilities.CreateUniqueNoteName(notes)
 	local newNoteName = "Unnamed"
 	local num = 2
 	if notes then
@@ -34,7 +34,7 @@ function Utilities:CreateUniqueNoteName(notes)
 	return newNoteName
 end
 
-function Utilities:CreatePrettyClassNames()
+function Utilities.CreatePrettyClassNames()
 	wipe(Private.prettyClassNames)
 	setmetatable(Private.prettyClassNames, {
 		__index = function(tbl, key)
@@ -73,7 +73,7 @@ end
 -- Sorts the assignees based on sortedTimelineAssignments.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment>
 ---@return table<integer, string>
-function Utilities:SortAssignees(sortedTimelineAssignments)
+function Utilities.SortAssignees(sortedTimelineAssignments)
 	local order = 1
 	local assigneeMap = {}
 	local assigneeOrder = {}
@@ -96,7 +96,7 @@ end
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@param assignmentSortType AssignmentSortType
 ---@return table<integer, TimelineAssignment>
-function Utilities:SortAssignments(assignments, roster, assignmentSortType)
+function Utilities.SortAssignments(assignments, roster, assignmentSortType)
 	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
 
 	for _, assignment in pairs(assignments) do
@@ -158,7 +158,7 @@ function Utilities:SortAssignments(assignments, roster, assignmentSortType)
 end
 
 ---@param assignments table<integer, Assignment>
-function Utilities:DetermineRolesFromAssignments(assignments)
+function Utilities.DetermineRolesFromAssignments(assignments)
 	local assigneeAssignments = {}
 	local healerClasses = {
 		["DRUID"] = "role:healer",
@@ -208,7 +208,7 @@ function Utilities:DetermineRolesFromAssignments(assignments)
 end
 
 ---@param data table<integer, DropdownItemData>
-function Utilities:SortDropdownDataByItemValue(data)
+function Utilities.SortDropdownDataByItemValue(data)
 	-- Sort the top-level table
 	sort(data, function(a, b)
 		local itemValueA = a.itemValue
@@ -231,7 +231,7 @@ function Utilities:SortDropdownDataByItemValue(data)
 	-- Recursively sort any nested dropdownItemMenuData tables
 	for _, item in pairs(data) do
 		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
-			self:SortDropdownDataByItemValue(item.dropdownItemMenuData)
+			Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
 		end
 	end
 end
@@ -267,7 +267,7 @@ local function CreateSpellDropdownItems()
 		end
 		tinsert(dropdownItems, classDropdownData)
 	end
-	Utilities:SortDropdownDataByItemValue(dropdownItems)
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
 	return { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems }
 end
 
@@ -282,7 +282,7 @@ local function CreateRacialDropdownItems()
 			dropdownItemMenuData = {},
 		})
 	end
-	Utilities:SortDropdownDataByItemValue(dropdownItems)
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
 	return { itemValue = "Racial", text = "Racial", dropdownItemMenuData = dropdownItems }
 end
 
@@ -297,17 +297,17 @@ local function CreateTrinketDropdownItems()
 			dropdownItemMenuData = {},
 		})
 	end
-	Utilities:SortDropdownDataByItemValue(dropdownItems)
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
 	return { itemValue = "Trinket", text = "Trinket", dropdownItemMenuData = dropdownItems }
 end
 
 ---@return DropdownItemData
-function Utilities:CreateSpellAssignmentDropdownItems()
+function Utilities.CreateSpellAssignmentDropdownItems()
 	return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
 end
 
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateClassDropdownItemData()
+function Utilities.CreateClassDropdownItemData()
 	local dropdownData = {}
 
 	for className, _ in pairs(Private.spellDB.classes) do
@@ -327,12 +327,12 @@ function Utilities:CreateClassDropdownItemData()
 		tinsert(dropdownData, classDropdownData)
 	end
 
-	self:SortDropdownDataByItemValue(dropdownData)
+	Utilities.SortDropdownDataByItemValue(dropdownData)
 	return dropdownData
 end
 
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateAssignmentTypeDropdownItems()
+function Utilities.CreateAssignmentTypeDropdownItems()
 	local assignmentTypes = {
 		{
 			text = "Group",
@@ -402,19 +402,19 @@ function Utilities:CreateAssignmentTypeDropdownItems()
 	local classAssignmentTypes = {
 		text = "Class",
 		itemValue = "Class",
-		dropdownItemMenuData = self:CreateClassDropdownItemData(),
+		dropdownItemMenuData = Utilities.CreateClassDropdownItemData(),
 	}
 
 	tinsert(assignmentTypes, classAssignmentTypes)
 
-	self:SortDropdownDataByItemValue(assignmentTypes)
+	Utilities.SortDropdownDataByItemValue(assignmentTypes)
 	return assignmentTypes
 end
 
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateAssignmentTypeWithRosterDropdownItems(roster)
-	local assignmentTypes = self:CreateAssignmentTypeDropdownItems()
+function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster)
+	local assignmentTypes = Utilities.CreateAssignmentTypeDropdownItems()
 
 	local individualIndex = nil
 	for index, assignmentType in ipairs(assignmentTypes) do
@@ -433,14 +433,14 @@ function Utilities:CreateAssignmentTypeWithRosterDropdownItems(roster)
 			tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
 		end
 
-		self:SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
+		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
 	return assignmentTypes
 end
 
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, DropdownItemData>
-function Utilities:CreateAssigneeDropdownItems(roster)
+function Utilities.CreateAssigneeDropdownItems(roster)
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	if roster then
 		for normalName, rosterTable in pairs(roster) do
@@ -451,14 +451,14 @@ function Utilities:CreateAssigneeDropdownItems(roster)
 			})
 		end
 	end
-	self:SortDropdownDataByItemValue(dropdownItems)
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
 	return dropdownItems
 end
 
 ---@param sortedAssignees table<integer, string>
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@return table<integer, string>
-function Utilities:GetAssignmentListTextFromAssignees(sortedAssignees, roster)
+function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 	local textTable = {}
 
 	for index = 1, #sortedAssignees do
@@ -498,7 +498,7 @@ end
 ---@param assignments table<integer, Assignment>
 ---@param ID integer
 ---@return Assignment|nil
-function Utilities:FindAssignmentByUniqueID(assignments, ID)
+function Utilities.FindAssignmentByUniqueID(assignments, ID)
 	for _, assignment in pairs(assignments) do
 		if assignment.uniqueID == ID then
 			return assignment
@@ -508,7 +508,7 @@ end
 
 ---@param maxGroup? integer
 ---@return table<integer, string>
-function Utilities:IterateRosterUnits(maxGroup)
+function Utilities.IterateRosterUnits(maxGroup)
 	local units = {}
 	maxGroup = maxGroup or 8
 	local numMembers = GetNumGroupMembers()
@@ -529,9 +529,9 @@ end
 
 -- Creates a table where keys are player names and values are tables with class and classColoredName fields.
 ---@return table
-function Utilities:CreateClassColoredNamesFromCurrentGroup()
+function Utilities.CreateClassColoredNamesFromCurrentGroup()
 	local groupData = {}
-	for _, unit in pairs(self:IterateRosterUnits()) do
+	for _, unit in pairs(Utilities.IterateRosterUnits()) do
 		if unit then
 			local _, classFileName, _ = UnitClass(unit)
 			local unitName, unitServer = UnitName(unit)
@@ -554,10 +554,10 @@ end
 
 ---@param assignments table<integer, Assignment>
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
-function Utilities:UpdateRoster(assignments, roster)
-	local determinedRoles = self:DetermineRolesFromAssignments(assignments)
+function Utilities.UpdateRoster(assignments, roster)
+	local determinedRoles = Utilities.DetermineRolesFromAssignments(assignments)
 	local visited = {}
-	local groupData = self:CreateClassColoredNamesFromCurrentGroup()
+	local groupData = Utilities.CreateClassColoredNamesFromCurrentGroup()
 
 	for _, assignment in ipairs(assignments) do
 		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then

@@ -93,7 +93,7 @@ local function CreateRosterEditor()
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 
 		Private.rosterEditor:SetLayout("EPVerticalLayout")
-		Private.rosterEditor:SetClassDropdownData(utilities:CreateClassDropdownItemData())
+		Private.rosterEditor:SetClassDropdownData(utilities.CreateClassDropdownItemData())
 		Private.rosterEditor:SetRosters(
 			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster,
 			AddOn.db.profile.sharedRoster
@@ -188,7 +188,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	if not assignmentID then
 		return
 	end
-	local assignment = utilities:FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 	if not assignment then
 		return
 	end
@@ -281,14 +281,14 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		Private.assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
 		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
-			utilities:CreateSpellAssignmentDropdownItems(),
+			utilities.CreateSpellAssignmentDropdownItems(),
 			"EPDropdownItemToggle"
 		)
 		Private.assignmentEditor.assigneeTypeDropdown:AddItems(
-			utilities:CreateAssignmentTypeDropdownItems(),
+			utilities.CreateAssignmentTypeDropdownItems(),
 			"EPDropdownItemToggle"
 		)
-		local assigneeDropdownItems = utilities:CreateAssigneeDropdownItems(GetCurrentRoster())
+		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 		Private.assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		local dropdownItems = {}
@@ -309,7 +309,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
 	end
 	Private.assignmentEditor:SetAssignmentID(uniqueID)
-	local assignment = utilities:FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
+	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
 	if not assignment then
 		return
 	end
@@ -368,8 +368,8 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 
 	local alreadyExists = false
 	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
+		utilities.SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+	local sortedAssignees = utilities.SortAssignees(sorted)
 	for _, assigneeNameOrRole in ipairs(sortedAssignees) do
 		if assigneeNameOrRole == value then
 			alreadyExists = true
@@ -394,8 +394,8 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 	end
 	local assignment = Private.classes.Assignment:New()
 	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
+		utilities.SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+	local sortedAssignees = utilities.SortAssignees(sorted)
 	assignment.assigneeNameOrRole = sortedAssignees[assigneeIndex] or ""
 	if abilityInstance.combatLogEventType and abilityInstance.triggerSpellID and abilityInstance.triggerCastIndex then
 		-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
@@ -422,7 +422,7 @@ local function HandleCreateNewEPNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local newNoteName = utilities:CreateUniqueNoteName(AddOn.db.profile.notes)
+	local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
 	interfaceUpdater.UpdateAllAssignments(true)
@@ -463,7 +463,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 				break
 			end
 		else
-			local newNoteName = utilities:CreateUniqueNoteName(AddOn.db.profile.notes)
+			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 			Private:Note(newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 		end
@@ -489,7 +489,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
-		local newNoteName = utilities:CreateUniqueNoteName(AddOn.db.profile.notes)
+		local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 		bossName = Private:Note(newNoteName, true)
 		AddOn.db.profile.lastOpenNote = newNoteName
 		local noteDropdown = Private.mainFrame:GetNoteDropdown()
@@ -560,7 +560,7 @@ function Private:CreateGUI()
 	end)
 
 	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+		utilities.SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
@@ -719,7 +719,7 @@ function Private:CreateGUI()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText("Add Assignee")
 	addAssigneeDropdown:AddItems(
-		utilities:CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
+		utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 		"EPDropdownItemToggle",
 		true
 	)
@@ -741,7 +741,7 @@ function Private:CreateGUI()
 	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
 
-	local sortedAssignees = utilities:SortAssignees(sorted)
+	local sortedAssignees = utilities.SortAssignees(sorted)
 	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
 
 	-- Set default values
@@ -814,7 +814,7 @@ function AddOn:OnInitialize()
 	--self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
-	utilities:CreatePrettyClassNames()
+	utilities.CreatePrettyClassNames()
 	self.OnInitialize = nil
 end
 

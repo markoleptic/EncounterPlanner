@@ -559,7 +559,7 @@ function Private:ParseNote(note, text)
 
 	local content = {}
 	local spellIDs = {}
-	local classColoredNameTable = utilities:CreateClassColoredNamesFromCurrentGroup()
+	local classColoredNameTable = utilities.CreateClassColoredNamesFromCurrentGroup()
 
 	---@param line string
 	local function parseNoteLine(line)
@@ -714,6 +714,6 @@ function Private:Note(epNoteName, parseMRTNote)
 		bossName = self:ParseNote(note)
 	end
 
-	utilities:UpdateRoster(note.assignments, note.roster)
+	utilities.UpdateRoster(note.assignments, note.roster)
 	return bossName
 end

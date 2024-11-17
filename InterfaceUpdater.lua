@@ -64,7 +64,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
 	if assignmentContainer then
 		assignmentContainer:ReleaseChildren()
-		local assignmentTextTable = utilities:GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
+		local assignmentTextTable = utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
 		for _, text in ipairs(assignmentTextTable) do
 			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
 			assigneeEntry:SetText(text)
@@ -93,7 +93,7 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 		addAssigneeDropdown:Clear()
 		addAssigneeDropdown:SetText("Add Assignee")
 		addAssigneeDropdown:AddItems(
-			utilities:CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
+			utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 			"EPDropdownItemToggle",
 			true
 		)
@@ -103,8 +103,8 @@ end
 ---@param updateAddAssigneeDropdown boolean
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown)
 	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
+		utilities.SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+	local sortedAssignees = utilities.SortAssignees(sorted)
 	InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	InterfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
 	if updateAddAssigneeDropdown then
