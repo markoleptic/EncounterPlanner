@@ -117,7 +117,6 @@ local function HandleRosterEntryDeleted(self, rosterEntry)
 	if rosterWidgetMap then
 		for index, rosterWidgetMapping in ipairs(rosterWidgetMap) do
 			if rosterWidgetMapping.widgetEntry == rosterEntry then
-				print("removed")
 				tremove(rosterWidgetMap, index)
 				break
 			end
@@ -140,6 +139,7 @@ end
 ---@param rosterWidgetMapping RosterWidgetMapping|nil
 local function AddRosterEntry(self, rosterWidgetMapping)
 	local newRosterEntry = AceGUI:Create("EPRosterEntry")
+	newRosterEntry:PopulateClassDropdown(self.classDropdownData)
 	if rosterWidgetMapping then
 		rosterWidgetMapping.widgetEntry = newRosterEntry
 		newRosterEntry:SetData(
@@ -163,7 +163,6 @@ local function AddRosterEntry(self, rosterWidgetMapping)
 		end
 	end
 	newRosterEntry:SetLayout("EPHorizontalLayout")
-	newRosterEntry:PopulateClassDropdown(self.classDropdownData)
 	newRosterEntry:SetCallback("NameChanged", function(entry, _, newName)
 		HandleRosterEntryNameChanged(self, entry, newName)
 	end)
@@ -243,7 +242,7 @@ end
 
 ---@param self EPRosterEditor
 local function OnAcquire(self)
-	self.activeTab = nil
+	self.activeTab = ""
 	self.currentRosterWidgetMap = {}
 	self.sharedRosterWidgetMap = {}
 
@@ -360,12 +359,17 @@ end
 ---@param self EPRosterEditor
 ---@param tab EPRosterEditorTab
 local function SetCurrentTab(self, tab)
+	self.activeTab = ""
 	for _, child in ipairs(self.tabContainer.children) do
 		if child:IsToggled() then
 			child:Toggle()
 		end
 	end
-	self.tabContainer.children[1]:Toggle()
+	if tab == "CurrentBossRoster" then
+		self.tabContainer.children[1]:Toggle()
+	elseif tab == "SharedRoster" then
+		self.tabContainer.children[2]:Toggle()
+	end
 	PopulateActiveTab(self, tab)
 end
 
