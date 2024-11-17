@@ -8,6 +8,10 @@ local AddOnName = ...
 local Private = select(2, ...) --[[@as Private]]
 ---@class Utilities
 local utilities = Private.utilities
+
+---@class InterfaceUpdater
+local interfaceUpdater = Private.interfaceUpdater
+
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
@@ -48,81 +52,6 @@ local function GetCurrentAssignments()
 	return note.assignments
 end
 
--- Clears and repopulates the boss ability container based on the boss name.
----@param bossName string The name of the boss
-local function UpdateBossAbilityList(bossName)
-	local boss = Private:GetBoss(bossName)
-	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
-	local bossDropdown = Private.mainFrame:GetBossDropdown()
-	if boss and bossAbilityContainer and bossDropdown then
-		local bossIndex = Private:GetBossDefinitionIndex(bossName)
-		if bossIndex and bossDropdown:GetValue() ~= bossIndex then
-			bossDropdown:SetValue(bossIndex)
-		end
-		bossAbilityContainer:ReleaseChildren()
-		for _, ID in pairs(boss.sortedAbilityIDs) do
-			local abilityEntry = AceGUI:Create("EPAbilityEntry")
-			abilityEntry:SetFullWidth(true)
-			abilityEntry:SetAbility(ID)
-			bossAbilityContainer:AddChild(abilityEntry)
-		end
-		bossAbilityContainer:DoLayout()
-	end
-end
-
--- Sets the boss abilities for the timeline and rerenders it.
----@param bossName string The name of the boss
-local function UpdateTimelineBossAbilities(bossName)
-	local boss = Private:GetBoss(bossName)
-	local timeline = Private.mainFrame:GetTimeline()
-	if boss and timeline then
-		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
-		timeline:UpdateTimeline()
-	end
-end
-
--- Clears and repopulates the list of assignments based on sortedAssignees
----@param sortedAssignees table<integer, string>
-local function UpdateAssignmentList(sortedAssignees)
-	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
-	if assignmentContainer then
-		assignmentContainer:ReleaseChildren()
-		local assignmentTextTable = utilities:GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
-		for _, text in ipairs(assignmentTextTable) do
-			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-			assigneeEntry:SetText(text)
-			assigneeEntry:SetHeight(30)
-			assignmentContainer:AddChild(assigneeEntry)
-		end
-		assignmentContainer:DoLayout()
-	end
-end
-
--- Sets the assignments and assignees for the timeline and rerenders it.
----@param sortedTimelineAssignments table<integer, TimelineAssignment>
----@param sortedAssignees table<integer, string>
-local function UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
-		timeline:UpdateTimeline()
-	end
-end
-
--- Updates the dropdown items from the current roster
-local function UpdateAddAssigneeDropdown()
-	local addAssigneeDropdown = Private.mainFrame:GetAddAssigneeDropdown()
-	if addAssigneeDropdown then
-		addAssigneeDropdown:Clear()
-		addAssigneeDropdown:SetText("Add Assignee")
-		addAssigneeDropdown:AddItems(
-			utilities:CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
-			"EPDropdownItemToggle",
-			true
-		)
-	end
-end
-
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
 ---@param sharedRosterMap table<integer, RosterWidgetMapping>
 local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
@@ -142,13 +71,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	AddOn.db.profile.sharedRoster = tempRoster
 
 	Private.rosterEditor:Release()
-
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 end
 
 local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab) end
@@ -191,8 +114,8 @@ local function HandleBossDropdownValueChanged(value)
 	if bossIndex then
 		local bossDef = Private:GetBossDefinition(bossIndex)
 		if bossDef then
-			UpdateBossAbilityList(bossDef.name)
-			UpdateTimelineBossAbilities(bossDef.name)
+			interfaceUpdater.UpdateBossAbilityList(bossDef.name)
+			interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
 		end
 	end
 end
@@ -200,11 +123,7 @@ end
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
+	interfaceUpdater.UpdateAllAssignments(false)
 end
 
 ---@param value string
@@ -215,15 +134,10 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	AddOn.db.profile.lastOpenNote = value
 	local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
 	if bossName then
-		UpdateBossAbilityList(bossName)
-		UpdateTimelineBossAbilities(bossName)
+		interfaceUpdater.UpdateBossAbilityList(bossName)
+		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	end
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
@@ -258,22 +172,12 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 			break
 		end
 	end
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
 	Private.assignmentEditor:Release()
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 end
 
 ---@param assignmentEditor EPAssignmentEditor
@@ -476,12 +380,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = value
 		tinsert(GetCurrentAssignments(), assignment)
-		sorted =
-			utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-		sortedAssignees = utilities:SortAssignees(sorted)
-		UpdateAssignmentList(sortedAssignees)
-		UpdateTimelineAssignments(sorted, sortedAssignees)
-		UpdateAddAssigneeDropdown()
+		interfaceUpdater.UpdateAllAssignments(true)
 	end
 
 	dropdown:SetText("Add Assignee")
@@ -515,10 +414,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		timedAssignment.time = abilityInstance.castTime
 		tinsert(GetCurrentAssignments(), timedAssignment)
 	end
-	sorted = utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
+	interfaceUpdater.UpdateAllAssignments(false)
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
@@ -529,12 +425,7 @@ local function HandleCreateNewEPNoteButtonClicked()
 	local newNoteName = utilities:CreateUniqueNoteName(AddOn.db.profile.notes)
 	Private:Note(newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 	local noteDropdown = Private.mainFrame:GetNoteDropdown()
 	if noteDropdown then
 		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
@@ -566,8 +457,8 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 				AddOn.db.profile.lastOpenNote = name
 				local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
 				if bossName then
-					UpdateBossAbilityList(bossName)
-					UpdateTimelineBossAbilities(bossName)
+					interfaceUpdater.UpdateBossAbilityList(bossName)
+					interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 				end
 				break
 			end
@@ -581,12 +472,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
-		local sorted =
-			utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-		local sortedAssignees = utilities:SortAssignees(sorted)
-		UpdateAssignmentList(sortedAssignees)
-		UpdateTimelineAssignments(sorted, sortedAssignees)
-		UpdateAddAssigneeDropdown()
+		interfaceUpdater.UpdateAllAssignments(true)
 	end
 end
 
@@ -617,16 +503,11 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		end
 	end
 	if bossName then
-		UpdateBossAbilityList(bossName)
-		UpdateTimelineBossAbilities(bossName)
+		interfaceUpdater.UpdateBossAbilityList(bossName)
+		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	end
 
-	local sorted =
-		utilities:SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
-	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
-	UpdateTimelineAssignments(sorted, sortedAssignees)
-	UpdateAddAssigneeDropdown()
+	interfaceUpdater.UpdateAllAssignments(true)
 	importDropdown:SetText("Import MRT note")
 end
 
@@ -861,11 +742,11 @@ function Private:CreateGUI()
 	Private.mainFrame:AddChild(timeline)
 
 	local sortedAssignees = utilities:SortAssignees(sorted)
-	UpdateAssignmentList(sortedAssignees)
+	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
 
 	-- Set default values
-	UpdateBossAbilityList(bossName or "Ulgrax the Devourer")
-	UpdateTimelineBossAbilities(bossName or "Ulgrax the Devourer")
+	interfaceUpdater.UpdateBossAbilityList(bossName or "Ulgrax the Devourer")
+	interfaceUpdater.UpdateTimelineBossAbilities(bossName or "Ulgrax the Devourer")
 	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
@@ -877,7 +758,7 @@ function Private:CreateGUI()
 	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
 	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
 
-	UpdateTimelineAssignments(sorted, sortedAssignees)
+	interfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
 end
 
 -- Addon is first loaded

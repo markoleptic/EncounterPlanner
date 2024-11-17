@@ -338,6 +338,7 @@ local defaults = {
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
+Private.interfaceUpdater = {}
 Private.utilities = {}
 Private.mainFrame = nil --[[@as EPMainFrame]]
 -- A map of class names to class pascal case colored class names with spaces if needed

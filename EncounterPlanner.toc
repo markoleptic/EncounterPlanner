@@ -16,4 +16,5 @@ Widgets\Widgets.xml
 Utilities.lua
 Note.lua
 Options.lua
+InterfaceUpdater.lua
 Core.lua

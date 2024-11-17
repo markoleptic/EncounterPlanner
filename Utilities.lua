@@ -70,7 +70,7 @@ function Utilities:CreatePrettyClassNames()
 	end
 end
 
--- Sorts the assignees based on sortedTimelineAssignments. All empty assignees will appear before regular assignees.
+-- Sorts the assignees based on sortedTimelineAssignments.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment>
 ---@return table<integer, string>
 function Utilities:SortAssignees(sortedTimelineAssignments)
