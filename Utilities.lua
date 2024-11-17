@@ -8,6 +8,8 @@ local Private = select(2, ...) --[[@as Private]]
 local Utilities = Private.utilities
 
 local GetClassColor = C_ClassColor.GetClassColor
+local GetNumGroupMembers = GetNumGroupMembers
+local GetRaidRosterInfo = GetRaidRosterInfo
 local ipairs = ipairs
 local pairs = pairs
 local rawget = rawget
@@ -500,6 +502,104 @@ function Utilities:FindAssignmentByUniqueID(assignments, ID)
 	for _, assignment in pairs(assignments) do
 		if assignment.uniqueID == ID then
 			return assignment
+		end
+	end
+end
+
+---@param maxGroup? integer
+---@return table<integer, string>
+function Utilities:IterateRosterUnits(maxGroup)
+	local units = {}
+	maxGroup = maxGroup or 8
+	local numMembers = GetNumGroupMembers()
+	for i = 1, numMembers do
+		if i == 1 and numMembers <= 4 then
+			units[i] = "player"
+		elseif IsInRaid() then
+			local _, _, subgroup = GetRaidRosterInfo(i)
+			if subgroup and subgroup <= maxGroup then
+				units[i] = "raid" .. i
+			end
+		else
+			units[i] = "party" .. (i - 1)
+		end
+	end
+	return units
+end
+
+-- Creates a table where keys are player names and values are tables with class and classColoredName fields.
+---@return table
+function Utilities:CreateClassColoredNamesFromCurrentGroup()
+	local groupData = {}
+	for _, unit in pairs(self:IterateRosterUnits()) do
+		if unit then
+			local _, classFileName, _ = UnitClass(unit)
+			local unitName, unitServer = UnitName(unit)
+			if classFileName then
+				local colorMixin = GetClassColor(classFileName)
+				if colorMixin then
+					local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+					groupData[unitName].class = classFileName
+					groupData[unitName].classColoredName = classColoredName
+					if unitServer then -- nil if on same server
+						local unitNameAndServer = unitName.join("-", unitServer)
+						groupData[unitNameAndServer] = groupData[unitName]
+					end
+				end
+			end
+		end
+	end
+	return groupData
+end
+
+---@param assignments table<integer, Assignment>
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+function Utilities:UpdateRoster(assignments, roster)
+	local determinedRoles = self:DetermineRolesFromAssignments(assignments)
+	local visited = {}
+	local groupData = self:CreateClassColoredNamesFromCurrentGroup()
+
+	for _, assignment in ipairs(assignments) do
+		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
+			local nameOrRole = assignment.assigneeNameOrRole
+			if not nameOrRole:find("class:") and not nameOrRole:find("group:") then
+				if not roster[nameOrRole] then
+					roster[nameOrRole] = {}
+				end
+				local rosterMember = roster[nameOrRole]
+				if rosterMember.class and rosterMember.class ~= "" then -- Manually entered class
+					local className = rosterMember.class:match("class:%s*(%a+)")
+					if className then
+						className = className:upper()
+						if Private.spellDB.classes[className] then
+							local colorMixin = GetClassColor(className)
+							rosterMember.classColoredName = colorMixin:WrapTextInColorCode(nameOrRole)
+						end
+					end
+				elseif groupData[nameOrRole] and type(groupData[nameOrRole].class) == "string" then
+					local className = groupData[nameOrRole].class
+					local actualClassName
+					if className == "DEATHKNIGHT" then
+						actualClassName = "DeathKnight"
+					elseif className == "DEMONHUNTER" then
+						actualClassName = "DemonHunter"
+					else
+						actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+					end
+					rosterMember.class = "class:" .. actualClassName:gsub("%s", "")
+					rosterMember.classColoredName = groupData[nameOrRole].classColoredName
+				else
+					rosterMember.class = nil
+					rosterMember.classColoredName = nil
+				end
+
+				if not rosterMember.role or rosterMember.role == "" then
+					if determinedRoles[nameOrRole] then
+						rosterMember.role = determinedRoles[nameOrRole]
+					end
+				end
+			end
+			visited[nameOrRole] = true
 		end
 	end
 end

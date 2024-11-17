@@ -242,55 +242,12 @@ local noteEncounters = {}
 local encounterIds = {}
 
 -- Create autocolor table like most "stolen" from ERT/KAZE
-local GSubAutoColorData = {}
 local combatLogEventFromAbbreviation = {
 	SCC = "SPELL_CAST_SUCCESS",
 	SCS = "SPELL_CAST_START",
 	SAA = "SPELL_AURA_APPLIED",
 	SAR = "SPELL_AURA_REMOVED",
 }
-
----@param maxGroup? integer
----@return table<integer, string>
-local function IterateRosterUnits(maxGroup)
-	local units = {}
-	maxGroup = maxGroup or 8
-	local numMembers = GetNumGroupMembers()
-	for i = 1, numMembers do
-		if i == 1 and numMembers <= 4 then
-			units[i] = "player"
-		elseif IsInRaid() then
-			local _, _, subgroup = GetRaidRosterInfo(i)
-			if subgroup and subgroup <= maxGroup then
-				units[i] = "raid" .. i
-			end
-		else
-			units[i] = "party" .. (i - 1)
-		end
-	end
-	return units
-end
-
--- Creates a table where keys are player names and values are colored names.
-local function GSubAutoColorCreate()
-	wipe(GSubAutoColorData)
-	for _, unit in pairs(IterateRosterUnits()) do
-		if unit then
-			local _, classFileName, _ = UnitClass(unit)
-			local unitName, unitServer = UnitName(unit)
-			local classData = (CUSTOM_CLASS_COLORS or RAID_CLASS_COLORS)[classFileName]
-			if classData then
-				local coloredName = ("|c%s%s|r"):format(classData.colorStr, unitName)
-				if unitServer then -- nil if on same server
-					GSubAutoColorData[unitName.join("-", unitServer)].class = classFileName
-					GSubAutoColorData[unitName.join("-", unitServer)].classColoredName = coloredName
-				end
-				GSubAutoColorData[unitName].class = classFileName
-				GSubAutoColorData[unitName].classColoredName = coloredName
-			end
-		end
-	end
-end
 
 ---@return integer
 local function GetGroupNumber()
@@ -423,11 +380,12 @@ end
 
 -- Replaces regular name text with class-colored name text.
 ---@param lines string
+---@param classColoredNameTable table
 ---@return string
-local function ReplaceNamesWithColoredNamesIfFound(lines)
+local function ReplaceNamesWithColoredNamesIfFound(lines, classColoredNameTable)
 	local result, _ = lines:gsub(nonSymbolRegex, function(word)
-		if GSubAutoColorData[word] and GSubAutoColorData[word].classColoredName then
-			return GSubAutoColorData[word].classColoredName
+		if classColoredNameTable[word] and classColoredNameTable[word].classColoredName then
+			return classColoredNameTable[word].classColoredName
 		end
 		return word
 	end)
@@ -477,8 +435,10 @@ end
 
 -- Parses a line of text in the note and creates assignment(s).
 ---@param line string
+---@param generalText string|nil
+---@param classColoredNameTable table
 ---@return table<integer, Assignment>
-local function CreateAssignmentsFromLine(line, generalText)
+local function CreateAssignmentsFromLine(line, generalText, classColoredNameTable)
 	local assignments = {}
 	for str in (line .. "  "):gmatch(postDashRegex) do
 		local targetName = str:match(targetNameRegex) or ""
@@ -501,14 +461,18 @@ local function CreateAssignmentsFromLine(line, generalText)
 				:gsub(ertIconRegex, localERTIcons)
 				:gsub(doublePipeRegex, "|")
 				:gsub(dashRegex, "")
-				:gsub(nonSymbolRegex, ReplaceNamesWithColoredNamesIfFound)
+				:gsub(nonSymbolRegex, function(s)
+					ReplaceNamesWithColoredNamesIfFound(s, classColoredNameTable)
+				end)
 		end
 		local strWithIconReplacements = str:gsub(spellIconRegex, GSubIcon)
 			:gsub(raidIconRegex, "|T%1:16|t")
 			:gsub(ertIconRegex, localERTIcons)
 			:gsub(doublePipeRegex, "|")
 			:gsub(dashRegex, "")
-			:gsub(nonSymbolRegex, ReplaceNamesWithColoredNamesIfFound)
+			:gsub(nonSymbolRegex, function(s)
+				ReplaceNamesWithColoredNamesIfFound(s, classColoredNameTable)
+			end)
 
 		local assignment = Private.classes.Assignment:New({
 			assigneeNameOrRole = nameOrGroup or "",
@@ -601,6 +565,7 @@ function Private:ParseNote(note, text)
 
 	local content = {}
 	local spellIDs = {}
+	local classColoredNameTable = utilities:CreateClassColoredNamesFromCurrentGroup()
 
 	local function inner(line)
 		tinsert(content, line)
@@ -620,7 +585,7 @@ function Private:ParseNote(note, text)
 				end
 			end
 
-			local inputs = CreateAssignmentsFromLine(line, generalText)
+			local inputs = CreateAssignmentsFromLine(line, generalText, classColoredNameTable)
 			self:ProcessOptions(inputs, note.assignments, time, options)
 		end
 	end
@@ -648,58 +613,6 @@ function Private:ParseNote(note, text)
 		end
 	end
 	return nil
-end
-
----@param assignments table<integer, Assignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
-function Private:UpdateRoster(assignments, roster)
-	local determinedRoles = utilities:DetermineRolesFromAssignments(assignments)
-	local visited = {}
-
-	for _, assignment in ipairs(assignments) do
-		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
-			local nameOrRole = assignment.assigneeNameOrRole
-			if not nameOrRole:find("class:") and not nameOrRole:find("group:") then
-				if not roster[nameOrRole] then
-					roster[nameOrRole] = {}
-				end
-				local rosterMember = roster[nameOrRole]
-				if rosterMember.class then -- Manually entered class
-					local className = rosterMember.class:match("class:%s*(%a+)")
-					if className then
-						className = className:upper()
-						if Private.spellDB.classes[className] then
-							local colorMixin = GetClassColor(className)
-							rosterMember.classColoredName = colorMixin:WrapTextInColorCode(nameOrRole)
-						end
-					end
-				elseif GSubAutoColorData[nameOrRole] then
-					if type(GSubAutoColorData[nameOrRole].class) == "string" then
-						local className = GSubAutoColorData[nameOrRole].class
-						local actualClassName
-						if className == "DEATHKNIGHT" then
-							actualClassName = "DeathKnight"
-						elseif className == "DEMONHUNTER" then
-							actualClassName = "DemonHunter"
-						else
-							actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-						end
-						rosterMember.class = "class:" .. actualClassName:gsub("%s", "")
-					end
-					rosterMember.classColoredName = GSubAutoColorData[nameOrRole].classColoredName
-				else
-					rosterMember.class = nil
-					rosterMember.classColoredName = nil
-				end
-				if not rosterMember.role or rosterMember.role == "" then
-					if determinedRoles[nameOrRole] then
-						rosterMember.role = determinedRoles[nameOrRole]
-					end
-				end
-			end
-			visited[nameOrRole] = true
-		end
-	end
 end
 
 ---@param note EncounterPlannerDbNote
@@ -801,8 +714,6 @@ end
 -- will be parsed.
 ---@return string|nil
 function Private:Note(epNoteName, parseMRTNote)
-	GSubAutoColorCreate()
-
 	local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
 	if not notes[epNoteName] then
 		notes[epNoteName] = Private.classes.EncounterPlannerDbNote:New(notes[epNoteName])
@@ -819,6 +730,6 @@ function Private:Note(epNoteName, parseMRTNote)
 		bossName = self:ParseNote(note)
 	end
 
-	self:UpdateRoster(note.assignments, note.roster)
+	utilities:UpdateRoster(note.assignments, note.roster)
 	return bossName
 end
