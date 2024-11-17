@@ -85,6 +85,12 @@ local function SetText(self, text)
 end
 
 ---@param self EPButton
+local function SetWidthFromText(self)
+	local fontString = self.button:GetFontString()
+	self.frame:SetWidth(fontString:GetUnboundedStringWidth() + 20)
+end
+
+---@param self EPButton
 ---@param toggleable boolean?
 local function SetIsToggleable(self, toggleable)
 	self.toggleable = toggleable
@@ -197,6 +203,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetDisabled = SetDisabled,
 		SetText = SetText,
+		SetWidthFromText = SetWidthFromText,
 		LayoutFinished = LayoutFinished,
 		SetBackdropColor = SetBackdropColor,
 		SetColor = SetColor,
