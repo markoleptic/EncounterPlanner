@@ -22,6 +22,8 @@ local UnitClass = UnitClass
 local UnitName = UnitName
 local wipe = table.wipe
 
+local lineMatchRegex = "([^\r\n]+)"
+
 ---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
 function Utilities.CreateUniqueNoteName(notes)
@@ -629,4 +631,14 @@ function Utilities.UpdateRoster(assignments, roster)
 			visited[nameOrRole] = true
 		end
 	end
+end
+
+---@param text string
+---@return table<integer, string>
+function Utilities.SplitTextIntoTable(text)
+	local textTable = {}
+	for line in text:gmatch(lineMatchRegex) do
+		tinsert(textTable, line)
+	end
+	return textTable
 end

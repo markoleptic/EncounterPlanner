@@ -4,7 +4,6 @@ local AddOn = Private.addOn
 local utilities = Private.utilities
 
 local concat = table.concat
-local GetClassColor = C_ClassColor.GetClassColor
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
@@ -25,8 +24,6 @@ local UnitClass = UnitClass
 local UnitName = UnitName
 local wipe = wipe
 
-local lineRegex = "[^\r\n]+"
-local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}({spell:(%d+)}(.-) %-)"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
@@ -549,21 +546,16 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 	end
 end
 
--- Repopulates assignments for the note based on the note content or optionally provided text. Returns a boss name if
--- one was found using spellIDs in the text.
+-- Repopulates assignments for the note based on the note content. Returns a boss name if one was found using spellIDs
+-- in the text.
 ---@param note EncounterPlannerDbNote Note to repopulate
----@param text string|nil Optional text to parse instead of using note.content
 ---@return string|nil
-function Private:ParseNote(note, text)
+function Private:ParseNote(note)
 	wipe(note.assignments) -- temporary until assignments are more stable
-
-	local content = {}
 	local spellIDs = {}
 	local classColoredNameTable = utilities.CreateClassColoredNamesFromCurrentGroup()
 
-	---@param line string
-	local function parseNoteLine(line)
-		tinsert(content, line)
+	for _, line in pairs(note.content) do
 		local time, options = ParseTime(line)
 		if time and options then
 			local _, spellID, generalText = line:match(postOptionsPreDashRegex)
@@ -577,18 +569,6 @@ function Private:ParseNote(note, text)
 			self:ProcessOptions(inputs, note.assignments, time, options)
 		end
 	end
-
-	if type(text) == "nil" then
-		for _, line in ipairs(note.content) do
-			parseNoteLine(line)
-		end
-	elseif type(text) == "string" then
-		for line in text:gmatch(lineMatchRegex) do
-			parseNoteLine(line)
-		end
-	end
-
-	note.content = content
 
 	for _, spellID in pairs(spellIDs) do
 		local bossName = self:GetBossFromSpellID(spellID)
@@ -700,20 +680,18 @@ end
 function Private:Note(epNoteName, parseMRTNote)
 	local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
 	if not notes[epNoteName] then
-		notes[epNoteName] = Private.classes.EncounterPlannerDbNote:New(notes[epNoteName])
+		notes[epNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	end
 	local note = notes[epNoteName]
 
-	local bossName = nil
 	if parseMRTNote then
 		if GMRT and GMRT.F then
 			local sharedMRTNote = VMRT.Note.Text1 or ""
-			bossName = self:ParseNote(note, sharedMRTNote)
+			note.content = utilities.SplitTextIntoTable(sharedMRTNote)
 		end
-	else
-		bossName = self:ParseNote(note)
 	end
 
+	local bossName = self:ParseNote(note)
 	utilities.UpdateRoster(note.assignments, note.roster)
 	return bossName
 end
