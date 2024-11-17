@@ -139,7 +139,7 @@ local function CreateRosterEditor()
 		Private.rosterEditor:SetCallback("ImportCurrentRaidButtonClicked", HandleImportCurrentRaidButtonClicked)
 		Private.rosterEditor:SetCallback("ImportRosterButtonClicked", HandleImportRosterButtonClicked)
 		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.rosterEditor.frame:SetFrameLevel(20)
+		Private.rosterEditor.frame:SetFrameLevel(25)
 		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 
@@ -526,36 +526,98 @@ end
 ---@param importDropdown EPDropdown
 ---@param value any
 local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
-	if value == "Import MRT note" then
+	if value == "Import" then
 		return
 	end
-	local bossName = nil
-	if value == "Override current EP note" then
-		bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
-	elseif value == "Create new EP note" then
+	if Private.importEditBox then
+		importDropdown:SetText("Import")
+		return
+	end
+
+	if value == "FromMRTOverwrite" or value == "FromMRTNew" then
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
-		local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-		bossName = Private:Note(newNoteName, true)
-		AddOn.db.profile.lastOpenNote = newNoteName
-		local noteDropdown = Private.mainFrame:GetNoteDropdown()
-		if noteDropdown then
-			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-			noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+		local bossName = nil
+		if value == "FromMRTOverwrite" then
+			bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
+		elseif value == "FromMRTNew" then
+			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
+			bossName = Private:Note(newNoteName, true)
+			AddOn.db.profile.lastOpenNote = newNoteName
+			local noteDropdown = Private.mainFrame:GetNoteDropdown()
+			if noteDropdown then
+				noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+				noteDropdown:SetValue(newNoteName)
+			end
+			local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+			if renameNoteLineEdit then
+				renameNoteLineEdit:SetText(newNoteName)
+			end
 		end
-		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
-		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
+		if bossName then
+			interfaceUpdater.UpdateBossAbilityList(bossName)
+			interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 		end
-	end
-	if bossName then
-		interfaceUpdater.UpdateBossAbilityList(bossName)
-		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+		interfaceUpdater.UpdateAllAssignments(true)
+	elseif value == "FromStringOverwrite" or value == "FromStringNew" then
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+		Private.importEditBox = AceGUI:Create("EPEditBox")
+		Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.importEditBox.frame:SetFrameLevel(30)
+		Private.importEditBox.frame:SetPoint("CENTER")
+		Private.importEditBox:SetTitle("Import Text")
+		local buttonText
+		if value == "FromStringOverwrite" then
+			buttonText = "Overwrite " .. AddOn.db.profile.lastOpenNote
+		else
+			buttonText = "Import As New EP note"
+		end
+		Private.importEditBox:ShowOkayButton(true, buttonText)
+		Private.importEditBox:SetCallback("OnRelease", function()
+			Private.importEditBox = nil
+		end)
+		local valueCopy = value
+		Private.importEditBox:SetCallback("OkayButtonClicked", function()
+			local text = Private.importEditBox:GetText()
+			local textTable = utilities.SplitTextIntoTable(text)
+			Private.importEditBox:Release()
+			local bossName = nil
+			local lastOpenNote = AddOn.db.profile.lastOpenNote
+			local notes = AddOn.db.profile.notes
+
+			if valueCopy == "FromStringOverwrite" then
+				notes[lastOpenNote].content = textTable
+				bossName = Private:Note(lastOpenNote)
+			elseif valueCopy == "FromStringNew" then
+				local newNoteName = utilities.CreateUniqueNoteName(notes)
+				notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+				notes[newNoteName].content = textTable
+				bossName = Private:Note(newNoteName)
+				AddOn.db.profile.lastOpenNote = newNoteName
+				local noteDropdown = Private.mainFrame:GetNoteDropdown()
+				if noteDropdown then
+					noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+					noteDropdown:SetValue(newNoteName)
+				end
+				local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+				if renameNoteLineEdit then
+					renameNoteLineEdit:SetText(newNoteName)
+				end
+			end
+
+			if bossName then
+				interfaceUpdater.UpdateBossAbilityList(bossName)
+				interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+			end
+			interfaceUpdater.UpdateAllAssignments(true)
+		end)
+		Private.importEditBox:HightlightTextAndFocus()
 	end
 
-	interfaceUpdater.UpdateAllAssignments(true)
-	importDropdown:SetText("Import MRT note")
+	importDropdown:SetText("Import")
 end
 
 local function HandleExportEPNoteButtonClicked()
@@ -564,6 +626,7 @@ local function HandleExportEPNoteButtonClicked()
 		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.exportEditBox.frame:SetFrameLevel(12)
 		Private.exportEditBox.frame:SetPoint("CENTER")
+		Private.exportEditBox:SetTitle("Export")
 		Private.exportEditBox:SetCallback("OnRelease", function()
 			Private.exportEditBox = nil
 		end)
@@ -600,6 +663,9 @@ function Private:CreateGUI()
 		end
 		if Private.exportEditBox then
 			Private.exportEditBox:Release()
+		end
+		if Private.importEditBox then
+			Private.importEditBox:Release()
 		end
 		if Private.rosterEditor then
 			Private.rosterEditor:Release()
@@ -734,14 +800,39 @@ function Private:CreateGUI()
 	importDropdown:SetWidth(topContainerDropdownWidth)
 	importDropdown:SetTextCentered(true)
 	importDropdown:SetCallback("OnValueChanged", HandleImportMRTNoteDropdownValueChanged)
-	importDropdown:SetText("Import MRT note")
-	importDropdown:AddItem("Override current EP note", "Override current EP note", "EPDropdownItemToggle", nil, true)
-	importDropdown:AddItem("Create new EP note", "Create new EP note", "EPDropdownItemToggle", nil, true)
+	importDropdown:SetText("Import")
+	local importDropdownData = {
+		{
+			itemValue = "From MRT",
+			text = "From MRT",
+			dropdownItemMenuData = {
+				{
+					itemValue = "FromMRTOverwrite",
+					text = "Overwrite current EP note",
+					dropdownItemMenuData = {},
+				},
+				{ itemValue = "FromMRTNew", text = "Create new EP note", dropdownItemMenuData = {} },
+			},
+		},
+		{
+			itemValue = "From String",
+			text = "From String",
+			dropdownItemMenuData = {
+				{
+					itemValue = "FromStringOverwrite",
+					text = "Overwrite current EP note",
+					dropdownItemMenuData = {},
+				},
+				{ itemValue = "FromStringNew", text = "Create new EP note", dropdownItemMenuData = {} },
+			},
+		},
+	}
+	importDropdown:AddItems(importDropdownData, "EPDropdownItemToggle", true)
 
 	local exportButton = AceGUI:Create("EPButton")
 	exportButton:SetWidth(topContainerDropdownWidth)
 	exportButton:SetCallback("Clicked", HandleExportEPNoteButtonClicked)
-	exportButton:SetText("Export EP note")
+	exportButton:SetText("Export")
 
 	bossContainer:AddChild(bossSpacer)
 	bossContainer:AddChild(bossLabel)

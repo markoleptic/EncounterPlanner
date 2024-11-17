@@ -345,6 +345,7 @@ Private.mainFrame = nil --[[@as EPMainFrame]]
 Private.prettyClassNames = {} --[[@as table<string, string>]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
 Private.rosterEditor = nil --[[@as EPRosterEditor]]
+Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 
 LSM:Register(
