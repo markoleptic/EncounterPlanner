@@ -18,6 +18,8 @@ local setmetatable = setmetatable
 local sort = table.sort
 local tinsert = table.insert
 local type = type
+local UnitClass = UnitClass
+local UnitName = UnitName
 local wipe = table.wipe
 
 ---@param notes table<integer, EncounterPlannerDbNote>
@@ -150,7 +152,13 @@ function Utilities.SortAssignments(assignments, roster, assignmentSortType)
 			elseif roster[nameOrRoleB].role == "role:tank" then
 				return false
 			end
-			return roster[nameOrRoleA] < roster[nameOrRoleB]
+			if assignmentSortType == "Role > First Appearance" then
+				if a.startTime == b.startTime then
+					return nameOrRoleA < nameOrRoleB
+				end
+				return a.startTime < b.startTime
+			end
+			return nameOrRoleA < nameOrRoleB
 		end)
 	end
 
@@ -528,6 +536,21 @@ function Utilities.IterateRosterUnits(maxGroup)
 end
 
 -- Creates a table where keys are player names and values are tables with class and classColoredName fields.
+---@return table<integer, string>
+function Utilities.CreateRosterFromCurrentGroup()
+	local group = {}
+	for _, unit in pairs(Utilities.IterateRosterUnits()) do
+		if unit then
+			local unitName, _ = UnitName(unit)
+			if unitName then
+				tinsert(group, unitName)
+			end
+		end
+	end
+	return group
+end
+
+-- Creates a table where keys are player names and values are tables with class and classColoredName fields.
 ---@return table
 function Utilities.CreateClassColoredNamesFromCurrentGroup()
 	local groupData = {}
@@ -562,7 +585,11 @@ function Utilities.UpdateRoster(assignments, roster)
 	for _, assignment in ipairs(assignments) do
 		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
 			local nameOrRole = assignment.assigneeNameOrRole
-			if not nameOrRole:find("class:") and not nameOrRole:find("group:") then
+			if
+				not nameOrRole:find("class:")
+				and not nameOrRole:find("group:")
+				and not nameOrRole:find("{everyone}")
+			then
 				if not roster[nameOrRole] then
 					roster[nameOrRole] = {}
 				end
