@@ -220,12 +220,12 @@ Private.classes.EncounterPlannerDbNote = {
 ---@generic T
 ---@param inTable T A table with any keys and values of type T
 ---@return T
-function Private:DeepCopy(inTable)
+function Private.DeepCopy(inTable)
 	local copy = {}
 	if type(inTable) == "table" then
 		for k, v in pairs(inTable) do
 			if k ~= "__index" then
-				copy[k] = self:DeepCopy(v)
+				copy[k] = Private.DeepCopy(v)
 			end
 		end
 	else
@@ -240,7 +240,7 @@ end
 ---@return T
 local function CreateNewInstance(classTable, o)
 	o = o or {}
-	for key, value in pairs(Private:DeepCopy(classTable)) do
+	for key, value in pairs(Private.DeepCopy(classTable)) do
 		if o[key] == nil then
 			o[key] = value
 		end
