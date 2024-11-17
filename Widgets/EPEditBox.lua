@@ -29,17 +29,20 @@ local titleBarBackdrop = {
 }
 
 ---@class EPEditBox : AceGUIWidget
----@field frame Frame|BackdropTemplate
+---@field frame table|Frame
 ---@field scrollFrame ScrollFrame|table
 ---@field type string
 ---@field text FontString
 ---@field highlight Texture
 ---@field editBox EditBox
 ---@field closeButton EPButton
+---@field okayButton EPButton
 ---@field windowBar Frame|table
 
 ---@param self EPEditBox
 local function OnAcquire(self)
+	self.editBox:SetText("")
+	self:SetTitle("")
 	self.frame:SetHeight(defaultFrameHeight)
 	self.frame:SetWidth(defaultFrameWidth)
 	self.closeButton = AceGUI:Create("EPButton")
@@ -52,15 +55,30 @@ local function OnAcquire(self)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Release()
 	end)
+	self:ShowOkayButton(false)
+
 	self.frame:Show()
 end
 
 ---@param self EPEditBox
 local function OnRelease(self)
+	if self.editBox then
+		self.editBox:SetText("")
+	end
 	if self.closeButton then
 		self.closeButton:Release()
 	end
 	self.closeButton = nil
+	if self.okayButton then
+		self.okayButton:Release()
+	end
+	self.okayButton = nil
+end
+
+---@param self EPEditBox
+---@param text string
+local function SetTitle(self, text)
+	self.windowBarText:SetText(text or "")
 end
 
 ---@param self EPEditBox
@@ -72,7 +90,40 @@ local function SetText(self, text)
 end
 
 ---@param self EPEditBox
+---@return string
+local function GetText(self)
+	return self.editBox:GetText()
+end
+
+---@param self EPEditBox
+---@param show boolean
+---@param okayButtonText string?
+local function ShowOkayButton(self, show, okayButtonText)
+	if show then
+		if not self.okayButton then
+			self.okayButton = AceGUI:Create("EPButton")
+			self.okayButton.frame:SetParent(self.frame)
+			self.okayButton:SetText(okayButtonText or "Okay")
+			self.okayButton:SetHeight(24)
+			self.okayButton:SetWidthFromText()
+			self.okayButton:SetCallback("Clicked", function()
+				self:Fire("OkayButtonClicked")
+			end)
+			self.okayButton:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, 10)
+		end
+		self.scrollFrame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, 10)
+	else
+		if self.okayButton then
+			self.okayButton:Release()
+		end
+		self.okayButton = nil
+		self.scrollFrame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, 10 + 16)
+	end
+end
+
+---@param self EPEditBox
 local function HightlightTextAndFocus(self)
+	self.editBox:SetSize(self.scrollFrame:GetSize())
 	self.editBox:HighlightText()
 	self.editBox:SetFocus()
 end
@@ -96,7 +147,7 @@ local function Constructor()
 	frame:SetClampedToScreen(true)
 	frame:SetResizable(true)
 	frame:SetResizeBounds(defaultFrameWidth, defaultFrameHeight, nil, nil)
-
+	frame:EnableMouse(true)
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
@@ -156,12 +207,16 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		SetText = SetText,
+		GetText = GetText,
 		HightlightTextAndFocus = HightlightTextAndFocus,
+		ShowOkayButton = ShowOkayButton,
+		SetTitle = SetTitle,
 		frame = frame,
 		scrollFrame = scrollFrame,
 		type = Type,
 		editBox = editBox,
 		windowBar = windowBar,
+		windowBarText = windowBarText,
 	}
 	frame.obj = widget
 
