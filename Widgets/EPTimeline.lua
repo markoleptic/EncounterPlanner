@@ -594,14 +594,10 @@ local function UpdateBossAbilityBars(self)
 	local cumulativePhaseStartTime = 0
 	local bossAbilityInstanceIndex = 1
 
-	for bossPhaseOrderIndex, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
+	for _, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
 		local bossPhase = self.bossPhases[bossPhaseIndex]
 		if bossPhase then
-			local phaseEndTime = totalTimelineDuration
-			local nextBossPhaseIndex = self.bossPhaseOrder[bossPhaseOrderIndex + 1]
-			if nextBossPhaseIndex and self.bossPhases[nextBossPhaseIndex] then
-				phaseEndTime = cumulativePhaseStartTime + self.bossPhases[nextBossPhaseIndex].duration
-			end
+			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 			for bossAbilityOrderIndex, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
 				local bossAbility = self.bossAbilities[bossAbilitySpellID]
 				bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
@@ -857,7 +853,6 @@ end
 
 ---@param self EPTimeline
 local function OnRelease(self)
-	self.assignmentTimelineTicks = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
 	self.bossPhaseOrder = nil
@@ -878,6 +873,11 @@ local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrde
 	self.bossAbilityOrder = abilityOrder
 	self.bossPhases = phases
 	self.bossPhaseOrder = phaseOrder
+
+	totalTimelineDuration = 0
+	for _, phaseData in pairs(self.bossPhases) do
+		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
+	end
 
 	UpdateHeight(self)
 end

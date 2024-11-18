@@ -10,8 +10,8 @@
 
 embeds.xml
 Spells.lua
-Widgets\Widgets.xml
 Init.lua
+Widgets\Widgets.xml
 NerubarPalace.lua
 BossUtilities.lua
 Utilities.lua
