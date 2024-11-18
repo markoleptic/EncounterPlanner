@@ -25,7 +25,6 @@ local format = format
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
-local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local pairs = pairs
 local tinsert = tinsert
 local tonumber = tonumber
@@ -167,6 +166,7 @@ local function HandleBossDropdownValueChanged(value)
 	if bossIndex then
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
+			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
 			interfaceUpdater.UpdateBossAbilityList(bossDef.name)
 			interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
 		end
@@ -197,7 +197,11 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 		Private.assignmentEditor:Release()
 	end
 	AddOn.db.profile.lastOpenNote = value
-	local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
+	local note = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote]
+	local bossName = note.bossName
+	if not bossName then
+		bossName = utilities.SearchStringTableForBossName(note.content)
+	end
 	local boss = nil
 	if bossName then
 		interfaceUpdater.UpdateBossAbilityList(bossName)
@@ -504,8 +508,14 @@ local function HandleCreateNewEPNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-	Private:Note(newNoteName)
+	AddOn.db.profile.notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	AddOn.db.profile.lastOpenNote = newNoteName
+
+	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	if bossDef then
+		AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
+	end
+
 	interfaceUpdater.UpdateAllAssignments(true)
 	local noteDropdown = Private.mainFrame:GetNoteDropdown()
 	if noteDropdown then
@@ -536,7 +546,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 		if beforeRemovalCount > 1 then
 			for name, _ in pairs(AddOn.db.profile.notes) do
 				AddOn.db.profile.lastOpenNote = name
-				local bossName = Private:Note(AddOn.db.profile.lastOpenNote)
+				local bossName = AddOn.db.profile.notes[name].bossName
 				if bossName then
 					interfaceUpdater.UpdateBossAbilityList(bossName)
 					interfaceUpdater.UpdateTimelineBossAbilities(bossName)
@@ -545,8 +555,13 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 			end
 		else
 			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-			Private:Note(newNoteName)
+			AddOn.db.profile.notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 			AddOn.db.profile.lastOpenNote = newNoteName
+			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
+			if bossDef then
+				AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
+			end
 		end
 		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
@@ -619,7 +634,7 @@ local function HandleImportMRTNoteDropdownValueChanged(importDropdown, _, value)
 		local valueCopy = value
 		Private.importEditBox:SetCallback("OkayButtonClicked", function()
 			local text = Private.importEditBox:GetText()
-			local textTable = utilities.SplitTextIntoTable(text)
+			local textTable = utilities.SplitStringIntoTable(text)
 			Private.importEditBox:Release()
 			local bossName = nil
 			local lastOpenNote = AddOn.db.profile.lastOpenNote
@@ -679,17 +694,24 @@ end
 
 function Private:CreateGUI()
 	local bossName = nil
-	if AddOn.db.profile.lastOpenNote and AddOn.db.profile.lastOpenNote ~= "" then
-		local noteName = AddOn.db.profile.lastOpenNote
-		bossName = Private:Note(noteName)
-	else
-		if not IsAddOnLoaded("MRT") then
-			print(AddOnName, "No note was loaded due to MRT not being installed.")
-			return
+	if not AddOn.db.profile.lastOpenNote or AddOn.db.profile.lastOpenNote == "" then
+		local defaultNoteName = "SharedMRTNote"
+		bossName = Private:Note(defaultNoteName, true)
+		if not AddOn.db.profile.notes[defaultNoteName] then -- MRT not loaded
+			defaultNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
+			AddOn.db.profile.notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
 		end
-		local defualtNoteName = "SharedMRTNote"
-		bossName = Private:Note(defualtNoteName, true)
-		AddOn.db.profile.lastOpenNote = defualtNoteName
+		AddOn.db.profile.lastOpenNote = defaultNoteName
+	end
+
+	if bossName == nil then
+		local note = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote]
+		if note.bossName then
+			bossName = note.bossName
+		else
+			bossName = "Ulgrax the Devourer"
+			note.bossName = bossName
+		end
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -951,7 +973,7 @@ function Private:CreateGUI()
 	Private.mainFrame:AddChild(bottomLeftContainer)
 	Private.mainFrame:AddChild(timeline)
 
-	local boss = bossUtilities.GetBoss(bossName or "Ulgrax the Devourer")
+	local boss = bossUtilities.GetBoss(bossName)
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -962,8 +984,8 @@ function Private:CreateGUI()
 	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
 
 	-- Set default values
-	interfaceUpdater.UpdateBossAbilityList(bossName or "Ulgrax the Devourer")
-	interfaceUpdater.UpdateTimelineBossAbilities(bossName or "Ulgrax the Devourer")
+	interfaceUpdater.UpdateBossAbilityList(bossName)
+	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
@@ -1028,6 +1050,23 @@ function AddOn:OnInitialize()
 		end
 		if not profile.activeBossAbilities then
 			profile.activeBossAbilities = {}
+		end
+
+		-- Convert tables from DB into classes
+		for _, note in pairs(profile.notes) do
+			for _, assignment in pairs(note.assignments) do
+				assignment = Private.classes.Assignment:New(assignment)
+				---@diagnostic disable-next-line: undefined-field
+				if assignment.combatLogEventType then
+					assignment = Private.classes.CombatLogEventAssignment:New(assignment)
+				---@diagnostic disable-next-line: undefined-field
+				elseif assignment.phase then
+					assignment = Private.classes.PhasedAssignment:New(assignment)
+				---@diagnostic disable-next-line: undefined-field
+				elseif assignment.time then
+					assignment = Private.classes.TimedAssignment:New(assignment)
+				end
+			end
 		end
 	end
 	--self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")

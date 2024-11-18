@@ -19,6 +19,7 @@ local GetSpecializationInfo = GetSpecializationInfo
 local GetSpellInfo = C_Spell.GetSpellInfo
 local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInRaid = IsInRaid
 local pairs = pairs
 local select = select
@@ -727,19 +728,32 @@ end
 ---@return string|nil
 function Private:Note(epNoteName, parseMRTNote)
 	local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
+
+	if parseMRTNote then
+		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
+		if not loadingOrLoaded and not loaded then
+			print(AddOnName, "No note was loaded due to MRT not being installed.")
+			return nil
+		end
+	end
+
 	if not notes[epNoteName] then
 		notes[epNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	end
 	local note = notes[epNoteName]
 
 	if parseMRTNote then
-		if GMRT and GMRT.F then
+		if VMRT and VMRT.Note then
 			local sharedMRTNote = VMRT.Note.Text1 or ""
-			note.content = utilities.SplitTextIntoTable(sharedMRTNote)
+			note.content = utilities.SplitStringIntoTable(sharedMRTNote)
 		end
 	end
 
 	local bossName = self:ParseNote(note)
+	if bossName then
+		note.bossName = bossName
+	end
+
 	utilities.UpdateRoster(note.assignments, note.roster)
 	return bossName
 end

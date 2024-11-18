@@ -26,6 +26,7 @@ local UnitName = UnitName
 local wipe = table.wipe
 
 local lineMatchRegex = "([^\r\n]+)"
+local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 
 ---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
@@ -695,10 +696,28 @@ end
 
 ---@param text string
 ---@return table<integer, string>
-function Utilities.SplitTextIntoTable(text)
-	local textTable = {}
+function Utilities.SplitStringIntoTable(text)
+	local stringTable = {}
 	for line in text:gmatch(lineMatchRegex) do
-		tinsert(textTable, line)
+		tinsert(stringTable, line)
 	end
-	return textTable
+	return stringTable
+end
+
+---@param stringTable table<integer, string>
+---@return string|nil -- Boss name if found, otherwise nil
+function Utilities.SearchStringTableForBossName(stringTable)
+	for _, line in pairs(stringTable) do
+		local spellID, _ = line:match(postOptionsPreDashRegex)
+		if spellID then
+			local spellIDNumber = tonumber(spellID)
+			if spellIDNumber then
+				local bossName = bossUtilities.GetBossNameFromSpellID(spellIDNumber)
+				if bossName then
+					return bossName
+				end
+			end
+		end
+	end
+	return nil
 end
