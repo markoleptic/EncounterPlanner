@@ -600,7 +600,7 @@ local function UpdateBossAbilityBars(self)
 			local phaseEndTime = totalTimelineDuration
 			local nextBossPhaseIndex = self.bossPhaseOrder[bossPhaseOrderIndex + 1]
 			if nextBossPhaseIndex and self.bossPhases[nextBossPhaseIndex] then
-				phaseEndTime = self.bossPhases[nextBossPhaseIndex].duration
+				phaseEndTime = cumulativePhaseStartTime + self.bossPhases[nextBossPhaseIndex].duration
 			end
 			for bossAbilityOrderIndex, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
 				local bossAbility = self.bossAbilities[bossAbilitySpellID]
@@ -832,13 +832,13 @@ end
 ---
 ---@field assignees table<integer, string>
 ---@field assignmentTimelineTicks table<number, Texture>
----@field assignmentTextures table<number, Texture>
----@field bossAbilities table<number, BossAbility>
----@field bossAbilityOrder table<number, number>
----@field bossAbilityTextureBars table<number, Texture>
----@field bossAbilityTimelineTicks table<number, Texture>
----@field bossPhaseOrder table<number, number> sequence of phases based on repeatAfter
----@field bossPhases table<number, BossPhase>
+---@field assignmentTextures table<integer, Texture>
+---@field bossAbilities table<integer, BossAbility>
+---@field bossAbilityOrder table<integer, integer>
+---@field bossAbilityTextureBars table<integer, Texture>
+---@field bossAbilityTimelineTicks table<integer, Texture>
+---@field bossPhaseOrder table<integer, integer>
+---@field bossPhases table<integer, BossPhase>
 ---@field timelineAssignments table<integer, TimelineAssignment>
 
 ---@param self EPTimeline
@@ -857,14 +857,21 @@ end
 
 ---@param self EPTimeline
 local function OnRelease(self)
+	self.assignmentTimelineTicks = nil
+	self.bossAbilities = nil
+	self.bossAbilityOrder = nil
+	self.bossPhaseOrder = nil
+	self.bossPhases = nil
+	self.timelineAssignments = nil
+	self.assignees = nil
 	ResetLocalVariables()
 end
 
 -- Sets the boss ability entries for the timeline.
 ---@param self EPTimeline
----@param abilities table<number, BossAbility>
----@param abilityOrder table<number, number>
----@param phases table<number, BossPhase>
+---@param abilities table<integer, BossAbility>
+---@param abilityOrder table<integer, integer>
+---@param phases table<integer, BossPhase>
 local function SetBossAbilities(self, abilities, abilityOrder, phases)
 	self.bossAbilities = abilities
 	self.bossAbilityOrder = abilityOrder
@@ -882,7 +889,11 @@ local function SetBossAbilities(self, abilities, abilityOrder, phases)
 	local currentPhase = 1
 	while #self.bossPhaseOrder < totalOccurances and currentPhase ~= nil do
 		table.insert(self.bossPhaseOrder, currentPhase)
-		currentPhase = phases[currentPhase].repeatAfter
+		if self.bossPhases[currentPhase].repeatAfter == nil and self.bossPhases[currentPhase + 1] then
+			currentPhase = currentPhase + 1
+		else
+			currentPhase = self.bossPhases[currentPhase].repeatAfter
+		end
 	end
 
 	UpdateHeight(self)
