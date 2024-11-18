@@ -65,10 +65,11 @@ Private.classes.Assignment = {
 }
 Private.classes.Assignment.__index = Private.classes.Assignment
 
+-- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
 ---@field combatLogEventType CombatLogEventType|nil The type of combat log even the assignment is triggered by
 ---@field combatLogEventSpellID integer|nil The spell for the event
----@field phase number|nil The phase the combat log event must occur in
+---@field phase number|nil The phase the combat log event must occur in (Currently not used)
 ---@field spellCount integer|nil The number of times the combat log event must have occurred
 ---@field time number|nil The time from the combat log event to trigger the assignment
 Private.classes.CombatLogEventAssignment = setmetatable({
@@ -80,6 +81,7 @@ Private.classes.CombatLogEventAssignment = setmetatable({
 }, { __index = Private.classes.Assignment })
 Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEventAssignment
 
+-- An assignment based on time from the boss being pulled.
 ---@class TimedAssignment : Assignment
 ---@field time number The length of time from the beginning of the fight to when this assignment is triggered
 Private.classes.TimedAssignment = setmetatable({
@@ -87,6 +89,7 @@ Private.classes.TimedAssignment = setmetatable({
 }, { __index = Private.classes.Assignment })
 Private.classes.TimedAssignment.__index = Private.classes.TimedAssignment
 
+-- An assignment dependent only upon a boss phase. Currently half-implemented.
 ---@class PhasedAssignment : Assignment
 ---@field phase integer The boss phase this assignment is triggered by
 ---@field time number The time from the start of the phase to trigger the assignment
@@ -96,6 +99,7 @@ Private.classes.PhasedAssignment = setmetatable({
 }, { __index = Private.classes.Assignment })
 Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 
+-- Wrapper around an assignment with additional info about where to draw the assignment on the timeline.
 ---@class TimelineAssignment
 ---@field assignment Assignment The assignment
 ---@field startTime number Time used to place the assignment on the timeline
