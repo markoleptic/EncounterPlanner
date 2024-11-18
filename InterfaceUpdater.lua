@@ -33,7 +33,7 @@ end
 function InterfaceUpdater.UpdateBossAbilityList(bossName)
 	local boss = bossUtilities.GetBoss(bossName)
 	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
-	local bossDropdown = Private.mainFrame:GetBossDropdown()
+	local bossDropdown = Private.mainFrame:GetBossSelectDropdown()
 	if boss and bossAbilityContainer and bossDropdown then
 		local bossIndex = bossUtilities.GetBossDefinitionIndex(bossName)
 		if bossIndex and bossDropdown:GetValue() ~= bossIndex then

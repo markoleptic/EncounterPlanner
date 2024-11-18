@@ -76,7 +76,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 
 	Private.rosterEditor:Release()
 	utilities.UpdateRoster(GetCurrentAssignments(), GetCurrentRoster())
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	interfaceUpdater.UpdateAllAssignments(true, boss)
 end
 
@@ -173,10 +173,15 @@ local function HandleBossDropdownValueChanged(value)
 	end
 end
 
+---@param value number|string
+local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
+	print(value, selected)
+end
+
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	interfaceUpdater.UpdateAllAssignments(false, boss)
 end
 
@@ -228,13 +233,13 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 			break
 		end
 	end
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	interfaceUpdater.UpdateAllAssignments(true, boss)
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
 	Private.assignmentEditor:Release()
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	interfaceUpdater.UpdateAllAssignments(true, boss)
 end
 
@@ -309,7 +314,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		assignment.targetName = value
 	end
 
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline and boss then
 		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
@@ -350,7 +355,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		local dropdownItems = {}
-		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 		if boss then
 			for _, ID in pairs(boss.sortedAbilityIDs) do
 				local spellInfo = GetSpellInfo(ID)
@@ -426,7 +431,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	end
 
 	local alreadyExists = false
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -457,7 +462,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		return
 	end
 	local assignment = Private.classes.Assignment:New()
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -541,7 +546,7 @@ local function HandleDeleteCurrentEPNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
-		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 		interfaceUpdater.UpdateAllAssignments(true, boss)
 	end
 end
@@ -702,15 +707,13 @@ function Private:CreateGUI()
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
 	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
-	bossContainer:SetFullHeight(true)
 	bossContainer:SetWidth(topContainerDropdownWidth)
 
-	local bossSpacer = AceGUI:Create("EPSpacer")
-	bossSpacer:SetFillSpace(true)
-
-	local bossLabel = AceGUI:Create("EPLabel")
-	bossLabel:SetText("Boss:")
-	bossLabel:SetTextPadding(unpack(dropdownContainerLabelSpacing))
+	local bossSelectContainer = AceGUI:Create("EPContainer")
+	bossSelectContainer:SetAlignment("center")
+	bossSelectContainer:SetLayout("EPHorizontalLayout")
+	bossSelectContainer:SetFullWidth(true)
+	bossSelectContainer:SetSpacing(unpack(noteContainerSpacing))
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	local bossDropdownData = {}
@@ -724,6 +727,19 @@ function Private:CreateGUI()
 	bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		HandleBossDropdownValueChanged(value)
 	end)
+
+	local bossAbilitySelectContainer = AceGUI:Create("EPContainer")
+	bossAbilitySelectContainer:SetAlignment("center")
+	bossAbilitySelectContainer:SetLayout("EPHorizontalLayout")
+	bossAbilitySelectContainer:SetFullWidth(true)
+	bossAbilitySelectContainer:SetSpacing(unpack(noteContainerSpacing))
+
+	local bossAbilitySelectDropdown = AceGUI:Create("EPDropdown")
+	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(_, _, value, selected)
+		HandleBossAbilitySelectDropdownValueChanged(value, selected)
+	end)
+	bossAbilitySelectDropdown:SetMultiselect(true)
+	bossAbilitySelectDropdown:SetText("Active Boss Abilities")
 
 	local assignmentSortContainer = AceGUI:Create("EPContainer")
 	assignmentSortContainer:SetLayout("EPVerticalLayout")
@@ -858,9 +874,11 @@ function Private:CreateGUI()
 	exportButton:SetCallback("Clicked", HandleExportEPNoteButtonClicked)
 	exportButton:SetText("Export")
 
-	bossContainer:AddChild(bossSpacer)
-	bossContainer:AddChild(bossLabel)
-	bossContainer:AddChild(bossDropdown)
+	bossSelectContainer:AddChild(bossDropdown)
+	bossAbilitySelectContainer:AddChild(bossAbilitySelectDropdown)
+
+	bossContainer:AddChild(bossSelectContainer)
+	bossContainer:AddChild(bossAbilitySelectContainer)
 	assignmentSortContainer:AddChild(assignmentSortSpacer)
 	assignmentSortContainer:AddChild(assignmentSortLabel)
 	assignmentSortContainer:AddChild(assignmentSortDropdown)

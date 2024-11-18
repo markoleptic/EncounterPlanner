@@ -116,14 +116,37 @@ end
 
 ---@param self EPMainFrame
 ---@return EPDropdown|nil
-local function GetBossDropdown(self)
+local function GetBossSelectDropdown(self)
 	local topContainer = self.children[1]
 	if topContainer then
 		---@diagnostic disable-next-line: undefined-field
 		local bossContainer = topContainer.children[1]
 		if bossContainer then
 			---@diagnostic disable-next-line: undefined-field
-			return bossContainer.children[3]
+			local bossSelectContainer = bossContainer.children[1]
+			if bossSelectContainer then
+				---@diagnostic disable-next-line: undefined-field
+				return bossSelectContainer.children[1]
+			end
+		end
+	end
+	return nil
+end
+
+---@param self EPMainFrame
+---@return EPDropdown|nil
+local function GetBossAbilitySelectDropdown(self)
+	local topContainer = self.children[1]
+	if topContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local bossContainer = topContainer.children[1]
+		if bossContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local bossAbilitySelectContainer = bossContainer.children[2]
+			if bossAbilitySelectContainer then
+				---@diagnostic disable-next-line: undefined-field
+				return bossAbilitySelectContainer.children[1]
+			end
 		end
 	end
 	return nil
@@ -237,7 +260,8 @@ local function Constructor()
 		GetAssignmentContainer = GetAssignmentContainer,
 		GetBossAbilityContainer = GetBossAbilityContainer,
 		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
-		GetBossDropdown = GetBossDropdown,
+		GetBossSelectDropdown = GetBossSelectDropdown,
+		GetBossAbilitySelectDropdown = GetBossAbilitySelectDropdown,
 		GetNoteDropdown = GetNoteDropdown,
 		GetNoteLineEdit = GetNoteLineEdit,
 		GetTimeline = GetTimeline,

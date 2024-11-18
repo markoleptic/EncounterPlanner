@@ -587,7 +587,7 @@ end
 ---@return string|nil
 function Private:ExportNote(note)
 	local sortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossDropdown():GetValue())
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local bossPhaseTable = nil
 	if boss then
 		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)

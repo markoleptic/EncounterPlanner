@@ -80,7 +80,7 @@ end
 ---@param spellID number
 ---@return BossAbility|nil
 function BossUtilities.FindBossAbility(spellID)
-	for _, boss in pairs(bosses) do
+	for _, boss in pairs(bosses["Nerub'ar Palace"]) do
 		if boss.abilities[spellID] then
 			return boss.abilities[spellID]
 		end
