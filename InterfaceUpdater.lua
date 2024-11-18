@@ -4,6 +4,9 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class InterfaceUpdater
 local InterfaceUpdater = Private.interfaceUpdater
 
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
 ---@class Utilities
 local utilities = Private.utilities
 
@@ -28,11 +31,11 @@ end
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
 function InterfaceUpdater.UpdateBossAbilityList(bossName)
-	local boss = Private:GetBoss(bossName)
+	local boss = bossUtilities.GetBoss(bossName)
 	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
 	local bossDropdown = Private.mainFrame:GetBossDropdown()
 	if boss and bossAbilityContainer and bossDropdown then
-		local bossIndex = Private:GetBossDefinitionIndex(bossName)
+		local bossIndex = bossUtilities.GetBossDefinitionIndex(bossName)
 		if bossIndex and bossDropdown:GetValue() ~= bossIndex then
 			bossDropdown:SetValue(bossIndex)
 		end
@@ -50,10 +53,11 @@ end
 -- Sets the boss abilities for the timeline and rerenders it.
 ---@param bossName string The name of the boss
 function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	local boss = Private:GetBoss(bossName)
+	local boss = bossUtilities.GetBoss(bossName)
 	local timeline = Private.mainFrame:GetTimeline()
 	if boss and timeline then
-		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases)
+		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
+		timeline:SetBossAbilities(boss.abilities, boss.sortedAbilityIDs, boss.phases, bossPhaseTable)
 		timeline:UpdateTimeline()
 	end
 end
@@ -101,9 +105,14 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 end
 
 ---@param updateAddAssigneeDropdown boolean
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown)
-	local sorted =
-		utilities.SortAssignments(GetCurrentAssignments(), GetCurrentRoster(), AddOn.db.profile.assignmentSortType)
+---@param boss Boss?
+function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
+	local sorted = utilities.SortAssignments(
+		GetCurrentAssignments(),
+		GetCurrentRoster(),
+		AddOn.db.profile.assignmentSortType,
+		boss
+	)
 	local sortedAssignees = utilities.SortAssignees(sorted)
 	InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	InterfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)

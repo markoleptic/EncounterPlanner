@@ -872,29 +872,12 @@ end
 ---@param abilities table<integer, BossAbility>
 ---@param abilityOrder table<integer, integer>
 ---@param phases table<integer, BossPhase>
-local function SetBossAbilities(self, abilities, abilityOrder, phases)
+---@param phaseOrder table<integer, integer>
+local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrder)
 	self.bossAbilities = abilities
 	self.bossAbilityOrder = abilityOrder
 	self.bossPhases = phases
-
-	local totalOccurances = 0
-	local timelineDuration = 0
-	for _, phaseData in pairs(self.bossPhases) do
-		timelineDuration = timelineDuration + (phaseData.duration * phaseData.count)
-		totalOccurances = totalOccurances + phaseData.count
-	end
-	totalTimelineDuration = timelineDuration
-
-	wipe(self.bossPhaseOrder)
-	local currentPhase = 1
-	while #self.bossPhaseOrder < totalOccurances and currentPhase ~= nil do
-		table.insert(self.bossPhaseOrder, currentPhase)
-		if self.bossPhases[currentPhase].repeatAfter == nil and self.bossPhases[currentPhase + 1] then
-			currentPhase = currentPhase + 1
-		else
-			currentPhase = self.bossPhases[currentPhase].repeatAfter
-		end
-	end
+	self.bossPhaseOrder = phaseOrder
 
 	UpdateHeight(self)
 end

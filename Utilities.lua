@@ -7,6 +7,9 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class Utilities
 local Utilities = Private.utilities
 
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
 local GetClassColor = C_ClassColor.GetClassColor
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
@@ -71,178 +74,6 @@ function Utilities.CreatePrettyClassNames()
 			Private.prettyClassNames["Demon Hunter"] = prettyClassName
 		end
 		Private.prettyClassNames[className] = prettyClassName
-	end
-end
-
--- Sorts the assignees based on sortedTimelineAssignments.
----@param sortedTimelineAssignments table<integer, TimelineAssignment>
----@return table<integer, string>
-function Utilities.SortAssignees(sortedTimelineAssignments)
-	local order = 1
-	local assigneeMap = {}
-	local assigneeOrder = {}
-
-	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assigneeNameOrRole
-		if not assigneeMap[assignee] then
-			assigneeMap[assignee] = order
-			assigneeOrder[order] = assignee
-			order = order + 1
-		end
-		entry.order = assigneeMap[assignee]
-	end
-
-	return assigneeOrder
-end
-
--- Sorts assignments based on the assignmentSortType and updates sortedTimelineAssignments and sortedAssignees.
----@param assignments table<integer, Assignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
----@param assignmentSortType AssignmentSortType
----@return table<integer, TimelineAssignment>
-function Utilities.SortAssignments(assignments, roster, assignmentSortType)
-	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
-
-	for _, assignment in pairs(assignments) do
-		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
-		if timelineAssignment then
-			tinsert(sorted, timelineAssignment)
-		end
-	end
-
-	if assignmentSortType == "Alphabetical" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
-			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-		end)
-	elseif assignmentSortType == "First Appearance" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
-			if a.startTime == b.startTime then
-				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-			end
-			return a.startTime < b.startTime
-		end)
-	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
-			local nameOrRoleA = a.assignment.assigneeNameOrRole
-			local nameOrRoleB = b.assignment.assigneeNameOrRole
-			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
-				if assignmentSortType == "Role > Alphabetical" then
-					return nameOrRoleA < nameOrRoleB
-				elseif assignmentSortType == "Role > First Appearance" then
-					if a.startTime == b.startTime then
-						return nameOrRoleA < nameOrRoleB
-					end
-					return a.startTime < b.startTime
-				end
-				return false
-			end
-			if roster[nameOrRoleA].role == roster[nameOrRoleB].role then
-				if assignmentSortType == "Role > Alphabetical" then
-					return nameOrRoleA < nameOrRoleB
-				elseif assignmentSortType == "Role > First Appearance" then
-					if a.startTime == b.startTime then
-						return nameOrRoleA < nameOrRoleB
-					end
-					return a.startTime < b.startTime
-				end
-			elseif roster[nameOrRoleA].role == "role:healer" then
-				return true
-			elseif roster[nameOrRoleB].role == "role:healer" then
-				return false
-			elseif roster[nameOrRoleA].role == "role:tank" then
-				return true
-			elseif roster[nameOrRoleB].role == "role:tank" then
-				return false
-			end
-			if assignmentSortType == "Role > First Appearance" then
-				if a.startTime == b.startTime then
-					return nameOrRoleA < nameOrRoleB
-				end
-				return a.startTime < b.startTime
-			end
-			return nameOrRoleA < nameOrRoleB
-		end)
-	end
-
-	return sorted
-end
-
----@param assignments table<integer, Assignment>
-function Utilities.DetermineRolesFromAssignments(assignments)
-	local assigneeAssignments = {}
-	local healerClasses = {
-		["DRUID"] = "role:healer",
-		["EVOKER"] = "role:healer",
-		["MONK"] = "role:healer",
-		["PALADIN"] = "role:healer",
-		["PRIEST"] = "role:healer",
-		["SHAMAN"] = "role:healer",
-	}
-	for _, assignment in pairs(assignments) do
-		local assignee = assignment.assigneeNameOrRole
-		if not assigneeAssignments[assignee] then
-			assigneeAssignments[assignee] = {}
-		end
-		tinsert(assigneeAssignments[assignee], assignment)
-	end
-	local determinedRoles = {}
-	for assignee, currentAssigneeAssignments in pairs(assigneeAssignments) do
-		for _, currentAssigneeAssignment in pairs(currentAssigneeAssignments) do
-			if determinedRoles[assignee] then
-				break
-			end
-			local spellID = currentAssigneeAssignment.spellInfo.spellID
-			if spellID == 98008 or spellID == 108280 then -- Shaman healing bc classified as raid defensive
-				determinedRoles[assignee] = "role:healer"
-				break
-			end
-			for className, classData in pairs(Private.spellDB.classes) do
-				if determinedRoles[assignee] then
-					break
-				end
-				for _, spellInfo in pairs(classData) do
-					if spellInfo["spellID"] == spellID then
-						if spellInfo["type"] == "heal" and healerClasses[className] then
-							determinedRoles[assignee] = "role:healer"
-							break
-						end
-					end
-				end
-			end
-		end
-		if not determinedRoles[assignee] then
-			determinedRoles[assignee] = ""
-		end
-	end
-	return determinedRoles
-end
-
----@param data table<integer, DropdownItemData>
-function Utilities.SortDropdownDataByItemValue(data)
-	-- Sort the top-level table
-	sort(data, function(a, b)
-		local itemValueA = a.itemValue
-		local itemValueB = b.itemValue
-		if type(itemValueA) == "number" then
-			local spellName = a.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueA = spellName
-			end
-		end
-		if type(itemValueB) == "number" then
-			local spellName = b.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueB = spellName
-			end
-		end
-		return itemValueA < itemValueB
-	end)
-
-	-- Recursively sort any nested dropdownItemMenuData tables
-	for _, item in pairs(data) do
-		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
-			Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
-		end
 	end
 end
 
@@ -463,6 +294,235 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
 	return dropdownItems
+end
+
+-- Sorts the assignees based on sortedTimelineAssignments.
+---@param sortedTimelineAssignments table<integer, TimelineAssignment>
+---@return table<integer, string>
+function Utilities.SortAssignees(sortedTimelineAssignments)
+	local order = 1
+	local assigneeMap = {}
+	local assigneeOrder = {}
+
+	for _, entry in ipairs(sortedTimelineAssignments) do
+		local assignee = entry.assignment.assigneeNameOrRole
+		if not assigneeMap[assignee] then
+			assigneeMap[assignee] = order
+			assigneeOrder[order] = assignee
+			order = order + 1
+		end
+		entry.order = assigneeMap[assignee]
+	end
+
+	return assigneeOrder
+end
+
+-- Creates a table of sorted TimelineAssignments and sets the start time used for each assignment on the timeline. Sorts
+-- assignments based on the assignmentSortType.
+---@param assignments table<integer, Assignment>
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param assignmentSortType AssignmentSortType
+---@param boss Boss?
+---@return table<integer, TimelineAssignment>
+function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
+	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
+	local bossPhaseTable = nil
+	if boss then
+		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
+	end
+
+	local allSucceeded = true
+	for _, assignment in pairs(assignments) do
+		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
+		local success = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
+		if success == false and allSucceeded == true then
+			allSucceeded = false
+		end
+		tinsert(sorted, timelineAssignment)
+	end
+	if allSucceeded == false then
+		print(AddOnName .. ":", "An assignment attempted to update without a boss or boss phase table.")
+	end
+
+	if assignmentSortType == "Alphabetical" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+		end)
+	elseif assignmentSortType == "First Appearance" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			if a.startTime == b.startTime then
+				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+			end
+			return a.startTime < b.startTime
+		end)
+	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
+		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+			local nameOrRoleA = a.assignment.assigneeNameOrRole
+			local nameOrRoleB = b.assignment.assigneeNameOrRole
+			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
+				if assignmentSortType == "Role > Alphabetical" then
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+				return false
+			end
+			if roster[nameOrRoleA].role == roster[nameOrRoleB].role then
+				if assignmentSortType == "Role > Alphabetical" then
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+			elseif roster[nameOrRoleA].role == "role:healer" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:healer" then
+				return false
+			elseif roster[nameOrRoleA].role == "role:tank" then
+				return true
+			elseif roster[nameOrRoleB].role == "role:tank" then
+				return false
+			end
+			if assignmentSortType == "Role > First Appearance" then
+				if a.startTime == b.startTime then
+					return nameOrRoleA < nameOrRoleB
+				end
+				return a.startTime < b.startTime
+			end
+			return nameOrRoleA < nameOrRoleB
+		end)
+	end
+
+	return sorted
+end
+
+---@param assignments table<integer, Assignment>
+function Utilities.DetermineRolesFromAssignments(assignments)
+	local assigneeAssignments = {}
+	local healerClasses = {
+		["DRUID"] = "role:healer",
+		["EVOKER"] = "role:healer",
+		["MONK"] = "role:healer",
+		["PALADIN"] = "role:healer",
+		["PRIEST"] = "role:healer",
+		["SHAMAN"] = "role:healer",
+	}
+	for _, assignment in pairs(assignments) do
+		local assignee = assignment.assigneeNameOrRole
+		if not assigneeAssignments[assignee] then
+			assigneeAssignments[assignee] = {}
+		end
+		tinsert(assigneeAssignments[assignee], assignment)
+	end
+	local determinedRoles = {}
+	for assignee, currentAssigneeAssignments in pairs(assigneeAssignments) do
+		for _, currentAssigneeAssignment in pairs(currentAssigneeAssignments) do
+			if determinedRoles[assignee] then
+				break
+			end
+			local spellID = currentAssigneeAssignment.spellInfo.spellID
+			if spellID == 98008 or spellID == 108280 then -- Shaman healing bc classified as raid defensive
+				determinedRoles[assignee] = "role:healer"
+				break
+			end
+			for className, classData in pairs(Private.spellDB.classes) do
+				if determinedRoles[assignee] then
+					break
+				end
+				for _, spellInfo in pairs(classData) do
+					if spellInfo["spellID"] == spellID then
+						if spellInfo["type"] == "heal" and healerClasses[className] then
+							determinedRoles[assignee] = "role:healer"
+							break
+						end
+					end
+				end
+			end
+		end
+		if not determinedRoles[assignee] then
+			determinedRoles[assignee] = ""
+		end
+	end
+	return determinedRoles
+end
+
+---@param data table<integer, DropdownItemData>
+function Utilities.SortDropdownDataByItemValue(data)
+	-- Sort the top-level table
+	sort(data, function(a, b)
+		local itemValueA = a.itemValue
+		local itemValueB = b.itemValue
+		if type(itemValueA) == "number" then
+			local spellName = a.text:match("|T.-|t%s(.+)")
+			if spellName then
+				itemValueA = spellName
+			end
+		end
+		if type(itemValueB) == "number" then
+			local spellName = b.text:match("|T.-|t%s(.+)")
+			if spellName then
+				itemValueB = spellName
+			end
+		end
+		return itemValueA < itemValueB
+	end)
+
+	-- Recursively sort any nested dropdownItemMenuData tables
+	for _, item in pairs(data) do
+		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+			Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
+		end
+	end
+end
+
+-- Updates a timeline assignment's start time.
+---@param timelineAssignment TimelineAssignment
+---@param boss Boss? The boss to obtain cast times from if the assignment requires it
+---@param bossPhaseTable table<integer, integer>? A table of boss phases in the order in which they occur
+---@return boolean -- Whether or not the update succeeded
+function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
+	local assignment = timelineAssignment.assignment
+	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+		assignment = assignment --[[@as CombatLogEventAssignment]]
+		local ability = bossUtilities.FindBossAbility(assignment.combatLogEventSpellID)
+		local startTime = assignment.time
+		if ability and boss and bossPhaseTable then
+			local relativeStartTime, phaseNumberOffset =
+				bossUtilities.GetRelativeBossAbilityStartTime(ability, assignment.spellCount)
+			local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseNumberOffset)
+			startTime = startTime + phaseStartTime + relativeStartTime
+			if assignment.combatLogEventType == "SAR" then
+				startTime = startTime + ability.duration + ability.castTime
+			elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
+				startTime = startTime + ability.castTime
+			end
+			timelineAssignment.startTime = startTime
+		else
+			return false
+		end
+	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
+		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
+	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
+		assignment = assignment --[[@as PhasedAssignment]]
+		if boss and bossPhaseTable then
+			local phase = boss.phases[assignment.phase]
+			if phase then
+				for phaseCount = 1, #phase.count do
+					local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseCount)
+					timelineAssignment.startTime = phaseStartTime
+					break -- TODO: Only first phase appearance implemented
+				end
+			end
+		else
+			return false
+		end
+	end
+	return true
 end
 
 ---@param sortedAssignees table<integer, string>

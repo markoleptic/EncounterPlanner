@@ -1,8 +1,15 @@
+local AddOnName = ...
+
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
-local AddOn = Private.addOn
+
+---@class Utilities
 local utilities = Private.utilities
 
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
+local AddOn = Private.addOn
 local concat = table.concat
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
@@ -565,7 +572,7 @@ function Private:ParseNote(note)
 			if spellID then
 				spellIDNumber = tonumber(spellID)
 				if not bossName and spellIDNumber then
-					bossName = self:GetBossFromSpellID(spellIDNumber)
+					bossName = bossUtilities.GetBossNameFromSpellID(spellIDNumber)
 				end
 			end
 			local inputs = CreateAssignmentsFromLine(line, generalText, spellIDNumber, classColoredNameTable)

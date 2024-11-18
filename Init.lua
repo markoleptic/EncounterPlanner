@@ -280,6 +280,20 @@ function Private.classes.PhasedAssignment:New(o)
 	return CreateNewInstance(self, o)
 end
 
+-- Creates a timeline assignment from an assignment.
+---@param assignment Assignment
+---@return TimelineAssignment
+function Private.classes.TimelineAssignment:New(assignment)
+	assignment = assignment or Private.classes.Assignment:New(assignment)
+	local timelineAssignment = {
+		assignment = assignment,
+		startTime = 0,
+		order = 0,
+	}
+	setmetatable(timelineAssignment, self)
+	return timelineAssignment
+end
+
 ---@return RaidInstance
 function Private.classes.RaidInstance:New(o)
 	return CreateNewInstance(self, o)
@@ -344,6 +358,8 @@ Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
 Private.interfaceUpdater = {}
+Private.bosses = {} --[[@as table<string, Boss>]]
+Private.bossUtilities = {}
 Private.utilities = {}
 Private.mainFrame = nil --[[@as EPMainFrame]]
 -- A map of class names to class pascal case colored class names with spaces if needed
