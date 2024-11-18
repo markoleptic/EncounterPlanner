@@ -342,11 +342,13 @@ end
 
 local defaults = {
 	--[[@class EncounterPlannerOptions]]
+	---@field activeBossAbilities table<string, table<integer, boolean>>
 	---@field assignmentSortType AssignmentSortType
 	---@field notes table<string, EncounterPlannerDbNote>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
 	profile = {
+		activeBossAbilities = {},
 		assignmentSortType = "First Appearance",
 		notes = {},
 		sharedRoster = {},

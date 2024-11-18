@@ -175,7 +175,13 @@ end
 
 ---@param value number|string
 local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
-	print(value, selected)
+	local bossIndex = Private.mainFrame:GetBossSelectDropdown():GetValue()
+	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
+	if bossDef then
+		AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
+		interfaceUpdater.UpdateBossAbilityList(bossDef.name, false)
+		interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
+	end
 end
 
 ---@param value string
@@ -740,7 +746,6 @@ function Private:CreateGUI()
 	end)
 	bossAbilitySelectDropdown:SetMultiselect(true)
 	bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-
 	local assignmentSortContainer = AceGUI:Create("EPContainer")
 	assignmentSortContainer:SetLayout("EPVerticalLayout")
 	assignmentSortContainer:SetSpacing(unpack(dropdownContainerSpacing))
@@ -1019,6 +1024,9 @@ function AddOn:OnInitialize()
 					note.assignments = {}
 				end
 			end
+		end
+		if not profile.activeBossAbilities then
+			profile.activeBossAbilities = {}
 		end
 	end
 	--self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")

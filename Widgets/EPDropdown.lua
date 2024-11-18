@@ -460,23 +460,6 @@ do
 	end
 
 	---@param self EPDropdown
-	local function ShowMultiText(self)
-		local text
-		for _, widget in self.pullout:IterateItems() do
-			if widget.type == "Dropdown-Item-Toggle" or widget.type == "EPDropdownItemToggle" then
-				if widget:GetIsSelected() then
-					if text then
-						text = text .. ", " .. widget:GetText()
-					else
-						text = widget:GetText()
-					end
-				end
-			end
-		end
-		self:SetText(text)
-	end
-
-	---@param self EPDropdown
 	---@param value any
 	---@param includeNeverShowItemsAsSelectedItems boolean?
 	---@return EPDropdownItemMenu|EPDropdownItemToggle|nil, string|nil
@@ -508,7 +491,6 @@ do
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
 			self:Fire("OnValueChanged", dropdownItem:GetValue(), selected)
-			ShowMultiText(self)
 		else
 			self:SetValue(value)
 			self:Fire("OnValueChanged", value)
@@ -525,7 +507,6 @@ do
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
 			self:Fire("OnValueChanged", dropdownItem:GetValue(), selected)
-			ShowMultiText(self)
 		else
 			if selected then
 				local newValue = dropdownItem:GetValue()
@@ -665,6 +646,14 @@ do
 	end
 
 	---@param self EPDropdown
+	---@param itemValuesToSelect table<any, boolean>
+	local function SetSelectedItems(self, itemValuesToSelect)
+		for _, pulloutItem in self.pullout:IterateItems() do
+			pulloutItem:SetIsSelected(itemValuesToSelect[pulloutItem:GetValue()] == true)
+		end
+	end
+
+	---@param self EPDropdown
 	---@param itemValue any the internal value used to index an item
 	---@param text string the value shown on the item
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
@@ -753,23 +742,9 @@ do
 	end
 
 	---@param self EPDropdown
-	local function AddCloseButton(self)
-		-- if not self.hasClose then
-		-- 	local close = AceGUI:Create("Dropdown-Item-Execute") --[[@as EPItemBase]]
-		-- 	close:SetText("Close")
-		-- 	self.pullout:AddItem(close)
-		-- 	self.hasClose = true
-		-- end
-	end
-
-	---@param self EPDropdown
 	---@param multi any
 	local function SetMultiselect(self, multi)
 		self.multiselect = multi
-		if multi then
-			ShowMultiText(self)
-			self:AddCloseButton()
-		end
 	end
 
 	---@param self EPDropdown
@@ -862,10 +837,10 @@ do
 			EditItemText = EditItemText,
 			SetDropdownItemHeight = SetDropdownItemHeight,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
-			AddCloseButton = AddCloseButton,
 			SetMultiselect = SetMultiselect,
 			GetMultiselect = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,
+			SetSelectedItems = SetSelectedItems,
 			Clear = Clear,
 			frame = frame,
 			type = Type,

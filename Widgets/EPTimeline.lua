@@ -439,6 +439,7 @@ end
 ---@param bossPhaseDuration number
 ---@param bossAbilityOrderIndex integer
 ---@param bossAbilityInstanceIndex integer
+---@param offset number
 ---@return integer
 local function DrawPhaseOrTimeBasedBossAbility(
 	self,
@@ -448,14 +449,14 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	bossPhaseStartTime,
 	bossPhaseDuration,
 	bossAbilityOrderIndex,
-	bossAbilityInstanceIndex
+	bossAbilityInstanceIndex,
+	offset
 )
 	if not bossAbility.phases[bossPhaseIndex] then
 		return bossAbilityInstanceIndex
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
-	local offset = (bossAbilityOrderIndex - 1) * (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
 	local cumulativePhaseCastTimes = bossPhaseStartTime
 	local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 	for _, castTime in ipairs(bossAbilityPhase.castTimes) do
@@ -504,6 +505,7 @@ end
 ---@param bossPhaseEndTime number
 ---@param bossAbilityOrderIndex integer
 ---@param bossAbilityInstanceIndex integer
+---@param offset number
 ---@return integer
 local function DrawEventTriggerBossAbility(
 	self,
@@ -513,14 +515,14 @@ local function DrawEventTriggerBossAbility(
 	bossPhaseStartTime,
 	bossPhaseEndTime,
 	bossAbilityOrderIndex,
-	bossAbilityInstanceIndex
+	bossAbilityInstanceIndex,
+	offset
 )
 	if not bossAbility.eventTriggers then
 		return bossAbilityInstanceIndex
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
-	local offset = (bossAbilityOrderIndex - 1) * (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
 
 	for triggerSpellID, eventTrigger in pairs(bossAbility.eventTriggers) do
 		local bossAbilityTrigger = self.bossAbilities[triggerSpellID]
@@ -593,33 +595,44 @@ local function UpdateBossAbilityBars(self)
 
 	local cumulativePhaseStartTime = 0
 	local bossAbilityInstanceIndex = 1
-
+	local offsets = {}
+	local offset = 0
+	for _, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
+		offsets[bossAbilitySpellID] = offset
+		if self.bossAbilityVisibility[bossAbilitySpellID] == true then
+			offset = offset + bossAbilityBarHeight + paddingBetweenBossAbilityBars
+		end
+	end
 	for _, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
 		local bossPhase = self.bossPhases[bossPhaseIndex]
 		if bossPhase then
 			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 			for bossAbilityOrderIndex, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
-				local bossAbility = self.bossAbilities[bossAbilitySpellID]
-				bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
-					self,
-					bossAbility,
-					bossPhaseIndex,
-					bossAbilitySpellID,
-					cumulativePhaseStartTime,
-					bossPhase.duration,
-					bossAbilityOrderIndex,
-					bossAbilityInstanceIndex
-				)
-				bossAbilityInstanceIndex = DrawEventTriggerBossAbility(
-					self,
-					bossAbility,
-					bossPhaseIndex,
-					bossAbilitySpellID,
-					cumulativePhaseStartTime,
-					phaseEndTime,
-					bossAbilityOrderIndex,
-					bossAbilityInstanceIndex
-				)
+				if self.bossAbilityVisibility[bossAbilitySpellID] == true then
+					local bossAbility = self.bossAbilities[bossAbilitySpellID]
+					bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
+						self,
+						bossAbility,
+						bossPhaseIndex,
+						bossAbilitySpellID,
+						cumulativePhaseStartTime,
+						bossPhase.duration,
+						bossAbilityOrderIndex,
+						bossAbilityInstanceIndex,
+						offsets[bossAbilitySpellID]
+					)
+					bossAbilityInstanceIndex = DrawEventTriggerBossAbility(
+						self,
+						bossAbility,
+						bossPhaseIndex,
+						bossAbilitySpellID,
+						cumulativePhaseStartTime,
+						phaseEndTime,
+						bossAbilityOrderIndex,
+						bossAbilityInstanceIndex,
+						offsets[bossAbilitySpellID]
+					)
+				end
 			end
 			cumulativePhaseStartTime = cumulativePhaseStartTime + bossPhase.duration
 		end
@@ -772,9 +785,13 @@ end
 ---@return number
 local function CalculateRequiredBarHeight(self)
 	local totalBarHeight = 0
-	if self.bossAbilityOrder then
-		local count = #self.bossAbilityOrder
-		totalBarHeight = count * (bossAbilityBarHeight + paddingBetweenBossAbilityBars) - paddingBetweenBossAbilityBars
+	for _, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true then
+			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+		end
+	end
+	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then
+		totalBarHeight = totalBarHeight - paddingBetweenBossAbilityBars
 	end
 	return totalBarHeight
 end
@@ -830,6 +847,7 @@ end
 ---@field assignmentTimelineTicks table<number, Texture>
 ---@field assignmentTextures table<integer, Texture>
 ---@field bossAbilities table<integer, BossAbility>
+---@field bossAbilityVisibility table<integer, boolean>
 ---@field bossAbilityOrder table<integer, integer>
 ---@field bossAbilityTextureBars table<integer, Texture>
 ---@field bossAbilityTimelineTicks table<integer, Texture>
@@ -849,6 +867,7 @@ local function OnAcquire(self)
 	self.bossPhases = self.bossPhases or {}
 	self.timelineAssignments = self.timelineAssignments or {}
 	self.assignees = self.assignees or {}
+	self.bossAbilityVisibility = {}
 end
 
 ---@param self EPTimeline
@@ -859,6 +878,7 @@ local function OnRelease(self)
 	self.bossPhases = nil
 	self.timelineAssignments = nil
 	self.assignees = nil
+	self.bossAbilityVisibility = nil
 	ResetLocalVariables()
 end
 
@@ -868,11 +888,13 @@ end
 ---@param abilityOrder table<integer, integer>
 ---@param phases table<integer, BossPhase>
 ---@param phaseOrder table<integer, integer>
-local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrder)
+---@param bossAbilityVisibility table<integer, boolean>
+local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrder, bossAbilityVisibility)
 	self.bossAbilities = abilities
 	self.bossAbilityOrder = abilityOrder
 	self.bossPhases = phases
 	self.bossPhaseOrder = phaseOrder
+	self.bossAbilityVisibility = bossAbilityVisibility
 
 	totalTimelineDuration = 0
 	for _, phaseData in pairs(self.bossPhases) do
