@@ -385,6 +385,9 @@ do
 				dropdownItem:SetIsSelected(false)
 			end
 		else
+			if self.neverShowItemsAsSelected == true then
+				self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
+			end
 			dropdownItem:SetIsSelected(true)
 		end
 		if self.open then
