@@ -613,8 +613,19 @@ function Private:ExportNote(note)
 		return a.startTime < b.startTime
 	end)
 
-	local inStringTable = {}
 	local stringTable = {}
+
+	local lastNoteContentIndex = nil
+	for index, line in ipairs(note.content) do
+		local time, options = ParseTime(line)
+		if time and options then
+			lastNoteContentIndex = index
+		else
+			tinsert(stringTable, line)
+		end
+	end
+
+	local inStringTable = {}
 	for _, timelineAssignment in ipairs(sortedAssignments) do
 		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
 			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
@@ -695,6 +706,13 @@ function Private:ExportNote(note)
 			-- Not yet supported
 		end
 	end
+
+	if lastNoteContentIndex then
+		for index = lastNoteContentIndex + 1, #note.content do
+			tinsert(stringTable, note.content[index])
+		end
+	end
+
 	if #stringTable == 0 then
 		return nil
 	end
