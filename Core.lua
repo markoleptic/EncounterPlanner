@@ -275,6 +275,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				assignment = Private.classes.PhasedAssignment:New(assignment)
 			end
 		end
+		assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 	elseif dataType == "CombatLogEventSpellID" then
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = tonumber(value)
