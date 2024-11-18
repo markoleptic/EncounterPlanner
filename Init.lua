@@ -61,6 +61,7 @@ Private.classes.Assignment = {
 	targetName = "",
 	uniqueID = nil,
 	generalText = "",
+	generalTextSpellID = nil,
 }
 Private.classes.Assignment.__index = Private.classes.Assignment
 

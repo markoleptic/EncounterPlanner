@@ -24,7 +24,7 @@ local UnitClass = UnitClass
 local UnitName = UnitName
 local wipe = wipe
 
-local postOptionsPreDashRegex = "}({spell:(%d+)}(.-) %-)"
+local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
 local doublePipeRegex = "||"
@@ -432,9 +432,10 @@ end
 -- Parses a line of text in the note and creates assignment(s).
 ---@param line string
 ---@param generalText string|nil
+---@param generalTextSpellID number|nil
 ---@param classColoredNameTable table
 ---@return table<integer, Assignment>
-local function CreateAssignmentsFromLine(line, generalText, classColoredNameTable)
+local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID, classColoredNameTable)
 	local assignments = {}
 	for str in (line .. "  "):gmatch(postDashRegex) do
 		local targetName = str:match(targetNameRegex) or ""
@@ -479,6 +480,7 @@ local function CreateAssignmentsFromLine(line, generalText, classColoredNameTabl
 			spellInfo = spellinfo,
 			targetName = targetName,
 			generalText = generalText,
+			generalTextSpellID = generalTextSpellID,
 		})
 		tinsert(assignments, assignment)
 	end
@@ -552,31 +554,26 @@ end
 ---@return string|nil
 function Private:ParseNote(note)
 	wipe(note.assignments) -- temporary until assignments are more stable
-	local spellIDs = {}
+	local bossName = nil
 	local classColoredNameTable = utilities.CreateClassColoredNamesFromCurrentGroup()
 
 	for _, line in pairs(note.content) do
 		local time, options = ParseTime(line)
 		if time and options then
-			local _, spellID, generalText = line:match(postOptionsPreDashRegex)
+			local spellID, generalText = line:match(postOptionsPreDashRegex)
+			local spellIDNumber = nil
 			if spellID then
-				local spellIDNumber = tonumber(spellID)
-				if spellIDNumber then
-					tinsert(spellIDs, spellIDNumber)
+				spellIDNumber = tonumber(spellID)
+				if not bossName and spellIDNumber then
+					bossName = self:GetBossFromSpellID(spellIDNumber)
 				end
 			end
-			local inputs = CreateAssignmentsFromLine(line, generalText, classColoredNameTable)
+			local inputs = CreateAssignmentsFromLine(line, generalText, spellIDNumber, classColoredNameTable)
 			self:ProcessOptions(inputs, note.assignments, time, options)
 		end
 	end
 
-	for _, spellID in pairs(spellIDs) do
-		local bossName = self:GetBossFromSpellID(spellID)
-		if bossName then
-			return bossName
-		end
-	end
-	return nil
+	return bossName
 end
 
 ---@param note EncounterPlannerDbNote
@@ -603,16 +600,22 @@ function Private:ExportNote(note)
 			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 			local minutes = math.floor(assignment.time / 60)
 			local seconds = assignment.time - (minutes * 60)
-			local timeAndOptionsString = string.format(
-				"{time:%d:%02d,%s:%d:%d}{spell:%d}%s - ",
+			local timeAndOptionsString = format(
+				"{time:%d:%02d,%s:%d:%d}",
 				minutes,
 				seconds,
 				assignment.combatLogEventType,
 				assignment.combatLogEventSpellID,
-				assignment.spellCount,
-				assignment.combatLogEventSpellID,
-				assignment.generalText
+				assignment.spellCount
 			)
+			if assignment.generalTextSpellID then
+				local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
+				timeAndOptionsString = timeAndOptionsString .. optionsString
+			else
+				timeAndOptionsString = timeAndOptionsString .. assignment.generalText
+			end
+			timeAndOptionsString = timeAndOptionsString .. " - "
+
 			local assignmentString = assignment.assigneeNameOrRole
 			if assignment.targetName ~= nil and assignment.targetName ~= "" then
 				local targetString = string.format(" @%s", assignment.targetName)
@@ -638,7 +641,14 @@ function Private:ExportNote(note)
 			local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
 			local minutes = math.floor(assignment.time / 60)
 			local seconds = assignment.time - (minutes * 60)
-			local timeAndOptionsString = string.format("{time:%d:%02d}%s - ", minutes, seconds, assignment.generalText)
+			local timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
+			if assignment.generalTextSpellID then
+				local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
+				timeAndOptionsString = timeAndOptionsString .. optionsString
+			else
+				timeAndOptionsString = timeAndOptionsString .. assignment.generalText
+			end
+			timeAndOptionsString = timeAndOptionsString .. " - "
 
 			local assignmentString = assignment.assigneeNameOrRole
 			if assignment.targetName ~= nil and assignment.targetName ~= "" then
