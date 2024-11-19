@@ -134,6 +134,12 @@ local function SetText(self, text)
 end
 
 ---@param self EPLabel
+---@return string
+local function GetText(self)
+	return self.text:GetText()
+end
+
+---@param self EPLabel
 ---@param height number
 local function SetTextHeight(self, height)
 	self.text:SetTextHeight(height or defaultFontHeight)
@@ -190,6 +196,7 @@ local function Constructor()
 		SetDisabled = SetDisabled,
 		SetIcon = SetIcon,
 		SetText = SetText,
+		GetText = GetText,
 		SetTextHeight = SetTextHeight,
 		LayoutFinished = LayoutFinished,
 		SetTextPadding = SetTextPadding,
