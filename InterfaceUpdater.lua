@@ -17,6 +17,7 @@ local format = format
 local ipairs = ipairs
 local GetSpellInfo = C_Spell.GetSpellInfo
 local tinsert = tinsert
+local tremove = tremove
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -26,6 +27,25 @@ end
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
 	return AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].assignments
+end
+
+---@param abilityEntry EPAbilityEntry
+local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+
+	local assigneeNameOrRole = abilityEntry:GetKey()
+	if assigneeNameOrRole then
+		local assignments = GetCurrentAssignments()
+		for i = #assignments, 1, -1 do
+			if assignments[i].assigneeNameOrRole == assigneeNameOrRole then
+				tremove(assignments, i)
+			end
+		end
+		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+		InterfaceUpdater.UpdateAllAssignments(true, boss)
+	end
 end
 
 -- Clears and repopulates the boss ability container based on the boss name.
@@ -110,11 +130,13 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
 	if assignmentContainer then
 		assignmentContainer:ReleaseChildren()
-		local assignmentTextTable = utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
-		for _, text in ipairs(assignmentTextTable) do
+		local assignmentTable, map = utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
+		for _, text in ipairs(assignmentTable) do
 			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-			assigneeEntry:SetText(text)
+			assigneeEntry:SetText(text, map[text])
 			assigneeEntry:SetHeight(30)
+			assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
+			assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
 			assignmentContainer:AddChild(assigneeEntry)
 		end
 		assignmentContainer:DoLayout()
