@@ -42,6 +42,17 @@ function Utilities.CreateUniqueNoteName(notes)
 	return newNoteName
 end
 
+---@param assignments table<integer, Assignment>
+---@param ID integer
+---@return Assignment|nil
+function Utilities.FindAssignmentByUniqueID(assignments, ID)
+	for _, assignment in pairs(assignments) do
+		if assignment.uniqueID == ID then
+			return assignment
+		end
+	end
+end
+
 function Utilities.CreatePrettyClassNames()
 	wipe(Private.prettyClassNames)
 	setmetatable(Private.prettyClassNames, {
@@ -253,7 +264,8 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 	return assignmentTypes
 end
 
----@param roster table<string, EncounterPlannerDbRosterEntry>
+-- Creates dropdown data with all assignments types including individual roster members.
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to character names from
 ---@return table<integer, DropdownItemData>
 function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster)
 	local assignmentTypes = Utilities.CreateAssignmentTypeDropdownItems()
@@ -297,8 +309,8 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 	return dropdownItems
 end
 
--- Sorts the assignees based on sortedTimelineAssignments.
----@param sortedTimelineAssignments table<integer, TimelineAssignment>
+-- Sorts the assignees based on the order of the timeline assignments.
+---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@return table<integer, string>
 function Utilities.SortAssignees(sortedTimelineAssignments)
 	local order = 1
@@ -320,10 +332,10 @@ end
 
 -- Creates a table of sorted TimelineAssignments and sets the start time used for each assignment on the timeline. Sorts
 -- assignments based on the assignmentSortType.
----@param assignments table<integer, Assignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
----@param assignmentSortType AssignmentSortType
----@param boss Boss?
+---@param assignments table<integer, Assignment> Assignments to sort
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
+---@param assignmentSortType AssignmentSortType Sort method
+---@param boss Boss? Used to get boss timers to set the proper timeline assignment start time for combat log assignments
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
 	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
@@ -402,7 +414,8 @@ function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss
 	return sorted
 end
 
----@param assignments table<integer, Assignment>
+-- Attempts to assign roles based on assignment spells. Currently only tries to assign healer roles.
+---@param assignments table<integer, Assignment> Assignments to assign roles for
 function Utilities.DetermineRolesFromAssignments(assignments)
 	local assigneeAssignments = {}
 	local healerClasses = {
@@ -452,7 +465,8 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 	return determinedRoles
 end
 
----@param data table<integer, DropdownItemData>
+-- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
+---@param data table<integer, DropdownItemData> Dropdown data to sort
 function Utilities.SortDropdownDataByItemValue(data)
 	-- Sort the top-level table
 	sort(data, function(a, b)
@@ -566,18 +580,8 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 	return textTable
 end
 
----@param assignments table<integer, Assignment>
----@param ID integer
----@return Assignment|nil
-function Utilities.FindAssignmentByUniqueID(assignments, ID)
-	for _, assignment in pairs(assignments) do
-		if assignment.uniqueID == ID then
-			return assignment
-		end
-	end
-end
-
----@param maxGroup? integer
+-- Creates a table of unit types for the current raid or party group.
+---@param maxGroup? integer Maximum group number
 ---@return table<integer, string>
 function Utilities.IterateRosterUnits(maxGroup)
 	local units = {}
@@ -694,7 +698,8 @@ function Utilities.UpdateRoster(assignments, roster)
 	end
 end
 
----@param text string
+-- Splits a string into table using new lines as separators.
+---@param text string The text to use to create the table
 ---@return table<integer, string>
 function Utilities.SplitStringIntoTable(text)
 	local stringTable = {}

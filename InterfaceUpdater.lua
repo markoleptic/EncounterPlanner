@@ -13,21 +13,19 @@ local utilities = Private.utilities
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
+local format = format
+local ipairs = ipairs
 local GetSpellInfo = C_Spell.GetSpellInfo
 local tinsert = tinsert
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.notes[lastOpenNote]
-	return note.roster
+	return AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster
 end
 
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.notes[lastOpenNote]
-	return note.assignments
+	return AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].assignments
 end
 
 -- Clears and repopulates the boss ability container based on the boss name.
@@ -55,7 +53,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 			bossAbilitySelectDropdown:Clear()
 		end
 		local bossAbilitySelectItems = {}
-		for _, ID in pairs(boss.sortedAbilityIDs) do
+		for _, ID in ipairs(boss.sortedAbilityIDs) do
 			if activeBossAbilities[ID] == nil then
 				activeBossAbilities[ID] = true
 			end
@@ -107,7 +105,7 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 end
 
 -- Clears and repopulates the list of assignments based on sortedAssignees
----@param sortedAssignees table<integer, string>
+---@param sortedAssignees table<integer, string> A sorted list of assignees
 function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
 	if assignmentContainer then
@@ -124,8 +122,8 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
 end
 
 -- Sets the assignments and assignees for the timeline and rerenders it.
----@param sortedTimelineAssignments table<integer, TimelineAssignment>
----@param sortedAssignees table<integer, string>
+---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
+---@param sortedAssignees table<integer, string> A sorted list of assignees
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
@@ -134,7 +132,7 @@ function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, s
 	end
 end
 
--- Updates the dropdown items from the current roster
+-- Clears and repopulates the add assignee dropdown from the current roster.
 function InterfaceUpdater.UpdateAddAssigneeDropdown()
 	local addAssigneeDropdown = Private.mainFrame:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
@@ -148,8 +146,10 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 	end
 end
 
----@param updateAddAssigneeDropdown boolean
----@param boss Boss?
+-- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
+-- dropdown.
+---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
+---@param boss Boss? The boss to pass to the assignment sort function
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),

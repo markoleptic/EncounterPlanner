@@ -7,6 +7,7 @@ local BossUtilities = Private.bossUtilities
 local bosses = Private.bosses
 local ipairs = ipairs
 local pairs = pairs
+local tinsert = tinsert
 local type = type
 
 ---@param bossNameOrIndex string|integer
@@ -116,10 +117,11 @@ function BossUtilities.GetRelativeBossAbilityStartTime(ability, spellCount)
 	return startTime, phaseNumberOffset
 end
 
+-- Returns the phase start time from boss pull to the specified phase number and occurance.
 ---@param boss Boss The boss
 ---@param bossPhaseTable table<integer, integer> A table of boss phases in the order in which they occur
 ---@param phaseNumber integer The boss phase number
----@param phaseCount integer? For repeating abilities, this number is the is the current repeat instance (i.e. 2nd time occuring = 2)
+---@param phaseCount integer? The current phase repeat instance (i.e. 2nd time occuring = 2)
 ---@return number -- Cumulative start time for a given boss phase and count/occurance
 function BossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseNumber, phaseCount)
 	if not phaseCount then
@@ -152,7 +154,7 @@ function BossUtilities.CreateBossPhaseTable(boss)
 	local bossPhaseOrder = {}
 	local currentPhase = 1
 	while #bossPhaseOrder < totalPhaseOccurances and currentPhase ~= nil do
-		table.insert(bossPhaseOrder, currentPhase)
+		tinsert(bossPhaseOrder, currentPhase)
 		if boss.phases[currentPhase].repeatAfter == nil and boss.phases[currentPhase + 1] then
 			currentPhase = currentPhase + 1
 		else
