@@ -35,18 +35,6 @@
 ---@alias EPDropdownType
 ---|"EPDropdown"
 
----@class EPAbilityEntry : AceGUIWidget
----@field frame table|BackdropTemplate|Frame
----@field type string
----@field count number
----@field checkbg Texture
----@field check table|Frame
----@field checkbox table|Frame
----@field label EPLabel
----@field highlight Texture
----@field disabled boolean
----@field checked boolean
-
 ---@alias EPAbilityEntryType
 ---|"EPAbilityEntry"
 

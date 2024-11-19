@@ -30,6 +30,19 @@ local function HandleCheckBoxMouseUp(frame)
 	end
 end
 
+---@class EPAbilityEntry : AceGUIWidget
+---@field frame table|BackdropTemplate|Frame
+---@field type string
+---@field count number
+---@field checkbg Texture
+---@field check table|Frame
+---@field checkbox table|Frame
+---@field label EPLabel
+---@field highlight Texture
+---@field disabled boolean
+---@field checked boolean
+---@field key string|nil
+
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.label = AceGUI:Create("EPLabel")
@@ -38,6 +51,7 @@ local function OnAcquire(self)
 	self.label:SetIconPadding(padding.x, padding.y)
 	self.label:SetTextPadding(padding.x * 2, "none")
 	self.label:SetHeight(frameHeight)
+	self:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self:SetDisabled(false)
 	self:SetChecked(true)
 end
@@ -46,6 +60,7 @@ end
 local function OnRelease(self)
 	self.label:Release()
 	self.label = nil
+	self.key = nil
 end
 
 ---@param self EPAbilityEntry
@@ -53,6 +68,13 @@ end
 local function SetDisabled(self, disabled)
 	self.disabled = disabled
 	self.label:SetDisabled(disabled)
+end
+
+---@param self EPAbilityEntry
+---@param textureAsset? string|number
+local function SetCheckedTexture(self, textureAsset)
+	local check = self.check
+	check:SetTexture(textureAsset)
 end
 
 ---@param self EPAbilityEntry
@@ -92,9 +114,23 @@ end
 
 ---@param self EPAbilityEntry
 ---@param str string
-local function SetText(self, str)
+---@param key string?
+local function SetText(self, str, key)
 	self.label:SetText(str)
 	self.label:SetIcon(nil)
+	self.key = key
+end
+
+---@param self EPAbilityEntry
+---@return string|nil
+local function GetKey(self)
+	return self.key
+end
+
+---@param self EPAbilityEntry
+---@return string
+local function GetText(self)
+	return self.label:GetText()
 end
 
 local function Constructor()
@@ -135,11 +171,14 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		SetDisabled = SetDisabled,
+		SetCheckedTexture = SetCheckedTexture,
 		SetChecked = SetChecked,
 		GetChecked = GetChecked,
 		ToggleChecked = ToggleChecked,
 		SetAbility = SetAbility,
 		SetText = SetText,
+		GetText = GetText,
+		GetKey = GetKey,
 		frame = frame,
 		type = Type,
 		count = count,
