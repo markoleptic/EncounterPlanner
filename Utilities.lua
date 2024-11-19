@@ -540,15 +540,17 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, b
 	return true
 end
 
----@param sortedAssignees table<integer, string>
----@param roster table<string, EncounterPlannerDbRosterEntry>
----@return table<integer, string>
+-- Creates two tables used to populate the assignment list. The first is a sorted list of text for the list and the
+-- second is a table that maps the text to the assigneeNameOrRole found in the assignments.
+---@param sortedAssignees table<integer, string> Sorted list of assigneeNameOrRoles from assignments
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
+---@return table<integer, string>, table<string, string>
 function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 	local textTable = {}
-
+	local map = {}
 	for index = 1, #sortedAssignees do
-		local abilityEntryText
 		local assigneeNameOrRole = sortedAssignees[index]
+		local abilityEntryText = assigneeNameOrRole
 		if assigneeNameOrRole == "{everyone}" then
 			abilityEntryText = "Everyone"
 		else
@@ -566,18 +568,17 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
 			elseif groupMatch then
 				abilityEntryText = "Group " .. groupMatch
-			else
-				if roster and roster[sortedAssignees[index]] and roster[sortedAssignees[index]].classColoredName then
-					abilityEntryText = roster[sortedAssignees[index]].classColoredName
-				else
-					abilityEntryText = sortedAssignees[index]
+			elseif roster and roster[sortedAssignees[index]] then
+				if roster[sortedAssignees[index]].classColoredName then
+					abilityEntryText = roster[sortedAssignees[index]].classColoredName or assigneeNameOrRole
 				end
 			end
 		end
+		map[abilityEntryText] = assigneeNameOrRole
 		tinsert(textTable, abilityEntryText)
 	end
 
-	return textTable
+	return textTable, map
 end
 
 -- Creates a table of unit types for the current raid or party group.
@@ -602,22 +603,7 @@ function Utilities.IterateRosterUnits(maxGroup)
 	return units
 end
 
--- Creates a table where keys are player names and values are tables with class and classColoredName fields.
----@return table<integer, string>
-function Utilities.CreateRosterFromCurrentGroup()
-	local group = {}
-	for _, unit in pairs(Utilities.IterateRosterUnits()) do
-		if unit then
-			local unitName, _ = UnitName(unit)
-			if unitName then
-				tinsert(group, unitName)
-			end
-		end
-	end
-	return group
-end
-
--- Creates a table where keys are player names and values are tables with class and classColoredName fields.
+-- Creates a table where keys are character names and the values are tables with class and classColoredName fields.
 ---@return table
 function Utilities.CreateClassColoredNamesFromCurrentGroup()
 	local groupData = {}
@@ -629,6 +615,7 @@ function Utilities.CreateClassColoredNamesFromCurrentGroup()
 				local colorMixin = GetClassColor(classFileName)
 				if colorMixin then
 					local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+					groupData[unitName] = {}
 					groupData[unitName].class = classFileName
 					groupData[unitName].classColoredName = classColoredName
 					if unitServer then -- nil if on same server
@@ -642,54 +629,75 @@ function Utilities.CreateClassColoredNamesFromCurrentGroup()
 	return groupData
 end
 
----@param assignments table<integer, Assignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
-function Utilities.UpdateRoster(assignments, roster)
+-- Updates classes and class colored names from the current raid or party group.
+---@param unitName string Character name for the roster entry
+---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
+---@param currentGroupClassData table Table containing class and class colored name
+local function UpdateRosterEntryClassAndClassName(unitName, rosterEntry, currentGroupClassData)
+	if rosterEntry.class and rosterEntry.class ~= "" then -- Manually entered class
+		local className = rosterEntry.class:match("class:%s*(%a+)")
+		if className then
+			className = className:upper()
+			if Private.spellDB.classes[className] then
+				local colorMixin = GetClassColor(className)
+				rosterEntry.classColoredName = colorMixin:WrapTextInColorCode(unitName)
+			end
+		end
+	elseif currentGroupClassData and type(currentGroupClassData.class) == "string" then
+		local className = currentGroupClassData.class
+		local actualClassName
+		if className == "DEATHKNIGHT" then
+			actualClassName = "DeathKnight"
+		elseif className == "DEMONHUNTER" then
+			actualClassName = "DemonHunter"
+		else
+			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+		end
+		rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
+		rosterEntry.classColoredName = currentGroupClassData.classColoredName
+	else
+		rosterEntry.class = nil
+		rosterEntry.classColoredName = nil
+	end
+end
+
+-- Updates classes and class colored names from the current raid or party group.
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+---@param addIfMissing boolean? If true, units that do not exist in the roster are added
+function Utilities.UpdateRosterClassesAndClassNames(roster, addIfMissing)
+	local groupData = Utilities.CreateClassColoredNamesFromCurrentGroup()
+	for unitName, data in pairs(groupData) do
+		if not roster[unitName] and addIfMissing then
+			roster[unitName] = {}
+		end
+		if roster[unitName] then
+			UpdateRosterEntryClassAndClassName(unitName, roster[unitName], data)
+		end
+	end
+end
+
+-- Adds assignees from assignments not already present in roster, updates estimated roles if one was found and the entry
+-- does not already have one.
+---@param assignments table<integer, Assignment> Assignments to add assignees from
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+function Utilities.UpdateRosterFromAssignments(assignments, roster)
 	local determinedRoles = Utilities.DetermineRolesFromAssignments(assignments)
 	local visited = {}
-	local groupData = Utilities.CreateClassColoredNamesFromCurrentGroup()
-
 	for _, assignment in ipairs(assignments) do
 		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
 			local nameOrRole = assignment.assigneeNameOrRole
 			if
 				not nameOrRole:find("class:")
 				and not nameOrRole:find("group:")
+				and not nameOrRole:find("role:")
 				and not nameOrRole:find("{everyone}")
 			then
 				if not roster[nameOrRole] then
 					roster[nameOrRole] = {}
 				end
-				local rosterMember = roster[nameOrRole]
-				if rosterMember.class and rosterMember.class ~= "" then -- Manually entered class
-					local className = rosterMember.class:match("class:%s*(%a+)")
-					if className then
-						className = className:upper()
-						if Private.spellDB.classes[className] then
-							local colorMixin = GetClassColor(className)
-							rosterMember.classColoredName = colorMixin:WrapTextInColorCode(nameOrRole)
-						end
-					end
-				elseif groupData[nameOrRole] and type(groupData[nameOrRole].class) == "string" then
-					local className = groupData[nameOrRole].class
-					local actualClassName
-					if className == "DEATHKNIGHT" then
-						actualClassName = "DeathKnight"
-					elseif className == "DEMONHUNTER" then
-						actualClassName = "DemonHunter"
-					else
-						actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-					end
-					rosterMember.class = "class:" .. actualClassName:gsub("%s", "")
-					rosterMember.classColoredName = groupData[nameOrRole].classColoredName
-				else
-					rosterMember.class = nil
-					rosterMember.classColoredName = nil
-				end
-
-				if not rosterMember.role or rosterMember.role == "" then
+				if not roster[nameOrRole].role or roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
-						rosterMember.role = determinedRoles[nameOrRole]
+						roster[nameOrRole].role = determinedRoles[nameOrRole]
 					end
 				end
 			end

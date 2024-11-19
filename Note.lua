@@ -754,6 +754,7 @@ function Private:Note(epNoteName, parseMRTNote)
 		note.bossName = bossName
 	end
 
-	utilities.UpdateRoster(note.assignments, note.roster)
+	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
+	utilities.UpdateRosterClassesAndClassNames(note.roster, false)
 	return bossName
 end
