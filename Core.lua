@@ -40,6 +40,9 @@ local dropdownContainerSpacing = { 2, 2 }
 local noteContainerSpacing = { 5, 2 }
 local topContainerDropdownWidth = 150
 local topContainerHeight = 36
+local spellDropdownItems = utilities.CreateSpellAssignmentDropdownItems()
+local assignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems()
+local classDropdownItems = utilities.CreateClassDropdownItemData()
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -145,7 +148,7 @@ local function CreateRosterEditor()
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 
 		Private.rosterEditor:SetLayout("EPVerticalLayout")
-		Private.rosterEditor:SetClassDropdownData(utilities.CreateClassDropdownItemData())
+		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 		Private.rosterEditor:SetCurrentTab("CurrentBossRoster")
 		yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
@@ -351,14 +354,8 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		Private.assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
 		Private.assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		Private.assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
-		Private.assignmentEditor.spellAssignmentDropdown:AddItems(
-			utilities.CreateSpellAssignmentDropdownItems(),
-			"EPDropdownItemToggle"
-		)
-		Private.assignmentEditor.assigneeTypeDropdown:AddItems(
-			utilities.CreateAssignmentTypeDropdownItems(),
-			"EPDropdownItemToggle"
-		)
+		Private.assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
+		Private.assignmentEditor.assigneeTypeDropdown:AddItems(assignmentTypeDropdownItems, "EPDropdownItemToggle")
 		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 		Private.assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		Private.assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
