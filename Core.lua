@@ -676,7 +676,7 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 			end
 			interfaceUpdater.UpdateAllAssignments(true, boss)
 		end)
-		Private.importEditBox:HightlightTextAndFocus()
+		Private.importEditBox:HighlightTextAndFocus()
 	end
 
 	importDropdown:SetText("Import")
@@ -696,7 +696,7 @@ local function HandleExportButtonClicked()
 	local text = Private:ExportNote(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
 	if text then
 		Private.exportEditBox:SetText(text)
-		Private.exportEditBox:HightlightTextAndFocus()
+		Private.exportEditBox:HighlightTextAndFocus()
 	end
 end
 

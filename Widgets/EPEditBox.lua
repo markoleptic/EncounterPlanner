@@ -122,7 +122,7 @@ local function ShowOkayButton(self, show, okayButtonText)
 end
 
 ---@param self EPEditBox
-local function HightlightTextAndFocus(self)
+local function HighlightTextAndFocus(self)
 	self.editBox:SetSize(self.scrollFrame:GetSize())
 	self.editBox:HighlightText()
 	self.editBox:SetFocus()
@@ -208,7 +208,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetText = SetText,
 		GetText = GetText,
-		HightlightTextAndFocus = HightlightTextAndFocus,
+		HighlightTextAndFocus = HighlightTextAndFocus,
 		ShowOkayButton = ShowOkayButton,
 		SetTitle = SetTitle,
 		frame = frame,
