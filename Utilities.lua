@@ -561,8 +561,9 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 		if assigneeNameOrRole == "{everyone}" then
 			abilityEntryText = "Everyone"
 		else
-			local classMatch, roleMatch, groupMatch =
-				assigneeNameOrRole:match("class:%s*(%a+)|role:%s*(%a+)|group:%s*(%d)")
+			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+			local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
 			if classMatch then
 				local prettyClassName = Private.prettyClassNames[classMatch]
 				if prettyClassName then
@@ -706,10 +707,12 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 	for _, assignment in ipairs(assignments) do
 		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
 			local nameOrRole = assignment.assigneeNameOrRole
-			if not nameOrRole:match("^(class:|group:|role:|{everyone})") then
-				if not roster[nameOrRole] then
-					roster[nameOrRole] = {}
-				end
+			if
+				not nameOrRole:find("class:")
+				and not nameOrRole:find("group:")
+				and not nameOrRole:find("role:")
+				and not nameOrRole:find("{everyone}")
+			then
 				if not roster[nameOrRole].role or roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
 						roster[nameOrRole].role = determinedRoles[nameOrRole]

@@ -269,7 +269,7 @@ local function CreateAssignmentEditor()
 		assignmentEditor.frame:SetFrameLevel(10)
 		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		assignmentEditor:SetLayout("EPVerticalLayout")
-		assignmentEditor = assignmentEditor
+		Private.assignmentEditor = assignmentEditor
 		assignmentEditor:SetCallback("OnRelease", function()
 			Private.assignmentEditor = nil
 		end)
@@ -398,7 +398,9 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
 		assignmentEditor.assigneeDropdown:SetValue("")
 	else
-		local classMatch, roleMatch, groupMatch = assigneeNameOrRole:match("class:%s*(%a+)|role:%s*(%a+)|group:%s*(%d)")
+		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
 		if classMatch then
 			assignmentEditor:SetAssigneeType("Class")
 			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
