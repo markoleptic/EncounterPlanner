@@ -351,30 +351,29 @@ function Utilities.SortAssignees(sortedTimelineAssignments)
 	return assigneeOrder
 end
 
--- Creates a table of sorted TimelineAssignments and sets the start time used for each assignment on the timeline. Sorts
--- assignments based on the assignmentSortType.
+-- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
+-- Sorts assignments based on the assignmentSortType.
 ---@param assignments table<integer, Assignment> Assignments to sort
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
 ---@param boss Boss? Used to get boss timers to set the proper timeline assignment start time for combat log assignments
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
-	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
 	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, boss)
 
 	if assignmentSortType == "Alphabetical" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+		sort(timelineAssignments, function(a, b)
 			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
 		end)
 	elseif assignmentSortType == "First Appearance" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
 			end
 			return a.startTime < b.startTime
 		end)
 	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
-		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
+		sort(timelineAssignments, function(a, b)
 			local nameOrRoleA = a.assignment.assigneeNameOrRole
 			local nameOrRoleB = b.assignment.assigneeNameOrRole
 			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
@@ -416,7 +415,7 @@ function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss
 		end)
 	end
 
-	return sorted
+	return timelineAssignments
 end
 
 -- Attempts to assign roles based on assignment spells. Currently only tries to assign healer roles.
