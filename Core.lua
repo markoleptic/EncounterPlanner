@@ -78,7 +78,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 
 	Private.rosterEditor:Release()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterClassesAndClassNames(GetCurrentRoster(), false)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
 	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	interfaceUpdater.UpdateAllAssignments(true, boss)
 end
@@ -92,7 +92,7 @@ local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab)
 		currentRoster = GetCurrentRoster()
 	end
 	if currentRoster then
-		utilities.UpdateRosterClassesAndClassNames(currentRoster, true)
+		utilities.UpdateRosterDataFromGroup(currentRoster, true)
 		if rosterTab == "CurrentBossRoster" then
 			interfaceUpdater.UpdateAddAssigneeDropdown()
 		end
@@ -127,7 +127,7 @@ local function HandleImportRosterButtonClicked(_, _, rosterTab)
 		end
 	end
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterClassesAndClassNames(GetCurrentRoster(), false)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
 	interfaceUpdater.UpdateAddAssigneeDropdown()
 	Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 	Private.rosterEditor:SetCurrentTab(rosterTab)
@@ -976,7 +976,7 @@ function Private:CreateGUI()
 	)
 	local sortedAssignees = utilities.SortAssignees(sorted)
 	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
-	utilities.UpdateRosterClassesAndClassNames(GetCurrentRoster(), false)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
 
 	-- Set default values
 	interfaceUpdater.UpdateBossAbilityList(bossName)

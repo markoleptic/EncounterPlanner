@@ -563,7 +563,7 @@ end
 function Private:ParseNote(note)
 	wipe(note.assignments) -- temporary until assignments are more stable
 	local bossName = nil
-	local classColoredNameTable = utilities.CreateClassColoredNamesFromCurrentGroup()
+	local classColoredNameTable = utilities.GetDataFromGroup()
 
 	for _, line in pairs(note.content) do
 		local time, options = ParseTime(line)
@@ -775,6 +775,6 @@ function Private:Note(epNoteName, parseMRTNote)
 	end
 
 	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
-	utilities.UpdateRosterClassesAndClassNames(note.roster, false)
+	utilities.UpdateRosterDataFromGroup(note.roster, false)
 	return bossName
 end
