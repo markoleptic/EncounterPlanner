@@ -251,10 +251,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline and boss then
-		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
 		for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 			if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
+				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 				break
 			end
 		end

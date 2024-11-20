@@ -309,6 +309,27 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 	return dropdownItems
 end
 
+-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
+---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
+---@param boss Boss? The boss to obtain cast times from if the assignment requires it
+---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
+function Utilities.CreateTimelineAssignments(assignments, boss)
+	local timelineAssignments = {}
+	local allSucceeded = true
+	for _, assignment in pairs(assignments) do
+		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
+		local success = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
+		if success == false and allSucceeded == true then
+			allSucceeded = false
+		end
+		tinsert(timelineAssignments, timelineAssignment)
+	end
+	if allSucceeded == false then
+		print(AddOnName .. ": ", "An assignment attempted to update without a boss or boss phase table.")
+	end
+	return timelineAssignments
+end
+
 -- Sorts the assignees based on the order of the timeline assignments.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@return table<integer, string>
@@ -339,23 +360,7 @@ end
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
 	local sorted = {} --[[@as table<integer, TimelineAssignment>]]
-	local bossPhaseTable = nil
-	if boss then
-		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
-	end
-
-	local allSucceeded = true
-	for _, assignment in pairs(assignments) do
-		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
-		local success = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
-		if success == false and allSucceeded == true then
-			allSucceeded = false
-		end
-		tinsert(sorted, timelineAssignment)
-	end
-	if allSucceeded == false then
-		print(AddOnName .. ":", "An assignment attempted to update without a boss or boss phase table.")
-	end
+	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, boss)
 
 	if assignmentSortType == "Alphabetical" then
 		sort(sorted --[[@as table<integer, TimelineAssignment>]], function(a, b)
@@ -498,10 +503,13 @@ end
 -- Updates a timeline assignment's start time.
 ---@param timelineAssignment TimelineAssignment
 ---@param boss Boss? The boss to obtain cast times from if the assignment requires it
----@param bossPhaseTable table<integer, integer>? A table of boss phases in the order in which they occur
 ---@return boolean -- Whether or not the update succeeded
-function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
+function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 	local assignment = timelineAssignment.assignment
+	local bossPhaseTable = nil
+	if boss then
+		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
+	end
 	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
 		local ability = bossUtilities.FindBossAbility(assignment.combatLogEventSpellID)
@@ -554,9 +562,8 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 		if assigneeNameOrRole == "{everyone}" then
 			abilityEntryText = "Everyone"
 		else
-			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-			local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+			local classMatch, roleMatch, groupMatch =
+				assigneeNameOrRole:match("class:%s*(%a+)|role:%s*(%a+)|group:%s*(%d)")
 			if classMatch then
 				local prettyClassName = Private.prettyClassNames[classMatch]
 				if prettyClassName then

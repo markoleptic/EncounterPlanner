@@ -587,26 +587,8 @@ end
 ---@param note EncounterPlannerDbNote
 ---@return string|nil
 function Private:ExportNote(note)
-	local sortedAssignments = {} --[[@as table<integer, TimelineAssignment>]]
 	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	local bossPhaseTable = nil
-	if boss then
-		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
-	end
-
-	local allSucceeded = true
-	for _, assignment in pairs(note.assignments) do
-		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
-		local success = utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss, bossPhaseTable)
-		if success == false and allSucceeded == true then
-			allSucceeded = false
-		end
-		tinsert(sortedAssignments, timelineAssignment)
-	end
-	if allSucceeded == false then
-		print(AddOnName .. ":", "An assignment attempted to update without a boss or boss phase table.")
-	end
-
+	local sortedAssignments = utilities.CreateTimelineAssignments(note.assignments, boss)
 	sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
 		if a.startTime == b.startTime then
 			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
