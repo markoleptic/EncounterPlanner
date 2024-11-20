@@ -584,12 +584,72 @@ function Private:ParseNote(note)
 	return bossName
 end
 
+---@param assignment CombatLogEventAssignment|TimedAssignment
+---@return string
+local function CreateTimeAndOptionsExportString(assignment)
+	local minutes = math.floor(assignment.time / 60)
+	local seconds = assignment.time - (minutes * 60)
+	local timeAndOptionsString = ""
+	if assignment.combatLogEventType and assignment.combatLogEventSpellID and assignment.spellCount then
+		timeAndOptionsString = format(
+			"{time:%d:%02d,%s:%d:%d}",
+			minutes,
+			seconds,
+			assignment.combatLogEventType,
+			assignment.combatLogEventSpellID,
+			assignment.spellCount
+		)
+	else
+		timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
+	end
+	if assignment.generalTextSpellID then
+		local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
+		timeAndOptionsString = timeAndOptionsString .. optionsString
+	else
+		timeAndOptionsString = timeAndOptionsString .. assignment.generalText
+	end
+	timeAndOptionsString = timeAndOptionsString .. " - "
+	return timeAndOptionsString
+end
+
+---@param assignment Assignment
+---@param roster EncounterPlannerDbRosterEntry
+---@return string
+local function CreateAssignmentExportString(assignment, roster)
+	local assignmentString = assignment.assigneeNameOrRole
+
+	if roster[assignment.assigneeNameOrRole] then
+		local classColoredName = roster[assignment.assigneeNameOrRole].classColoredName
+		if classColoredName then
+			assignmentString = classColoredName:gsub("|", "||")
+		end
+	end
+	if assignment.targetName ~= nil and assignment.targetName ~= "" then
+		if roster[assignment.targetName] and roster[assignment.targetName].classColoredName then
+			local classColoredName = roster[assignment.targetName].classColoredName
+			assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
+		else
+			assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
+		end
+	end
+	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+		local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
+		assignmentString = assignmentString .. spellString
+	end
+	if assignment.text ~= nil and assignment.text ~= "" then
+		local textString = string.format(" {text}%s{/text}", assignment.text)
+		assignmentString = assignmentString .. textString
+	end
+
+	return assignmentString
+end
+
 ---@param note EncounterPlannerDbNote
 ---@return string|nil
 function Private:ExportNote(note)
 	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	local sortedAssignments = utilities.CreateTimelineAssignments(note.assignments, boss)
-	sort(sortedAssignments --[[@as table<integer, TimelineAssignment>]], function(a, b)
+	local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, boss)
+	sort(timelineAssignments, function(a, b)
 		if a.startTime == b.startTime then
 			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
 		end
@@ -609,104 +669,26 @@ function Private:ExportNote(note)
 	end
 
 	local inStringTable = {}
-	for _, timelineAssignment in ipairs(sortedAssignments) do
+	for _, timelineAssignment in ipairs(timelineAssignments) do
+		local assignment = timelineAssignment.assignment
+		local timeAndOptionsString, assignmentString = "", ""
 		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
-			local minutes = math.floor(assignment.time / 60)
-			local seconds = assignment.time - (minutes * 60)
-			local timeAndOptionsString = format(
-				"{time:%d:%02d,%s:%d:%d}",
-				minutes,
-				seconds,
-				assignment.combatLogEventType,
-				assignment.combatLogEventSpellID,
-				assignment.spellCount
-			)
-			if assignment.generalTextSpellID then
-				local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
-				timeAndOptionsString = timeAndOptionsString .. optionsString
-			else
-				timeAndOptionsString = timeAndOptionsString .. assignment.generalText
-			end
-			timeAndOptionsString = timeAndOptionsString .. " - "
-
-			local assignmentString = assignment.assigneeNameOrRole
-			if note.roster[assignment.assigneeNameOrRole] then
-				local classColoredName = note.roster[assignment.assigneeNameOrRole].classColoredName
-				if classColoredName then
-					assignmentString = classColoredName:gsub("|", "||")
-				end
-			end
-			if assignment.targetName ~= nil and assignment.targetName ~= "" then
-				if note.roster[assignment.targetName] and note.roster[assignment.targetName].classColoredName then
-					local classColoredName = note.roster[assignment.targetName].classColoredName
-					assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
-				else
-					assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
-				end
-			end
-			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
-				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
-				assignmentString = assignmentString .. spellString
-			end
-			if assignment.text ~= nil and assignment.text ~= "" then
-				local textString = string.format(" {text}%s{/text}", assignment.text)
-				assignmentString = assignmentString .. textString
-			end
-
-			local stringTableIndex = inStringTable[timeAndOptionsString]
-			if stringTableIndex then
-				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
-			else
-				tinsert(stringTable, timeAndOptionsString .. assignmentString)
-				inStringTable[timeAndOptionsString] = #stringTable
-			end
+			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
+			assignmentString = CreateAssignmentExportString(assignment, note.roster)
 		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
-			local minutes = math.floor(assignment.time / 60)
-			local seconds = assignment.time - (minutes * 60)
-			local timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
-			if assignment.generalTextSpellID then
-				local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
-				timeAndOptionsString = timeAndOptionsString .. optionsString
-			else
-				timeAndOptionsString = timeAndOptionsString .. assignment.generalText
-			end
-			timeAndOptionsString = timeAndOptionsString .. " - "
-
-			local assignmentString = assignment.assigneeNameOrRole
-			if note.roster[assignment.assigneeNameOrRole] then
-				local classColoredName = note.roster[assignment.assigneeNameOrRole].classColoredName
-				if classColoredName then
-					assignmentString = classColoredName:gsub("|", "||")
-				end
-			end
-			if assignment.targetName ~= nil and assignment.targetName ~= "" then
-				if note.roster[assignment.targetName] and note.roster[assignment.targetName].classColoredName then
-					local classColoredName = note.roster[assignment.targetName].classColoredName
-					assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
-				else
-					assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
-				end
-			end
-			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
-				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
-				assignmentString = assignmentString .. spellString
-			end
-			if assignment.text ~= nil and assignment.text ~= "" then
-				local textString = string.format(" {text}%s{/text}", assignment.text)
-				assignmentString = assignmentString .. textString
-			end
-
-			local stringTableIndex = inStringTable[timeAndOptionsString]
-			if stringTableIndex then
-				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
-			else
-				tinsert(stringTable, timeAndOptionsString .. assignmentString)
-				inStringTable[timeAndOptionsString] = #stringTable
-			end
+			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
+			assignmentString = CreateAssignmentExportString(assignment, note.roster)
 		elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
 			-- Not yet supported
+		end
+		if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
+			local stringTableIndex = inStringTable[timeAndOptionsString]
+			if stringTableIndex then
+				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+			else
+				tinsert(stringTable, timeAndOptionsString .. assignmentString)
+				inStringTable[timeAndOptionsString] = #stringTable
+			end
 		end
 	end
 
