@@ -393,50 +393,54 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		return
 	end
 
-	if assignment.assigneeNameOrRole == "{everyone}" then
-		Private.assignmentEditor:SetAssigneeType("Everyone")
-		Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
-		Private.assignmentEditor.assigneeDropdown:SetValue("")
+	local assigneeNameOrRole = assignment.assigneeNameOrRole
+	if assigneeNameOrRole == "{everyone}" then
+		assignmentEditor:SetAssigneeType("Everyone")
+		assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+		assignmentEditor.assigneeDropdown:SetValue("")
 	else
-		local classMatch = assignment.assigneeNameOrRole:match("class:%s*(%a+)")
-		local roleMatch = assignment.assigneeNameOrRole:match("role:%s*(%a+)")
+		local classMatch, roleMatch, groupMatch = assigneeNameOrRole:match("class:%s*(%a+)|role:%s*(%a+)|group:%s*(%d)")
 		if classMatch then
-			Private.assignmentEditor:SetAssigneeType("Class")
-			Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
-			Private.assignmentEditor.assigneeDropdown:SetValue("")
+			assignmentEditor:SetAssigneeType("Class")
+			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			assignmentEditor.assigneeDropdown:SetValue("")
 		elseif roleMatch then
-			Private.assignmentEditor:SetAssigneeType("Role")
-			Private.assignmentEditor.assigneeTypeDropdown:SetValue(assignment.assigneeNameOrRole)
-			Private.assignmentEditor.assigneeDropdown:SetValue("")
+			assignmentEditor:SetAssigneeType("Role")
+			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			assignmentEditor.assigneeDropdown:SetValue("")
+		elseif groupMatch then
+			assignmentEditor:SetAssigneeType("GroupNumber")
+			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			assignmentEditor.assigneeDropdown:SetValue("")
 		else
-			Private.assignmentEditor:SetAssigneeType("Individual")
-			Private.assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
-			Private.assignmentEditor.assigneeDropdown:SetValue(assignment.assigneeNameOrRole)
+			assignmentEditor:SetAssigneeType("Individual")
+			assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
+			assignmentEditor.assigneeDropdown:SetValue(assigneeNameOrRole)
 		end
 	end
 
-	Private.assignmentEditor.previewLabel:SetText(assignment.strWithIconReplacements)
-	Private.assignmentEditor.targetDropdown:SetValue(assignment.targetName)
-	Private.assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
-	Private.assignmentEditor.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
+	assignmentEditor.previewLabel:SetText(assignment.strWithIconReplacements)
+	assignmentEditor.targetDropdown:SetValue(assignment.targetName)
+	assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
+	assignmentEditor.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
 
 	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		Private.assignmentEditor:SetAssignmentType("CombatLogEventAssignment")
-		Private.assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
-		Private.assignmentEditor.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
-		Private.assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
-		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
+		assignmentEditor:SetAssignmentType("CombatLogEventAssignment")
+		assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
+		assignmentEditor.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
+		assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
+		assignmentEditor.timeEditBox:SetText(assignment.time)
 	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
-		Private.assignmentEditor:SetAssignmentType("TimedAssignment")
-		Private.assignmentEditor.assignmentTypeDropdown:SetValue("Absolute Time")
-		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
+		assignmentEditor:SetAssignmentType("TimedAssignment")
+		assignmentEditor.assignmentTypeDropdown:SetValue("Absolute Time")
+		assignmentEditor.timeEditBox:SetText(assignment.time)
 	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
-		Private.assignmentEditor:SetAssignmentType("PhasedAssignment")
-		Private.assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
-		Private.assignmentEditor.timeEditBox:SetText(assignment.time)
+		assignmentEditor:SetAssignmentType("PhasedAssignment")
+		assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
+		assignmentEditor.timeEditBox:SetText(assignment.time)
 	end
 end
 
