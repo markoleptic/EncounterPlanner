@@ -649,9 +649,19 @@ function Private:ExportNote(note)
 			timeAndOptionsString = timeAndOptionsString .. " - "
 
 			local assignmentString = assignment.assigneeNameOrRole
+			if note.roster[assignment.assigneeNameOrRole] then
+				local classColoredName = note.roster[assignment.assigneeNameOrRole].classColoredName
+				if classColoredName then
+					assignmentString = classColoredName:gsub("|", "||")
+				end
+			end
 			if assignment.targetName ~= nil and assignment.targetName ~= "" then
-				local targetString = string.format(" @%s", assignment.targetName)
-				assignmentString = assignmentString .. targetString
+				if note.roster[assignment.targetName] and note.roster[assignment.targetName].classColoredName then
+					local classColoredName = note.roster[assignment.targetName].classColoredName
+					assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
+				else
+					assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
+				end
 			end
 			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
 				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
@@ -683,9 +693,19 @@ function Private:ExportNote(note)
 			timeAndOptionsString = timeAndOptionsString .. " - "
 
 			local assignmentString = assignment.assigneeNameOrRole
+			if note.roster[assignment.assigneeNameOrRole] then
+				local classColoredName = note.roster[assignment.assigneeNameOrRole].classColoredName
+				if classColoredName then
+					assignmentString = classColoredName:gsub("|", "||")
+				end
+			end
 			if assignment.targetName ~= nil and assignment.targetName ~= "" then
-				local targetString = string.format(" @%s", assignment.targetName)
-				assignmentString = assignmentString .. targetString
+				if note.roster[assignment.targetName] and note.roster[assignment.targetName].classColoredName then
+					local classColoredName = note.roster[assignment.targetName].classColoredName
+					assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
+				else
+					assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
+				end
 			end
 			if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
 				local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
