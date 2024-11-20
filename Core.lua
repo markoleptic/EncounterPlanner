@@ -40,9 +40,9 @@ local dropdownContainerSpacing = { 2, 2 }
 local noteContainerSpacing = { 5, 2 }
 local topContainerDropdownWidth = 150
 local topContainerHeight = 36
-local spellDropdownItems = utilities.CreateSpellAssignmentDropdownItems()
-local assignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems()
-local classDropdownItems = utilities.CreateClassDropdownItemData()
+local spellDropdownItems = {}
+local assignmentTypeDropdownItems = {}
+local classDropdownItems = {}
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -1082,6 +1082,9 @@ function AddOn:OnInitialize()
 	self:RegisterChatCommand("ep", "SlashCommand")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	utilities.CreatePrettyClassNames()
+	spellDropdownItems = utilities.CreateSpellAssignmentDropdownItems()
+	assignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems()
+	classDropdownItems = utilities.CreateClassDropdownItemData()
 	self.OnInitialize = nil
 end
 
