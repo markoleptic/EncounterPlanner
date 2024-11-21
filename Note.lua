@@ -23,8 +23,8 @@ local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInRaid = IsInRaid
 local pairs = pairs
 local select = select
-local strsplit = strsplit
-local strsplittable = strsplittable
+local split = string.split
+local splitTable = strsplittable
 local tinsert = tinsert
 local tonumber = tonumber
 local tostring = tostring
@@ -289,7 +289,7 @@ end
 ---@return string
 local function GSubPlayer(anti, list, msg)
 	local playerName, _ = UnitName("player")
-	local tableList = strsplittable(",", list)
+	local tableList = splitTable(",", list)
 	local found = false
 	local myName = playerName:lower()
 	for i = 1, #tableList do
@@ -310,7 +310,7 @@ end
 ---@param msg string
 ---@return string
 local function GSubEncounter(list, msg)
-	local tableList = strsplittable(",", list)
+	local tableList = splitTable(",", list)
 	local found = false
 	for i = 1, #tableList do
 		tableList[i] = tableList[i]:gsub("|?|c........", ""):gsub("|?|r", ""):lower()
@@ -328,7 +328,7 @@ end
 ---@param msg string
 ---@return string
 local function GSubClass(anti, list, msg)
-	local tableList = strsplittable(",", list)
+	local tableList = splitTable(",", list)
 	local classID = select(3, UnitClass("player"))
 	local found = false
 	for i = 1, #tableList do
@@ -351,7 +351,7 @@ end
 ---@param msg string
 ---@return string
 local function GSubRace(anti, list, msg)
-	local tableList = strsplittable(",", list)
+	local tableList = splitTable(",", list)
 	local race = select(2, UnitRace("player")):lower()
 	local found = false
 	for i = 1, #tableList do
@@ -504,10 +504,10 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 	local regularTimer = true
 	local option = nil
 	while options do
-		option, options = strsplit(",", options, 2)
+		option, options = split(",", options, 2)
 		if option == "e" then
 			if options then
-				option, options = strsplit(",", options, 2)
+				option, options = split(",", options, 2)
 				if option then -- custom event
 					-- TODO: Handle custom event
 					regularTimer = false
@@ -528,7 +528,7 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 				regularTimer = false
 			end
 		else
-			local combatLogEventAbbreviation, spellIDStr, spellCountStr = strsplit(":", option, 3)
+			local combatLogEventAbbreviation, spellIDStr, spellCountStr = split(":", option, 3)
 			if combatLogEventFromAbbreviation[combatLogEventAbbreviation] then
 				local spellID = tonumber(spellIDStr)
 				local spellCount = tonumber(spellCountStr)

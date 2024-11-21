@@ -97,7 +97,7 @@ local function HandleAssignmentMouseDown(frame, mouseButton, epTimeline)
 	if mouseButton ~= "LeftButton" then
 		return
 	end
-	-- TODO: Implement dragging an assignement spell icon to change the time
+	-- TODO: Implement dragging an assignment spell icon to change the time
 end
 
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
@@ -113,7 +113,7 @@ local function UpdateLinePosition(frame)
 	local self = frame.obj --[[@as EPTimeline]]
 	local xPosition, _ = GetCursorPosition()
 	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.timelineFrame:GetLeft()
-	local newassignmentTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
+	local newAssignmentTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.assignmentTimelineFrame:GetLeft()
 
 	self.timelineVerticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT", newTimeOffset, 0)
 	self.timelineVerticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
@@ -123,14 +123,14 @@ local function UpdateLinePosition(frame)
 		"TOP",
 		self.assignmentTimelineFrame,
 		"TOPLEFT",
-		newassignmentTimeOffset,
+		newAssignmentTimeOffset,
 		0
 	)
 	self.assignmentTimelineVerticalPositionLine:SetPoint(
 		"BOTTOM",
 		self.assignmentTimelineFrame,
 		"BOTTOMLEFT",
-		newassignmentTimeOffset,
+		newAssignmentTimeOffset,
 		0
 	)
 	self.assignmentTimelineVerticalPositionLine:Show()
@@ -342,7 +342,7 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 	local timelineWidth = self.timelineWrapperFrame:GetWidth() - 2 * padding.x
 
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
-	local timelinetimeEndPosition = (endTime / totalTimelineDuration) * timelineWidth
+	local timelineEndPosition = (endTime / totalTimelineDuration) * timelineWidth
 
 	---@class Texture
 	local bar = self.bossAbilityTextureBars[index]
@@ -355,7 +355,7 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 
 	local r, g, b, a = unpack(color)
 	bar:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
-	bar:SetSize(timelinetimeEndPosition - timelineStartPosition, bossAbilityBarHeight)
+	bar:SetSize(timelineEndPosition - timelineStartPosition, bossAbilityBarHeight)
 	bar:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", timelineStartPosition + padding.x, -offset)
 	bar:Show()
 end
