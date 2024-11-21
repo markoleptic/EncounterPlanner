@@ -372,10 +372,12 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 		return
 	end
 
-	---@class Texture
-	local assignment = self.assignmentTextures[index]
+	---@class Frame
+	local assignment = self.assignmentFrames[index]
 	if not assignment then
-		assignment = self.assignmentTimelineFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
+		assignment = CreateFrame("Frame", nil, self.assignmentTimelineFrame)
+		assignment.spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
+		assignment.spellTexture:SetAllPoints()
 		assignment.assignmentFrame = self.assignmentTimelineFrame
 		assignment:SetScript("OnEnter", function(frame, motion)
 			HandleIconEnter(frame, motion)
@@ -389,16 +391,16 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 		assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
 			HandleAssignmentMouseUp(frame, mouseButton, self)
 		end)
-		self.assignmentTextures[index] = assignment
+		self.assignmentFrames[index] = assignment
 	end
 
 	assignment.spellID = spellID
 	assignment.assignmentIndex = uniqueID
 	if spellID == 0 or spellID == nil then
-		assignment:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
 	else
 		local iconID, _ = GetSpellTexture(spellID)
-		assignment:SetTexture(iconID)
+		assignment.spellTexture:SetTexture(iconID)
 	end
 
 	local timelineWidth = self.timelineWrapperFrame:GetWidth() - 2 * timelineLinePadding.x
@@ -408,6 +410,7 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 
 	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
 	assignment:SetPoint("TOPLEFT", self.assignmentTimelineFrame, "TOPLEFT", offsetX, -offsetY)
+	assignment:SetFrameLevel(self.assignmentTimelineFrame:GetFrameLevel() + floor(startTime))
 	assignment:Show()
 end
 
@@ -415,7 +418,7 @@ end
 ---@param self EPTimeline
 local function UpdateAssignments(self)
 	-- Hide existing assignments
-	for _, texture in pairs(self.assignmentTextures) do
+	for _, texture in pairs(self.assignmentFrames) do
 		texture:Hide()
 	end
 
@@ -845,7 +848,7 @@ end
 ---
 ---@field assignees table<integer, string>
 ---@field assignmentTimelineTicks table<number, Texture>
----@field assignmentTextures table<integer, Texture>
+---@field assignmentFrames table<integer, Frame>
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
 ---@field bossAbilityOrder table<integer, integer>
@@ -858,7 +861,7 @@ end
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentTimelineTicks = self.assignmentTimelineTicks or {}
-	self.assignmentTextures = self.assignmentTextures or {}
+	self.assignmentFrames = self.assignmentFrames or {}
 	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
 	self.bossAbilityTimelineTicks = self.bossAbilityTimelineTicks or {}
 	self.bossAbilities = self.bossAbilities or {}
