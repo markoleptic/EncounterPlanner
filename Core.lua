@@ -724,8 +724,7 @@ function Private:CreateGUI()
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
-
-	Private.mainFrame:SetLayout("EPContentFrameLayout")
+	Private.mainFrame:SetLayout("EPVerticalLayout")
 	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
 		if Private.assignmentEditor then
@@ -977,10 +976,17 @@ function Private:CreateGUI()
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+	timeline:SetFullWidth(true)
+
+	bottomLeftContainer:SetFullHeight(true)
+	local bottomContainer = AceGUI:Create("EPContainer")
+	bottomContainer:SetLayout("EPHorizontalLayout")
+	bottomContainer:SetFullWidth(true)
+	bottomContainer:AddChild(bottomLeftContainer)
+	bottomContainer:AddChild(timeline)
 
 	Private.mainFrame:AddChild(topContainer)
-	Private.mainFrame:AddChild(bottomLeftContainer)
-	Private.mainFrame:AddChild(timeline)
+	Private.mainFrame:AddChild(bottomContainer)
 
 	local boss = bossUtilities.GetBoss(bossName)
 	local sorted = utilities.SortAssignments(
@@ -1005,9 +1011,18 @@ function Private:CreateGUI()
 	local screenHeight = UIParent:GetHeight()
 	local xPos = (screenWidth / 2) - (Private.mainFrame.frame:GetWidth() / 2)
 	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
+	Private.mainFrame.frame:ClearAllPoints()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
 
 	interfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
+
+	local minWidth = 0
+	for _, child in pairs(topContainer.children) do
+		if child.type ~= "EPSpacer" then
+			minWidth = minWidth + child.frame:GetWidth() + 10
+		end
+	end
+	Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, 600)
 end
 
 -- Addon is first loaded

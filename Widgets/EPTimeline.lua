@@ -829,9 +829,6 @@ end
 ---@param self EPTimeline
 local function UpdateHeight(self)
 	self:SetHeight(CalculateRequiredHeight(self))
-	if self.parent and self.parent.DoLayout then
-		self.parent:DoLayout()
-	end
 end
 
 ---@class EPTimeline : AceGUIWidget
@@ -860,6 +857,7 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
+	self.frame:SetSize(frameWidth, frameHeight)
 	self.assignmentTimelineTicks = self.assignmentTimelineTicks or {}
 	self.assignmentFrames = self.assignmentFrames or {}
 	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
@@ -871,6 +869,12 @@ local function OnAcquire(self)
 	self.timelineAssignments = self.timelineAssignments or {}
 	self.assignees = self.assignees or {}
 	self.bossAbilityVisibility = {}
+	self.timelineFrame:SetPoint("TOPLEFT", self.timelineWrapperFrame, "TOPLEFT")
+	self.timelineFrame:SetPoint("TOPRIGHT", self.timelineWrapperFrame, "TOPRIGHT")
+	self.assignmentTimelineFrame:SetPoint("TOPLEFT", self.timelineFrame, "BOTTOMLEFT", 0, -paddingBetweenTimelines)
+	self.assignmentTimelineFrame:SetPoint("TOPRIGHT", self.timelineFrame, "BOTTOMRIGHT", 0, -paddingBetweenTimelines)
+	self.assignmentTimelineFrame:SetPoint("BOTTOMLEFT", self.timelineWrapperFrame, "BOTTOMLEFT")
+	self.assignmentTimelineFrame:SetPoint("BOTTOMRIGHT", self.timelineWrapperFrame, "BOTTOMRIGHT")
 end
 
 ---@param self EPTimeline
@@ -939,13 +943,7 @@ end
 ---@param height number
 local function OnHeightSet(self, height)
 	self.timelineWrapperFrame:SetHeight(height - paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight)
-	self.timelineFrame:SetPoint("TOPLEFT", self.timelineWrapperFrame, "TOPLEFT")
-	self.timelineFrame:SetPoint("TOPRIGHT", self.timelineWrapperFrame, "TOPRIGHT")
 	self.timelineFrame:SetHeight(CalculateRequiredBarHeight(self))
-	self.assignmentTimelineFrame:SetPoint("TOPLEFT", self.timelineFrame, "BOTTOMLEFT", 0, -paddingBetweenTimelines)
-	self.assignmentTimelineFrame:SetPoint("TOPRIGHT", self.timelineFrame, "BOTTOMRIGHT", 0, -paddingBetweenTimelines)
-	self.assignmentTimelineFrame:SetPoint("BOTTOMLEFT", self.timelineWrapperFrame, "BOTTOMLEFT")
-	self.assignmentTimelineFrame:SetPoint("BOTTOMRIGHT", self.timelineWrapperFrame, "BOTTOMRIGHT")
 	self:UpdateTimeline()
 end
 
@@ -956,6 +954,7 @@ local function Constructor()
 
 	local timelineWrapperFrame = CreateFrame("Frame", Type .. "WrapperFrame" .. count, frame)
 	timelineWrapperFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
+	timelineWrapperFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 	timelineWrapperFrame:SetSize(
 		frameWidth,
 		frameHeight - horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar

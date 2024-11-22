@@ -8,7 +8,8 @@ local CreateFrame = CreateFrame
 local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local windowBarHeight = 30
-local contentFramePadding = { x = 10, y = 10 }
+local defaultPadding = 10
+local padding = { top = 10, right = 10, bottom = 10, left = 10 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -32,12 +33,21 @@ local titleBarBackdrop = {
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
 ---@field children table<integer, AceGUIWidget>
+---@field anchorLastChild boolean
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
+	padding.top = defaultPadding
+	padding.right = defaultPadding
+	padding.bottom = defaultPadding
+	padding.left = defaultPadding
+	self.anchorLastChild = true
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
+
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
+	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetText("X")
@@ -65,22 +75,40 @@ local function OnRelease(self)
 	self.closeButton = nil
 end
 
+local function OnHeightSet(self, height)
+	self.content:SetHeight(height)
+	self.content.height = height
+end
+
+local function OnWidthSet(self, width)
+	self.content:SetWidth(width)
+	self.content.width = width
+end
+
 ---@param self EPMainFrame
 ---@param width number|nil
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
-	self.frame:SetHeight((height and height + windowBarHeight + (2 * contentFramePadding.y)) or 100)
+	-- if not self.frame.isResizing then
+	if height then
+		self:SetHeight(height + windowBarHeight + padding.top + padding.bottom)
+	end
+	-- end
 end
 
 ---@param self EPMainFrame
 ---@return EPContainer|nil
 local function GetAssignmentContainer(self)
-	local bottomLeftContainer = self.children[2]
-	if bottomLeftContainer then
+	local bottomContainer = self.children[2]
+	if bottomContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local assignmentContainer = bottomLeftContainer.children[3]
-		if assignmentContainer then
-			return assignmentContainer
+		local bottomLeftContainer = bottomContainer.children[1]
+		if bottomLeftContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local assignmentContainer = bottomLeftContainer.children[3]
+			if assignmentContainer then
+				return assignmentContainer
+			end
 		end
 	end
 	return nil
@@ -89,12 +117,16 @@ end
 ---@param self EPMainFrame
 ---@return EPContainer|nil
 local function GetBossAbilityContainer(self)
-	local bottomLeftContainer = self.children[2]
-	if bottomLeftContainer then
+	local bottomContainer = self.children[2]
+	if bottomContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local bossAbilityContainer = bottomLeftContainer.children[1]
-		if bossAbilityContainer then
-			return bossAbilityContainer
+		local bottomLeftContainer = bottomContainer.children[1]
+		if bottomLeftContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local bossAbilityContainer = bottomLeftContainer.children[1]
+			if bossAbilityContainer then
+				return bossAbilityContainer
+			end
 		end
 	end
 	return nil
@@ -103,12 +135,16 @@ end
 ---@param self EPMainFrame
 ---@return EPDropdown|nil
 local function GetAddAssigneeDropdown(self)
-	local bottomLeftContainer = self.children[2]
-	if bottomLeftContainer then
+	local bottomContainer = self.children[2]
+	if bottomContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local assigneeDropdown = bottomLeftContainer.children[2]
-		if assigneeDropdown then
-			return assigneeDropdown
+		local bottomLeftContainer = bottomContainer.children[1]
+		if bottomLeftContainer then
+			---@diagnostic disable-next-line: undefined-field
+			local assigneeDropdown = bottomLeftContainer.children[2]
+			if assigneeDropdown then
+				return assigneeDropdown
+			end
 		end
 	end
 	return nil
@@ -193,46 +229,51 @@ end
 ---@param self EPMainFrame
 ---@return EPTimeline|nil
 local function GetTimeline(self)
-	local timeline = self.children[3] --[[@as EPTimeline]]
-	if timeline then
-		return timeline
+	local bottomContainer = self.children[2]
+	if bottomContainer then
+		---@diagnostic disable-next-line: undefined-field
+		local timeline = bottomContainer.children[2]
+		if timeline then
+			return timeline
+		end
 	end
 	return nil
 end
 
+---@param self EPMainFrame
+---@param top number
+---@param right number
+---@param bottom number
+---@param left number
+local function SetPadding(self, top, right, bottom, left)
+	padding.top = top
+	padding.right = right
+	padding.bottom = bottom
+	padding.left = left
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
+	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
-	local mainFrame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	mainFrame:EnableMouse(true)
-	mainFrame:SetMovable(true)
-	mainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-	mainFrame:SetBackdrop(frameBackdrop)
-	mainFrame:SetBackdropColor(0, 0, 0, 0.9)
-	mainFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
-	mainFrame:SetSize(mainFrameWidth, mainFrameHeight)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
+	frame:EnableMouse(true)
+	frame:SetMovable(true)
+	frame:SetResizable(true)
+	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetBackdrop(frameBackdrop)
+	frame:SetBackdropColor(0, 0, 0, 0.9)
+	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
-	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, mainFrame)
-	contentFrame:SetPoint(
-		"TOPLEFT",
-		mainFrame,
-		"TOPLEFT",
-		contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y)
-	)
-	contentFrame:SetPoint(
-		"TOPRIGHT",
-		mainFrame,
-		"TOPRIGHT",
-		-contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y)
-	)
-	contentFrame:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
-	contentFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
+	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
+	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
+	contentFrame:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, mainFrame, "BackdropTemplate")
+	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetHeight(windowBarHeight)
-	windowBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT")
+	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
+	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetBackdrop(titleBarBackdrop)
 	windowBar:SetBackdropColor(0, 0, 0, 0.9)
 	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
@@ -246,16 +287,25 @@ local function Constructor()
 		windowBarText:SetFont(fPath, h)
 	end
 	windowBar:SetScript("OnMouseDown", function()
-		mainFrame:StartMoving()
+		frame:StartMoving()
 	end)
 	windowBar:SetScript("OnMouseUp", function()
-		mainFrame:StopMovingOrSizing()
+		frame:StopMovingOrSizing()
 	end)
+
+	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
+	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
+	resizer:SetSize(16, 16)
+	resizer:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+	resizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+	resizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
 
 	---@class EPMainFrame
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
+		OnHeightSet = OnHeightSet,
+		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		GetAssignmentContainer = GetAssignmentContainer,
 		GetBossAbilityContainer = GetBossAbilityContainer,
@@ -265,11 +315,43 @@ local function Constructor()
 		GetNoteDropdown = GetNoteDropdown,
 		GetNoteLineEdit = GetNoteLineEdit,
 		GetTimeline = GetTimeline,
-		frame = mainFrame,
+		SetPadding = SetPadding,
+		frame = frame,
 		type = Type,
 		content = contentFrame,
 		windowBar = windowBar,
 	}
+
+	resizer:SetScript("OnMouseDown", function(_, mouseButton)
+		if mouseButton == "LeftButton" then
+			if not frame.isResizing then
+				frame:StartSizing("BOTTOMRIGHT")
+				AceGUI:ClearFocus()
+				frame.isResizing = true
+			end
+		end
+	end)
+
+	resizer:SetScript("OnMouseUp", function(_, mouseButton)
+		if mouseButton == "LeftButton" then
+			if frame.isResizing == true then
+				frame.isResizing = nil
+				local point, rel, relP, x, y = frame:GetPointByName("TOPLEFT")
+				local width = frame:GetWidth()
+				local height = frame:GetHeight()
+				--Unfortunately this is necessary so that the layout does not get totally borked
+				C_Timer.After(0.05, function()
+					if not frame.isResizing then
+						frame:StopMovingOrSizing()
+						AceGUI:ClearFocus()
+						frame:SetPoint(point, rel, relP, x, y)
+						frame:SetSize(width, height)
+						widget:DoLayout()
+					end
+				end)
+			end
+		end
+	end)
 
 	return AceGUI:RegisterAsContainer(widget)
 end

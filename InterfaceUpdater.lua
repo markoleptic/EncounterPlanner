@@ -121,6 +121,7 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 			activeBossAbilities
 		)
 		timeline:UpdateTimeline()
+		Private.mainFrame:DoLayout()
 	end
 end
 
@@ -151,6 +152,7 @@ function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, s
 	if timeline then
 		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
 		timeline:UpdateTimeline()
+		Private.mainFrame:DoLayout()
 	end
 end
 

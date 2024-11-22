@@ -232,6 +232,7 @@ local function OnAcquire(self)
 	self.assignmentTypeContainer = AceGUI:Create("EPContainer")
 	self.assignmentTypeContainer:SetLayout("EPVerticalLayout")
 	self.assignmentTypeContainer:SetSpacing(0, 2)
+	self.assignmentTypeContainer:SetFullWidth(true)
 	self.assignmentTypeLabel = AceGUI:Create("EPLabel")
 	self.assignmentTypeLabel:SetText("Assignment Trigger")
 	self.assignmentTypeLabel:SetTextPadding(0, 2)
@@ -248,6 +249,7 @@ local function OnAcquire(self)
 	self.combatLogEventContainer = AceGUI:Create("EPContainer")
 	self.combatLogEventContainer:SetLayout("EPVerticalLayout")
 	self.combatLogEventContainer:SetSpacing(0, 2)
+	self.combatLogEventContainer:SetFullWidth(true)
 	self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
 	self.combatLogEventSpellIDLabel:SetText("Combat Log Event Spell ID")
 	self.combatLogEventSpellIDLabel:SetTextPadding(0, 2)
@@ -274,6 +276,7 @@ local function OnAcquire(self)
 	self.assigneeTypeContainer = AceGUI:Create("EPContainer")
 	self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
 	self.assigneeTypeContainer:SetSpacing(0, 2)
+	self.assigneeTypeContainer:SetFullWidth(true)
 	self.assigneeTypeLabel = AceGUI:Create("EPLabel")
 	self.assigneeTypeLabel:SetText("Assignment Type")
 	self.assigneeTypeLabel:SetTextPadding(0, 2)
@@ -289,6 +292,7 @@ local function OnAcquire(self)
 	self.assigneeContainer = AceGUI:Create("EPContainer")
 	self.assigneeContainer:SetLayout("EPVerticalLayout")
 	self.assigneeContainer:SetSpacing(0, 2)
+	self.assigneeContainer:SetFullWidth(true)
 	self.assigneeLabel = AceGUI:Create("EPLabel")
 	self.assigneeLabel:SetText("Person to Assign")
 	self.assigneeLabel:SetTextPadding(0, 2)
@@ -304,6 +308,7 @@ local function OnAcquire(self)
 	self.spellAssignmentContainer = AceGUI:Create("EPContainer")
 	self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
 	self.spellAssignmentContainer:SetSpacing(0, 2)
+	self.spellAssignmentContainer:SetFullWidth(true)
 	self.spellAssignmentLabel = AceGUI:Create("EPLabel")
 	self.spellAssignmentLabel:SetText("Spell Assignment")
 	self.spellAssignmentLabel:SetTextPadding(0, 2)
@@ -321,6 +326,7 @@ local function OnAcquire(self)
 	self.timeContainer = AceGUI:Create("EPContainer")
 	self.timeContainer:SetLayout("EPVerticalLayout")
 	self.timeContainer:SetSpacing(0, 2)
+	self.timeContainer:SetFullWidth(true)
 	self.timeLabel = AceGUI:Create("EPLabel")
 	self.timeLabel:SetText("Time")
 	self.timeLabel:SetTextPadding(0, 2)
@@ -336,6 +342,7 @@ local function OnAcquire(self)
 	self.optionalTextContainer = AceGUI:Create("EPContainer")
 	self.optionalTextContainer:SetLayout("EPVerticalLayout")
 	self.optionalTextContainer:SetSpacing(0, 2)
+	self.optionalTextContainer:SetFullWidth(true)
 	self.optionalTextLabel = AceGUI:Create("EPLabel")
 	self.optionalTextLabel:SetText("Assignment Text (Optional)")
 	self.optionalTextLabel:SetTextPadding(0, 2)
@@ -351,6 +358,7 @@ local function OnAcquire(self)
 	self.targetContainer = AceGUI:Create("EPContainer")
 	self.targetContainer:SetLayout("EPVerticalLayout")
 	self.targetContainer:SetSpacing(0, 2)
+	self.targetContainer:SetFullWidth(true)
 	self.targetLabel = AceGUI:Create("EPLabel")
 	self.targetLabel:SetText("Spell Assignment Target (Optional)")
 	self.targetLabel:SetTextPadding(0, 2)
@@ -366,6 +374,7 @@ local function OnAcquire(self)
 	self.previewContainer = AceGUI:Create("EPContainer")
 	self.previewContainer:SetLayout("EPVerticalLayout")
 	self.previewContainer:SetSpacing(0, 2)
+	self.previewContainer:SetFullWidth(true)
 	local previewLabelLabel = AceGUI:Create("EPLabel")
 	previewLabelLabel:SetText("Preview")
 	previewLabelLabel:SetTextPadding(0, 2)
@@ -452,6 +461,16 @@ local function OnRelease(self)
 	self.closeButton = nil
 end
 
+local function OnHeightSet(self, width)
+	self.content:SetHeight(width)
+	self.content.height = width
+end
+
+local function OnWidthSet(self, width)
+	self.content:SetWidth(width)
+	self.content.width = width
+end
+
 ---@param self EPAssignmentEditor
 local function LayoutFinished(self, width, height)
 	if width and height then
@@ -525,6 +544,8 @@ local function Constructor()
 		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
+		OnHeightSet = OnHeightSet,
+		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
 		SetAssigneeType = SetAssigneeType,

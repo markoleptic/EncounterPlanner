@@ -66,8 +66,11 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				-- end
 			end
 
+			if child.width == "fill" and i == #children then
+				frame:SetPoint("RIGHT", content)
+			end
+
 			if child.height == "fill" then
-				--child:SetWidth(contentWidth)
 				frame:SetPoint("BOTTOM", content)
 			elseif child.height == "relative" then
 				child:SetHeight(contentHeight * child.relHeight)
