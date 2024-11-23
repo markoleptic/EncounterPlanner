@@ -50,9 +50,13 @@ local timelineLinePadding = { x = 25, y = 25 }
 local timelineFrameIsDragging = false
 local timelineFrameDragStartX = 0
 local thumbOffsetWhenThumbClicked = 0
+local verticalThumbOffsetWhenThumbClicked = 0
 local scrollBarWidthWhenThumbClicked = 0
+local verticalScrollBarHeightWhenThumbClicked = 0
 local thumbWidthWhenThumbClicked = 0
+local verticalThumbHeightWhenThumbClicked = 0
 local thumbIsDragging = false
+local verticalThumbIsDragging = false
 local totalTimelineDuration = 0
 
 local function ResetLocalVariables()
@@ -61,9 +65,13 @@ local function ResetLocalVariables()
 	timelineFrameIsDragging = false
 	timelineFrameDragStartX = 0
 	thumbOffsetWhenThumbClicked = 0
+	verticalThumbOffsetWhenThumbClicked = 0
 	scrollBarWidthWhenThumbClicked = 0
+	verticalScrollBarHeightWhenThumbClicked = 0
 	thumbWidthWhenThumbClicked = 0
+	verticalThumbHeightWhenThumbClicked = 0
 	thumbIsDragging = false
+	verticalThumbIsDragging = false
 	totalTimelineDuration = 0
 end
 
@@ -201,19 +209,80 @@ local function HandleThumbMouseUp(frame)
 	self.thumb:SetScript("OnUpdate", nil)
 end
 
+local function HandleVerticalThumbUpdate(frame)
+	local self = frame.obj --[[@as EPTimeline]]
+	if not verticalThumbIsDragging then
+		return
+	end
+
+	local currentOffset = verticalThumbOffsetWhenThumbClicked
+	local currentHeight = verticalThumbHeightWhenThumbClicked
+	local currentScrollBarHeight = verticalScrollBarHeightWhenThumbClicked
+	local _, yPosition = GetCursorPosition()
+	local newOffset = self.verticalScrollBar:GetTop() - (yPosition / UIParent:GetEffectiveScale()) - currentOffset
+
+	local minAllowedOffset = thumbPadding.y
+	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
+	newOffset = math.max(newOffset, minAllowedOffset)
+	newOffset = math.min(newOffset, maxAllowedOffset)
+	self.verticalThumb:SetPoint("TOP", 0, -newOffset)
+
+	local scrollFrame = self.frame
+	local scrollFrameHeight = scrollFrame:GetHeight()
+	local timelineHeight = self.timelineWrapperFrame:GetHeight()
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+	local maxScroll = timelineHeight - scrollFrameHeight
+
+	-- Calculate the scroll frame's vertical scroll based on the thumb's position
+	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
+	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	scrollFrame:SetVerticalScroll(scrollOffset)
+end
+
+local function HandleVerticalThumbMouseDown(frame)
+	local self = frame.obj --[[@as EPTimeline]]
+	local _, y = GetCursorPosition()
+	verticalThumbOffsetWhenThumbClicked = self.verticalThumb:GetTop() - (y / UIParent:GetEffectiveScale())
+	verticalScrollBarHeightWhenThumbClicked = self.verticalScrollBar:GetHeight()
+	verticalThumbHeightWhenThumbClicked = self.verticalThumb:GetHeight()
+	verticalThumbIsDragging = true
+	self.verticalThumb:SetScript("OnUpdate", HandleVerticalThumbUpdate)
+end
+
+local function HandleVerticalThumbMouseUp(frame)
+	local self = frame.obj
+	verticalThumbIsDragging = false
+	self.verticalThumb:SetScript("OnUpdate", nil)
+end
+
 -- Updates the scroll bar width and offset based on the visible area of the timeline.
 ---@param self EPTimeline
 local function UpdateScrollBar(self)
 	local scrollFrame = self.frame
+
+	local scrollFrameHeight = scrollFrame:GetHeight()
 	local scrollFrameWidth = scrollFrame:GetWidth()
+
+	local timelineHeight = self.timelineWrapperFrame:GetHeight()
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
 	local timelineWidth = self.timelineWrapperFrame:GetWidth()
-	local scrollBarWidth = self.scrollBar:GetWidth()
-	local thumbPaddingX = thumbPadding.x
+
+	local verticalScrollBarHeight = self.verticalScrollBar:GetHeight()
+	local horizontalScrollBarWidth = self.scrollBar:GetWidth()
 
 	-- Calculate the scroll bar thumb size based on the visible area
-	local thumbWidth = (scrollFrameWidth / timelineWidth) * (scrollBarWidth - (2 * thumbPaddingX))
+	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
 	thumbWidth = math.max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = math.min(thumbWidth, scrollFrameWidth - (2 * thumbPaddingX))
+	thumbWidth = math.min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
+
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * (verticalScrollBarHeight - (2 * thumbPadding.y))
+	thumbHeight = math.max(thumbHeight, 20)
+	thumbHeight = math.min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+
+	local verticalThumb = self.verticalThumb
+	verticalThumb:SetHeight(thumbHeight)
 
 	local thumb = self.thumb
 	thumb:SetWidth(thumbWidth)
@@ -222,17 +291,32 @@ local function UpdateScrollBar(self)
 
 	-- Calculate the thumb's relative position in the scroll bar
 	local maxScroll = timelineWidth - scrollFrameWidth
-	local maxThumbPosition = scrollBarWidth - thumbWidth - (2 * thumbPaddingX)
+	local maxThumbPosition = horizontalScrollBarWidth - thumbWidth - (2 * thumbPadding.x)
 
 	-- Prevent division by zero if maxScroll is 0
 	if maxScroll > 0 then
 		local thumbPosition = (scrollOffset / maxScroll) * maxThumbPosition
 
 		-- Update the thumb's position based on the scroll offset
-		thumb:SetPoint("LEFT", thumbPaddingX + thumbPosition, 0)
+		thumb:SetPoint("LEFT", thumbPadding.x + thumbPosition, 0)
 	else
 		-- If no scrolling is possible, reset the thumb to the start
-		thumb:SetPoint("LEFT", thumbPaddingX, 0)
+		thumb:SetPoint("LEFT", thumbPadding.x, 0)
+	end
+
+	local verticalScrollOffset = scrollFrame:GetVerticalScroll()
+	local maxVerticalScroll = timelineHeight - scrollFrameHeight
+	local maxVerticalThumbPosition = verticalScrollBarHeight - thumbHeight - (2 * thumbPadding.y)
+
+	-- Prevent division by zero if maxScroll is 0
+	if maxVerticalScroll > 0 then
+		local thumbPosition = (verticalScrollOffset / maxVerticalScroll) * maxVerticalThumbPosition
+
+		-- Update the thumb's position based on the scroll offset
+		verticalThumb:SetPoint("TOP", 0, -(thumbPadding.x + thumbPosition))
+	else
+		-- If no scrolling is possible, reset the thumb to the start
+		verticalThumb:SetPoint("TOP", 0, -thumbPadding.x)
 	end
 end
 
@@ -841,7 +925,9 @@ end
 ---@field assignmentTimelineVerticalPositionLine table|Texture
 ---@field timelineVerticalPositionLine table|Texture
 ---@field scrollBar table|Frame
+---@field verticalScrollBar table|Frame
 ---@field thumb Button
+---@field verticalThumb table|Frame
 ---
 ---@field assignees table<integer, string>
 ---@field assignmentTimelineTicks table<number, Texture>
@@ -1036,6 +1122,31 @@ local function Constructor()
 	thumbBackground:SetAllPoints()
 	thumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
 
+	local verticalScrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
+	verticalScrollBar:SetWidth(horizontalScrollBarHeight)
+	verticalScrollBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
+	verticalScrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, horizontalScrollBarHeight)
+
+	local verticalScrollBarBackground =
+		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
+	verticalScrollBarBackground:SetAllPoints()
+	verticalScrollBarBackground:SetColorTexture(0.25, 0.25, 0.25, 1)
+
+	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, verticalScrollBar)
+	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
+	verticalThumb:SetSize(
+		horizontalScrollBarHeight - (2 * thumbPadding.x),
+		verticalScrollBar:GetHeight() - 2 * thumbPadding.y
+	)
+	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
+	verticalThumb:SetScript("OnMouseDown", HandleVerticalThumbMouseDown)
+	verticalThumb:SetScript("OnMouseUp", HandleVerticalThumbMouseUp)
+
+	local verticalThumbBackground =
+		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
+	verticalThumbBackground:SetAllPoints()
+	verticalThumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
+
 	---@class EPTimeline
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -1052,14 +1163,18 @@ local function Constructor()
 		assignmentTimelineFrame = assignmentTimelineFrame,
 		timelineFrame = timelineFrame,
 		scrollBar = scrollBar,
+		verticalScrollBar = verticalScrollBar,
 		thumb = thumb,
+		verticalThumb = verticalThumb,
 		timelineVerticalPositionLine = timelineVerticalPositionLine,
 		assignmentTimelineVerticalPositionLine = assignmentTimelineVerticalPositionLine,
 	}
 
 	frame.obj = widget
 	scrollBar.obj = widget
+	verticalScrollBar.obj = widget
 	thumb.obj = widget
+	verticalThumb.obj = widget
 	timelineFrame.obj = widget
 	timelineWrapperFrame.obj = widget
 	assignmentTimelineFrame.obj = widget
