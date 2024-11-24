@@ -13,6 +13,7 @@
 	<Script file="EPDropdown.lua"/>
 	<Script file="EPAbilityEntry.lua"/>
 	<Script file="EPAssignmentEditor.lua"/>
+    <Script file="EPTimelineSection.lua"/>
 	<Script file="EPTimeline.lua"/>
     <Script file="EPRosterEntry.lua"/>
     <Script file="EPRosterEditor.lua"/>

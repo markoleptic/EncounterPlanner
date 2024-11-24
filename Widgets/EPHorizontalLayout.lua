@@ -19,7 +19,6 @@ end
 
 AceGUI:RegisterLayout(Type, function(content, children)
 	local totalWidth = 0
-	local contentHeight = content.height or content:GetHeight() or 0
 	local maxHeight = 0
 	local paddingX = defaultSpacing
 	local alignment = "default"
@@ -72,8 +71,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 
 			if child.height == "fill" then
 				frame:SetPoint("BOTTOM", content)
-			elseif child.height == "relative" then
-				child:SetHeight(contentHeight * child.relHeight)
 			end
 
 			if child.DoLayout then

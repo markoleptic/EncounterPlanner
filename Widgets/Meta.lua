@@ -53,6 +53,9 @@
 ---@alias EPRosterEditorType
 ---|"EPRosterEditor"
 
+---@alias EPTimelineSectionType
+---|"EPTimelineSection"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -66,6 +69,7 @@
 ---| EPAssignmentEditorType
 ---| EPTimelineType
 ---| EPMainFrameType
+---| EPTimelineSectionType
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -148,6 +152,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPRosterEntryType
 ---@return EPRosterEntry
+function AceGUI:Create(type) end
+
+---@param type EPTimelineSectionType
+---@return EPTimelineSection
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

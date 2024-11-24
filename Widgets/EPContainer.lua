@@ -36,13 +36,13 @@ local function LayoutFinished(self, width, height)
 end
 
 local function OnHeightSet(self, width)
-	self.content:SetHeight(width)
-	self.content.height = width
+	-- self.content:SetHeight(width)
+	-- self.content.height = width
 end
 
 local function OnWidthSet(self, width)
-	self.content:SetWidth(width)
-	self.content.width = width
+	-- self.content:SetWidth(width)
+	-- self.content.width = width
 end
 
 ---@param self EPContainer

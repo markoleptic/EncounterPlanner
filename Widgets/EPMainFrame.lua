@@ -32,7 +32,7 @@ local titleBarBackdrop = {
 ---@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
----@field children table<integer, AceGUIWidget>
+---@field children table<integer, EPWidgetType|EPContainerType>
 ---@field anchorLastChild boolean
 
 ---@param self EPMainFrame
@@ -75,15 +75,9 @@ local function OnRelease(self)
 	self.closeButton = nil
 end
 
-local function OnHeightSet(self, height)
-	self.content:SetHeight(height)
-	self.content.height = height
-end
+local function OnHeightSet(self, height) end
 
-local function OnWidthSet(self, width)
-	self.content:SetWidth(width)
-	self.content.width = width
-end
+local function OnWidthSet(self, width) end
 
 ---@param self EPMainFrame
 ---@param width number|nil
@@ -251,7 +245,7 @@ local function SetPadding(self, top, right, bottom, left)
 	padding.bottom = bottom
 	padding.left = left
 	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
+	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -padding.right, padding.bottom)
 end
 
 local function Constructor()
@@ -268,7 +262,7 @@ local function Constructor()
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
 	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	contentFrame:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
+	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -padding.right, padding.bottom)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetHeight(windowBarHeight)
@@ -347,6 +341,7 @@ local function Constructor()
 						frame:SetPoint(point, rel, relP, x, y)
 						frame:SetSize(width, height)
 						widget:DoLayout()
+						-- widget.children[2]:DoLayout()
 					end
 				end)
 			end

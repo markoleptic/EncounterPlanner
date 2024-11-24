@@ -73,30 +73,32 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 			bossAbilitySelectDropdown:Clear()
 		end
 		local bossAbilitySelectItems = {}
-		for _, ID in ipairs(boss.sortedAbilityIDs) do
-			if activeBossAbilities[ID] == nil then
-				activeBossAbilities[ID] = true
+		for _, abilityID in ipairs(boss.sortedAbilityIDs) do
+			if activeBossAbilities[abilityID] == nil then
+				activeBossAbilities[abilityID] = true
 			end
-			if activeBossAbilities[ID] == true then
+			if activeBossAbilities[abilityID] == true then
 				local abilityEntry = AceGUI:Create("EPAbilityEntry")
 				abilityEntry:SetFullWidth(true)
-				abilityEntry:SetAbility(ID)
+				abilityEntry:SetAbility(abilityID)
 				abilityEntry:SetCallback("OnValueChanged", function(_, _, checked)
-					AddOn.db.profile.activeBossAbilities[bossName][ID] = checked
+					AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
 					InterfaceUpdater.UpdateBossAbilityList(bossName, true)
 					InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 				end)
 				bossAbilityContainer:AddChild(abilityEntry)
 			end
 			if updateBossAbilitySelectDropdown then
-				local spellInfo = GetSpellInfo(ID)
+				local spellInfo = GetSpellInfo(abilityID)
 				if spellInfo then
 					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-					tinsert(bossAbilitySelectItems, { itemValue = ID, text = iconText, dropdownItemMenuData = {} })
+					tinsert(
+						bossAbilitySelectItems,
+						{ itemValue = abilityID, text = iconText, dropdownItemMenuData = {} }
+					)
 				end
 			end
 		end
-		bossAbilityContainer:DoLayout()
 		if updateBossAbilitySelectDropdown then
 			bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
 			bossAbilitySelectDropdown:SetText("Active Boss Abilities")

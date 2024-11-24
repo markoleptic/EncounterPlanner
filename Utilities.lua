@@ -319,10 +319,11 @@ function Utilities.CreateTimelineAssignments(assignments, boss)
 	for _, assignment in pairs(assignments) do
 		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
 		local success = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
-		if success == false and allSucceeded == true then
+		if success == true then
+			tinsert(timelineAssignments, timelineAssignment)
+		elseif allSucceeded == true then
 			allSucceeded = false
 		end
-		tinsert(timelineAssignments, timelineAssignment)
 	end
 	if allSucceeded == false then
 		print(AddOnName .. ": ", "An assignment attempted to update without a boss or boss phase table.")
@@ -575,9 +576,9 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
 			elseif groupMatch then
 				abilityEntryText = "Group " .. groupMatch
-			elseif roster and roster[sortedAssignees[index]] then
-				if roster[sortedAssignees[index]].classColoredName then
-					abilityEntryText = roster[sortedAssignees[index]].classColoredName or assigneeNameOrRole
+			elseif roster and roster[assigneeNameOrRole] then
+				if roster[assigneeNameOrRole].classColoredName then
+					abilityEntryText = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
 				end
 			end
 		end
@@ -713,6 +714,9 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 				and not nameOrRole:find("role:")
 				and not nameOrRole:find("{everyone}")
 			then
+				if not roster[nameOrRole] then
+					roster[nameOrRole] = {}
+				end
 				if not roster[nameOrRole].role or roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
 						roster[nameOrRole].role = determinedRoles[nameOrRole]

@@ -517,7 +517,8 @@ local function HandleCreateNewNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-	AddOn.db.profile.notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+	local notes = AddOn.db.profile.notes
+	notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	AddOn.db.profile.lastOpenNote = newNoteName
 
 	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
@@ -525,7 +526,8 @@ local function HandleCreateNewNoteButtonClicked()
 		AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
 	end
 
-	interfaceUpdater.UpdateAllAssignments(true)
+	interfaceUpdater.UpdateAllAssignments(true) -- Does not need boss bc empty note
+
 	local noteDropdown = Private.mainFrame:GetNoteDropdown()
 	if noteDropdown then
 		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
@@ -948,6 +950,7 @@ function Private:CreateGUI()
 	bottomLeftContainer:SetLayout("EPVerticalLayout")
 	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
 	bottomLeftContainer:SetSpacing(unpack(bottomLeftContainerSpacing))
+	bottomLeftContainer:SetFullHeight(true) -- for whatever reason this is required otherwise will crash
 
 	local bossAbilityContainer = AceGUI:Create("EPContainer")
 	bossAbilityContainer:SetLayout("EPVerticalLayout")
@@ -978,7 +981,6 @@ function Private:CreateGUI()
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
 	timeline:SetFullWidth(true)
 
-	bottomLeftContainer:SetFullHeight(true)
 	local bottomContainer = AceGUI:Create("EPContainer")
 	bottomContainer:SetLayout("EPHorizontalLayout")
 	bottomContainer:SetFullWidth(true)
@@ -1111,13 +1113,26 @@ end
 
 function AddOn:Refresh(db, newProfile) end
 
--- Slash command functionality
+---@param input string|nil
 function AddOn:SlashCommand(input)
-	if DevTool then
-		DevTool:AddData(Private)
-	end
-	if not Private.mainFrame then
-		Private:CreateGUI()
+	if not input or input:trim() == "" then
+		if DevTool then
+			DevTool:AddData(Private)
+		end
+		if not Private.mainFrame then
+			Private:CreateGUI()
+		end
+	elseif input then
+		local trimmed = input:trim():lower()
+		if trimmed == "close" then
+			if Private.mainFrame then
+				Private.mainFrame:Release()
+			end
+		elseif trimmed == "dolayout" then
+			if Private.mainFrame then
+				Private.mainFrame:DoLayout()
+			end
+		end
 	end
 end
 
