@@ -2,9 +2,13 @@ local Type = "EPTimelineSection"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local floor = math.floor
+local GetCursorPosition = GetCursorPosition
+local IsControlKeyDown = IsControlKeyDown
+local max = math.max
+local min = math.min
 
 local frameWidth = 400
 local frameHeight = 400
@@ -16,6 +20,9 @@ local paddingBetweenTimelineAndScrollBar = 10
 local minZoomFactor = 1
 local maxZoomFactor = 10
 local zoomStep = 0.05
+local defaultListPadding = 4
+local listFrameWidth = 200
+local listTimelinePadding = 10
 
 local function UpdateLinePosition(frame)
 	local self = frame.obj --[[@as EPTimelineSection]]
@@ -76,8 +83,8 @@ local function UpdateScrollBarPrivate(self)
 
 	-- Calculate the scroll bar thumb size based on the visible area
 	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
-	thumbWidth = math.max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = math.min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
+	thumbWidth = max(thumbWidth, 20) -- Minimum size so it's always visible
+	thumbWidth = min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
 	local horizontalThumb = self.horizontalScrollBar.thumb
 	horizontalThumb:SetWidth(thumbWidth)
 
@@ -94,8 +101,8 @@ local function UpdateScrollBarPrivate(self)
 	horizontalThumb:SetPoint("LEFT", horizontalThumbPosition, 0)
 
 	local thumbHeight = (scrollFrameHeight / timelineHeight) * (verticalScrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = math.max(thumbHeight, 20)
-	thumbHeight = math.min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	thumbHeight = max(thumbHeight, 20)
+	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
 	local verticalThumb = self.thumb
 	verticalThumb:SetHeight(thumbHeight)
 
@@ -112,63 +119,90 @@ local function UpdateScrollBarPrivate(self)
 	verticalThumb:SetPoint("TOP", 0, verticalThumbPosition)
 end
 
--- Sets the width of the timelineWrapperFrame and the horizontal scroll of the scrollFrame. Also updates the scroll bar
--- size and position, tick mark positions, boss ability bars, and assignment icon positions.
-local function HandleTimelineFrameMouseWheel(frame, delta)
+local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 	local self = frame.obj --[[@as EPTimelineSection]]
-	local scrollFrame = self.scrollFrame
-	local timelineFrame = self.timelineFrame
-	local timelineDuration = self.totalTimelineDuration
-
-	local zoomFactor = self.staticTimelineSectionData.zoomFactor
-	local visibleDuration = timelineDuration / zoomFactor
-	local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineFrame:GetWidth()) * timelineDuration
-	local visibleEndTime = visibleStartTime + visibleDuration
-	local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
-
-	-- Update zoom factor based on scroll delta
-	if delta > 0 and zoomFactor < maxZoomFactor then
-		zoomFactor = zoomFactor * (1.0 + zoomStep)
-	elseif delta < 0 and zoomFactor > minZoomFactor then
-		zoomFactor = zoomFactor / (1.0 + zoomStep)
+	if self.totalTimelineDuration <= 0 then
+		return
 	end
+	local controlKeyDown = IsControlKeyDown()
 
-	-- Recalculate visible duration after zoom
-	local newVisibleDuration = timelineDuration / zoomFactor
+	if controlKeyDown or updateBoth then
+		local scrollFrame = self.scrollFrame
+		local timelineFrame = self.timelineFrame
+		local timelineDuration = self.totalTimelineDuration
 
-	-- Calculate new start and end time while keeping midpoint constant
-	local newVisibleStartTime = visibleMidpointTime - (newVisibleDuration / 2.0)
-	local newVisibleEndTime = visibleMidpointTime + (newVisibleDuration / 2.0)
+		local zoomFactor = self.staticTimelineSectionData.zoomFactor
+		local visibleDuration = timelineDuration / zoomFactor
+		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineFrame:GetWidth()) * timelineDuration
+		local visibleEndTime = visibleStartTime + visibleDuration
+		local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
 
-	-- Add overflow from end time to start time to prevent empty space between end of timeline and parent frame
-	if newVisibleEndTime > timelineDuration then
-		local surplus = timelineDuration - newVisibleEndTime
-		newVisibleEndTime = timelineDuration
-		newVisibleStartTime = newVisibleStartTime + surplus
+		-- Update zoom factor based on scroll delta
+		if delta > 0 and zoomFactor < maxZoomFactor then
+			zoomFactor = zoomFactor * (1.0 + zoomStep)
+		elseif delta < 0 and zoomFactor > minZoomFactor then
+			zoomFactor = zoomFactor / (1.0 + zoomStep)
+		end
+
+		-- Recalculate visible duration after zoom
+		local newVisibleDuration = timelineDuration / zoomFactor
+
+		-- Calculate new start and end time while keeping midpoint constant
+		local newVisibleStartTime = visibleMidpointTime - (newVisibleDuration / 2.0)
+		local newVisibleEndTime = visibleMidpointTime + (newVisibleDuration / 2.0)
+
+		-- Add overflow from end time to start time to prevent empty space between end of timeline and parent frame
+		if newVisibleEndTime > timelineDuration then
+			local surplus = timelineDuration - newVisibleEndTime
+			newVisibleEndTime = timelineDuration
+			newVisibleStartTime = newVisibleStartTime + surplus
+		end
+
+		-- Ensure boundaries are within the total timeline range
+		newVisibleStartTime = max(0, newVisibleStartTime)
+		newVisibleEndTime = min(timelineDuration, newVisibleEndTime)
+
+		-- Adjust the timeline frame width based on zoom factor
+		local newTimelineFrameWidth = scrollFrame:GetWidth() * zoomFactor
+
+		-- Recalculate the new scroll position based on the new visible start time
+		local newHorizontalScroll = (newVisibleStartTime / timelineDuration) * newTimelineFrameWidth
+
+		scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+		timelineFrame:SetWidth(newTimelineFrameWidth)
+
+		if
+			self.staticTimelineSectionData.zoomFactor ~= zoomFactor
+			or self.staticTimelineSectionData.timelineFrameWidth ~= newTimelineFrameWidth
+			or self.staticTimelineSectionData.horizontalScroll ~= newHorizontalScroll
+		then
+			self.staticTimelineSectionData.zoomFactor = zoomFactor
+			self.staticTimelineSectionData.timelineFrameWidth = newTimelineFrameWidth
+			self.staticTimelineSectionData.horizontalScroll = newHorizontalScroll
+			self:Fire("StaticDataChanged", true)
+		end
 	end
+	if not controlKeyDown or updateBoth then
+		local scrollFrame = self.scrollFrame
+		local timelineFrame = self.timelineFrame
 
-	-- Ensure boundaries are within the total timeline range
-	newVisibleStartTime = math.max(0, newVisibleStartTime)
-	newVisibleEndTime = math.min(timelineDuration, newVisibleEndTime)
+		local scrollFrameHeight = scrollFrame:GetHeight()
+		local timelineFrameHeight = timelineFrame:GetHeight()
 
-	-- Adjust the timeline frame width based on zoom factor
-	local newTimelineFrameWidth = scrollFrame:GetWidth() * zoomFactor
+		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
+		local currentVerticalScroll = scrollFrame:GetVerticalScroll()
+		local snapValue = (self.textureHeight + self.listPadding) / 2
+		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
 
-	-- Recalculate the new scroll position based on the new visible start time
-	local newHorizontalScroll = (newVisibleStartTime / timelineDuration) * newTimelineFrameWidth
+		if delta > 0 then
+			currentSnapValue = currentSnapValue - 1
+		elseif delta < 0 then
+			currentSnapValue = currentSnapValue + 1
+		end
 
-	scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	timelineFrame:SetWidth(newTimelineFrameWidth)
-
-	if
-		self.staticTimelineSectionData.zoomFactor ~= zoomFactor
-		or self.staticTimelineSectionData.timelineFrameWidth ~= newTimelineFrameWidth
-		or self.staticTimelineSectionData.horizontalScroll ~= newHorizontalScroll
-	then
-		self.staticTimelineSectionData.zoomFactor = zoomFactor
-		self.staticTimelineSectionData.timelineFrameWidth = newTimelineFrameWidth
-		self.staticTimelineSectionData.horizontalScroll = newHorizontalScroll
-		self:Fire("StaticDataChanged", true)
+		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		scrollFrame:SetVerticalScroll(newVerticalScroll)
+		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	end
 
 	UpdateScrollBarPrivate(self)
@@ -185,7 +219,7 @@ local function HandleTimelineFrameUpdate(frame)
 	local dx = (x - self.timelineFrameDragStartX) / scrollFrame:GetEffectiveScale()
 	local newHorizontalScroll = scrollFrame:GetHorizontalScroll() - dx
 	local maxHorizontalScroll = self.timelineFrame:GetWidth() - scrollFrame:GetWidth()
-	newHorizontalScroll = math.min(math.max(0, newHorizontalScroll), maxHorizontalScroll)
+	newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
 	scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.timelineFrameDragStartX = x
 
@@ -249,8 +283,8 @@ local function HandleVerticalThumbUpdate(frame)
 
 	local minAllowedOffset = thumbPadding.y
 	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
-	newOffset = math.max(newOffset, minAllowedOffset)
-	newOffset = math.min(newOffset, maxAllowedOffset)
+	newOffset = max(newOffset, minAllowedOffset)
+	newOffset = min(newOffset, maxAllowedOffset)
 	self.thumb:SetPoint("TOP", 0, -newOffset)
 
 	local scrollFrame = self.scrollFrame
@@ -262,6 +296,7 @@ local function HandleVerticalThumbUpdate(frame)
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
 	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
 	scrollFrame:SetVerticalScroll(scrollOffset)
+	self.listScrollFrame:SetVerticalScroll(scrollOffset)
 end
 
 local function HandleVerticalThumbMouseDown(frame)
@@ -290,6 +325,8 @@ end
 ---@class EPTimelineSection : AceGUIWidget
 ---@field type string
 ---@field frame table|Frame
+---@field listFrame table|ScrollFrame
+---@field listScrollFrame table|Frame
 ---@field scrollFrame table|ScrollFrame
 ---@field timelineFrame table|Frame
 ---@field verticalPositionLine Texture
@@ -305,6 +342,9 @@ end
 ---@field timelineFrameIsDragging boolean
 ---@field timelineFrameDragStartX number
 ---@field staticTimelineSectionData SharedTimelineSectionData
+---@field textureHeight number
+---@field listPadding number
+---@field listContainer EPContainer
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -316,6 +356,17 @@ local function OnAcquire(self)
 	self.verticalThumbIsDragging = false
 	self.timelineFrameIsDragging = false
 	self.timelineFrameDragStartX = 0
+	self.textureHeight = 0
+	self.listPadding = defaultListPadding
+	self.listContainer = AceGUI:Create("EPContainer")
+	self.listFrame:SetWidth(listFrameWidth)
+	self.listScrollFrame:SetWidth(listFrameWidth)
+	self.listContainer.frame:SetParent(self.listFrame)
+	self.listContainer.frame:SetPoint("TOPLEFT", self.listFrame, "TOPLEFT")
+	self.listContainer:SetLayout("EPVerticalLayout")
+	self.listContainer:SetFullWidth(true)
+	self:SetListPadding(defaultListPadding)
+	self.scrollFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", listFrameWidth + listTimelinePadding, 0)
 end
 
 ---@param self EPTimelineSection
@@ -325,6 +376,8 @@ end
 
 ---@param self EPTimelineSection
 local function OnRelease(self)
+	self.listContainer:Release()
+	self.listContainer = nil
 	self.horizontalScrollBar = nil
 	self.staticTimelineSectionData = nil
 end
@@ -332,7 +385,8 @@ end
 ---@param self EPTimelineSection
 ---@param height number
 local function OnHeightSet(self, height)
-	self.timelineFrame:SetHeight(height)
+	self.scrollFrame:SetHeight(height)
+	self.listScrollFrame:SetHeight(height)
 end
 
 ---@param self EPTimelineSection
@@ -358,6 +412,12 @@ local function GetTicks(self)
 end
 
 ---@param self EPTimelineSection
+---@return EPContainer
+local function GetListContainer(self)
+	return self.listContainer
+end
+
+---@param self EPTimelineSection
 ---@param horizontalScrollBar table|Frame
 local function SetHorizontalScrollBarReference(self, horizontalScrollBar)
 	self.horizontalScrollBar = horizontalScrollBar
@@ -367,6 +427,26 @@ end
 ---@param totalTimelineDuration number
 local function SetTimelineDuration(self, totalTimelineDuration)
 	self.totalTimelineDuration = totalTimelineDuration
+end
+
+---@param self EPTimelineSection
+---@param padding number
+local function SetListPadding(self, padding)
+	self.listPadding = padding
+	self.listContainer:SetSpacing(0, padding)
+end
+
+---@param self EPTimelineSection
+---@param height number
+local function SetTimelineFrameHeight(self, height)
+	self.timelineFrame:SetHeight(height)
+	self.listFrame:SetHeight(height)
+end
+
+---@param self EPTimelineSection
+---@param height number
+local function SetTextureHeight(self, height)
+	self.textureHeight = height
 end
 
 ---@param self EPTimelineSection
@@ -397,7 +477,7 @@ end
 
 ---@param self EPTimelineSection
 local function UpdateWidthAndScroll(self)
-	HandleTimelineFrameMouseWheel(self.timelineFrame, 0)
+	HandleTimelineFrameMouseWheel(self.timelineFrame, 0, true)
 end
 
 ---@param self EPTimelineSection
@@ -425,10 +505,21 @@ local function Constructor()
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 	scrollFrame:SetPoint("TOPLEFT")
-	scrollFrame:SetPoint("BOTTOMLEFT")
-	scrollFrame:SetPoint("TOPRIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
-	scrollFrame:SetPoint("BOTTOMRIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
+	scrollFrame:SetPoint("RIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
 	scrollFrame:SetSize(frameWidth - scrollBarWidth - paddingBetweenTimelineAndScrollBar, frameHeight)
+
+	local listScrollFrame = CreateFrame("ScrollFrame", Type .. "ListScrollFrame" .. count, frame)
+	listScrollFrame:SetPoint("TOPLEFT")
+	listScrollFrame:SetSize(listFrameWidth, frameHeight)
+
+	local listFrame = CreateFrame("Frame", Type .. "ListFrame" .. count, listScrollFrame)
+	listFrame:SetPoint("TOPLEFT")
+	listFrame:SetSize(listFrameWidth, frameHeight)
+	listFrame:EnableMouse(true)
+	listFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
+
+	listScrollFrame:SetScrollChild(listFrame)
+	listScrollFrame:EnableMouseWheel(true)
 
 	local timelineFrame = CreateFrame("Frame", Type .. "TimelineFrame" .. count, scrollFrame)
 	timelineFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
@@ -445,7 +536,7 @@ local function Constructor()
 	scrollFrame:EnableMouseWheel(true)
 
 	local verticalPositionLine =
-		scrollFrame:CreateTexture(Type .. "PositionLine" .. count, "OVERLAY", nil, verticalPositionLineSubLevel)
+		timelineFrame:CreateTexture(Type .. "PositionLine" .. count, "OVERLAY", nil, verticalPositionLineSubLevel)
 	verticalPositionLine:SetColorTexture(unpack(verticalPositionLineColor))
 	verticalPositionLine:SetPoint("TOP", scrollFrame, "TOPLEFT")
 	verticalPositionLine:SetPoint("BOTTOM", scrollFrame, "BOTTOMLEFT")
@@ -480,6 +571,8 @@ local function Constructor()
 		scrollFrame = scrollFrame,
 		type = Type,
 		timelineFrame = timelineFrame,
+		listFrame = listFrame,
+		listScrollFrame = listScrollFrame,
 		verticalPositionLine = verticalPositionLine,
 		scrollBar = verticalScrollBar,
 		thumb = verticalThumb,
@@ -490,6 +583,7 @@ local function Constructor()
 		GetScrollFrame = GetScrollFrame,
 		GetTimelineFrame = GetTimelineFrame,
 		GetTicks = GetTicks,
+		GetListContainer = GetListContainer,
 		SetHorizontalScrollBarReference = SetHorizontalScrollBarReference,
 		UpdateScrollBar = UpdateScrollBar,
 		UpdateWidthAndScroll = UpdateWidthAndScroll,
@@ -500,9 +594,13 @@ local function Constructor()
 		GetZoomFactor = GetZoomFactor,
 		SetHorizontalScroll = SetHorizontalScroll,
 		SetSharedData = SetSharedData,
+		SetListPadding = SetListPadding,
+		SetTimelineFrameHeight = SetTimelineFrameHeight,
+		SetTextureHeight = SetTextureHeight,
 	}
 
 	frame.obj = widget
+	listFrame.obj = widget
 	scrollFrame.obj = widget
 	timelineFrame.obj = widget
 	verticalScrollBar.obj = widget

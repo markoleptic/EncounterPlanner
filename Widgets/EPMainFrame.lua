@@ -91,60 +91,6 @@ local function LayoutFinished(self, width, height)
 end
 
 ---@param self EPMainFrame
----@return EPContainer|nil
-local function GetAssignmentContainer(self)
-	local bottomContainer = self.children[2]
-	if bottomContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local bottomLeftContainer = bottomContainer.children[1]
-		if bottomLeftContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local assignmentContainer = bottomLeftContainer.children[3]
-			if assignmentContainer then
-				return assignmentContainer
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPContainer|nil
-local function GetBossAbilityContainer(self)
-	local bottomContainer = self.children[2]
-	if bottomContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local bottomLeftContainer = bottomContainer.children[1]
-		if bottomLeftContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local bossAbilityContainer = bottomLeftContainer.children[1]
-			if bossAbilityContainer then
-				return bossAbilityContainer
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPDropdown|nil
-local function GetAddAssigneeDropdown(self)
-	local bottomContainer = self.children[2]
-	if bottomContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local bottomLeftContainer = bottomContainer.children[1]
-		if bottomLeftContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local assigneeDropdown = bottomLeftContainer.children[2]
-			if assigneeDropdown then
-				return assigneeDropdown
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
 ---@return EPDropdown|nil
 local function GetBossSelectDropdown(self)
 	local topContainer = self.children[1]
@@ -223,13 +169,9 @@ end
 ---@param self EPMainFrame
 ---@return EPTimeline|nil
 local function GetTimeline(self)
-	local bottomContainer = self.children[2]
-	if bottomContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local timeline = bottomContainer.children[2]
-		if timeline then
-			return timeline
-		end
+	local timeline = self.children[2] --[[@as EPTimeline]]
+	if timeline then
+		return timeline
 	end
 	return nil
 end
@@ -280,11 +222,15 @@ local function Constructor()
 	if fPath then
 		windowBarText:SetFont(fPath, h)
 	end
+
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()
 	end)
 	windowBar:SetScript("OnMouseUp", function()
 		frame:StopMovingOrSizing()
+		local x, y = frame:GetLeft(), frame:GetTop()
+		frame:ClearAllPoints()
+		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
 	end)
 
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
@@ -301,9 +247,6 @@ local function Constructor()
 		OnHeightSet = OnHeightSet,
 		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
-		GetAssignmentContainer = GetAssignmentContainer,
-		GetBossAbilityContainer = GetBossAbilityContainer,
-		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
 		GetBossSelectDropdown = GetBossSelectDropdown,
 		GetBossAbilitySelectDropdown = GetBossAbilitySelectDropdown,
 		GetNoteDropdown = GetNoteDropdown,
@@ -338,10 +281,10 @@ local function Constructor()
 					if not frame.isResizing then
 						frame:StopMovingOrSizing()
 						AceGUI:ClearFocus()
+						frame:ClearAllPoints()
 						frame:SetPoint(point, rel, relP, x, y)
 						frame:SetSize(width, height)
 						widget:DoLayout()
-						-- widget.children[2]:DoLayout()
 					end
 				end)
 			end

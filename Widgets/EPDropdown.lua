@@ -533,6 +533,7 @@ do
 		self:SetHeight(self.dropdownItemHeight)
 		self:SetWidth(200)
 		self:SetPulloutWidth(nil)
+		self.frame:Show()
 	end
 
 	---@param self EPDropdown

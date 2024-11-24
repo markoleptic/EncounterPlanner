@@ -17,6 +17,7 @@ local defaultWidth = 100
 
 ---@param self EPContainer
 local function OnAcquire(self)
+	self.frame:Show()
 	self:SetHeight(defaultHeight)
 	self:SetWidth(defaultWidth)
 	self.content.spacing = defaultSpacing

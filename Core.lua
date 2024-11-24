@@ -311,7 +311,7 @@ local function HandleBossDropdownValueChanged(value)
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
 			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			interfaceUpdater.UpdateBossAbilityList(bossDef.name)
+			interfaceUpdater.UpdateBossAbilityList(bossDef.name, true)
 			interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
 		end
 	end
@@ -348,7 +348,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	end
 	local boss = nil
 	if bossName then
-		interfaceUpdater.UpdateBossAbilityList(bossName)
+		interfaceUpdater.UpdateBossAbilityList(bossName, true)
 		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 		boss = bossUtilities.GetBoss(bossName)
 	end
@@ -357,6 +357,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
 	end
+	Private.mainFrame:DoLayout()
 end
 
 ---@param lineEdit EPLineEdit
@@ -559,7 +560,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 				AddOn.db.profile.lastOpenNote = name
 				local bossName = AddOn.db.profile.notes[name].bossName
 				if bossName then
-					interfaceUpdater.UpdateBossAbilityList(bossName)
+					interfaceUpdater.UpdateBossAbilityList(bossName, true)
 					interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 				end
 				break
@@ -618,7 +619,7 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 		end
 		local boss = nil
 		if bossName then
-			interfaceUpdater.UpdateBossAbilityList(bossName)
+			interfaceUpdater.UpdateBossAbilityList(bossName, true)
 			interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 			boss = bossUtilities.GetBoss(bossName)
 		end
@@ -673,7 +674,7 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 
 			local boss = nil
 			if bossName then
-				interfaceUpdater.UpdateBossAbilityList(bossName)
+				interfaceUpdater.UpdateBossAbilityList(bossName, true)
 				interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 				boss = bossUtilities.GetBoss(bossName)
 			end
@@ -946,19 +947,11 @@ function Private:CreateGUI()
 	topContainer:AddChild(noteButtonContainer)
 	topContainer:AddChild(importExportContainer)
 
-	local bottomLeftContainer = AceGUI:Create("EPContainer")
-	bottomLeftContainer:SetLayout("EPVerticalLayout")
-	bottomLeftContainer:SetWidth(bottomLeftContainerWidth)
-	bottomLeftContainer:SetSpacing(unpack(bottomLeftContainerSpacing))
-	bottomLeftContainer:SetFullHeight(true) -- for whatever reason this is required otherwise will crash
-
-	local bossAbilityContainer = AceGUI:Create("EPContainer")
-	bossAbilityContainer:SetLayout("EPVerticalLayout")
-	bossAbilityContainer:SetFullWidth(true)
-	bossAbilityContainer:SetSpacing(0, bossAbilityPadding)
-
-	local addAssigneeDropdown = AceGUI:Create("EPDropdown")
-	addAssigneeDropdown:SetFullWidth(true)
+	local timeline = AceGUI:Create("EPTimeline")
+	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
+	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+	timeline:SetFullWidth(true)
+	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText("Add Assignee")
 	addAssigneeDropdown:AddItems(
@@ -967,28 +960,13 @@ function Private:CreateGUI()
 		true
 	)
 
-	local assignmentListContainer = AceGUI:Create("EPContainer")
-	assignmentListContainer:SetLayout("EPVerticalLayout")
-	assignmentListContainer:SetFullWidth(true)
-	assignmentListContainer:SetSpacing(0, assignmentPadding)
-
-	bottomLeftContainer:AddChild(bossAbilityContainer)
-	bottomLeftContainer:AddChild(addAssigneeDropdown)
-	bottomLeftContainer:AddChild(assignmentListContainer)
-
-	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
-	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
-	timeline:SetFullWidth(true)
-
-	local bottomContainer = AceGUI:Create("EPContainer")
-	bottomContainer:SetLayout("EPHorizontalLayout")
-	bottomContainer:SetFullWidth(true)
-	bottomContainer:AddChild(bottomLeftContainer)
-	bottomContainer:AddChild(timeline)
-
 	Private.mainFrame:AddChild(topContainer)
-	Private.mainFrame:AddChild(bottomContainer)
+	Private.mainFrame:AddChild(timeline)
+
+	-- Set default values
+	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
+	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 
 	local boss = bossUtilities.GetBoss(bossName)
 	local sorted = utilities.SortAssignments(
@@ -1000,22 +978,8 @@ function Private:CreateGUI()
 	local sortedAssignees = utilities.SortAssignees(sorted)
 	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
-
-	-- Set default values
-	interfaceUpdater.UpdateBossAbilityList(bossName)
+	interfaceUpdater.UpdateBossAbilityList(bossName, true)
 	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
-	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
-	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
-
-	-- Center frame in middle of screen
-	local screenWidth = UIParent:GetWidth()
-	local screenHeight = UIParent:GetHeight()
-	local xPos = (screenWidth / 2) - (Private.mainFrame.frame:GetWidth() / 2)
-	local yPos = -(screenHeight / 2) + (Private.mainFrame.frame:GetHeight() / 2)
-	Private.mainFrame.frame:ClearAllPoints()
-	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", xPos, yPos)
-
 	interfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
 
 	local minWidth = 0
@@ -1024,7 +988,14 @@ function Private:CreateGUI()
 			minWidth = minWidth + child.frame:GetWidth() + 10
 		end
 	end
+
 	Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, 600)
+	-- Center frame in middle of screen
+	Private.mainFrame.frame:SetPoint("CENTER")
+	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
+	Private.mainFrame.frame:ClearAllPoints()
+	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+	timeline:UpdateTimeline()
 end
 
 -- Addon is first loaded
@@ -1131,6 +1102,13 @@ function AddOn:SlashCommand(input)
 		elseif trimmed == "dolayout" then
 			if Private.mainFrame then
 				Private.mainFrame:DoLayout()
+			end
+		elseif trimmed == "updatetimeline" then
+			if Private.mainFrame then
+				local timeline = Private.mainFrame:GetTimeline()
+				if timeline then
+					timeline:UpdateTimeline()
+				end
 			end
 		end
 	end

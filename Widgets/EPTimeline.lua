@@ -9,7 +9,10 @@ local CreateFrame = CreateFrame
 local floor = math.floor
 local GetCursorPosition = GetCursorPosition
 local GetSpellTexture = C_Spell.GetSpellTexture
+local hugeNumber = math.huge
 local ipairs = ipairs
+local max = math.max
+local min = math.min
 local pairs = pairs
 local unpack = unpack
 
@@ -205,8 +208,8 @@ local function HandleThumbUpdate(frame)
 
 	local minAllowedOffset = paddingX
 	local maxAllowedOffset = currentScrollBarWidth - currentWidth - paddingX
-	newOffset = math.max(newOffset, minAllowedOffset)
-	newOffset = math.min(newOffset, maxAllowedOffset)
+	newOffset = max(newOffset, minAllowedOffset)
+	newOffset = min(newOffset, maxAllowedOffset)
 	self.horizontalScrollBar.thumb:SetPoint("LEFT", newOffset, 0)
 
 	-- Calculate the scroll frame's horizontal scroll based on the thumb's position
@@ -243,7 +246,7 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 	currentX = currentX / UIParent:GetEffectiveScale()
 	currentY = currentY / UIParent:GetEffectiveScale()
 	local nearestBarIndex = nil
-	local minDistance = math.huge
+	local minDistance = hugeNumber
 	for index, bar in ipairs(self.bossAbilityTextureBars) do
 		if bar:IsShown() then
 			local distance = abs(bar:GetLeft() - currentX)
@@ -585,12 +588,21 @@ end
 
 -- Calculate the total required height for boss ability bars.
 ---@param self EPTimeline
+---@param limit boolean|nil
 ---@return number
-local function CalculateRequiredBarHeight(self)
+local function CalculateRequiredBarHeight(self, limit)
+	if limit == nil then
+		limit = true
+	end
 	local totalBarHeight = 0
+	local abilityCount = 0
 	for _, visible in pairs(self.bossAbilityVisibility) do
 		if visible == true then
 			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+			abilityCount = abilityCount + 1
+		end
+		if limit == true and abilityCount == 12 then
+			break
 		end
 	end
 	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then
@@ -601,11 +613,18 @@ end
 
 -- Calculate the total required height for assignments.
 ---@param self EPTimeline
+---@param limit boolean|nil
 ---@return number
-local function CalculateRequiredAssignmentHeight(self)
+local function CalculateRequiredAssignmentHeight(self, limit)
+	if limit == nil then
+		limit = true
+	end
 	local totalAssignmentHeight = 0
 	if self.assignees and #self.assignees > 0 then
 		local count = #self.assignees
+		if limit == true then
+			count = min(count, 12)
+		end
 		totalAssignmentHeight = count * (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
 			- paddingBetweenAssignmentTextures
 	end
@@ -656,6 +675,7 @@ end
 ---@field timelineLabels table<integer, FontString>
 ---@field contentFrame table|Frame
 ---@field horizontalScrollBar table|Frame
+---@field addAssigneeDropdown EPDropdown
 ---
 ---@field assignees table<integer, string>
 ---@field assignmentFrames table<integer, Frame>
@@ -669,7 +689,16 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
-	--self.frame:SetSize(frameWidth, frameHeight)
+	self.assignmentFrames = self.assignmentFrames or {}
+	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
+	self.bossAbilities = self.bossAbilities or {}
+	self.bossAbilityOrder = self.bossAbilityOrder or {}
+	self.bossPhaseOrder = self.bossPhaseOrder or {}
+	self.bossPhases = self.bossPhases or {}
+	self.timelineAssignments = self.timelineAssignments or {}
+	self.assignees = self.assignees or {}
+	self.timelineLabels = self.timelineLabels or {}
+	self.bossAbilityVisibility = {}
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
 	local assignmentTimelineFrame = self.assignmentTimeline:GetFrame()
@@ -688,6 +717,10 @@ local function OnAcquire(self)
 	}
 	self.assignmentTimeline:SetSharedData(table)
 	self.bossAbilityTimeline:SetSharedData(table)
+	self.assignmentTimeline:SetListPadding(paddingBetweenAssignmentTextures)
+	self.bossAbilityTimeline:SetListPadding(paddingBetweenBossAbilityBars)
+	self.assignmentTimeline:SetTextureHeight(assignmentTextureSize.y)
+	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
 	self.assignmentTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
 	self.bossAbilityTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
 	self.bossAbilityTimeline:SetCallback("StaticDataChanged", function(_, _, needsFullUpdate)
@@ -696,18 +729,6 @@ local function OnAcquire(self)
 	self.assignmentTimeline:SetCallback("StaticDataChanged", function(_, _, needsFullUpdate)
 		HandleTimelineSectionStaticDataChanged(self, self.bossAbilityTimeline, needsFullUpdate)
 	end)
-
-	self.assignmentFrames = self.assignmentFrames or {}
-	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
-	self.bossAbilities = self.bossAbilities or {}
-	self.bossAbilityOrder = self.bossAbilityOrder or {}
-	self.bossPhaseOrder = self.bossPhaseOrder or {}
-	self.bossPhases = self.bossPhases or {}
-	self.timelineAssignments = self.timelineAssignments or {}
-	self.assignees = self.assignees or {}
-	self.timelineLabels = self.timelineLabels or {}
-	self.bossAbilityVisibility = {}
-
 	self.assignmentTimeline:GetTimelineFrame():SetScript("OnMouseUp", function(frame, button)
 		HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 	end)
@@ -716,6 +737,10 @@ local function OnAcquire(self)
 	bossTimelineFrame:SetPoint("TOPRIGHT", self.contentFrame, "TOPRIGHT")
 	assignmentTimelineFrame:SetPoint("TOPLEFT", bossTimelineFrame, "BOTTOMLEFT", 0, -36)
 	assignmentTimelineFrame:SetPoint("TOPRIGHT", bossTimelineFrame, "BOTTOMRIGHT", 0, -36)
+
+	self.addAssigneeDropdown = AceGUI:Create("EPDropdown")
+	self.addAssigneeDropdown.frame:SetParent(self.contentFrame)
+	self.addAssigneeDropdown.frame:SetPoint("RIGHT", self.splitterScrollFrame, "LEFT", -10, 0)
 end
 
 ---@param self EPTimeline
@@ -724,6 +749,8 @@ local function OnRelease(self)
 	self.assignmentTimeline = nil
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
+	self.addAssigneeDropdown:Release()
+	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
 	self.bossPhaseOrder = nil
@@ -773,6 +800,24 @@ local function GetAssignments(self)
 end
 
 ---@param self EPTimeline
+---@return EPContainer
+local function GetAssignmentContainer(self)
+	return self.assignmentTimeline:GetListContainer()
+end
+
+---@param self EPTimeline
+---@return EPContainer
+local function GetBossAbilityContainer(self)
+	return self.bossAbilityTimeline:GetListContainer()
+end
+
+---@param self EPTimeline
+---@return EPDropdown
+local function GetAddAssigneeDropdown(self)
+	return self.addAssigneeDropdown
+end
+
+---@param self EPTimeline
 local function UpdateTimeline(self)
 	self.assignmentTimeline:UpdateWidthAndScroll()
 	self.bossAbilityTimeline:UpdateWidthAndScroll()
@@ -796,7 +841,11 @@ local function OnHeightSet(self, height)
 	local barHeight = CalculateRequiredBarHeight(self)
 	self.bossAbilityTimeline:SetHeight(barHeight)
 	self.assignmentTimeline:SetHeight(CalculateRequiredAssignmentHeight(self))
-	self.splitterScrollFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT", 0, -barHeight)
+
+	self.bossAbilityTimeline:SetTimelineFrameHeight(CalculateRequiredBarHeight(self, false))
+	self.assignmentTimeline:SetTimelineFrameHeight(CalculateRequiredAssignmentHeight(self, false))
+
+	self.splitterScrollFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT", 210, -barHeight)
 	self.splitterScrollFrame:SetPoint(
 		"TOPRIGHT",
 		self.contentFrame,
@@ -828,7 +877,7 @@ local function Constructor()
 
 	local horizontalScrollBar = CreateFrame("Frame", Type .. "HorizontalScrollBar" .. count, frame)
 	horizontalScrollBar:SetHeight(horizontalScrollBarHeight)
-	horizontalScrollBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
+	horizontalScrollBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 210, 0)
 	horizontalScrollBar:SetPoint(
 		"BOTTOMRIGHT",
 		frame,
@@ -861,6 +910,9 @@ local function Constructor()
 		SetBossAbilities = SetBossAbilities,
 		SetAssignments = SetAssignments,
 		GetAssignments = GetAssignments,
+		GetAssignmentContainer = GetAssignmentContainer,
+		GetBossAbilityContainer = GetBossAbilityContainer,
+		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
 		UpdateTimeline = UpdateTimeline,
 		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,

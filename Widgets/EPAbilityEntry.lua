@@ -54,6 +54,7 @@ local function OnAcquire(self)
 	self:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self:SetDisabled(false)
 	self:SetChecked(true)
+	self.frame:Show()
 end
 
 ---@param self EPAbilityEntry

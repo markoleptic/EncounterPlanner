@@ -56,54 +56,58 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 		updateBossAbilitySelectDropdown = true
 	end
 	local boss = bossUtilities.GetBoss(bossName)
-	local bossAbilityContainer = Private.mainFrame:GetBossAbilityContainer()
-	local bossDropdown = Private.mainFrame:GetBossSelectDropdown()
-	local bossAbilitySelectDropdown = Private.mainFrame:GetBossAbilitySelectDropdown()
-	if boss and bossAbilityContainer and bossDropdown and bossAbilitySelectDropdown then
-		if AddOn.db.profile.activeBossAbilities[bossName] == nil then
-			AddOn.db.profile.activeBossAbilities[bossName] = {}
-		end
-		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
-		local bossIndex = bossUtilities.GetBossDefinitionIndex(bossName)
-		if bossIndex and bossDropdown:GetValue() ~= bossIndex then
-			bossDropdown:SetValue(bossIndex)
-		end
-		bossAbilityContainer:ReleaseChildren()
-		if updateBossAbilitySelectDropdown then
-			bossAbilitySelectDropdown:Clear()
-		end
-		local bossAbilitySelectItems = {}
-		for _, abilityID in ipairs(boss.sortedAbilityIDs) do
-			if activeBossAbilities[abilityID] == nil then
-				activeBossAbilities[abilityID] = true
+	local timeline = Private.mainFrame:GetTimeline()
+	if boss and timeline then
+		local bossAbilityContainer = timeline:GetBossAbilityContainer()
+		local bossDropdown = Private.mainFrame:GetBossSelectDropdown()
+		local bossAbilitySelectDropdown = Private.mainFrame:GetBossAbilitySelectDropdown()
+		if bossAbilityContainer and bossDropdown and bossAbilitySelectDropdown then
+			if AddOn.db.profile.activeBossAbilities[bossName] == nil then
+				AddOn.db.profile.activeBossAbilities[bossName] = {}
 			end
-			if activeBossAbilities[abilityID] == true then
-				local abilityEntry = AceGUI:Create("EPAbilityEntry")
-				abilityEntry:SetFullWidth(true)
-				abilityEntry:SetAbility(abilityID)
-				abilityEntry:SetCallback("OnValueChanged", function(_, _, checked)
-					AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
-					InterfaceUpdater.UpdateBossAbilityList(bossName, true)
-					InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
-				end)
-				bossAbilityContainer:AddChild(abilityEntry)
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
+			local bossIndex = bossUtilities.GetBossDefinitionIndex(bossName)
+			if bossIndex and bossDropdown:GetValue() ~= bossIndex then
+				bossDropdown:SetValue(bossIndex)
 			end
+			bossAbilityContainer:ReleaseChildren()
 			if updateBossAbilitySelectDropdown then
-				local spellInfo = GetSpellInfo(abilityID)
-				if spellInfo then
-					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-					tinsert(
-						bossAbilitySelectItems,
-						{ itemValue = abilityID, text = iconText, dropdownItemMenuData = {} }
-					)
+				bossAbilitySelectDropdown:Clear()
+			end
+			local bossAbilitySelectItems = {}
+			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
+				if activeBossAbilities[abilityID] == nil then
+					activeBossAbilities[abilityID] = true
+				end
+				if activeBossAbilities[abilityID] == true then
+					local abilityEntry = AceGUI:Create("EPAbilityEntry")
+					abilityEntry:SetFullWidth(true)
+					abilityEntry:SetAbility(abilityID)
+					abilityEntry:SetCallback("OnValueChanged", function(_, _, checked)
+						AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
+						InterfaceUpdater.UpdateBossAbilityList(bossName, true)
+						InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
+					end)
+					bossAbilityContainer:AddChild(abilityEntry)
+				end
+				if updateBossAbilitySelectDropdown then
+					local spellInfo = GetSpellInfo(abilityID)
+					if spellInfo then
+						local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+						tinsert(
+							bossAbilitySelectItems,
+							{ itemValue = abilityID, text = iconText, dropdownItemMenuData = {} }
+						)
+					end
 				end
 			end
+			if updateBossAbilitySelectDropdown then
+				bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
+				bossAbilitySelectDropdown:SetText("Active Boss Abilities")
+				bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities)
+			end
 		end
-		if updateBossAbilitySelectDropdown then
-			bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
-			bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-			bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities)
-		end
+		Private.mainFrame:DoLayout()
 	end
 end
 
@@ -130,19 +134,24 @@ end
 -- Clears and repopulates the list of assignments based on sortedAssignees
 ---@param sortedAssignees table<integer, string> A sorted list of assignees
 function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
-	local assignmentContainer = Private.mainFrame:GetAssignmentContainer()
-	if assignmentContainer then
-		assignmentContainer:ReleaseChildren()
-		local assignmentTable, map = utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
-		for _, text in ipairs(assignmentTable) do
-			local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-			assigneeEntry:SetText(text, map[text])
-			assigneeEntry:SetHeight(30)
-			assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
-			assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
-			assignmentContainer:AddChild(assigneeEntry)
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		local assignmentContainer = timeline:GetAssignmentContainer()
+		if assignmentContainer then
+			assignmentContainer:ReleaseChildren()
+			local assignmentTable, map =
+				utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
+			for _, text in ipairs(assignmentTable) do
+				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
+				assigneeEntry:SetText(text, map[text])
+				assigneeEntry:SetFullWidth(true)
+				assigneeEntry:SetHeight(30)
+				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
+				assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+				assignmentContainer:AddChild(assigneeEntry)
+			end
 		end
-		assignmentContainer:DoLayout()
+		Private.mainFrame:DoLayout()
 	end
 end
 
@@ -160,7 +169,7 @@ end
 
 -- Clears and repopulates the add assignee dropdown from the current roster.
 function InterfaceUpdater.UpdateAddAssigneeDropdown()
-	local addAssigneeDropdown = Private.mainFrame:GetAddAssigneeDropdown()
+	local addAssigneeDropdown = Private.mainFrame:GetTimeline():GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
 		addAssigneeDropdown:SetText("Add Assignee")
