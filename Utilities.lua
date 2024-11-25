@@ -326,12 +326,12 @@ function Utilities.CreateTimelineAssignments(assignments, boss)
 		end
 	end
 	if allSucceeded == false then
-		print(AddOnName .. ": ", "An assignment attempted to update without a boss or boss phase table.")
+		print(format("%s: An assignment attempted to update without a boss or boss phase table.", AddOnName))
 	end
 	return timelineAssignments
 end
 
--- Sorts the assignees based on the order of the timeline assignments.
+-- Sorts the assignees based on the order of the timeline assignments. Sets the order field in timeline assignments.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@return table<integer, string>
 function Utilities.SortAssignees(sortedTimelineAssignments)
@@ -352,6 +352,102 @@ function Utilities.SortAssignees(sortedTimelineAssignments)
 	return assigneeOrder
 end
 
+-- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
+---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
+---@return table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	local order = 1
+	local assigneeMap = {}
+	local assigneeOrder = {}
+
+	for _, entry in ipairs(sortedTimelineAssignments) do
+		local assignee = entry.assignment.assigneeNameOrRole
+		local spellID = entry.assignment.spellInfo.spellID
+
+		if not assigneeMap[assignee] then
+			assigneeMap[assignee] = {
+				order = order,
+				spellIDs = {},
+			}
+			tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = nil })
+			order = order + 1
+		end
+		if not assigneeMap[assignee].spellIDs[spellID] then
+			assigneeMap[assignee].spellIDs[spellID] = order
+			tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = spellID })
+			order = order + 1
+		end
+		entry.order = assigneeMap[assignee].spellIDs[spellID]
+	end
+
+	DevTool:AddData(assigneeOrder)
+	return assigneeOrder
+end
+
+-- Creates a Timeline Assignment comparator function.
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
+---@param assignmentSortType AssignmentSortType Sort method
+---@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
+local function compareAssignments(roster, assignmentSortType)
+	local function rolePriority(role)
+		if role == "role:healer" then
+			return 1
+		elseif role == "role:tank" then
+			return 2
+		elseif role == "role:damager" then
+			return 3
+		elseif role == nil then
+			return 4
+		else
+			print(format('%s: Invalid role type "%s"', AddOnName, role))
+			return 4
+		end
+	end
+
+	---@param a TimelineAssignment
+	---@param b TimelineAssignment
+	return function(a, b)
+		local nameOrRoleA, nameOrRoleB = a.assignment.assigneeNameOrRole, b.assignment.assigneeNameOrRole
+		local spellIDA, spellIDB = a.assignment.spellInfo.spellID, b.assignment.spellInfo.spellID
+		if assignmentSortType == "Alphabetical" then
+			if nameOrRoleA == nameOrRoleB then
+				return spellIDA < spellIDB
+			end
+			return nameOrRoleA < nameOrRoleB
+		elseif assignmentSortType == "First Appearance" then
+			if a.startTime == b.startTime then
+				if nameOrRoleA == nameOrRoleB then
+					return spellIDA < spellIDB
+				end
+				return nameOrRoleA < nameOrRoleB
+			end
+			return a.startTime < b.startTime
+		elseif assignmentSortType:match("^Role") then
+			local rolePriorityA, rolePriorityB = rolePriority(roster[a]), rolePriority(roster[b])
+			if rolePriorityA == rolePriorityB then
+				if assignmentSortType == "Role > Alphabetical" then
+					if nameOrRoleA == nameOrRoleB then
+						return spellIDA < spellIDB
+					end
+					return nameOrRoleA < nameOrRoleB
+				elseif assignmentSortType == "Role > First Appearance" then
+					if a.startTime == b.startTime then
+						if nameOrRoleA == nameOrRoleB then
+							return spellIDA < spellIDB
+						end
+						return nameOrRoleA < nameOrRoleB
+					end
+					return a.startTime < b.startTime
+				end
+			end
+			return rolePriorityA < rolePriorityB
+		else
+			print(format('%s: Invalid assignment sort type "%s"', AddOnName, assignmentSortType))
+			return false
+		end
+	end
+end
+
 -- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
 -- Sorts assignments based on the assignmentSortType.
 ---@param assignments table<integer, Assignment> Assignments to sort
@@ -361,61 +457,7 @@ end
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
 	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, boss)
-
-	if assignmentSortType == "Alphabetical" then
-		sort(timelineAssignments, function(a, b)
-			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-		end)
-	elseif assignmentSortType == "First Appearance" then
-		sort(timelineAssignments, function(a, b)
-			if a.startTime == b.startTime then
-				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-			end
-			return a.startTime < b.startTime
-		end)
-	elseif assignmentSortType == "Role > Alphabetical" or assignmentSortType == "Role > First Appearance" then
-		sort(timelineAssignments, function(a, b)
-			local nameOrRoleA = a.assignment.assigneeNameOrRole
-			local nameOrRoleB = b.assignment.assigneeNameOrRole
-			if not roster[nameOrRoleA] or not roster[nameOrRoleB] then
-				if assignmentSortType == "Role > Alphabetical" then
-					return nameOrRoleA < nameOrRoleB
-				elseif assignmentSortType == "Role > First Appearance" then
-					if a.startTime == b.startTime then
-						return nameOrRoleA < nameOrRoleB
-					end
-					return a.startTime < b.startTime
-				end
-				return false
-			end
-			if roster[nameOrRoleA].role == roster[nameOrRoleB].role then
-				if assignmentSortType == "Role > Alphabetical" then
-					return nameOrRoleA < nameOrRoleB
-				elseif assignmentSortType == "Role > First Appearance" then
-					if a.startTime == b.startTime then
-						return nameOrRoleA < nameOrRoleB
-					end
-					return a.startTime < b.startTime
-				end
-			elseif roster[nameOrRoleA].role == "role:healer" then
-				return true
-			elseif roster[nameOrRoleB].role == "role:healer" then
-				return false
-			elseif roster[nameOrRoleA].role == "role:tank" then
-				return true
-			elseif roster[nameOrRoleB].role == "role:tank" then
-				return false
-			end
-			if assignmentSortType == "Role > First Appearance" then
-				if a.startTime == b.startTime then
-					return nameOrRoleA < nameOrRoleB
-				end
-				return a.startTime < b.startTime
-			end
-			return nameOrRoleA < nameOrRoleB
-		end)
-	end
-
+	sort(timelineAssignments, compareAssignments(roster, assignmentSortType))
 	return timelineAssignments
 end
 
@@ -587,6 +629,58 @@ function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
 	end
 
 	return textTable, map
+end
+
+-- Creates two tables used to populate the assignment list. The first is a sorted list of text for the list and the
+-- second is a table that maps the text to the assigneeNameOrRole found in the assignments.
+---@param sortedAssigneesWithSpellID table<integer, {assigneeNameOrRole:string, spellID:number|nil}> Sorted list of assigneeNameOrRoles from assignments
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
+---@return table<integer, {assigneeNameOrRole:string, text:string, spells:table<integer, integer>}>
+function Utilities.GetAssignmentListTextFromAssignees2(sortedAssigneesWithSpellID, roster)
+	local visited = {}
+	local map = {}
+	for _, sortTable in ipairs(sortedAssigneesWithSpellID) do
+		local assigneeNameOrRole = sortTable.assigneeNameOrRole
+		local abilityEntryText = assigneeNameOrRole
+		if assigneeNameOrRole == "{everyone}" then
+			abilityEntryText = "Everyone"
+		else
+			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+			local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+			if classMatch then
+				classMatch = classMatch:match("^(.*):") or classMatch
+				local prettyClassName = Private.prettyClassNames[classMatch]
+				if prettyClassName then
+					abilityEntryText = prettyClassName
+				else
+					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
+				end
+			elseif roleMatch then
+				roleMatch = roleMatch:match("^(.*):") or roleMatch
+				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+			elseif groupMatch then
+				groupMatch = groupMatch:match("^(.*):") or groupMatch
+				abilityEntryText = "Group " .. groupMatch
+			elseif roster and roster[assigneeNameOrRole] then
+				if roster[assigneeNameOrRole].classColoredName then
+					abilityEntryText = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
+				end
+			end
+		end
+		if not visited[abilityEntryText] then
+			tinsert(map, {
+				assigneeNameOrRole = assigneeNameOrRole,
+				text = abilityEntryText,
+				spells = {},
+			})
+			visited[abilityEntryText] = map[#map]
+		end
+		if sortTable.spellID then
+			tinsert(visited[abilityEntryText].spells, sortTable.spellID)
+		end
+	end
+	return map
 end
 
 -- Creates a table of unit types for the current raid or party group.

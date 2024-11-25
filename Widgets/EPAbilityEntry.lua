@@ -41,13 +41,14 @@ end
 ---@field highlight Texture
 ---@field disabled boolean
 ---@field checked boolean
----@field key string|nil
+---@field key string|table|nil
 
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
 	self.label.frame:SetPoint("LEFT")
+	self.label.frame:SetPoint("RIGHT", self.checkbox, "LEFT", -padding.x, 0)
 	self.label:SetIconPadding(padding.x, padding.y)
 	self.label:SetTextPadding(padding.x * 2, "none")
 	self.label:SetHeight(frameHeight)
@@ -103,7 +104,8 @@ end
 
 ---@param self EPAbilityEntry
 ---@param spellID number
-local function SetAbility(self, spellID)
+---@param key string|table|nil
+local function SetAbility(self, spellID, key)
 	local spellInfo = GetSpellInfo(spellID)
 	if spellInfo then
 		self.label:SetText(spellInfo.name)
@@ -111,11 +113,20 @@ local function SetAbility(self, spellID)
 	else
 		self.label:SetIcon(nil)
 	end
+	self.key = key
+end
+
+---@param self EPAbilityEntry
+---@param key string|table|nil
+local function SetNullAbility(self, key)
+	self.label:SetText("Unknown")
+	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", 0)
+	self.key = key
 end
 
 ---@param self EPAbilityEntry
 ---@param str string
----@param key string?
+---@param key string|table|nil
 local function SetText(self, str, key)
 	self.label:SetText(str)
 	self.label:SetIcon(nil)
@@ -123,7 +134,13 @@ local function SetText(self, str, key)
 end
 
 ---@param self EPAbilityEntry
----@return string|nil
+---@param indent number
+local function SetLeftIndent(self, indent)
+	self.label.frame:SetPoint("LEFT", indent, 0)
+end
+
+---@param self EPAbilityEntry
+---@return string|table|nil
 local function GetKey(self)
 	return self.key
 end
@@ -177,6 +194,8 @@ local function Constructor()
 		GetChecked = GetChecked,
 		ToggleChecked = ToggleChecked,
 		SetAbility = SetAbility,
+		SetNullAbility = SetNullAbility,
+		SetLeftIndent = SetLeftIndent,
 		SetText = SetText,
 		GetText = GetText,
 		GetKey = GetKey,

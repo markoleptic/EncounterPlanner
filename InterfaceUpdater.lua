@@ -35,12 +35,25 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
 		Private.assignmentEditor:Release()
 	end
 
-	local assigneeNameOrRole = abilityEntry:GetKey()
-	if assigneeNameOrRole then
+	local key = abilityEntry:GetKey()
+	if key then
 		local assignments = GetCurrentAssignments()
-		for i = #assignments, 1, -1 do
-			if assignments[i].assigneeNameOrRole == assigneeNameOrRole then
-				tremove(assignments, i)
+		if type(key) == "string" then
+			for i = #assignments, 1, -1 do
+				if assignments[i].assigneeNameOrRole == key then
+					tremove(assignments, i)
+				end
+			end
+		elseif type(key) == "table" then
+			local assigneeNameOrRole = key.assigneeNameOrRole
+			local spellID = key.spellID
+			for i = #assignments, 1, -1 do
+				if
+					assignments[i].assigneeNameOrRole == assigneeNameOrRole
+					and assignments[i].spellInfo.spellID == spellID
+				then
+					tremove(assignments, i)
+				end
 			end
 		end
 		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
@@ -133,22 +146,41 @@ end
 
 -- Clears and repopulates the list of assignments based on sortedAssignees
 ---@param sortedAssignees table<integer, string> A sorted list of assignees
-function InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
+---@param sortedWithSpellID table<integer, {assigneeNameOrRole:string, spellID:number|nil}> A sorted list of assignees
+function InterfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
 		local assignmentContainer = timeline:GetAssignmentContainer()
 		if assignmentContainer then
 			assignmentContainer:ReleaseChildren()
-			local assignmentTable, map =
-				utilities.GetAssignmentListTextFromAssignees(sortedAssignees, GetCurrentRoster())
-			for _, text in ipairs(assignmentTable) do
+			local map = utilities.GetAssignmentListTextFromAssignees2(sortedWithSpellID, GetCurrentRoster())
+			for _, textTable in ipairs(map) do
 				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-				assigneeEntry:SetText(text, map[text])
+				assigneeEntry:SetText(textTable.text, textTable.assigneeNameOrRole)
 				assigneeEntry:SetFullWidth(true)
 				assigneeEntry:SetHeight(30)
 				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
 				assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+				assigneeEntry.label.text:SetJustifyH("LEFT")
+				assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
 				assignmentContainer:AddChild(assigneeEntry)
+				for _, spellID in ipairs(textTable.spells) do
+					local spellEntry = AceGUI:Create("EPAbilityEntry")
+					local key = { assigneeNameOrRole = textTable.assigneeNameOrRole, spellID = spellID }
+					if spellID == 0 then
+						spellEntry:SetNullAbility(key)
+					else
+						spellEntry:SetAbility(spellID, key)
+					end
+					spellEntry:SetFullWidth(true)
+					spellEntry:SetLeftIndent(15)
+					spellEntry:SetHeight(30)
+					spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
+					spellEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+					spellEntry.label.text:SetJustifyH("LEFT")
+					spellEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
+					assignmentContainer:AddChild(spellEntry)
+				end
 			end
 		end
 		Private.mainFrame:DoLayout()
@@ -161,7 +193,8 @@ end
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees)
+		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees, sortedWithSpellID)
 		timeline:UpdateTimeline()
 		Private.mainFrame:DoLayout()
 	end
@@ -186,15 +219,16 @@ end
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
 ---@param boss Boss? The boss to pass to the assignment sort function
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
-	local sorted = utilities.SortAssignments(
+	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedAssignees = utilities.SortAssignees(sorted)
-	InterfaceUpdater.UpdateAssignmentList(sortedAssignees)
-	InterfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
+	local sortedAssignees = utilities.SortAssignees(sortedTimelineAssignments)
+	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	InterfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
+	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
 	if updateAddAssigneeDropdown then
 		InterfaceUpdater.UpdateAddAssigneeDropdown()
 	end

@@ -11,6 +11,7 @@ local bossUtilities = Private.bossUtilities
 
 local AddOn = Private.addOn
 local concat = table.concat
+local format = format
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
@@ -22,6 +23,7 @@ local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInRaid = IsInRaid
 local pairs = pairs
+local print = print
 local select = select
 local split = string.split
 local splitTable = strsplittable
@@ -716,7 +718,7 @@ function Private:Note(epNoteName, parseMRTNote)
 	if parseMRTNote then
 		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 		if not loadingOrLoaded and not loaded then
-			print(AddOnName, "No note was loaded due to MRT not being installed.")
+			print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
 			return nil
 		end
 	end

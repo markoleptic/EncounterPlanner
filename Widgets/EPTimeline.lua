@@ -25,8 +25,10 @@ local bossAbilityBarHeight = 30
 local assignmentTextureSize = { x = 30, y = 30 }
 local assignmentTextureSubLevel = 0
 local bossAbilityTextureSubLevel = 0
-local paddingBetweenAssignmentTextures = 2
+local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
+local maximumNumberOfAssignmentRows = 12
+local maximumNumberOfBossAbilityRows = 12
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
@@ -258,9 +260,7 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 	end
 	if nearestBarIndex then
 		local relativeDistanceFromTop = abs(self.assignmentTimeline:GetTimelineFrame():GetTop() - currentY)
-		local assigneeIndex = floor(
-			relativeDistanceFromTop / (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
-		) + 1
+		local assigneeIndex = floor(relativeDistanceFromTop / (assignmentTextureSize.y + paddingBetweenAssignments)) + 1
 		self:Fire("CreateNewAssignment", self.bossAbilityTextureBars[nearestBarIndex].abilityInstance, assigneeIndex)
 	end
 end
@@ -350,7 +350,7 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
 	local offsetX = timelineStartPosition + timelineLinePadding.x
-	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
+	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
 
 	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
 	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
@@ -601,7 +601,7 @@ local function CalculateRequiredBarHeight(self, limit)
 			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
 			abilityCount = abilityCount + 1
 		end
-		if limit == true and abilityCount == 12 then
+		if limit == true and abilityCount == maximumNumberOfBossAbilityRows then
 			break
 		end
 	end
@@ -613,20 +613,19 @@ end
 
 -- Calculate the total required height for assignments.
 ---@param self EPTimeline
----@param limit boolean|nil
+---@param limit boolean
 ---@return number
 local function CalculateRequiredAssignmentHeight(self, limit)
-	if limit == nil then
-		limit = true
-	end
 	local totalAssignmentHeight = 0
-	if self.assignees and #self.assignees > 0 then
-		local count = #self.assignees
+	if self.assigneeSpells and #self.assigneeSpells > 0 then
+		local count = #self.assigneeSpells
 		if limit == true then
-			count = min(count, 12)
+			count = min(count, maximumNumberOfAssignmentRows)
 		end
-		totalAssignmentHeight = count * (assignmentTextureSize.y + paddingBetweenAssignmentTextures)
-			- paddingBetweenAssignmentTextures
+		totalAssignmentHeight = count * (assignmentTextureSize.y + paddingBetweenAssignments)
+	end
+	if totalAssignmentHeight >= (assignmentTextureSize.y + paddingBetweenAssignments) then
+		totalAssignmentHeight = totalAssignmentHeight - paddingBetweenAssignments
 	end
 	return totalAssignmentHeight
 end
@@ -635,8 +634,8 @@ end
 ---@param self EPTimeline
 ---@return number
 local function CalculateRequiredHeight(self)
-	local totalBarHeight = CalculateRequiredBarHeight(self)
-	local totalAssignmentHeight = CalculateRequiredAssignmentHeight(self)
+	local totalBarHeight = CalculateRequiredBarHeight(self, true)
+	local totalAssignmentHeight = CalculateRequiredAssignmentHeight(self, true)
 	return totalBarHeight
 		+ paddingBetweenTimelines
 		+ totalAssignmentHeight
@@ -678,6 +677,7 @@ end
 ---@field addAssigneeDropdown EPDropdown
 ---
 ---@field assignees table<integer, string>
+---@field assigneeSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, Frame>
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
@@ -691,13 +691,14 @@ end
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
 	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
-	self.bossAbilities = self.bossAbilities or {}
-	self.bossAbilityOrder = self.bossAbilityOrder or {}
-	self.bossPhaseOrder = self.bossPhaseOrder or {}
-	self.bossPhases = self.bossPhases or {}
-	self.timelineAssignments = self.timelineAssignments or {}
-	self.assignees = self.assignees or {}
 	self.timelineLabels = self.timelineLabels or {}
+	self.bossAbilities = {}
+	self.bossAbilityOrder = {}
+	self.bossPhaseOrder = {}
+	self.bossPhases = {}
+	self.timelineAssignments = {}
+	self.assignees = {}
+	self.assigneeSpells = {}
 	self.bossAbilityVisibility = {}
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
@@ -717,7 +718,7 @@ local function OnAcquire(self)
 	}
 	self.assignmentTimeline:SetSharedData(table)
 	self.bossAbilityTimeline:SetSharedData(table)
-	self.assignmentTimeline:SetListPadding(paddingBetweenAssignmentTextures)
+	self.assignmentTimeline:SetListPadding(paddingBetweenAssignments)
 	self.bossAbilityTimeline:SetListPadding(paddingBetweenBossAbilityBars)
 	self.assignmentTimeline:SetTextureHeight(assignmentTextureSize.y)
 	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
@@ -757,6 +758,7 @@ local function OnRelease(self)
 	self.bossPhases = nil
 	self.timelineAssignments = nil
 	self.assignees = nil
+	self.assigneeSpells = nil
 	self.bossAbilityVisibility = nil
 	ResetLocalVariables()
 end
@@ -787,9 +789,11 @@ end
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
 ---@param assignees table<integer, string>
-local function SetAssignments(self, assignments, assignees)
+---@param assigneeSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+local function SetAssignments(self, assignments, assignees, assigneeSpells)
 	self.timelineAssignments = assignments
 	self.assignees = assignees
+	self.assigneeSpells = assigneeSpells
 	UpdateHeight(self)
 end
 
@@ -840,7 +844,7 @@ end
 local function OnHeightSet(self, height)
 	local barHeight = CalculateRequiredBarHeight(self)
 	self.bossAbilityTimeline:SetHeight(barHeight)
-	self.assignmentTimeline:SetHeight(CalculateRequiredAssignmentHeight(self))
+	self.assignmentTimeline:SetHeight(CalculateRequiredAssignmentHeight(self, true))
 
 	self.bossAbilityTimeline:SetTimelineFrameHeight(CalculateRequiredBarHeight(self, false))
 	self.assignmentTimeline:SetTimelineFrameHeight(CalculateRequiredAssignmentHeight(self, false))

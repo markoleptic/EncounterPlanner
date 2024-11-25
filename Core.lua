@@ -969,18 +969,19 @@ function Private:CreateGUI()
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 
 	local boss = bossUtilities.GetBoss(bossName)
-	local sorted = utilities.SortAssignments(
+	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedAssignees = utilities.SortAssignees(sorted)
-	interfaceUpdater.UpdateAssignmentList(sortedAssignees)
+	local sortedAssignees = utilities.SortAssignees(sortedTimelineAssignments)
+	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	interfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
 	interfaceUpdater.UpdateBossAbilityList(bossName, true)
 	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	interfaceUpdater.UpdateTimelineAssignments(sorted, sortedAssignees)
+	interfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
 
 	local minWidth = 0
 	for _, child in pairs(topContainer.children) do

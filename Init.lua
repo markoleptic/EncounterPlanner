@@ -103,7 +103,8 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@class TimelineAssignment
 ---@field assignment Assignment The assignment
 ---@field startTime number Time used to place the assignment on the timeline
----@field order number When sorted by first appearance, this number signifies the order relative to other assignments. This number is the same across assignments with the same assignee.
+---@field order number The row of the assignment in the timeline.
+
 Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 

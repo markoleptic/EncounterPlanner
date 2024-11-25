@@ -98,6 +98,8 @@ local function OnAcquire(self)
 	self.frame:Show()
 	self:SetHeight(defaultFrameHeight)
 	self:SetDisabled(false)
+	self.text:SetJustifyH("CENTER")
+	self.text:ClearAllPoints()
 	self:SetTextHeight(defaultFontHeight)
 	self:SetIcon(nil)
 end
@@ -111,7 +113,7 @@ local function OnRelease(self)
 end
 
 ---@param self EPLabel
----@param iconID number|nil
+---@param iconID number|string|nil
 ---@param spellID number|nil
 local function SetIcon(self, iconID, spellID)
 	self.icon:SetTexture(iconID)
