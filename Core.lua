@@ -309,8 +309,7 @@ local function HandleBossDropdownValueChanged(value)
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
 			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			interfaceUpdater.UpdateBossAbilityList(bossDef.name)
-			interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
+			interfaceUpdater.UpdateBoss(bossDef.name, true)
 		end
 	end
 end
@@ -321,8 +320,7 @@ local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
 	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 	if bossDef then
 		AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
-		interfaceUpdater.UpdateBossAbilityList(bossDef.name)
-		interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
+		interfaceUpdater.UpdateBoss(bossDef.name, true)
 	end
 end
 
@@ -345,8 +343,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	end
 	local boss = nil
 	if bossName then
-		interfaceUpdater.UpdateBossAbilityList(bossName)
-		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+		interfaceUpdater.UpdateBoss(bossName, true)
 		boss = bossUtilities.GetBoss(bossName)
 	end
 	interfaceUpdater.UpdateAllAssignments(true, boss)
@@ -549,8 +546,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 				AddOn.db.profile.lastOpenNote = name
 				local bossName = AddOn.db.profile.notes[name].bossName
 				if bossName then
-					interfaceUpdater.UpdateBossAbilityList(bossName, true)
-					interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+					interfaceUpdater.UpdateBoss(bossName, true)
 				end
 				break
 			end
@@ -662,8 +658,7 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 
 			local boss = nil
 			if bossName then
-				interfaceUpdater.UpdateBossAbilityList(bossName, true)
-				interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+				interfaceUpdater.UpdateBoss(bossName, true)
 				boss = bossUtilities.GetBoss(bossName)
 			end
 			interfaceUpdater.UpdateAllAssignments(true, boss)
@@ -958,18 +953,10 @@ function Private:CreateGUI()
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 
-	local boss = bossUtilities.GetBoss(bossName)
-	local sortedTimelineAssignments = utilities.SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
-		AddOn.db.profile.assignmentSortType,
-		boss
-	)
-	interfaceUpdater.UpdateAssignmentList(utilities.SortAssigneesWithSpellID(sortedTimelineAssignments))
+	interfaceUpdater.UpdateBoss(bossName, true)
+	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
-	interfaceUpdater.UpdateBossAbilityList(bossName, true)
-	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	interfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
+	interfaceUpdater.UpdateAllAssignments(true, bossUtilities.GetBoss(bossName))
 
 	local minWidth = 0
 	for _, child in pairs(topContainer.children) do
@@ -979,7 +966,6 @@ function Private:CreateGUI()
 	end
 
 	Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, 600)
-	-- Center frame in middle of screen
 	Private.mainFrame.frame:SetPoint("CENTER")
 	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
 	Private.mainFrame.frame:ClearAllPoints()

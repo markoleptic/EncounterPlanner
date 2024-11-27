@@ -59,6 +59,7 @@ function Utilities.CreatePrettyClassNames()
 		__index = function(tbl, key)
 			if type(key) == "string" then
 				key = key:lower()
+				key = key:gsub("%s", "")
 			end
 			return rawget(tbl, key)
 		end,

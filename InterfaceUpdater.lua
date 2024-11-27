@@ -144,6 +144,12 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	end
 end
 
+-- Updates the list of boss abilities and the boss ability timeline.
+function InterfaceUpdater.UpdateBoss(bossName, updateBossAbilitySelectDropdown)
+	InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
+	InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
+end
+
 -- Clears and repopulates the list of assignments and spells.
 ---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
