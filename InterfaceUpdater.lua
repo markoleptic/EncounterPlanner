@@ -144,16 +144,15 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	end
 end
 
--- Clears and repopulates the list of assignments based on sortedAssignees
----@param sortedAssignees table<integer, string> A sorted list of assignees
----@param sortedWithSpellID table<integer, {assigneeNameOrRole:string, spellID:number|nil}> A sorted list of assignees
-function InterfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
+-- Clears and repopulates the list of assignments and spells.
+---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
 		local assignmentContainer = timeline:GetAssignmentContainer()
 		if assignmentContainer then
 			assignmentContainer:ReleaseChildren()
-			local map = utilities.GetAssignmentListTextFromAssignees2(sortedWithSpellID, GetCurrentRoster())
+			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, GetCurrentRoster())
 			for _, textTable in ipairs(map) do
 				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
 				assigneeEntry:SetText(textTable.text, textTable.assigneeNameOrRole)
@@ -189,12 +188,11 @@ end
 
 -- Sets the assignments and assignees for the timeline and rerenders it.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
----@param sortedAssignees table<integer, string> A sorted list of assignees
-function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
+function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
 		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
-		timeline:SetAssignments(sortedTimelineAssignments, sortedAssignees, sortedWithSpellID)
+		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID)
 		timeline:UpdateTimeline()
 		Private.mainFrame:DoLayout()
 	end
@@ -225,10 +223,9 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedAssignees = utilities.SortAssignees(sortedTimelineAssignments)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
-	InterfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
-	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
+	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID)
+	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
 	if updateAddAssigneeDropdown then
 		InterfaceUpdater.UpdateAddAssigneeDropdown()
 	end

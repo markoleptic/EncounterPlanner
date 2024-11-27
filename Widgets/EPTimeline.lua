@@ -617,8 +617,8 @@ end
 ---@return number
 local function CalculateRequiredAssignmentHeight(self, limit)
 	local totalAssignmentHeight = 0
-	if self.assigneeSpells and #self.assigneeSpells > 0 then
-		local count = #self.assigneeSpells
+	if self.assigneesAndSpells and #self.assigneesAndSpells > 0 then
+		local count = #self.assigneesAndSpells
 		if limit == true then
 			count = min(count, maximumNumberOfAssignmentRows)
 		end
@@ -676,8 +676,7 @@ end
 ---@field horizontalScrollBar table|Frame
 ---@field addAssigneeDropdown EPDropdown
 ---
----@field assignees table<integer, string>
----@field assigneeSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+---@field assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, Frame>
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
@@ -697,8 +696,7 @@ local function OnAcquire(self)
 	self.bossPhaseOrder = {}
 	self.bossPhases = {}
 	self.timelineAssignments = {}
-	self.assignees = {}
-	self.assigneeSpells = {}
+	self.assigneesAndSpells = {}
 	self.bossAbilityVisibility = {}
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
@@ -757,8 +755,7 @@ local function OnRelease(self)
 	self.bossPhaseOrder = nil
 	self.bossPhases = nil
 	self.timelineAssignments = nil
-	self.assignees = nil
-	self.assigneeSpells = nil
+	self.assigneesAndSpells = nil
 	self.bossAbilityVisibility = nil
 	ResetLocalVariables()
 end
@@ -788,12 +785,10 @@ end
 
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
----@param assignees table<integer, string>
----@param assigneeSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
-local function SetAssignments(self, assignments, assignees, assigneeSpells)
+---@param assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+local function SetAssignments(self, assignments, assigneesAndSpells)
 	self.timelineAssignments = assignments
-	self.assignees = assignees
-	self.assigneeSpells = assigneeSpells
+	self.assigneesAndSpells = assigneesAndSpells
 	UpdateHeight(self)
 end
 

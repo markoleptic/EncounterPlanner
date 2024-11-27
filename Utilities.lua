@@ -331,27 +331,6 @@ function Utilities.CreateTimelineAssignments(assignments, boss)
 	return timelineAssignments
 end
 
--- Sorts the assignees based on the order of the timeline assignments. Sets the order field in timeline assignments.
----@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
----@return table<integer, string>
-function Utilities.SortAssignees(sortedTimelineAssignments)
-	local order = 1
-	local assigneeMap = {}
-	local assigneeOrder = {}
-
-	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assigneeNameOrRole
-		if not assigneeMap[assignee] then
-			assigneeMap[assignee] = order
-			assigneeOrder[order] = assignee
-			order = order + 1
-		end
-		entry.order = assigneeMap[assignee]
-	end
-
-	return assigneeOrder
-end
-
 -- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@return table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
@@ -380,7 +359,6 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
 		entry.order = assigneeMap[assignee].spellIDs[spellID]
 	end
 
-	DevTool:AddData(assigneeOrder)
 	return assigneeOrder
 end
 
@@ -591,57 +569,15 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 	return true
 end
 
--- Creates two tables used to populate the assignment list. The first is a sorted list of text for the list and the
--- second is a table that maps the text to the assigneeNameOrRole found in the assignments.
----@param sortedAssignees table<integer, string> Sorted list of assigneeNameOrRoles from assignments
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
----@return table<integer, string>, table<string, string>
-function Utilities.GetAssignmentListTextFromAssignees(sortedAssignees, roster)
-	local textTable = {}
-	local map = {}
-	for index = 1, #sortedAssignees do
-		local assigneeNameOrRole = sortedAssignees[index]
-		local abilityEntryText = assigneeNameOrRole
-		if assigneeNameOrRole == "{everyone}" then
-			abilityEntryText = "Everyone"
-		else
-			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-			local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-			if classMatch then
-				local prettyClassName = Private.prettyClassNames[classMatch]
-				if prettyClassName then
-					abilityEntryText = prettyClassName
-				else
-					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
-				end
-			elseif roleMatch then
-				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
-			elseif groupMatch then
-				abilityEntryText = "Group " .. groupMatch
-			elseif roster and roster[assigneeNameOrRole] then
-				if roster[assigneeNameOrRole].classColoredName then
-					abilityEntryText = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
-				end
-			end
-		end
-		map[abilityEntryText] = assigneeNameOrRole
-		tinsert(textTable, abilityEntryText)
-	end
-
-	return textTable, map
-end
-
--- Creates two tables used to populate the assignment list. The first is a sorted list of text for the list and the
--- second is a table that maps the text to the assigneeNameOrRole found in the assignments.
----@param sortedAssigneesWithSpellID table<integer, {assigneeNameOrRole:string, spellID:number|nil}> Sorted list of assigneeNameOrRoles from assignments
+-- Creates a sorted table used to populate the assignment list.
+---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}> Sorted assignment list
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
 ---@return table<integer, {assigneeNameOrRole:string, text:string, spells:table<integer, integer>}>
-function Utilities.GetAssignmentListTextFromAssignees2(sortedAssigneesWithSpellID, roster)
+function Utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 	local visited = {}
 	local map = {}
-	for _, sortTable in ipairs(sortedAssigneesWithSpellID) do
-		local assigneeNameOrRole = sortTable.assigneeNameOrRole
+	for _, nameAndSpell in ipairs(sortedAssigneesAndSpells) do
+		local assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
 		local abilityEntryText = assigneeNameOrRole
 		if assigneeNameOrRole == "{everyone}" then
 			abilityEntryText = "Everyone"
@@ -677,8 +613,8 @@ function Utilities.GetAssignmentListTextFromAssignees2(sortedAssigneesWithSpellI
 			})
 			visited[abilityEntryText] = map[#map]
 		end
-		if sortTable.spellID then
-			tinsert(visited[abilityEntryText].spells, sortTable.spellID)
+		if nameAndSpell.spellID then
+			tinsert(visited[abilityEntryText].spells, nameAndSpell.spellID)
 		end
 	end
 	return map

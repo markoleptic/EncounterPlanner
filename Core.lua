@@ -451,26 +451,14 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		return
 	end
 
-	local alreadyExists = false
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	local sorted = utilities.SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
-		AddOn.db.profile.assignmentSortType,
-		boss
-	)
-	local sortedAssignees = utilities.SortAssignees(sorted)
-	for _, assigneeNameOrRole in ipairs(sortedAssignees) do
-		if assigneeNameOrRole == value then
-			alreadyExists = true
-			break
-		end
-	end
-	if not alreadyExists then
+	if not GetCurrentRoster()[value] then
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = value
 		tinsert(GetCurrentAssignments(), assignment)
-		interfaceUpdater.UpdateAllAssignments(true, boss)
+		interfaceUpdater.UpdateAllAssignments(
+			true,
+			bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+		)
 	end
 
 	dropdown:SetText("Add Assignee")
@@ -482,7 +470,6 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 	if not assigneeIndex then
 		return
 	end
-	local assignment = Private.classes.Assignment:New()
 	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
@@ -490,27 +477,38 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedAssignees = utilities.SortAssignees(sorted)
-	assignment.assigneeNameOrRole = sortedAssignees[assigneeIndex] or ""
-	if abilityInstance.combatLogEventType and abilityInstance.triggerSpellID and abilityInstance.triggerCastIndex then
-		-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
-		-- else
-		local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:New(assignment)
-		combatLogEventAssignment.combatLogEventType = abilityInstance.combatLogEventType
-		combatLogEventAssignment.time = abilityInstance.castTime
-		combatLogEventAssignment.phase = abilityInstance.phase
-		combatLogEventAssignment.spellCount = abilityInstance.triggerCastIndex
-		combatLogEventAssignment.combatLogEventSpellID = abilityInstance.triggerSpellID
-		tinsert(GetCurrentAssignments(), combatLogEventAssignment)
-		-- end
-		-- elseif abilityInstance.repeatInstance then
-	else
-		local timedAssignment = Private.classes.TimedAssignment:New(assignment)
-		timedAssignment.time = abilityInstance.castTime
-		tinsert(GetCurrentAssignments(), timedAssignment)
+	local sortedAssigneesAndSpells = utilities.SortAssigneesWithSpellID(sorted)
+	local nameAndSpell = sortedAssigneesAndSpells[assigneeIndex]
+	if nameAndSpell then
+		local assignment = Private.classes.Assignment:New()
+		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
+		if nameAndSpell.spellID then
+			assignment.spellInfo.spellID = nameAndSpell.spellID
+		end
+		if
+			abilityInstance.combatLogEventType
+			and abilityInstance.triggerSpellID
+			and abilityInstance.triggerCastIndex
+		then
+			-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
+			-- else
+			local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:New(assignment)
+			combatLogEventAssignment.combatLogEventType = abilityInstance.combatLogEventType
+			combatLogEventAssignment.time = abilityInstance.castTime
+			combatLogEventAssignment.phase = abilityInstance.phase
+			combatLogEventAssignment.spellCount = abilityInstance.triggerCastIndex
+			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.triggerSpellID
+			tinsert(GetCurrentAssignments(), combatLogEventAssignment)
+			-- end
+			-- elseif abilityInstance.repeatInstance then
+		else
+			local timedAssignment = Private.classes.TimedAssignment:New(assignment)
+			timedAssignment.time = abilityInstance.castTime
+			tinsert(GetCurrentAssignments(), timedAssignment)
+		end
+		interfaceUpdater.UpdateAllAssignments(false, boss)
+		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
-	interfaceUpdater.UpdateAllAssignments(false, boss)
-	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
 local function HandleCreateNewNoteButtonClicked()
@@ -975,13 +973,11 @@ function Private:CreateGUI()
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedAssignees = utilities.SortAssignees(sortedTimelineAssignments)
-	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
-	interfaceUpdater.UpdateAssignmentList(sortedAssignees, sortedWithSpellID)
+	interfaceUpdater.UpdateAssignmentList(utilities.SortAssigneesWithSpellID(sortedTimelineAssignments))
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
 	interfaceUpdater.UpdateBossAbilityList(bossName, true)
 	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	interfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedAssignees)
+	interfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
 
 	local minWidth = 0
 	for _, child in pairs(topContainer.children) do
