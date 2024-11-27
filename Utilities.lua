@@ -367,8 +367,8 @@ end
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
 ---@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
-local function compareAssignments(roster, assignmentSortType)
-	local function rolePriority(role)
+local function CompareAssignments(roster, assignmentSortType)
+	local function RolePriority(role)
 		if role == "role:healer" then
 			return 1
 		elseif role == "role:tank" then
@@ -403,7 +403,7 @@ local function compareAssignments(roster, assignmentSortType)
 			return a.startTime < b.startTime
 		elseif assignmentSortType:match("^Role") then
 			local rolePriorityA, rolePriorityB =
-				rolePriority(roster[nameOrRoleA].role), rolePriority(roster[nameOrRoleB].role)
+				RolePriority(roster[nameOrRoleA].role), RolePriority(roster[nameOrRoleB].role)
 			if rolePriorityA == rolePriorityB then
 				if assignmentSortType == "Role > Alphabetical" then
 					if nameOrRoleA == nameOrRoleB then
@@ -437,7 +437,7 @@ end
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
 	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, boss)
-	sort(timelineAssignments, compareAssignments(roster, assignmentSortType))
+	sort(timelineAssignments, CompareAssignments(roster, assignmentSortType))
 	return timelineAssignments
 end
 
