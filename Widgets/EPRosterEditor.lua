@@ -392,10 +392,18 @@ local function SetRosters(self, currentRoster, sharedRoster)
 	end
 
 	for name, data in pairs(currentRoster) do
-		tinsert(self.currentRosterWidgetMap, { name = name, dbEntry = data, widgetEntry = nil })
+		tinsert(self.currentRosterWidgetMap, {
+			name = name,
+			dbEntry = { class = data.class, classColoredName = data.classColoredName, role = data.role },
+			widgetEntry = nil,
+		})
 	end
 	for name, data in pairs(sharedRoster) do
-		tinsert(self.sharedRosterWidgetMap, { name = name, dbEntry = data, widgetEntry = nil })
+		tinsert(self.sharedRosterWidgetMap, {
+			name = name,
+			dbEntry = { class = data.class, classColoredName = data.classColoredName, role = data.role },
+			widgetEntry = nil,
+		})
 	end
 
 	sort(self.currentRosterWidgetMap, function(a, b)
