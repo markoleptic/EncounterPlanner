@@ -299,6 +299,68 @@ local function CreateAssignmentEditor()
 	end
 end
 
+local function HandleImportNoteFromString(importType)
+	local text = Private.importEditBox:GetText()
+	local textTable = utilities.SplitStringIntoTable(text)
+	Private.importEditBox:Release()
+	local bossName = nil
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	local notes = AddOn.db.profile.notes
+
+	if importType == "FromStringOverwrite" then
+		notes[lastOpenNote].content = textTable
+		bossName = Private:Note(lastOpenNote)
+	elseif importType == "FromStringNew" then
+		local newNoteName = utilities.CreateUniqueNoteName(notes)
+		notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+		notes[newNoteName].content = textTable
+		bossName = Private:Note(newNoteName)
+		AddOn.db.profile.lastOpenNote = newNoteName
+		local noteDropdown = Private.mainFrame:GetNoteDropdown()
+		if noteDropdown then
+			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+			noteDropdown:SetValue(newNoteName)
+		end
+		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+		if renameNoteLineEdit then
+			renameNoteLineEdit:SetText(newNoteName)
+		end
+	end
+
+	local boss = nil
+	if bossName then
+		interfaceUpdater.UpdateBossAbilityList(bossName, true)
+		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+		boss = bossUtilities.GetBoss(bossName)
+	end
+	interfaceUpdater.UpdateAllAssignments(true, boss)
+end
+
+local function CreateImportEditBox(importType)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	Private.importEditBox = AceGUI:Create("EPEditBox")
+	Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+	Private.importEditBox.frame:SetFrameLevel(30)
+	Private.importEditBox.frame:SetPoint("CENTER")
+	Private.importEditBox:SetTitle("Import Text")
+	local buttonText
+	if importType == "FromStringOverwrite" then
+		buttonText = "Overwrite " .. AddOn.db.profile.lastOpenNote
+	else
+		buttonText = "Import As New EP note"
+	end
+	Private.importEditBox:ShowOkayButton(true, buttonText)
+	Private.importEditBox:SetCallback("OnRelease", function()
+		Private.importEditBox = nil
+	end)
+	Private.importEditBox:SetCallback("OkayButtonClicked", function()
+		HandleImportNoteFromString(importType)
+	end)
+	Private.importEditBox:HighlightTextAndFocus()
+end
+
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
 	if Private.assignmentEditor then
@@ -575,75 +637,17 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 	if value == "Import" then
 		return
 	end
-	if Private.importEditBox then
-		importDropdown:SetText("Import")
-		return
-	end
-
-	if value == "FromMRTOverwrite" or value == "FromMRTNew" then
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		local bossName = nil
-		if value == "FromMRTOverwrite" then
-			bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
-		elseif value == "FromMRTNew" then
-			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-			bossName = Private:Note(newNoteName, true)
-			AddOn.db.profile.lastOpenNote = newNoteName
-			local noteDropdown = Private.mainFrame:GetNoteDropdown()
-			if noteDropdown then
-				noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-				noteDropdown:SetValue(newNoteName)
+	if not Private.importEditBox then
+		if value == "FromMRTOverwrite" or value == "FromMRTNew" then
+			if Private.assignmentEditor then
+				Private.assignmentEditor:Release()
 			end
-			local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
-			if renameNoteLineEdit then
-				renameNoteLineEdit:SetText(newNoteName)
-			end
-		end
-		local boss = nil
-		if bossName then
-			interfaceUpdater.UpdateBossAbilityList(bossName, true)
-			interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-			boss = bossUtilities.GetBoss(bossName)
-		end
-		interfaceUpdater.UpdateAllAssignments(true, boss)
-	elseif value == "FromStringOverwrite" or value == "FromStringNew" then
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		Private.importEditBox = AceGUI:Create("EPEditBox")
-		Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.importEditBox.frame:SetFrameLevel(30)
-		Private.importEditBox.frame:SetPoint("CENTER")
-		Private.importEditBox:SetTitle("Import Text")
-		local buttonText
-		if value == "FromStringOverwrite" then
-			buttonText = "Overwrite " .. AddOn.db.profile.lastOpenNote
-		else
-			buttonText = "Import As New EP note"
-		end
-		Private.importEditBox:ShowOkayButton(true, buttonText)
-		Private.importEditBox:SetCallback("OnRelease", function()
-			Private.importEditBox = nil
-		end)
-		local valueCopy = value
-		Private.importEditBox:SetCallback("OkayButtonClicked", function()
-			local text = Private.importEditBox:GetText()
-			local textTable = utilities.SplitStringIntoTable(text)
-			Private.importEditBox:Release()
 			local bossName = nil
-			local lastOpenNote = AddOn.db.profile.lastOpenNote
-			local notes = AddOn.db.profile.notes
-
-			if valueCopy == "FromStringOverwrite" then
-				notes[lastOpenNote].content = textTable
-				bossName = Private:Note(lastOpenNote)
-			elseif valueCopy == "FromStringNew" then
-				local newNoteName = utilities.CreateUniqueNoteName(notes)
-				notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
-				notes[newNoteName].content = textTable
-				bossName = Private:Note(newNoteName)
+			if value == "FromMRTOverwrite" then
+				bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
+			elseif value == "FromMRTNew" then
+				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
+				bossName = Private:Note(newNoteName, true)
 				AddOn.db.profile.lastOpenNote = newNoteName
 				local noteDropdown = Private.mainFrame:GetNoteDropdown()
 				if noteDropdown then
@@ -655,17 +659,16 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 					renameNoteLineEdit:SetText(newNoteName)
 				end
 			end
-
 			local boss = nil
 			if bossName then
 				interfaceUpdater.UpdateBoss(bossName, true)
 				boss = bossUtilities.GetBoss(bossName)
 			end
 			interfaceUpdater.UpdateAllAssignments(true, boss)
-		end)
-		Private.importEditBox:HighlightTextAndFocus()
+		elseif value == "FromStringOverwrite" or value == "FromStringNew" then
+			CreateImportEditBox(value)
+		end
 	end
-
 	importDropdown:SetText("Import")
 end
 
