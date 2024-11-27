@@ -396,7 +396,7 @@ local function compareAssignments(roster, assignmentSortType)
 			return 2
 		elseif role == "role:damager" then
 			return 3
-		elseif role == nil then
+		elseif role == nil or role == "" then
 			return 4
 		else
 			print(format('%s: Invalid role type "%s"', AddOnName, role))
@@ -423,7 +423,8 @@ local function compareAssignments(roster, assignmentSortType)
 			end
 			return a.startTime < b.startTime
 		elseif assignmentSortType:match("^Role") then
-			local rolePriorityA, rolePriorityB = rolePriority(roster[a]), rolePriority(roster[b])
+			local rolePriorityA, rolePriorityB =
+				rolePriority(roster[nameOrRoleA].role), rolePriority(roster[nameOrRoleB].role)
 			if rolePriorityA == rolePriorityB then
 				if assignmentSortType == "Role > Alphabetical" then
 					if nameOrRoleA == nameOrRoleB then
