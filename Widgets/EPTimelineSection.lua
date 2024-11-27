@@ -124,13 +124,33 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 	if self.totalTimelineDuration <= 0 then
 		return
 	end
+
 	local controlKeyDown = IsControlKeyDown()
+	local scrollFrame = self.scrollFrame
+	local timelineFrame = self.timelineFrame
+
+	if not controlKeyDown or updateBoth then
+		local scrollFrameHeight = scrollFrame:GetHeight()
+		local timelineFrameHeight = timelineFrame:GetHeight()
+
+		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
+		local currentVerticalScroll = scrollFrame:GetVerticalScroll()
+		local snapValue = (self.textureHeight + self.listPadding) / 2
+		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
+
+		if delta > 0 then
+			currentSnapValue = currentSnapValue - 1
+		elseif delta < 0 then
+			currentSnapValue = currentSnapValue + 1
+		end
+
+		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		scrollFrame:SetVerticalScroll(newVerticalScroll)
+		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
+	end
 
 	if controlKeyDown or updateBoth then
-		local scrollFrame = self.scrollFrame
-		local timelineFrame = self.timelineFrame
 		local timelineDuration = self.totalTimelineDuration
-
 		local zoomFactor = self.staticTimelineSectionData.zoomFactor
 		local visibleDuration = timelineDuration / zoomFactor
 		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineFrame:GetWidth()) * timelineDuration
@@ -181,28 +201,6 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 			self.staticTimelineSectionData.horizontalScroll = newHorizontalScroll
 			self:Fire("StaticDataChanged", true)
 		end
-	end
-	if not controlKeyDown or updateBoth then
-		local scrollFrame = self.scrollFrame
-		local timelineFrame = self.timelineFrame
-
-		local scrollFrameHeight = scrollFrame:GetHeight()
-		local timelineFrameHeight = timelineFrame:GetHeight()
-
-		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
-		local currentVerticalScroll = scrollFrame:GetVerticalScroll()
-		local snapValue = (self.textureHeight + self.listPadding) / 2
-		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
-
-		if delta > 0 then
-			currentSnapValue = currentSnapValue - 1
-		elseif delta < 0 then
-			currentSnapValue = currentSnapValue + 1
-		end
-
-		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
-		scrollFrame:SetVerticalScroll(newVerticalScroll)
-		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	end
 
 	UpdateScrollBarPrivate(self)
