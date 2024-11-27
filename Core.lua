@@ -507,12 +507,17 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		return
 	end
 
-	if not GetCurrentRoster()[value] then
-		local assignment = Private.classes.Assignment:New()
-		assignment.assigneeNameOrRole = value
-		tinsert(GetCurrentAssignments(), assignment)
-		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+	for _, assignment in pairs(GetCurrentAssignments()) do
+		if assignment.assigneeNameOrRole == value then
+			dropdown:SetText("Add Assignee")
+			return
+		end
 	end
+
+	local assignment = Private.classes.Assignment:New()
+	assignment.assigneeNameOrRole = value
+	tinsert(GetCurrentAssignments(), assignment)
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 
 	dropdown:SetText("Add Assignee")
 end
