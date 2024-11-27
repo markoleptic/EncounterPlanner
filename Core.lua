@@ -31,10 +31,6 @@ local tonumber = tonumber
 local tremove = tremove
 local unpack = unpack
 
-local assignmentPadding = 2
-local bossAbilityPadding = 4
-local bottomLeftContainerSpacing = { 0, 6 }
-local bottomLeftContainerWidth = 200
 local dropdownContainerLabelSpacing = { 2, 2 }
 local dropdownContainerSpacing = { 2, 2 }
 local noteContainerSpacing = { 5, 2 }
@@ -58,6 +54,11 @@ local function GetCurrentAssignments()
 	return note.assignments
 end
 
+---@return Boss|nil
+local function GetCurrentBoss()
+	return bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+end
+
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
 ---@param sharedRosterMap table<integer, RosterWidgetMapping>
 local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
@@ -78,9 +79,8 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 
 	Private.rosterEditor:Release()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	interfaceUpdater.UpdateAllAssignments(true, boss)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 end
 
 ---@param rosterTab EPRosterEditorTab
@@ -92,7 +92,8 @@ local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab)
 		currentRoster = GetCurrentRoster()
 	end
 	if currentRoster then
-		utilities.UpdateRosterDataFromGroup(currentRoster, true)
+		utilities.ImportGroupIntoRoster(currentRoster)
+		utilities.UpdateRosterDataFromGroup(currentRoster)
 		if rosterTab == "CurrentBossRoster" then
 			interfaceUpdater.UpdateAddAssigneeDropdown()
 		end
@@ -127,7 +128,7 @@ local function HandleImportRosterButtonClicked(_, _, rosterTab)
 		end
 	end
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	interfaceUpdater.UpdateAddAssigneeDropdown()
 	Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 	Private.rosterEditor:SetCurrentTab(rosterTab)
@@ -166,14 +167,12 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 			break
 		end
 	end
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	interfaceUpdater.UpdateAllAssignments(true, boss)
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
 	Private.assignmentEditor:Release()
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	interfaceUpdater.UpdateAllAssignments(true, boss)
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 end
 
 ---@param assignmentEditor EPAssignmentEditor
@@ -248,12 +247,11 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		assignment.targetName = value
 	end
 
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local timeline = Private.mainFrame:GetTimeline()
-	if timeline and boss then
+	if timeline then
 		for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 			if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
+				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBoss())
 				break
 			end
 		end
@@ -282,7 +280,7 @@ local function CreateAssignmentEditor()
 		assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		local dropdownItems = {}
-		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+		local boss = GetCurrentBoss()
 		if boss then
 			for _, ID in pairs(boss.sortedAbilityIDs) do
 				local spellInfo = GetSpellInfo(ID)
@@ -311,7 +309,7 @@ local function HandleBossDropdownValueChanged(value)
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
 			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			interfaceUpdater.UpdateBossAbilityList(bossDef.name, true)
+			interfaceUpdater.UpdateBossAbilityList(bossDef.name)
 			interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
 		end
 	end
@@ -323,7 +321,7 @@ local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
 	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 	if bossDef then
 		AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
-		interfaceUpdater.UpdateBossAbilityList(bossDef.name, false)
+		interfaceUpdater.UpdateBossAbilityList(bossDef.name)
 		interfaceUpdater.UpdateTimelineBossAbilities(bossDef.name)
 	end
 end
@@ -331,8 +329,7 @@ end
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	interfaceUpdater.UpdateAllAssignments(false, boss)
+	interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
 end
 
 ---@param value string
@@ -348,7 +345,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	end
 	local boss = nil
 	if bossName then
-		interfaceUpdater.UpdateBossAbilityList(bossName, true)
+		interfaceUpdater.UpdateBossAbilityList(bossName)
 		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 		boss = bossUtilities.GetBoss(bossName)
 	end
@@ -455,10 +452,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = value
 		tinsert(GetCurrentAssignments(), assignment)
-		interfaceUpdater.UpdateAllAssignments(
-			true,
-			bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-		)
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 	end
 
 	dropdown:SetText("Add Assignee")
@@ -467,15 +461,11 @@ end
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
 local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
-	if not assigneeIndex then
-		return
-	end
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.assignmentSortType,
-		boss
+		GetCurrentBoss()
 	)
 	local sortedAssigneesAndSpells = utilities.SortAssigneesWithSpellID(sorted)
 	local nameAndSpell = sortedAssigneesAndSpells[assigneeIndex]
@@ -506,7 +496,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 			timedAssignment.time = abilityInstance.castTime
 			tinsert(GetCurrentAssignments(), timedAssignment)
 		end
-		interfaceUpdater.UpdateAllAssignments(false, boss)
+		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
 end
@@ -515,14 +505,15 @@ local function HandleCreateNewNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 	local notes = AddOn.db.profile.notes
+	local newNoteName = utilities.CreateUniqueNoteName(notes)
+
 	notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	AddOn.db.profile.lastOpenNote = newNoteName
 
 	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
 	if bossDef then
-		AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
+		notes[newNoteName].bossName = bossDef.name
 	end
 
 	interfaceUpdater.UpdateAllAssignments(true) -- Does not need boss bc empty note
@@ -578,8 +569,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
-		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-		interfaceUpdater.UpdateAllAssignments(true, boss)
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 	end
 end
 
@@ -704,18 +694,20 @@ end
 
 function Private:CreateGUI()
 	local bossName = nil
-	if not AddOn.db.profile.lastOpenNote or AddOn.db.profile.lastOpenNote == "" then
+	local notes = AddOn.db.profile.notes
+	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	if not lastOpenNote or lastOpenNote == "" then
 		local defaultNoteName = "SharedMRTNote"
 		bossName = Private:Note(defaultNoteName, true)
-		if not AddOn.db.profile.notes[defaultNoteName] then -- MRT not loaded
-			defaultNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-			AddOn.db.profile.notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
+		if not notes[defaultNoteName] then -- MRT not loaded
+			defaultNoteName = utilities.CreateUniqueNoteName(notes)
+			notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
 		end
 		AddOn.db.profile.lastOpenNote = defaultNoteName
 	end
 
 	if bossName == nil then
-		local note = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote]
+		local note = notes[lastOpenNote]
 		if note.bossName then
 			bossName = note.bossName
 		else
@@ -974,7 +966,7 @@ function Private:CreateGUI()
 		boss
 	)
 	interfaceUpdater.UpdateAssignmentList(utilities.SortAssigneesWithSpellID(sortedTimelineAssignments))
-	utilities.UpdateRosterDataFromGroup(GetCurrentRoster(), false)
+	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	interfaceUpdater.UpdateBossAbilityList(bossName, true)
 	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	interfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)

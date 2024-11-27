@@ -642,9 +642,9 @@ function Utilities.IterateRosterUnits(maxGroup)
 	return units
 end
 
--- Creates a table where keys are character names and the values are tables with class, classColoredName, and role
--- fields. Dependent on the group the player is in.
----@return table
+-- Creates a table where keys are character names and the values are tables with class and role fields. Dependent on the
+-- group the player is in.
+---@return table<string, {class:string, role:string, classColoredName: string}>
 function Utilities.GetDataFromGroup()
 	local groupData = {}
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
@@ -661,7 +661,7 @@ function Utilities.GetDataFromGroup()
 					local classColoredName = colorMixin:WrapTextInColorCode(unitName)
 					groupData[unitName].classColoredName = classColoredName
 					if unitServer then -- nil if on same server
-						local unitNameAndServer = unitName.join("-", unitServer)
+						local unitNameAndServer = unitName .. "-" .. unitServer
 						groupData[unitNameAndServer] = groupData[unitName]
 					end
 				end
@@ -671,13 +671,11 @@ function Utilities.GetDataFromGroup()
 	return groupData
 end
 
--- Updates class, class colored names, and roles from the current raid or party group.
 ---@param unitName string Character name for the roster entry
 ---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
----@param unitData table Table containing class, class colored name, and role data for the unit
-local function UpdateRosterEntryClassAndClassName(unitName, rosterEntry, unitData)
+local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
 	local hasValidClass = rosterEntry.class and rosterEntry.class ~= ""
-	if hasValidClass and (not rosterEntry.classColoredName or rosterEntry.classColoredName == "") then
+	if hasValidClass then
 		local className = rosterEntry.class:match("class:%s*(%a+)")
 		if className then
 			className = className:upper()
@@ -686,7 +684,14 @@ local function UpdateRosterEntryClassAndClassName(unitName, rosterEntry, unitDat
 				rosterEntry.classColoredName = colorMixin:WrapTextInColorCode(unitName)
 			end
 		end
-	elseif not hasValidClass and unitData.class then
+	end
+end
+
+-- Updates class, class colored name, and role from the group if they do not exist.
+---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
+---@param unitData {class:string, role:string, classColoredName: string}
+local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
+	if not rosterEntry.class or rosterEntry.class ~= "" then
 		local className = unitData.class
 		local actualClassName
 		if className == "DEATHKNIGHT" then
@@ -697,10 +702,10 @@ local function UpdateRosterEntryClassAndClassName(unitName, rosterEntry, unitDat
 			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
 		end
 		rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
+	end
+
+	if not rosterEntry.classColoredName or rosterEntry.classColoredName == "" then
 		rosterEntry.classColoredName = unitData.classColoredName
-	else
-		rosterEntry.class = nil
-		rosterEntry.classColoredName = nil
 	end
 
 	if not rosterEntry.role or rosterEntry.role == "" then
@@ -714,17 +719,26 @@ local function UpdateRosterEntryClassAndClassName(unitName, rosterEntry, unitDat
 	end
 end
 
+-- Imports all characters in the group if they do not already exist.
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+function Utilities.ImportGroupIntoRoster(roster)
+	for _, unit in pairs(Utilities.IterateRosterUnits()) do
+		if unit then
+			local unitName, _ = UnitName(unit)
+			if unitName then
+				roster[unitName] = {}
+			end
+		end
+	end
+end
+
 -- Updates class, class colored name, and role from the current raid or party group.
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
----@param addIfMissing boolean? If true, units that do not exist in the roster are added
-function Utilities.UpdateRosterDataFromGroup(roster, addIfMissing)
+function Utilities.UpdateRosterDataFromGroup(roster)
 	local groupData = Utilities.GetDataFromGroup()
 	for unitName, data in pairs(groupData) do
-		if not roster[unitName] and addIfMissing then
-			roster[unitName] = {}
-		end
 		if roster[unitName] then
-			UpdateRosterEntryClassAndClassName(unitName, roster[unitName], data)
+			UpdateRosterEntryFromUnitData(roster[unitName], data)
 		end
 	end
 end
@@ -753,6 +767,7 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 						roster[nameOrRole].role = determinedRoles[nameOrRole]
 					end
 				end
+				UpdateRosterEntryClassColoredName(nameOrRole, roster[nameOrRole])
 			end
 			visited[nameOrRole] = true
 		end
