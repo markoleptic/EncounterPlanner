@@ -531,7 +531,8 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		AddOn.db.profile.assignmentSortType,
 		GetCurrentBoss()
 	)
-	local sortedAssigneesAndSpells = utilities.SortAssigneesWithSpellID(sorted)
+	local sortedAssigneesAndSpells =
+		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed)
 	local nameAndSpell = sortedAssigneesAndSpells[assigneeIndex]
 	if nameAndSpell then
 		local assignment = Private.classes.Assignment:New()
@@ -1026,6 +1027,9 @@ function AddOn:OnInitialize()
 				end
 				if not note.assignments then
 					note.assignments = {}
+				end
+				if not note.collapsed then
+					note.collapsed = {}
 				end
 			end
 		end

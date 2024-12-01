@@ -217,11 +217,13 @@ Private.classes.EncounterPlannerDbRosterEntry = {}
 ---@field content table<integer, string>
 ---@field assignments table<integer, Assignment>
 ---@field roster table<string, EncounterPlannerDbRosterEntry>
+---@field collapsed table<string, boolean>
 Private.classes.EncounterPlannerDbNote = {
 	bossName = nil,
 	content = {},
 	assignments = {},
 	roster = {},
+	collapsed = {},
 }
 
 --- Copies a table

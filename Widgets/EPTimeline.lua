@@ -260,8 +260,24 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 	end
 	if nearestBarIndex then
 		local relativeDistanceFromTop = abs(self.assignmentTimeline:GetTimelineFrame():GetTop() - currentY)
-		local assigneeIndex = floor(relativeDistanceFromTop / (assignmentTextureSize.y + paddingBetweenAssignments)) + 1
-		self:Fire("CreateNewAssignment", self.bossAbilityTextureBars[nearestBarIndex].abilityInstance, assigneeIndex)
+		local totalAssignmentHeight = 0
+		local assigneeIndex = nil
+		for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
+			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
+				totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
+				if totalAssignmentHeight >= relativeDistanceFromTop then
+					assigneeIndex = index
+					break
+				end
+			end
+		end
+		if assigneeIndex then
+			self:Fire(
+				"CreateNewAssignment",
+				self.bossAbilityTextureBars[nearestBarIndex].abilityInstance,
+				assigneeIndex
+			)
+		end
 	end
 end
 
@@ -617,12 +633,15 @@ end
 ---@return number
 local function CalculateRequiredAssignmentHeight(self, limit)
 	local totalAssignmentHeight = 0
-	if self.assigneesAndSpells and #self.assigneesAndSpells > 0 then
-		local count = #self.assigneesAndSpells
-		if limit == true then
-			count = min(count, maximumNumberOfAssignmentRows)
+	local totalAssignmentRows = 0
+	for _, as in ipairs(self.assigneesAndSpells) do
+		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
+			totalAssignmentRows = totalAssignmentRows + 1
+			if limit == true and totalAssignmentRows >= maximumNumberOfAssignmentRows then
+				break
+			end
 		end
-		totalAssignmentHeight = count * (assignmentTextureSize.y + paddingBetweenAssignments)
 	end
 	if totalAssignmentHeight >= (assignmentTextureSize.y + paddingBetweenAssignments) then
 		totalAssignmentHeight = totalAssignmentHeight - paddingBetweenAssignments
@@ -684,6 +703,7 @@ end
 ---@field bossAbilityTextureBars table<integer, Texture>
 ---@field bossPhaseOrder table<integer, integer>
 ---@field bossPhases table<integer, BossPhase>
+---@field collapsed table<string, boolean>
 ---@field timelineAssignments table<integer, TimelineAssignment>
 
 ---@param self EPTimeline
@@ -698,6 +718,7 @@ local function OnAcquire(self)
 	self.timelineAssignments = {}
 	self.assigneesAndSpells = {}
 	self.bossAbilityVisibility = {}
+	self.collapsed = {}
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
 	local assignmentTimelineFrame = self.assignmentTimeline:GetFrame()
@@ -757,6 +778,7 @@ local function OnRelease(self)
 	self.timelineAssignments = nil
 	self.assigneesAndSpells = nil
 	self.bossAbilityVisibility = nil
+	self.collapsed = nil
 	ResetLocalVariables()
 end
 
@@ -786,9 +808,11 @@ end
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
 ---@param assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
-local function SetAssignments(self, assignments, assigneesAndSpells)
+---@param collapsed table<string, boolean>
+local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	self.timelineAssignments = assignments
 	self.assigneesAndSpells = assigneesAndSpells
+	self.collapsed = collapsed
 	UpdateHeight(self)
 end
 

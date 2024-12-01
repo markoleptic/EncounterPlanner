@@ -18,16 +18,18 @@ local listItemBackdrop = {
 	edgeSize = 1,
 }
 
-local function HandleCheckBoxMouseDown(frame)
-	AceGUI:ClearFocus()
-end
-
 local function HandleCheckBoxMouseUp(frame)
 	local self = frame.obj
 	if not self.disabled then
 		self:ToggleChecked()
 		self:Fire("OnValueChanged", self.checked)
 	end
+end
+
+local function HandleCollapseButtonMouseUp(frame)
+	local self = frame.obj
+	self:SetCollapsed(not self.collapsed)
+	self:Fire("CollapseButtonToggled", self.collapsed)
 end
 
 ---@class EPAbilityEntry : AceGUIWidget
@@ -39,9 +41,11 @@ end
 ---@field checkbox table|Frame
 ---@field label EPLabel
 ---@field highlight Texture
+---@field collapseButton Button|table
 ---@field disabled boolean
 ---@field checked boolean
 ---@field key string|table|nil
+---@field collapsed boolean
 
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
@@ -55,6 +59,8 @@ local function OnAcquire(self)
 	self:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self:SetDisabled(false)
 	self:SetChecked(true)
+	self:SetCollapsible(false)
+	self:SetCollapsed(false)
 	self.frame:Show()
 end
 
@@ -151,6 +157,37 @@ local function GetText(self)
 	return self.label:GetText()
 end
 
+---@param self EPAbilityEntry
+---@param collapsible boolean
+local function SetCollapsible(self, collapsible)
+	if collapsible then
+		self.label.frame:SetPoint("LEFT", padding.x + (frameHeight - 2 * padding.y), 0)
+		self.collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+		self.collapseButton:SetScript("OnClick", HandleCollapseButtonMouseUp)
+		self.collapseButton:Show()
+	else
+		self.label.frame:SetPoint("LEFT")
+		self.collapseButton:SetSize(0, frameHeight - 2 * padding.y)
+		self.collapseButton:SetScript("OnClick", nil)
+		self.collapseButton:Hide()
+	end
+end
+
+---@param self EPAbilityEntry
+---@param collapsed boolean
+local function SetCollapsed(self, collapsed)
+	self.collapsed = collapsed
+	if collapsed then
+		self.collapseButton:GetNormalTexture():SetRotation(math.pi / 2)
+		self.collapseButton:GetPushedTexture():SetRotation(math.pi / 2)
+		self.collapseButton:GetHighlightTexture():SetRotation(math.pi / 2)
+	else
+		self.collapseButton:GetNormalTexture():SetRotation(0)
+		self.collapseButton:GetPushedTexture():SetRotation(0)
+		self.collapseButton:GetHighlightTexture():SetRotation(0)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -161,12 +198,21 @@ local function Constructor()
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 
+	local button = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
+	button:SetPoint("LEFT", frame, "LEFT", padding.x, 0)
+	button:SetSize(0, frameHeight - 2 * padding.y)
+	button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	button:RegisterForClicks("LeftButtonUp")
+	button:Hide()
+
 	local checkbox = CreateFrame("CheckButton", Type .. "CheckBox" .. count, frame)
 	checkbox:SetPoint("RIGHT", frame, "RIGHT", -padding.x, 0)
 	checkbox:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
 	checkbox:EnableMouse(true)
-	checkbox:SetScript("OnMouseDown", HandleCheckBoxMouseDown)
-	checkbox:SetScript("OnMouseUp", HandleCheckBoxMouseUp)
+	checkbox:RegisterForClicks("LeftButtonUp")
+	checkbox:SetScript("OnClick", HandleCheckBoxMouseUp)
 
 	local checkbg = checkbox:CreateTexture(Type .. "CheckBoxBackground" .. count, "ARTWORK")
 	checkbg:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-square-64]])
@@ -196,6 +242,8 @@ local function Constructor()
 		SetAbility = SetAbility,
 		SetNullAbility = SetNullAbility,
 		SetLeftIndent = SetLeftIndent,
+		SetCollapsible = SetCollapsible,
+		SetCollapsed = SetCollapsed,
 		SetText = SetText,
 		GetText = GetText,
 		GetKey = GetKey,
@@ -206,10 +254,12 @@ local function Constructor()
 		check = check,
 		checkbox = checkbox,
 		highlight = highlight,
+		collapseButton = button,
 	}
 
 	checkbox.obj = widget
 	frame.obj = widget
+	button.obj = widget
 
 	return AceGUI:RegisterAsWidget(widget)
 end

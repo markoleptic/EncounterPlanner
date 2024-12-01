@@ -61,6 +61,14 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
 	end
 end
 
+---@param abilityEntry EPAbilityEntry
+---@param collapsed boolean
+local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
+	AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
+	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	InterfaceUpdater.UpdateAllAssignments(true, boss)
+end
+
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
 ---@param updateBossAbilitySelectDropdown boolean? Whether to update the boss ability select dropdown
@@ -168,23 +176,30 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 				assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
 				assigneeEntry.label.text:SetJustifyH("LEFT")
 				assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
+				assigneeEntry:SetCollapsible(true)
+				assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 				assignmentContainer:AddChild(assigneeEntry)
-				for _, spellID in ipairs(textTable.spells) do
-					local spellEntry = AceGUI:Create("EPAbilityEntry")
-					local key = { assigneeNameOrRole = textTable.assigneeNameOrRole, spellID = spellID }
-					if spellID == 0 then
-						spellEntry:SetNullAbility(key)
-					else
-						spellEntry:SetAbility(spellID, key)
+				local collapsed =
+					AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[textTable.assigneeNameOrRole]
+				assigneeEntry:SetCollapsed(collapsed)
+				if not collapsed then
+					for _, spellID in ipairs(textTable.spells) do
+						local spellEntry = AceGUI:Create("EPAbilityEntry")
+						local key = { assigneeNameOrRole = textTable.assigneeNameOrRole, spellID = spellID }
+						if spellID == 0 then
+							spellEntry:SetNullAbility(key)
+						else
+							spellEntry:SetAbility(spellID, key)
+						end
+						spellEntry:SetFullWidth(true)
+						spellEntry:SetLeftIndent(15 - 2)
+						spellEntry:SetHeight(30)
+						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
+						spellEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+						spellEntry.label.text:SetJustifyH("LEFT")
+						spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
+						assignmentContainer:AddChild(spellEntry)
 					end
-					spellEntry:SetFullWidth(true)
-					spellEntry:SetLeftIndent(15)
-					spellEntry:SetHeight(30)
-					spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-x-64]])
-					spellEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
-					spellEntry.label.text:SetJustifyH("LEFT")
-					spellEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
-					assignmentContainer:AddChild(spellEntry)
 				end
 			end
 		end
@@ -197,8 +212,9 @@ end
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
 	local timeline = Private.mainFrame:GetTimeline()
 	if timeline then
-		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
-		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID)
+		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
 		timeline:UpdateTimeline()
 		Private.mainFrame:DoLayout()
 	end
@@ -229,7 +245,10 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
 		AddOn.db.profile.assignmentSortType,
 		boss
 	)
-	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
+		sortedTimelineAssignments,
+		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+	)
 	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID)
 	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
 	if updateAddAssigneeDropdown then

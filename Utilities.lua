@@ -334,9 +334,10 @@ end
 
 -- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
+---@param collapsed table<string, boolean>
 ---@return table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
-function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
-	local order = 1
+function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+	local order = 0
 	local assigneeMap = {}
 	local assigneeOrder = {}
 
@@ -353,9 +354,11 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
 			order = order + 1
 		end
 		if not assigneeMap[assignee].spellIDs[spellID] then
+			if not collapsed[assignee] then
+				order = order + 1
+			end
 			assigneeMap[assignee].spellIDs[spellID] = order
 			tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = spellID })
-			order = order + 1
 		end
 		entry.order = assigneeMap[assignee].spellIDs[spellID]
 	end
