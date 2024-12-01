@@ -84,54 +84,79 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 end
 
 ---@param rosterTab EPRosterEditorTab
-local function HandleImportCurrentRaidButtonClicked(_, _, rosterTab)
-	local currentRoster = nil
+local function HandleImportCurrentRaidGroupButtonClicked(_, _, rosterTab)
+	local importRosterWidgetMapping = nil
+	local noChangeRosterWidgetMapping = nil
 	if rosterTab == "SharedRoster" then
-		currentRoster = AddOn.db.profile.sharedRoster
+		noChangeRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+		importRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
 	elseif rosterTab == "CurrentBossRoster" then
-		currentRoster = GetCurrentRoster()
+		noChangeRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+		importRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 	end
-	if currentRoster then
-		utilities.ImportGroupIntoRoster(currentRoster)
-		utilities.UpdateRosterDataFromGroup(currentRoster)
-		if rosterTab == "CurrentBossRoster" then
-			interfaceUpdater.UpdateAddAssigneeDropdown()
+	if importRosterWidgetMapping and noChangeRosterWidgetMapping then
+		local importRoster = {}
+		local noChangeRoster = {}
+		for _, rosterWidgetMapping in ipairs(importRosterWidgetMapping) do
+			importRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
 		end
-		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
+		for _, rosterWidgetMapping in ipairs(noChangeRosterWidgetMapping) do
+			noChangeRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+		end
+		utilities.ImportGroupIntoRoster(importRoster)
+		utilities.UpdateRosterDataFromGroup(importRoster)
+		if rosterTab == "SharedRoster" then
+			Private.rosterEditor:SetRosters(noChangeRoster, importRoster)
+		elseif rosterTab == "CurrentBossRoster" then
+			Private.rosterEditor:SetRosters(importRoster, noChangeRoster)
+		end
+		Private.rosterEditor:SetCurrentTab(rosterTab)
 	end
-	Private.rosterEditor:SetCurrentTab(rosterTab)
 end
 
-local function HandleImportRosterButtonClicked(_, _, rosterTab)
-	local fromRoster = nil
-	local toRoster = nil
+local function HandleAddUpdateRosterButtonClicked(_, _, rosterTab)
+	local fromRosterWidgetMapping = nil
+	local toRosterWidgetMapping = nil
 	if rosterTab == "SharedRoster" then
-		fromRoster = GetCurrentRoster()
-		toRoster = AddOn.db.profile.sharedRoster
+		fromRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+		toRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
 	elseif rosterTab == "CurrentBossRoster" then
-		fromRoster = AddOn.db.profile.sharedRoster
-		toRoster = GetCurrentRoster()
+		fromRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+		toRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 	end
-	if fromRoster and toRoster then
+	if fromRosterWidgetMapping and toRosterWidgetMapping then
+		local fromRoster = {}
+		local toRoster = {}
+		for _, rosterWidgetMapping in ipairs(fromRosterWidgetMapping) do
+			fromRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+		end
+		for _, rosterWidgetMapping in ipairs(toRosterWidgetMapping) do
+			toRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+		end
 		for name, rosterMember in pairs(fromRoster) do
 			if not toRoster[name] then
 				toRoster[name] = Private.DeepCopy(rosterMember)
 			else
-				if (not toRoster[name].class or toRoster[name].class == "") and rosterMember.class then
-					toRoster[name].class = rosterMember.class
-					toRoster[name].classColoredName = nil
+				if rosterMember.class then
+					if not toRoster[name].class or toRoster[name].class == "" then
+						toRoster[name].class = rosterMember.class
+						toRoster[name].classColoredName = nil
+					end
 				end
-				if (not toRoster[name].role or toRoster[name].role == "") and rosterMember.role then
-					toRoster[name].role = rosterMember.role
+				if rosterMember.role then
+					if not toRoster[name].role or toRoster[name].role == "" then
+						toRoster[name].role = rosterMember.role
+					end
 				end
 			end
 		end
+		if rosterTab == "SharedRoster" then
+			Private.rosterEditor:SetRosters(fromRoster, toRoster)
+		elseif rosterTab == "CurrentBossRoster" then
+			Private.rosterEditor:SetRosters(toRoster, fromRoster)
+		end
+		Private.rosterEditor:SetCurrentTab(rosterTab)
 	end
-	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
-	interfaceUpdater.UpdateAddAssigneeDropdown()
-	Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
-	Private.rosterEditor:SetCurrentTab(rosterTab)
 end
 
 local function CreateRosterEditor()
@@ -141,8 +166,8 @@ local function CreateRosterEditor()
 			Private.rosterEditor = nil
 		end)
 		Private.rosterEditor:SetCallback("EditingFinished", HandleRosterEditingFinished)
-		Private.rosterEditor:SetCallback("ImportCurrentRaidButtonClicked", HandleImportCurrentRaidButtonClicked)
-		Private.rosterEditor:SetCallback("ImportRosterButtonClicked", HandleImportRosterButtonClicked)
+		Private.rosterEditor:SetCallback("ImportCurrentRaidButtonClicked", HandleImportCurrentRaidGroupButtonClicked)
+		Private.rosterEditor:SetCallback("ImportRosterButtonClicked", HandleAddUpdateRosterButtonClicked)
 		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.rosterEditor.frame:SetFrameLevel(25)
 		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
