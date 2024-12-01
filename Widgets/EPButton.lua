@@ -68,6 +68,7 @@ local function OnAcquire(self)
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	self:SetBackdropColor(0.25, 0.25, 0.25, 1)
 	self:SetColor(0.725, 0.008, 0.008, 1)
+	self:SetIcon(nil)
 	self.frame:Show()
 	self:SetDisabled(false)
 end
@@ -82,6 +83,18 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.button:SetText(text or "")
+end
+
+---@param self EPButton
+---@param iconID string|number|nil
+local function SetIcon(self, iconID)
+	self.button.icon:SetTexture(iconID)
+	if iconID then
+		self.button.icon:Show()
+		self.button:SetText("")
+	else
+		self.button.icon:Hide()
+	end
 end
 
 ---@param self EPButton
@@ -165,6 +178,11 @@ local function Constructor()
 		fontString:SetFont(fPath, defaultFontHeight)
 	end
 
+	button.icon = button:CreateTexture(Type .. "Icon" .. count, "OVERLAY")
+	button.icon:SetBlendMode("ADD")
+	button.icon:SetAllPoints()
+	button.icon:Hide()
+
 	button.bg = button:CreateTexture(Type .. "Background" .. count, "BORDER")
 	button.bg:SetAllPoints()
 	button.bg:SetColorTexture(0.725, 0.008, 0.008)
@@ -210,6 +228,7 @@ local function Constructor()
 		SetIsToggleable = SetIsToggleable,
 		Toggle = Toggle,
 		IsToggled = IsToggled,
+		SetIcon = SetIcon,
 		frame = frame,
 		type = Type,
 		button = button,

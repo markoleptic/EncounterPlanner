@@ -785,6 +785,32 @@ function Private:CreateGUI()
 			Private.rosterEditor:Release()
 		end
 	end)
+	Private.mainFrame:SetCallback("CollapseAllButtonClicked", function()
+		local sortedTimelineAssignments = utilities.SortAssignments(
+			GetCurrentAssignments(),
+			GetCurrentRoster(),
+			AddOn.db.profile.assignmentSortType,
+			GetCurrentBoss()
+		)
+		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
+			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = true
+		end
+		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+	end)
+	Private.mainFrame:SetCallback("ExpandAllButtonClicked", function()
+		local sortedTimelineAssignments = utilities.SortAssignments(
+			GetCurrentAssignments(),
+			GetCurrentRoster(),
+			AddOn.db.profile.assignmentSortType,
+			GetCurrentBoss()
+		)
+		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
+			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
+		end
+		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+	end)
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")

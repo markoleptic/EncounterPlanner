@@ -27,13 +27,14 @@ local titleBarBackdrop = {
 }
 
 ---@class EPMainFrame : AceGUIContainer
----@field frame table|BackdropTemplate|Frame
+---@field frame table|Frame
 ---@field type string
 ---@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
+---@field collapseAllButton EPButton
+---@field expandAllButton EPButton
 ---@field children table<integer, EPWidgetType|EPContainerType>
----@field anchorLastChild boolean
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
@@ -41,7 +42,6 @@ local function OnAcquire(self)
 	padding.right = defaultPadding
 	padding.bottom = defaultPadding
 	padding.left = defaultPadding
-	self.anchorLastChild = true
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
@@ -65,6 +65,34 @@ local function OnAcquire(self)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+
+	self.collapseAllButton = AceGUI:Create("EPButton")
+	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
+	self.collapseAllButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.collapseAllButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.collapseAllButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.collapseAllButton.frame:SetParent(self.frame)
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
+	self.collapseAllButton:SetCallback("Clicked", function()
+		self:Fire("CollapseAllButtonClicked")
+	end)
+
+	self.expandAllButton = AceGUI:Create("EPButton")
+	self.expandAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]])
+	self.expandAllButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.expandAllButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.expandAllButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.expandAllButton.frame:SetParent(self.frame)
+	self.expandAllButton.frame:SetPoint(
+		"BOTTOMLEFT",
+		self.frame,
+		"BOTTOMLEFT",
+		padding.right + 2 + self.collapseAllButton.frame:GetWidth(),
+		padding.bottom
+	)
+	self.expandAllButton:SetCallback("Clicked", function()
+		self:Fire("ExpandAllButtonClicked")
+	end)
 end
 
 ---@param self EPMainFrame
@@ -72,12 +100,16 @@ local function OnRelease(self)
 	if self.closeButton then
 		self.closeButton:Release()
 	end
+	if self.collapseAllButton then
+		self.collapseAllButton:Release()
+	end
+	if self.expandAllButton then
+		self.expandAllButton:Release()
+	end
 	self.closeButton = nil
+	self.collapseAllButton = nil
+	self.expandAllButton = nil
 end
-
-local function OnHeightSet(self, height) end
-
-local function OnWidthSet(self, width) end
 
 ---@param self EPMainFrame
 ---@param width number|nil
@@ -188,6 +220,14 @@ local function SetPadding(self, top, right, bottom, left)
 	padding.left = left
 	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
 	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -padding.right, padding.bottom)
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
+	self.expandAllButton.frame:SetPoint(
+		"BOTTOMLEFT",
+		self.frame,
+		"BOTTOMLEFT",
+		padding.right + 2 + self.collapseAllButton.frame:GetWidth(),
+		padding.bottom
+	)
 end
 
 local function Constructor()
@@ -244,8 +284,6 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		OnHeightSet = OnHeightSet,
-		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		GetBossSelectDropdown = GetBossSelectDropdown,
 		GetBossAbilitySelectDropdown = GetBossAbilitySelectDropdown,
