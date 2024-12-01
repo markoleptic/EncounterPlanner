@@ -405,8 +405,8 @@ local function CompareAssignments(roster, assignmentSortType)
 			end
 			return a.startTime < b.startTime
 		elseif assignmentSortType:match("^Role") then
-			local rolePriorityA, rolePriorityB =
-				RolePriority(roster[nameOrRoleA].role), RolePriority(roster[nameOrRoleB].role)
+			local roleA, roleB = roster[nameOrRoleA], roster[nameOrRoleB]
+			local rolePriorityA, rolePriorityB = RolePriority(roleA and roleA.role), RolePriority(roleB and roleB.role)
 			if rolePriorityA == rolePriorityB then
 				if assignmentSortType == "Role > Alphabetical" then
 					if nameOrRoleA == nameOrRoleB then
