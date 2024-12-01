@@ -53,8 +53,6 @@ local function OnAcquire(self)
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
 	self.label.frame:SetPoint("LEFT")
 	self.label.frame:SetPoint("RIGHT", self.checkbox, "LEFT", -padding.x, 0)
-	self.label:SetIconPadding(padding.x, padding.y)
-	self.label:SetTextPadding(padding.x * 2, "none")
 	self.label:SetHeight(frameHeight)
 	self:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self:SetDisabled(false)
@@ -114,8 +112,8 @@ end
 local function SetAbility(self, spellID, key)
 	local spellInfo = GetSpellInfo(spellID)
 	if spellInfo then
-		self.label:SetText(spellInfo.name)
-		self.label:SetIcon(spellInfo.iconID, spellInfo.spellID)
+		self.label:SetText(spellInfo.name, padding.x * 2)
+		self.label:SetIcon(spellInfo.iconID, padding.x, padding.y, spellInfo.spellID)
 	else
 		self.label:SetIcon(nil)
 	end
@@ -125,8 +123,8 @@ end
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
 local function SetNullAbility(self, key)
-	self.label:SetText("Unknown")
-	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", 0)
+	self.label:SetText("Unknown", padding.x * 2)
+	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", padding.x, padding.y, 0)
 	self.key = key
 end
 
@@ -134,7 +132,7 @@ end
 ---@param str string
 ---@param key string|table|nil
 local function SetText(self, str, key)
-	self.label:SetText(str)
+	self.label:SetText(str, padding.x * 2)
 	self.label:SetIcon(nil)
 	self.key = key
 end

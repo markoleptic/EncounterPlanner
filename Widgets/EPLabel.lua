@@ -12,7 +12,7 @@ local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultFontHeight = 14
 local defaultIconPadding = { x = 2, y = 2 }
-local defaultTextPadding = { x = 5, y = "none" }
+local defaultTextPadding = { x = 0, y = 2 }
 
 ---@param frame table|GameTooltip
 ---@param elapsed number
@@ -44,29 +44,16 @@ local function HandleIconLeave(_)
 end
 
 ---@param self EPLabel
-local function UpdateFrameSize(self)
-	if self.textPadding.y == "auto" then
-		self.frame:SetHeight(self.text:GetLineHeight())
-	elseif type(self.textPadding.y) == "number" then
-		self.frame:SetHeight(self.text:GetLineHeight() + self.textPadding.y * 2)
-	end
-
-	if self.icon:IsShown() then
-		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.textPadding.x * 2)
-	else
-		self.frame:SetWidth(self.text:GetStringWidth() + self.textPadding.x * 2)
-	end
-end
-
----@param self EPLabel
-local function UpdateIconSizeAndPadding(self)
-	if self.icon:IsShown() then
+local function UpdateIconAndTextAnchors(self)
+	if self.showIcon then
 		self.icon:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.iconPadding.x, -self.iconPadding.y)
 		self.icon:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.iconPadding.x, self.iconPadding.y)
 		self.icon:SetWidth(self.frame:GetHeight() - 2 * self.iconPadding.y)
-		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.textPadding.x, 0)
+		self.icon:Show()
+		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
 	else
-		self.text:SetPoint("LEFT", self.frame, "LEFT", self.textPadding.x, 0)
+		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
+		self.icon:Hide()
 	end
 end
 
@@ -78,7 +65,8 @@ end
 ---@field icon Texture|nil
 ---@field spellID number|nil
 ---@field disabled boolean
----@field textPadding table{x: number, y: number|string}
+---@field showIcon boolean
+---@field horizontalTextPadding number
 ---@field iconPadding table{x: number, y: number}
 
 ---@param self EPLabel
@@ -93,46 +81,59 @@ end
 
 ---@param self EPLabel
 local function OnAcquire(self)
+	self.horizontalTextPadding = defaultTextPadding.x
 	self.iconPadding = defaultIconPadding
-	self.textPadding = defaultTextPadding
-	self.frame:Show()
-	self:SetHeight(defaultFrameHeight)
-	self:SetDisabled(false)
-	self.text:SetJustifyH("CENTER")
 	self.text:ClearAllPoints()
-	self:SetTextHeight(defaultFontHeight)
+	self.icon:ClearAllPoints()
+	self:SetHeight(defaultFrameHeight)
+	self:SetTextCentered(false)
 	self:SetIcon(nil)
+	self:SetDisabled(false)
+	self.frame:Show()
 end
 
 ---@param self EPLabel
 local function OnRelease(self)
-	self:SetIcon(nil)
-	self.textPadding = nil
+	self.horizontalTextPadding = nil
 	self.iconPadding = nil
 	self.spellID = nil
 end
 
 ---@param self EPLabel
 ---@param iconID number|string|nil
+---@param paddingX number|nil
+---@param paddingY number|nil
 ---@param spellID number|nil
-local function SetIcon(self, iconID, spellID)
+local function SetIcon(self, iconID, paddingX, paddingY, spellID)
+	self.iconPadding.x = paddingX or self.iconPadding.x
+	self.iconPadding.y = paddingY or self.iconPadding.y
 	self.icon:SetTexture(iconID)
 	self.spellID = spellID
 	if iconID then
-		self.icon:Show()
+		self.showIcon = true
 	else
-		self.icon:Hide()
+		self.showIcon = false
 	end
-	UpdateFrameSize(self)
-	UpdateIconSizeAndPadding(self)
+	UpdateIconAndTextAnchors(self)
 end
 
 ---@param self EPLabel
 ---@param text string
-local function SetText(self, text)
+---@param paddingX number|nil
+local function SetText(self, text, paddingX)
 	self.text:SetText(text or "")
-	UpdateFrameSize(self)
-	UpdateIconSizeAndPadding(self)
+	self.horizontalTextPadding = paddingX or self.horizontalTextPadding
+	UpdateIconAndTextAnchors(self)
+end
+
+---@param self EPLabel
+---@param center boolean
+local function SetTextCentered(self, center)
+	if center then
+		self.text:SetJustifyH("CENTER")
+	else
+		self.text:SetJustifyH("LEFT")
+	end
 end
 
 ---@param self EPLabel
@@ -142,36 +143,20 @@ local function GetText(self)
 end
 
 ---@param self EPLabel
----@param height number
-local function SetTextHeight(self, height)
-	self.text:SetTextHeight(height or defaultFontHeight)
-	UpdateFrameSize(self)
-	UpdateIconSizeAndPadding(self)
+---@param paddingY number|nil
+local function SetFrameHeightFromText(self, paddingY)
+	paddingY = paddingY or defaultTextPadding.y
+	self.frame:SetHeight(self.text:GetLineHeight() + paddingY * 2)
 end
 
 ---@param self EPLabel
----@param x number
----@param y number
-local function SetIconPadding(self, x, y)
-	self.iconPadding.x = x
-	self.iconPadding.y = y
-	UpdateIconSizeAndPadding(self)
+local function SetFrameWidthFromText(self)
+	if self.showIcon then
+		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 2)
+	else
+		self.frame:SetWidth(self.text:GetStringWidth() + self.horizontalTextPadding * 2)
+	end
 end
-
----@param self EPLabel
----@param x number
----@param y number|string
-local function SetTextPadding(self, x, y)
-	self.textPadding.x = x
-	self.textPadding.y = y
-	UpdateFrameSize(self)
-	UpdateIconSizeAndPadding(self)
-end
-
----@param self EPLabel
----@param width number|nil
----@param height number|nil
-local function LayoutFinished(self, width, height) end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
@@ -188,7 +173,8 @@ local function Constructor()
 	if fPath then
 		text:SetFont(fPath, defaultFontHeight)
 	end
-	text:SetPoint("LEFT", icon, "RIGHT", defaultTextPadding.x, 0)
+	text:SetPoint("LEFT", frame, "LEFT", defaultTextPadding.x, 0)
+	text:SetPoint("RIGHT", frame, "RIGHT", defaultTextPadding.x, 0)
 	text:SetWordWrap(false)
 
 	---@class EPLabel
@@ -198,11 +184,10 @@ local function Constructor()
 		SetDisabled = SetDisabled,
 		SetIcon = SetIcon,
 		SetText = SetText,
+		SetTextCentered = SetTextCentered,
 		GetText = GetText,
-		SetTextHeight = SetTextHeight,
-		LayoutFinished = LayoutFinished,
-		SetTextPadding = SetTextPadding,
-		SetIconPadding = SetIconPadding,
+		SetFrameHeightFromText = SetFrameHeightFromText,
+		SetFrameWidthFromText = SetFrameWidthFromText,
 		frame = frame,
 		type = Type,
 		icon = icon,
