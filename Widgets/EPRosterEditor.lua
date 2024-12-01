@@ -206,10 +206,12 @@ local function PopulateActiveTab(self, tab)
 	self.activeContainer:AddChild(addEntryButton)
 	self.activeContainer:DoLayout()
 
-	if tab == "CurrentBossRoster" and #self.buttonContainer.children == 2 then
-		self.buttonContainer.children[2]:SetText("Add/Update from Shared Roster")
-	elseif tab == "SharedRoster" and #self.buttonContainer.children == 2 then
-		self.buttonContainer.children[2]:SetText("Add/Update from Current Boss Roster")
+	if tab == "CurrentBossRoster" and #self.buttonContainer.children >= 2 then
+		self.buttonContainer.children[1]:SetText("Update from Shared Roster")
+		self.buttonContainer.children[2]:SetText("Fill from Shared Roster")
+	elseif tab == "SharedRoster" and #self.buttonContainer.children >= 2 then
+		self.buttonContainer.children[1]:SetText("Update from Current Boss Roster")
+		self.buttonContainer.children[2]:SetText("Fill from Current Boss Roster")
 	end
 
 	self:DoLayout()
@@ -312,25 +314,36 @@ local function OnAcquire(self)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
+	self.buttonContainer:SetSpacing(2, 0)
 
-	local importCurrentRosterButton = AceGUI:Create("EPButton")
-	importCurrentRosterButton:SetText("Import Current Party/Raid Group")
-	importCurrentRosterButton:SetWidth(220)
-	importCurrentRosterButton.obj = self
-	importCurrentRosterButton:SetCallback("Clicked", function()
-		self:Fire("ImportCurrentRaidButtonClicked", self.activeTab)
+	local updateRosterButton = AceGUI:Create("EPButton")
+	updateRosterButton:SetText("Update from Shared Roster")
+	updateRosterButton:SetWidth(200)
+	updateRosterButton.obj = self
+	updateRosterButton:SetCallback("Clicked", function()
+		self:Fire("UpdateRosterButtonClicked", self.activeTab)
 	end)
 
-	local importOtherRosterButton = AceGUI:Create("EPButton")
-	importOtherRosterButton:SetText("Add/Update from Shared Roster")
-	importOtherRosterButton:SetWidth(220)
-	importOtherRosterButton.obj = self
-	importOtherRosterButton:SetCallback("Clicked", function()
-		self:Fire("ImportRosterButtonClicked", self.activeTab)
+	local fillRosterButton = AceGUI:Create("EPButton")
+	fillRosterButton:SetText("Fill from Shared Roster")
+	fillRosterButton:SetWidth(200)
+	fillRosterButton.obj = self
+	fillRosterButton:SetCallback("Clicked", function()
+		self:Fire("FillRosterButtonClicked", self.activeTab)
 	end)
 
-	self.buttonContainer:AddChild(importCurrentRosterButton)
-	self.buttonContainer:AddChild(importOtherRosterButton)
+	local importCurrentGroupButton = AceGUI:Create("EPButton")
+	importCurrentGroupButton:SetText("Import Current Party/Raid Group")
+	importCurrentGroupButton:SetWidth(200)
+	importCurrentGroupButton.obj = self
+	importCurrentGroupButton:SetCallback("Clicked", function()
+		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
+	end)
+
+	self.buttonContainer:AddChild(updateRosterButton)
+	self.buttonContainer:AddChild(fillRosterButton)
+	self.buttonContainer:AddChild(importCurrentGroupButton)
+
 	self:AddChild(self.buttonContainer)
 end
 

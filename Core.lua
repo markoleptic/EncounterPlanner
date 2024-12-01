@@ -84,7 +84,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 end
 
 ---@param rosterTab EPRosterEditorTab
-local function HandleImportCurrentRaidGroupButtonClicked(_, _, rosterTab)
+local function HandleImportCurrentGroupButtonClicked(_, _, rosterTab)
 	local importRosterWidgetMapping = nil
 	local noChangeRosterWidgetMapping = nil
 	if rosterTab == "SharedRoster" then
@@ -114,7 +114,9 @@ local function HandleImportCurrentRaidGroupButtonClicked(_, _, rosterTab)
 	end
 end
 
-local function HandleAddUpdateRosterButtonClicked(_, _, rosterTab)
+---@param rosterTab EPRosterEditorTab
+---@param fill boolean
+local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 	local fromRosterWidgetMapping = nil
 	local toRosterWidgetMapping = nil
 	if rosterTab == "SharedRoster" then
@@ -133,19 +135,19 @@ local function HandleAddUpdateRosterButtonClicked(_, _, rosterTab)
 		for _, rosterWidgetMapping in ipairs(toRosterWidgetMapping) do
 			toRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
 		end
-		for name, rosterMember in pairs(fromRoster) do
-			if not toRoster[name] then
-				toRoster[name] = Private.DeepCopy(rosterMember)
-			else
-				if rosterMember.class then
+		for name, dbEntry in pairs(fromRoster) do
+			if fill and not toRoster[name] then
+				toRoster[name] = Private.DeepCopy(dbEntry)
+			elseif toRoster[name] then
+				if dbEntry.class then
 					if not toRoster[name].class or toRoster[name].class == "" then
-						toRoster[name].class = rosterMember.class
+						toRoster[name].class = dbEntry.class
 						toRoster[name].classColoredName = nil
 					end
 				end
-				if rosterMember.role then
+				if dbEntry.role then
 					if not toRoster[name].role or toRoster[name].role == "" then
-						toRoster[name].role = rosterMember.role
+						toRoster[name].role = dbEntry.role
 					end
 				end
 			end
@@ -166,8 +168,13 @@ local function CreateRosterEditor()
 			Private.rosterEditor = nil
 		end)
 		Private.rosterEditor:SetCallback("EditingFinished", HandleRosterEditingFinished)
-		Private.rosterEditor:SetCallback("ImportCurrentRaidButtonClicked", HandleImportCurrentRaidGroupButtonClicked)
-		Private.rosterEditor:SetCallback("ImportRosterButtonClicked", HandleAddUpdateRosterButtonClicked)
+		Private.rosterEditor:SetCallback("ImportCurrentGroupButtonClicked", HandleImportCurrentGroupButtonClicked)
+		Private.rosterEditor:SetCallback("FillRosterButtonClicked", function(_, _, tabName)
+			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, true)
+		end)
+		Private.rosterEditor:SetCallback("UpdateRosterButtonClicked", function(_, _, tabName)
+			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
+		end)
 		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.rosterEditor.frame:SetFrameLevel(25)
 		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
