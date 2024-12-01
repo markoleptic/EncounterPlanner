@@ -743,6 +743,7 @@ local function OnAcquire(self)
 		timelineFrameWidth = frameWidth,
 		horizontalScroll = 0,
 		zoomFactor = 1,
+		timelineLinePadding = timelineLinePadding,
 	}
 	self.assignmentTimeline:SetSharedData(table)
 	self.bossAbilityTimeline:SetSharedData(table)
@@ -913,6 +914,13 @@ local function ClearSelectedAssignment(self, assignmentID)
 	end
 end
 
+---@param self EPTimeline
+---@param label EPLabel
+local function SetCurrentTimeLabel(self, label)
+	self.assignmentTimeline.currentTimeLabel = label
+	self.bossAbilityTimeline.currentTimeLabel = label
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -974,6 +982,7 @@ local function Constructor()
 		OnHeightSet = OnHeightSet,
 		SelectAssignment = SelectAssignment,
 		ClearSelectedAssignment = ClearSelectedAssignment,
+		SetCurrentTimeLabel = SetCurrentTimeLabel,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

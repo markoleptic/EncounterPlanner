@@ -51,8 +51,10 @@ local function UpdateIconAndTextAnchors(self)
 		self.icon:SetWidth(self.frame:GetHeight() - 2 * self.iconPadding.y)
 		self.icon:Show()
 		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", self.horizontalTextPadding, 0)
 	else
 		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", self.horizontalTextPadding, 0)
 		self.icon:Hide()
 	end
 end
@@ -85,8 +87,9 @@ local function OnAcquire(self)
 	self.iconPadding = defaultIconPadding
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
+	self:SetFontSize(defaultFontHeight)
 	self:SetHeight(defaultFrameHeight)
-	self:SetTextCentered(false)
+	self:SetHorizontalTextAlignment("LEFT")
 	self:SetIcon(nil)
 	self:SetDisabled(false)
 	self.frame:Show()
@@ -127,13 +130,18 @@ local function SetText(self, text, paddingX)
 end
 
 ---@param self EPLabel
----@param center boolean
-local function SetTextCentered(self, center)
-	if center then
-		self.text:SetJustifyH("CENTER")
-	else
-		self.text:SetJustifyH("LEFT")
+---@param size integer
+local function SetFontSize(self, size)
+	local fontFile, _, flags = self.text:GetFont()
+	if fontFile then
+		self.text:SetFont(fontFile, size, flags)
 	end
+end
+
+---@param self EPLabel
+---@param alignment "CENTER"|"LEFT"|"RIGHT"
+local function SetHorizontalTextAlignment(self, alignment)
+	self.text:SetJustifyH(alignment)
 end
 
 ---@param self EPLabel
@@ -184,7 +192,8 @@ local function Constructor()
 		SetDisabled = SetDisabled,
 		SetIcon = SetIcon,
 		SetText = SetText,
-		SetTextCentered = SetTextCentered,
+		SetFontSize = SetFontSize,
+		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		GetText = GetText,
 		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetFrameWidthFromText = SetFrameWidthFromText,

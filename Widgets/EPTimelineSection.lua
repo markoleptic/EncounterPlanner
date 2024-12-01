@@ -33,6 +33,13 @@ local function UpdateLinePosition(frame)
 	self.verticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
 	self.verticalPositionLine:Show()
 
+	local padding = self.staticTimelineSectionData.timelineLinePadding.x
+	local time = (newTimeOffset - padding) * self.totalTimelineDuration / (self.timelineFrame:GetWidth() - padding * 2)
+	time = min(max(0, time), self.totalTimelineDuration)
+	local minutes = floor(time / 60)
+	local seconds = time % 60
+	self.currentTimeLabel:SetText(string.format("%d:%02d", minutes, seconds))
+
 	if
 		self.staticTimelineSectionData.verticalPositionLineVisible ~= true
 		or self.staticTimelineSectionData.verticalPositionLineOffset ~= newTimeOffset
@@ -319,6 +326,7 @@ end
 ---@field timelineFrameWidth number
 ---@field horizontalScroll number
 ---@field zoomFactor number
+---@field timelineLinePadding {x: number, y: number}
 
 ---@class EPTimelineSection : AceGUIWidget
 ---@field type string
@@ -343,6 +351,7 @@ end
 ---@field textureHeight number
 ---@field listPadding number
 ---@field listContainer EPContainer
+---@field currentTimeLabel EPLabel
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -378,6 +387,7 @@ local function OnRelease(self)
 	self.listContainer = nil
 	self.horizontalScrollBar = nil
 	self.staticTimelineSectionData = nil
+	self.currentTimeLabel = nil
 end
 
 ---@param self EPTimelineSection

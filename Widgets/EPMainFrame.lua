@@ -34,6 +34,7 @@ local titleBarBackdrop = {
 ---@field closeButton EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
+---@field currentTimeLabel EPLabel
 ---@field children table<integer, EPWidgetType|EPContainerType>
 
 ---@param self EPMainFrame
@@ -93,6 +94,14 @@ local function OnAcquire(self)
 	self.expandAllButton:SetCallback("Clicked", function()
 		self:Fire("ExpandAllButtonClicked")
 	end)
+
+	self.currentTimeLabel = AceGUI:Create("EPLabel")
+	self.currentTimeLabel:SetText("0:00", 0)
+	self.currentTimeLabel:SetFontSize(18)
+	self.currentTimeLabel:SetWidth(200 - self.collapseAllButton.frame:GetWidth() * 2 - 4)
+	self.currentTimeLabel:SetHorizontalTextAlignment("RIGHT")
+	self.currentTimeLabel.frame:SetParent(self.frame)
+	self.currentTimeLabel.frame:SetPoint("RIGHT", self.collapseAllButton.frame, "LEFT", 200, 0)
 end
 
 ---@param self EPMainFrame
@@ -105,6 +114,9 @@ local function OnRelease(self)
 	end
 	if self.expandAllButton then
 		self.expandAllButton:Release()
+	end
+	if self.currentTimeLabel then
+		self.currentTimeLabel:Release()
 	end
 	self.closeButton = nil
 	self.collapseAllButton = nil
