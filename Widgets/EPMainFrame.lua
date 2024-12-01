@@ -63,7 +63,7 @@ local function OnAcquire(self)
 		-frameBackdrop.edgeSize
 	)
 	self.closeButton:SetCallback("Clicked", function()
-		self:Release()
+		self:Fire("CloseButtonClicked")
 	end)
 end
 

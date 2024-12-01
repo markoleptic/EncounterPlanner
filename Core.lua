@@ -747,7 +747,10 @@ function Private:CreateGUI()
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
-	Private.mainFrame:SetCallback("OnRelease", function()
+	Private.mainFrame:SetCallback("CloseButtonClicked", function()
+		local width, height = Private.mainFrame.frame:GetSize()
+		AddOn.db.profile.windowSize = { x = width, y = height }
+		Private.mainFrame:Release()
 		Private.mainFrame = nil
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
@@ -1000,6 +1003,10 @@ function Private:CreateGUI()
 	end
 
 	Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, 600)
+	if AddOn.db.profile.windowSize then
+		Private.mainFrame:SetWidth(AddOn.db.profile.windowSize.x)
+		Private.mainFrame:SetHeight(AddOn.db.profile.windowSize.y)
+	end
 	Private.mainFrame.frame:SetPoint("CENTER")
 	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
 	Private.mainFrame.frame:ClearAllPoints()
