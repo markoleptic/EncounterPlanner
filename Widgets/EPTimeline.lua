@@ -32,6 +32,8 @@ local maximumNumberOfBossAbilityRows = 12
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
+local assignmentOutlineColor = { 0.25, 0.25, 0.25, 1 }
+local assignmentSelectOutlineColor = { 1, 0.82, 0, 1 }
 local tickFontSize = 12
 local tooltip = EncounterPlanner.tooltip
 local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
@@ -96,12 +98,14 @@ local function HandleAssignmentMouseDown(frame, mouseButton, epTimeline)
 	-- TODO: Implement dragging an assignment spell icon to change the time
 end
 
+---@param epTimeline EPTimeline
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
 	if mouseButton ~= "RightButton" then
 		return
 	end
 	if frame.assignmentIndex then
 		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
+		epTimeline:SelectAssignment(frame.assignmentIndex)
 	end
 end
 
@@ -338,7 +342,12 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order)
 	if not assignment then
 		assignment = CreateFrame("Frame", nil, timelineFrame)
 		assignment.spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
-		assignment.spellTexture:SetAllPoints()
+		assignment.outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 1)
+		assignment.outlineTexture:SetAllPoints()
+		assignment.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		assignment.outlineTexture:Show()
+		assignment.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		assignment.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 		assignment.assignmentFrame = timelineFrame
 		assignment:SetScript("OnEnter", function(frame, motion)
 			HandleIconEnter(frame, motion)
@@ -880,6 +889,30 @@ local function OnHeightSet(self, height)
 	self:UpdateTimeline()
 end
 
+---@param self EPTimeline
+---@param assignmentID integer
+local function SelectAssignment(self, assignmentID)
+	for _, assignmentFrame in pairs(self.assignmentFrames) do
+		if assignmentFrame.assignmentIndex == assignmentID then
+			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 2, -2)
+			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+		end
+	end
+end
+
+---@param self EPTimeline
+---@param assignmentID integer
+local function ClearSelectedAssignment(self, assignmentID)
+	for _, assignmentFrame in pairs(self.assignmentFrames) do
+		if assignmentFrame.assignmentIndex == assignmentID then
+			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		end
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -939,6 +972,8 @@ local function Constructor()
 		UpdateTimeline = UpdateTimeline,
 		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,
+		SelectAssignment = SelectAssignment,
+		ClearSelectedAssignment = ClearSelectedAssignment,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

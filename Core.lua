@@ -301,6 +301,11 @@ local function CreateAssignmentEditor()
 		assignmentEditor:SetLayout("EPVerticalLayout")
 		Private.assignmentEditor = assignmentEditor
 		assignmentEditor:SetCallback("OnRelease", function()
+			local timeline = Private.mainFrame:GetTimeline()
+			local assignmentID = Private.assignmentEditor:GetAssignmentID()
+			if timeline and assignmentID then
+				timeline:ClearSelectedAssignment(assignmentID)
+			end
 			Private.assignmentEditor = nil
 		end)
 		assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
@@ -550,7 +555,11 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	assignment.assigneeNameOrRole = value
 	tinsert(GetCurrentAssignments(), assignment)
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
-
+	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:SelectAssignment(assignment.uniqueID)
+	end
 	dropdown:SetText("Add Assignee")
 end
 
@@ -595,6 +604,10 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		end
 		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+		local timeline = Private.mainFrame:GetTimeline()
+		if timeline then
+			timeline:SelectAssignment(assignment.uniqueID)
+		end
 	end
 end
 
