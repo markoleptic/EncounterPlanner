@@ -76,6 +76,7 @@ local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 	if rosterWidgetMap then
 		for _, rosterWidgetMapping in ipairs(rosterWidgetMap) do
 			if rosterWidgetMapping.widgetEntry == rosterEntry then
+				print("NewClass: ", newClass)
 				rosterWidgetMapping.dbEntry.class = newClass
 				break
 			end
@@ -176,7 +177,21 @@ local function AddRosterEntry(self, rosterWidgetMapping)
 		HandleRosterEntryDeleted(self, entry)
 	end)
 	self.activeContainer:AddChild(newRosterEntry, self.activeContainer.children[#self.activeContainer.children])
-	self:DoLayout()
+end
+
+---@param self EPRosterEditor
+---@param rosterWidgetMapping RosterWidgetMapping
+---@param index integer
+local function EditRosterEntry(self, rosterWidgetMapping, index)
+	local rosterEntry = self.activeContainer.children[index]
+	if rosterEntry then
+		rosterEntry:SetData(
+			rosterWidgetMapping.name,
+			rosterWidgetMapping.dbEntry.class,
+			rosterWidgetMapping.dbEntry.role
+		)
+		rosterWidgetMapping.widgetEntry = rosterEntry
+	end
 end
 
 ---@param self EPRosterEditor
@@ -186,24 +201,29 @@ local function PopulateActiveTab(self, tab)
 		return
 	end
 
-	self.activeContainer:ReleaseChildren()
+	local rosterWidgetMap = nil
 	if tab == "CurrentBossRoster" then
-		for _, rosterWidgetMapping in ipairs(self.currentRosterWidgetMap) do
-			AddRosterEntry(self, rosterWidgetMapping)
-		end
+		rosterWidgetMap = self.currentRosterWidgetMap
 	elseif tab == "SharedRoster" then
-		for _, rosterWidgetMapping in ipairs(self.sharedRosterWidgetMap) do
-			AddRosterEntry(self, rosterWidgetMapping)
+		rosterWidgetMap = self.sharedRosterWidgetMap
+	end
+	if rosterWidgetMap then
+		local currentCount = #self.activeContainer.children - 1
+		local requiredCount = #rosterWidgetMap
+		for index = 1, min(currentCount, requiredCount) do
+			EditRosterEntry(self, rosterWidgetMap[index], index)
+		end
+		for index = currentCount + 1, requiredCount do
+			AddRosterEntry(self, rosterWidgetMap[index])
+		end
+		if requiredCount < currentCount then
+			for i = currentCount, requiredCount + 1, -1 do
+				AceGUI:Release(self.activeContainer.children[i])
+				tremove(self.activeContainer.children, i)
+			end
 		end
 	end
-	local addEntryButton = AceGUI:Create("EPButton")
-	addEntryButton:SetText("+")
-	addEntryButton:SetHeight(20)
-	addEntryButton:SetWidth(20)
-	addEntryButton:SetCallback("Clicked", function()
-		AddRosterEntry(self)
-	end)
-	self.activeContainer:AddChild(addEntryButton)
+
 	self.activeContainer:DoLayout()
 
 	if tab == "CurrentBossRoster" and #self.buttonContainer.children >= 2 then
@@ -309,6 +329,15 @@ local function OnAcquire(self)
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 4)
+	local addEntryButton = AceGUI:Create("EPButton")
+	addEntryButton:SetText("+")
+	addEntryButton:SetHeight(20)
+	addEntryButton:SetWidth(20)
+	addEntryButton:SetCallback("Clicked", function()
+		AddRosterEntry(self)
+		self:DoLayout()
+	end)
+	self.activeContainer:AddChild(addEntryButton)
 
 	self:AddChild(self.activeContainer)
 

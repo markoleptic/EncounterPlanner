@@ -134,7 +134,7 @@ local function GetNoteDropdown(self)
 	local topContainer = self.children[1]
 	if topContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[5]
+		local outerNoteContainer = topContainer.children[4]
 		if outerNoteContainer then
 			---@diagnostic disable-next-line: undefined-field
 			local noteContainer = outerNoteContainer.children[1]
@@ -153,7 +153,7 @@ local function GetNoteLineEdit(self)
 	local topContainer = self.children[1]
 	if topContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[5]
+		local outerNoteContainer = topContainer.children[4]
 		if outerNoteContainer then
 			---@diagnostic disable-next-line: undefined-field
 			local renameNoteContainer = outerNoteContainer.children[2]
