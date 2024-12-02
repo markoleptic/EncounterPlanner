@@ -14,6 +14,7 @@ local defaultWidth = 100
 ---@field type string
 ---@field content table|Frame
 ---@field children table<AceGUIWidget>
+---@field selfAlignment string|nil
 
 ---@param self EPContainer
 local function OnAcquire(self)
@@ -22,6 +23,7 @@ local function OnAcquire(self)
 	self:SetWidth(defaultWidth)
 	self.content.spacing = defaultSpacing
 	self.content.alignment = nil
+	self.selfAlignment = nil
 end
 
 ---@param self EPContainer
@@ -36,16 +38,6 @@ local function LayoutFinished(self, width, height)
 	end
 end
 
-local function OnHeightSet(self, width)
-	-- self.content:SetHeight(width)
-	-- self.content.height = width
-end
-
-local function OnWidthSet(self, width)
-	-- self.content:SetWidth(width)
-	-- self.content.width = width
-end
-
 ---@param self EPContainer
 ---@param horizontal number
 ---@param vertical number
@@ -57,6 +49,12 @@ end
 ---@param alignment string
 local function SetAlignment(self, alignment)
 	self.content.alignment = alignment
+end
+
+---@param self EPContainer
+---@param alignment string
+local function SetSelfAlignment(self, alignment)
+	self.selfAlignment = alignment
 end
 
 local function Constructor()
@@ -75,9 +73,8 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		LayoutFinished = LayoutFinished,
 		SetSpacing = SetSpacing,
-		OnWidthSet = OnWidthSet,
-		OnHeightSet = OnHeightSet,
 		SetAlignment = SetAlignment,
+		SetSelfAlignment = SetSelfAlignment,
 		frame = frame,
 		type = Type,
 		content = content,

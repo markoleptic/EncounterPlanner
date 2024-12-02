@@ -76,7 +76,6 @@ local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 	if rosterWidgetMap then
 		for _, rosterWidgetMapping in ipairs(rosterWidgetMap) do
 			if rosterWidgetMapping.widgetEntry == rosterEntry then
-				print("NewClass: ", newClass)
 				rosterWidgetMapping.dbEntry.class = newClass
 				break
 			end

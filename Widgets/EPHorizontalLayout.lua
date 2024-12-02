@@ -29,6 +29,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		alignment = content.alignment
 	end
 
+	local hitFirstNonSpacer = false
 	local spacers = {}
 	for i = 1, #children do
 		local child = children[i]
@@ -41,10 +42,11 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		else
 			if i > 1 then
 				if i == #children then
-					if alignment == "default" then
+					if child.selfAlignment == "right" then
+						frame:SetPoint("RIGHT", content, "RIGHT")
+					elseif alignment == "default" then
 						frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT", paddingX, 0)
 					elseif alignment == "center" then
-						--frame:SetPoint("LEFT", children[i - 1].frame, "RIGHT", paddingX, 0)
 						frame:SetPoint("RIGHT", content, "RIGHT")
 					end
 				else
@@ -60,9 +62,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				elseif alignment == "center" then
 					frame:SetPoint("LEFT", content, "LEFT")
 				end
-				-- if i == #children then
-				-- 	frame:SetPoint("RIGHT", content, "RIGHT")
-				-- end
 			end
 
 			if child.width == "fill" and i == #children then
@@ -79,13 +78,14 @@ AceGUI:RegisterLayout(Type, function(content, children)
 
 			local childWidth = frame:GetWidth()
 			totalWidth = totalWidth + childWidth
-			if i > 1 then
+			if hitFirstNonSpacer == true then
 				totalWidth = totalWidth + paddingX
 			end
 			maxHeight = max(maxHeight, frame:GetHeight())
+			hitFirstNonSpacer = true
 		end
 	end
-	totalWidth = totalWidth - (#spacers * paddingX)
+
 	if #spacers > 0 then
 		local remainingWidth = content:GetWidth() or 0
 		remainingWidth = remainingWidth - totalWidth
@@ -102,9 +102,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			else
 				spacer.frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT")
 			end
-			if i == #children then
-				--spacer.frame:SetPoint("RIGHT", content, "RIGHT")
-			else
+			if i ~= #children then
 				children[i + 1].frame:SetPoint("TOPLEFT", spacer.frame, "TOPRIGHT")
 			end
 		end

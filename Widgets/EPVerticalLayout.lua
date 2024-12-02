@@ -43,24 +43,25 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			if i > 1 then
 				if alignment == "default" then
 					frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
-				-- frame:SetPoint("RIGHT", content)
 				elseif alignment == "center" then
 					frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
 				end
 			else
 				if alignment == "default" then
 					frame:SetPoint("TOPLEFT", content, "TOPLEFT")
-				-- frame:SetPoint("RIGHT", content)
 				elseif alignment == "center" then
 					frame:SetPoint("TOP", content, "TOP")
 				end
 			end
 
 			if child.width == "fill" then
-				--child:SetWidth(contentWidth)
 				frame:SetPoint("RIGHT", content)
 			elseif child.width == "relative" then
 				child:SetWidth(contentWidth * child.relWidth)
+			end
+
+			if child.height == "fill" and i == #children then
+				frame:SetPoint("BOTTOM", content)
 			end
 
 			if child.DoLayout then
@@ -93,9 +94,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			else
 				spacer.frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT")
 			end
-			if i == #children then
-				--spacer.frame:SetPoint("RIGHT", content, "RIGHT")
-			else
+			if i ~= #children then
 				children[i + 1].frame:SetPoint("TOPLEFT", spacer.frame, "BOTTOMLEFT")
 			end
 		end

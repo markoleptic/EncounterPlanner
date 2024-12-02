@@ -770,7 +770,25 @@ function Private:CreateGUI()
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
+		AddOn.db.profile.timelineHeight = Private.mainFrame:GetTimeline().frame:GetHeight()
+		AddOn.db.profile.assignmentTimelineHeight = Private.mainFrame:GetTimeline().assignmentTimeline.frame:GetHeight()
+		AddOn.db.profile.bossTimelineHeight = Private.mainFrame:GetTimeline().bossAbilityTimeline.frame:GetHeight()
 		Private.mainFrame:Release()
+		Private.mainFrame = nil
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+		if Private.exportEditBox then
+			Private.exportEditBox:Release()
+		end
+		if Private.importEditBox then
+			Private.importEditBox:Release()
+		end
+		if Private.rosterEditor then
+			Private.rosterEditor:Release()
+		end
+	end)
+	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
@@ -810,6 +828,8 @@ function Private:CreateGUI()
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
 		end
 		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+		Private.mainFrame:GetTimeline():SetMaxAssignmentHeight()
+		Private.mainFrame:DoLayout()
 	end)
 
 	local bossContainer = AceGUI:Create("EPContainer")
@@ -818,7 +838,6 @@ function Private:CreateGUI()
 	bossContainer:SetWidth(topContainerDropdownWidth)
 
 	local bossSelectContainer = AceGUI:Create("EPContainer")
-	bossSelectContainer:SetAlignment("center")
 	bossSelectContainer:SetLayout("EPHorizontalLayout")
 	bossSelectContainer:SetFullWidth(true)
 	bossSelectContainer:SetSpacing(unpack(noteContainerSpacing))
@@ -837,7 +856,6 @@ function Private:CreateGUI()
 	end)
 
 	local bossAbilitySelectContainer = AceGUI:Create("EPContainer")
-	bossAbilitySelectContainer:SetAlignment("center")
 	bossAbilitySelectContainer:SetLayout("EPHorizontalLayout")
 	bossAbilitySelectContainer:SetFullWidth(true)
 	bossAbilitySelectContainer:SetSpacing(unpack(noteContainerSpacing))
@@ -852,7 +870,6 @@ function Private:CreateGUI()
 	local assignmentSortAndEditRosterContainer = AceGUI:Create("EPContainer")
 	assignmentSortAndEditRosterContainer:SetLayout("EPVerticalLayout")
 	assignmentSortAndEditRosterContainer:SetSpacing(unpack(dropdownContainerSpacing))
-	assignmentSortAndEditRosterContainer:SetFullHeight(true)
 
 	local assignmentSortContainer = AceGUI:Create("EPContainer")
 	assignmentSortContainer:SetLayout("EPHorizontalLayout")
@@ -886,14 +903,12 @@ function Private:CreateGUI()
 	outerNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local noteContainer = AceGUI:Create("EPContainer")
-	noteContainer:SetAlignment("center")
 	noteContainer:SetLayout("EPHorizontalLayout")
 	noteContainer:SetFullWidth(true)
 	noteContainer:SetSpacing(unpack(noteContainerSpacing))
 
 	local noteLabel = AceGUI:Create("EPLabel")
 	noteLabel:SetText("Current:", unpack(dropdownContainerLabelSpacing))
-	noteLabel:SetFrameWidthFromText()
 
 	local noteDropdown = AceGUI:Create("EPDropdown")
 	noteDropdown:SetWidth(topContainerDropdownWidth)
@@ -909,16 +924,15 @@ function Private:CreateGUI()
 	renameNoteLineEdit:SetCallback("OnTextChanged", HandleNoteTextChanged)
 
 	local renameNoteContainer = AceGUI:Create("EPContainer")
-	renameNoteContainer:SetAlignment("center")
 	renameNoteContainer:SetLayout("EPHorizontalLayout")
 	renameNoteContainer:SetSpacing(unpack(noteContainerSpacing))
 
 	local renameNoteLabel = AceGUI:Create("EPLabel")
 	renameNoteLabel:SetText("Rename current:", unpack(dropdownContainerLabelSpacing))
 	renameNoteLabel:SetFrameWidthFromText()
+	noteLabel:SetWidth(renameNoteLabel.frame:GetWidth())
 
 	local noteButtonContainer = AceGUI:Create("EPContainer")
-	noteButtonContainer:SetAlignment("center")
 	noteButtonContainer:SetLayout("EPVerticalLayout")
 	noteButtonContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
@@ -931,7 +945,6 @@ function Private:CreateGUI()
 	deleteButton:SetText("Delete EP note")
 
 	local importExportContainer = AceGUI:Create("EPContainer")
-	importExportContainer:SetAlignment("center")
 	importExportContainer:SetLayout("EPVerticalLayout")
 	importExportContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
@@ -998,16 +1011,30 @@ function Private:CreateGUI()
 	topContainer:SetHeight(topContainerHeight)
 	topContainer:SetFullWidth(true)
 
+	local topLeftContainer = AceGUI:Create("EPContainer")
+	topLeftContainer:SetLayout("EPHorizontalLayout")
+	topLeftContainer:SetHeight(topContainerHeight)
+	topLeftContainer:AddChild(outerNoteContainer)
+	topLeftContainer:AddChild(noteButtonContainer)
+	topLeftContainer:AddChild(importExportContainer)
+	topLeftContainer:SetSelfAlignment("right")
+
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortAndEditRosterContainer)
-	topContainer:AddChild(spacer)
-	topContainer:AddChild(outerNoteContainer)
-	topContainer:AddChild(noteButtonContainer)
-	topContainer:AddChild(importExportContainer)
+	topContainer:AddChild(topLeftContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+	timeline:SetCallback("ResizeBoundsCalculated", function(_, _, minHeight, maxHeight)
+		local heightDiff = Private.mainFrame.frame:GetHeight() - timeline.frame:GetHeight()
+		Private.mainFrame.frame:SetResizeBounds(
+			topContainer.frame:GetWidth() + 20,
+			minHeight + heightDiff,
+			nil,
+			maxHeight + heightDiff
+		)
+	end)
 	timeline:SetFullWidth(true)
 	timeline:SetCurrentTimeLabel(Private.mainFrame.currentTimeLabel)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
@@ -1031,15 +1058,15 @@ function Private:CreateGUI()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	interfaceUpdater.UpdateAllAssignments(true, bossUtilities.GetBoss(bossName))
-
-	local minWidth = 0
-	for _, child in pairs(topContainer.children) do
-		if child.type ~= "EPSpacer" then
-			minWidth = minWidth + child.frame:GetWidth() + 10
-		end
+	if
+		AddOn.db.profile.timelineHeight
+		and AddOn.db.profile.assignmentTimelineHeight
+		and AddOn.db.profile.bossTimelineHeight
+	then
+		timeline.assignmentTimeline:SetHeight(AddOn.db.profile.assignmentTimelineHeight)
+		timeline.bossAbilityTimeline:SetHeight(AddOn.db.profile.bossTimelineHeight)
+		timeline:SetHeight(AddOn.db.profile.timelineHeight)
 	end
-
-	Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, 600)
 	if AddOn.db.profile.windowSize then
 		Private.mainFrame:SetWidth(AddOn.db.profile.windowSize.x)
 		Private.mainFrame:SetHeight(AddOn.db.profile.windowSize.y)
@@ -1047,7 +1074,7 @@ function Private:CreateGUI()
 	Private.mainFrame.frame:SetPoint("CENTER")
 	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
 	Private.mainFrame.frame:ClearAllPoints()
-	Private.mainFrame.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 	timeline:UpdateTimeline()
 end
 

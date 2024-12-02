@@ -128,7 +128,7 @@ end
 
 local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 	local self = frame.obj --[[@as EPTimelineSection]]
-	if self.totalTimelineDuration <= 0 then
+	if not self.totalTimelineDuration or self.totalTimelineDuration <= 0 then
 		return
 	end
 

@@ -27,7 +27,9 @@ local assignmentTextureSubLevel = 0
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
+local minimumNumberOfAssignmentRows = 4
 local maximumNumberOfAssignmentRows = 12
+local minimumNumberOfBossAbilityRows = 4
 local maximumNumberOfBossAbilityRows = 12
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -658,23 +660,111 @@ local function CalculateRequiredAssignmentHeight(self, limit)
 	return totalAssignmentHeight
 end
 
--- Calculate the total required height for widget.
 ---@param self EPTimeline
----@return number
-local function CalculateRequiredHeight(self)
-	local totalBarHeight = CalculateRequiredBarHeight(self, true)
-	local totalAssignmentHeight = CalculateRequiredAssignmentHeight(self, true)
-	return totalBarHeight
-		+ paddingBetweenTimelines
-		+ totalAssignmentHeight
-		+ paddingBetweenTimelineAndScrollBar
-		+ horizontalScrollBarHeight
+local function CalculateMinMaxStepBarHeight(self)
+	local abilityCount = 0
+	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+	for _, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true then
+			maxH = maxH + stepH
+			abilityCount = abilityCount + 1
+			if abilityCount <= minimumNumberOfBossAbilityRows then
+				minH = maxH
+			end
+			if abilityCount >= maximumNumberOfBossAbilityRows then
+				break
+			end
+		end
+	end
+	if minH >= stepH then
+		minH = minH - paddingBetweenBossAbilityBars
+	end
+	if maxH >= stepH then
+		maxH = maxH - paddingBetweenBossAbilityBars
+	end
+	self.barDimensions.min = minH
+	self.barDimensions.max = maxH
+	self.barDimensions.step = stepH
+end
+
+---@param self EPTimeline
+local function CalculateMinMaxStepAssignmentHeight(self)
+	local totalAssignmentRows = 0
+	local minH, maxH, stepH = 0, 0, (assignmentTextureSize.y + paddingBetweenAssignments)
+	for _, as in ipairs(self.assigneesAndSpells) do
+		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+			maxH = maxH + stepH
+			totalAssignmentRows = totalAssignmentRows + 1
+			if totalAssignmentRows <= minimumNumberOfAssignmentRows then
+				minH = maxH
+			end
+			if totalAssignmentRows >= maximumNumberOfAssignmentRows then
+				break
+			end
+		end
+	end
+	if minH >= stepH then
+		minH = minH - paddingBetweenAssignments
+	end
+	if maxH >= stepH then
+		maxH = maxH - paddingBetweenAssignments
+	end
+	self.assignmentDimensions.min = minH
+	self.assignmentDimensions.max = maxH
+	self.assignmentDimensions.step = stepH
 end
 
 -- Sets the height of the widget based on boss ability bars and assignment icons
 ---@param self EPTimeline
 local function UpdateHeight(self)
-	self:SetHeight(CalculateRequiredHeight(self))
+	CalculateMinMaxStepBarHeight(self)
+	CalculateMinMaxStepAssignmentHeight(self)
+	local minHeight = self.assignmentDimensions.min
+		+ self.barDimensions.min
+		+ paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+	local maxHeight = self.assignmentDimensions.max
+		+ self.barDimensions.max
+		+ paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+	self:Fire("ResizeBoundsCalculated", minHeight, maxHeight)
+
+	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
+	local height = paddingBetweenTimelines + paddingBetweenTimelineAndScrollBar + horizontalScrollBarHeight
+	if bossFrameHeight < self.barDimensions.min then
+		height = height + self.barDimensions.min
+		self.bossAbilityTimeline.frame:SetHeight(self.barDimensions.min)
+	elseif bossFrameHeight > self.barDimensions.max then
+		height = height + self.barDimensions.max
+		self.bossAbilityTimeline.frame:SetHeight(self.barDimensions.max)
+	else
+		height = height + bossFrameHeight
+	end
+
+	local assignmentFrameHeight = self.assignmentTimeline.frame:GetHeight()
+	if assignmentFrameHeight < self.assignmentDimensions.min then
+		height = height + self.assignmentDimensions.min
+		self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.min)
+	elseif assignmentFrameHeight > self.assignmentDimensions.max then
+		height = height + self.assignmentDimensions.max
+		self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
+	else
+		height = height + assignmentFrameHeight
+	end
+	self:SetHeight(height)
+end
+
+---@param self EPTimeline
+local function SetMaxAssignmentHeight(self)
+	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
+	local height = paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+		+ bossFrameHeight
+	self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
+	self:SetHeight(height + self.assignmentDimensions.max)
 end
 
 ---@param self EPTimeline
@@ -714,6 +804,9 @@ end
 ---@field bossPhases table<integer, BossPhase>
 ---@field collapsed table<string, boolean>
 ---@field timelineAssignments table<integer, TimelineAssignment>
+---@field allowHeightResizing boolean
+---@field barDimensions {min: number, max:number, step:number}
+---@field assignmentDimensions {min: number, max:number, step:number}
 
 ---@param self EPTimeline
 local function OnAcquire(self)
@@ -728,6 +821,9 @@ local function OnAcquire(self)
 	self.assigneesAndSpells = {}
 	self.bossAbilityVisibility = {}
 	self.collapsed = {}
+	self.allowHeightResizing = false
+	self.barDimensions = {}
+	self.assignmentDimensions = {}
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
 	local assignmentTimelineFrame = self.assignmentTimeline:GetFrame()
@@ -789,6 +885,9 @@ local function OnRelease(self)
 	self.assigneesAndSpells = nil
 	self.bossAbilityVisibility = nil
 	self.collapsed = nil
+	self.allowHeightResizing = nil
+	self.barDimensions = nil
+	self.assignmentDimensions = nil
 	ResetLocalVariables()
 end
 
@@ -871,12 +970,52 @@ end
 ---@param self EPTimeline
 ---@param height number
 local function OnHeightSet(self, height)
-	local barHeight = CalculateRequiredBarHeight(self)
-	self.bossAbilityTimeline:SetHeight(barHeight)
-	self.assignmentTimeline:SetHeight(CalculateRequiredAssignmentHeight(self, true))
+	local barHeight = self.bossAbilityTimeline.frame:GetHeight()
+	local assignmentHeight = self.assignmentTimeline.frame:GetHeight()
+	local newContentFrameHeight = height - paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight
 
-	self.bossAbilityTimeline:SetTimelineFrameHeight(CalculateRequiredBarHeight(self, false))
-	self.assignmentTimeline:SetTimelineFrameHeight(CalculateRequiredAssignmentHeight(self, false))
+	if self.allowHeightResizing then
+		local contentFloor = newContentFrameHeight - paddingBetweenTimelines
+		local timelineFloor = barHeight + assignmentHeight
+		if contentFloor > timelineFloor then
+			local surplus = contentFloor - timelineFloor
+			local barPlusSurplus = barHeight + surplus
+			local assignmentPlusSurplus = assignmentHeight + surplus
+			if barPlusSurplus <= assignmentHeight and barPlusSurplus <= self.barDimensions.max then
+				barHeight = barPlusSurplus
+			elseif assignmentPlusSurplus <= barHeight and assignmentPlusSurplus <= self.assignmentDimensions.max then
+				assignmentHeight = assignmentPlusSurplus
+			else
+				local surplusSplit = surplus * 0.5
+				barHeight = barHeight + surplusSplit
+				assignmentHeight = assignmentHeight + surplusSplit
+			end
+		elseif contentFloor < timelineFloor then
+			local surplus = timelineFloor - contentFloor
+			local barMinusSurplus = barHeight - surplus
+			local assignmentMinusSurplus = assignmentHeight - surplus
+			if barMinusSurplus >= assignmentHeight and barMinusSurplus >= self.barDimensions.min then
+				barHeight = barMinusSurplus
+			elseif assignmentMinusSurplus >= barHeight and assignmentMinusSurplus >= self.assignmentDimensions.min then
+				assignmentHeight = assignmentMinusSurplus
+			else
+				local surplusSplit = surplus * 0.5
+				barHeight = barHeight - surplusSplit
+				assignmentHeight = assignmentHeight - surplusSplit
+			end
+		end
+		barHeight = min(max(barHeight, self.barDimensions.min), self.barDimensions.max)
+		assignmentHeight = min(max(assignmentHeight, self.assignmentDimensions.min), self.assignmentDimensions.max)
+	end
+
+	self.bossAbilityTimeline:SetHeight(barHeight)
+	self.assignmentTimeline:SetHeight(assignmentHeight)
+
+	local fullBarHeight = CalculateRequiredBarHeight(self, false)
+	local fullAssignmentHeight = CalculateRequiredAssignmentHeight(self, false)
+
+	self.bossAbilityTimeline:SetTimelineFrameHeight(fullBarHeight)
+	self.assignmentTimeline:SetTimelineFrameHeight(fullAssignmentHeight)
 
 	self.splitterScrollFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT", 210, -barHeight)
 	self.splitterScrollFrame:SetPoint(
@@ -886,7 +1025,7 @@ local function OnHeightSet(self, height)
 		-paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight,
 		-barHeight
 	)
-	self.contentFrame:SetHeight(height - paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight)
+	self.contentFrame:SetHeight(newContentFrameHeight)
 	self:UpdateTimeline()
 end
 
@@ -919,6 +1058,12 @@ end
 local function SetCurrentTimeLabel(self, label)
 	self.assignmentTimeline.currentTimeLabel = label
 	self.bossAbilityTimeline.currentTimeLabel = label
+end
+
+---@param self EPTimeline
+---@param allow boolean
+local function SetAllowHeightResizing(self, allow)
+	self.allowHeightResizing = allow
 end
 
 local function Constructor()
@@ -983,6 +1128,8 @@ local function Constructor()
 		SelectAssignment = SelectAssignment,
 		ClearSelectedAssignment = ClearSelectedAssignment,
 		SetCurrentTimeLabel = SetCurrentTimeLabel,
+		SetAllowHeightResizing = SetAllowHeightResizing,
+		SetMaxAssignmentHeight = SetMaxAssignmentHeight,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

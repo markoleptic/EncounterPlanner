@@ -127,11 +127,11 @@ end
 ---@param width number|nil
 ---@param height number|nil
 local function LayoutFinished(self, width, height)
-	-- if not self.frame.isResizing then
-	if height then
-		self:SetHeight(height + windowBarHeight + padding.top + padding.bottom)
+	if not self.frame.isResizing then
+		if height then
+			self:SetHeight(height + windowBarHeight + padding.top + padding.bottom)
+		end
 	end
-	-- end
 end
 
 ---@param self EPMainFrame
@@ -175,10 +175,11 @@ end
 ---@param self EPMainFrame
 ---@return EPDropdown|nil
 local function GetNoteDropdown(self)
-	local topContainer = self.children[1]
+	---@diagnostic disable-next-line: undefined-field
+	local topContainer = self.children[1].children[3]
 	if topContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[4]
+		local outerNoteContainer = topContainer.children[1]
 		if outerNoteContainer then
 			---@diagnostic disable-next-line: undefined-field
 			local noteContainer = outerNoteContainer.children[1]
@@ -194,10 +195,11 @@ end
 ---@param self EPMainFrame
 ---@return EPLineEdit|nil
 local function GetNoteLineEdit(self)
-	local topContainer = self.children[1]
+	---@diagnostic disable-next-line: undefined-field
+	local topContainer = self.children[1].children[3]
 	if topContainer then
 		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[4]
+		local outerNoteContainer = topContainer.children[1]
 		if outerNoteContainer then
 			---@diagnostic disable-next-line: undefined-field
 			local renameNoteContainer = outerNoteContainer.children[2]
@@ -312,9 +314,11 @@ local function Constructor()
 	resizer:SetScript("OnMouseDown", function(_, mouseButton)
 		if mouseButton == "LeftButton" then
 			if not frame.isResizing then
-				frame:StartSizing("BOTTOMRIGHT")
 				AceGUI:ClearFocus()
 				frame.isResizing = true
+				frame:StartSizing("BOTTOMRIGHT")
+				widget:GetTimeline():SetFullHeight(true)
+				widget:GetTimeline():SetAllowHeightResizing(true)
 			end
 		end
 	end)
@@ -322,21 +326,15 @@ local function Constructor()
 	resizer:SetScript("OnMouseUp", function(_, mouseButton)
 		if mouseButton == "LeftButton" then
 			if frame.isResizing == true then
+				AceGUI:ClearFocus()
 				frame.isResizing = nil
-				local point, rel, relP, x, y = frame:GetPointByName("TOPLEFT")
-				local width = frame:GetWidth()
-				local height = frame:GetHeight()
-				--Unfortunately this is necessary so that the layout does not get totally borked
-				C_Timer.After(0.05, function()
-					if not frame.isResizing then
-						frame:StopMovingOrSizing()
-						AceGUI:ClearFocus()
-						frame:ClearAllPoints()
-						frame:SetPoint(point, rel, relP, x, y)
-						frame:SetSize(width, height)
-						widget:DoLayout()
-					end
-				end)
+				frame:StopMovingOrSizing()
+				local x, y = frame:GetLeft(), frame:GetTop()
+				frame:ClearAllPoints()
+				frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+				widget:DoLayout()
+				widget:GetTimeline():SetFullHeight(false)
+				widget:GetTimeline():SetAllowHeightResizing(false)
 			end
 		end
 	end)
