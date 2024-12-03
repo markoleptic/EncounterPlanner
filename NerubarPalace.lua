@@ -159,7 +159,89 @@ local bosses = {
 			}),
 		},
 	}),
-	-- ["The Bloodbound Horror"] = Private.classes.Boss:New({}),
+	["The Bloodbound Horror"] = Private.classes.Boss:New({
+		abilities = {
+			[444497] = Private.classes.BossAbility:New({ -- Invoke Terrors
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 3.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 1.0,
+				castTime = 0.0,
+			}),
+			[444363] = Private.classes.BossAbility:New({ -- Gruesome Disgorge
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 14.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 40.0,
+				castTime = 5.0,
+			}),
+			[445936] = Private.classes.BossAbility:New({ -- Spewing Hemorrhage
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 32.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 20.0,
+				castTime = 5.0,
+			}),
+			[442530] = Private.classes.BossAbility:New({ -- Goresplatter
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 120.0, 128.0, 128.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 10.0,
+				castTime = 8.0,
+			}),
+			[443203] = Private.classes.BossAbility:New({ -- Crimson Rain
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 11.0, 128.0, 128.0, 128.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 5.0,
+				castTime = 0.0,
+			}),
+			[443042] = Private.classes.BossAbility:New({ -- Grasp From Beyond
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 19.0, 28.0, 31.0, 28.0, 41.0, 28.0, 31.0, 28.0, 41.0, 28.0, 31.0, 28.0, 41.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 12.0,
+				castTime = 0.0,
+			}),
+			[452237] = Private.classes.BossAbility:New({ -- Bloodcurdle
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 9.0, 32.0, 27.0, 32.0, 37.0, 32.0, 27.0, 32.0, 37.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 5.0,
+				castTime = 2.0,
+			}),
+		},
+		phases = {
+			[1] = Private.classes.BossPhase:New({
+				duration = 300,
+				defaultDuration = 300,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+		},
+	}),
 	-- ["Sikran, Captain of the Sureki"] = Private.classes.Boss:New({}),
 	-- ["Rasha'nan"] = Private.classes.Boss:New({}),
 	["Broodtwister Ovi'nax"] = Private.classes.Boss:New({
