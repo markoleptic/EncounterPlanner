@@ -1028,12 +1028,13 @@ function Private:CreateGUI()
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
 	timeline:SetCallback("ResizeBoundsCalculated", function(_, _, minHeight, maxHeight)
 		local heightDiff = Private.mainFrame.frame:GetHeight() - timeline.frame:GetHeight()
-		Private.mainFrame.frame:SetResizeBounds(
-			topContainer.frame:GetWidth() + 20,
-			minHeight + heightDiff,
-			nil,
-			maxHeight + heightDiff
-		)
+		local minWidth = 0
+		for _, child in pairs(topContainer.children) do
+			if child.type ~= "EPSpacer" then
+				minWidth = minWidth + child.frame:GetWidth() + 10
+			end
+		end
+		Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, minHeight + heightDiff, nil, maxHeight + heightDiff)
 	end)
 	timeline:SetFullWidth(true)
 	timeline:SetCurrentTimeLabel(Private.mainFrame.currentTimeLabel)
