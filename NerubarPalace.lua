@@ -357,7 +357,218 @@ local bosses = {
 			}),
 		},
 	}),
-	-- ["Rasha'nan"] = Private.classes.Boss:New({}),
+	["Rasha'nan"] = Private.classes.Boss:New({
+		abilities = {
+			[439789] = Private.classes.BossAbility:New({ -- Rolling Acid
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 35.1 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 40.7 },
+						repeatInterval = nil,
+					}),
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 15.9 },
+						repeatInterval = nil,
+					}),
+					[5] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 20.7 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 3.0,
+				castTime = 2.0,
+			}),
+			[455373] = Private.classes.BossAbility:New({ -- Infested Spawn
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 18.7 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 14.4 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 14.3, 20.0 },
+						repeatInterval = nil,
+					}),
+					[5] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 14.3, 24.8 },
+						repeatInterval = nil,
+					}),
+					[6] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 19.1 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 2.5,
+				castTime = 2.5,
+			}),
+			[439784] = Private.classes.BossAbility:New({ -- Spinneret's Strands
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 14.2 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 33.8 },
+						repeatInterval = nil,
+					}),
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 18.7, 15.2 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 18.7 },
+						repeatInterval = nil,
+					}),
+					[6] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 13.9, 20.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 3.0,
+				castTime = 2.0,
+			}),
+			[454989] = Private.classes.BossAbility:New({ -- Enveloping Webs
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 38.1 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 18.6 },
+						repeatInterval = nil,
+					}),
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 38.6 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 38.6 },
+						repeatInterval = nil,
+					}),
+					[5] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 33.9 },
+						repeatInterval = nil,
+					}),
+					[6] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 38.6 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 2.5,
+				castTime = 2.5,
+			}),
+			[439795] = Private.classes.BossAbility:New({ -- Web Reave
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+					[5] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+					[6] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0.3 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 1.0,
+				castTime = 4.0,
+			}),
+			[439811] = Private.classes.BossAbility:New({ -- Erosive Spray
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 8.1, 40.0 },
+						repeatInterval = nil,
+					}),
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 23.7 },
+						repeatInterval = nil,
+					}),
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 23.7 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 23.7 },
+						repeatInterval = nil,
+					}),
+					[5] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 23.7 },
+						repeatInterval = nil,
+					}),
+					[6] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 23.7 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 4.0,
+				castTime = 1.5,
+			}),
+		},
+		phases = {
+			[1] = Private.classes.BossPhase:New({
+				duration = 64.5,
+				defaultDuration = 64.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[2] = Private.classes.BossPhase:New({
+				duration = 64.5,
+				defaultDuration = 64.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[3] = Private.classes.BossPhase:New({
+				duration = 64.5,
+				defaultDuration = 64.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[4] = Private.classes.BossPhase:New({
+				duration = 64.5,
+				defaultDuration = 64.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[5] = Private.classes.BossPhase:New({
+				duration = 64.5,
+				defaultDuration = 64.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[6] = Private.classes.BossPhase:New({
+				duration = 44.5,
+				defaultDuration = 44.5,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+		},
+	}),
 	["Broodtwister Ovi'nax"] = Private.classes.Boss:New({
 		abilities = {
 			[441362] = Private.classes.BossAbility:New({ -- Volatile Concoction
