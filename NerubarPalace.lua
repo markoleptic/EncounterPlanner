@@ -242,7 +242,121 @@ local bosses = {
 			}),
 		},
 	}),
-	-- ["Sikran, Captain of the Sureki"] = Private.classes.Boss:New({}),
+	["Sikran, Captain of the Sureki"] = Private.classes.Boss:New({
+		abilities = {
+			[439511] = Private.classes.BossAbility:New({ -- Captain's Flourish
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = {
+							6.9,
+							25.8,
+							25.1,
+							25.7,
+							18.7,
+							28.1,
+							28.0,
+							27.1,
+							15.8,
+							28.1,
+							28.1,
+							27.3,
+							15.3,
+							28.2,
+							27.1,
+							28.0,
+							15.4,
+							28.1,
+							27.2,
+							28.0,
+						},
+						repeatInterval = nil,
+					}),
+				},
+				duration = 6.0,
+				castTime = 0.0,
+			}),
+			[433517] = Private.classes.BossAbility:New({ -- Phase Blades
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = {
+							13.0,
+							27.3,
+							27.2,
+							42.1,
+							28.1,
+							28.2,
+							43.9,
+							28.2,
+							28.1,
+							41.6,
+							27.9,
+							28.0,
+							43.8,
+							28.0,
+							28.1,
+						},
+						repeatInterval = nil,
+					}),
+				},
+				duration = 20.0,
+				castTime = 1.5,
+			}),
+			[442428] = Private.classes.BossAbility:New({ -- Decimate
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 51.2, 26.6, 75.6, 27.1, 72.0, 28.1, 70.8, 27.9, 70.7, 28.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 0.0,
+				castTime = 2.0,
+			}),
+			[439559] = Private.classes.BossAbility:New({ -- Rain of Arrows
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = {
+							22.8,
+							42.3,
+							55.5,
+							26.8,
+							27.1,
+							45.1,
+							27.0,
+							26.6,
+							45.5,
+							26.7,
+							26.7,
+							45.0,
+							26.9,
+							26.8,
+						},
+						repeatInterval = nil,
+					}),
+				},
+				duration = 8.0,
+				castTime = 2.0,
+			}),
+			[456420] = Private.classes.BossAbility:New({ -- Shattering Sweep
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 90.0, 98.0, 98.0, 98.0, 98.0, 98.0, 98.0 },
+						repeatInterval = nil,
+					}),
+				},
+				duration = 10.0,
+				castTime = 5.0,
+			}),
+		},
+		phases = {
+			[1] = Private.classes.BossPhase:New({
+				duration = 481,
+				defaultDuration = 481,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+		},
+	}),
 	-- ["Rasha'nan"] = Private.classes.Boss:New({}),
 	["Broodtwister Ovi'nax"] = Private.classes.Boss:New({
 		abilities = {
