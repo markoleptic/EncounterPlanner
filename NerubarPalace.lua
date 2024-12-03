@@ -1004,7 +1004,144 @@ local bosses = {
 			}),
 		},
 	}),
-	-- ["Queen Ansurek"] = Private.classes.Boss:New({}),
+	["Queen Ansurek"] = Private.classes.Boss:New({
+		abilities = {
+			[437592] = Private.classes.BossAbility:New({ -- Reactive Toxin
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 21.1, 56.0, 56.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[439814] = Private.classes.BossAbility:New({ -- Silken Tomb
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 12.3, 40.0, 57.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[440899] = Private.classes.BossAbility:New({ -- Liquefy
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 6.4, 40.0, 54.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[437093] = Private.classes.BossAbility:New({ -- Feast
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 8.4, 40.0, 54.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[439299] = Private.classes.BossAbility:New({ -- Web Blades
+				phases = {
+					[1] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 20.3, 40.0, 13.0, 25.0, 19.0, 23.0 },
+						repeatInterval = nil,
+					}),
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 48.3, 37.0, 21.0, 17.0, 42.0, 21.0, 19.0, 36.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[444829] = Private.classes.BossAbility:New({ -- Queen's Summons
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 43.3, 64.0, 83.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[438976] = Private.classes.BossAbility:New({ -- Royal Condemnation
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 111.4, 86.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[443325] = Private.classes.BossAbility:New({ -- Infest
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 30.0, 66.0, 80.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[443336] = Private.classes.BossAbility:New({ -- Gorge
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 32.0, 66.0, 80.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+			[445422] = Private.classes.BossAbility:New({ -- Frothing Gluttony
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 45.0, 80.0, 88.0, 35.5 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 4.5,
+				duration = 0.0,
+			}),
+		},
+		phases = {
+			[1] = Private.classes.BossPhase:New({
+				duration = 150,
+				defaultDuration = 150,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[2] = Private.classes.BossPhase:New({
+				duration = 40,
+				defaultDuration = 40,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[3] = Private.classes.BossPhase:New({
+				duration = 126,
+				defaultDuration = 126,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+			[4] = Private.classes.BossPhase:New({
+				duration = 240,
+				defaultDuration = 240,
+				count = 1,
+				defaultCount = 1,
+				repeatAfter = nil,
+			}),
+		},
+	}),
 }
 
 -- Generate a list of abilities for each boss sorted by their first cast time
