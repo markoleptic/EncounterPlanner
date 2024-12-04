@@ -565,7 +565,17 @@ end
 
 ---@param abilityInstance BossAbilityInstance
 ---@param assigneeIndex integer
-local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
+---@param relativeAssignmentStartTime number
+local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, relativeAssignmentStartTime)
+	-- Clear selected assignment if one exists
+	if Private.assignmentEditor then
+		local timeline = Private.mainFrame:GetTimeline()
+		local assignmentID = Private.assignmentEditor:GetAssignmentID()
+		if timeline and assignmentID then
+			timeline:ClearSelectedAssignment(assignmentID)
+		end
+	end
+
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -581,19 +591,16 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex)
 		if nameAndSpell.spellID then
 			assignment.spellInfo.spellID = nameAndSpell.spellID
 		end
-		if
-			abilityInstance.combatLogEventType
-			and abilityInstance.triggerSpellID
-			and abilityInstance.triggerCastIndex
-		then
+		local createCombatLogAssignment = true -- TODO: Allow user to choose
+		if createCombatLogAssignment then
 			-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
 			-- else
 			local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:New(assignment)
-			combatLogEventAssignment.combatLogEventType = abilityInstance.combatLogEventType
-			combatLogEventAssignment.time = abilityInstance.castTime
+			combatLogEventAssignment.combatLogEventType = "SCS"
+			combatLogEventAssignment.time = utilities.Round(relativeAssignmentStartTime, 1)
 			combatLogEventAssignment.phase = abilityInstance.phase
-			combatLogEventAssignment.spellCount = abilityInstance.triggerCastIndex
-			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.triggerSpellID
+			combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
+			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.spellID
 			tinsert(GetCurrentAssignments(), combatLogEventAssignment)
 			-- end
 			-- elseif abilityInstance.repeatInstance then

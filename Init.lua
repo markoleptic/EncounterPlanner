@@ -188,8 +188,10 @@ Private.classes.EventTrigger = {
 
 ---@class BossAbilityInstance
 ---@field spellID number
+---@field spellOccurrence integer The number of times the spell has already been cast prior to this instance (+1).
 ---@field phase number
----@field castTime number|nil
+---@field castTime number|nil The cast time from the start of the encounter
+---@field relativeCastTime number|nil The cast time from the trigger cast time, if applicable
 ---@field combatLogEventType CombatLogEventType|nil
 ---@field triggerSpellID number|nil
 ---@field triggerCastIndex number|nil
@@ -197,8 +199,10 @@ Private.classes.EventTrigger = {
 ---@field repeatCastIndex number|nil
 Private.classes.BossAbilityInstance = {
 	spellID = 0,
+	spellOccurrence = 1,
 	phase = 1,
 	castTime = nil,
+	relativeCastTime = nil,
 	combatLogEventType = nil,
 	triggerSpellID = nil,
 	triggerCastIndex = nil,

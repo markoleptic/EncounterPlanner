@@ -253,17 +253,22 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 	local currentX, currentY = GetCursorPosition()
 	currentX = currentX / UIParent:GetEffectiveScale()
 	currentY = currentY / UIParent:GetEffectiveScale()
+
 	local nearestBarIndex = nil
 	local minDistance = hugeNumber
 	for index, bar in ipairs(self.bossAbilityTextureBars) do
 		if bar:IsShown() then
-			local distance = abs(bar:GetLeft() - currentX)
-			if distance < minDistance then
-				minDistance = distance
-				nearestBarIndex = index
+			local barStart = bar:GetLeft()
+			if barStart <= currentX then
+				local distance = currentX - barStart
+				if distance < minDistance then
+					minDistance = distance
+					nearestBarIndex = index
+				end
 			end
 		end
 	end
+
 	if nearestBarIndex then
 		local relativeDistanceFromTop = abs(self.assignmentTimeline:GetTimelineFrame():GetTop() - currentY)
 		local totalAssignmentHeight = 0
@@ -278,10 +283,19 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 			end
 		end
 		if assigneeIndex then
+			local timelineFrame = self.bossAbilityTimeline:GetTimelineFrame()
+			local timelineWidth = timelineFrame:GetWidth()
+			local padding = timelineLinePadding.x
+			local newTimeOffset = currentX - timelineFrame:GetLeft()
+			local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
+			time = min(max(0, time), totalTimelineDuration)
+			local relativeAssignmentStartTime = time
+				- self.bossAbilityTextureBars[nearestBarIndex].abilityInstance.castTime
 			self:Fire(
 				"CreateNewAssignment",
 				self.bossAbilityTextureBars[nearestBarIndex].abilityInstance,
-				assigneeIndex
+				assigneeIndex,
+				relativeAssignmentStartTime
 			)
 		end
 	end
@@ -414,6 +428,7 @@ end
 ---@param bossAbilityOrderIndex integer
 ---@param bossAbilityInstanceIndex integer
 ---@param offset number
+---@param spellCount table<integer, integer>
 ---@return integer
 local function DrawPhaseOrTimeBasedBossAbility(
 	self,
@@ -424,10 +439,15 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	bossPhaseDuration,
 	bossAbilityOrderIndex,
 	bossAbilityInstanceIndex,
-	offset
+	offset,
+	spellCount
 )
 	if not bossAbility.phases[bossPhaseIndex] then
 		return bossAbilityInstanceIndex
+	end
+
+	if not spellCount[bossAbilitySpellID] then
+		spellCount[bossAbilitySpellID] = 1
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
@@ -437,15 +457,13 @@ local function DrawPhaseOrTimeBasedBossAbility(
 		local castStart = cumulativePhaseCastTimes + castTime
 		local castEnd = castStart + bossAbility.castTime
 		local effectEnd = castEnd + bossAbility.duration
-		DrawBossAbilityBar(
-			self,
-			castStart,
-			effectEnd,
-			color,
-			bossAbilityInstanceIndex,
-			offset,
-			{ spellID = bossAbilitySpellID, phase = bossPhaseIndex, castTime = castStart }
-		)
+		DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
+			spellID = bossAbilitySpellID,
+			phase = bossPhaseIndex,
+			castTime = castStart,
+			spellOccurrence = spellCount[bossAbilitySpellID],
+		})
+		spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 		if bossAbilityPhase.repeatInterval then
 			local repeatInterval = bossAbilityPhase.repeatInterval
@@ -459,7 +477,9 @@ local function DrawPhaseOrTimeBasedBossAbility(
 					phase = bossPhaseIndex,
 					castTime = nextRepeatStart,
 					repeatInstance = repeatInstance,
+					spellOccurrence = spellCount[bossAbilitySpellID],
 				})
+				spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 				bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 				nextRepeatStart = nextRepeatStart + repeatInterval
 				repeatInstance = repeatInstance + 1
@@ -480,6 +500,7 @@ end
 ---@param bossAbilityOrderIndex integer
 ---@param bossAbilityInstanceIndex integer
 ---@param offset number
+---@param spellCount table<integer, integer>
 ---@return integer
 local function DrawEventTriggerBossAbility(
 	self,
@@ -490,10 +511,15 @@ local function DrawEventTriggerBossAbility(
 	bossPhaseEndTime,
 	bossAbilityOrderIndex,
 	bossAbilityInstanceIndex,
-	offset
+	offset,
+	spellCount
 )
 	if not bossAbility.eventTriggers then
 		return bossAbilityInstanceIndex
+	end
+
+	if not spellCount[bossAbilitySpellID] then
+		spellCount[bossAbilitySpellID] = 1
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
@@ -511,11 +537,14 @@ local function DrawEventTriggerBossAbility(
 					DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
 						combatLogEventType = eventTrigger.combatLogEventType,
 						spellID = bossAbilitySpellID,
+						spellOccurrence = spellCount[bossAbilitySpellID],
 						phase = bossPhaseIndex,
-						castTime = castStart - cumulativeCastTime,
+						castTime = castStart,
+						relativeCastTime = castTime,
 						triggerSpellID = triggerSpellID,
 						triggerCastIndex = triggerCastIndex,
 					})
+					spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 					bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 					cumulativeCastTime = cumulativeCastTime + castTime
 				end
@@ -537,14 +566,17 @@ local function DrawEventTriggerBossAbility(
 									{
 										combatLogEventType = eventTrigger.combatLogEventType,
 										spellID = bossAbilitySpellID,
+										spellOccurrence = spellCount[bossAbilitySpellID],
 										phase = bossPhaseIndex,
-										castTime = castStart - cumulativeCastTime,
+										castTime = castStart,
+										relativeCastTime = castTime,
 										triggerSpellID = triggerSpellID,
 										triggerCastIndex = triggerCastIndex,
 										repeatInstance = repeatInstance,
 										repeatCastIndex = repeatCastIndex,
 									}
 								)
+								spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 								bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 								repeatInstance = repeatInstance + 1
 							end
@@ -571,17 +603,18 @@ local function UpdateBossAbilityBars(self)
 	local bossAbilityInstanceIndex = 1
 	local offsets = {}
 	local offset = 0
-	for _, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
+	for _, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 		offsets[bossAbilitySpellID] = offset
 		if self.bossAbilityVisibility[bossAbilitySpellID] == true then
 			offset = offset + bossAbilityBarHeight + paddingBetweenBossAbilityBars
 		end
 	end
+	local spellCount = {}
 	for _, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
 		local bossPhase = self.bossPhases[bossPhaseIndex]
 		if bossPhase then
 			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
-			for bossAbilityOrderIndex, bossAbilitySpellID in pairs(self.bossAbilityOrder) do
+			for bossAbilityOrderIndex, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 				if self.bossAbilityVisibility[bossAbilitySpellID] == true then
 					local bossAbility = self.bossAbilities[bossAbilitySpellID]
 					bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
@@ -593,7 +626,8 @@ local function UpdateBossAbilityBars(self)
 						bossPhase.duration,
 						bossAbilityOrderIndex,
 						bossAbilityInstanceIndex,
-						offsets[bossAbilitySpellID]
+						offsets[bossAbilitySpellID],
+						spellCount
 					)
 					bossAbilityInstanceIndex = DrawEventTriggerBossAbility(
 						self,
@@ -604,7 +638,8 @@ local function UpdateBossAbilityBars(self)
 						phaseEndTime,
 						bossAbilityOrderIndex,
 						bossAbilityInstanceIndex,
-						offsets[bossAbilitySpellID]
+						offsets[bossAbilitySpellID],
+						spellCount
 					)
 				end
 			end

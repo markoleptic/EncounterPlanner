@@ -28,6 +28,18 @@ local wipe = table.wipe
 local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 
+---@param value number
+---@param precision integer
+---@return number
+function Utilities.Round(value, precision)
+	local factor = 10 ^ precision
+	if value > 0 then
+		return math.ceil(value * factor) / factor
+	else
+		return math.floor(value * factor) / factor
+	end
+end
+
 ---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
 function Utilities.CreateUniqueNoteName(notes)
