@@ -31,6 +31,7 @@ local minimumNumberOfAssignmentRows = 4
 local maximumNumberOfAssignmentRows = 12
 local minimumNumberOfBossAbilityRows = 4
 local maximumNumberOfBossAbilityRows = 12
+local minimumBossAbilityWidth = 5
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
@@ -107,7 +108,6 @@ local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
 	end
 	if frame.assignmentIndex then
 		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
-		epTimeline:SelectAssignment(frame.assignmentIndex)
 	end
 end
 
@@ -256,7 +256,7 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 
 	local nearestBarIndex = nil
 	local minDistance = hugeNumber
-	for index, bar in ipairs(self.bossAbilityTextureBars) do
+	for index, bar in ipairs(self.bossAbilityFrames) do
 		if bar:IsShown() then
 			local barStart = bar:GetLeft()
 			if barStart <= currentX then
@@ -289,11 +289,10 @@ local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
 			local newTimeOffset = currentX - timelineFrame:GetLeft()
 			local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
 			time = min(max(0, time), totalTimelineDuration)
-			local relativeAssignmentStartTime = time
-				- self.bossAbilityTextureBars[nearestBarIndex].abilityInstance.castTime
+			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castTime
 			self:Fire(
 				"CreateNewAssignment",
-				self.bossAbilityTextureBars[nearestBarIndex].abilityInstance,
+				self.bossAbilityFrames[nearestBarIndex].abilityInstance,
 				assigneeIndex,
 				relativeAssignmentStartTime
 			)
@@ -321,20 +320,29 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
 	local timelineEndPosition = (endTime / totalTimelineDuration) * timelineWidth
 
-	---@class Texture
-	local bar = self.bossAbilityTextureBars[index]
-	if not bar then
-		bar = timelineFrame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
-		self.bossAbilityTextureBars[index] = bar
+	---@class Frame
+	local frame = self.bossAbilityFrames[index]
+	if not frame then
+		frame = CreateFrame("Frame", nil, timelineFrame)
+		frame.spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
+		frame.outlineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel - 1)
+		frame.outlineTexture:SetAllPoints()
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame.outlineTexture:Show()
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		frame.assignmentFrame = timelineFrame
+		self.bossAbilityFrames[index] = frame
 	end
 
-	bar.abilityInstance = abilityInstance
+	frame.abilityInstance = abilityInstance
 
 	local r, g, b, a = unpack(color)
-	bar:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
-	bar:SetSize(timelineEndPosition - timelineStartPosition, bossAbilityBarHeight)
-	bar:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", timelineStartPosition + padding.x, -offset)
-	bar:Show()
+	frame.spellTexture:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
+	frame:SetSize(max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition), bossAbilityBarHeight)
+	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", timelineStartPosition + padding.x, -offset)
+	frame:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
+	frame:Show()
 end
 
 -- Helper function to draw a spell icon for an assignment.
@@ -595,7 +603,7 @@ end
 ---@param self EPTimeline
 local function UpdateBossAbilityBars(self)
 	-- Hide existing bars
-	for _, texture in pairs(self.bossAbilityTextureBars) do
+	for _, texture in pairs(self.bossAbilityFrames) do
 		texture:Hide()
 	end
 
@@ -834,7 +842,7 @@ end
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
 ---@field bossAbilityOrder table<integer, integer>
----@field bossAbilityTextureBars table<integer, Texture>
+---@field bossAbilityFrames table<integer, Frame>
 ---@field bossPhaseOrder table<integer, integer>
 ---@field bossPhases table<integer, BossPhase>
 ---@field collapsed table<string, boolean>
@@ -846,7 +854,7 @@ end
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
-	self.bossAbilityTextureBars = self.bossAbilityTextureBars or {}
+	self.bossAbilityFrames = self.bossAbilityFrames or {}
 	self.timelineLabels = self.timelineLabels or {}
 	self.bossAbilities = {}
 	self.bossAbilityOrder = {}
@@ -911,11 +919,8 @@ local function OnRelease(self)
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
 	self.addAssigneeDropdown:Release()
-	for _, frame in pairs(self.assignmentFrames) do
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
-	end
+	self:ClearSelectedAssignments()
+	self:ClearSelectedBossAbilities()
 	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
@@ -1077,6 +1082,7 @@ local function SelectAssignment(self, assignmentID)
 			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 2, -2)
 			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+			break
 		end
 	end
 end
@@ -1089,7 +1095,54 @@ local function ClearSelectedAssignment(self, assignmentID)
 			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
 			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+			break
 		end
+	end
+end
+
+---@param self EPTimeline
+---@param spellID integer
+---@param spellOccurrence integer
+local function SelectBossAbility(self, spellID, spellOccurrence)
+	for _, frame in pairs(self.bossAbilityFrames) do
+		if frame.abilityInstance.spellID == spellID and frame.abilityInstance.spellOccurrence == spellOccurrence then
+			frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+			frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
+			frame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+			break
+		end
+	end
+end
+
+---@param self EPTimeline
+---@param spellID integer
+---@param spellOccurrence integer
+local function ClearSelectedBossAbility(self, spellID, spellOccurrence)
+	for _, frame in pairs(self.bossAbilityFrames) do
+		if frame.abilityInstance.spellID == spellID and frame.abilityInstance.spellOccurrence == spellOccurrence then
+			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+			frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+			break
+		end
+	end
+end
+
+---@param self EPTimeline
+local function ClearSelectedAssignments(self)
+	for _, assignmentFrame in pairs(self.assignmentFrames) do
+		assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+	end
+end
+
+---@param self EPTimeline
+local function ClearSelectedBossAbilities(self)
+	for _, frame in pairs(self.bossAbilityFrames) do
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 	end
 end
 
@@ -1167,6 +1220,10 @@ local function Constructor()
 		OnHeightSet = OnHeightSet,
 		SelectAssignment = SelectAssignment,
 		ClearSelectedAssignment = ClearSelectedAssignment,
+		SelectBossAbility = SelectBossAbility,
+		ClearSelectedBossAbility = ClearSelectedBossAbility,
+		ClearSelectedAssignments = ClearSelectedAssignments,
+		ClearSelectedBossAbilities = ClearSelectedBossAbilities,
 		SetCurrentTimeLabel = SetCurrentTimeLabel,
 		SetAllowHeightResizing = SetAllowHeightResizing,
 		SetMaxAssignmentHeight = SetMaxAssignmentHeight,

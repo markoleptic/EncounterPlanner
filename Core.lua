@@ -224,6 +224,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
 				assignment = Private.classes.CombatLogEventAssignment:New(assignment)
 			end
+			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 		elseif value == "Absolute Time" then
 			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
 				assignment = Private.classes.TimedAssignment:New(assignment)
@@ -233,7 +234,6 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				assignment = Private.classes.PhasedAssignment:New(assignment)
 			end
 		end
-		assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 	elseif dataType == "CombatLogEventSpellID" then
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = tonumber(value)
@@ -288,6 +288,17 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			end
 		end
 		timeline:UpdateTimeline()
+		if
+			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+			and assignment--[[@as CombatLogEventAssignment]].spellCount
+		then
+			timeline:SelectBossAbility(
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+				assignment--[[@as CombatLogEventAssignment]].spellCount
+			)
+		else
+			timeline:ClearSelectedBossAbilities()
+		end
 	end
 end
 
@@ -302,10 +313,10 @@ local function CreateAssignmentEditor()
 		Private.assignmentEditor = assignmentEditor
 		assignmentEditor:SetCallback("OnRelease", function()
 			if Private.mainFrame then
-				local assignmentID = Private.assignmentEditor:GetAssignmentID()
 				local timeline = Private.mainFrame:GetTimeline()
-				if assignmentID and timeline then
-					timeline:ClearSelectedAssignment(assignmentID)
+				if timeline then
+					timeline:ClearSelectedAssignments()
+					timeline:ClearSelectedBossAbilities()
 				end
 			end
 			Private.assignmentEditor = nil
@@ -539,6 +550,22 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
 		assignmentEditor.timeEditBox:SetText(assignment.time)
 	end
+
+	local timeline = Private.mainFrame:GetTimeline()
+	if timeline then
+		timeline:ClearSelectedAssignments()
+		timeline:ClearSelectedBossAbilities()
+		timeline:SelectAssignment(uniqueID)
+		if
+			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+			and assignment--[[@as CombatLogEventAssignment]].spellCount
+		then
+			timeline:SelectBossAbility(
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+				assignment--[[@as CombatLogEventAssignment]].spellCount
+			)
+		end
+	end
 end
 
 local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
@@ -558,10 +585,6 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	tinsert(GetCurrentAssignments(), assignment)
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:SelectAssignment(assignment.uniqueID)
-	end
 	dropdown:SetText("Add Assignee")
 end
 
@@ -569,15 +592,6 @@ end
 ---@param assigneeIndex integer
 ---@param relativeAssignmentStartTime number
 local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, relativeAssignmentStartTime)
-	-- Clear selected assignment if one exists
-	if Private.assignmentEditor then
-		local timeline = Private.mainFrame:GetTimeline()
-		local assignmentID = Private.assignmentEditor:GetAssignmentID()
-		if timeline and assignmentID then
-			timeline:ClearSelectedAssignment(assignmentID)
-		end
-	end
-
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -613,10 +627,6 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 		end
 		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-		local timeline = Private.mainFrame:GetTimeline()
-		if timeline then
-			timeline:SelectAssignment(assignment.uniqueID)
-		end
 	end
 end
 
