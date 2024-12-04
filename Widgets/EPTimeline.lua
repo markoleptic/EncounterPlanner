@@ -911,6 +911,11 @@ local function OnRelease(self)
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
 	self.addAssigneeDropdown:Release()
+	for _, frame in pairs(self.assignmentFrames) do
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+	end
 	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
