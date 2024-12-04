@@ -33,6 +33,11 @@ local wipe = table.wipe
 local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 
+local absoluteSpellCastStartTables = {}
+for bossName, boss in pairs(Private.bosses["Nerub'ar Palace"]) do
+	absoluteSpellCastStartTables[bossName] = bossUtilities.CreateAbsoluteSpellCastTimeTable(boss)
+end
+
 ---@param value number
 ---@param precision integer
 ---@return number
@@ -548,25 +553,25 @@ end
 ---@return boolean -- Whether or not the update succeeded
 function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 	local assignment = timelineAssignment.assignment
-	local bossPhaseTable = nil
-	if boss then
-		bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
-	end
 	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local ability = bossUtilities.FindBossAbility(assignment.combatLogEventSpellID)
-		local startTime = assignment.time
-		if ability and boss and bossPhaseTable then
-			local relativeStartTime, phaseNumberOffset =
-				bossUtilities.GetRelativeBossAbilityStartTime(ability, assignment.spellCount)
-			local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseNumberOffset)
-			startTime = startTime + phaseStartTime + relativeStartTime
-			if assignment.combatLogEventType == "SAR" then
-				startTime = startTime + ability.duration + ability.castTime
-			elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
-				startTime = startTime + ability.castTime
-			end
+		local bossName = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue()).name
+		if
+			absoluteSpellCastStartTables[bossName]
+			and absoluteSpellCastStartTables[bossName][assignment.combatLogEventSpellID]
+			and absoluteSpellCastStartTables[bossName][assignment.combatLogEventSpellID][assignment.spellCount]
+		then
+			local startTime = absoluteSpellCastStartTables[bossName][assignment.combatLogEventSpellID][assignment.spellCount]
+				+ assignment.time
 			timelineAssignment.startTime = startTime
+			local ability = bossUtilities.FindBossAbility(assignment.combatLogEventSpellID)
+			if ability then
+				if assignment.combatLogEventType == "SAR" then
+					startTime = startTime + ability.duration + ability.castTime
+				elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
+					startTime = startTime + ability.castTime
+				end
+			end
 		else
 			return false
 		end
@@ -574,9 +579,10 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
 	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
-		if boss and bossPhaseTable then
+		if boss then
+			local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
 			local phase = boss.phases[assignment.phase]
-			if phase then
+			if bossPhaseTable and phase then
 				for phaseCount = 1, #phase.count do
 					local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseCount)
 					timelineAssignment.startTime = phaseStartTime
