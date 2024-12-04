@@ -301,10 +301,12 @@ local function CreateAssignmentEditor()
 		assignmentEditor:SetLayout("EPVerticalLayout")
 		Private.assignmentEditor = assignmentEditor
 		assignmentEditor:SetCallback("OnRelease", function()
-			local timeline = Private.mainFrame:GetTimeline()
-			local assignmentID = Private.assignmentEditor:GetAssignmentID()
-			if timeline and assignmentID then
-				timeline:ClearSelectedAssignment(assignmentID)
+			if Private.mainFrame then
+				local assignmentID = Private.assignmentEditor:GetAssignmentID()
+				local timeline = Private.mainFrame:GetTimeline()
+				if assignmentID and timeline then
+					timeline:ClearSelectedAssignment(assignmentID)
+				end
 			end
 			Private.assignmentEditor = nil
 		end)
