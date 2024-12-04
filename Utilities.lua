@@ -10,16 +10,21 @@ local Utilities = Private.utilities
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
+local ceil = math.ceil
+local floor = math.floor
+local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local ipairs = ipairs
 local pairs = pairs
+local print = print
 local rawget = rawget
 local rawset = rawset
 local setmetatable = setmetatable
 local sort = table.sort
 local tinsert = table.insert
+local tonumber = tonumber
 local type = type
 local UnitClass = UnitClass
 local UnitName = UnitName
@@ -34,9 +39,9 @@ local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 function Utilities.Round(value, precision)
 	local factor = 10 ^ precision
 	if value > 0 then
-		return math.ceil(value * factor) / factor
+		return ceil(value * factor) / factor
 	else
-		return math.floor(value * factor) / factor
+		return floor(value * factor) / factor
 	end
 end
 
@@ -334,7 +339,7 @@ function Utilities.CreateTimelineAssignments(assignments, boss)
 		local success = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 		if success == true then
 			tinsert(timelineAssignments, timelineAssignment)
-		elseif allSucceeded == true then
+		else
 			allSucceeded = false
 		end
 	end

@@ -89,10 +89,10 @@ function BossUtilities.FindBossAbility(spellID)
 	return nil
 end
 
--- Accumulates cast times for a boss ability until it reaches spellCount occurances.
----@param ability BossAbility The boss ability to get cast times for.
----@param spellCount integer The spell count/occurance. If the spell is cast 5 times
----@return number, number -- Time from the start of the phase, the phase in which the occurance is located in
+-- Accumulates cast times for a boss ability until it reaches spellCount occurrences.
+---@param ability BossAbility The boss ability to get cast times for
+---@param spellCount integer The spell count/occurrence
+---@return number, number -- Time from the start of the phase, the phase in which the occurrence is located in
 function BossUtilities.GetRelativeBossAbilityStartTime(ability, spellCount)
 	local startTime = 0
 	local phaseNumberOffset = 1
@@ -117,23 +117,23 @@ function BossUtilities.GetRelativeBossAbilityStartTime(ability, spellCount)
 	return startTime, phaseNumberOffset
 end
 
--- Returns the phase start time from boss pull to the specified phase number and occurance.
+-- Returns the phase start time from boss pull to the specified phase number and occurrence.
 ---@param boss Boss The boss
 ---@param bossPhaseTable table<integer, integer> A table of boss phases in the order in which they occur
 ---@param phaseNumber integer The boss phase number
----@param phaseCount integer? The current phase repeat instance (i.e. 2nd time occuring = 2)
----@return number -- Cumulative start time for a given boss phase and count/occurance
+---@param phaseCount integer? The current phase repeat instance (i.e. 2nd time occurring = 2)
+---@return number -- Cumulative start time for a given boss phase and count/occurrence
 function BossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseNumber, phaseCount)
 	if not phaseCount then
 		phaseCount = 1
 	end
 	local cumulativePhaseStartTime = 0
-	local phaseNumberOccurances = 0
+	local phaseNumberOccurrences = 0
 	for _, currentPhaseNumber in ipairs(bossPhaseTable) do
 		if currentPhaseNumber == phaseNumber then
-			phaseNumberOccurances = phaseNumberOccurances + 1
+			phaseNumberOccurrences = phaseNumberOccurrences + 1
 		end
-		if phaseNumberOccurances == phaseCount then
+		if phaseNumberOccurrences == phaseCount then
 			break
 		end
 		cumulativePhaseStartTime = cumulativePhaseStartTime + boss.phases[currentPhaseNumber].duration
@@ -145,15 +145,15 @@ end
 ---@param boss Boss The boss
 ---@return table<integer, integer> -- Ordered boss phase table
 function BossUtilities.CreateBossPhaseTable(boss)
-	local totalPhaseOccurances = 0
+	local totalPhaseOccurrences = 0
 	local totalTimelineDuration = 0
 	for _, phase in pairs(boss.phases) do
 		totalTimelineDuration = totalTimelineDuration + (phase.duration * phase.count)
-		totalPhaseOccurances = totalPhaseOccurances + phase.count
+		totalPhaseOccurrences = totalPhaseOccurrences + phase.count
 	end
 	local bossPhaseOrder = {}
 	local currentPhase = 1
-	while #bossPhaseOrder < totalPhaseOccurances and currentPhase ~= nil do
+	while #bossPhaseOrder < totalPhaseOccurrences and currentPhase ~= nil do
 		tinsert(bossPhaseOrder, currentPhase)
 		if boss.phases[currentPhase].repeatAfter == nil and boss.phases[currentPhase + 1] then
 			currentPhase = currentPhase + 1
