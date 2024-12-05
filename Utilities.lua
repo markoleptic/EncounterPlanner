@@ -389,15 +389,15 @@ end
 
 -- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
 ---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
----@param boss Boss? The boss to obtain cast times from if the assignment requires it
+---@param bossName string? The boss to obtain cast times from if the assignment requires it
 ---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
-function Utilities.CreateTimelineAssignments(assignments, boss)
+function Utilities.CreateTimelineAssignments(assignments, bossName)
 	local timelineAssignments = {}
 	local allSucceeded = true
 	local warningStrings = {}
 	for _, assignment in pairs(assignments) do
 		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
-		local success, warningString = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
+		local success, warningString = Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossName)
 		if success == true then
 			tinsert(timelineAssignments, timelineAssignment)
 		else
@@ -519,10 +519,10 @@ end
 ---@param assignments table<integer, Assignment> Assignments to sort
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
----@param boss Boss? Used to get boss timers to set the proper timeline assignment start time for combat log assignments
+---@param bossName string? Used to get boss timers to set the proper timeline assignment start time for combat log assignments
 ---@return table<integer, TimelineAssignment>
-function Utilities.SortAssignments(assignments, roster, assignmentSortType, boss)
-	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, boss)
+function Utilities.SortAssignments(assignments, roster, assignmentSortType, bossName)
+	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, bossName)
 	sort(timelineAssignments, CompareAssignments(roster, assignmentSortType))
 	return timelineAssignments
 end
@@ -610,15 +610,14 @@ end
 
 -- Updates a timeline assignment's start time.
 ---@param timelineAssignment TimelineAssignment
----@param boss Boss? The boss to obtain cast times from if the assignment requires it
+---@param bossName string? The boss to obtain cast times from if the assignment requires it
 ---@return boolean, string|nil -- Whether or not the update succeeded, optional warning message
-function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
+function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossName)
 	local assignment = timelineAssignment.assignment
 	local warningString = nil
 
 	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local bossName = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue()).name
 		local bossTableSpellCastStartTable = absoluteSpellCastStartTables[bossName]
 		if bossTableSpellCastStartTable then
 			local spellIDSpellCastStartTable = bossTableSpellCastStartTable[assignment.combatLogEventSpellID]
@@ -656,14 +655,18 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, boss)
 		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
 	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
-		if boss then
-			local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
-			local phase = boss.phases[assignment.phase]
-			if bossPhaseTable and phase then
-				for phaseCount = 1, #phase.count do
-					local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(boss, bossPhaseTable, phaseCount)
-					timelineAssignment.startTime = phaseStartTime
-					break -- TODO: Only first phase appearance implemented
+		if bossName then
+			local boss = bossUtilities.GetBoss(bossName)
+			if boss then
+				local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossName)
+				local phase = boss.phases[assignment.phase]
+				if bossPhaseTable and phase then
+					for phaseCount = 1, #phase.count do
+						local phaseStartTime =
+							bossUtilities.GetCumulativePhaseStartTime(bossName, bossPhaseTable, phaseCount)
+						timelineAssignment.startTime = phaseStartTime
+						break -- TODO: Only first phase appearance implemented
+					end
 				end
 			end
 		else

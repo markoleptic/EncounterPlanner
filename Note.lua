@@ -649,8 +649,9 @@ end
 ---@param note EncounterPlannerDbNote
 ---@return string|nil
 function Private:ExportNote(note)
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, boss)
+	local bossName =
+		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
 	sort(timelineAssignments, function(a, b)
 		if a.startTime == b.startTime then
 			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole

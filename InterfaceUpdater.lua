@@ -56,8 +56,9 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
 				end
 			end
 		end
-		local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-		InterfaceUpdater.UpdateAllAssignments(true, boss)
+		local bossName =
+			bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+		InterfaceUpdater.UpdateAllAssignments(true, bossName)
 	end
 end
 
@@ -65,8 +66,9 @@ end
 ---@param collapsed boolean
 local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
-	local boss = bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	InterfaceUpdater.UpdateAllAssignments(true, boss)
+	local bossName =
+		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	InterfaceUpdater.UpdateAllAssignments(true, bossName)
 end
 
 -- Clears and repopulates the boss ability container based on the boss name.
@@ -138,7 +140,7 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	local boss = bossUtilities.GetBoss(bossName)
 	local timeline = Private.mainFrame:GetTimeline()
 	if boss and timeline then
-		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(boss)
+		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossName)
 		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
 		timeline:SetBossAbilities(
 			boss.abilities,
@@ -237,13 +239,13 @@ end
 -- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 -- dropdown.
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
----@param boss Boss? The boss to pass to the assignment sort function
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, boss)
+---@param bossName string? The boss to pass to the assignment sort function
+function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossName)
 	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.assignmentSortType,
-		boss
+		bossName
 	)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
 		sortedTimelineAssignments,

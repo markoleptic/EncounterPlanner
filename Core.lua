@@ -90,7 +90,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	Private.rosterEditor:Release()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 end
 
 ---@param rosterTab EPRosterEditorTab
@@ -209,12 +209,12 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 			break
 		end
 	end
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 end
 
 local function HandleAssignmentEditorOkayButtonClicked()
 	Private.assignmentEditor:Release()
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 end
 
 ---@param assignmentEditor EPAssignmentEditor
@@ -322,7 +322,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	if timeline then
 		for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 			if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBoss())
+				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBossName())
 				break
 			end
 		end
@@ -415,13 +415,11 @@ local function HandleImportNoteFromString(importType)
 		end
 	end
 
-	local boss = nil
 	if bossName then
 		interfaceUpdater.UpdateBossAbilityList(bossName, true)
 		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-		boss = bossUtilities.GetBoss(bossName)
 	end
-	interfaceUpdater.UpdateAllAssignments(true, boss)
+	interfaceUpdater.UpdateAllAssignments(true, bossName)
 end
 
 local function CreateImportEditBox(importType)
@@ -477,7 +475,7 @@ end
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
 	AddOn.db.profile.assignmentSortType = value
-	interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+	interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossName())
 end
 
 ---@param value string
@@ -491,12 +489,10 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	if not bossName then
 		bossName = utilities.SearchStringTableForBossName(note.content)
 	end
-	local boss = nil
 	if bossName then
 		interfaceUpdater.UpdateBoss(bossName, true)
-		boss = bossUtilities.GetBoss(bossName)
 	end
-	interfaceUpdater.UpdateAllAssignments(true, boss)
+	interfaceUpdater.UpdateAllAssignments(true, bossName)
 	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
@@ -564,7 +560,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	local assignment = Private.classes.Assignment:New()
 	assignment.assigneeNameOrRole = value
 	tinsert(GetCurrentAssignments(), assignment)
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText("Add Assignee")
 end
@@ -577,7 +573,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.assignmentSortType,
-		GetCurrentBoss()
+		GetCurrentBossName()
 	)
 	local sortedAssigneesAndSpells =
 		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed)
@@ -606,7 +602,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 			timedAssignment.time = abilityInstance.castTime
 			tinsert(GetCurrentAssignments(), timedAssignment)
 		end
-		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossName())
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
 end
@@ -678,7 +674,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
-		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBoss())
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 	end
 end
 
@@ -710,12 +706,10 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 					renameNoteLineEdit:SetText(newNoteName)
 				end
 			end
-			local boss = nil
 			if bossName then
 				interfaceUpdater.UpdateBoss(bossName, true)
-				boss = bossUtilities.GetBoss(bossName)
 			end
-			interfaceUpdater.UpdateAllAssignments(true, boss)
+			interfaceUpdater.UpdateAllAssignments(true, bossName)
 		elseif value == "FromStringOverwrite" or value == "FromStringNew" then
 			CreateImportEditBox(value)
 		end
@@ -804,30 +798,32 @@ function Private:CreateGUI()
 		end
 	end)
 	Private.mainFrame:SetCallback("CollapseAllButtonClicked", function()
+		local currentBossName = GetCurrentBossName()
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),
 			AddOn.db.profile.assignmentSortType,
-			GetCurrentBoss()
+			currentBossName
 		)
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = true
 		end
-		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+		interfaceUpdater.UpdateAllAssignments(true, currentBossName)
 	end)
 	Private.mainFrame:SetCallback("ExpandAllButtonClicked", function()
+		local currentBossName = GetCurrentBossName()
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),
 			AddOn.db.profile.assignmentSortType,
-			GetCurrentBoss()
+			currentBossName
 		)
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
 		end
-		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBoss())
+		interfaceUpdater.UpdateAllAssignments(false, currentBossName)
 		Private.mainFrame:GetTimeline():SetMaxAssignmentHeight()
 		Private.mainFrame:DoLayout()
 	end)
@@ -1058,7 +1054,7 @@ function Private:CreateGUI()
 	interfaceUpdater.UpdateBoss(bossName, true)
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
-	interfaceUpdater.UpdateAllAssignments(true, bossUtilities.GetBoss(bossName))
+	interfaceUpdater.UpdateAllAssignments(true, bossName)
 	if
 		AddOn.db.profile.timelineHeight
 		and AddOn.db.profile.assignmentTimelineHeight
