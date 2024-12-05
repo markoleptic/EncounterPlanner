@@ -604,7 +604,7 @@ local function CreateTimeAndOptionsExportString(assignment)
 	else
 		timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
 	end
-	if assignment.generalTextSpellID then
+	if assignment.generalTextSpellID and assignment.generalTextSpellID >= 0 then
 		local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
 		timeAndOptionsString = timeAndOptionsString .. optionsString
 	else

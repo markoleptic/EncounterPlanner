@@ -59,11 +59,10 @@ Private.classes.Assignment = {
 	strWithIconReplacements = "",
 	spellInfo = { spellID = 0, name = "", iconID = 0 },
 	targetName = "",
-	uniqueID = nil,
+	uniqueID = 0,
 	generalText = "",
-	generalTextSpellID = nil,
+	generalTextSpellID = -1,
 }
-Private.classes.Assignment.__index = Private.classes.Assignment
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
@@ -73,11 +72,11 @@ Private.classes.Assignment.__index = Private.classes.Assignment
 ---@field spellCount integer|nil The number of times the combat log event must have occurred
 ---@field time number|nil The time from the combat log event to trigger the assignment
 Private.classes.CombatLogEventAssignment = setmetatable({
-	combatLogEventType = nil,
-	combatLogEventSpellID = nil,
-	phase = nil,
-	spellCount = nil,
-	time = nil,
+	combatLogEventType = "SCS",
+	combatLogEventSpellID = 0,
+	phase = 1,
+	spellCount = 1,
+	time = 0,
 }, { __index = Private.classes.Assignment })
 Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEventAssignment
 
@@ -85,7 +84,7 @@ Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEven
 ---@class TimedAssignment : Assignment
 ---@field time number The length of time from the beginning of the fight to when this assignment is triggered
 Private.classes.TimedAssignment = setmetatable({
-	time = nil,
+	time = 0,
 }, { __index = Private.classes.Assignment })
 Private.classes.TimedAssignment.__index = Private.classes.TimedAssignment
 
@@ -94,8 +93,8 @@ Private.classes.TimedAssignment.__index = Private.classes.TimedAssignment
 ---@field phase integer The boss phase this assignment is triggered by
 ---@field time number The time from the start of the phase to trigger the assignment
 Private.classes.PhasedAssignment = setmetatable({
-	phase = nil,
-	time = nil,
+	phase = 1,
+	time = 0,
 }, { __index = Private.classes.Assignment })
 Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 
@@ -135,11 +134,11 @@ Private.classes.BossDefinition = {
 ---@class Boss
 ---@field abilities table<integer, BossAbility> A list of abilities
 ---@field phases table<integer, BossPhase> A list of phases
----@field sortedAbilityIDs? table<integer, integer> An ordered list of abilities sorted by first appearance
+---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance
 Private.classes.Boss = {
 	abilities = {},
 	phases = {},
-	sortedAbilityIDs = nil,
+	sortedAbilityIDs = {},
 }
 
 ---@class BossAbility
@@ -246,6 +245,36 @@ function Private.DeepCopy(inTable)
 		copy = inTable
 	end
 	return copy
+end
+
+--- Collects all valid fields recursively from the inheritance chain.
+---@param classTable table The class table to collect fields from
+---@param validFields table The table to populate with valid fields
+local function CollectValidFields(classTable, validFields, visited)
+	if visited[classTable] then
+		return
+	end
+	visited[classTable] = true
+	for key, _ in pairs(classTable) do
+		validFields[key] = true
+	end
+	if classTable.__index and type(classTable.__index) == "table" then
+		CollectValidFields(classTable.__index, validFields, visited)
+	end
+end
+
+--- Removes invalid fields not present in the inheritance chain of the class.
+---@param classTable table The target class table
+---@param o table The object to clean up
+local function RemoveInvalidFields(classTable, o)
+	local validFields = {}
+	local visited = {}
+	CollectValidFields(classTable, validFields, visited)
+	for key, _ in pairs(o) do
+		if not validFields[key] then
+			o[key] = nil
+		end
+	end
 end
 
 ---@generic T : table

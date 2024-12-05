@@ -481,6 +481,64 @@ local function LayoutFinished(self, width, height)
 	end
 end
 
+---@param self EPAssignmentEditor
+---@param assignment Assignment
+---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
+local function PopulateFields(self, assignment, metaTables)
+	self:SetAssignmentID(assignment.uniqueID)
+	local assigneeNameOrRole = assignment.assigneeNameOrRole
+	if assigneeNameOrRole == "{everyone}" then
+		self:SetAssigneeType("Everyone")
+		self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+		self.assigneeDropdown:SetValue("")
+	else
+		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+		if classMatch then
+			self:SetAssigneeType("Class")
+			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			self.assigneeDropdown:SetValue("")
+		elseif roleMatch then
+			self:SetAssigneeType("Role")
+			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			self.assigneeDropdown:SetValue("")
+		elseif groupMatch then
+			self:SetAssigneeType("GroupNumber")
+			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			self.assigneeDropdown:SetValue("")
+		else
+			self:SetAssigneeType("Individual")
+			self.assigneeTypeDropdown:SetValue("Individual")
+			self.assigneeDropdown:SetValue(assigneeNameOrRole)
+		end
+	end
+
+	self.previewLabel:SetText(assignment.strWithIconReplacements)
+	self.targetDropdown:SetValue(assignment.targetName)
+	self.optionalTextLineEdit:SetText(assignment.text)
+	self.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
+
+	if getmetatable(assignment) == metaTables.CombatLogEventAssignment then
+		assignment = assignment --[[@as CombatLogEventAssignment]]
+		self:SetAssignmentType("CombatLogEventAssignment")
+		self.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
+		self.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
+		self.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
+		self.timeEditBox:SetText(assignment.time)
+	elseif getmetatable(assignment) == metaTables.TimedAssignment then
+		assignment = assignment --[[@as TimedAssignment]]
+		self:SetAssignmentType("TimedAssignment")
+		self.assignmentTypeDropdown:SetValue("Absolute Time")
+		self.timeEditBox:SetText(assignment.time)
+	elseif getmetatable(assignment) == metaTables.TimedAssignment then
+		assignment = assignment --[[@as PhasedAssignment]]
+		self:SetAssignmentType("PhasedAssignment")
+		self.assignmentTypeDropdown:SetValue("Boss Phase")
+		self.timeEditBox:SetText(assignment.time)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -551,6 +609,7 @@ local function Constructor()
 		SetAssigneeType = SetAssigneeType,
 		SetAssignmentID = SetAssignmentID,
 		GetAssignmentID = GetAssignmentID,
+		PopulateFields = PopulateFields,
 		buttonFrame = buttonFrame,
 	}
 

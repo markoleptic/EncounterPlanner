@@ -31,6 +31,11 @@ local tonumber = tonumber
 local tremove = tremove
 local unpack = unpack
 
+local assignmentMetaTables = {
+	CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
+	TimedAssignment = Private.classes.TimedAssignment,
+	PhasedAssignment = Private.classes.PhasedAssignment,
+}
 local dropdownContainerLabelSpacing = { 2, 2 }
 local dropdownContainerSpacing = { 2, 2 }
 local noteContainerSpacing = { 5, 2 }
@@ -57,6 +62,11 @@ end
 ---@return Boss|nil
 local function GetCurrentBoss()
 	return bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+end
+
+---@return string
+local function GetCurrentBossName()
+	return bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue()).name
 end
 
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
@@ -215,23 +225,50 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	if not assignmentID then
 		return
 	end
+
 	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 	if not assignment then
 		return
 	end
+
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
+				local combatLogEventSpellID, spellCount, minTime = nil, nil, nil
+				if getmetatable(assignment) == Private.classes.TimedAssignment then
+					combatLogEventSpellID, spellCount, minTime =
+						utilities.FindNearestCombatLogEvent(assignment.time, GetCurrentBossName(), value)
+				end
 				assignment = Private.classes.CombatLogEventAssignment:New(assignment)
+				if combatLogEventSpellID and spellCount and minTime then
+					assignment.time = minTime
+					assignment.combatLogEventSpellID = combatLogEventSpellID
+					assignment.spellCount = spellCount
+				end
+				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
 			end
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 		elseif value == "Absolute Time" then
 			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
+				local convertedTime = nil
+				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+					convertedTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+						assignment.time,
+						GetCurrentBossName(),
+						assignment.combatLogEventSpellID,
+						assignment.spellCount
+					)
+				end
 				assignment = Private.classes.TimedAssignment:New(assignment)
+				if convertedTime then
+					assignment.time = convertedTime
+				end
+				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
 			end
 		elseif value == "Boss Phase" then
 			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
 				assignment = Private.classes.PhasedAssignment:New(assignment)
+				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
 			end
 		end
 	elseif dataType == "CombatLogEventSpellID" then
@@ -266,7 +303,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		if not tonumber(value) then
 			return
 		end
-		if
+		if tonumber(value) < 0 then
+			assignmentEditor.timeEditBox:SetText(assignment.time)
+		elseif
 			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
 			or getmetatable(assignment) == Private.classes.PhasedAssignment
 			or getmetatable(assignment) == Private.classes.TimedAssignment
@@ -302,51 +341,50 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	end
 end
 
+---@return EPAssignmentEditor
 local function CreateAssignmentEditor()
-	if not Private.assignmentEditor then
-		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
-		assignmentEditor.obj = Private.mainFrame
-		assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		assignmentEditor.frame:SetFrameLevel(10)
-		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
-		assignmentEditor:SetLayout("EPVerticalLayout")
-		Private.assignmentEditor = assignmentEditor
-		assignmentEditor:SetCallback("OnRelease", function()
-			if Private.mainFrame then
-				local timeline = Private.mainFrame:GetTimeline()
-				if timeline then
-					timeline:ClearSelectedAssignments()
-					timeline:ClearSelectedBossAbilities()
-				end
-			end
-			Private.assignmentEditor = nil
-		end)
-		assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
-		assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
-		assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
-		assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
-		assignmentEditor.assigneeTypeDropdown:AddItems(assignmentTypeDropdownItems, "EPDropdownItemToggle")
-		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
-		assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
-		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
-		local dropdownItems = {}
-		local boss = GetCurrentBoss()
-		if boss then
-			for _, ID in pairs(boss.sortedAbilityIDs) do
-				local spellInfo = GetSpellInfo(ID)
-				if spellInfo then
-					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-					tinsert(dropdownItems, {
-						itemValue = ID,
-						text = iconText,
-						dropdownItemMenuData = {},
-					})
-				end
+	local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
+	assignmentEditor.obj = Private.mainFrame
+	assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+	assignmentEditor.frame:SetFrameLevel(10)
+	assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
+	assignmentEditor:SetLayout("EPVerticalLayout")
+	assignmentEditor:SetCallback("OnRelease", function()
+		if Private.mainFrame then
+			local timeline = Private.mainFrame:GetTimeline()
+			if timeline then
+				timeline:ClearSelectedAssignments()
+				timeline:ClearSelectedBossAbilities()
 			end
 		end
-		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
-		assignmentEditor:DoLayout()
+		Private.assignmentEditor = nil
+	end)
+	assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
+	assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
+	assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
+	assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
+	assignmentEditor.assigneeTypeDropdown:AddItems(assignmentTypeDropdownItems, "EPDropdownItemToggle")
+	local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
+	assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+	assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+	local dropdownItems = {}
+	local boss = GetCurrentBoss()
+	if boss then
+		for _, ID in pairs(boss.sortedAbilityIDs) do
+			local spellInfo = GetSpellInfo(ID)
+			if spellInfo then
+				local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+				tinsert(dropdownItems, {
+					itemValue = ID,
+					text = iconText,
+					dropdownItemMenuData = {},
+				})
+			end
+		end
 	end
+	assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+	assignmentEditor:DoLayout()
+	return assignmentEditor
 end
 
 local function HandleImportNoteFromString(importType)
@@ -487,83 +525,26 @@ end
 
 ---@param uniqueID integer
 local function HandleTimelineAssignmentClicked(_, _, uniqueID)
-	if not Private.assignmentEditor then
-		CreateAssignmentEditor()
-	end
-
-	local assignmentEditor = Private.assignmentEditor --[[@as EPAssignmentEditor]]
-	assignmentEditor:SetAssignmentID(uniqueID)
-
 	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
-	if not assignment then
-		return
-	end
-
-	local assigneeNameOrRole = assignment.assigneeNameOrRole
-	if assigneeNameOrRole == "{everyone}" then
-		assignmentEditor:SetAssigneeType("Everyone")
-		assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-		assignmentEditor.assigneeDropdown:SetValue("")
-	else
-		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-		if classMatch then
-			assignmentEditor:SetAssigneeType("Class")
-			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			assignmentEditor.assigneeDropdown:SetValue("")
-		elseif roleMatch then
-			assignmentEditor:SetAssigneeType("Role")
-			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			assignmentEditor.assigneeDropdown:SetValue("")
-		elseif groupMatch then
-			assignmentEditor:SetAssigneeType("GroupNumber")
-			assignmentEditor.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			assignmentEditor.assigneeDropdown:SetValue("")
-		else
-			assignmentEditor:SetAssigneeType("Individual")
-			assignmentEditor.assigneeTypeDropdown:SetValue("Individual")
-			assignmentEditor.assigneeDropdown:SetValue(assigneeNameOrRole)
+	if assignment then
+		if not Private.assignmentEditor then
+			Private.assignmentEditor = CreateAssignmentEditor()
 		end
-	end
-
-	assignmentEditor.previewLabel:SetText(assignment.strWithIconReplacements)
-	assignmentEditor.targetDropdown:SetValue(assignment.targetName)
-	assignmentEditor.optionalTextLineEdit:SetText(assignment.text)
-	assignmentEditor.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
-
-	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-		assignment = assignment --[[@as CombatLogEventAssignment]]
-		assignmentEditor:SetAssignmentType("CombatLogEventAssignment")
-		assignmentEditor.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
-		assignmentEditor.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
-		assignmentEditor.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
-		assignmentEditor.timeEditBox:SetText(assignment.time)
-	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
-		assignment = assignment --[[@as TimedAssignment]]
-		assignmentEditor:SetAssignmentType("TimedAssignment")
-		assignmentEditor.assignmentTypeDropdown:SetValue("Absolute Time")
-		assignmentEditor.timeEditBox:SetText(assignment.time)
-	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
-		assignment = assignment --[[@as PhasedAssignment]]
-		assignmentEditor:SetAssignmentType("PhasedAssignment")
-		assignmentEditor.assignmentTypeDropdown:SetValue("Boss Phase")
-		assignmentEditor.timeEditBox:SetText(assignment.time)
-	end
-
-	local timeline = Private.mainFrame:GetTimeline()
-	if timeline then
-		timeline:ClearSelectedAssignments()
-		timeline:ClearSelectedBossAbilities()
-		timeline:SelectAssignment(uniqueID)
-		if
-			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-			and assignment--[[@as CombatLogEventAssignment]].spellCount
-		then
-			timeline:SelectBossAbility(
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-				assignment--[[@as CombatLogEventAssignment]].spellCount
-			)
+		Private.assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
+		local timeline = Private.mainFrame:GetTimeline()
+		if timeline then
+			timeline:ClearSelectedAssignments()
+			timeline:ClearSelectedBossAbilities()
+			timeline:SelectAssignment(uniqueID)
+			if
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+				and assignment--[[@as CombatLogEventAssignment]].spellCount
+			then
+				timeline:SelectBossAbility(
+					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+					assignment--[[@as CombatLogEventAssignment]].spellCount
+				)
+			end
 		end
 	end
 end
