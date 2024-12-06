@@ -12,6 +12,7 @@ local bossUtilities = Private.bossUtilities
 local AddOn = Private.addOn
 local concat = table.concat
 local format = format
+local floor = math.floor
 local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
@@ -589,7 +590,7 @@ end
 ---@param assignment CombatLogEventAssignment|TimedAssignment
 ---@return string
 local function CreateTimeAndOptionsExportString(assignment)
-	local minutes = math.floor(assignment.time / 60)
+	local minutes = floor(assignment.time / 60)
 	local seconds = assignment.time - (minutes * 60)
 	local timeAndOptionsString = ""
 	if assignment.combatLogEventType and assignment.combatLogEventSpellID and assignment.spellCount then

@@ -5,6 +5,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local GetSpellInfo = C_Spell.GetSpellInfo
+local pi = math.pi
 
 local frameWidth = 200
 local frameHeight = 30
@@ -176,9 +177,9 @@ end
 local function SetCollapsed(self, collapsed)
 	self.collapsed = collapsed
 	if collapsed then
-		self.collapseButton:GetNormalTexture():SetRotation(math.pi / 2)
-		self.collapseButton:GetPushedTexture():SetRotation(math.pi / 2)
-		self.collapseButton:GetHighlightTexture():SetRotation(math.pi / 2)
+		self.collapseButton:GetNormalTexture():SetRotation(pi / 2)
+		self.collapseButton:GetPushedTexture():SetRotation(pi / 2)
+		self.collapseButton:GetHighlightTexture():SetRotation(pi / 2)
 	else
 		self.collapseButton:GetNormalTexture():SetRotation(0)
 		self.collapseButton:GetPushedTexture():SetRotation(0)

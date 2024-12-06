@@ -4,6 +4,7 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class TimelineAssignment
 local TimelineAssignment = Private.classes.TimelineAssignment
 
+local hugeNumber = math.huge
 local ipairs = ipairs
 local min = math.min
 local pairs = pairs
@@ -1149,7 +1150,7 @@ for _, boss in pairs(bosses) do
 	local firstAppearances = {}
 	local firstAppearancesMap = {}
 	for spellID, data in pairs(boss.abilities) do
-		local earliestCastTime = math.huge
+		local earliestCastTime = hugeNumber
 		for phaseNumber, phase in pairs(data.phases) do
 			if phase.castTimes then
 				for _, castTime in ipairs(phase.castTimes) do
@@ -1167,7 +1168,7 @@ for _, boss in pairs(bosses) do
 	end
 	local firstEventTriggerAppearancesMap = {}
 	for spellID, data in pairs(boss.abilities) do
-		local earliestCastTime = math.huge
+		local earliestCastTime = hugeNumber
 		if data.eventTriggers then
 			for triggerSpellID, eventTrigger in pairs(data.eventTriggers) do
 				local earliestTriggerCastTime = firstAppearancesMap[triggerSpellID]

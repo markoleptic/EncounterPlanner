@@ -33,20 +33,13 @@ local function UpdateLinePosition(frame)
 	self.verticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
 	self.verticalPositionLine:Show()
 
-	local padding = self.staticTimelineSectionData.timelineLinePadding.x
-	local time = (newTimeOffset - padding) * self.totalTimelineDuration / (self.timelineFrame:GetWidth() - padding * 2)
-	time = min(max(0, time), self.totalTimelineDuration)
-	local minutes = floor(time / 60)
-	local seconds = time % 60
-	self.currentTimeLabel:SetText(string.format("%d:%02d", minutes, seconds))
-
 	if
-		self.staticTimelineSectionData.verticalPositionLineVisible ~= true
-		or self.staticTimelineSectionData.verticalPositionLineOffset ~= newTimeOffset
+		self.sharedTimelineSectionData.verticalPositionLineVisible ~= true
+		or self.sharedTimelineSectionData.verticalPositionLineOffset ~= newTimeOffset
 	then
-		self.staticTimelineSectionData.verticalPositionLineVisible = true
-		self.staticTimelineSectionData.verticalPositionLineOffset = newTimeOffset
-		self:Fire("StaticDataChanged", false)
+		self.sharedTimelineSectionData.verticalPositionLineVisible = true
+		self.sharedTimelineSectionData.verticalPositionLineOffset = newTimeOffset
+		self:Fire("SharedDataChanged", false)
 	end
 end
 
@@ -68,9 +61,9 @@ local function HandleTimelineFrameLeave(frame)
 	frame:SetScript("OnUpdate", nil)
 	self.verticalPositionLine:Hide()
 
-	if self.staticTimelineSectionData.verticalPositionLineVisible ~= false then
-		self.staticTimelineSectionData.verticalPositionLineVisible = false
-		self:Fire("StaticDataChanged", false)
+	if self.sharedTimelineSectionData.verticalPositionLineVisible ~= false then
+		self.sharedTimelineSectionData.verticalPositionLineVisible = false
+		self:Fire("SharedDataChanged", false)
 	end
 end
 
@@ -158,7 +151,7 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 
 	if controlKeyDown or updateBoth then
 		local timelineDuration = self.totalTimelineDuration
-		local zoomFactor = self.staticTimelineSectionData.zoomFactor
+		local zoomFactor = self.sharedTimelineSectionData.zoomFactor
 		local visibleDuration = timelineDuration / zoomFactor
 		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineFrame:GetWidth()) * timelineDuration
 		local visibleEndTime = visibleStartTime + visibleDuration
@@ -199,14 +192,14 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 		timelineFrame:SetWidth(newTimelineFrameWidth)
 
 		if
-			self.staticTimelineSectionData.zoomFactor ~= zoomFactor
-			or self.staticTimelineSectionData.timelineFrameWidth ~= newTimelineFrameWidth
-			or self.staticTimelineSectionData.horizontalScroll ~= newHorizontalScroll
+			self.sharedTimelineSectionData.zoomFactor ~= zoomFactor
+			or self.sharedTimelineSectionData.timelineFrameWidth ~= newTimelineFrameWidth
+			or self.sharedTimelineSectionData.horizontalScroll ~= newHorizontalScroll
 		then
-			self.staticTimelineSectionData.zoomFactor = zoomFactor
-			self.staticTimelineSectionData.timelineFrameWidth = newTimelineFrameWidth
-			self.staticTimelineSectionData.horizontalScroll = newHorizontalScroll
-			self:Fire("StaticDataChanged", true)
+			self.sharedTimelineSectionData.zoomFactor = zoomFactor
+			self.sharedTimelineSectionData.timelineFrameWidth = newTimelineFrameWidth
+			self.sharedTimelineSectionData.horizontalScroll = newHorizontalScroll
+			self:Fire("SharedDataChanged", true)
 		end
 	end
 
@@ -228,9 +221,9 @@ local function HandleTimelineFrameUpdate(frame)
 	scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.timelineFrameDragStartX = x
 
-	if self.staticTimelineSectionData.horizontalScroll ~= newHorizontalScroll then
-		self.staticTimelineSectionData.horizontalScroll = newHorizontalScroll
-		self:Fire("StaticDataChanged", true)
+	if self.sharedTimelineSectionData.horizontalScroll ~= newHorizontalScroll then
+		self.sharedTimelineSectionData.horizontalScroll = newHorizontalScroll
+		self:Fire("SharedDataChanged", true)
 		UpdateScrollBarPrivate(self)
 	end
 end
@@ -243,9 +236,9 @@ local function HandleTimelineFrameDragStart(frame, button)
 
 	self.verticalPositionLine:Hide()
 
-	if self.staticTimelineSectionData.verticalPositionLineVisible ~= false then
-		self.staticTimelineSectionData.verticalPositionLineVisible = false
-		self:Fire("StaticDataChanged", false)
+	if self.sharedTimelineSectionData.verticalPositionLineVisible ~= false then
+		self.sharedTimelineSectionData.verticalPositionLineVisible = false
+		self:Fire("SharedDataChanged", false)
 	end
 
 	frame:SetScript("OnUpdate", HandleTimelineFrameUpdate)
@@ -326,7 +319,6 @@ end
 ---@field timelineFrameWidth number
 ---@field horizontalScroll number
 ---@field zoomFactor number
----@field timelineLinePadding {x: number, y: number}
 
 ---@class EPTimelineSection : AceGUIWidget
 ---@field type string
@@ -347,11 +339,10 @@ end
 ---@field verticalThumbIsDragging boolean
 ---@field timelineFrameIsDragging boolean
 ---@field timelineFrameDragStartX number
----@field staticTimelineSectionData SharedTimelineSectionData
+---@field sharedTimelineSectionData SharedTimelineSectionData
 ---@field textureHeight number
 ---@field listPadding number
 ---@field listContainer EPContainer
----@field currentTimeLabel EPLabel
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -378,7 +369,7 @@ end
 
 ---@param self EPTimelineSection
 local function SetSharedData(self, data)
-	self.staticTimelineSectionData = data
+	self.sharedTimelineSectionData = data
 end
 
 ---@param self EPTimelineSection
@@ -386,8 +377,7 @@ local function OnRelease(self)
 	self.listContainer:Release()
 	self.listContainer = nil
 	self.horizontalScrollBar = nil
-	self.staticTimelineSectionData = nil
-	self.currentTimeLabel = nil
+	self.sharedTimelineSectionData = nil
 end
 
 ---@param self EPTimelineSection
@@ -458,8 +448,8 @@ local function SetTextureHeight(self, height)
 end
 
 ---@param self EPTimelineSection
-local function SyncFromStaticData(self)
-	local data = self.staticTimelineSectionData
+local function SyncFromSharedData(self)
+	local data = self.sharedTimelineSectionData
 	self.verticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT", data.verticalPositionLineOffset, 0)
 	self.verticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", data.verticalPositionLineOffset, 0)
 	if data.verticalPositionLineVisible == true then
@@ -474,7 +464,7 @@ end
 ---@param self EPTimelineSection
 ---@param horizontalScroll number
 local function SetHorizontalScroll(self, horizontalScroll)
-	self.staticTimelineSectionData.horizontalScroll = horizontalScroll
+	self.sharedTimelineSectionData.horizontalScroll = horizontalScroll
 	self.scrollFrame:SetHorizontalScroll(horizontalScroll)
 end
 
@@ -503,7 +493,7 @@ end
 ---@param self EPTimelineSection
 ---@return number
 local function GetZoomFactor(self)
-	return self.staticTimelineSectionData.zoomFactor
+	return self.sharedTimelineSectionData.zoomFactor
 end
 
 local function Constructor()
@@ -596,7 +586,7 @@ local function Constructor()
 		UpdateScrollBar = UpdateScrollBar,
 		UpdateWidthAndScroll = UpdateWidthAndScroll,
 		SetTimelineDuration = SetTimelineDuration,
-		SyncFromStaticData = SyncFromStaticData,
+		SyncFromSharedData = SyncFromSharedData,
 		GetHorizontalScrollAndWidth = GetHorizontalScrollAndWidth,
 		GetMaxScroll = GetMaxScroll,
 		GetZoomFactor = GetZoomFactor,

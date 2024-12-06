@@ -3,6 +3,7 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
+local pi = math.pi
 
 local textOffsetX = 4
 local checkOffsetLeftX = -2
@@ -13,12 +14,12 @@ local dropdownItemHeight = 24
 local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 
-local function fixlevels(parent, ...)
+local function fixLevels(parent, ...)
 	local i = 1
 	local child = select(i, ...)
 	while child do
 		child:SetFrameLevel(parent:GetFrameLevel() + 1)
-		fixlevels(child, child:GetChildren())
+		fixLevels(child, child:GetChildren())
 		i = i + 1
 		child = select(i, ...)
 	end
@@ -99,7 +100,7 @@ function EPItemBase.SetPullout(self, pullout)
 	self.frame:SetParent(nil)
 	self.frame:SetParent(pullout.itemFrame)
 	self.parent = pullout.itemFrame
-	fixlevels(pullout.itemFrame, pullout.itemFrame:GetChildren())
+	fixLevels(pullout.itemFrame, pullout.itemFrame:GetChildren())
 end
 
 ---@param self EPItemBase
@@ -181,7 +182,7 @@ function EPItemBase.Create(type)
 	childSelectedIndicator:SetHeight(subHeight)
 	childSelectedIndicator:SetPoint("RIGHT", frame, "RIGHT", -3, -1)
 	childSelectedIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	childSelectedIndicator:SetRotation(math.pi / 2)
+	childSelectedIndicator:SetRotation(pi / 2)
 	childSelectedIndicator:Hide()
 
 	---@class EPItemBase
@@ -218,9 +219,9 @@ do
 	local widgetType = "EPDropdownItemToggle"
 	local widgetVersion = 1
 
-	-- Updates the visiblity of the check texture based on selected and neverShowItemsAsSelected
+	-- Updates the visibility of the check texture based on selected and neverShowItemsAsSelected
 	---@param dropdownItemToggle EPDropdownItemToggle
-	local function UpdateCheckVisiblity(dropdownItemToggle)
+	local function UpdateCheckVisibility(dropdownItemToggle)
 		if dropdownItemToggle.selected and not dropdownItemToggle.neverShowItemsAsSelected then
 			dropdownItemToggle.check:Show()
 		else
@@ -234,7 +235,7 @@ do
 			return
 		end
 		self.selected = not self.selected
-		UpdateCheckVisiblity(self)
+		UpdateCheckVisibility(self)
 		self:Fire("OnValueChanged", self.selected)
 	end
 
@@ -242,7 +243,7 @@ do
 	---@param selected boolean
 	local function SetIsSelected(self, selected)
 		self.selected = selected
-		UpdateCheckVisiblity(self)
+		UpdateCheckVisibility(self)
 	end
 
 	---@param self EPDropdownItemToggle
@@ -422,7 +423,7 @@ do
 				self.childPullout:AddItem(dropdownItemToggle)
 			end
 		end
-		fixlevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		fixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
 	end
 
 	---@param self EPDropdownItemMenu
@@ -463,7 +464,7 @@ do
 				end
 			end
 		end
-		fixlevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		fixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
 	end
 
 	---@param self EPDropdownItemMenu

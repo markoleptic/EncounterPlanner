@@ -37,6 +37,7 @@ local minimumBossAbilityWidth = 5
 local tickWidth = 2
 local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
+local tickLabelColor = { 1, 1, 1, 1 }
 local assignmentOutlineColor = { 0.25, 0.25, 0.25, 1 }
 local assignmentSelectOutlineColor = { 1, 0.82, 0, 1 }
 local tickFontSize = 12
@@ -50,6 +51,14 @@ local colors = {
 	{ 255, 214, 51, 1 },
 	{ 51, 255, 249, 1 },
 	{ 184, 51, 255, 1 },
+}
+
+local currentTimeBackdrop = {
+	bgFile = nil,
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 1,
 }
 
 local thumbPadding = { x = 2, y = 2 }
@@ -127,6 +136,7 @@ local function UpdateTickMarks(self)
 	end
 	for _, label in pairs(self.timelineLabels) do
 		label:Hide()
+		label.wantsToShow = false
 	end
 	if totalTimelineDuration <= 0.0 then
 		return
@@ -187,19 +197,23 @@ local function UpdateTickMarks(self)
 		bossTick:Show()
 
 		-- Create or reuse timestamp label
+		---@class FontString
 		local label = self.timelineLabels[i]
 		if not label then
 			label = self.splitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+			label.wantsToShow = true
 			self.timelineLabels[i] = label
 			if fontPath then
 				label:SetFont(fontPath, tickFontSize)
+				label:SetTextColor(unpack(tickLabelColor))
 			end
 		end
-		local minutes = math.floor(i / 60)
+		local minutes = floor(i / 60)
 		local seconds = i % 60
 		label:SetText(string.format("%d:%02d", minutes, seconds))
-		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetUnboundedStringWidth() / 2, 0)
+		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetStringWidth() / 2.0, 0)
 		label:Show()
+		label.wantsToShow = true
 	end
 end
 
@@ -777,7 +791,10 @@ local function UpdateHeight(self)
 	local height = paddingBetweenTimelines + paddingBetweenTimelineAndScrollBar + horizontalScrollBarHeight
 
 	local assignmentFrameHeight = self.assignmentTimeline.frame:GetHeight()
-	if assignmentFrameHeight ~= self.preferredTimelineHeights.assignmentHeight then
+	if assignmentFrameHeight >= self.assignmentDimensions.max then
+		height = height + self.assignmentDimensions.max
+		self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
+	elseif assignmentFrameHeight ~= self.preferredTimelineHeights.assignmentHeight then
 		height = height + self.preferredTimelineHeights.assignmentHeight
 		self.assignmentTimeline.frame:SetHeight(self.preferredTimelineHeights.assignmentHeight)
 	else
@@ -785,7 +802,10 @@ local function UpdateHeight(self)
 	end
 
 	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
-	if bossFrameHeight ~= self.preferredTimelineHeights.bossAbilityBarHeight then
+	if bossFrameHeight >= self.barDimensions.max then
+		height = height + self.barDimensions.max
+		self.bossAbilityTimeline.frame:SetHeight(self.barDimensions.max)
+	elseif bossFrameHeight ~= self.preferredTimelineHeights.bossAbilityBarHeight then
 		height = height + self.preferredTimelineHeights.bossAbilityBarHeight
 		self.bossAbilityTimeline.frame:SetHeight(self.preferredTimelineHeights.bossAbilityBarHeight)
 	else
@@ -803,10 +823,7 @@ local function SetMaxAssignmentHeight(self)
 		+ horizontalScrollBarHeight
 		+ bossFrameHeight
 	self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
-	self.preferredTimelineHeights = {
-		bossAbilityBarHeight = bossFrameHeight,
-		assignmentHeight = self.assignmentDimensions.max,
-	}
+	self.preferredTimelineHeights.bossAbilityBarHeight = bossFrameHeight
 	self:Fire(
 		"PreferredTimelineHeightsChanged",
 		self.preferredTimelineHeights.assignmentHeight,
@@ -818,8 +835,44 @@ end
 ---@param self EPTimeline
 ---@param otherTimeline EPTimelineSection
 ---@param needsFullUpdate boolean
-local function HandleTimelineSectionStaticDataChanged(self, otherTimeline, needsFullUpdate)
-	otherTimeline:SyncFromStaticData()
+local function HandleTimelineSectionSharedDataChanged(self, otherTimeline, needsFullUpdate)
+	otherTimeline:SyncFromSharedData()
+	local showCurrentTimeLabel = otherTimeline.sharedTimelineSectionData.verticalPositionLineVisible
+	local offset = otherTimeline.sharedTimelineSectionData.verticalPositionLineOffset
+	local padding = timelineLinePadding.x
+	local time = (offset - padding) * totalTimelineDuration / (otherTimeline.timelineFrame:GetWidth() - padding * 2)
+	if time < 0 or time > totalTimelineDuration then
+		showCurrentTimeLabel = false
+	end
+
+	if showCurrentTimeLabel then
+		self.currentTimeLabel.frame:Show()
+
+		local minutes = floor(time / 60)
+		local seconds = time % 60
+		self.currentTimeLabel:SetText(string.format("%d:%02d", minutes, seconds), 2)
+		self.currentTimeLabel:SetFrameWidthFromText()
+
+		local left = offset - self.currentTimeLabel.text:GetStringWidth() / 2.0
+		self.currentTimeLabel:SetPoint("LEFT", self.splitterFrame, "LEFT", left, 0)
+
+		for _, label in pairs(self.timelineLabels) do
+			local text = self.currentTimeLabel.text
+			if not (text:GetRight() <= label:GetLeft() or text:GetLeft() >= label:GetRight()) then
+				label:Hide()
+			elseif label.wantsToShow then
+				label:Show()
+			end
+		end
+	else
+		self.currentTimeLabel.frame:Hide()
+		for _, label in pairs(self.timelineLabels) do
+			if label.wantsToShow then
+				label:Show()
+			end
+		end
+	end
+
 	if needsFullUpdate == true then
 		local scroll, width = self.bossAbilityTimeline:GetHorizontalScrollAndWidth()
 		self.splitterScrollFrame:SetHorizontalScroll(scroll)
@@ -841,6 +894,7 @@ end
 ---@field contentFrame table|Frame
 ---@field horizontalScrollBar table|Frame
 ---@field addAssigneeDropdown EPDropdown
+---@field currentTimeLabel EPLabel
 ---
 ---@field assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, Frame>
@@ -905,11 +959,11 @@ local function OnAcquire(self)
 	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
 	self.assignmentTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
 	self.bossAbilityTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
-	self.bossAbilityTimeline:SetCallback("StaticDataChanged", function(_, _, needsFullUpdate)
-		HandleTimelineSectionStaticDataChanged(self, self.assignmentTimeline, needsFullUpdate)
+	self.bossAbilityTimeline:SetCallback("SharedDataChanged", function(_, _, needsFullUpdate)
+		HandleTimelineSectionSharedDataChanged(self, self.assignmentTimeline, needsFullUpdate)
 	end)
-	self.assignmentTimeline:SetCallback("StaticDataChanged", function(_, _, needsFullUpdate)
-		HandleTimelineSectionStaticDataChanged(self, self.bossAbilityTimeline, needsFullUpdate)
+	self.assignmentTimeline:SetCallback("SharedDataChanged", function(_, _, needsFullUpdate)
+		HandleTimelineSectionSharedDataChanged(self, self.bossAbilityTimeline, needsFullUpdate)
 	end)
 	self.assignmentTimeline:GetTimelineFrame():SetScript("OnMouseUp", function(frame, button)
 		HandleAssignmentTimelineFrameMouseUp(frame, button, self)
@@ -923,6 +977,13 @@ local function OnAcquire(self)
 	self.addAssigneeDropdown = AceGUI:Create("EPDropdown")
 	self.addAssigneeDropdown.frame:SetParent(self.contentFrame)
 	self.addAssigneeDropdown.frame:SetPoint("RIGHT", self.splitterScrollFrame, "LEFT", -10, 0)
+
+	self.currentTimeLabel = AceGUI:Create("EPLabel")
+	self.currentTimeLabel.text:SetTextColor(unpack(assignmentSelectOutlineColor))
+	self.currentTimeLabel:SetFontSize(18)
+	self.currentTimeLabel.frame:SetParent(self.splitterScrollFrame)
+	self.currentTimeLabel.frame:SetPoint("CENTER", self.splitterScrollFrame, "LEFT", 200, 0)
+	self.currentTimeLabel.frame:Hide()
 end
 
 ---@param self EPTimeline
@@ -932,6 +993,8 @@ local function OnRelease(self)
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
 	self.addAssigneeDropdown:Release()
+	self.currentTimeLabel:Release()
+	self.currentTimeLabel = nil
 	self:ClearSelectedAssignments()
 	self:ClearSelectedBossAbilities()
 	self.addAssigneeDropdown = nil
@@ -1161,10 +1224,7 @@ end
 
 ---@param self EPTimeline
 ---@param label EPLabel
-local function SetCurrentTimeLabel(self, label)
-	self.assignmentTimeline.currentTimeLabel = label
-	self.bossAbilityTimeline.currentTimeLabel = label
-end
+local function SetCurrentTimeLabel(self, label) end
 
 ---@param self EPTimeline
 ---@param assignmentHeight number

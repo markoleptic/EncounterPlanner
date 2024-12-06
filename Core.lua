@@ -1041,7 +1041,6 @@ function Private:CreateGUI()
 		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight
 	)
 	timeline:SetFullWidth(true)
-	timeline:SetCurrentTimeLabel(Private.mainFrame.currentTimeLabel)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText("Add Assignee")
