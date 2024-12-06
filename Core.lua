@@ -241,7 +241,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				end
 				assignment = Private.classes.CombatLogEventAssignment:New(assignment)
 				if combatLogEventSpellID and spellCount and minTime then
-					assignment.time = minTime
+					assignment.time = utilities.Round(minTime, 1)
 					assignment.combatLogEventSpellID = combatLogEventSpellID
 					assignment.spellCount = spellCount
 				end
@@ -261,7 +261,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				end
 				assignment = Private.classes.TimedAssignment:New(assignment)
 				if convertedTime then
-					assignment.time = convertedTime
+					assignment.time = utilities.Round(convertedTime, 1)
 				end
 				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
 			end
@@ -764,9 +764,6 @@ function Private:CreateGUI()
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
-		AddOn.db.profile.timelineHeight = Private.mainFrame:GetTimeline().frame:GetHeight()
-		AddOn.db.profile.assignmentTimelineHeight = Private.mainFrame:GetTimeline().assignmentTimeline.frame:GetHeight()
-		AddOn.db.profile.bossTimelineHeight = Private.mainFrame:GetTimeline().bossAbilityTimeline.frame:GetHeight()
 		Private.mainFrame:Release()
 		Private.mainFrame = nil
 		if Private.assignmentEditor then
@@ -1032,6 +1029,17 @@ function Private:CreateGUI()
 		end
 		Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, minHeight + heightDiff, nil, maxHeight + heightDiff)
 	end)
+	if not AddOn.db.profile.preferredTimelineHeights then
+		AddOn.db.profile.preferredTimelineHeights = timeline.preferredTimelineHeights
+	end
+	timeline:SetCallback("PreferredTimelineHeightsChanged", function(_, _, assignmentHeight, bossAbilityBarHeight)
+		AddOn.db.profile.preferredTimelineHeights.assignmentHeight = assignmentHeight
+		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight = bossAbilityBarHeight
+	end)
+	timeline:SetPreferredTimelineHeights(
+		AddOn.db.profile.preferredTimelineHeights.assignmentHeight,
+		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight
+	)
 	timeline:SetFullWidth(true)
 	timeline:SetCurrentTimeLabel(Private.mainFrame.currentTimeLabel)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
@@ -1055,15 +1063,6 @@ function Private:CreateGUI()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	interfaceUpdater.UpdateAllAssignments(true, bossName)
-	if
-		AddOn.db.profile.timelineHeight
-		and AddOn.db.profile.assignmentTimelineHeight
-		and AddOn.db.profile.bossTimelineHeight
-	then
-		timeline.assignmentTimeline:SetHeight(AddOn.db.profile.assignmentTimelineHeight)
-		timeline.bossAbilityTimeline:SetHeight(AddOn.db.profile.bossTimelineHeight)
-		timeline:SetHeight(AddOn.db.profile.timelineHeight)
-	end
 	if AddOn.db.profile.windowSize then
 		Private.mainFrame:SetWidth(AddOn.db.profile.windowSize.x)
 		Private.mainFrame:SetHeight(AddOn.db.profile.windowSize.y)
@@ -1072,6 +1071,7 @@ function Private:CreateGUI()
 	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
 	Private.mainFrame.frame:ClearAllPoints()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+	Private.mainFrame:DoLayout()
 	timeline:UpdateTimeline()
 end
 
@@ -1193,6 +1193,3 @@ function AddOn:SlashCommand(input)
 		end
 	end
 end
-
--- Loads all the set options after game loads and player enters world
-function AddOn:PLAYER_ENTERING_WORLD(eventName) end
