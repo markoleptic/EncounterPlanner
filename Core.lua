@@ -290,9 +290,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	elseif dataType == "SpellAssignment" then
 		local spellInfo = GetSpellInfo(value)
 		if spellInfo then
-			assignment.spellInfo.iconID = spellInfo.iconID
-			assignment.spellInfo.spellID = spellInfo.spellID
-			assignment.spellInfo.name = spellInfo.name
+			assignment.spellInfo = spellInfo
 		end
 	elseif dataType == "AssigneeType" then
 		if value ~= "Individual" then
@@ -583,7 +581,12 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
 		if nameAndSpell.spellID then
-			assignment.spellInfo.spellID = nameAndSpell.spellID
+			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
+			if spellInfo then
+				assignment.spellInfo = spellInfo
+			else
+				assignment.spellInfo.spellID = nameAndSpell.spellID
+			end
 		end
 		local createCombatLogAssignment = true -- TODO: Allow user to choose
 		if createCombatLogAssignment then

@@ -49,7 +49,7 @@ Private.classes = {}
 ---@field text string The originally parsed portion of the assignment containing a {text}{/text} block
 ---@field textWithIconReplacements string Text with icons formatted back in
 ---@field strWithIconReplacements string Line with icons formatted back in, similar to how it appears in the note
----@field spellInfo { spellID: integer, name: string, iconID: integer } The spell info for the assignment
+---@field spellInfo SpellInfo The spell info for the assignment
 ---@field targetName string|nil The target's name if the assignment has a '@'
 Private.classes.Assignment = {
 	assigneeNameOrRole = "",
@@ -57,7 +57,7 @@ Private.classes.Assignment = {
 	text = "",
 	textWithIconReplacements = "",
 	strWithIconReplacements = "",
-	spellInfo = { spellID = 0, name = "", iconID = 0 },
+	spellInfo = { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
 	targetName = "",
 	uniqueID = 0,
 	generalText = "",

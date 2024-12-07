@@ -453,9 +453,10 @@ local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID, 
 		local targetName = str:match(targetNameRegex) or ""
 		targetName = targetName:gsub(doublePipeRegex, "|"):gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
 
-		local spellinfo = { spellID = 0, name = "", iconID = 0 }
+		local spellInfo =
+			{ name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 }
 		local strWithoutSpell = str:gsub(spellIDPlaceholderRegex, function(rest, id)
-			spellinfo = GetSpellInfo(id)
+			spellInfo = GetSpellInfo(id)
 			return rest
 		end)
 
@@ -489,7 +490,7 @@ local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID, 
 			text = text,
 			textWithIconReplacements = textWithIconReplacements,
 			strWithIconReplacements = strWithIconReplacements,
-			spellInfo = spellinfo,
+			spellInfo = spellInfo,
 			targetName = targetName,
 			generalText = generalText,
 			generalTextSpellID = generalTextSpellID,
