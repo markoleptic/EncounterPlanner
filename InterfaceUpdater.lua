@@ -58,7 +58,9 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
 		end
 		local bossName =
 			bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-		InterfaceUpdater.UpdateAllAssignments(true, bossName)
+		if bossName then
+			InterfaceUpdater.UpdateAllAssignments(true, bossName)
+		end
 	end
 end
 
@@ -68,7 +70,9 @@ local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
 	local bossName =
 		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	InterfaceUpdater.UpdateAllAssignments(true, bossName)
+	if bossName then
+		InterfaceUpdater.UpdateAllAssignments(true, bossName)
+	end
 end
 
 -- Clears and repopulates the boss ability container based on the boss name.
@@ -239,7 +243,7 @@ end
 -- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 -- dropdown.
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
----@param bossName string? The boss to pass to the assignment sort function
+---@param bossName string The boss to pass to the assignment sort function
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossName)
 	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),

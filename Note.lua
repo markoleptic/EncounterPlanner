@@ -652,60 +652,63 @@ end
 function Private:ExportNote(note)
 	local bossName =
 		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
-	local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
-	sort(timelineAssignments, function(a, b)
-		if a.startTime == b.startTime then
-			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-		end
-		return a.startTime < b.startTime
-	end)
+	if bossName then
+		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
+		sort(timelineAssignments, function(a, b)
+			if a.startTime == b.startTime then
+				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+			end
+			return a.startTime < b.startTime
+		end)
 
-	local stringTable = {}
+		local stringTable = {}
 
-	local lastNoteContentIndex = nil
-	for index, line in ipairs(note.content) do
-		local time, options = ParseTime(line)
-		if time and options then
-			lastNoteContentIndex = index
-		else
-			tinsert(stringTable, line)
-		end
-	end
-
-	local inStringTable = {}
-	for _, timelineAssignment in ipairs(timelineAssignments) do
-		local assignment = timelineAssignment.assignment
-		local timeAndOptionsString, assignmentString = "", ""
-		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
-			assignmentString = CreateAssignmentExportString(assignment, note.roster)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
-			assignmentString = CreateAssignmentExportString(assignment, note.roster)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
-			-- Not yet supported
-		end
-		if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
-			local stringTableIndex = inStringTable[timeAndOptionsString]
-			if stringTableIndex then
-				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+		local lastNoteContentIndex = nil
+		for index, line in ipairs(note.content) do
+			local time, options = ParseTime(line)
+			if time and options then
+				lastNoteContentIndex = index
 			else
-				tinsert(stringTable, timeAndOptionsString .. assignmentString)
-				inStringTable[timeAndOptionsString] = #stringTable
+				tinsert(stringTable, line)
 			end
 		end
-	end
 
-	if lastNoteContentIndex then
-		for index = lastNoteContentIndex + 1, #note.content do
-			tinsert(stringTable, note.content[index])
+		local inStringTable = {}
+		for _, timelineAssignment in ipairs(timelineAssignments) do
+			local assignment = timelineAssignment.assignment
+			local timeAndOptionsString, assignmentString = "", ""
+			if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
+				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
+				assignmentString = CreateAssignmentExportString(assignment, note.roster)
+			elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
+				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
+				assignmentString = CreateAssignmentExportString(assignment, note.roster)
+			elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
+				-- Not yet supported
+			end
+			if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
+				local stringTableIndex = inStringTable[timeAndOptionsString]
+				if stringTableIndex then
+					stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+				else
+					tinsert(stringTable, timeAndOptionsString .. assignmentString)
+					inStringTable[timeAndOptionsString] = #stringTable
+				end
+			end
 		end
-	end
 
-	if #stringTable == 0 then
-		return nil
+		if lastNoteContentIndex then
+			for index = lastNoteContentIndex + 1, #note.content do
+				tinsert(stringTable, note.content[index])
+			end
+		end
+
+		if #stringTable == 0 then
+			return nil
+		end
+		return concat(stringTable, "\n")
 	end
-	return concat(stringTable, "\n")
+	return nil
 end
 
 -- Clears the current assignments and repopulates it. Updates the roster.

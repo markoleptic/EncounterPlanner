@@ -389,7 +389,7 @@ end
 
 -- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
 ---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
----@param bossName string? The boss to obtain cast times from if the assignment requires it
+---@param bossName string The boss to obtain cast times from if the assignment requires it
 ---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
 function Utilities.CreateTimelineAssignments(assignments, bossName)
 	local timelineAssignments = {}
@@ -519,7 +519,7 @@ end
 ---@param assignments table<integer, Assignment> Assignments to sort
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
----@param bossName string? Used to get boss timers to set the proper timeline assignment start time for combat log assignments
+---@param bossName string Used to get boss timers to set the proper timeline assignment start time for combat log assignments
 ---@return table<integer, TimelineAssignment>
 function Utilities.SortAssignments(assignments, roster, assignmentSortType, bossName)
 	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, bossName)
@@ -610,7 +610,7 @@ end
 
 -- Updates a timeline assignment's start time.
 ---@param timelineAssignment TimelineAssignment
----@param bossName string? The boss to obtain cast times from if the assignment requires it
+---@param bossName string The boss to obtain cast times from if the assignment requires it
 ---@return boolean, string|nil -- Whether or not the update succeeded, optional warning message
 function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossName)
 	local assignment = timelineAssignment.assignment

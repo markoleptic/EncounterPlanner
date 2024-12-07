@@ -418,8 +418,8 @@ local function HandleImportNoteFromString(importType)
 	if bossName then
 		interfaceUpdater.UpdateBossAbilityList(bossName, true)
 		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+		interfaceUpdater.UpdateAllAssignments(true, bossName)
 	end
-	interfaceUpdater.UpdateAllAssignments(true, bossName)
 end
 
 local function CreateImportEditBox(importType)
@@ -491,8 +491,8 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	end
 	if bossName then
 		interfaceUpdater.UpdateBoss(bossName, true)
+		interfaceUpdater.UpdateAllAssignments(true, bossName)
 	end
-	interfaceUpdater.UpdateAllAssignments(true, bossName)
 	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
@@ -622,7 +622,7 @@ local function HandleCreateNewNoteButtonClicked()
 		notes[newNoteName].bossName = bossDef.name
 	end
 
-	interfaceUpdater.UpdateAllAssignments(true) -- Does not need boss bc empty note
+	interfaceUpdater.UpdateAllAssignments(true, notes[newNoteName].bossName)
 
 	local noteDropdown = Private.mainFrame:GetNoteDropdown()
 	if noteDropdown then
@@ -708,8 +708,8 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 			end
 			if bossName then
 				interfaceUpdater.UpdateBoss(bossName, true)
+				interfaceUpdater.UpdateAllAssignments(true, bossName)
 			end
-			interfaceUpdater.UpdateAllAssignments(true, bossName)
 		elseif value == "FromStringOverwrite" or value == "FromStringNew" then
 			CreateImportEditBox(value)
 		end
