@@ -36,6 +36,7 @@ local UnitName = UnitName
 local wipe = wipe
 
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
+local postOptionsPreDashNoSpellRegex = "}(.-) %-"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
 local doublePipeRegex = "||"
@@ -578,6 +579,8 @@ function Private:ParseNote(note)
 				if not bossName and spellIDNumber then
 					bossName = bossUtilities.GetBossNameFromSpellID(spellIDNumber)
 				end
+			else
+				generalText = line:match(postOptionsPreDashNoSpellRegex)
 			end
 			local inputs = CreateAssignmentsFromLine(line, generalText, spellIDNumber, classColoredNameTable)
 			self:ProcessOptions(inputs, note.assignments, time, options)
