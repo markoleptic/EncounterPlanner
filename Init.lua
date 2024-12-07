@@ -251,15 +251,17 @@ end
 ---@param classTable table The class table to collect fields from
 ---@param validFields table The table to populate with valid fields
 local function CollectValidFields(classTable, validFields, visited)
-	if visited[classTable] then
-		return
+	for k, _ in pairs(classTable) do
+		if k ~= "__index" then
+			validFields[k] = true
+		end
 	end
-	visited[classTable] = true
-	for key, _ in pairs(classTable) do
-		validFields[key] = true
-	end
-	if classTable.__index and type(classTable.__index) == "table" then
-		CollectValidFields(classTable.__index, validFields, visited)
+	local mt = getmetatable(classTable)
+	if mt and mt.__index and type(mt.__index) == "table" then
+		if not visited[mt.__index] then
+			visited[mt.__index] = true
+			CollectValidFields(mt.__index, validFields, visited)
+		end
 	end
 end
 
@@ -270,9 +272,11 @@ local function RemoveInvalidFields(classTable, o)
 	local validFields = {}
 	local visited = {}
 	CollectValidFields(classTable, validFields, visited)
-	for key, _ in pairs(o) do
-		if not validFields[key] then
-			o[key] = nil
+	for k, _ in pairs(o) do
+		if k ~= "__index" and k ~= "New" then
+			if not validFields[k] then
+				o[k] = nil
+			end
 		end
 	end
 end
@@ -301,21 +305,33 @@ function Private.classes.Assignment:New(o)
 end
 
 ---@return CombatLogEventAssignment
-function Private.classes.CombatLogEventAssignment:New(o)
+function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
-	return CreateNewInstance(self, o)
+	local instance = CreateNewInstance(self, o)
+	if removeInvalidFields then
+		RemoveInvalidFields(self, instance)
+	end
+	return instance
 end
 
 ---@return TimedAssignment
-function Private.classes.TimedAssignment:New(o)
+function Private.classes.TimedAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
-	return CreateNewInstance(self, o)
+	local instance = CreateNewInstance(self, o)
+	if removeInvalidFields then
+		RemoveInvalidFields(self, instance)
+	end
+	return instance
 end
 
 ---@return PhasedAssignment
-function Private.classes.PhasedAssignment:New(o)
+function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
-	return CreateNewInstance(self, o)
+	local instance = CreateNewInstance(self, o)
+	if removeInvalidFields then
+		RemoveInvalidFields(self, instance)
+	end
+	return instance
 end
 
 -- Creates a timeline assignment from an assignment.

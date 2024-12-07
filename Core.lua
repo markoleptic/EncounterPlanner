@@ -239,7 +239,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 					combatLogEventSpellID, spellCount, minTime =
 						utilities.FindNearestCombatLogEvent(assignment.time, GetCurrentBossName(), value)
 				end
-				assignment = Private.classes.CombatLogEventAssignment:New(assignment)
+				assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
 				if combatLogEventSpellID and spellCount and minTime then
 					assignment.time = utilities.Round(minTime, 1)
 					assignment.combatLogEventSpellID = combatLogEventSpellID
@@ -259,7 +259,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 						assignment.spellCount
 					)
 				end
-				assignment = Private.classes.TimedAssignment:New(assignment)
+				assignment = Private.classes.TimedAssignment:New(assignment, true)
 				if convertedTime then
 					assignment.time = utilities.Round(convertedTime, 1)
 				end
@@ -267,7 +267,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			end
 		elseif value == "Boss Phase" then
 			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
-				assignment = Private.classes.PhasedAssignment:New(assignment)
+				assignment = Private.classes.PhasedAssignment:New(assignment, true)
 				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
 			end
 		end
