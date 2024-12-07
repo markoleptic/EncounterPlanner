@@ -81,14 +81,30 @@ end
 ---@param bossName string
 ---@param combatLogEventSpellID integer
 ---@param spellCount integer
+---@param combatLogEventType CombatLogEventType
 ---@return number|nil
-function Utilities.ConvertCombatLogEventTimeToAbsoluteTime(time, bossName, combatLogEventSpellID, spellCount)
+function Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+	time,
+	bossName,
+	combatLogEventSpellID,
+	spellCount,
+	combatLogEventType
+)
 	if
 		absoluteSpellCastStartTables[bossName]
 		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID]
 		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount]
 	then
-		return absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount] + time
+		local adjustedTime = absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount] + time
+		local ability = bossUtilities.FindBossAbility(combatLogEventSpellID)
+		if ability then
+			if combatLogEventType == "SAR" then
+				adjustedTime = adjustedTime + ability.duration + ability.castTime
+			elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+				adjustedTime = adjustedTime + ability.castTime
+			end
+		end
+		return adjustedTime
 	end
 	return nil
 end

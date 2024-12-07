@@ -256,7 +256,8 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 						assignment.time,
 						GetCurrentBossName(),
 						assignment.combatLogEventSpellID,
-						assignment.spellCount
+						assignment.spellCount,
+						assignment.combatLogEventType
 					)
 				end
 				assignment = Private.classes.TimedAssignment:New(assignment, true)
