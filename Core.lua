@@ -386,6 +386,170 @@ local function CreateAssignmentEditor()
 	return assignmentEditor
 end
 
+local function CreateOptionsMenu()
+	local optionsMenu = AceGUI:Create("EPOptions")
+	optionsMenu.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+	optionsMenu.frame:SetFrameLevel(25)
+	optionsMenu:SetLayout("EPVerticalLayout")
+	optionsMenu:SetCallback("OnRelease", function()
+		Private.optionsMenu = nil
+	end)
+
+	local options = {
+		{
+			label = "Pan",
+			description = "Pans the timeline to the left and right when holding this key.",
+			category = "Timeline",
+			values = {
+				{ itemValue = "LeftButton", text = "Left Click" },
+				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
+				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+			},
+			get = function()
+				return AddOn.db.profile.keyBindings.pan
+			end,
+			set = function(key)
+				AddOn.db.profile.keyBindings.pan = key
+			end,
+			validate = function(key)
+				if
+					AddOn.db.profile.keyBindings.editAssignment == key
+					or AddOn.db.profile.keyBindings.newAssignment == key
+				then
+					return false, AddOn.db.profile.keyBindings.pan
+				end
+				return true
+			end,
+		},
+		{
+			label = "Scroll",
+			description = "Scrolls the timeline up and down.",
+			category = "Timeline",
+			values = {
+				{ itemValue = "MouseScroll", text = "Mouse Scroll" },
+				{ itemValue = "ALT-MouseScroll", text = "Alt + Mouse Scroll" },
+				{ itemValue = "CTRL-MouseScroll", text = "Ctrl + Mouse Scroll" },
+				{ itemValue = "SHIFT-MouseScroll", text = "Shift + Mouse Scroll" },
+			},
+			get = function()
+				return AddOn.db.profile.keyBindings.scroll
+			end,
+			set = function(key)
+				AddOn.db.profile.keyBindings.scroll = key
+			end,
+			validate = function(key)
+				if AddOn.db.profile.keyBindings.zoom == key then
+					return false, AddOn.db.profile.keyBindings.scroll
+				end
+				return true
+			end,
+		},
+		{
+			label = "Zoom",
+			description = "Zooms in horizontally on the timeline.",
+			category = "Timeline",
+			values = {
+				{ itemValue = "MouseScroll", text = "Mouse Scroll" },
+				{ itemValue = "ALT-MouseScroll", text = "Alt + Mouse Scroll" },
+				{ itemValue = "CTRL-MouseScroll", text = "Ctrl + Mouse Scroll" },
+				{ itemValue = "SHIFT-MouseScroll", text = "Shift + Mouse Scroll" },
+			},
+			get = function()
+				return AddOn.db.profile.keyBindings.zoom
+			end,
+			set = function(key)
+				AddOn.db.profile.keyBindings.zoom = key
+			end,
+			validate = function(key)
+				if AddOn.db.profile.keyBindings.scroll == key then
+					return false, AddOn.db.profile.keyBindings.zoom
+				end
+				return true
+			end,
+		},
+		{
+			label = "Add Assignment",
+			description = "Creates a new assignment when this key is pressed when hovering over the timeline.",
+			category = "Assignment",
+			values = {
+				{ itemValue = "LeftButton", text = "Left Click" },
+				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
+				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+			},
+			get = function(_)
+				return AddOn.db.profile.keyBindings.newAssignment
+			end,
+			set = function(key)
+				AddOn.db.profile.keyBindings.newAssignment = key
+			end,
+			validate = function(key)
+				if AddOn.db.profile.keyBindings.pan == key then
+					return false, AddOn.db.profile.keyBindings.newAssignment
+				end
+				return true
+			end,
+		},
+		{
+			label = "Edit Assignment",
+			description = "Opens the assignment editor when this key is pressed when hovering over an assignment spell icon.",
+			category = "Assignment",
+			values = {
+				{ itemValue = "LeftButton", text = "Left Click" },
+				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
+				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+			},
+			get = function()
+				return AddOn.db.profile.keyBindings.editAssignment
+			end,
+			set = function(key)
+				AddOn.db.profile.keyBindings.editAssignment = key
+			end,
+			validate = function(key)
+				if AddOn.db.profile.keyBindings.pan == key then
+					return false, AddOn.db.profile.keyBindings.editAssignment
+				end
+				return true
+			end,
+		},
+	}
+	optionsMenu:AddOptionTab("Keybindings", options, { "Assignment", "Timeline" })
+	optionsMenu:SetCurrentTab("Keybindings")
+	local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
+	optionsMenu.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+	yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
+	optionsMenu.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+	optionsMenu:DoLayout()
+
+	return optionsMenu
+end
+
 local function HandleImportNoteFromString(importType)
 	local text = Private.importEditBox:GetText()
 	local textTable = utilities.SplitStringIntoTable(text)
@@ -765,6 +929,11 @@ function Private:CreateGUI()
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
+	Private.mainFrame:SetCallback("SettingsButtonClicked", function()
+		if not Private.optionsMenu then
+			Private.optionsMenu = CreateOptionsMenu()
+		end
+	end)
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
@@ -782,6 +951,9 @@ function Private:CreateGUI()
 		if Private.rosterEditor then
 			Private.rosterEditor:Release()
 		end
+		if Private.optionsMenu then
+			Private.optionsMenu:Release()
+		end
 	end)
 	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
@@ -796,6 +968,9 @@ function Private:CreateGUI()
 		end
 		if Private.rosterEditor then
 			Private.rosterEditor:Release()
+		end
+		if Private.optionsMenu then
+			Private.optionsMenu:Release()
 		end
 	end)
 	Private.mainFrame:SetCallback("CollapseAllButtonClicked", function()
@@ -1045,6 +1220,7 @@ function Private:CreateGUI()
 		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight
 	)
 	timeline:SetFullWidth(true)
+	timeline:SetKeyBindings(AddOn.db.profile.keyBindings)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText("Add Assignee")

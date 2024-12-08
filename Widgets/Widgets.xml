@@ -18,4 +18,5 @@
     <Script file="EPRosterEntry.lua"/>
     <Script file="EPRosterEditor.lua"/>
 	<Script file="EPMainFrame.lua"/>
+    <Script file="EPOptions.lua"/>
 </Ui>

@@ -32,6 +32,7 @@ local titleBarBackdrop = {
 ---@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
+---@field settingsButton EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
 ---@field children table<integer, EPWidgetType|EPContainerType>
@@ -64,6 +65,18 @@ local function OnAcquire(self)
 		self:Fire("CloseButtonClicked")
 	end)
 
+	self.settingsButton = AceGUI:Create("EPButton")
+	self.settingsButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-settings-96]])
+	self.settingsButton:SetIconPadding(2, 2)
+	self.settingsButton:SetWidth(buttonSize)
+	self.settingsButton:SetHeight(buttonSize)
+	self.settingsButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.settingsButton.frame:SetParent(self.frame)
+	self.settingsButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT", -edgeSize, 0)
+	self.settingsButton:SetCallback("Clicked", function()
+		self:Fire("SettingsButtonClicked")
+	end)
+
 	self.collapseAllButton = AceGUI:Create("EPButton")
 	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
 	self.collapseAllButton:SetIconPadding(2, 2)
@@ -94,6 +107,9 @@ local function OnRelease(self)
 	if self.closeButton then
 		self.closeButton:Release()
 	end
+	if self.settingsButton then
+		self.settingsButton:Release()
+	end
 	if self.collapseAllButton then
 		self.collapseAllButton:Release()
 	end
@@ -101,6 +117,7 @@ local function OnRelease(self)
 		self.expandAllButton:Release()
 	end
 	self.closeButton = nil
+	self.settingsButton = nil
 	self.collapseAllButton = nil
 	self.expandAllButton = nil
 end

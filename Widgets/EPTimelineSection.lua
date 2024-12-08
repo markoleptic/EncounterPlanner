@@ -6,7 +6,6 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local floor = math.floor
 local GetCursorPosition = GetCursorPosition
-local IsControlKeyDown = IsControlKeyDown
 local max = math.max
 local min = math.min
 
@@ -125,11 +124,13 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 		return
 	end
 
-	local controlKeyDown = IsControlKeyDown()
+	local validScroll = self.IsValidKeyCombination(self.keyBindings.scroll, "MouseScroll")
+	local validZoom = self.IsValidKeyCombination(self.keyBindings.zoom, "MouseScroll")
+
 	local scrollFrame = self.scrollFrame
 	local timelineFrame = self.timelineFrame
 
-	if not controlKeyDown or updateBoth then
+	if validScroll or updateBoth then
 		local scrollFrameHeight = scrollFrame:GetHeight()
 		local timelineFrameHeight = timelineFrame:GetHeight()
 
@@ -149,7 +150,7 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	end
 
-	if controlKeyDown or updateBoth then
+	if validZoom or updateBoth then
 		local timelineDuration = self.totalTimelineDuration
 		local zoomFactor = self.sharedTimelineSectionData.zoomFactor
 		local visibleDuration = timelineDuration / zoomFactor
@@ -230,6 +231,11 @@ end
 
 local function HandleTimelineFrameDragStart(frame, button)
 	local self = frame.obj --[[@as EPTimelineSection]]
+
+	if not self.IsValidKeyCombination(self.keyBindings.pan, button) then
+		return
+	end
+
 	self.timelineFrameIsDragging = true
 	local x, _ = GetCursorPosition()
 	self.timelineFrameDragStartX = x
@@ -343,6 +349,8 @@ end
 ---@field textureHeight number
 ---@field listPadding number
 ---@field listContainer EPContainer
+---@field keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
+---@field IsValidKeyCombination fun(keyBinding:string, mouseButton:string): boolean
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -378,6 +386,8 @@ local function OnRelease(self)
 	self.listContainer = nil
 	self.horizontalScrollBar = nil
 	self.sharedTimelineSectionData = nil
+	self.keyBindings = nil
+	self.IsValidKeyCombination = nil
 end
 
 ---@param self EPTimelineSection
@@ -523,7 +533,7 @@ local function Constructor()
 	timelineFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	timelineFrame:SetSize(frameWidth - scrollBarWidth - paddingBetweenTimelineAndScrollBar, frameHeight)
 	timelineFrame:EnableMouse(true)
-	timelineFrame:RegisterForDrag("LeftButton")
+	timelineFrame:RegisterForDrag("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
 	timelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 	timelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
 	timelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)

@@ -407,6 +407,13 @@ local defaults = {
 		notes = {},
 		sharedRoster = {},
 		lastOpenNote = "",
+		keyBindings = {
+			pan = "LeftButton",
+			zoom = "CTRL-MouseScroll",
+			scroll = "MouseScroll",
+			editAssignment = "RightButton",
+			newAssignment = "RightButton",
+		},
 	},
 }
 
@@ -424,6 +431,7 @@ Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
 Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
+Private.optionsMenu = nil --[[@as EPOptions]]
 
 LSM:Register(
 	"font",

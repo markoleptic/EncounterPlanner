@@ -11,9 +11,12 @@ local GetCursorPosition = GetCursorPosition
 local GetSpellTexture = C_Spell.GetSpellTexture
 local hugeNumber = math.huge
 local ipairs = ipairs
+local IsAltKeyDown = IsAltKeyDown
+local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
 local max = math.max
 local min = math.min
 local pairs = pairs
+local split = string.split
 local unpack = unpack
 
 local frameWidth = 900
@@ -53,14 +56,6 @@ local colors = {
 	{ 184, 51, 255, 1 },
 }
 
-local currentTimeBackdrop = {
-	bgFile = nil,
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
-}
-
 local thumbPadding = { x = 2, y = 2 }
 local timelineLinePadding = { x = 25, y = 25 }
 local thumbOffsetWhenThumbClicked = 0
@@ -77,6 +72,39 @@ local function ResetLocalVariables()
 	thumbWidthWhenThumbClicked = 0
 	thumbIsDragging = false
 	totalTimelineDuration = 0
+end
+
+---@param keyBinding string
+---@param mouseButton string
+---@return boolean
+local function IsValidKeyCombination(keyBinding, mouseButton)
+	local modifier, key = split("-", keyBinding)
+	if modifier and key then
+		if modifier == "CTRL" then
+			if not IsControlKeyDown() then
+				return false
+			end
+		elseif modifier == "SHIFT" then
+			if not IsLeftShiftKeyDown() and not IsRightShiftKeyDown() then
+				return false
+			end
+		elseif modifier == "ALT" then
+			if not IsAltKeyDown() then
+				return false
+			end
+		end
+		if mouseButton ~= key then
+			return false
+		end
+	else
+		if IsControlKeyDown() or IsLeftShiftKeyDown() or IsRightShiftKeyDown() or IsAltKeyDown() then
+			return false
+		end
+		if mouseButton ~= keyBinding then
+			return false
+		end
+	end
+	return true
 end
 
 local function HandleTimelineTooltipOnUpdate(frame, elapsed)
@@ -106,17 +134,15 @@ local function HandleIconLeave(_, _)
 end
 
 local function HandleAssignmentMouseDown(frame, mouseButton, epTimeline)
-	if mouseButton ~= "LeftButton" then
-		return
-	end
 	-- TODO: Implement dragging an assignment spell icon to change the time
 end
 
 ---@param epTimeline EPTimeline
 local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
-	if mouseButton ~= "RightButton" then
+	if not IsValidKeyCombination(epTimeline.keyBindings.editAssignment, mouseButton) then
 		return
 	end
+
 	if frame.assignmentIndex then
 		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
 	end
@@ -910,6 +936,7 @@ end
 ---@field barDimensions {min: integer, max:integer, step:number}
 ---@field assignmentDimensions {min: integer, max:integer, step:number}
 ---@field preferredTimelineHeights {assignmentHeight: number, bossAbilityBarHeight: number}
+---@field keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
 
 ---@param self EPTimeline
 local function OnAcquire(self)
@@ -959,6 +986,8 @@ local function OnAcquire(self)
 	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
 	self.assignmentTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
 	self.bossAbilityTimeline:SetHorizontalScrollBarReference(self.horizontalScrollBar)
+	self.assignmentTimeline.IsValidKeyCombination = IsValidKeyCombination
+	self.bossAbilityTimeline.IsValidKeyCombination = IsValidKeyCombination
 	self.bossAbilityTimeline:SetCallback("SharedDataChanged", function(_, _, needsFullUpdate)
 		HandleTimelineSectionSharedDataChanged(self, self.assignmentTimeline, needsFullUpdate)
 	end)
@@ -1009,6 +1038,7 @@ local function OnRelease(self)
 	self.allowHeightResizing = nil
 	self.barDimensions = nil
 	self.assignmentDimensions = nil
+	self.keyBindings = nil
 	ResetLocalVariables()
 end
 
@@ -1289,6 +1319,14 @@ local function SetAllowHeightResizing(self, allow)
 	end
 end
 
+---@param self EPTimeline
+---@param keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
+local function SetKeyBindings(self, keyBindings)
+	self.keyBindings = keyBindings
+	self.assignmentTimeline.keyBindings = keyBindings
+	self.bossAbilityTimeline.keyBindings = keyBindings
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -1358,6 +1396,7 @@ local function Constructor()
 		SetAllowHeightResizing = SetAllowHeightResizing,
 		SetMaxAssignmentHeight = SetMaxAssignmentHeight,
 		SetPreferredTimelineHeights = SetPreferredTimelineHeights,
+		SetKeyBindings = SetKeyBindings,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

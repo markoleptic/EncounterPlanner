@@ -56,6 +56,9 @@
 ---@alias EPTimelineSectionType
 ---|"EPTimelineSection"
 
+---@alias EPOptionsType
+---|"EPOptions"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -76,6 +79,7 @@
 ---| EPMainFrameType
 ---| EPBaseContainerType
 ---| EPRosterEditorType
+---| EPOptionsType
 
 ---@class AceGUI-3.0
 local AceGUI = {}
@@ -156,6 +160,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPTimelineSectionType
 ---@return EPTimelineSection
+function AceGUI:Create(type) end
+
+---@param type EPOptionsType
+---@return EPOptions
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
