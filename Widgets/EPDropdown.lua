@@ -32,23 +32,23 @@ local sliderBackdrop = {
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
-local function fixlevels(parent, ...)
+local function FixLevels(parent, ...)
 	local i = 1
 	local child = select(i, ...)
 	while child do
 		child:SetFrameLevel(parent:GetFrameLevel() + 1)
-		fixlevels(child, child:GetChildren())
+		FixLevels(child, child:GetChildren())
 		i = i + 1
 		child = select(i, ...)
 	end
 end
 
-local function fixstrata(strata, parent, ...)
+local function FixStrata(strata, parent, ...)
 	local i = 1
 	local child = select(i, ...)
 	parent:SetFrameStrata(strata)
 	while child do
-		fixstrata(strata, child, child:GetChildren())
+		FixStrata(strata, child, child:GetChildren())
 		i = i + 1
 		child = select(i, ...)
 	end
@@ -68,7 +68,7 @@ do
 	---@field type string
 	---@field count integer
 	---@field maxHeight number
-	---@field scrollStatus { scrollvalue: number, offset: number}
+	---@field scrollStatus { scrollValue: number, offset: number}
 	---@field items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
 	---@field hideOnLeave boolean
 	---@field dropdownItemHeight number
@@ -170,7 +170,7 @@ do
 			height = height + self.dropdownItemHeight
 		end
 		itemFrame:SetHeight(height)
-		fixstrata("TOOLTIP", frame, frame:GetChildren())
+		FixStrata("TOOLTIP", frame, frame:GetChildren())
 		frame:Show()
 		self:Fire("OnOpen")
 	end
@@ -229,18 +229,18 @@ do
 	local function SetScroll(self, value)
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
-		local height, viewheight = frame:GetHeight(), child:GetHeight()
+		local height, viewHeight = frame:GetHeight(), child:GetHeight()
 		local offset
-		if viewheight <= (height + 0.5) then
+		if viewHeight <= (height + 0.5) then
 			offset = 0
 		else
-			offset = floor((viewheight - height) / 1000 * value)
+			offset = floor((viewHeight - height) / 1000 * value)
 		end
 		child:ClearAllPoints()
 		child:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, offset)
 		child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", self.slider:IsShown() and -12 or 0, offset)
 		status.offset = offset
-		status.scrollvalue = value
+		status.scrollValue = value
 	end
 
 	---@param self EPDropdownPullout
@@ -248,17 +248,17 @@ do
 	local function MoveScroll(self, value)
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
-		local height, viewheight = frame:GetHeight(), child:GetHeight()
-		if viewheight <= (height + 0.5) then
+		local height, viewHeight = frame:GetHeight(), child:GetHeight()
+		if viewHeight <= (height + 0.5) then
 			self.slider:Hide()
 		else
 			self.slider:Show()
-			local diff = height - viewheight
+			local diff = height - viewHeight
 			local delta = 1
 			if value < 0 then
 				delta = -1
 			end
-			self.slider:SetValue(min(max(status.scrollvalue + delta * (1000 / (diff / 45)), 0), 1000))
+			self.slider:SetValue(min(max(status.scrollValue + delta * (1000 / (diff / 45)), 0), 1000))
 		end
 	end
 
@@ -266,15 +266,15 @@ do
 	local function FixScroll(self)
 		local status = self.scrollStatus
 		local frame, child = self.scrollFrame, self.itemFrame
-		local height, viewheight = frame:GetHeight(), child:GetHeight()
+		local height, viewHeight = frame:GetHeight(), child:GetHeight()
 		local offset = status.offset or 0
-		if viewheight <= (height + 0.5) then
+		if viewHeight <= (height + 0.5) then
 			self.slider:Hide()
 			child:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, offset)
 			self.slider:SetValue(0)
 		else
 			self.slider:Show()
-			local value = (offset / (viewheight - height) * 1000)
+			local value = (offset / (viewHeight - height) * 1000)
 			if value > 1000 then
 				value = 1000
 			end
@@ -358,7 +358,7 @@ do
 			count = count,
 			maxHeight = defaultMaxHeight,
 			scrollStatus = {
-				scrollvalue = 0,
+				scrollValue = 0,
 			},
 			items = {},
 		}
@@ -378,7 +378,7 @@ end
 
 do
 	---@class EPDropdown : AceGUIWidget
-	---@field frame table|BackdropTemplate|Frame
+	---@field frame table|Frame
 	---@field dropdown table|Frame
 	---@field text FontString
 	---@field slider table|BackdropTemplate|Slider
@@ -527,7 +527,7 @@ do
 		self.pullout:SetCallback("OnClose", HandlePulloutClose)
 		self.pullout:SetCallback("OnOpen", HandlePulloutOpen)
 		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
-		fixlevels(self.pullout.frame, self.pullout.frame:GetChildren())
+		FixLevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
 		self:SetTextCentered(false)
 		self:SetHeight(self.dropdownItemHeight)
@@ -718,16 +718,18 @@ do
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
 				self:AddItem(index, itemData, leafType)
-			elseif type(itemData) == "table" and #itemData.dropdownItemMenuData > 0 then
-				self:AddItem(
-					itemData.itemValue,
-					itemData.text,
-					"EPDropdownItemMenu",
-					itemData.dropdownItemMenuData,
-					neverShowItemsAsSelected
-				)
-			else
-				self:AddItem(itemData.itemValue, itemData.text, leafType, nil, neverShowItemsAsSelected)
+			elseif type(itemData) == "table" then
+				if type(itemData.dropdownItemMenuData) == "table" and #itemData.dropdownItemMenuData > 0 then
+					self:AddItem(
+						itemData.itemValue,
+						itemData.text,
+						"EPDropdownItemMenu",
+						itemData.dropdownItemMenuData,
+						neverShowItemsAsSelected
+					)
+				else
+					self:AddItem(itemData.itemValue, itemData.text, leafType, nil, neverShowItemsAsSelected)
+				end
 			end
 		end
 	end
@@ -796,16 +798,14 @@ do
 		local button = _G[dropdown:GetName() .. "Button"]
 		button:ClearAllPoints()
 		button:SetPoint("RIGHT", frame, "RIGHT")
-		button:SetScript("OnEnter", HandleButtonEnter)
-		button:SetScript("OnLeave", HandleButtonLeave)
-		button:SetScript("OnClick", HandleToggleDropdownPullout)
 		button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 
 		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)
-		buttonCover:SetPoint("LEFT", frame, "LEFT")
-		buttonCover:SetPoint("RIGHT", frame, "RIGHT")
+		buttonCover:SetFrameLevel(button:GetFrameLevel() + 1)
+		buttonCover:SetPoint("TOPLEFT", frame, "TOPLEFT")
+		buttonCover:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 		buttonCover:SetScript("OnEnter", HandleButtonEnter)
 		buttonCover:SetScript("OnLeave", HandleButtonLeave)
 		buttonCover:SetScript("OnClick", HandleToggleDropdownPullout)
