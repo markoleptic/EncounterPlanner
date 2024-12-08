@@ -8,8 +8,7 @@ local CreateFrame = CreateFrame
 
 local defaultFrameHeight = 200
 local defaultFrameWidth = 400
-local defaultFontHeight = 14
-local windowBarHeight = 24
+local windowBarHeight = 28
 local title = "Export as MRT Note"
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -45,13 +44,17 @@ local function OnAcquire(self)
 	self:SetTitle("")
 	self.frame:SetHeight(defaultFrameHeight)
 	self.frame:SetWidth(defaultFrameWidth)
+
+	local edgeSize = frameBackdrop.edgeSize
+	local buttonSize = windowBarHeight - 2 * edgeSize
+
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetText("X")
 	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetHeight(buttonSize)
+	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton:SetPoint("TOPRIGHT", self.windowBar, "TOPRIGHT", -frameBackdrop.edgeSize, -frameBackdrop.edgeSize)
+	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Release()
 	end)
@@ -134,13 +137,7 @@ local function Constructor()
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	frame:SetBackdrop({
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-	})
+	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(0, 0, 0, 1)
 	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
 	frame:SetMovable(true)
@@ -160,9 +157,10 @@ local function Constructor()
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(title)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
+	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		windowBarText:SetFont(fPath, 12)
+		windowBarText:SetFont(fPath, h)
 	end
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()

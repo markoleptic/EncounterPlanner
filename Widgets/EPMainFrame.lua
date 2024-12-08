@@ -46,30 +46,29 @@ local function OnAcquire(self)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
 
+	local edgeSize = frameBackdrop.edgeSize
+	local buttonSize = windowBarHeight - 2 * edgeSize
+
 	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
 	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
 
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetText("X")
-	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.closeButton:SetIconPadding(2, 2)
+	self.closeButton:SetWidth(buttonSize)
+	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton.frame:SetPoint(
-		"TOPRIGHT",
-		self.windowBar,
-		"TOPRIGHT",
-		-frameBackdrop.edgeSize,
-		-frameBackdrop.edgeSize
-	)
+	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
 	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
-	self.collapseAllButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.collapseAllButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.collapseAllButton:SetIconPadding(2, 2)
+	self.collapseAllButton:SetWidth(buttonSize)
+	self.collapseAllButton:SetHeight(buttonSize)
 	self.collapseAllButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.collapseAllButton.frame:SetParent(self.frame)
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
@@ -79,17 +78,12 @@ local function OnAcquire(self)
 
 	self.expandAllButton = AceGUI:Create("EPButton")
 	self.expandAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]])
-	self.expandAllButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.expandAllButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.expandAllButton:SetIconPadding(2, 2)
+	self.expandAllButton:SetWidth(buttonSize)
+	self.expandAllButton:SetHeight(buttonSize)
 	self.expandAllButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.expandAllButton.frame:SetParent(self.frame)
-	self.expandAllButton.frame:SetPoint(
-		"BOTTOMLEFT",
-		self.frame,
-		"BOTTOMLEFT",
-		padding.right + 2 + self.collapseAllButton.frame:GetWidth(),
-		padding.bottom
-	)
+	self.expandAllButton.frame:SetPoint("LEFT", self.collapseAllButton.frame, "RIGHT", edgeSize, 0)
 	self.expandAllButton:SetCallback("Clicked", function()
 		self:Fire("ExpandAllButtonClicked")
 	end)

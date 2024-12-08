@@ -63,9 +63,10 @@ end
 local function OnAcquire(self)
 	self:SetIsToggleable(false)
 	self.button.toggleIndicator:Hide()
-	self.button.bg:ClearAllPoints()
-	self.button.bg:SetAllPoints()
+	self.button.bg:SetPoint("TOPLEFT")
+	self.button.bg:SetPoint("BOTTOMRIGHT")
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self:SetIconPadding(0, 0)
 	self:SetBackdropColor(0.25, 0.25, 0.25, 1)
 	self:SetColor(0.725, 0.008, 0.008, 1)
 	self:SetIcon(nil)
@@ -154,6 +155,14 @@ local function SetColor(self, r, g, b, a)
 end
 
 ---@param self EPButton
+---@param x number
+---@param y number
+local function SetIconPadding(self, x, y)
+	self.button.icon:SetPoint("TOPLEFT", x, -y)
+	self.button.icon:SetPoint("BOTTOMRIGHT", -x, y)
+end
+
+---@param self EPButton
 ---@param width number|nil
 ---@param height number|nil
 local function LayoutFinished(self, width, height) end
@@ -180,11 +189,14 @@ local function Constructor()
 
 	button.icon = button:CreateTexture(Type .. "Icon" .. count, "OVERLAY")
 	button.icon:SetBlendMode("ADD")
-	button.icon:SetAllPoints()
+	button.icon:SetPoint("TOPLEFT")
+	button.icon:SetPoint("BOTTOMRIGHT")
 	button.icon:Hide()
-
+	button.icon:SetSnapToPixelGrid(false)
+	button.icon:SetTexelSnappingBias(0)
 	button.bg = button:CreateTexture(Type .. "Background" .. count, "BORDER")
-	button.bg:SetAllPoints()
+	button.bg:SetPoint("TOPLEFT")
+	button.bg:SetPoint("BOTTOMRIGHT")
 	button.bg:SetColorTexture(0.725, 0.008, 0.008)
 	button.bg:Hide()
 
@@ -229,6 +241,7 @@ local function Constructor()
 		Toggle = Toggle,
 		IsToggled = IsToggled,
 		SetIcon = SetIcon,
+		SetIconPadding = SetIconPadding,
 		frame = frame,
 		type = Type,
 		button = button,

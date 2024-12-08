@@ -8,8 +8,8 @@ local CreateFrame = CreateFrame
 
 local frameWidth = 200
 local frameHeight = 200
-local buttonFrameHeight = 24
-local windowBarHeight = 24
+local buttonFrameHeight = 28
+local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
 local title = "Assignment Editor"
 local frameBackdrop = {
@@ -387,26 +387,16 @@ local function OnAcquire(self)
 	self.previewContainer:AddChild(self.previewLabel)
 	self:AddChild(self.previewContainer)
 
+	local edgeSize = frameBackdrop.edgeSize
+
 	self.okayButton = AceGUI:Create("EPButton")
 	self.okayButton:SetText("Okay")
 	self.okayButton:SetWidth(75)
 	self.okayButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.okayButton:SetCallback("Clicked", HandleOkayButtonClicked)
 	self.okayButton.frame:SetParent(self.buttonFrame)
-	self.okayButton:SetPoint(
-		"TOPRIGHT",
-		self.buttonFrame,
-		"TOPRIGHT",
-		-buttonFrameBackdrop.edgeSize,
-		-buttonFrameBackdrop.edgeSize
-	)
-	self.okayButton:SetPoint(
-		"BOTTOMRIGHT",
-		self.buttonFrame,
-		"BOTTOMRIGHT",
-		-buttonFrameBackdrop.edgeSize,
-		buttonFrameBackdrop.edgeSize
-	)
+	self.okayButton:SetPoint("TOPRIGHT", self.buttonFrame, "TOPRIGHT", -edgeSize, -edgeSize)
+	self.okayButton:SetPoint("BOTTOMRIGHT", self.buttonFrame, "BOTTOMRIGHT", -edgeSize, edgeSize)
 	self.okayButton.obj = self
 
 	self.deleteButton = AceGUI:Create("EPButton")
@@ -415,29 +405,20 @@ local function OnAcquire(self)
 	self.deleteButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.deleteButton:SetCallback("Clicked", HandleDeleteButtonClicked)
 	self.deleteButton.frame:SetParent(self.buttonFrame)
-	self.deleteButton.frame:SetPoint(
-		"TOPLEFT",
-		self.buttonFrame,
-		"TOPLEFT",
-		buttonFrameBackdrop.edgeSize,
-		-buttonFrameBackdrop.edgeSize
-	)
-	self.deleteButton.frame:SetPoint(
-		"BOTTOMLEFT",
-		self.buttonFrame,
-		"BOTTOMLEFT",
-		buttonFrameBackdrop.edgeSize,
-		buttonFrameBackdrop.edgeSize
-	)
+	self.deleteButton.frame:SetPoint("TOPLEFT", self.buttonFrame, "TOPLEFT", edgeSize, -edgeSize)
+	self.deleteButton.frame:SetPoint("BOTTOMLEFT", self.buttonFrame, "BOTTOMLEFT", edgeSize, edgeSize)
 	self.deleteButton.obj = self
 
+	local buttonSize = windowBarHeight - 2 * edgeSize
+
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetText("X")
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetHeight(buttonSize)
+	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton:SetPoint("TOPRIGHT", self.windowBar, "TOPRIGHT", -frameBackdrop.edgeSize, -frameBackdrop.edgeSize)
+	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Release()
 	end)
@@ -562,9 +543,10 @@ local function Constructor()
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(title)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
+	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		windowBarText:SetFont(fPath, 12)
+		windowBarText:SetFont(fPath, h)
 	end
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()

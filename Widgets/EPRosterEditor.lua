@@ -11,7 +11,7 @@ local wipe = wipe
 
 local mainFrameWidth = 500
 local mainFrameHeight = 500
-local windowBarHeight = 30
+local windowBarHeight = 28
 local contentFramePadding = { x = 10, y = 10 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -272,20 +272,18 @@ local function OnAcquire(self)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
 
+	local edgeSize = frameBackdrop.edgeSize
+	local buttonSize = windowBarHeight - 2 * edgeSize
+
 	self.content.alignment = "center"
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetText("X")
-	self.closeButton:SetWidth(windowBarHeight - 2 * frameBackdrop.edgeSize)
-	self.closeButton:SetHeight(windowBarHeight - 2 * frameBackdrop.edgeSize)
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.closeButton:SetIconPadding(2, 2)
+	self.closeButton:SetWidth(buttonSize)
+	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton.frame:SetPoint(
-		"TOPRIGHT",
-		self.windowBar,
-		"TOPRIGHT",
-		-frameBackdrop.edgeSize,
-		-frameBackdrop.edgeSize
-	)
+	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Fire("EditingFinished", self.currentRosterWidgetMap, self.sharedRosterWidgetMap)
 	end)
