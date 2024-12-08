@@ -69,6 +69,7 @@ local function OnAcquire(self)
 	self:SetIconPadding(0, 0)
 	self:SetBackdropColor(0.25, 0.25, 0.25, 1)
 	self:SetColor(0.725, 0.008, 0.008, 1)
+	self:SetIconColor(1, 1, 1, 1)
 	self:SetIcon(nil)
 	self.frame:Show()
 	self:SetDisabled(false)
@@ -98,6 +99,17 @@ local function SetIcon(self, iconID)
 	end
 end
 
+---@param self EPButton
+---@param r number
+---@param g number
+---@param b number
+---@param a number
+local function SetIconColor(self, r, g, b, a)
+	local iconTexture = self.button.icon
+	if iconTexture then
+		iconTexture:SetVertexColor(r, g, b, a)
+	end
+end
 ---@param self EPButton
 local function SetWidthFromText(self)
 	local fontString = self.button:GetFontString()
@@ -242,6 +254,7 @@ local function Constructor()
 		IsToggled = IsToggled,
 		SetIcon = SetIcon,
 		SetIconPadding = SetIconPadding,
+		SetIconColor = SetIconColor,
 		frame = frame,
 		type = Type,
 		button = button,

@@ -10,7 +10,6 @@ local pi = math.pi
 local frameWidth = 200
 local frameHeight = 30
 local padding = { x = 2, y = 2 }
-local zoomAmount = 0.15
 local listItemBackdrop = {
 	bgFile = nil,
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -19,13 +18,13 @@ local listItemBackdrop = {
 	edgeSize = 1,
 }
 
-local function HandleCheckBoxMouseUp(frame)
-	local self = frame.obj
-	if not self.disabled then
-		self:ToggleChecked()
-		self:Fire("OnValueChanged", self.checked)
-	end
-end
+local checkBackdrop = {
+	bgFile = nil,
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = false,
+	tileSize = nil,
+	edgeSize = 1,
+}
 
 local function HandleCollapseButtonMouseUp(frame)
 	local self = frame.obj
@@ -37,11 +36,9 @@ end
 ---@field frame table|BackdropTemplate|Frame
 ---@field type string
 ---@field count number
----@field checkbg Texture
----@field check table|Frame
----@field checkbox table|Frame
 ---@field label EPLabel
----@field highlight Texture
+---@field check EPButton
+---@field checkBackground table|BackdropTemplate|Frame
 ---@field collapseButton Button|table
 ---@field disabled boolean
 ---@field checked boolean
@@ -53,9 +50,27 @@ local function OnAcquire(self)
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
 	self.label.frame:SetPoint("LEFT")
-	self.label.frame:SetPoint("RIGHT", self.checkbox, "LEFT", -padding.x, 0)
+	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
 	self.label:SetHeight(frameHeight)
-	self:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+
+	local checkSpacing = checkBackdrop.edgeSize
+	local checkSize = frameHeight - 2 * checkSpacing
+
+	self.check = AceGUI:Create("EPButton")
+	self.check:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+	self.check.frame:SetParent(self.checkBackground --[[@as Frame]])
+	self.check.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
+	self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
+	self.check:SetWidth(checkSize)
+	self.check:SetHeight(checkSize)
+	self.check:SetBackdropColor(0, 0, 0, 0)
+	self.check:SetCallback("Clicked", function()
+		if not self.disabled then
+			self:ToggleChecked()
+			self:Fire("OnValueChanged", self.checked)
+		end
+	end)
+
 	self:SetDisabled(false)
 	self:SetChecked(true)
 	self:SetCollapsible(false)
@@ -67,6 +82,8 @@ end
 local function OnRelease(self)
 	self.label:Release()
 	self.label = nil
+	self.check:Release()
+	self.check = nil
 	self.key = nil
 end
 
@@ -80,19 +97,26 @@ end
 ---@param self EPAbilityEntry
 ---@param textureAsset? string|number
 local function SetCheckedTexture(self, textureAsset)
-	local check = self.check
-	check:SetTexture(textureAsset)
+	self.check:SetIcon(textureAsset)
+end
+
+---@param self EPAbilityEntry
+---@param r number
+---@param g number
+---@param b number
+---@param a number
+local function SetCheckedTextureColor(self, r, g, b, a)
+	self.check:SetIconColor(r, g, b, a)
 end
 
 ---@param self EPAbilityEntry
 ---@param value boolean
 local function SetChecked(self, value)
-	local check = self.check
 	self.checked = value
 	if value then
-		check:Show()
+		self.check.frame:Show()
 	else
-		check:Hide()
+		self.check.frame:Hide()
 	end
 end
 
@@ -206,28 +230,12 @@ local function Constructor()
 	button:RegisterForClicks("LeftButtonUp")
 	button:Hide()
 
-	local checkbox = CreateFrame("CheckButton", Type .. "CheckBox" .. count, frame)
-	checkbox:SetPoint("RIGHT", frame, "RIGHT", -padding.x, 0)
-	checkbox:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
-	checkbox:EnableMouse(true)
-	checkbox:RegisterForClicks("LeftButtonUp")
-	checkbox:SetScript("OnClick", HandleCheckBoxMouseUp)
-
-	local checkbg = checkbox:CreateTexture(Type .. "CheckBoxBackground" .. count, "ARTWORK")
-	checkbg:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-square-64]])
-	checkbg:SetTexCoord(zoomAmount, 1 - zoomAmount, zoomAmount, 1 - zoomAmount)
-	checkbg:SetAllPoints(checkbox)
-	checkbg:SetVertexColor(0.25, 0.25, 0.25)
-
-	local check = checkbox:CreateTexture(Type .. "CheckBoxCheck" .. count, "ARTWORK")
-	check:SetAllPoints(checkbox)
-	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
-
-	local highlight = checkbox:CreateTexture(Type .. "CheckBoxHighlight" .. count, "HIGHLIGHT")
-	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
-	highlight:SetTexelSnappingBias(0.0)
-	highlight:SetSnapToPixelGrid(false)
-	highlight:SetAllPoints(checkbox)
+	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
+	checkBackground:SetBackdrop(checkBackdrop)
+	checkBackground:SetBackdropColor(0, 0, 0, 0)
+	checkBackground:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	checkBackground:SetPoint("RIGHT", -padding.x, 0)
 
 	---@class EPAbilityEntry
 	local widget = {
@@ -246,17 +254,14 @@ local function Constructor()
 		SetText = SetText,
 		GetText = GetText,
 		GetKey = GetKey,
+		SetCheckedTextureColor = SetCheckedTextureColor,
 		frame = frame,
 		type = Type,
 		count = count,
-		checkbg = checkbg,
-		check = check,
-		checkbox = checkbox,
-		highlight = highlight,
+		checkBackground = checkBackground,
 		collapseButton = button,
 	}
 
-	checkbox.obj = widget
 	frame.obj = widget
 	button.obj = widget
 
