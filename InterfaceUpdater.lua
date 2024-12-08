@@ -246,7 +246,7 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossNa
 	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
-		AddOn.db.profile.assignmentSortType,
+		AddOn.db.profile.preferences.assignmentSortType,
 		bossName
 	)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(

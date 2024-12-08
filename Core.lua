@@ -403,30 +403,30 @@ local function CreateOptionsMenu()
 			category = "Timeline",
 			values = {
 				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
 				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
 			},
 			get = function()
-				return AddOn.db.profile.keyBindings.pan
+				return AddOn.db.profile.preferences.keyBindings.pan
 			end,
 			set = function(key)
-				AddOn.db.profile.keyBindings.pan = key
+				AddOn.db.profile.preferences.keyBindings.pan = key
 			end,
 			validate = function(key)
 				if
-					AddOn.db.profile.keyBindings.editAssignment == key
-					or AddOn.db.profile.keyBindings.newAssignment == key
+					AddOn.db.profile.preferences.keyBindings.editAssignment == key
+					or AddOn.db.profile.preferences.keyBindings.newAssignment == key
 				then
-					return false, AddOn.db.profile.keyBindings.pan
+					return false, AddOn.db.profile.preferences.keyBindings.pan
 				end
 				return true
 			end,
@@ -437,19 +437,19 @@ local function CreateOptionsMenu()
 			category = "Timeline",
 			values = {
 				{ itemValue = "MouseScroll", text = "Mouse Scroll" },
-				{ itemValue = "ALT-MouseScroll", text = "Alt + Mouse Scroll" },
-				{ itemValue = "CTRL-MouseScroll", text = "Ctrl + Mouse Scroll" },
-				{ itemValue = "SHIFT-MouseScroll", text = "Shift + Mouse Scroll" },
+				{ itemValue = "Alt-MouseScroll", text = "Alt + Mouse Scroll" },
+				{ itemValue = "Ctrl-MouseScroll", text = "Ctrl + Mouse Scroll" },
+				{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
 			},
 			get = function()
-				return AddOn.db.profile.keyBindings.scroll
+				return AddOn.db.profile.preferences.keyBindings.scroll
 			end,
 			set = function(key)
-				AddOn.db.profile.keyBindings.scroll = key
+				AddOn.db.profile.preferences.keyBindings.scroll = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.keyBindings.zoom == key then
-					return false, AddOn.db.profile.keyBindings.scroll
+				if AddOn.db.profile.preferences.keyBindings.zoom == key then
+					return false, AddOn.db.profile.preferences.keyBindings.scroll
 				end
 				return true
 			end,
@@ -460,19 +460,19 @@ local function CreateOptionsMenu()
 			category = "Timeline",
 			values = {
 				{ itemValue = "MouseScroll", text = "Mouse Scroll" },
-				{ itemValue = "ALT-MouseScroll", text = "Alt + Mouse Scroll" },
-				{ itemValue = "CTRL-MouseScroll", text = "Ctrl + Mouse Scroll" },
-				{ itemValue = "SHIFT-MouseScroll", text = "Shift + Mouse Scroll" },
+				{ itemValue = "Alt-MouseScroll", text = "Alt + Mouse Scroll" },
+				{ itemValue = "Ctrl-MouseScroll", text = "Ctrl + Mouse Scroll" },
+				{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
 			},
 			get = function()
-				return AddOn.db.profile.keyBindings.zoom
+				return AddOn.db.profile.preferences.keyBindings.zoom
 			end,
 			set = function(key)
-				AddOn.db.profile.keyBindings.zoom = key
+				AddOn.db.profile.preferences.keyBindings.zoom = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.keyBindings.scroll == key then
-					return false, AddOn.db.profile.keyBindings.zoom
+				if AddOn.db.profile.preferences.keyBindings.scroll == key then
+					return false, AddOn.db.profile.preferences.keyBindings.zoom
 				end
 				return true
 			end,
@@ -483,27 +483,27 @@ local function CreateOptionsMenu()
 			category = "Assignment",
 			values = {
 				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
 				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
 			},
 			get = function(_)
-				return AddOn.db.profile.keyBindings.newAssignment
+				return AddOn.db.profile.preferences.keyBindings.newAssignment
 			end,
 			set = function(key)
-				AddOn.db.profile.keyBindings.newAssignment = key
+				AddOn.db.profile.preferences.keyBindings.newAssignment = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.keyBindings.pan == key then
-					return false, AddOn.db.profile.keyBindings.newAssignment
+				if AddOn.db.profile.preferences.keyBindings.pan == key then
+					return false, AddOn.db.profile.preferences.keyBindings.newAssignment
 				end
 				return true
 			end,
@@ -514,27 +514,27 @@ local function CreateOptionsMenu()
 			category = "Assignment",
 			values = {
 				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "ALT-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "CTRL-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "SHIFT-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "ALT-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "CTRL-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "SHIFT-RightButton", text = "Shift + Right Click" },
+				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
+				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
+				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
 				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "ALT-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "CTRL-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "SHIFT-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
+				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
+				{ itemValue = "RightButton", text = "Right Click" },
+				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
+				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
+				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
 			},
 			get = function()
-				return AddOn.db.profile.keyBindings.editAssignment
+				return AddOn.db.profile.preferences.keyBindings.editAssignment
 			end,
 			set = function(key)
-				AddOn.db.profile.keyBindings.editAssignment = key
+				AddOn.db.profile.preferences.keyBindings.editAssignment = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.keyBindings.pan == key then
-					return false, AddOn.db.profile.keyBindings.editAssignment
+				if AddOn.db.profile.preferences.keyBindings.pan == key then
+					return false, AddOn.db.profile.preferences.keyBindings.editAssignment
 				end
 				return true
 			end,
@@ -560,11 +560,11 @@ local function CreateOptionsMenu()
 			category = nil,
 			values = rowValues,
 			get = function()
-				return tostring(AddOn.db.profile.preferredTimelineHeights.numberOfAssignmentsToShow)
+				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow)
 			end,
 			set = function(key)
 				print(key)
-				AddOn.db.profile.preferredTimelineHeights.numberOfAssignmentsToShow = tonumber(key)
+				AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow = tonumber(key)
 				local timeline = Private.mainFrame:GetTimeline()
 				if timeline then
 					timeline:UpdateHeight()
@@ -581,11 +581,11 @@ local function CreateOptionsMenu()
 			category = nil,
 			values = rowValues,
 			get = function()
-				return tostring(AddOn.db.profile.preferredTimelineHeights.numberOfBossAbilitiesToShow)
+				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow)
 			end,
 			set = function(key)
 				print(key)
-				AddOn.db.profile.preferredTimelineHeights.numberOfBossAbilitiesToShow = tonumber(key)
+				AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow = tonumber(key)
 				local timeline = Private.mainFrame:GetTimeline()
 				if timeline then
 					timeline:UpdateHeight()
@@ -698,7 +698,7 @@ end
 
 ---@param value string
 local function HandleAssignmentSortDropdownValueChanged(_, _, value)
-	AddOn.db.profile.assignmentSortType = value
+	AddOn.db.profile.preferences.assignmentSortType = value
 	interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossName())
 end
 
@@ -796,7 +796,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
-		AddOn.db.profile.assignmentSortType,
+		AddOn.db.profile.preferences.assignmentSortType,
 		GetCurrentBossName()
 	)
 	local sortedAssigneesAndSpells =
@@ -1039,7 +1039,7 @@ function Private:CreateGUI()
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),
-			AddOn.db.profile.assignmentSortType,
+			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossName
 		)
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
@@ -1053,7 +1053,7 @@ function Private:CreateGUI()
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),
-			AddOn.db.profile.assignmentSortType,
+			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossName
 		)
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
@@ -1257,8 +1257,7 @@ function Private:CreateGUI()
 	topContainer:AddChild(topLeftContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetPreferredTimelineHeights(AddOn.db.profile.preferredTimelineHeights)
-	timeline:SetKeyBindings(AddOn.db.profile.keyBindings)
+	timeline:SetPreferences(AddOn.db.profile.preferences)
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
@@ -1285,7 +1284,7 @@ function Private:CreateGUI()
 	Private.mainFrame:AddChild(timeline)
 
 	-- Set default values
-	assignmentSortDropdown:SetValue(AddOn.db.profile.assignmentSortType)
+	assignmentSortDropdown:SetValue(AddOn.db.profile.preferences.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 

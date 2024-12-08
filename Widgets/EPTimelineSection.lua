@@ -124,8 +124,8 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 		return
 	end
 
-	local validScroll = self.IsValidKeyCombination(self.keyBindings.scroll, "MouseScroll")
-	local validZoom = self.IsValidKeyCombination(self.keyBindings.zoom, "MouseScroll")
+	local validScroll = self.IsValidKeyCombination(self.preferences.keyBindings.scroll, "MouseScroll")
+	local validZoom = self.IsValidKeyCombination(self.preferences.keyBindings.zoom, "MouseScroll")
 
 	local scrollFrame = self.scrollFrame
 	local timelineFrame = self.timelineFrame
@@ -153,10 +153,11 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 	if validZoom or updateBoth then
 		local timelineDuration = self.totalTimelineDuration
 		local zoomFactor = self.sharedTimelineSectionData.zoomFactor
+		local timelineWidth = timelineFrame:GetWidth()
+
 		local visibleDuration = timelineDuration / zoomFactor
-		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineFrame:GetWidth()) * timelineDuration
+		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineWidth) * timelineDuration
 		local visibleEndTime = visibleStartTime + visibleDuration
-		local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
 
 		-- Update zoom factor based on scroll delta
 		if delta > 0 and zoomFactor < maxZoomFactor then
@@ -165,18 +166,41 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 			zoomFactor = zoomFactor / (1.0 + zoomStep)
 		end
 
-		-- Recalculate visible duration after zoom
 		local newVisibleDuration = timelineDuration / zoomFactor
+		local newVisibleStartTime, newVisibleEndTime
 
-		-- Calculate new start and end time while keeping midpoint constant
-		local newVisibleStartTime = visibleMidpointTime - (newVisibleDuration / 2.0)
-		local newVisibleEndTime = visibleMidpointTime + (newVisibleDuration / 2.0)
+		if self.preferences.zoomCenteredOnCursor then
+			local xPosition = select(1, GetCursorPosition()) or 0
+			local frameLeft = timelineFrame:GetLeft() or 0
+			local relativeCursorOffset = xPosition / UIParent:GetEffectiveScale() - frameLeft
 
-		-- Add overflow from end time to start time to prevent empty space between end of timeline and parent frame
-		if newVisibleEndTime > timelineDuration then
-			local surplus = timelineDuration - newVisibleEndTime
+			-- Convert offset to time, accounting for padding
+			local padding = self.sharedTimelineSectionData.timelineLinePadding.x
+			local effectiveTimelineWidth = timelineWidth - (padding * 2)
+			local cursorTime = (relativeCursorOffset - padding) * timelineDuration / effectiveTimelineWidth
+
+			local beforeCursorDuration = cursorTime - visibleStartTime
+			local afterCursorDuration = visibleEndTime - cursorTime
+			local leftScaleFactor = beforeCursorDuration / visibleDuration
+			local rightScaleFactor = afterCursorDuration / visibleDuration
+			newVisibleStartTime = cursorTime - (newVisibleDuration * leftScaleFactor)
+			newVisibleEndTime = cursorTime + (newVisibleDuration * rightScaleFactor)
+		else
+			local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
+			newVisibleStartTime = visibleMidpointTime - (newVisibleDuration / 2.0)
+			newVisibleEndTime = visibleMidpointTime + (newVisibleDuration / 2.0)
+		end
+
+		-- Correct boundaries
+		if newVisibleStartTime < 0 then
+			local overflow = newVisibleStartTime
+			newVisibleEndTime = newVisibleEndTime - overflow
+			newVisibleStartTime = 0
+		elseif newVisibleEndTime > timelineDuration then
+			-- Add overflow from end time to start time to prevent empty space between end of timeline and scroll frame
+			local overflow = timelineDuration - newVisibleEndTime
 			newVisibleEndTime = timelineDuration
-			newVisibleStartTime = newVisibleStartTime + surplus
+			newVisibleStartTime = newVisibleStartTime + overflow
 		end
 
 		-- Ensure boundaries are within the total timeline range
@@ -232,7 +256,7 @@ end
 local function HandleTimelineFrameDragStart(frame, button)
 	local self = frame.obj --[[@as EPTimelineSection]]
 
-	if not self.IsValidKeyCombination(self.keyBindings.pan, button) then
+	if not self.IsValidKeyCombination(self.preferences.keyBindings.pan, button) then
 		return
 	end
 
@@ -325,6 +349,7 @@ end
 ---@field timelineFrameWidth number
 ---@field horizontalScroll number
 ---@field zoomFactor number
+---@field timelineLinePadding {x: number, y: number}
 
 ---@class EPTimelineSection : AceGUIWidget
 ---@field type string
@@ -349,8 +374,8 @@ end
 ---@field textureHeight number
 ---@field listPadding number
 ---@field listContainer EPContainer
----@field keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
----@field IsValidKeyCombination fun(keyBinding:string, mouseButton:string): boolean
+---@field preferences EncounterPlannerPreferences
+---@field IsValidKeyCombination fun(keyBinding:ScrollKeyBinding|MouseButtonKeyBinding, mouseButton:string): boolean
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -386,7 +411,7 @@ local function OnRelease(self)
 	self.listContainer = nil
 	self.horizontalScrollBar = nil
 	self.sharedTimelineSectionData = nil
-	self.keyBindings = nil
+	self.preferences = nil
 	self.IsValidKeyCombination = nil
 end
 

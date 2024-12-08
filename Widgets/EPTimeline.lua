@@ -72,21 +72,21 @@ local function ResetLocalVariables()
 	totalTimelineDuration = 0
 end
 
----@param keyBinding string
+---@param keyBinding ScrollKeyBinding|MouseButtonKeyBinding
 ---@param mouseButton string
 ---@return boolean
 local function IsValidKeyCombination(keyBinding, mouseButton)
 	local modifier, key = split("-", keyBinding)
 	if modifier and key then
-		if modifier == "CTRL" then
+		if modifier == "Ctrl" then
 			if not IsControlKeyDown() then
 				return false
 			end
-		elseif modifier == "SHIFT" then
+		elseif modifier == "Shift" then
 			if not IsLeftShiftKeyDown() and not IsRightShiftKeyDown() then
 				return false
 			end
-		elseif modifier == "ALT" then
+		elseif modifier == "Alt" then
 			if not IsAltKeyDown() then
 				return false
 			end
@@ -131,18 +131,18 @@ local function HandleIconLeave(_, _)
 	tooltip:Hide()
 end
 
-local function HandleAssignmentMouseDown(frame, mouseButton, epTimeline)
+local function HandleAssignmentMouseDown(frame, mouseButton, timeline)
 	-- TODO: Implement dragging an assignment spell icon to change the time
 end
 
----@param epTimeline EPTimeline
-local function HandleAssignmentMouseUp(frame, mouseButton, epTimeline)
-	if not IsValidKeyCombination(epTimeline.keyBindings.editAssignment, mouseButton) then
+---@param timeline EPTimeline
+local function HandleAssignmentMouseUp(frame, mouseButton, timeline)
+	if not IsValidKeyCombination(timeline.preferences.keyBindings.editAssignment, mouseButton) then
 		return
 	end
 
 	if frame.assignmentIndex then
-		epTimeline:Fire("AssignmentClicked", frame.assignmentIndex)
+		timeline:Fire("AssignmentClicked", frame.assignmentIndex)
 	end
 end
 
@@ -803,7 +803,7 @@ local function SetMaxAssignmentHeight(self)
 		+ horizontalScrollBarHeight
 		+ bossFrameHeight
 	self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
-	self.preferredTimelineHeights.numberOfAssignmentsToShow = maximumNumberOfAssignmentRows
+	self.preferences.timelineRows.numberOfAssignmentsToShow = maximumNumberOfAssignmentRows
 	self:SetHeight(height + self.assignmentDimensions.max)
 end
 
@@ -884,8 +884,7 @@ end
 ---@field allowHeightResizing boolean
 ---@field barDimensions {min: integer, max:integer, step:number}
 ---@field assignmentDimensions {min: integer, max:integer, step:number}
----@field preferredTimelineHeights {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
----@field keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
+---@field preferences EncounterPlannerPreferences
 
 ---@param self EPTimeline
 local function OnAcquire(self)
@@ -980,7 +979,7 @@ local function OnRelease(self)
 	self.allowHeightResizing = nil
 	self.barDimensions = nil
 	self.assignmentDimensions = nil
-	self.keyBindings = nil
+	self.preferences = nil
 	ResetLocalVariables()
 end
 
@@ -1074,11 +1073,11 @@ local function UpdateHeight(self)
 	local assignmentFrameHeight = self.assignmentTimeline.frame:GetHeight()
 	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
 
-	local preferredAssignmentHeight = self.preferredTimelineHeights.numberOfAssignmentsToShow
+	local preferredAssignmentHeight = self.preferences.timelineRows.numberOfAssignmentsToShow
 			* self.assignmentDimensions.step
 		- paddingBetweenAssignments
 	preferredAssignmentHeight = min(preferredAssignmentHeight, self.assignmentDimensions.max)
-	local preferredBossHeight = self.preferredTimelineHeights.numberOfBossAbilitiesToShow * self.barDimensions.step
+	local preferredBossHeight = self.preferences.timelineRows.numberOfBossAbilitiesToShow * self.barDimensions.step
 		- paddingBetweenBossAbilityBars
 	preferredBossHeight = min(preferredBossHeight, self.barDimensions.max)
 
@@ -1252,12 +1251,6 @@ end
 local function SetCurrentTimeLabel(self, label) end
 
 ---@param self EPTimeline
----@param heights {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
-local function SetPreferredTimelineHeights(self, heights)
-	self.preferredTimelineHeights = heights
-end
-
----@param self EPTimeline
 ---@param allow boolean
 local function SetAllowHeightResizing(self, allow)
 	local previousAllowHeightResizing = self.allowHeightResizing
@@ -1292,9 +1285,9 @@ local function SetAllowHeightResizing(self, allow)
 		self.assignmentTimeline:SetHeight(assignmentHeight)
 		self.bossAbilityTimeline:SetHeight(barHeight)
 
-		self.preferredTimelineHeights.numberOfAssignmentsToShow =
+		self.preferences.timelineRows.numberOfAssignmentsToShow =
 			floor((assignmentHeight + paddingBetweenAssignments + 0.5) / self.assignmentDimensions.step)
-		self.preferredTimelineHeights.numberOfBossAbilitiesToShow =
+		self.preferences.timelineRows.numberOfBossAbilitiesToShow =
 			floor((barHeight + paddingBetweenBossAbilityBars + 0.5) / self.barDimensions.step)
 
 		local totalHeight = paddingBetweenTimelineAndScrollBar
@@ -1310,11 +1303,11 @@ local function SetAllowHeightResizing(self, allow)
 end
 
 ---@param self EPTimeline
----@param keyBindings {pan: string, zoom: string, scroll: string, editAssignment: string, newAssignment: string}
-local function SetKeyBindings(self, keyBindings)
-	self.keyBindings = keyBindings
-	self.assignmentTimeline.keyBindings = keyBindings
-	self.bossAbilityTimeline.keyBindings = keyBindings
+---@param preferences EncounterPlannerPreferences
+local function SetPreferences(self, preferences)
+	self.preferences = preferences
+	self.assignmentTimeline.preferences = preferences
+	self.bossAbilityTimeline.preferences = preferences
 end
 
 local function Constructor()
@@ -1385,8 +1378,7 @@ local function Constructor()
 		SetCurrentTimeLabel = SetCurrentTimeLabel,
 		SetAllowHeightResizing = SetAllowHeightResizing,
 		SetMaxAssignmentHeight = SetMaxAssignmentHeight,
-		SetPreferredTimelineHeights = SetPreferredTimelineHeights,
-		SetKeyBindings = SetKeyBindings,
+		SetPreferences = SetPreferences,
 		UpdateHeight = UpdateHeight,
 		frame = frame,
 		splitterFrame = splitterFrame,

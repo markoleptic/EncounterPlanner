@@ -394,8 +394,35 @@ end
 ---| "role:tank"
 ---| ""
 
+---@alias ScrollKeyBinding
+---| "MouseScroll"
+---| "Alt-MouseScroll"
+---| "Ctrl-MouseScroll"
+---| "Shift-MouseScroll"
+
+---@alias MouseButtonKeyBinding
+---| "LeftButton"
+---| "Alt-LeftButton"
+---| "Ctrl-LeftButton"
+---| "Shift-LeftButton"
+---| "MiddleButton"
+---| "Alt-MiddleButton"
+---| "Ctrl-MiddleButton"
+---| "Shift-MiddleButton"
+---| "RightButton"
+---| "Alt-RightButton"
+---| "Ctrl-RightButton"
+---| "Shift-RightButton"
+
+---@class EncounterPlannerKeyBindings
+---@field pan MouseButtonKeyBinding
+---@field zoom ScrollKeyBinding
+---@field scroll ScrollKeyBinding
+---@field editAssignment MouseButtonKeyBinding
+---@field newAssignment MouseButtonKeyBinding
+
 local defaults = {
-	--[[@class EncounterPlannerOptions]]
+	---@class EncounterPlannerDefaultProfile
 	---@field activeBossAbilities table<string, table<integer, boolean>>
 	---@field assignmentSortType AssignmentSortType
 	---@field notes table<string, EncounterPlannerDbNote>
@@ -403,20 +430,28 @@ local defaults = {
 	---@field lastOpenNote string
 	profile = {
 		activeBossAbilities = {},
-		assignmentSortType = "First Appearance",
 		notes = {},
 		sharedRoster = {},
 		lastOpenNote = "",
-		keyBindings = {
-			pan = "LeftButton",
-			zoom = "CTRL-MouseScroll",
-			scroll = "MouseScroll",
-			editAssignment = "RightButton",
-			newAssignment = "RightButton",
-		},
-		preferredTimelineHeights = {
-			numberOfAssignmentsToShow = 8,
-			numberOfBossAbilitiesToShow = 6,
+		---@class EncounterPlannerPreferences
+		---@field keyBindings EncounterPlannerKeyBindings
+		---@field assignmentSortType AssignmentSortType
+		---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
+		---@field zoomCenteredOnCursor boolean
+		preferences = {
+			keyBindings = {
+				pan = "LeftButton",
+				zoom = "Ctrl-MouseScroll",
+				scroll = "MouseScroll",
+				editAssignment = "RightButton",
+				newAssignment = "RightButton",
+			},
+			assignmentSortType = "First Appearance",
+			timelineRows = {
+				numberOfAssignmentsToShow = 8,
+				numberOfBossAbilitiesToShow = 6,
+			},
+			zoomCenteredOnCursor = true,
 		},
 	},
 }
