@@ -290,7 +290,6 @@ local function OnAcquire(self)
 
 	self.tabContainer = AceGUI:Create("EPContainer")
 	self.tabContainer:SetLayout("EPHorizontalLayout")
-	self.tabContainer:SetAlignment("center")
 	self.tabContainer:SetSpacing(0, 0)
 
 	local currentRosterTab = AceGUI:Create("EPButton")

@@ -414,6 +414,10 @@ local defaults = {
 			editAssignment = "RightButton",
 			newAssignment = "RightButton",
 		},
+		preferredTimelineHeights = {
+			numberOfAssignmentsToShow = 8,
+			numberOfBossAbilitiesToShow = 6,
+		},
 	},
 }
 

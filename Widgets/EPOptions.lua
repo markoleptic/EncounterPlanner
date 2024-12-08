@@ -7,8 +7,8 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local tooltip = EncounterPlanner.tooltip
 
-local frameWidth = 200
-local frameHeight = 200
+local frameWidth = 400
+local frameHeight = 400
 local windowBarHeight = 28
 local dropdownWidth = 250
 local contentFramePadding = { x = 10, y = 10 }
@@ -49,7 +49,7 @@ local function CreateOptionWidget(option)
 	label:SetFrameHeightFromText()
 	label.text:SetTextColor(1, 0.82, 0, 1)
 	local dropdown = AceGUI:Create("EPDropdown")
-	dropdown:SetWidth(dropdownWidth)
+	dropdown:SetFullWidth(true)
 	dropdown:SetCallback("OnValueChanged", function(_, _, value, _)
 		local valid, valueToRevertTo = option.validate(value)
 		if not valid and valueToRevertTo then
@@ -98,6 +98,7 @@ local function PopulateActiveTab(self, tab)
 
 			local preLineSpacer = AceGUI:Create("EPSpacer")
 			preLineSpacer:SetHeight(preLineSpacing)
+			preLineSpacer:SetFullWidth(true)
 			self.activeContainer:AddChild(preLineSpacer)
 
 			local line = AceGUI:Create("EPSpacer")
@@ -116,22 +117,27 @@ local function PopulateActiveTab(self, tab)
 
 			local postLineSpacer = AceGUI:Create("EPSpacer")
 			postLineSpacer:SetHeight(postLineSpacing)
+			postLineSpacer:SetFullWidth(true)
 			self.activeContainer:AddChild(postLineSpacer)
 
-			local container = AceGUI:Create("EPContainer")
-			container:SetLayout("EPVerticalLayout")
-			container:SetSpacing(0, spacingBetweenOptions)
-			container:SetFullWidth(true)
+			local categoryContainer = AceGUI:Create("EPContainer")
+			categoryContainer:SetLayout("EPVerticalLayout")
+			categoryContainer:SetSpacing(0, spacingBetweenOptions)
+			categoryContainer:SetFullWidth(true)
 			for _, option in ipairs(self.optionTabs[tab]) do
 				if option.category == category then
-					container:AddChild(CreateOptionWidget(option))
+					categoryContainer:AddChild(CreateOptionWidget(option))
 				end
 			end
-			self.activeContainer:AddChild(container)
+
+			categoryContainer:DoLayout()
+			self.activeContainer:AddChild(categoryContainer)
+
 			if categoryIndex ~= #self.tabCategories[tab] then
 				local spacer = AceGUI:Create("EPSpacer")
 				spacer:SetHeight(spacingBetweenCategories)
-				container:AddChild(spacer)
+				spacer:SetFullWidth(true)
+				self.activeContainer:AddChild(spacer)
 			end
 		end
 	else
@@ -140,6 +146,7 @@ local function PopulateActiveTab(self, tab)
 			if index ~= #self.optionTabs[tab] then
 				local spacer = AceGUI:Create("EPSpacer")
 				spacer:SetHeight(spacingBetweenOptions)
+				spacer:SetFullWidth(true)
 				self.activeContainer:AddChild(spacer)
 			end
 		end
@@ -176,9 +183,8 @@ local function OnAcquire(self)
 	self.activeTab = ""
 	self.optionTabs = {}
 	self.tabCategories = {}
-	self:SetLayout("EPVerticalLayout")
-	self.frame:Show()
 	self.content.alignment = "center"
+	self.frame:Show()
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
@@ -197,14 +203,13 @@ local function OnAcquire(self)
 
 	self.tabTitleContainer = AceGUI:Create("EPContainer")
 	self.tabTitleContainer:SetLayout("EPHorizontalLayout")
-	self.tabTitleContainer:SetAlignment("center")
 	self.tabTitleContainer:SetSpacing(0, 0)
 	self:AddChild(self.tabTitleContainer)
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
-	self.activeContainer:SetWidth(350)
+	self.activeContainer:SetFullWidth(true)
 	self:AddChild(self.activeContainer)
 end
 
@@ -217,6 +222,16 @@ local function OnRelease(self)
 	self.optionTabs = nil
 	self.activeTab = nil
 	self.tabCategories = nil
+end
+
+local function OnHeightSet(self, width)
+	self.content:SetHeight(width)
+	self.content.height = width
+end
+
+local function OnWidthSet(self, width)
+	self.content:SetWidth(width)
+	self.content.width = width
 end
 
 ---@param self EPOptions
@@ -315,6 +330,8 @@ local function Constructor()
 		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
+		OnHeightSet = OnHeightSet,
+		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		AddOptionTab = AddOptionTab,
 		SetCurrentTab = SetCurrentTab,

@@ -20,61 +20,90 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	local totalHeight = 0
 	local contentWidth = content.width or content:GetWidth() or 0
 	local maxWidth = 0
-	local alignment = "default"
 	local paddingY = defaultSpacing
 	if content.spacing then
 		paddingY = content.spacing.y
 	end
-	if content.alignment then
-		alignment = content.alignment
-	end
 
 	local hitFirstNonSpacer = false
 	local spacers = {}
-	for i = 1, #children do
-		local child = children[i]
-		local frame = child.frame
-		frame:ClearAllPoints()
-		frame:Show()
 
-		if child.type == "EPSpacer" and child.fillSpace then
-			tinsert(spacers, i)
-		else
-			if i > 1 then
-				if alignment == "default" then
-					frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
-				elseif alignment == "center" then
-					frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
-				end
+	if content.alignment == "center" then
+		for i = 1, #children do
+			local child = children[i]
+			local frame = child.frame
+			frame:ClearAllPoints()
+			frame:Show()
+
+			if child.type == "EPSpacer" and child.fillSpace then
+				tinsert(spacers, i)
 			else
-				if alignment == "default" then
-					frame:SetPoint("TOPLEFT", content, "TOPLEFT")
-				elseif alignment == "center" then
+				if i > 1 then
+					frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
+				else
 					frame:SetPoint("TOP", content, "TOP")
 				end
-			end
 
-			if child.width == "fill" then
-				frame:SetPoint("RIGHT", content)
-			elseif child.width == "relative" then
-				child:SetWidth(contentWidth * child.relWidth)
-			end
+				if child.width == "fill" then
+					frame:SetPoint("LEFT", content)
+					frame:SetPoint("RIGHT", content)
+				elseif child.width == "relative" then
+					child:SetWidth(contentWidth * child.relWidth)
+				end
+				if child.height == "fill" and i == #children then
+					frame:SetPoint("BOTTOM", content)
+				end
 
-			if child.height == "fill" and i == #children then
-				frame:SetPoint("BOTTOM", content)
-			end
+				if child.DoLayout then
+					child:DoLayout()
+				end
 
-			if child.DoLayout then
-				child:DoLayout()
+				local childHeight = frame:GetHeight()
+				totalHeight = totalHeight + childHeight
+				if hitFirstNonSpacer == true then
+					totalHeight = totalHeight + paddingY
+				end
+				maxWidth = max(maxWidth, frame:GetWidth())
+				hitFirstNonSpacer = true
 			end
+		end
+	else
+		for i = 1, #children do
+			local child = children[i]
+			local frame = child.frame
+			frame:ClearAllPoints()
+			frame:Show()
 
-			local childHeight = frame:GetHeight()
-			totalHeight = totalHeight + childHeight
-			if hitFirstNonSpacer == true then
-				totalHeight = totalHeight + paddingY
+			if child.type == "EPSpacer" and child.fillSpace then
+				tinsert(spacers, i)
+			else
+				if i > 1 then
+					frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT", 0, -paddingY)
+				else
+					frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+				end
+
+				if child.width == "fill" then
+					frame:SetPoint("RIGHT", content)
+				elseif child.width == "relative" then
+					child:SetWidth(contentWidth * child.relWidth)
+				end
+				if child.height == "fill" and i == #children then
+					frame:SetPoint("BOTTOM", content)
+				end
+
+				if child.DoLayout then
+					child:DoLayout()
+				end
+
+				local childHeight = frame:GetHeight()
+				totalHeight = totalHeight + childHeight
+				if hitFirstNonSpacer == true then
+					totalHeight = totalHeight + paddingY
+				end
+				maxWidth = max(maxWidth, frame:GetWidth())
+				hitFirstNonSpacer = true
 			end
-			maxWidth = max(maxWidth, frame:GetWidth())
-			hitFirstNonSpacer = true
 		end
 	end
 

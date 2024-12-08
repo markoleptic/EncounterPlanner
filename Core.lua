@@ -28,6 +28,7 @@ local ipairs = ipairs
 local pairs = pairs
 local tinsert = tinsert
 local tonumber = tonumber
+local tostring = tostring
 local tremove = tremove
 local unpack = unpack
 
@@ -395,7 +396,7 @@ local function CreateOptionsMenu()
 		Private.optionsMenu = nil
 	end)
 
-	local options = {
+	local keyBindingOptions = {
 		{
 			label = "Pan",
 			description = "Pans the timeline to the left and right when holding this key.",
@@ -539,8 +540,68 @@ local function CreateOptionsMenu()
 			end,
 		},
 	}
-	optionsMenu:AddOptionTab("Keybindings", options, { "Assignment", "Timeline" })
+
+	local rowValues = {
+		{ itemValue = "4", text = "4" },
+		{ itemValue = "5", text = "5" },
+		{ itemValue = "6", text = "6" },
+		{ itemValue = "7", text = "7" },
+		{ itemValue = "8", text = "8" },
+		{ itemValue = "9", text = "9" },
+		{ itemValue = "10", text = "10" },
+		{ itemValue = "11", text = "11" },
+		{ itemValue = "12", text = "12" },
+	}
+
+	local viewOptions = {
+		{
+			label = "Preferred Number of Assignments to Show",
+			description = "The assignment timeline will attempt to expand or shrink to show this many rows.",
+			category = nil,
+			values = rowValues,
+			get = function()
+				return tostring(AddOn.db.profile.preferredTimelineHeights.numberOfAssignmentsToShow)
+			end,
+			set = function(key)
+				print(key)
+				AddOn.db.profile.preferredTimelineHeights.numberOfAssignmentsToShow = tonumber(key)
+				local timeline = Private.mainFrame:GetTimeline()
+				if timeline then
+					timeline:UpdateHeight()
+					Private.mainFrame:DoLayout()
+				end
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Preferred Number of Boss Abilities to Show",
+			description = "The boss ability timeline will attempt to expand or shrink to show this many rows.",
+			category = nil,
+			values = rowValues,
+			get = function()
+				return tostring(AddOn.db.profile.preferredTimelineHeights.numberOfBossAbilitiesToShow)
+			end,
+			set = function(key)
+				print(key)
+				AddOn.db.profile.preferredTimelineHeights.numberOfBossAbilitiesToShow = tonumber(key)
+				local timeline = Private.mainFrame:GetTimeline()
+				if timeline then
+					timeline:UpdateHeight()
+					Private.mainFrame:DoLayout()
+				end
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+	}
+
+	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
+	optionsMenu:AddOptionTab("View", viewOptions)
 	optionsMenu:SetCurrentTab("Keybindings")
+
 	local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
 	optionsMenu.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 	yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
@@ -1196,6 +1257,9 @@ function Private:CreateGUI()
 	topContainer:AddChild(topLeftContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
+	timeline:SetPreferredTimelineHeights(AddOn.db.profile.preferredTimelineHeights)
+	timeline:SetKeyBindings(AddOn.db.profile.keyBindings)
+	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
 	timeline:SetCallback("ResizeBoundsCalculated", function(_, _, minHeight, maxHeight)
@@ -1208,19 +1272,6 @@ function Private:CreateGUI()
 		end
 		Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, minHeight + heightDiff, nil, maxHeight + heightDiff)
 	end)
-	if not AddOn.db.profile.preferredTimelineHeights then
-		AddOn.db.profile.preferredTimelineHeights = timeline.preferredTimelineHeights
-	end
-	timeline:SetCallback("PreferredTimelineHeightsChanged", function(_, _, assignmentHeight, bossAbilityBarHeight)
-		AddOn.db.profile.preferredTimelineHeights.assignmentHeight = assignmentHeight
-		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight = bossAbilityBarHeight
-	end)
-	timeline:SetPreferredTimelineHeights(
-		AddOn.db.profile.preferredTimelineHeights.assignmentHeight,
-		AddOn.db.profile.preferredTimelineHeights.bossAbilityBarHeight
-	)
-	timeline:SetFullWidth(true)
-	timeline:SetKeyBindings(AddOn.db.profile.keyBindings)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText("Add Assignee")
