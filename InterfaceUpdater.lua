@@ -77,18 +77,14 @@ end
 
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
----@param updateBossAbilitySelectDropdown boolean? Whether to update the boss ability select dropdown
+---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
-	if updateBossAbilitySelectDropdown == nil then
-		updateBossAbilitySelectDropdown = true
-	end
 	local boss = bossUtilities.GetBoss(bossName)
 	local timeline = Private.mainFrame:GetTimeline()
 	if boss and timeline then
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossDropdown = Private.mainFrame:GetBossSelectDropdown()
-		local bossAbilitySelectDropdown = Private.mainFrame:GetBossAbilitySelectDropdown()
-		if bossAbilityContainer and bossDropdown and bossAbilitySelectDropdown then
+		if bossAbilityContainer and bossDropdown then
 			if AddOn.db.profile.activeBossAbilities[bossName] == nil then
 				AddOn.db.profile.activeBossAbilities[bossName] = {}
 			end
@@ -98,9 +94,6 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				bossDropdown:SetValue(bossIndex)
 			end
 			bossAbilityContainer:ReleaseChildren()
-			if updateBossAbilitySelectDropdown then
-				bossAbilitySelectDropdown:Clear()
-			end
 			local bossAbilitySelectItems = {}
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
 				if activeBossAbilities[abilityID] == nil then
@@ -112,8 +105,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 					abilityEntry:SetAbility(abilityID)
 					abilityEntry:SetCallback("OnValueChanged", function(_, _, checked)
 						AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
-						InterfaceUpdater.UpdateBossAbilityList(bossName, true)
-						InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
+						InterfaceUpdater.UpdateBoss(bossName, true)
 					end)
 					bossAbilityContainer:AddChild(abilityEntry)
 				end
@@ -129,9 +121,13 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				end
 			end
 			if updateBossAbilitySelectDropdown then
-				bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
-				bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-				bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities)
+				local bossAbilitySelectDropdown = Private.mainFrame:GetBossAbilitySelectDropdown()
+				if bossAbilitySelectDropdown then
+					bossAbilitySelectDropdown:Clear()
+					bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
+					bossAbilitySelectDropdown:SetText("Active Boss Abilities")
+					bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities)
+				end
 			end
 		end
 		Private.mainFrame:DoLayout()
@@ -159,6 +155,8 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 end
 
 -- Updates the list of boss abilities and the boss ability timeline.
+---@param bossName string The name of the boss
+---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 function InterfaceUpdater.UpdateBoss(bossName, updateBossAbilitySelectDropdown)
 	InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
 	InterfaceUpdater.UpdateTimelineBossAbilities(bossName)

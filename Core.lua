@@ -692,7 +692,7 @@ local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
 	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 	if bossDef then
 		AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
-		interfaceUpdater.UpdateBoss(bossDef.name, true)
+		interfaceUpdater.UpdateBoss(bossDef.name, false)
 	end
 end
 
