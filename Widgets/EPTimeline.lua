@@ -1310,7 +1310,6 @@ local function SetAllowHeightResizing(self, allow)
 			+ assignmentHeight
 
 		self:SetHeight(totalHeight)
-		self.parent:DoLayout()
 		self:UpdateTimeline()
 	end
 end

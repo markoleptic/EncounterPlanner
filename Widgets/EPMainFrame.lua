@@ -325,15 +325,14 @@ local function Constructor()
 	resizer:SetScript("OnMouseUp", function(_, mouseButton)
 		if mouseButton == "LeftButton" then
 			if frame.isResizing == true then
-				AceGUI:ClearFocus()
 				frame.isResizing = nil
-				frame:StopMovingOrSizing()
 				local x, y = frame:GetLeft(), frame:GetTop()
+				frame:StopMovingOrSizing()
+				widget:GetTimeline():SetFullHeight(false)
+				widget:GetTimeline():SetAllowHeightResizing(false)
 				frame:ClearAllPoints()
 				frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 				widget:DoLayout()
-				widget:GetTimeline():SetFullHeight(false)
-				widget:GetTimeline():SetAllowHeightResizing(false)
 			end
 		end
 	end)

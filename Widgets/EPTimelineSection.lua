@@ -78,7 +78,8 @@ local function UpdateScrollBarPrivate(self)
 	local timelineWidth = self.timelineFrame:GetWidth()
 
 	local verticalScrollBarHeight = self.scrollBar:GetHeight()
-	local horizontalScrollBarWidth = self.horizontalScrollBar:GetWidth()
+	-- Sometimes horizontal scroll bar width can be zero when resizing, but is same as timeline width
+	local horizontalScrollBarWidth = max(self.horizontalScrollBar:GetWidth(), timelineWidth)
 
 	-- Calculate the scroll bar thumb size based on the visible area
 	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
@@ -208,7 +209,8 @@ local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
 		newVisibleEndTime = min(timelineDuration, newVisibleEndTime)
 
 		-- Adjust the timeline frame width based on zoom factor
-		local newTimelineFrameWidth = scrollFrame:GetWidth() * zoomFactor
+		local scrollFrameWidth = scrollFrame:GetWidth()
+		local newTimelineFrameWidth = max(scrollFrameWidth, scrollFrameWidth * zoomFactor)
 
 		-- Recalculate the new scroll position based on the new visible start time
 		local newHorizontalScroll = (newVisibleStartTime / timelineDuration) * newTimelineFrameWidth
