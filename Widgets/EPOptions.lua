@@ -6,13 +6,15 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local tooltip = EncounterPlanner.tooltip
+local ipairs = ipairs
+local pairs = pairs
+local type = type
 
 local frameWidth = 400
 local frameHeight = 400
 local windowBarHeight = 28
-local dropdownWidth = 250
 local contentFramePadding = { x = 10, y = 10 }
-local title = "Options"
+local title = "Preferences"
 local categoryFontSize = 16
 local optionLabelFontSize = 14
 local spacingBetweenOptions = 5
@@ -35,6 +37,16 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
+---@param radioButton EPRadioButton
+---@param radioButtonGroup EPContainer
+local function handleRadioButtonToggled(radioButton, radioButtonGroup)
+	for _, child in ipairs(radioButtonGroup.children) do
+		if child ~= radioButton then
+			child:SetToggled(false)
+		end
+	end
+end
+
 ---@param option EPSettingOption
 ---@return EPContainer
 local function CreateOptionWidget(option)
@@ -42,38 +54,76 @@ local function CreateOptionWidget(option)
 	container:SetLayout("EPVerticalLayout")
 	container:SetSpacing(0, 2)
 	container:SetFullWidth(true)
+
 	local label = AceGUI:Create("EPLabel")
 	label:SetText(option.label)
 	label:SetFontSize(optionLabelFontSize)
 	label:SetFullWidth(true)
 	label:SetFrameHeightFromText()
 	label.text:SetTextColor(1, 0.82, 0, 1)
-	local dropdown = AceGUI:Create("EPDropdown")
-	dropdown:SetFullWidth(true)
-	dropdown:SetCallback("OnValueChanged", function(_, _, value, _)
-		local valid, valueToRevertTo = option.validate(value)
-		if not valid and valueToRevertTo then
-			dropdown:SetValue(valueToRevertTo)
-			option.set(valueToRevertTo)
-		else
-			option.set(value)
-		end
-	end)
-	dropdown:AddItems(option.values, "EPDropdownItemToggle")
-	dropdown:SetValue(option.get())
-	dropdown:SetCallback("OnLeave", function()
-		tooltip:Hide()
-	end)
-	dropdown:SetCallback("OnEnter", function()
-		tooltip:SetOwner(dropdown.frame, "ANCHOR_TOP")
-		tooltip:SetText(option.label, 1, 0.82, 0, true)
-		if type(option.description) == "string" then
-			tooltip:AddLine(option.description, 1, 1, 1, true)
-		end
-		tooltip:Show()
-	end)
 	container:AddChild(label)
-	container:AddChild(dropdown)
+
+	if option.type == "dropdown" then
+		local dropdown = AceGUI:Create("EPDropdown")
+		dropdown:SetFullWidth(true)
+		dropdown:SetCallback("OnValueChanged", function(_, _, value, _)
+			local valid, valueToRevertTo = option.validate(value)
+			if not valid and valueToRevertTo then
+				dropdown:SetValue(valueToRevertTo)
+				option.set(valueToRevertTo)
+			else
+				option.set(value)
+			end
+		end)
+		dropdown:AddItems(option.values, "EPDropdownItemToggle")
+		dropdown:SetValue(option.get())
+		dropdown:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
+		dropdown:SetCallback("OnEnter", function()
+			tooltip:SetOwner(dropdown.frame, "ANCHOR_TOP")
+			tooltip:SetText(option.label, 1, 0.82, 0, true)
+			if type(option.description) == "string" then
+				tooltip:AddLine(option.description, 1, 1, 1, true)
+			end
+			tooltip:Show()
+		end)
+		container:AddChild(dropdown)
+	elseif option.type == "radioButtonGroup" then
+		local radioButtonGroup = AceGUI:Create("EPContainer")
+		radioButtonGroup:SetLayout("EPVerticalLayout")
+		radioButtonGroup:SetSpacing(0, 0)
+		radioButtonGroup:SetFullWidth(true)
+		for _, itemValueAndText in pairs(option.values) do
+			local radioButton = AceGUI:Create("EPRadioButton")
+			radioButton:SetFullWidth(true)
+			radioButton:SetLabelText(itemValueAndText.text)
+			radioButton:SetToggled(option.get() == itemValueAndText.itemValue)
+			radioButton:GetUserDataTable().key = itemValueAndText.itemValue
+
+			radioButtonGroup:AddChild(radioButton)
+		end
+		for _, child in ipairs(radioButtonGroup.children) do
+			child:SetCallback("Toggled", function(radioButton, _, _)
+				handleRadioButtonToggled(radioButton, radioButtonGroup)
+				local value = radioButton:GetUserData("key")
+				option.set(value)
+			end)
+			child:SetCallback("OnLeave", function()
+				tooltip:Hide()
+			end)
+			child:SetCallback("OnEnter", function()
+				tooltip:SetOwner(radioButtonGroup.frame --[[@as Frame]], "ANCHOR_TOP")
+				tooltip:SetText(option.label, 1, 0.82, 0, true)
+				if type(option.description) == "string" then
+					tooltip:AddLine(option.description, 1, 1, 1, true)
+				end
+				tooltip:Show()
+			end)
+		end
+		container:AddChild(radioButtonGroup)
+	end
+
 	return container
 end
 
@@ -158,6 +208,7 @@ end
 
 ---@class EPSettingOption
 ---@field label string
+---@field type "dropdown"|"radioButtonGroup"
 ---@field description string?
 ---@field category string?
 ---@field values table<integer, string|DropdownItemData>

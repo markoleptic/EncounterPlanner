@@ -59,6 +59,9 @@
 ---@alias EPOptionsType
 ---|"EPOptions"
 
+---@alias EPRadioButtonType
+---|"EPRadioButton"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -73,6 +76,7 @@
 ---| EPTimelineType
 ---| EPMainFrameType
 ---| EPTimelineSectionType
+---| EPRadioButtonType
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -112,6 +116,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPButtonType
 ---@return EPButton
+function AceGUI:Create(type) end
+
+---@param type EPRadioButtonType
+---@return EPRadioButton
 function AceGUI:Create(type) end
 
 ---@param type EPEditBoxType
