@@ -827,7 +827,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		end
 	end
 
-	local assignment = Private.classes.Assignment:New()
+	local assignment = Private.classes.TimedAssignment:New()
 	assignment.assigneeNameOrRole = value
 	tinsert(GetCurrentAssignments(), assignment)
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
