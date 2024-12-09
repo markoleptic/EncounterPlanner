@@ -531,6 +531,34 @@ local function GetZoomFactor(self)
 	return self.sharedTimelineSectionData.zoomFactor
 end
 
+---@param self EPTimelineSection
+---@param distanceToTop number Distance from the top of the scroll frame to the top of the frame to make visible
+---@param distanceToBottom number Distance from the top of the scroll frame to the bottom of the frame to make visible
+local function ScrollVerticallyIfNotVisible(self, distanceToTop, distanceToBottom)
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local timelineFrameHeight = self.timelineFrame:GetHeight()
+
+	local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
+	local distanceFromTopScrollFrameToBottomTimelineFrame = currentVerticalScroll + self.scrollFrame:GetHeight()
+	local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
+	local newVerticalScroll = nil
+
+	if abs(distanceToBottom) > distanceFromTopScrollFrameToBottomTimelineFrame then
+		local difference = abs(distanceToBottom) - distanceFromTopScrollFrameToBottomTimelineFrame
+		newVerticalScroll = currentVerticalScroll + difference
+	elseif abs(distanceToTop) < currentVerticalScroll then
+		newVerticalScroll = abs(distanceToTop)
+	end
+
+	if newVerticalScroll then
+		local snapValue = (self.textureHeight + self.listPadding) / 2
+		local currentSnapValue = floor((newVerticalScroll / snapValue) + 0.5)
+		newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -630,6 +658,7 @@ local function Constructor()
 		SetListPadding = SetListPadding,
 		SetTimelineFrameHeight = SetTimelineFrameHeight,
 		SetTextureHeight = SetTextureHeight,
+		ScrollVerticallyIfNotVisible = ScrollVerticallyIfNotVisible,
 	}
 
 	frame.obj = widget

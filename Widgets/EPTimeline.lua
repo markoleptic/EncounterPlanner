@@ -1209,6 +1209,8 @@ local function SelectBossAbility(self, spellID, spellOccurrence)
 			frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 			frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
 			frame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+			local _, _, _, _, y = frame:GetPointByName("TOPLEFT")
+			self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
 			break
 		end
 	end
