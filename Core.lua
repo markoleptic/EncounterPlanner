@@ -547,6 +547,9 @@ local function CreateOptionsMenu()
 	}
 
 	local rowValues = {
+		{ itemValue = "1", text = "1" },
+		{ itemValue = "2", text = "2" },
+		{ itemValue = "3", text = "3" },
 		{ itemValue = "4", text = "4" },
 		{ itemValue = "5", text = "5" },
 		{ itemValue = "6", text = "6" },
@@ -569,7 +572,6 @@ local function CreateOptionsMenu()
 				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow)
 			end,
 			set = function(key)
-				print(key)
 				AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow = tonumber(key)
 				local timeline = Private.mainFrame:GetTimeline()
 				if timeline then
@@ -591,7 +593,6 @@ local function CreateOptionsMenu()
 				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow)
 			end,
 			set = function(key)
-				print(key)
 				AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow = tonumber(key)
 				local timeline = Private.mainFrame:GetTimeline()
 				if timeline then
@@ -717,13 +718,27 @@ local function HandleBossDropdownValueChanged(value)
 	end
 end
 
+---@param dropdown EPDropdown
 ---@param value number|string
-local function HandleBossAbilitySelectDropdownValueChanged(value, selected)
+---@param selected boolean
+local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
 	local bossIndex = Private.mainFrame:GetBossSelectDropdown():GetValue()
 	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 	if bossDef then
-		AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
-		interfaceUpdater.UpdateBoss(bossDef.name, false)
+		local atLeastOneSelected = false
+		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDef.name]) do
+			if currentAbilityID ~= value and currentSelected then
+				atLeastOneSelected = true
+				break
+			end
+		end
+		if atLeastOneSelected then
+			AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
+			interfaceUpdater.UpdateBoss(bossDef.name, false)
+		else
+			dropdown:SetItemIsSelected(value, true)
+			AddOn.db.profile.activeBossAbilities[bossDef.name][value] = true
+		end
 	end
 end
 
@@ -1125,8 +1140,8 @@ function Private:CreateGUI()
 	bossAbilitySelectContainer:SetSpacing(unpack(noteContainerSpacing))
 
 	local bossAbilitySelectDropdown = AceGUI:Create("EPDropdown")
-	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(_, _, value, selected)
-		HandleBossAbilitySelectDropdownValueChanged(value, selected)
+	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(dropdown, _, value, selected)
+		HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
 	end)
 	bossAbilitySelectDropdown:SetMultiselect(true)
 	bossAbilitySelectDropdown:SetText("Active Boss Abilities")

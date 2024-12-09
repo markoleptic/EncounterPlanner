@@ -30,9 +30,9 @@ local assignmentTextureSubLevel = 0
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
-local minimumNumberOfAssignmentRows = 4
+local minimumNumberOfAssignmentRows = 1
 local maximumNumberOfAssignmentRows = 12
-local minimumNumberOfBossAbilityRows = 4
+local minimumNumberOfBossAbilityRows = 1
 local maximumNumberOfBossAbilityRows = 12
 local minimumBossAbilityWidth = 5
 local tickWidth = 2
@@ -760,9 +760,13 @@ local function CalculateMinMaxStepBarHeight(self)
 	end
 	if minH >= stepH then
 		minH = minH - paddingBetweenBossAbilityBars
+	else
+		minH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
 	end
 	if maxH >= stepH then
 		maxH = maxH - paddingBetweenBossAbilityBars
+	else
+		maxH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
 	end
 	self.barDimensions.min = minH
 	self.barDimensions.max = maxH
@@ -1287,10 +1291,17 @@ local function SetAllowHeightResizing(self, allow)
 		self.assignmentTimeline:SetHeight(assignmentHeight)
 		self.bossAbilityTimeline:SetHeight(barHeight)
 
-		self.preferences.timelineRows.numberOfAssignmentsToShow =
+		local numberOfAssignmentsToShow =
 			floor((assignmentHeight + paddingBetweenAssignments + 0.5) / self.assignmentDimensions.step)
-		self.preferences.timelineRows.numberOfBossAbilitiesToShow =
+		numberOfAssignmentsToShow =
+			min(max(minimumNumberOfAssignmentRows, numberOfAssignmentsToShow), maximumNumberOfAssignmentRows)
+		self.preferences.timelineRows.numberOfAssignmentsToShow = numberOfAssignmentsToShow
+
+		local numberOfBossAbilitiesToShow =
 			floor((barHeight + paddingBetweenBossAbilityBars + 0.5) / self.barDimensions.step)
+		numberOfBossAbilitiesToShow =
+			min(max(minimumNumberOfBossAbilityRows, numberOfBossAbilitiesToShow), maximumNumberOfBossAbilityRows)
+		self.preferences.timelineRows.numberOfBossAbilitiesToShow = numberOfBossAbilitiesToShow
 
 		local totalHeight = paddingBetweenTimelineAndScrollBar
 			+ horizontalScrollBarHeight

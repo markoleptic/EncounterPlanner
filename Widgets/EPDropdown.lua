@@ -655,6 +655,18 @@ do
 	end
 
 	---@param self EPDropdown
+	---@param itemValue any
+	---@param selected boolean
+	local function SetItemIsSelected(self, itemValue, selected)
+		for _, pulloutItem in self.pullout:IterateItems() do
+			if pulloutItem:GetValue() == itemValue then
+				pulloutItem:SetIsSelected(selected)
+				break
+			end
+		end
+	end
+
+	---@param self EPDropdown
 	---@param itemValue any the internal value used to index an item
 	---@param text string the value shown on the item
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
@@ -842,6 +854,7 @@ do
 			GetMultiselect = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,
 			SetSelectedItems = SetSelectedItems,
+			SetItemIsSelected = SetItemIsSelected,
 			Clear = Clear,
 			frame = frame,
 			type = Type,

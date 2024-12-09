@@ -103,9 +103,21 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
 					abilityEntry:SetAbility(abilityID)
-					abilityEntry:SetCallback("OnValueChanged", function(_, _, checked)
-						AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
-						InterfaceUpdater.UpdateBoss(bossName, true)
+					abilityEntry:SetCallback("OnValueChanged", function(entry, _, checked)
+						local atLeastOneSelected = false
+						for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossName]) do
+							if currentAbilityID ~= abilityID and currentSelected then
+								atLeastOneSelected = true
+								break
+							end
+						end
+						if atLeastOneSelected then
+							AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
+							InterfaceUpdater.UpdateBoss(bossName, true)
+						else
+							entry:SetChecked(true)
+							AddOn.db.profile.activeBossAbilities[bossName][abilityID] = true
+						end
 					end)
 					bossAbilityContainer:AddChild(abilityEntry)
 				end
