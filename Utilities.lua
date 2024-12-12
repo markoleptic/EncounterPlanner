@@ -436,30 +436,41 @@ end
 ---@param collapsed table<string, boolean>
 ---@return table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+	local assigneeIndices = {}
+	local groupedByAssignee = {}
+	for _, entry in ipairs(sortedTimelineAssignments) do
+		local assignee = entry.assignment.assigneeNameOrRole
+		if not groupedByAssignee[assignee] then
+			groupedByAssignee[assignee] = {}
+			tinsert(assigneeIndices, assignee)
+		end
+		tinsert(groupedByAssignee[assignee], entry)
+	end
+
 	local order = 0
 	local assigneeMap = {}
 	local assigneeOrder = {}
 
-	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assigneeNameOrRole
-		local spellID = entry.assignment.spellInfo.spellID
-
-		if not assigneeMap[assignee] then
-			assigneeMap[assignee] = {
-				order = order,
-				spellIDs = {},
-			}
-			tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = nil })
-			order = order + 1
-		end
-		if not assigneeMap[assignee].spellIDs[spellID] then
-			if not collapsed[assignee] then
+	for _, assignee in ipairs(assigneeIndices) do
+		for _, entry in ipairs(groupedByAssignee[assignee]) do
+			local spellID = entry.assignment.spellInfo.spellID
+			if not assigneeMap[assignee] then
+				assigneeMap[assignee] = {
+					order = order,
+					spellIDs = {},
+				}
+				tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = nil })
 				order = order + 1
 			end
-			assigneeMap[assignee].spellIDs[spellID] = order
-			tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = spellID })
+			if not assigneeMap[assignee].spellIDs[spellID] then
+				if not collapsed[assignee] then
+					order = order + 1
+				end
+				assigneeMap[assignee].spellIDs[spellID] = order
+				tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = spellID })
+			end
+			entry.order = assigneeMap[assignee].spellIDs[spellID]
 		end
-		entry.order = assigneeMap[assignee].spellIDs[spellID]
 	end
 
 	return assigneeOrder
@@ -509,6 +520,9 @@ local function CompareAssignments(roster, assignmentSortType)
 			if rolePriorityA == rolePriorityB then
 				if assignmentSortType == "Role > Alphabetical" then
 					if nameOrRoleA == nameOrRoleB then
+						if spellIDA == spellIDB then
+							return a.startTime < b.startTime
+						end
 						return spellIDA < spellIDB
 					end
 					return nameOrRoleA < nameOrRoleB

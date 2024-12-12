@@ -452,6 +452,7 @@ local defaults = {
 				numberOfBossAbilitiesToShow = 6,
 			},
 			zoomCenteredOnCursor = true,
+			showSpellCooldownDuration = true,
 		},
 	},
 }

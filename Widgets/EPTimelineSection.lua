@@ -16,291 +16,12 @@ local verticalPositionLineColor = { 1, 0.82, 0, 1 }
 local scrollBarWidth = 20
 local thumbPadding = { x = 2, y = 2 }
 local paddingBetweenTimelineAndScrollBar = 10
-local minZoomFactor = 1
-local maxZoomFactor = 10
-local zoomStep = 0.05
 local defaultListPadding = 4
 local listFrameWidth = 200
 local listTimelinePadding = 10
 
-local function UpdateLinePosition(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	local xPosition, _ = GetCursorPosition()
-	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - self.timelineFrame:GetLeft()
-
-	self.verticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT", newTimeOffset, 0)
-	self.verticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
-	self.verticalPositionLine:Show()
-
-	if
-		self.sharedTimelineSectionData.verticalPositionLineVisible ~= true
-		or self.sharedTimelineSectionData.verticalPositionLineOffset ~= newTimeOffset
-	then
-		self.sharedTimelineSectionData.verticalPositionLineVisible = true
-		self.sharedTimelineSectionData.verticalPositionLineOffset = newTimeOffset
-		self:Fire("SharedDataChanged", false)
-	end
-end
-
-local function HandleTimelineFrameEnter(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	if self.timelineFrameIsDragging == true then
-		return
-	end
-	frame:SetScript("OnUpdate", function()
-		UpdateLinePosition(frame)
-	end)
-end
-
-local function HandleTimelineFrameLeave(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	if self.timelineFrameIsDragging then
-		return
-	end
-	frame:SetScript("OnUpdate", nil)
-	self.verticalPositionLine:Hide()
-
-	if self.sharedTimelineSectionData.verticalPositionLineVisible ~= false then
-		self.sharedTimelineSectionData.verticalPositionLineVisible = false
-		self:Fire("SharedDataChanged", false)
-	end
-end
-
--- Updates the scroll bar width and offset based on the visible area of the timeline.
 ---@param self EPTimelineSection
-local function UpdateScrollBarPrivate(self)
-	local scrollFrame = self.scrollFrame
-
-	local scrollFrameHeight = scrollFrame:GetHeight()
-	local scrollFrameWidth = scrollFrame:GetWidth()
-
-	local timelineHeight = self.timelineFrame:GetHeight()
-	local timelineWidth = self.timelineFrame:GetWidth()
-
-	local verticalScrollBarHeight = self.scrollBar:GetHeight()
-	-- Sometimes horizontal scroll bar width can be zero when resizing, but is same as timeline width
-	local horizontalScrollBarWidth = max(self.horizontalScrollBar:GetWidth(), timelineWidth)
-
-	-- Calculate the scroll bar thumb size based on the visible area
-	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
-	thumbWidth = max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
-	local horizontalThumb = self.horizontalScrollBar.thumb
-	horizontalThumb:SetWidth(thumbWidth)
-
-	local scrollOffset = scrollFrame:GetHorizontalScroll()
-	local maxScroll = timelineWidth - scrollFrameWidth
-	local maxThumbPosition = horizontalScrollBarWidth - thumbWidth - (2 * thumbPadding.x)
-	local horizontalThumbPosition = 0
-	if maxScroll > 0 then -- Prevent division by zero if maxScroll is 0
-		horizontalThumbPosition = (scrollOffset / maxScroll) * maxThumbPosition
-		horizontalThumbPosition = horizontalThumbPosition + thumbPadding.x
-	else
-		horizontalThumbPosition = thumbPadding.x -- If no scrolling is possible, reset the thumb to the start
-	end
-	horizontalThumb:SetPoint("LEFT", horizontalThumbPosition, 0)
-
-	local thumbHeight = (scrollFrameHeight / timelineHeight) * (verticalScrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = max(thumbHeight, 20)
-	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
-	local verticalThumb = self.thumb
-	verticalThumb:SetHeight(thumbHeight)
-
-	local verticalScrollOffset = scrollFrame:GetVerticalScroll()
-	local maxVerticalScroll = timelineHeight - scrollFrameHeight
-	local maxVerticalThumbPosition = verticalScrollBarHeight - thumbHeight - (2 * thumbPadding.y)
-	local verticalThumbPosition = 0
-	if maxVerticalScroll > 0 then -- Prevent division by zero if maxScroll is 0
-		verticalThumbPosition = (verticalScrollOffset / maxVerticalScroll) * maxVerticalThumbPosition
-		verticalThumbPosition = -(thumbPadding.x + verticalThumbPosition)
-	else
-		verticalThumbPosition = -thumbPadding.x -- If no scrolling is possible, reset the thumb to the start
-	end
-	verticalThumb:SetPoint("TOP", 0, verticalThumbPosition)
-end
-
-local function HandleTimelineFrameMouseWheel(frame, delta, updateBoth)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	if not self.totalTimelineDuration or self.totalTimelineDuration <= 0 then
-		return
-	end
-
-	local validScroll = self.IsValidKeyCombination(self.preferences.keyBindings.scroll, "MouseScroll")
-	local validZoom = self.IsValidKeyCombination(self.preferences.keyBindings.zoom, "MouseScroll")
-
-	local scrollFrame = self.scrollFrame
-	local timelineFrame = self.timelineFrame
-
-	if validScroll or updateBoth then
-		local scrollFrameHeight = scrollFrame:GetHeight()
-		local timelineFrameHeight = timelineFrame:GetHeight()
-
-		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
-		local currentVerticalScroll = scrollFrame:GetVerticalScroll()
-		local snapValue = (self.textureHeight + self.listPadding) / 2
-		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
-
-		if delta > 0 then
-			currentSnapValue = currentSnapValue - 1
-		elseif delta < 0 then
-			currentSnapValue = currentSnapValue + 1
-		end
-
-		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
-		scrollFrame:SetVerticalScroll(newVerticalScroll)
-		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
-	end
-
-	if validZoom or updateBoth then
-		local timelineDuration = self.totalTimelineDuration
-		local zoomFactor = self.sharedTimelineSectionData.zoomFactor
-		local timelineWidth = timelineFrame:GetWidth()
-
-		local visibleDuration = timelineDuration / zoomFactor
-		local visibleStartTime = (scrollFrame:GetHorizontalScroll() / timelineWidth) * timelineDuration
-		local visibleEndTime = visibleStartTime + visibleDuration
-
-		-- Update zoom factor based on scroll delta
-		if delta > 0 and zoomFactor < maxZoomFactor then
-			zoomFactor = zoomFactor * (1.0 + zoomStep)
-		elseif delta < 0 and zoomFactor > minZoomFactor then
-			zoomFactor = zoomFactor / (1.0 + zoomStep)
-		end
-
-		local newVisibleDuration = timelineDuration / zoomFactor
-		local newVisibleStartTime, newVisibleEndTime
-
-		if self.preferences.zoomCenteredOnCursor then
-			local xPosition = select(1, GetCursorPosition()) or 0
-			local frameLeft = timelineFrame:GetLeft() or 0
-			local relativeCursorOffset = xPosition / UIParent:GetEffectiveScale() - frameLeft
-
-			-- Convert offset to time, accounting for padding
-			local padding = self.sharedTimelineSectionData.timelineLinePadding.x
-			local effectiveTimelineWidth = timelineWidth - (padding * 2)
-			local cursorTime = (relativeCursorOffset - padding) * timelineDuration / effectiveTimelineWidth
-
-			local beforeCursorDuration = cursorTime - visibleStartTime
-			local afterCursorDuration = visibleEndTime - cursorTime
-			local leftScaleFactor = beforeCursorDuration / visibleDuration
-			local rightScaleFactor = afterCursorDuration / visibleDuration
-			newVisibleStartTime = cursorTime - (newVisibleDuration * leftScaleFactor)
-			newVisibleEndTime = cursorTime + (newVisibleDuration * rightScaleFactor)
-		else
-			local visibleMidpointTime = (visibleStartTime + visibleEndTime) / 2.0
-			newVisibleStartTime = visibleMidpointTime - (newVisibleDuration / 2.0)
-			newVisibleEndTime = visibleMidpointTime + (newVisibleDuration / 2.0)
-		end
-
-		-- Correct boundaries
-		if newVisibleStartTime < 0 then
-			local overflow = newVisibleStartTime
-			newVisibleEndTime = newVisibleEndTime - overflow
-			newVisibleStartTime = 0
-		elseif newVisibleEndTime > timelineDuration then
-			-- Add overflow from end time to start time to prevent empty space between end of timeline and scroll frame
-			local overflow = timelineDuration - newVisibleEndTime
-			newVisibleEndTime = timelineDuration
-			newVisibleStartTime = newVisibleStartTime + overflow
-		end
-
-		-- Ensure boundaries are within the total timeline range
-		newVisibleStartTime = max(0, newVisibleStartTime)
-		newVisibleEndTime = min(timelineDuration, newVisibleEndTime)
-
-		-- Adjust the timeline frame width based on zoom factor
-		local scrollFrameWidth = scrollFrame:GetWidth()
-		local newTimelineFrameWidth = max(scrollFrameWidth, scrollFrameWidth * zoomFactor)
-
-		-- Recalculate the new scroll position based on the new visible start time
-		local newHorizontalScroll = (newVisibleStartTime / timelineDuration) * newTimelineFrameWidth
-
-		scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		timelineFrame:SetWidth(newTimelineFrameWidth)
-
-		if
-			self.sharedTimelineSectionData.zoomFactor ~= zoomFactor
-			or self.sharedTimelineSectionData.timelineFrameWidth ~= newTimelineFrameWidth
-			or self.sharedTimelineSectionData.horizontalScroll ~= newHorizontalScroll
-		then
-			self.sharedTimelineSectionData.zoomFactor = zoomFactor
-			self.sharedTimelineSectionData.timelineFrameWidth = newTimelineFrameWidth
-			self.sharedTimelineSectionData.horizontalScroll = newHorizontalScroll
-			self:Fire("SharedDataChanged", true)
-		end
-	end
-
-	UpdateScrollBarPrivate(self)
-end
-
-local function HandleTimelineFrameUpdate(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	if not self.timelineFrameIsDragging then
-		return
-	end
-
-	local scrollFrame = self.scrollFrame
-	local x, _ = GetCursorPosition()
-	local dx = (x - self.timelineFrameDragStartX) / scrollFrame:GetEffectiveScale()
-	local newHorizontalScroll = scrollFrame:GetHorizontalScroll() - dx
-	local maxHorizontalScroll = self.timelineFrame:GetWidth() - scrollFrame:GetWidth()
-	newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
-	scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	self.timelineFrameDragStartX = x
-
-	if self.sharedTimelineSectionData.horizontalScroll ~= newHorizontalScroll then
-		self.sharedTimelineSectionData.horizontalScroll = newHorizontalScroll
-		self:Fire("SharedDataChanged", true)
-		UpdateScrollBarPrivate(self)
-	end
-end
-
-local function HandleTimelineFrameDragStart(frame, button)
-	local self = frame.obj --[[@as EPTimelineSection]]
-
-	if not self.IsValidKeyCombination(self.preferences.keyBindings.pan, button) then
-		return
-	end
-
-	self.timelineFrameIsDragging = true
-	local x, _ = GetCursorPosition()
-	self.timelineFrameDragStartX = x
-
-	self.verticalPositionLine:Hide()
-
-	if self.sharedTimelineSectionData.verticalPositionLineVisible ~= false then
-		self.sharedTimelineSectionData.verticalPositionLineVisible = false
-		self:Fire("SharedDataChanged", false)
-	end
-
-	frame:SetScript("OnUpdate", HandleTimelineFrameUpdate)
-end
-
-local function HandleTimelineFrameDragStop(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
-	self.timelineFrameIsDragging = false
-	frame:SetScript("OnUpdate", nil)
-
-	local x, y = GetCursorPosition()
-	x = x / UIParent:GetEffectiveScale()
-	y = y / UIParent:GetEffectiveScale()
-	local scrollFrame = self.scrollFrame
-
-	if
-		x > scrollFrame:GetLeft()
-		and x < scrollFrame:GetRight()
-		and y < scrollFrame:GetTop()
-		and y > scrollFrame:GetBottom()
-	then
-		local timelineFrame = self.timelineFrame
-		timelineFrame:SetScript("OnUpdate", function()
-			UpdateLinePosition(timelineFrame)
-		end)
-	end
-end
-
-local function HandleVerticalThumbUpdate(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
+local function HandleVerticalThumbUpdate(self)
 	if not self.verticalThumbIsDragging then
 		return
 	end
@@ -329,18 +50,20 @@ local function HandleVerticalThumbUpdate(frame)
 	self.listScrollFrame:SetVerticalScroll(scrollOffset)
 end
 
-local function HandleVerticalThumbMouseDown(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
+---@param self EPTimelineSection
+local function HandleVerticalThumbMouseDown(self)
 	local _, y = GetCursorPosition()
 	self.verticalThumbOffsetWhenThumbClicked = self.thumb:GetTop() - (y / UIParent:GetEffectiveScale())
 	self.verticalScrollBarHeightWhenThumbClicked = self.scrollBar:GetHeight()
 	self.verticalThumbHeightWhenThumbClicked = self.thumb:GetHeight()
 	self.verticalThumbIsDragging = true
-	self.thumb:SetScript("OnUpdate", HandleVerticalThumbUpdate)
+	self.thumb:SetScript("OnUpdate", function()
+		HandleVerticalThumbUpdate(self)
+	end)
 end
 
-local function HandleVerticalThumbMouseUp(frame)
-	local self = frame.obj --[[@as EPTimelineSection]]
+---@param self EPTimelineSection
+local function HandleVerticalThumbMouseUp(self)
 	self.verticalThumbIsDragging = false
 	self.thumb:SetScript("OnUpdate", nil)
 end
@@ -363,21 +86,14 @@ end
 ---@field verticalPositionLine Texture
 ---@field scrollBar table|Frame
 ---@field thumb table|Frame
----@field horizontalScrollBar table|Frame
----@field ticks table<number, Texture>
----@field totalTimelineDuration number
+---@field ticks table<number, table<number, Texture>>
 ---@field verticalThumbOffsetWhenThumbClicked number
 ---@field verticalScrollBarHeightWhenThumbClicked number
 ---@field verticalThumbHeightWhenThumbClicked number
 ---@field verticalThumbIsDragging boolean
----@field timelineFrameIsDragging boolean
----@field timelineFrameDragStartX number
----@field sharedTimelineSectionData SharedTimelineSectionData
 ---@field textureHeight number
 ---@field listPadding number
 ---@field listContainer EPContainer
----@field preferences EncounterPlannerPreferences
----@field IsValidKeyCombination fun(keyBinding:ScrollKeyBinding|MouseButtonKeyBinding, mouseButton:string): boolean
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
@@ -387,8 +103,6 @@ local function OnAcquire(self)
 	self.verticalScrollBarHeightWhenThumbClicked = 0
 	self.verticalThumbHeightWhenThumbClicked = 0
 	self.verticalThumbIsDragging = false
-	self.timelineFrameIsDragging = false
-	self.timelineFrameDragStartX = 0
 	self.textureHeight = 0
 	self.listPadding = defaultListPadding
 	self.listContainer = AceGUI:Create("EPContainer")
@@ -403,18 +117,9 @@ local function OnAcquire(self)
 end
 
 ---@param self EPTimelineSection
-local function SetSharedData(self, data)
-	self.sharedTimelineSectionData = data
-end
-
----@param self EPTimelineSection
 local function OnRelease(self)
 	self.listContainer:Release()
 	self.listContainer = nil
-	self.horizontalScrollBar = nil
-	self.sharedTimelineSectionData = nil
-	self.preferences = nil
-	self.IsValidKeyCombination = nil
 end
 
 ---@param self EPTimelineSection
@@ -425,43 +130,9 @@ local function OnHeightSet(self, height)
 end
 
 ---@param self EPTimelineSection
-local function GetFrame(self)
-	return self.frame
-end
-
----@param self EPTimelineSection
-local function GetScrollFrame(self)
-	return self.scrollFrame
-end
-
----@param self EPTimelineSection
----@return Frame|table
-local function GetTimelineFrame(self)
-	return self.timelineFrame
-end
-
----@param self EPTimelineSection
----@return table<number, Texture>
+---@return table<number, table<number, Texture>>
 local function GetTicks(self)
 	return self.ticks
-end
-
----@param self EPTimelineSection
----@return EPContainer
-local function GetListContainer(self)
-	return self.listContainer
-end
-
----@param self EPTimelineSection
----@param horizontalScrollBar table|Frame
-local function SetHorizontalScrollBarReference(self, horizontalScrollBar)
-	self.horizontalScrollBar = horizontalScrollBar
-end
-
----@param self EPTimelineSection
----@param totalTimelineDuration number
-local function SetTimelineDuration(self, totalTimelineDuration)
-	self.totalTimelineDuration = totalTimelineDuration
 end
 
 ---@param self EPTimelineSection
@@ -476,6 +147,7 @@ end
 local function SetTimelineFrameHeight(self, height)
 	self.timelineFrame:SetHeight(height)
 	self.listFrame:SetHeight(height)
+	self:UpdateVerticalScroll()
 end
 
 ---@param self EPTimelineSection
@@ -485,52 +157,27 @@ local function SetTextureHeight(self, height)
 end
 
 ---@param self EPTimelineSection
-local function SyncFromSharedData(self)
-	local data = self.sharedTimelineSectionData
-	self.verticalPositionLine:SetPoint("TOP", self.timelineFrame, "TOPLEFT", data.verticalPositionLineOffset, 0)
-	self.verticalPositionLine:SetPoint("BOTTOM", self.timelineFrame, "BOTTOMLEFT", data.verticalPositionLineOffset, 0)
-	if data.verticalPositionLineVisible == true then
-		self.verticalPositionLine:Show()
+local function UpdateVerticalScroll(self)
+	local scrollBarHeight = self.scrollBar:GetHeight()
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local timelineHeight = self.timelineFrame:GetHeight()
+	local verticalScroll = self.scrollFrame:GetVerticalScroll()
+
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * (scrollBarHeight - (2 * thumbPadding.y))
+	thumbHeight = max(thumbHeight, 20) -- Minimum size so it's always visible
+	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	self.thumb:SetHeight(thumbHeight)
+
+	local maxScroll = timelineHeight - scrollFrameHeight
+	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
+	local verticalThumbPosition = 0
+	if maxScroll > 0 then
+		verticalThumbPosition = (verticalScroll / maxScroll) * maxThumbPosition
+		verticalThumbPosition = verticalThumbPosition + thumbPadding.x
 	else
-		self.verticalPositionLine:Hide()
+		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
 	end
-	self.scrollFrame:SetHorizontalScroll(data.horizontalScroll)
-	self.timelineFrame:SetWidth(data.timelineFrameWidth)
-end
-
----@param self EPTimelineSection
----@param horizontalScroll number
-local function SetHorizontalScroll(self, horizontalScroll)
-	self.sharedTimelineSectionData.horizontalScroll = horizontalScroll
-	self.scrollFrame:SetHorizontalScroll(horizontalScroll)
-end
-
----@param self EPTimelineSection
-local function UpdateScrollBar(self)
-	UpdateScrollBarPrivate(self)
-end
-
----@param self EPTimelineSection
-local function UpdateWidthAndScroll(self)
-	HandleTimelineFrameMouseWheel(self.timelineFrame, 0, true)
-end
-
----@param self EPTimelineSection
----@return number
-local function GetMaxScroll(self)
-	return self.timelineFrame:GetWidth() - self.scrollFrame:GetWidth()
-end
-
----@param self EPTimelineSection
----@return number, number
-local function GetHorizontalScrollAndWidth(self)
-	return self.scrollFrame:GetHorizontalScroll(), self.timelineFrame:GetWidth()
-end
-
----@param self EPTimelineSection
----@return number
-local function GetZoomFactor(self)
-	return self.sharedTimelineSectionData.zoomFactor
+	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
 ---@param self EPTimelineSection
@@ -579,7 +226,6 @@ local function Constructor()
 	listFrame:SetPoint("TOPLEFT")
 	listFrame:SetSize(listFrameWidth, frameHeight)
 	listFrame:EnableMouse(true)
-	listFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
 
 	listScrollFrame:SetScrollChild(listFrame)
 	listScrollFrame:EnableMouseWheel(true)
@@ -589,11 +235,6 @@ local function Constructor()
 	timelineFrame:SetSize(frameWidth - scrollBarWidth - paddingBetweenTimelineAndScrollBar, frameHeight)
 	timelineFrame:EnableMouse(true)
 	timelineFrame:RegisterForDrag("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
-	timelineFrame:SetScript("OnMouseWheel", HandleTimelineFrameMouseWheel)
-	timelineFrame:SetScript("OnDragStart", HandleTimelineFrameDragStart)
-	timelineFrame:SetScript("OnDragStop", HandleTimelineFrameDragStop)
-	timelineFrame:SetScript("OnEnter", HandleTimelineFrameEnter)
-	timelineFrame:SetScript("OnLeave", HandleTimelineFrameLeave)
 
 	scrollFrame:SetScrollChild(timelineFrame)
 	scrollFrame:EnableMouseWheel(true)
@@ -620,8 +261,6 @@ local function Constructor()
 	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
 	verticalThumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), verticalScrollBar:GetHeight() - 2 * thumbPadding.y)
 	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
-	verticalThumb:SetScript("OnMouseDown", HandleVerticalThumbMouseDown)
-	verticalThumb:SetScript("OnMouseUp", HandleVerticalThumbMouseUp)
 
 	local verticalThumbBackground =
 		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
@@ -642,33 +281,24 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		OnHeightSet = OnHeightSet,
-		GetFrame = GetFrame,
-		GetScrollFrame = GetScrollFrame,
-		GetTimelineFrame = GetTimelineFrame,
 		GetTicks = GetTicks,
-		GetListContainer = GetListContainer,
-		SetHorizontalScrollBarReference = SetHorizontalScrollBarReference,
-		UpdateScrollBar = UpdateScrollBar,
-		UpdateWidthAndScroll = UpdateWidthAndScroll,
-		SetTimelineDuration = SetTimelineDuration,
-		SyncFromSharedData = SyncFromSharedData,
-		GetHorizontalScrollAndWidth = GetHorizontalScrollAndWidth,
-		GetMaxScroll = GetMaxScroll,
-		GetZoomFactor = GetZoomFactor,
-		SetHorizontalScroll = SetHorizontalScroll,
-		SetSharedData = SetSharedData,
 		SetListPadding = SetListPadding,
 		SetTimelineFrameHeight = SetTimelineFrameHeight,
 		SetTextureHeight = SetTextureHeight,
+		UpdateVerticalScroll = UpdateVerticalScroll,
 		ScrollVerticallyIfNotVisible = ScrollVerticallyIfNotVisible,
+		verticalThumbOffsetWhenThumbClicked = 0,
+		verticalScrollBarHeightWhenThumbClicked = 0,
+		verticalThumbHeightWhenThumbClicked = 0,
+		verticalThumbIsDragging = false,
 	}
 
-	frame.obj = widget
-	listFrame.obj = widget
-	scrollFrame.obj = widget
-	timelineFrame.obj = widget
-	verticalScrollBar.obj = widget
-	verticalThumb.obj = widget
+	verticalThumb:SetScript("OnMouseDown", function()
+		HandleVerticalThumbMouseDown(widget)
+	end)
+	verticalThumb:SetScript("OnMouseUp", function()
+		HandleVerticalThumbMouseUp(widget)
+	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end
