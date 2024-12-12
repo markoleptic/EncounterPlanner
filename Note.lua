@@ -606,15 +606,16 @@ local function CreateTimeAndOptionsExportString(assignment)
 			assignment.combatLogEventSpellID,
 			assignment.spellCount
 		)
+		-- Add spell icon and name so note is more readable
+		local spellInfo = GetSpellInfo(assignment.combatLogEventSpellID)
+		if spellInfo then
+			local spellIconAndName = format("{spell:%d}%s", assignment.combatLogEventSpellID, spellInfo.name)
+			timeAndOptionsString = timeAndOptionsString .. spellIconAndName
+		end
 	else
 		timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
 	end
-	if assignment.generalTextSpellID and assignment.generalTextSpellID >= 0 then
-		local optionsString = format("{spell:%d}%s", assignment.generalTextSpellID, assignment.generalText)
-		timeAndOptionsString = timeAndOptionsString .. optionsString
-	else
-		timeAndOptionsString = timeAndOptionsString .. assignment.generalText
-	end
+
 	timeAndOptionsString = timeAndOptionsString .. " - "
 	return timeAndOptionsString
 end
@@ -751,5 +752,34 @@ function Private:Note(epNoteName, parseMRTNote)
 
 	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
 	utilities.UpdateRosterDataFromGroup(note.roster)
+	for name, sharedRosterEntry in pairs(AddOn.db.profile.sharedRoster) do
+		local noteRosterEntry = note.roster[name]
+		if noteRosterEntry then
+			if not noteRosterEntry.class or noteRosterEntry.class == "" then
+				if sharedRosterEntry.class and sharedRosterEntry.class ~= "" then
+					noteRosterEntry.class = sharedRosterEntry.class
+					if sharedRosterEntry.classColoredName then
+						noteRosterEntry.classColoredName = sharedRosterEntry.classColoredName
+					end
+				end
+			end
+			if not noteRosterEntry.role or noteRosterEntry.role == "" then
+				if sharedRosterEntry.role and sharedRosterEntry.role ~= "" then
+					noteRosterEntry.role = sharedRosterEntry.role
+				end
+			end
+			if not noteRosterEntry.classColoredName or noteRosterEntry.classColoredName == "" then
+				if noteRosterEntry.class then
+					local className = noteRosterEntry.class:match("class:%s*(%a+)")
+					if className then
+						className = className:upper()
+						if Private.spellDB.classes[className] then
+							noteRosterEntry.classColoredName = sharedRosterEntry.classColoredName
+						end
+					end
+				end
+			end
+		end
+	end
 	return bossName
 end
