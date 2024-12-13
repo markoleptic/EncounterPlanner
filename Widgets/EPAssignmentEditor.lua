@@ -44,33 +44,13 @@ local assignmentTriggers = {
 		text = "Combat Log Event",
 		itemValue = "Combat Log Event",
 		dropdownItemMenuData = {
-			{
-				text = "SPELL_CAST_SUCCESS",
-				itemValue = "SCC",
-				dropdownItemMenuData = {},
-			},
-			{
-				text = "SPELL_CAST_START",
-				itemValue = "SCS",
-				dropdownItemMenuData = {},
-			},
-			{
-				text = "SPELL_AURA_APPLIED",
-				itemValue = "SAA",
-				dropdownItemMenuData = {},
-			},
-			{
-				text = "SPELL_AURA_REMOVED",
-				itemValue = "SAR",
-				dropdownItemMenuData = {},
-			},
+			{ text = "SPELL_CAST_SUCCESS", itemValue = "SCC" },
+			{ text = "SPELL_CAST_START", itemValue = "SCS" },
+			{ text = "SPELL_AURA_APPLIED", itemValue = "SAA" },
+			{ text = "SPELL_AURA_REMOVED", itemValue = "SAR" },
 		},
 	},
-	{
-		text = "Absolute Time",
-		itemValue = "Absolute Time",
-		dropdownItemMenuData = {},
-	},
+	{ text = "Absolute Time", itemValue = "Absolute Time" },
 }
 
 ---@class EPAssignmentEditor : AceGUIContainer

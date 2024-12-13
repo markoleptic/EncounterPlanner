@@ -125,10 +125,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 					local spellInfo = GetSpellInfo(abilityID)
 					if spellInfo then
 						local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-						tinsert(
-							bossAbilitySelectItems,
-							{ itemValue = abilityID, text = iconText, dropdownItemMenuData = {} }
-						)
+						tinsert(bossAbilitySelectItems, { itemValue = abilityID, text = iconText })
 					end
 				end
 			end

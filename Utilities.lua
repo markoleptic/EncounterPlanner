@@ -209,7 +209,6 @@ local function CreateSpellDropdownItems()
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
 				itemValue = spellID,
 				text = iconText,
-				dropdownItemMenuData = {},
 			})
 		end
 		tinsert(dropdownItems, classDropdownData)
@@ -226,7 +225,6 @@ local function CreateRacialDropdownItems()
 		tinsert(dropdownItems, {
 			itemValue = racialInfo["spellID"],
 			text = iconText,
-			dropdownItemMenuData = {},
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
@@ -241,7 +239,6 @@ local function CreateTrinketDropdownItems()
 		tinsert(dropdownItems, {
 			itemValue = trinketInfo["spellID"],
 			text = iconText,
-			dropdownItemMenuData = {},
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
@@ -269,7 +266,6 @@ function Utilities.CreateClassDropdownItemData()
 		local classDropdownData = {
 			itemValue = "class:" .. actualClassName:gsub("%s", ""),
 			text = Private.prettyClassNames[className],
-			dropdownItemMenuData = {},
 		}
 		tinsert(dropdownData, classDropdownData)
 	end
@@ -285,56 +281,24 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 			text = "Group",
 			itemValue = "Group",
 			dropdownItemMenuData = {
-				{
-					text = "Everyone",
-					itemValue = "{everyone}",
-					dropdownItemMenuData = {},
-				},
+				{ text = "Everyone", itemValue = "{everyone}" },
 				{
 					text = "Role",
 					itemValue = "Role",
 					dropdownItemMenuData = {
-						{
-							text = "Damager",
-							itemValue = "role:damager",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "Healer",
-							itemValue = "role:healer",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "Tank",
-							itemValue = "role:tank",
-							dropdownItemMenuData = {},
-						},
+						{ text = "Damager", itemValue = "role:damager" },
+						{ text = "Healer", itemValue = "role:healer" },
+						{ text = "Tank", itemValue = "role:tank" },
 					},
 				},
 				{
 					text = "Group Number",
 					itemValue = "Group Number",
 					dropdownItemMenuData = {
-						{
-							text = "1",
-							itemValue = "group:1",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "2",
-							itemValue = "group:2",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "3",
-							itemValue = "group:3",
-							dropdownItemMenuData = {},
-						},
-						{
-							text = "4",
-							itemValue = "group:4",
-							dropdownItemMenuData = {},
-						},
+						{ text = "1", itemValue = "group:1" },
+						{ text = "2", itemValue = "group:2" },
+						{ text = "3", itemValue = "group:3" },
+						{ text = "4", itemValue = "group:4" },
 					},
 				},
 			},
@@ -342,7 +306,6 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 		{
 			text = "Individual",
 			itemValue = "Individual",
-			dropdownItemMenuData = {},
 		},
 	} --[[@as table<integer, DropdownItemData>]]
 
@@ -372,11 +335,13 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster)
 		end
 	end
 	if individualIndex and roster then
+		if not assignmentTypes[individualIndex].dropdownItemMenuData then
+			assignmentTypes[individualIndex].dropdownItemMenuData = {}
+		end
 		for normalName, rosterTable in pairs(roster) do
 			local memberDropdownData = {
 				itemValue = normalName,
 				text = rosterTable.classColoredName or normalName,
-				dropdownItemMenuData = {},
 			}
 			tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
 		end
@@ -395,7 +360,6 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 			tinsert(dropdownItems, {
 				itemValue = normalName,
 				text = rosterTable.classColoredName or normalName,
-				dropdownItemMenuData = {},
 			})
 		end
 	end

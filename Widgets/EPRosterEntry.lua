@@ -43,9 +43,9 @@ local function OnAcquire(self)
 	end)
 	self.groupDropdown:SetDropdownItemHeight(20)
 	self.groupDropdown:AddItems({
-		{ itemValue = "role:tank", text = "Tank", dropdownItemMenuData = {} },
-		{ itemValue = "role:healer", text = "Healer", dropdownItemMenuData = {} },
-		{ itemValue = "role:damager", text = "Damager", dropdownItemMenuData = {} },
+		{ itemValue = "role:tank", text = "Tank" },
+		{ itemValue = "role:healer", text = "Healer" },
+		{ itemValue = "role:damager", text = "Damager" },
 	}, "EPDropdownItemToggle")
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])

@@ -57,7 +57,7 @@ end
 ---@class DropdownItemData
 ---@field itemValue string|number the internal value used to index a dropdown item
 ---@field text string the value shown in the dropdown
----@field dropdownItemMenuData table<integer, DropdownItemData> nested dropdown item menus
+---@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
 
 do
 	---@class EPDropdownPullout : AceGUIWidget

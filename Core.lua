@@ -387,11 +387,7 @@ local function CreateAssignmentEditor()
 			local spellInfo = GetSpellInfo(ID)
 			if spellInfo then
 				local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-				tinsert(dropdownItems, {
-					itemValue = ID,
-					text = iconText,
-					dropdownItemMenuData = {},
-				})
+				tinsert(dropdownItems, { itemValue = ID, text = iconText })
 			end
 		end
 	end
@@ -1175,10 +1171,10 @@ function Private:CreateGUI()
 	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
 	assignmentSortDropdown:SetWidth(topContainerDropdownWidth)
 	assignmentSortDropdown:AddItems({
-		{ itemValue = "Alphabetical", text = "Alphabetical", dropdownItemMenuData = {} },
-		{ itemValue = "First Appearance", text = "First Appearance", dropdownItemMenuData = {} },
-		{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical", dropdownItemMenuData = {} },
-		{ itemValue = "Role > First Appearance", text = "Role > First Appearance", dropdownItemMenuData = {} },
+		{ itemValue = "Alphabetical", text = "Alphabetical" },
+		{ itemValue = "First Appearance", text = "First Appearance" },
+		{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical" },
+		{ itemValue = "Role > First Appearance", text = "Role > First Appearance" },
 	}, "EPDropdownItemToggle")
 	assignmentSortDropdown:SetCallback("OnValueChanged", HandleAssignmentSortDropdownValueChanged)
 
@@ -1207,7 +1203,7 @@ function Private:CreateGUI()
 	local noteDropdownData = {}
 	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
 	for noteName, _ in pairs(AddOn.db.profile.notes) do
-		tinsert(noteDropdownData, { itemValue = noteName, text = noteName, dropdownItemMenuData = {} })
+		tinsert(noteDropdownData, { itemValue = noteName, text = noteName })
 	end
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
 
@@ -1250,24 +1246,16 @@ function Private:CreateGUI()
 			itemValue = "From MRT",
 			text = "From MRT",
 			dropdownItemMenuData = {
-				{
-					itemValue = "FromMRTOverwrite",
-					text = "Overwrite current EP note",
-					dropdownItemMenuData = {},
-				},
-				{ itemValue = "FromMRTNew", text = "Create new EP note", dropdownItemMenuData = {} },
+				{ itemValue = "FromMRTOverwrite", text = "Overwrite current EP note" },
+				{ itemValue = "FromMRTNew", text = "Create new EP note" },
 			},
 		},
 		{
 			itemValue = "From String",
 			text = "From String",
 			dropdownItemMenuData = {
-				{
-					itemValue = "FromStringOverwrite",
-					text = "Overwrite current EP note",
-					dropdownItemMenuData = {},
-				},
-				{ itemValue = "FromStringNew", text = "Create new EP note", dropdownItemMenuData = {} },
+				{ itemValue = "FromStringOverwrite", text = "Overwrite current EP note" },
+				{ itemValue = "FromStringNew", text = "Create new EP note" },
 			},
 		},
 	}
