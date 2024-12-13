@@ -1175,7 +1175,7 @@ end
 ---@param verticalPositionLine Texture
 local function UpdateLinePosition(timelineFrame, verticalPositionLine)
 	local xPosition, _ = GetCursorPosition()
-	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - timelineFrame:GetLeft()
+	local newTimeOffset = (xPosition / UIParent:GetEffectiveScale()) - (timelineFrame:GetLeft() or 0)
 
 	verticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT", newTimeOffset, 0)
 	verticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
@@ -1220,7 +1220,7 @@ local function HandleTimelineFrameUpdate(self)
 	local timelineFrameWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
 	local maxHorizontalScroll = self.bossAbilityTimeline.timelineFrame:GetWidth() - scrollFrameWidth
 	newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
-	scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+	self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.timelineFrameDragStartX = x
@@ -1511,9 +1511,9 @@ local function UpdateTimeline(self)
 	self.bossAbilityTimeline.listScrollFrame:SetVerticalScroll(bossNewVerticalScroll)
 	self.bossAbilityTimeline:UpdateVerticalScroll()
 
-	local timelineWidth = self.assignmentTimeline.timelineFrame:GetWidth()
+	local timelineWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
 	local visibleDuration = totalTimelineDuration / self.zoomFactor
-	local visibleStartTime = (self.assignmentTimeline.scrollFrame:GetHorizontalScroll() / timelineWidth)
+	local visibleStartTime = (self.bossAbilityTimeline.scrollFrame:GetHorizontalScroll() / timelineWidth)
 		* totalTimelineDuration
 	local visibleEndTime = visibleStartTime + visibleDuration
 	local newVisibleDuration = totalTimelineDuration / self.zoomFactor
@@ -1521,7 +1521,7 @@ local function UpdateTimeline(self)
 
 	if self.preferences.zoomCenteredOnCursor then
 		local xPosition = select(1, GetCursorPosition()) or 0
-		local frameLeft = self.assignmentTimeline.timelineFrame:GetLeft() or 0
+		local frameLeft = self.bossAbilityTimeline.timelineFrame:GetLeft() or 0
 		local relativeCursorOffset = xPosition / UIParent:GetEffectiveScale() - frameLeft
 
 		-- Convert offset to time, accounting for padding
@@ -1558,7 +1558,7 @@ local function UpdateTimeline(self)
 	newVisibleEndTime = min(totalTimelineDuration, newVisibleEndTime)
 
 	-- Adjust the timeline frame width based on zoom factor
-	local scrollFrameWidth = self.assignmentTimeline.scrollFrame:GetWidth()
+	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
 	local newTimelineFrameWidth = max(scrollFrameWidth, scrollFrameWidth * self.zoomFactor)
 
 	-- Recalculate the new scroll position based on the new visible start time
