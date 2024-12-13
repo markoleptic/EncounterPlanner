@@ -45,6 +45,7 @@ local topContainerHeight = 36
 local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
 local classDropdownItems = {}
+local maxNumberOfRecentItems = 10
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -350,6 +351,13 @@ local function CreateAssignmentEditor()
 	assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 	assignmentEditor:SetLayout("EPVerticalLayout")
 	assignmentEditor:SetCallback("OnRelease", function()
+		local recent = Private.assignmentEditor.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent")
+		for _, dropdownItemData in ipairs(recent) do
+			tinsert(AddOn.db.profile.recentSpellAssignments, dropdownItemData)
+		end
+		while #AddOn.db.profile.recentSpellAssignments > maxNumberOfRecentItems do
+			tremove(AddOn.db.profile.recentSpellAssignments, 1)
+		end
 		if Private.mainFrame then
 			local timeline = Private.mainFrame:GetTimeline()
 			if timeline then
@@ -367,6 +375,11 @@ local function CreateAssignmentEditor()
 	local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 	assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 	assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+	assignmentEditor.spellAssignmentDropdown:SetItemDisabled("Recent", #AddOn.db.profile.recentSpellAssignments == 0)
+	assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+		"Recent",
+		AddOn.db.profile.recentSpellAssignments
+	)
 	local dropdownItems = {}
 	local boss = GetCurrentBoss()
 	if boss then

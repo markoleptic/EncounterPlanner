@@ -137,6 +137,21 @@ do
 	end
 
 	---@param self EPDropdownPullout
+	---@param item EPDropdownItemToggle|EPDropdownItemMenu
+	---@param index integer
+	local function InsertItem(self, item, index)
+		tinsert(self.items, index, item)
+		item:SetHeight(self.dropdownItemHeight)
+		local h = #self.items * self.dropdownItemHeight
+		self.itemFrame:SetHeight(h)
+		self.frame:SetHeight(min(h + dropdownItemExtraOffset, self.maxHeight))
+		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
+		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
+		item:SetPullout(self)
+		item:SetOnEnter(OnEnter)
+	end
+
+	---@param self EPDropdownPullout
 	---@param value any
 	local function RemoveItem(self, value)
 		local items = self.items
@@ -339,6 +354,7 @@ do
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
 			AddItem = AddItem,
+			InsertItem = InsertItem,
 			RemoveItem = RemoveItem,
 			Open = Open,
 			Close = Close,
@@ -748,12 +764,39 @@ do
 
 	---@param self EPDropdown
 	---@param existingItemValue any the internal value used to index an item
-	---@param dropdownItemData table<integer, DropdownItemData> table of nested dropdown item data
-	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
+	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data
+	---@param index integer? item index to insert into
+	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData, index)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			existingDropdownMenuItem--[[@as EPDropdownItemMenu]]:AddMenuItems(dropdownItemData, self)
+			existingDropdownMenuItem--[[@as EPDropdownItemMenu]]:AddMenuItems(dropdownItemData, self, index)
 		end
+	end
+
+	---@param self EPDropdown
+	---@param existingItemValue any the internal value used to index an item
+	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data
+	local function RemoveItemsFromExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
+		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
+		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
+			for _, data in ipairs(dropdownItemData) do
+				existingDropdownMenuItem.childPullout:RemoveItem(data.itemValue)
+			end
+		end
+	end
+
+	---@param self EPDropdown
+	---@param itemValue any the internal value used to index an item
+	---@return table<integer, DropdownItemData>
+	local function GetItemsFromDropdownItemMenu(self, itemValue)
+		local existingDropdownMenuItem, _ = FindItemAndText(self, itemValue, true)
+		local dropdownItemData = {}
+		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
+			for _, item in pairs(existingDropdownMenuItem.childPullout.items) do
+				tinsert(dropdownItemData, { itemValue = item:GetValue(), text = item:GetText() })
+			end
+		end
+		return dropdownItemData
 	end
 
 	---@param self EPDropdown
@@ -850,6 +893,8 @@ do
 			EditItemText = EditItemText,
 			SetDropdownItemHeight = SetDropdownItemHeight,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
+			GetItemsFromDropdownItemMenu = GetItemsFromDropdownItemMenu,
+			RemoveItemsFromExistingDropdownItemMenu = RemoveItemsFromExistingDropdownItemMenu,
 			SetMultiselect = SetMultiselect,
 			GetMultiselect = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,

@@ -428,11 +428,13 @@ local defaults = {
 	---@field notes table<string, EncounterPlannerDbNote>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
+	---@field recentSpellAssignments table<string, DropdownItemData>
 	profile = {
 		activeBossAbilities = {},
 		notes = {},
 		sharedRoster = {},
 		lastOpenNote = "",
+		recentSpellAssignments = {},
 		---@class EncounterPlannerPreferences
 		---@field keyBindings EncounterPlannerKeyBindings
 		---@field assignmentSortType AssignmentSortType

@@ -429,10 +429,12 @@ do
 	---@param self EPDropdownItemMenu
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
-	local function AddMenuItems(self, dropdownItemData, dropdownParent)
+	---@param index integer?
+	local function AddMenuItems(self, dropdownItemData, dropdownParent, index)
 		if not self.childPullout then
 			self.childPullout = CreateChildPullout(self)
 		end
+		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
@@ -460,7 +462,12 @@ do
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
-					self.childPullout:AddItem(dropdownItemToggle)
+					if currentIndex then
+						self.childPullout:InsertItem(dropdownItemToggle, currentIndex)
+						currentIndex = currentIndex + 1
+					else
+						self.childPullout:AddItem(dropdownItemToggle)
+					end
 				end
 			end
 		end

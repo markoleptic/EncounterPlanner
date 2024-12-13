@@ -5,11 +5,13 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local tremove = tremove
 
 local frameWidth = 200
 local frameHeight = 200
 local buttonFrameHeight = 28
 local windowBarHeight = 28
+local maxNumberOfRecentItems = 10
 local contentFramePadding = { x = 15, y = 15 }
 local title = "Assignment Editor"
 local frameBackdrop = {
@@ -148,10 +150,23 @@ local function HandleSpellAssignmentDropdownValueChanged(frame, callbackName, va
 	local self = frame.obj --[[@as EPAssignmentEditor]]
 	local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
 	if itemText then
-		self.spellAssignmentDropdown:SetItemDisabled("Recent", false)
+		local recent = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent")
+		if #recent > 0 then
+			for i = #recent, 1, -1 do
+				if recent[i].itemValue == value then
+					self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Recent", { recent[i] })
+					tremove(recent, i)
+				end
+			end
+		end
+		while #recent >= maxNumberOfRecentItems do
+			self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Recent", { recent[#recent] })
+			tremove(recent, #recent)
+		end
 		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 			"Recent",
-			{ { itemValue = value, text = itemText, dropdownItemMenuData = {} } }
+			{ { itemValue = value, text = itemText } },
+			1
 		)
 	end
 	self:Fire("DataChanged", "SpellAssignment", value)
