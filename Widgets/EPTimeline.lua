@@ -600,7 +600,6 @@ local function UpdateAssignments(self)
 		frame:Hide()
 		frame.cooldownBackGround:SetWidth(0)
 		frame.cooldownBackGround:Hide()
-		frame.cooldownTexture:SetWidth(0)
 		frame.cooldownTexture:Hide()
 	end
 
@@ -1408,8 +1407,28 @@ local function OnRelease(self)
 	self.addAssigneeDropdown:Release()
 	self.currentTimeLabel:Release()
 	self.currentTimeLabel = nil
+
 	self:ClearSelectedAssignments()
 	self:ClearSelectedBossAbilities()
+
+	for _, frame in ipairs(self.assignmentFrames) do
+		frame:Hide()
+		frame.cooldownBackGround:SetWidth(0)
+		frame.cooldownBackGround:Hide()
+		frame.cooldownTexture:Hide()
+		frame.spellTexture:SetTexture(nil)
+		frame.spellID = nil
+		frame.assignmentIndex = nil
+		frame.assignmentFrame = nil
+	end
+
+	for _, frame in ipairs(self.bossAbilityFrames) do
+		frame:Hide()
+		frame.spellTexture:SetTexture(nil)
+		frame.assignmentFrame = nil
+		frame.abilityInstance = nil
+	end
+
 	self.orderedAssignmentFrames = nil
 	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
@@ -1424,6 +1443,7 @@ local function OnRelease(self)
 	self.barDimensions = nil
 	self.assignmentDimensions = nil
 	self.preferences = nil
+
 	ResetLocalVariables()
 end
 
