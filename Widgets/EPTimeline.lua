@@ -580,9 +580,6 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 			assignment.cooldownBackGround:SetWidth(cooldownEndPosition - timelineStartPosition)
 			assignment.cooldownBackGround:Show()
 			assignment.cooldownTexture:Show()
-		else
-			assignment.cooldownBackGround:Hide()
-			assignment.cooldownTexture:Hide()
 		end
 	end
 
@@ -601,6 +598,10 @@ local function UpdateAssignments(self)
 	-- Hide existing assignments
 	for _, frame in pairs(self.assignmentFrames) do
 		frame:Hide()
+		frame.cooldownBackGround:SetWidth(0)
+		frame.cooldownBackGround:Hide()
+		frame.cooldownTexture:SetWidth(0)
+		frame.cooldownTexture:Hide()
 	end
 
 	wipe(self.orderedAssignmentFrames)
