@@ -233,6 +233,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		return
 	end
 
+	local updateFields = false
+	local updatePreviewText = false
+
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
@@ -247,7 +250,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 					assignment.combatLogEventSpellID = combatLogEventSpellID
 					assignment.spellCount = spellCount
 				end
-				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
+				updateFields = true
 			end
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 		elseif value == "Absolute Time" then
@@ -266,12 +269,12 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				if convertedTime then
 					assignment.time = utilities.Round(convertedTime, 1)
 				end
-				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
+				updateFields = true
 			end
 		elseif value == "Boss Phase" then
 			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
 				assignment = Private.classes.PhasedAssignment:New(assignment, true)
-				assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
+				updateFields = true
 			end
 		end
 	elseif dataType == "CombatLogEventSpellID" then
@@ -293,30 +296,43 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		local spellInfo = GetSpellInfo(value)
 		if spellInfo then
 			assignment.spellInfo = spellInfo
+			updatePreviewText = true
 		end
 	elseif dataType == "AssigneeType" then
 		if value ~= "Individual" then
 			assignment.assigneeNameOrRole = value
+			updatePreviewText = true
 		end
 	elseif dataType == "Assignee" then
 		assignment.assigneeNameOrRole = value
+		updatePreviewText = true
 	elseif dataType == "Time" then
-		if not tonumber(value) then
-			return
-		end
-		if tonumber(value) < 0 then
-			assignmentEditor.timeEditBox:SetText(assignment.time)
-		elseif
-			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
-			or getmetatable(assignment) == Private.classes.PhasedAssignment
-			or getmetatable(assignment) == Private.classes.TimedAssignment
-		then
-			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = tonumber(value)
+		local timeValue = tonumber(value)
+		if timeValue then
+			if timeValue < 0 then
+				assignmentEditor.timeEditBox:SetText(assignment.time)
+			elseif
+				getmetatable(assignment) == Private.classes.CombatLogEventAssignment
+				or getmetatable(assignment) == Private.classes.PhasedAssignment
+				or getmetatable(assignment) == Private.classes.TimedAssignment
+			then
+				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = tonumber(value)
+			end
 		end
 	elseif dataType == "OptionalText" then
-		assignment.text = value -- TODO: update textWithIconReplacements
+		assignment.text = value
+		updatePreviewText = true
 	elseif dataType == "Target" then
 		assignment.targetName = value
+		updatePreviewText = true
+	end
+
+	if updateFields then
+		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+	elseif updatePreviewText then
+		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		assignmentEditor.previewLabel:SetText(previewText)
 	end
 
 	local timeline = Private.mainFrame:GetTimeline()
@@ -805,7 +821,8 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		if not Private.assignmentEditor then
 			Private.assignmentEditor = CreateAssignmentEditor()
 		end
-		Private.assignmentEditor:PopulateFields(assignment, assignmentMetaTables)
+		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 		local timeline = Private.mainFrame:GetTimeline()
 		if timeline then
 			timeline:ClearSelectedAssignments()

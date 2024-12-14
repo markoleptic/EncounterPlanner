@@ -14,6 +14,7 @@ local ceil = math.ceil
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
+local GetSpellTexture = C_Spell.GetSpellTexture
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local hugeNumber = math.huge
@@ -572,6 +573,40 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 	return determinedRoles
 end
 
+---@param assigneeNameOrRole string
+---@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
+---@return string
+function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
+	local legibleString = ""
+	if assigneeNameOrRole == "{everyone}" then
+		return "{everyone}"
+	else
+		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+		if classMatch then
+			classMatch = classMatch:match("^(.*):") or classMatch
+			local prettyClassName = Private.prettyClassNames[classMatch]
+			if prettyClassName then
+				legibleString = prettyClassName
+			else
+				legibleString = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
+			end
+		elseif roleMatch then
+			roleMatch = roleMatch:match("^(.*):") or roleMatch
+			legibleString = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+		elseif groupMatch then
+			groupMatch = groupMatch:match("^(.*):") or groupMatch
+			legibleString = "Group " .. groupMatch
+		elseif roster and roster[assigneeNameOrRole] then
+			if roster[assigneeNameOrRole].classColoredName then
+				legibleString = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
+			end
+		end
+	end
+	return legibleString
+end
+
 -- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
 ---@param data table<integer, DropdownItemData> Dropdown data to sort
 function Utilities.SortDropdownDataByItemValue(data)
@@ -682,33 +717,7 @@ function Utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 	local map = {}
 	for _, nameAndSpell in ipairs(sortedAssigneesAndSpells) do
 		local assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
-		local abilityEntryText = assigneeNameOrRole
-		if assigneeNameOrRole == "{everyone}" then
-			abilityEntryText = "Everyone"
-		else
-			local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-			local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-			local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-			if classMatch then
-				classMatch = classMatch:match("^(.*):") or classMatch
-				local prettyClassName = Private.prettyClassNames[classMatch]
-				if prettyClassName then
-					abilityEntryText = prettyClassName
-				else
-					abilityEntryText = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
-				end
-			elseif roleMatch then
-				roleMatch = roleMatch:match("^(.*):") or roleMatch
-				abilityEntryText = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
-			elseif groupMatch then
-				groupMatch = groupMatch:match("^(.*):") or groupMatch
-				abilityEntryText = "Group " .. groupMatch
-			elseif roster and roster[assigneeNameOrRole] then
-				if roster[assigneeNameOrRole].classColoredName then
-					abilityEntryText = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
-				end
-			end
-		end
+		local abilityEntryText = Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
 		if not visited[abilityEntryText] then
 			tinsert(map, {
 				assigneeNameOrRole = assigneeNameOrRole,
@@ -905,4 +914,11 @@ function Utilities.SearchStringTableForBossName(stringTable)
 		end
 	end
 	return nil
+end
+
+---@param spellID integer
+---@return string
+function Utilities.SubSpellIconTextWithSpellIcon(spellID)
+	local spellTexture = GetSpellTexture(spellID)
+	return "|T" .. (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]) .. ":16|t"
 end

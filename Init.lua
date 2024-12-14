@@ -45,18 +45,12 @@ Private.classes = {}
 
 ---@class Assignment
 ---@field assigneeNameOrRole string Who to assign the assignment to
----@field line string Originally parsed line in the form: {assigneeNameOrRole} {options}
 ---@field text string The originally parsed portion of the assignment containing a {text}{/text} block
----@field textWithIconReplacements string Text with icons formatted back in
----@field strWithIconReplacements string Line with icons formatted back in, similar to how it appears in the note
 ---@field spellInfo SpellInfo The spell info for the assignment
 ---@field targetName string|nil The target's name if the assignment has a '@'
 Private.classes.Assignment = {
 	assigneeNameOrRole = "",
-	line = "",
 	text = "",
-	textWithIconReplacements = "",
-	strWithIconReplacements = "",
 	spellInfo = { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
 	targetName = "",
 	uniqueID = 0,

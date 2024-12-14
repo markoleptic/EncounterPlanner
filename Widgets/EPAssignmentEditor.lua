@@ -459,8 +459,9 @@ end
 
 ---@param self EPAssignmentEditor
 ---@param assignment Assignment
+---@param previewText string
 ---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
-local function PopulateFields(self, assignment, metaTables)
+local function PopulateFields(self, assignment, previewText, metaTables)
 	self:SetAssignmentID(assignment.uniqueID)
 	local assigneeNameOrRole = assignment.assigneeNameOrRole
 	if assigneeNameOrRole == "{everyone}" then
@@ -490,7 +491,7 @@ local function PopulateFields(self, assignment, metaTables)
 		end
 	end
 
-	self.previewLabel:SetText(assignment.strWithIconReplacements)
+	self.previewLabel:SetText(previewText)
 	self.targetDropdown:SetValue(assignment.targetName)
 	self.optionalTextLineEdit:SetText(assignment.text)
 	self.spellAssignmentDropdown:SetValue(assignment.spellInfo.spellID)
