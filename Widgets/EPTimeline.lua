@@ -387,8 +387,8 @@ local function HandleThumbMouseUp(frame)
 end
 
 ---@param self EPTimeline
-local function HandleAssignmentTimelineFrameMouseUp(frame, button, self)
-	if button ~= "RightButton" then
+local function HandleAssignmentTimelineFrameMouseUp(frame, mouseButton, self)
+	if not IsValidKeyCombination(self.preferences.keyBindings.newAssignment, mouseButton) then
 		return
 	end
 

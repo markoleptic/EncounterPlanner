@@ -436,11 +436,11 @@ local defaults = {
 		---@field zoomCenteredOnCursor boolean
 		preferences = {
 			keyBindings = {
-				pan = "LeftButton",
+				pan = "RightButton",
 				zoom = "Ctrl-MouseScroll",
 				scroll = "MouseScroll",
-				editAssignment = "RightButton",
-				newAssignment = "RightButton",
+				editAssignment = "LeftButton",
+				newAssignment = "LeftButton",
 			},
 			assignmentSortType = "First Appearance",
 			timelineRows = {
