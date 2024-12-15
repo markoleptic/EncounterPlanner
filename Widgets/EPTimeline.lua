@@ -22,6 +22,17 @@ local pairs = pairs
 local select = select
 local split = string.split
 local unpack = unpack
+local xpcall = xpcall
+
+local function errorhandler(err)
+	return geterrorhandler()(err)
+end
+
+local function SafeCall(func, ...)
+	if type(func) == "function" then
+		return xpcall(func, errorhandler, ...)
+	end
+end
 
 local frameWidth = 900
 local frameHeight = 400
@@ -62,7 +73,7 @@ local colors = {
 }
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
 local cooldownPadding = 2
-local cooldownBackGroundColor = { 1, 1, 1, 0.2 }
+local cooldownBackGroundColor = { 1, 1, 1, 1 }
 local cooldownTextureAlpha = 0.4
 
 local assignmentIsDragging = false
@@ -349,17 +360,49 @@ local function UpdateTickMarks(self)
 			local tickLeft = assignmentTick:GetLeft()
 			if tickLeft then
 				local tickRight = tickLeft + currentTickWidth
+				local lastAssignmentFrame, lastCdLeft, lastCdRight, lastCdWidth = nil, nil, nil, nil
 				for _, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
-					local cooldown = self.assignmentFrames[assignmentFrameIndex].cooldownBackGround
-					local cooldownLeft = cooldown:GetLeft()
-					if not cooldownLeft then
-						showTick = true
-						break
-					end
-					local cooldownRight = cooldownLeft + cooldown:GetWidth()
-					if not (tickRight <= cooldownLeft or tickLeft >= cooldownRight) then
-						showTick = false
-						break
+					local assignmentFrame = self.assignmentFrames[assignmentFrameIndex]
+					local cdLeft = assignmentFrame:GetLeft()
+					local cdWidth = assignmentFrame.cooldownWidth
+					if cdLeft and cdWidth > 0 then
+						local cdRight = cdLeft + cdWidth
+						if not (tickRight <= cdLeft or tickLeft >= cdRight) then
+							showTick = false
+						end
+						if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
+							if lastCdRight > cdLeft then
+								if lastCdLeft < cdLeft then
+									local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
+									if newLastWidth >= lastCdWidth then
+										lastAssignmentFrame.invalidTexture:Hide()
+										newLastWidth = lastCdWidth
+									end
+									lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
+									assignmentFrame.invalidTexture:Show()
+									assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
+								else
+									local newLastWidth = max(lastCdWidth, assignmentTextureSize.x)
+									lastAssignmentFrame:SetWidth(newLastWidth)
+									if lastCdLeft > cdRight then
+										lastAssignmentFrame.invalidTexture:Hide()
+									else
+										lastAssignmentFrame.invalidTexture:Show()
+									end
+
+									local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
+									assignmentFrame:SetWidth(newWidth)
+									assignmentFrame.invalidTexture:Hide()
+								end
+							else
+								assignmentFrame.invalidTexture:Hide()
+								lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
+							end
+						end
+						lastCdLeft, lastCdRight, lastCdWidth = cdLeft, cdRight, cdWidth
+						lastAssignmentFrame = assignmentFrame
+					else
+						assignmentFrame.invalidTexture:Hide()
 					end
 				end
 			end
@@ -676,35 +719,6 @@ local function UpdateBossAbilityBars(self)
 	end
 end
 
----@param frame GameTooltip|table
----@param elapsed number
-local function HandleAssignmentSpellTextureTooltipUpdate(frame, elapsed)
-	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
-	if frame.updateTooltipTimer > 0 then
-		return
-	end
-	frame.updateTooltipTimer = tooltipUpdateTime
-	local owner = frame:GetOwner()
-	if owner and frame.spellID then
-		frame:SetSpellByID(frame.spellID)
-	end
-end
-
----@param frame Frame
-local function HandleAssignmentSpellTextureEnter(frame)
-	if frame.spellID and frame.spellID ~= 0 then
-		tooltip:ClearLines()
-		tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
-		tooltip:SetSpellByID(frame.spellID)
-		tooltip:SetScript("OnUpdate", HandleAssignmentSpellTextureTooltipUpdate)
-	end
-end
-
-local function HandleAssignmentSpellTextureLeave()
-	tooltip:SetScript("OnUpdate", nil)
-	tooltip:Hide()
-end
-
 ---@param self EPTimeline
 ---@param assignmentFrame Frame
 local function StopMovingAssignment(self, assignmentFrame)
@@ -811,7 +825,8 @@ local function HandleAssignmentMouseDown(frame, mouseButton, timeline)
 
 	frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 	frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-	frame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+	frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
+	frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
 
 	for _, timelineAssignment in ipairs(timeline.timelineAssignments) do
 		if frame.assignmentIndex == timelineAssignment.assignment.uniqueID then
@@ -923,45 +938,86 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 	local timelineFrame = self.assignmentTimeline.timelineFrame
 	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
 
+	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
+	local offsetX = timelineStartPosition + timelineLinePadding.x
+	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
+
 	---@class Frame
 	local assignment = self.assignmentFrames[index]
 	if not assignment then
 		assignment = CreateFrame("Frame", nil, timelineFrame)
+		assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
+		assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
+		assignment:SetClipsChildren(true)
+
 		local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
 		spellTexture:SetPoint("TOPLEFT", 1, -1)
-		spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+		spellTexture:SetWidth(assignmentTextureSize.y - 2)
 
 		local outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 1)
-		outlineTexture:SetAllPoints()
+		outlineTexture:SetPoint("TOPLEFT")
+		outlineTexture:SetPoint("BOTTOMLEFT")
+		outlineTexture:SetWidth(assignmentTextureSize.y)
 		outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		outlineTexture:Show()
 
-		local cooldownBackGround = timelineFrame:CreateTexture(nil, "ARTWORK", nil, -1)
+		local cooldownBackGround = assignment:CreateTexture(nil, "ARTWORK", nil, -1)
 		cooldownBackGround:SetColorTexture(unpack(cooldownBackGroundColor))
 		cooldownBackGround:SetPoint("TOPLEFT", assignment, "TOPLEFT")
-		cooldownBackGround:SetPoint("BOTTOMLEFT", assignment, "BOTTOMLEFT")
+		cooldownBackGround:SetPoint("BOTTOMRIGHT", assignment, "BOTTOMRIGHT")
+		cooldownBackGround:SetAlpha(cooldownTextureAlpha)
 		cooldownBackGround:Hide()
 
-		local cooldownTexture = timelineFrame:CreateTexture(nil, "ARTWORK", nil, 0)
+		local cooldownTexture = assignment:CreateTexture(nil, "ARTWORK", nil, 0)
 		cooldownTexture:SetTexture(cooldownTextureFile, "REPEAT", "REPEAT")
 		cooldownTexture:SetHorizTile(true)
 		cooldownTexture:SetVertTile(true)
-		cooldownTexture:SetPoint("TOPLEFT", cooldownBackGround, "TOPLEFT", cooldownPadding, -cooldownPadding)
-		cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownBackGround, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
+		cooldownTexture:SetPoint("LEFT", cooldownBackGround, "LEFT", cooldownPadding)
+		cooldownTexture:SetHeight(assignmentTextureSize.y - 2 * cooldownPadding)
 		cooldownTexture:SetAlpha(cooldownTextureAlpha)
 		cooldownTexture:Hide()
 
+		local invalidTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
+		invalidTexture:SetAllPoints(spellTexture)
+		invalidTexture:SetColorTexture(0.8, 0.1, 0.1, 0.4)
+		invalidTexture:Hide()
+
+		assignment.spellTexture = spellTexture
+		assignment.invalidTexture = invalidTexture
 		assignment.outlineTexture = outlineTexture
 		assignment.cooldownBackGround = cooldownBackGround
 		assignment.cooldownTexture = cooldownTexture
-		assignment.spellTexture = spellTexture
+		assignment.cooldownWidth = 0
 		assignment.assignmentFrame = timelineFrame
 		assignment.timelineAssignment = nil
-		assignment:SetScript("OnEnter", function(frame, _)
-			HandleAssignmentSpellTextureEnter(frame)
+		assignment.spellTexture:SetScript("OnEnter", function()
+			if spellID and spellID ~= 0 then
+				tooltip:ClearLines()
+				tooltip:SetOwner(assignment, "ANCHOR_TOPLEFT", assignmentTextureSize.x / 2, 0)
+				tooltip:SetSpellByID(spellID)
+				local updateTooltipTimer = 0
+				tooltip:SetScript("OnUpdate", function(_, elapsed)
+					updateTooltipTimer = updateTooltipTimer - elapsed
+					if updateTooltipTimer <= 0 then
+						updateTooltipTimer = tooltipUpdateTime
+						tooltip:SetSpellByID(spellID)
+					end
+				end)
+			end
 		end)
-		assignment:SetScript("OnLeave", function()
-			HandleAssignmentSpellTextureLeave()
+		SafeCall(
+			assignment.spellTexture.SetPassThroughButtons,
+			assignment.spellTexture,
+			"LeftButton",
+			"RightButton",
+			"MiddleButton",
+			"Button4",
+			"Button5"
+		)
+		assignment.spellTexture:SetScript("OnLeave", function()
+			tooltip:SetScript("OnUpdate", nil)
+			tooltip:Hide()
 		end)
 		assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
 			HandleAssignmentMouseDown(frame, mouseButton, self)
@@ -974,7 +1030,10 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 
 	assignment.spellID = spellID
 	assignment.assignmentIndex = uniqueID
-	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
+
+	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
+	assignment:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
+	assignment:Show()
 
 	if spellID == 0 or spellID == nil then
 		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
@@ -997,19 +1056,24 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 			end
 		end
 		if showCooldown and cooldownEndPosition then
-			assignment.cooldownBackGround:SetWidth(cooldownEndPosition - timelineStartPosition)
-			assignment.cooldownBackGround:Show()
-			assignment.cooldownTexture:Show()
+			local left = assignment:GetLeft()
+			if left then
+				local cdOffset = left % 64
+				if order % 2 == 0 then
+					cdOffset = cdOffset + 32
+				end
+
+				assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition
+				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
+
+				local cooldownWidthAlignedToTextureGrid = assignment.cooldownWidth + cdOffset
+				assignment.cooldownTexture:SetWidth(cooldownWidthAlignedToTextureGrid)
+				assignment.cooldownTexture:SetPoint("LEFT", assignment.cooldownBackGround, "LEFT", -cdOffset - 1, 0)
+				assignment.cooldownTexture:Show()
+				assignment.cooldownBackGround:Show()
+			end
 		end
 	end
-
-	local offsetX = timelineStartPosition + timelineLinePadding.x
-	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
-
-	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
-	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
-	assignment:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
-	assignment:Show()
 end
 
 -- Updates the rendering of assignments on the timeline.
@@ -1018,9 +1082,11 @@ local function UpdateAssignments(self)
 	-- Hide existing assignments
 	for _, frame in pairs(self.assignmentFrames) do
 		frame:Hide()
+		frame.invalidTexture:Hide()
 		frame.cooldownBackGround:SetWidth(0)
 		frame.cooldownBackGround:Hide()
 		frame.cooldownTexture:Hide()
+		frame.cooldownWidth = 0
 	end
 
 	wipe(self.orderedAssignmentFrames)
@@ -1901,7 +1967,8 @@ local function SelectAssignment(self, assignmentID)
 		if assignmentFrame.assignmentIndex == assignmentID then
 			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
+			assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
+			assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
 			break
 		end
 	end
@@ -1914,7 +1981,8 @@ local function ClearSelectedAssignment(self, assignmentID)
 		if assignmentFrame.assignmentIndex == assignmentID then
 			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 			assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-			assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+			assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+			assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 			break
 		end
 	end
@@ -1955,7 +2023,8 @@ local function ClearSelectedAssignments(self)
 	for _, assignmentFrame in pairs(self.assignmentFrames) do
 		assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		assignmentFrame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+		assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 	end
 end
 
