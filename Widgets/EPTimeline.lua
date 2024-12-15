@@ -74,7 +74,12 @@ local thumbOffsetWhenThumbClicked = 0
 local scrollBarWidthWhenThumbClicked = 0
 local thumbWidthWhenThumbClicked = 0
 local thumbIsDragging = false
+local timelineFrameOffsetWhenDragStarted = 0
+local timelineFrameIsDragging = false
 local totalTimelineDuration = 0
+
+local throttleInterval = 0.015 -- Minimum time between executions, in seconds
+local lastExecutionTime = 0
 
 local function ResetLocalVariables()
 	assignmentIsDragging = false
@@ -86,7 +91,10 @@ local function ResetLocalVariables()
 	scrollBarWidthWhenThumbClicked = 0
 	thumbWidthWhenThumbClicked = 0
 	thumbIsDragging = false
+	timelineFrameOffsetWhenDragStarted = 0
+	timelineFrameIsDragging = false
 	totalTimelineDuration = 0
+	lastExecutionTime = 0
 end
 
 ---@param keyBinding ScrollKeyBinding|MouseButtonKeyBinding
@@ -122,35 +130,6 @@ local function IsValidKeyCombination(keyBinding, mouseButton)
 	return true
 end
 
----@param frame GameTooltip|table
----@param elapsed number
-local function HandleTimelineTooltipOnUpdate(frame, elapsed)
-	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
-	if frame.updateTooltipTimer > 0 then
-		return
-	end
-	frame.updateTooltipTimer = tooltipUpdateTime
-	local owner = frame:GetOwner()
-	if owner and frame.spellID then
-		frame:SetSpellByID(frame.spellID)
-	end
-end
-
----@param frame Frame
-local function HandleIconEnter(frame, _)
-	if frame.spellID and frame.spellID ~= 0 then
-		tooltip:ClearLines()
-		tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
-		tooltip:SetSpellByID(frame.spellID)
-		tooltip:SetScript("OnUpdate", HandleTimelineTooltipOnUpdate)
-	end
-end
-
-local function HandleIconLeave(_, _)
-	tooltip:SetScript("OnUpdate", nil)
-	tooltip:Hide()
-end
-
 ---@param self EPTimeline
 ---@param frame Frame|Texture
 ---@return number|nil
@@ -165,8 +144,9 @@ local function ConvertTimelineOffsetToTime(self, frame)
 	return time
 end
 
+-- Updates the time of the current time label and hides time labels that overlap with it.
 ---@param self EPTimeline
-local function UpdateCurrentTimeLabel(self)
+local function UpdateTimeLabels(self)
 	local showCurrentTimeLabel = self.bossAbilityTimeline.verticalPositionLine:IsVisible()
 	local offset = self.bossAbilityTimeline.verticalPositionLine:GetLeft()
 		- self.bossAbilityTimeline.timelineFrame:GetLeft()
@@ -205,8 +185,9 @@ end
 ---@param verticalPositionLine Texture
 ---@param offset? number
 local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset)
-	local xPosition, _ = GetCursorPosition()
-	local newTimeOffset = ((xPosition / UIParent:GetEffectiveScale()) - (timelineFrame:GetLeft() or 0))
+	local newTimeOffset = (select(1, GetCursorPosition()) / UIParent:GetEffectiveScale())
+		- (timelineFrame:GetLeft() or 0)
+
 	if offset then
 		newTimeOffset = newTimeOffset + offset
 	end
@@ -214,89 +195,6 @@ local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset)
 	verticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT", newTimeOffset, 0)
 	verticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
 	verticalPositionLine:Show()
-end
-
----@param frame Frame
----@param elapsed number
----@param timeline EPTimeline
-local function HandleAssignmentUpdate(frame, elapsed, timeline)
-	if not assignmentIsDragging then
-		return
-	end
-
-	local xPosition, _ = GetCursorPosition()
-	local newOffset = (xPosition / UIParent:GetEffectiveScale())
-		- timeline.bossAbilityTimeline.timelineFrame:GetLeft()
-		- assignmentOffsetWhenClicked
-
-	local padding = timelineLinePadding.x
-	local scaledPadding = padding
-		* (timeline.bossAbilityTimeline.timelineFrame:GetWidth() / timeline.bossAbilityTimeline.scrollFrame:GetWidth())
-
-	local minAllowedOffset = scaledPadding
-	local maxAllowedOffset = timeline.bossAbilityTimeline.timelineFrame:GetWidth()
-		- scaledPadding
-		- assignmentTextureSize.x
-	local lineOffset = -assignmentOffsetWhenClicked
-	if newOffset < minAllowedOffset then
-		lineOffset = lineOffset + minAllowedOffset - newOffset
-		newOffset = minAllowedOffset
-	elseif newOffset > maxAllowedOffset then
-		lineOffset = lineOffset - (newOffset - maxAllowedOffset)
-		newOffset = maxAllowedOffset
-	end
-
-	UpdateLinePosition(timeline.assignmentTimeline.frame, timeline.assignmentTimeline.verticalPositionLine, lineOffset)
-	UpdateLinePosition(
-		timeline.bossAbilityTimeline.frame,
-		timeline.bossAbilityTimeline.verticalPositionLine,
-		lineOffset
-	)
-	UpdateCurrentTimeLabel(timeline)
-
-	frame:SetPoint("TOPLEFT", newOffset, assignmentVerticalOffsetWhenClicked)
-end
-
----@param frame Frame
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
----@param timeline EPTimeline
-local function HandleAssignmentMouseDown(frame, mouseButton, timeline)
-	if not IsValidKeyCombination(timeline.preferences.keyBindings.editAssignment, mouseButton) then
-		return
-	end
-
-	assignmentIsDragging = true
-	tooltip:SetScript("OnUpdate", nil)
-	tooltip:Hide()
-
-	local x, _ = GetCursorPosition()
-	assignmentOffsetWhenClicked = (x / UIParent:GetEffectiveScale()) - frame:GetLeft()
-	assignmentVerticalOffsetWhenClicked = select(5, frame:GetPointByName("TOPLEFT"))
-
-	frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-	frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-	frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
-
-	frame:SetScript("OnUpdate", function(f, delta)
-		HandleAssignmentUpdate(f, delta, timeline)
-	end)
-end
-
----@param frame Frame
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
----@param timeline EPTimeline
-local function HandleAssignmentMouseUp(frame, mouseButton, timeline)
-	if assignmentIsDragging then
-		assignmentIsDragging = false
-		frame:SetScript("OnUpdate", nil)
-	end
-	if not IsValidKeyCombination(timeline.preferences.keyBindings.editAssignment, mouseButton) then
-		return
-	end
-
-	if frame.assignmentIndex then
-		timeline:Fire("AssignmentClicked", frame.assignmentIndex)
-	end
 end
 
 -- Updates the tick mark positions for the boss ability timeline and assignments timeline.
@@ -448,127 +346,34 @@ local function UpdateTickMarks(self)
 	end
 end
 
+---@param horizontalScrollBar Frame
 ---@param thumb Button
----@param scrollBar Frame
----@param assignmentScrollFrame ScrollFrame
----@param bossAbilityScrollFrame ScrollFrame
----@param bossAbilityTimelineFrame Frame
----@param splitterScrollFrame ScrollFrame
-local function HandleThumbUpdate(
-	thumb,
-	scrollBar,
-	assignmentScrollFrame,
-	bossAbilityScrollFrame,
-	bossAbilityTimelineFrame,
-	splitterScrollFrame
-)
-	if not thumbIsDragging then
-		return
+---@param scrollFrameWidth number
+---@param timelineWidth number
+---@param horizontalScroll number
+local function UpdateHorizontalScroll(horizontalScrollBar, thumb, scrollFrameWidth, timelineWidth, horizontalScroll)
+	-- Sometimes horizontal scroll bar width can be zero when resizing, but is same as timeline width
+	local horizontalScrollBarWidth = horizontalScrollBar:GetWidth()
+	if horizontalScrollBarWidth == 0 then
+		horizontalScrollBarWidth = timelineWidth
 	end
 
-	local paddingX = thumbPadding.x
-	local currentOffset = thumbOffsetWhenThumbClicked
-	local currentWidth = thumbWidthWhenThumbClicked
-	local currentScrollBarWidth = scrollBarWidthWhenThumbClicked
-	local xPosition, _ = GetCursorPosition()
-	local newOffset = (xPosition / UIParent:GetEffectiveScale()) - scrollBar:GetLeft() - currentOffset
+	-- Calculate the scroll bar thumb size based on the visible area
+	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
+	thumbWidth = max(thumbWidth, 20) -- Minimum size so it's always visible
+	thumbWidth = min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
+	thumb:SetWidth(thumbWidth)
 
-	local minAllowedOffset = paddingX
-	local maxAllowedOffset = currentScrollBarWidth - currentWidth - paddingX
-	newOffset = max(newOffset, minAllowedOffset)
-	newOffset = min(newOffset, maxAllowedOffset)
-	thumb:SetPoint("LEFT", newOffset, 0)
-
-	-- Calculate the scroll frame's horizontal scroll based on the thumb's position
-	local maxThumbPosition = currentScrollBarWidth - currentWidth - (2 * paddingX)
-	local maxScroll = bossAbilityTimelineFrame:GetWidth() - bossAbilityScrollFrame:GetWidth()
-	local scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
-	bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
-	assignmentScrollFrame:SetHorizontalScroll(scrollOffset)
-	splitterScrollFrame:SetHorizontalScroll(scrollOffset)
-end
-
----@param self EPTimeline
-local function HandleThumbMouseDown(self)
-	local x, _ = GetCursorPosition()
-	thumbOffsetWhenThumbClicked = (x / UIParent:GetEffectiveScale()) - self.thumb:GetLeft()
-	scrollBarWidthWhenThumbClicked = self.horizontalScrollBar:GetWidth()
-	thumbWidthWhenThumbClicked = self.thumb:GetWidth()
-	thumbIsDragging = true
-	self.thumb:SetScript("OnUpdate", function()
-		HandleThumbUpdate(
-			self.thumb,
-			self.horizontalScrollBar,
-			self.assignmentTimeline.scrollFrame,
-			self.bossAbilityTimeline.scrollFrame,
-			self.bossAbilityTimeline.timelineFrame,
-			self.splitterScrollFrame
-		)
-	end)
-end
-
----@param self EPTimeline
-local function HandleThumbMouseUp(self)
-	thumbIsDragging = false
-	self.thumb:SetScript("OnUpdate", nil)
-end
-
----@param frame Frame
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
----@param self EPTimeline
-local function HandleAssignmentTimelineFrameMouseUp(frame, mouseButton, self)
-	if not IsValidKeyCombination(self.preferences.keyBindings.newAssignment, mouseButton) then
-		return
+	local maxScroll = timelineWidth - scrollFrameWidth
+	local maxThumbPosition = horizontalScrollBarWidth - thumbWidth - (2 * thumbPadding.x)
+	local horizontalThumbPosition = 0
+	if maxScroll > 0 then -- Prevent division by zero if maxScroll is 0
+		horizontalThumbPosition = (horizontalScroll / maxScroll) * maxThumbPosition
+		horizontalThumbPosition = horizontalThumbPosition + thumbPadding.x
+	else
+		horizontalThumbPosition = thumbPadding.x -- If no scrolling is possible, reset the thumb to the start
 	end
-
-	local currentX, currentY = GetCursorPosition()
-	currentX = currentX / UIParent:GetEffectiveScale()
-	currentY = currentY / UIParent:GetEffectiveScale()
-
-	local nearestBarIndex = nil
-	local minDistance = hugeNumber
-	for index, bar in ipairs(self.bossAbilityFrames) do
-		if bar:IsShown() then
-			local barStart = bar:GetLeft()
-			if barStart <= currentX then
-				local distance = currentX - barStart
-				if distance < minDistance then
-					minDistance = distance
-					nearestBarIndex = index
-				end
-			end
-		end
-	end
-
-	if nearestBarIndex then
-		local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
-		local totalAssignmentHeight = 0
-		local assigneeIndex = nil
-		for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
-				totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
-				if totalAssignmentHeight >= relativeDistanceFromTop then
-					assigneeIndex = index
-					break
-				end
-			end
-		end
-		if assigneeIndex then
-			local timelineFrame = self.bossAbilityTimeline.timelineFrame
-			local timelineWidth = timelineFrame:GetWidth()
-			local padding = timelineLinePadding.x
-			local newTimeOffset = currentX - timelineFrame:GetLeft()
-			local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
-			time = min(max(0, time), totalTimelineDuration)
-			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castTime
-			self:Fire(
-				"CreateNewAssignment",
-				self.bossAbilityFrames[nearestBarIndex].abilityInstance,
-				assigneeIndex,
-				relativeAssignmentStartTime
-			)
-		end
-	end
+	thumb:SetPoint("LEFT", horizontalThumbPosition, 0)
 end
 
 -- Helper function to draw a boss ability timeline bar.
@@ -614,152 +419,6 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", timelineStartPosition + padding.x, -offset)
 	frame:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
 	frame:Show()
-end
-
--- Helper function to draw a spell icon for an assignment.
----@param self EPTimeline
----@param startTime number absolute start time of the assignment
----@param spellID integer spellID of the spell being assigned
----@param index integer index of the assignment texture
----@param uniqueID integer unique index of the assignment
----@param order number the relative order of the assignee of the assignment
----@param showCooldown boolean
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown)
-	if totalTimelineDuration <= 0.0 then
-		return
-	end
-
-	local padding = timelineLinePadding
-	local timelineFrame = self.assignmentTimeline.timelineFrame
-	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
-
-	---@class Frame
-	local assignment = self.assignmentFrames[index]
-	if not assignment then
-		assignment = CreateFrame("Frame", nil, timelineFrame)
-		local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
-		spellTexture:SetPoint("TOPLEFT", 1, -1)
-		spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
-
-		local outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 1)
-		outlineTexture:SetAllPoints()
-		outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		outlineTexture:Show()
-
-		local cooldownBackGround = timelineFrame:CreateTexture(nil, "ARTWORK", nil, -1)
-		cooldownBackGround:SetColorTexture(unpack(cooldownBackGroundColor))
-		cooldownBackGround:SetPoint("TOPLEFT", assignment, "TOPLEFT")
-		cooldownBackGround:SetPoint("BOTTOMLEFT", assignment, "BOTTOMLEFT")
-		cooldownBackGround:Hide()
-
-		local cooldownTexture = timelineFrame:CreateTexture(nil, "ARTWORK", nil, 0)
-		cooldownTexture:SetTexture(cooldownTextureFile, "REPEAT", "REPEAT")
-		cooldownTexture:SetHorizTile(true)
-		cooldownTexture:SetVertTile(true)
-		cooldownTexture:SetPoint("TOPLEFT", cooldownBackGround, "TOPLEFT", cooldownPadding, -cooldownPadding)
-		cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownBackGround, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
-		cooldownTexture:SetAlpha(cooldownTextureAlpha)
-		cooldownTexture:Hide()
-
-		assignment.outlineTexture = outlineTexture
-		assignment.cooldownBackGround = cooldownBackGround
-		assignment.cooldownTexture = cooldownTexture
-		assignment.spellTexture = spellTexture
-		assignment.assignmentFrame = timelineFrame
-		assignment:SetScript("OnEnter", function(frame, motion)
-			HandleIconEnter(frame, motion)
-		end)
-		assignment:SetScript("OnLeave", function(frame, motion)
-			HandleIconLeave(frame, motion)
-		end)
-		assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
-			HandleAssignmentMouseDown(frame, mouseButton, self)
-		end)
-		assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
-			HandleAssignmentMouseUp(frame, mouseButton, self)
-		end)
-		self.assignmentFrames[index] = assignment
-	end
-
-	assignment.spellID = spellID
-	assignment.assignmentIndex = uniqueID
-	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
-
-	if spellID == 0 or spellID == nil then
-		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
-		assignment.cooldownBackGround:Hide()
-		assignment.cooldownTexture:Hide()
-	else
-		local iconID, _ = GetSpellTexture(spellID)
-		assignment.spellTexture:SetTexture(iconID)
-		local cooldownEndPosition = nil
-		if showCooldown then
-			local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-			if not cooldownMS or cooldownMS <= 0 then
-				local chargeInfo = GetSpellCharges(spellID)
-				if chargeInfo then
-					cooldownEndPosition = ((startTime + chargeInfo.cooldownDuration) / totalTimelineDuration)
-						* timelineWidth
-				end
-			else
-				cooldownEndPosition = ((startTime + cooldownMS / 1000) / totalTimelineDuration) * timelineWidth
-			end
-		end
-		if showCooldown and cooldownEndPosition then
-			assignment.cooldownBackGround:SetWidth(cooldownEndPosition - timelineStartPosition)
-			assignment.cooldownBackGround:Show()
-			assignment.cooldownTexture:Show()
-		end
-	end
-
-	local offsetX = timelineStartPosition + timelineLinePadding.x
-	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
-
-	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
-	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
-	assignment:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
-	assignment:Show()
-end
-
--- Updates the rendering of assignments on the timeline.
----@param self EPTimeline
-local function UpdateAssignments(self)
-	-- Hide existing assignments
-	for _, frame in pairs(self.assignmentFrames) do
-		frame:Hide()
-		frame.cooldownBackGround:SetWidth(0)
-		frame.cooldownBackGround:Hide()
-		frame.cooldownTexture:Hide()
-	end
-
-	wipe(self.orderedAssignmentFrames)
-	local maxOrder = -hugeNumber
-
-	for index, assignment in ipairs(self.timelineAssignments) do
-		if not self.orderedAssignmentFrames[assignment.order] then
-			self.orderedAssignmentFrames[assignment.order] = {}
-		end
-		local showCooldown = not self.collapsed[assignment.assignment.assigneeNameOrRole]
-			and self.preferences.showSpellCooldownDuration
-		DrawAssignment(
-			self,
-			assignment.startTime,
-			assignment.assignment.spellInfo.spellID,
-			index,
-			assignment.assignment.uniqueID,
-			assignment.order,
-			showCooldown
-		)
-		if showCooldown then
-			tinsert(self.orderedAssignmentFrames[assignment.order], index)
-		end
-		maxOrder = max(maxOrder, assignment.order)
-	end
-	for i = 1, maxOrder do
-		if not self.orderedAssignmentFrames[i] then
-			self.orderedAssignmentFrames[i] = {}
-		end
-	end
 end
 
 ---@param self EPTimeline
@@ -991,141 +650,319 @@ local function UpdateBossAbilityBars(self)
 	end
 end
 
--- Calculate the total required height for boss ability bars.
----@param self EPTimeline
----@param limit boolean|nil
----@return number
-local function CalculateRequiredBarHeight(self, limit)
-	if limit == nil then
-		limit = true
+---@param frame GameTooltip|table
+---@param elapsed number
+local function HandleAssignmentSpellTextureTooltipUpdate(frame, elapsed)
+	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
+	if frame.updateTooltipTimer > 0 then
+		return
 	end
-	local totalBarHeight = 0
-	local abilityCount = 0
-	for _, visible in pairs(self.bossAbilityVisibility) do
-		if visible == true then
-			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
-			abilityCount = abilityCount + 1
-		end
-		if limit == true and abilityCount == maximumNumberOfBossAbilityRows then
-			break
-		end
+	frame.updateTooltipTimer = tooltipUpdateTime
+	local owner = frame:GetOwner()
+	if owner and frame.spellID then
+		frame:SetSpellByID(frame.spellID)
 	end
-	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then
-		totalBarHeight = totalBarHeight - paddingBetweenBossAbilityBars
-	end
-	return totalBarHeight
 end
 
--- Calculate the total required height for assignments.
----@param self EPTimeline
----@param limit boolean
----@return number
-local function CalculateRequiredAssignmentHeight(self, limit)
-	local totalAssignmentHeight = 0
-	local totalAssignmentRows = 0
-	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
-			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
-			totalAssignmentRows = totalAssignmentRows + 1
-			if limit == true and totalAssignmentRows >= maximumNumberOfAssignmentRows then
-				break
-			end
-		end
+---@param frame Frame
+local function HandleAssignmentSpellTextureEnter(frame)
+	if frame.spellID and frame.spellID ~= 0 then
+		tooltip:ClearLines()
+		tooltip:SetOwner(frame.assignmentFrame, "ANCHOR_CURSOR", 0, 0)
+		tooltip:SetSpellByID(frame.spellID)
+		tooltip:SetScript("OnUpdate", HandleAssignmentSpellTextureTooltipUpdate)
 	end
-	if totalAssignmentHeight >= (assignmentTextureSize.y + paddingBetweenAssignments) then
-		totalAssignmentHeight = totalAssignmentHeight - paddingBetweenAssignments
-	end
-	return totalAssignmentHeight
 end
 
+local function HandleAssignmentSpellTextureLeave()
+	tooltip:SetScript("OnUpdate", nil)
+	tooltip:Hide()
+end
+
+---@param frame Frame
+---@param elapsed number
+---@param timeline EPTimeline
+local function HandleAssignmentUpdate(frame, elapsed, timeline)
+	if not assignmentIsDragging then
+		return
+	end
+
+	local newOffset = (select(1, GetCursorPosition()) / UIParent:GetEffectiveScale())
+		- timeline.bossAbilityTimeline.timelineFrame:GetLeft()
+		- assignmentOffsetWhenClicked
+
+	local padding = timelineLinePadding.x
+	local scaledPadding = padding
+		* (timeline.bossAbilityTimeline.timelineFrame:GetWidth() / timeline.bossAbilityTimeline.scrollFrame:GetWidth())
+
+	local minAllowedOffset = scaledPadding
+	local maxAllowedOffset = timeline.bossAbilityTimeline.timelineFrame:GetWidth()
+		- scaledPadding
+		- assignmentTextureSize.x
+	local lineOffset = -assignmentOffsetWhenClicked
+	if newOffset < minAllowedOffset then
+		lineOffset = lineOffset + minAllowedOffset - newOffset
+		newOffset = minAllowedOffset
+	elseif newOffset > maxAllowedOffset then
+		lineOffset = lineOffset - (newOffset - maxAllowedOffset)
+		newOffset = maxAllowedOffset
+	end
+
+	UpdateLinePosition(timeline.assignmentTimeline.frame, timeline.assignmentTimeline.verticalPositionLine, lineOffset)
+	UpdateLinePosition(
+		timeline.bossAbilityTimeline.frame,
+		timeline.bossAbilityTimeline.verticalPositionLine,
+		lineOffset
+	)
+	UpdateTimeLabels(timeline)
+
+	frame:SetPoint("TOPLEFT", newOffset, assignmentVerticalOffsetWhenClicked)
+end
+
+---@param frame Frame
+---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
+---@param timeline EPTimeline
+local function HandleAssignmentMouseDown(frame, mouseButton, timeline)
+	if not IsValidKeyCombination(timeline.preferences.keyBindings.editAssignment, mouseButton) then
+		return
+	end
+
+	assignmentIsDragging = true
+	tooltip:SetScript("OnUpdate", nil)
+	tooltip:Hide()
+
+	assignmentOffsetWhenClicked = (select(1, GetCursorPosition()) / UIParent:GetEffectiveScale()) - frame:GetLeft()
+	assignmentVerticalOffsetWhenClicked = select(5, frame:GetPointByName("TOPLEFT"))
+
+	frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+	frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+	frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+
+	frame:SetScript("OnUpdate", function(f, delta)
+		HandleAssignmentUpdate(f, delta, timeline)
+	end)
+end
+
+---@param frame Frame
+---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
+---@param timeline EPTimeline
+local function HandleAssignmentMouseUp(frame, mouseButton, timeline)
+	if assignmentIsDragging then
+		assignmentIsDragging = false
+		frame:SetScript("OnUpdate", nil)
+	end
+	if not IsValidKeyCombination(timeline.preferences.keyBindings.editAssignment, mouseButton) then
+		return
+	end
+
+	if frame.assignmentIndex then
+		timeline:Fire("AssignmentClicked", frame.assignmentIndex)
+	end
+end
+
+---@param frame Frame
+---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
 ---@param self EPTimeline
-local function CalculateMinMaxStepBarHeight(self)
-	local abilityCount = 1
-	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
-	for _, visible in pairs(self.bossAbilityVisibility) do
-		if visible == true then
-			if abilityCount <= maximumNumberOfBossAbilityRows then
-				maxH = maxH + stepH
+local function HandleAssignmentTimelineFrameMouseUp(frame, mouseButton, self)
+	if not IsValidKeyCombination(self.preferences.keyBindings.newAssignment, mouseButton) then
+		return
+	end
+
+	local currentX, currentY = GetCursorPosition()
+	currentX = currentX / UIParent:GetEffectiveScale()
+	currentY = currentY / UIParent:GetEffectiveScale()
+
+	local nearestBarIndex = nil
+	local minDistance = hugeNumber
+	for index, bar in ipairs(self.bossAbilityFrames) do
+		if bar:IsShown() then
+			local barStart = bar:GetLeft()
+			if barStart <= currentX then
+				local distance = currentX - barStart
+				if distance < minDistance then
+					minDistance = distance
+					nearestBarIndex = index
+				end
 			end
-			if abilityCount <= minimumNumberOfBossAbilityRows then
-				minH = maxH
-			end
-			abilityCount = abilityCount + 1
 		end
 	end
-	if minH >= stepH then
-		minH = minH - paddingBetweenBossAbilityBars
+
+	if nearestBarIndex then
+		local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
+		local totalAssignmentHeight = 0
+		local assigneeIndex = nil
+		for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
+			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
+				totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
+				if totalAssignmentHeight >= relativeDistanceFromTop then
+					assigneeIndex = index
+					break
+				end
+			end
+		end
+		if assigneeIndex then
+			local timelineFrame = self.bossAbilityTimeline.timelineFrame
+			local timelineWidth = timelineFrame:GetWidth()
+			local padding = timelineLinePadding.x
+			local newTimeOffset = currentX - timelineFrame:GetLeft()
+			local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
+			time = min(max(0, time), totalTimelineDuration)
+			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castTime
+			self:Fire(
+				"CreateNewAssignment",
+				self.bossAbilityFrames[nearestBarIndex].abilityInstance,
+				assigneeIndex,
+				relativeAssignmentStartTime
+			)
+		end
+	end
+end
+
+-- Helper function to draw a spell icon for an assignment.
+---@param self EPTimeline
+---@param startTime number absolute start time of the assignment
+---@param spellID integer spellID of the spell being assigned
+---@param index integer index of the assignment texture
+---@param uniqueID integer unique index of the assignment
+---@param order number the relative order of the assignee of the assignment
+---@param showCooldown boolean
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown)
+	if totalTimelineDuration <= 0.0 then
+		return
+	end
+
+	local padding = timelineLinePadding
+	local timelineFrame = self.assignmentTimeline.timelineFrame
+	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
+
+	---@class Frame
+	local assignment = self.assignmentFrames[index]
+	if not assignment then
+		assignment = CreateFrame("Frame", nil, timelineFrame)
+		local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
+		spellTexture:SetPoint("TOPLEFT", 1, -1)
+		spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+
+		local outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 1)
+		outlineTexture:SetAllPoints()
+		outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		outlineTexture:Show()
+
+		local cooldownBackGround = timelineFrame:CreateTexture(nil, "ARTWORK", nil, -1)
+		cooldownBackGround:SetColorTexture(unpack(cooldownBackGroundColor))
+		cooldownBackGround:SetPoint("TOPLEFT", assignment, "TOPLEFT")
+		cooldownBackGround:SetPoint("BOTTOMLEFT", assignment, "BOTTOMLEFT")
+		cooldownBackGround:Hide()
+
+		local cooldownTexture = timelineFrame:CreateTexture(nil, "ARTWORK", nil, 0)
+		cooldownTexture:SetTexture(cooldownTextureFile, "REPEAT", "REPEAT")
+		cooldownTexture:SetHorizTile(true)
+		cooldownTexture:SetVertTile(true)
+		cooldownTexture:SetPoint("TOPLEFT", cooldownBackGround, "TOPLEFT", cooldownPadding, -cooldownPadding)
+		cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownBackGround, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
+		cooldownTexture:SetAlpha(cooldownTextureAlpha)
+		cooldownTexture:Hide()
+
+		assignment.outlineTexture = outlineTexture
+		assignment.cooldownBackGround = cooldownBackGround
+		assignment.cooldownTexture = cooldownTexture
+		assignment.spellTexture = spellTexture
+		assignment.assignmentFrame = timelineFrame
+		assignment:SetScript("OnEnter", function(frame, _)
+			HandleAssignmentSpellTextureEnter(frame)
+		end)
+		assignment:SetScript("OnLeave", function()
+			HandleAssignmentSpellTextureLeave()
+		end)
+		assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
+			HandleAssignmentMouseDown(frame, mouseButton, self)
+		end)
+		assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
+			HandleAssignmentMouseUp(frame, mouseButton, self)
+		end)
+		self.assignmentFrames[index] = assignment
+	end
+
+	assignment.spellID = spellID
+	assignment.assignmentIndex = uniqueID
+	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
+
+	if spellID == 0 or spellID == nil then
+		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		assignment.cooldownBackGround:Hide()
+		assignment.cooldownTexture:Hide()
 	else
-		minH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
-	end
-	if maxH >= stepH then
-		maxH = maxH - paddingBetweenBossAbilityBars
-	else
-		maxH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
-	end
-	self.barDimensions.min = minH
-	self.barDimensions.max = maxH
-	self.barDimensions.step = stepH
-end
-
----@param self EPTimeline
-local function CalculateMinMaxStepAssignmentHeight(self)
-	local totalAssignmentRows = 1
-	local minH, maxH, stepH = 0, 0, (assignmentTextureSize.y + paddingBetweenAssignments)
-	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
-			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
-				maxH = maxH + stepH
+		local iconID, _ = GetSpellTexture(spellID)
+		assignment.spellTexture:SetTexture(iconID)
+		local cooldownEndPosition = nil
+		if showCooldown then
+			local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+			if not cooldownMS or cooldownMS <= 0 then
+				local chargeInfo = GetSpellCharges(spellID)
+				if chargeInfo then
+					cooldownEndPosition = ((startTime + chargeInfo.cooldownDuration) / totalTimelineDuration)
+						* timelineWidth
+				end
+			else
+				cooldownEndPosition = ((startTime + cooldownMS / 1000) / totalTimelineDuration) * timelineWidth
 			end
-			if totalAssignmentRows <= minimumNumberOfAssignmentRows then
-				minH = maxH
-			end
-			totalAssignmentRows = totalAssignmentRows + 1
+		end
+		if showCooldown and cooldownEndPosition then
+			assignment.cooldownBackGround:SetWidth(cooldownEndPosition - timelineStartPosition)
+			assignment.cooldownBackGround:Show()
+			assignment.cooldownTexture:Show()
 		end
 	end
-	if minH >= stepH then
-		minH = minH - paddingBetweenAssignments
-	end
-	if maxH >= stepH then
-		maxH = maxH - paddingBetweenAssignments
-	end
-	self.assignmentDimensions.min = minH
-	self.assignmentDimensions.max = maxH
-	self.assignmentDimensions.step = stepH
+
+	local offsetX = timelineStartPosition + timelineLinePadding.x
+	local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
+
+	assignment:SetSize(assignmentTextureSize.x, assignmentTextureSize.y)
+	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
+	assignment:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
+	assignment:Show()
 end
 
----@param horizontalScrollBar Frame
----@param thumb Button
----@param scrollFrameWidth number
----@param timelineWidth number
----@param horizontalScroll number
-local function UpdateHorizontalScroll(horizontalScrollBar, thumb, scrollFrameWidth, timelineWidth, horizontalScroll)
-	-- Sometimes horizontal scroll bar width can be zero when resizing, but is same as timeline width
-	local horizontalScrollBarWidth = horizontalScrollBar:GetWidth()
-	if horizontalScrollBarWidth == 0 then
-		horizontalScrollBarWidth = timelineWidth
+-- Updates the rendering of assignments on the timeline.
+---@param self EPTimeline
+local function UpdateAssignments(self)
+	-- Hide existing assignments
+	for _, frame in pairs(self.assignmentFrames) do
+		frame:Hide()
+		frame.cooldownBackGround:SetWidth(0)
+		frame.cooldownBackGround:Hide()
+		frame.cooldownTexture:Hide()
 	end
 
-	-- Calculate the scroll bar thumb size based on the visible area
-	local thumbWidth = (scrollFrameWidth / timelineWidth) * (horizontalScrollBarWidth - (2 * thumbPadding.x))
-	thumbWidth = max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
-	thumb:SetWidth(thumbWidth)
+	wipe(self.orderedAssignmentFrames)
+	local maxOrder = -hugeNumber
 
-	local maxScroll = timelineWidth - scrollFrameWidth
-	local maxThumbPosition = horizontalScrollBarWidth - thumbWidth - (2 * thumbPadding.x)
-	local horizontalThumbPosition = 0
-	if maxScroll > 0 then -- Prevent division by zero if maxScroll is 0
-		horizontalThumbPosition = (horizontalScroll / maxScroll) * maxThumbPosition
-		horizontalThumbPosition = horizontalThumbPosition + thumbPadding.x
-	else
-		horizontalThumbPosition = thumbPadding.x -- If no scrolling is possible, reset the thumb to the start
+	for index, assignment in ipairs(self.timelineAssignments) do
+		if not self.orderedAssignmentFrames[assignment.order] then
+			self.orderedAssignmentFrames[assignment.order] = {}
+		end
+		local showCooldown = not self.collapsed[assignment.assignment.assigneeNameOrRole]
+			and self.preferences.showSpellCooldownDuration
+		DrawAssignment(
+			self,
+			assignment.startTime,
+			assignment.assignment.spellInfo.spellID,
+			index,
+			assignment.assignment.uniqueID,
+			assignment.order,
+			showCooldown
+		)
+		if showCooldown then
+			tinsert(self.orderedAssignmentFrames[assignment.order], index)
+		end
+		maxOrder = max(maxOrder, assignment.order)
 	end
-	thumb:SetPoint("LEFT", horizontalThumbPosition, 0)
+	for i = 1, maxOrder do
+		if not self.orderedAssignmentFrames[i] then
+			self.orderedAssignmentFrames[i] = {}
+		end
+	end
 end
-
-local throttleInterval = 0.015 -- Minimum time between executions, in seconds
-local lastExecutionTime = 0
 
 ---@param self EPTimeline
 ---@param isBossTimelineSection boolean
@@ -1259,39 +1096,82 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta,
 end
 
 ---@param self EPTimeline
+local function HandleThumbMouseDown(self)
+	thumbOffsetWhenThumbClicked = (select(1, GetCursorPosition()) / UIParent:GetEffectiveScale()) - self.thumb:GetLeft()
+	scrollBarWidthWhenThumbClicked = self.horizontalScrollBar:GetWidth()
+	thumbWidthWhenThumbClicked = self.thumb:GetWidth()
+	thumbIsDragging = true
+
+	self.thumb:SetScript("OnUpdate", function()
+		if not thumbIsDragging then
+			return
+		end
+
+		local paddingX = thumbPadding.x
+		local currentOffset = thumbOffsetWhenThumbClicked
+		local currentWidth = thumbWidthWhenThumbClicked
+		local currentScrollBarWidth = scrollBarWidthWhenThumbClicked
+		local newOffset = (select(1, GetCursorPosition()) / UIParent:GetEffectiveScale())
+			- self.horizontalScrollBar:GetLeft()
+			- currentOffset
+
+		local minAllowedOffset = paddingX
+		local maxAllowedOffset = currentScrollBarWidth - currentWidth - paddingX
+		newOffset = max(newOffset, minAllowedOffset)
+		newOffset = min(newOffset, maxAllowedOffset)
+		self.thumb:SetPoint("LEFT", newOffset, 0)
+
+		local bossAbilityScrollFrame = self.bossAbilityTimeline.scrollFrame
+		-- Calculate the scroll frame's horizontal scroll based on the thumb's position
+		local maxThumbPosition = currentScrollBarWidth - currentWidth - (2 * paddingX)
+		local maxScroll = self.bossAbilityTimeline.timelineFrame:GetWidth() - bossAbilityScrollFrame:GetWidth()
+		local scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
+		bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
+		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(scrollOffset)
+		self.splitterScrollFrame:SetHorizontalScroll(scrollOffset)
+	end)
+end
+
+---@param self EPTimeline
+local function HandleThumbMouseUp(self)
+	thumbIsDragging = false
+	self.thumb:SetScript("OnUpdate", nil)
+end
+
+---@param self EPTimeline
 ---@param frame Frame
 local function HandleTimelineFrameEnter(self, frame)
-	if self.timelineFrameIsDragging == true then
+	if timelineFrameIsDragging == true then
 		return
 	end
 	frame:SetScript("OnUpdate", function()
 		UpdateLinePosition(self.assignmentTimeline.frame, self.assignmentTimeline.verticalPositionLine)
 		UpdateLinePosition(self.bossAbilityTimeline.frame, self.bossAbilityTimeline.verticalPositionLine)
-		UpdateCurrentTimeLabel(self)
+		UpdateTimeLabels(self)
 	end)
 end
 
 ---@param self EPTimeline
 ---@param frame Frame
 local function HandleTimelineFrameLeave(self, frame)
-	if self.timelineFrameIsDragging then
+	if timelineFrameIsDragging then
 		return
 	end
 	frame:SetScript("OnUpdate", nil)
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
-	UpdateCurrentTimeLabel(self)
+	UpdateTimeLabels(self)
 end
 
 ---@param self EPTimeline
-local function HandleTimelineFrameUpdate(self)
-	if not self.timelineFrameIsDragging then
+local function HandleTimelineFrameDragUpdate(self)
+	if not timelineFrameIsDragging then
 		return
 	end
 
 	local scrollFrame = self.bossAbilityTimeline.scrollFrame
-	local x, _ = GetCursorPosition()
-	local dx = (x - self.timelineFrameDragStartX) / scrollFrame:GetEffectiveScale()
+	local x = select(1, GetCursorPosition())
+	local dx = (x - timelineFrameOffsetWhenDragStarted) / scrollFrame:GetEffectiveScale()
 	local newHorizontalScroll = scrollFrame:GetHorizontalScroll() - dx
 	local scrollFrameWidth = scrollFrame:GetWidth()
 	local timelineFrameWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
@@ -1300,7 +1180,7 @@ local function HandleTimelineFrameUpdate(self)
 	self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	self.timelineFrameDragStartX = x
+	timelineFrameOffsetWhenDragStarted = x
 	UpdateHorizontalScroll(
 		self.horizontalScrollBar,
 		self.thumb,
@@ -1317,14 +1197,13 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 	if not IsValidKeyCombination(self.preferences.keyBindings.pan, button) then
 		return
 	end
-	self.timelineFrameIsDragging = true
-	local x, _ = GetCursorPosition()
-	self.timelineFrameDragStartX = x
+	timelineFrameIsDragging = true
+	timelineFrameOffsetWhenDragStarted = select(1, GetCursorPosition())
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
-	UpdateCurrentTimeLabel(self)
+	UpdateTimeLabels(self)
 	frame:SetScript("OnUpdate", function()
-		HandleTimelineFrameUpdate(self)
+		HandleTimelineFrameDragUpdate(self)
 	end)
 end
 
@@ -1332,7 +1211,7 @@ end
 ---@param frame Frame
 ---@param scrollFrame ScrollFrame
 local function HandleTimelineFrameDragStop(self, frame, scrollFrame)
-	self.timelineFrameIsDragging = false
+	timelineFrameIsDragging = false
 	frame:SetScript("OnUpdate", nil)
 
 	local x, y = GetCursorPosition()
@@ -1348,9 +1227,112 @@ local function HandleTimelineFrameDragStop(self, frame, scrollFrame)
 		frame:SetScript("OnUpdate", function()
 			UpdateLinePosition(self.assignmentTimeline.frame, self.assignmentTimeline.verticalPositionLine)
 			UpdateLinePosition(self.bossAbilityTimeline.frame, self.bossAbilityTimeline.verticalPositionLine)
-			UpdateCurrentTimeLabel(self)
+			UpdateTimeLabels(self)
 		end)
 	end
+end
+
+-- Calculate the total required height for boss ability bars.
+---@param self EPTimeline
+---@param limit boolean|nil
+---@return number
+local function CalculateRequiredBarHeight(self, limit)
+	if limit == nil then
+		limit = true
+	end
+	local totalBarHeight = 0
+	local abilityCount = 0
+	for _, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true then
+			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+			abilityCount = abilityCount + 1
+		end
+		if limit == true and abilityCount == maximumNumberOfBossAbilityRows then
+			break
+		end
+	end
+	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then
+		totalBarHeight = totalBarHeight - paddingBetweenBossAbilityBars
+	end
+	return totalBarHeight
+end
+
+-- Calculate the total required height for assignments.
+---@param self EPTimeline
+---@param limit boolean
+---@return number
+local function CalculateRequiredAssignmentHeight(self, limit)
+	local totalAssignmentHeight = 0
+	local totalAssignmentRows = 0
+	for _, as in ipairs(self.assigneesAndSpells) do
+		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
+			totalAssignmentRows = totalAssignmentRows + 1
+			if limit == true and totalAssignmentRows >= maximumNumberOfAssignmentRows then
+				break
+			end
+		end
+	end
+	if totalAssignmentHeight >= (assignmentTextureSize.y + paddingBetweenAssignments) then
+		totalAssignmentHeight = totalAssignmentHeight - paddingBetweenAssignments
+	end
+	return totalAssignmentHeight
+end
+
+---@param self EPTimeline
+local function CalculateMinMaxStepBarHeight(self)
+	local abilityCount = 1
+	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+	for _, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true then
+			if abilityCount <= maximumNumberOfBossAbilityRows then
+				maxH = maxH + stepH
+			end
+			if abilityCount <= minimumNumberOfBossAbilityRows then
+				minH = maxH
+			end
+			abilityCount = abilityCount + 1
+		end
+	end
+	if minH >= stepH then
+		minH = minH - paddingBetweenBossAbilityBars
+	else
+		minH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
+	end
+	if maxH >= stepH then
+		maxH = maxH - paddingBetweenBossAbilityBars
+	else
+		maxH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
+	end
+	self.barDimensions.min = minH
+	self.barDimensions.max = maxH
+	self.barDimensions.step = stepH
+end
+
+---@param self EPTimeline
+local function CalculateMinMaxStepAssignmentHeight(self)
+	local totalAssignmentRows = 1
+	local minH, maxH, stepH = 0, 0, (assignmentTextureSize.y + paddingBetweenAssignments)
+	for _, as in ipairs(self.assigneesAndSpells) do
+		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
+				maxH = maxH + stepH
+			end
+			if totalAssignmentRows <= minimumNumberOfAssignmentRows then
+				minH = maxH
+			end
+			totalAssignmentRows = totalAssignmentRows + 1
+		end
+	end
+	if minH >= stepH then
+		minH = minH - paddingBetweenAssignments
+	end
+	if maxH >= stepH then
+		maxH = maxH - paddingBetweenAssignments
+	end
+	self.assignmentDimensions.min = minH
+	self.assignmentDimensions.max = maxH
+	self.assignmentDimensions.step = stepH
 end
 
 ---@class EPTimeline : AceGUIWidget
@@ -1383,8 +1365,6 @@ end
 ---@field assignmentDimensions {min: integer, max:integer, step:number}
 ---@field preferences EncounterPlannerPreferences
 ---@field zoomFactor number
----@field timelineFrameIsDragging boolean
----@field timelineFrameDragStartX number
 
 ---@param self EPTimeline
 local function OnAcquire(self)
