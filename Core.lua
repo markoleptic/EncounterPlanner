@@ -1322,6 +1322,36 @@ function Private:CreateGUI()
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
+	timeline.CalculateAssignmentTimeFromStart = function(assignment)
+		return utilities.ConvertAbsoluteTimeToCombatLogEventTime(
+			assignment.startTime,
+			GetCurrentBossName(),
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.combatLogEventSpellID,
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.spellCount,
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.combatLogEventType
+		)
+	end
+	timeline.GetMinimumCombatLogEventTime = function(assignment)
+		return utilities.GetMinimumCombatLogEventTime(
+			GetCurrentBossName(),
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.combatLogEventSpellID,
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.spellCount,
+			assignment
+				.assignment--[[@as CombatLogEventAssignment]]
+				.combatLogEventType
+		)
+	end
+
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)

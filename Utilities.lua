@@ -47,9 +47,9 @@ end
 function Utilities.Round(value, precision)
 	local factor = 10 ^ precision
 	if value > 0 then
-		return ceil(value * factor) / factor
+		return ceil(value * factor - 0.5) / factor
 	else
-		return floor(value * factor) / factor
+		return floor(value * factor + 0.5) / factor
 	end
 end
 
@@ -106,6 +106,63 @@ function Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
 			end
 		end
 		return adjustedTime
+	end
+	return nil
+end
+
+---@param absoluteTime number
+---@param bossName string
+---@param combatLogEventSpellID integer
+---@param spellCount integer
+---@param combatLogEventType CombatLogEventType
+---@return number|nil
+function Utilities.ConvertAbsoluteTimeToCombatLogEventTime(
+	absoluteTime,
+	bossName,
+	combatLogEventSpellID,
+	spellCount,
+	combatLogEventType
+)
+	if
+		absoluteSpellCastStartTables[bossName]
+		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID]
+		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount]
+	then
+		local adjustedTime = absoluteTime - absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount]
+		local ability = bossUtilities.FindBossAbility(combatLogEventSpellID)
+		if ability then
+			if combatLogEventType == "SAR" then
+				adjustedTime = adjustedTime - ability.duration - ability.castTime
+			elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+				adjustedTime = adjustedTime - ability.castTime
+			end
+		end
+		return adjustedTime
+	end
+	return nil
+end
+
+---@param bossName string
+---@param combatLogEventSpellID integer
+---@param spellCount integer
+---@param combatLogEventType CombatLogEventType
+---@return number|nil
+function Utilities.GetMinimumCombatLogEventTime(bossName, combatLogEventSpellID, spellCount, combatLogEventType)
+	if
+		absoluteSpellCastStartTables[bossName]
+		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID]
+		and absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount]
+	then
+		local time = absoluteSpellCastStartTables[bossName][combatLogEventSpellID][spellCount]
+		local ability = bossUtilities.FindBossAbility(combatLogEventSpellID)
+		if ability then
+			if combatLogEventType == "SAR" then
+				time = time + ability.duration + ability.castTime
+			elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+				time = time + ability.castTime
+			end
+		end
+		return time
 	end
 	return nil
 end
@@ -649,11 +706,11 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossNam
 		assignment = assignment --[[@as CombatLogEventAssignment]]
 		local bossTableSpellCastStartTable = absoluteSpellCastStartTables[bossName]
 		if bossTableSpellCastStartTable then
-			local spellIDSpellCastStartTable = bossTableSpellCastStartTable[assignment.combatLogEventSpellID]
+			local spellIDSpellCastStartTable = bossTableSpellCastStartTable[assignment.combatLogEventSpellID] --[[@ as table<integer, number>]]
 			if spellIDSpellCastStartTable then
-				local spellCastStartTable = spellIDSpellCastStartTable[assignment.spellCount]
-				if spellCastStartTable then
-					local startTime = spellCastStartTable + assignment.time
+				local spellCastStart = spellIDSpellCastStartTable[assignment.spellCount]--[[@ as number]]
+				if spellCastStart then
+					local startTime = spellCastStart + assignment.time
 					local ability = bossUtilities.FindBossAbility(assignment.combatLogEventSpellID)
 					if ability then
 						if assignment.combatLogEventType == "SAR" then
