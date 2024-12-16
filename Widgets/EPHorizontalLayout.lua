@@ -11,7 +11,7 @@ local function errorhandler(err)
 	return geterrorhandler()(err)
 end
 
-local function safecall(func, ...)
+local function SafeCall(func, ...)
 	if func then
 		return xpcall(func, errorhandler, ...)
 	end
@@ -146,5 +146,5 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	content:SetHeight(maxHeight)
 	content:SetWidth(totalWidth)
 
-	safecall(content.obj.LayoutFinished, content.obj, totalWidth, maxHeight)
+	SafeCall(content.obj.LayoutFinished, content.obj, totalWidth, maxHeight)
 end)
