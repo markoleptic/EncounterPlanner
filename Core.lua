@@ -673,18 +673,18 @@ local function HandleImportNoteFromString(importType)
 	local text = Private.importEditBox:GetText()
 	local textTable = utilities.SplitStringIntoTable(text)
 	Private.importEditBox:Release()
-	local bossName = nil
+	local bossName = GetCurrentBossName()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
 	local notes = AddOn.db.profile.notes
 
 	if importType == "FromStringOverwrite" then
 		notes[lastOpenNote].content = textTable
-		bossName = Private:Note(lastOpenNote)
+		bossName = Private:Note(lastOpenNote, bossName) or bossName
 	elseif importType == "FromStringNew" then
 		local newNoteName = utilities.CreateUniqueNoteName(notes)
 		notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 		notes[newNoteName].content = textTable
-		bossName = Private:Note(newNoteName)
+		bossName = Private:Note(newNoteName, bossName) or bossName
 		AddOn.db.profile.lastOpenNote = newNoteName
 		local noteDropdown = Private.mainFrame:GetNoteDropdown()
 		if noteDropdown then
@@ -697,11 +697,9 @@ local function HandleImportNoteFromString(importType)
 		end
 	end
 
-	if bossName then
-		interfaceUpdater.UpdateBossAbilityList(bossName, true)
-		interfaceUpdater.UpdateTimelineBossAbilities(bossName)
-		interfaceUpdater.UpdateAllAssignments(true, bossName)
-	end
+	interfaceUpdater.UpdateBossAbilityList(bossName, true)
+	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
+	interfaceUpdater.UpdateAllAssignments(true, bossName)
 end
 
 local function CreateImportEditBox(importType)
@@ -783,12 +781,12 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	local note = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote]
 	local bossName = note.bossName
 	if not bossName then
-		bossName = utilities.SearchStringTableForBossName(note.content)
+		bossName = utilities.SearchStringTableForBossName(note.content) or GetCurrentBossName()
 	end
-	if bossName then
-		interfaceUpdater.UpdateBoss(bossName, true)
-		interfaceUpdater.UpdateAllAssignments(true, bossName)
-	end
+
+	interfaceUpdater.UpdateBoss(bossName, true)
+	interfaceUpdater.UpdateAllAssignments(true, bossName)
+
 	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
@@ -991,12 +989,12 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 			if Private.assignmentEditor then
 				Private.assignmentEditor:Release()
 			end
-			local bossName = nil
+			local bossName = GetCurrentBossName()
 			if value == "FromMRTOverwrite" then
-				bossName = Private:Note(AddOn.db.profile.lastOpenNote, true)
+				bossName = Private:Note(AddOn.db.profile.lastOpenNote, bossName, true) or bossName
 			elseif value == "FromMRTNew" then
 				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-				bossName = Private:Note(newNoteName, true)
+				bossName = Private:Note(newNoteName, bossName, true) or bossName
 				AddOn.db.profile.lastOpenNote = newNoteName
 				local noteDropdown = Private.mainFrame:GetNoteDropdown()
 				if noteDropdown then
@@ -1008,10 +1006,8 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 					renameNoteLineEdit:SetText(newNoteName)
 				end
 			end
-			if bossName then
-				interfaceUpdater.UpdateBoss(bossName, true)
-				interfaceUpdater.UpdateAllAssignments(true, bossName)
-			end
+			interfaceUpdater.UpdateBoss(bossName, true)
+			interfaceUpdater.UpdateAllAssignments(true, bossName or "")
 		elseif value == "FromStringOverwrite" or value == "FromStringNew" then
 			CreateImportEditBox(value)
 		end
@@ -1038,27 +1034,21 @@ local function HandleExportButtonClicked()
 end
 
 function Private:CreateGUI()
-	local bossName = nil
+	local bossName = "Ulgrax the Devourer"
 	local notes = AddOn.db.profile.notes
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	if not lastOpenNote or lastOpenNote == "" then
+
+	if lastOpenNote and lastOpenNote ~= "" then
+		bossName = notes[lastOpenNote].bossName
+	else
 		local defaultNoteName = "SharedMRTNote"
-		bossName = Private:Note(defaultNoteName, true)
+		bossName = Private:Note(defaultNoteName, "Ulgrax the Devourer", true) or bossName
 		if not notes[defaultNoteName] then -- MRT not loaded
 			defaultNoteName = utilities.CreateUniqueNoteName(notes)
 			notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
+			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
 		end
 		AddOn.db.profile.lastOpenNote = defaultNoteName
-	end
-
-	if bossName == nil then
-		local note = notes[lastOpenNote]
-		if note.bossName then
-			bossName = note.bossName
-		else
-			bossName = "Ulgrax the Devourer"
-			note.bossName = bossName
-		end
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -1324,19 +1314,23 @@ function Private:CreateGUI()
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
 	timeline.CalculateAssignmentTimeFromStart = function(assignment)
-		return utilities.ConvertAbsoluteTimeToCombatLogEventTime(
-			assignment.startTime,
-			GetCurrentBossName(),
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.combatLogEventSpellID,
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.spellCount,
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.combatLogEventType
-		)
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			return utilities.ConvertAbsoluteTimeToCombatLogEventTime(
+				assignment.startTime,
+				GetCurrentBossName(),
+				assignment
+					.assignment--[[@as CombatLogEventAssignment]]
+					.combatLogEventSpellID,
+				assignment
+					.assignment--[[@as CombatLogEventAssignment]]
+					.spellCount,
+				assignment
+					.assignment--[[@as CombatLogEventAssignment]]
+					.combatLogEventType
+			)
+		else
+			return nil
+		end
 	end
 	timeline.GetMinimumCombatLogEventTime = function(assignment)
 		return utilities.GetMinimumCombatLogEventTime(

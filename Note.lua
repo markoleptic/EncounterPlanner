@@ -571,10 +571,11 @@ end
 -- Clears the current assignments and repopulates it. Updates the roster.
 ---@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
 -- an empty note will be created
+---@param currentBossName string
 ---@param parseMRTNote boolean? If true, the MRT shared note will be parsed, otherwise the existing note in the database
 -- will be parsed.
 ---@return string|nil
-function Private:Note(epNoteName, parseMRTNote)
+function Private:Note(epNoteName, currentBossName, parseMRTNote)
 	local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
 
 	if parseMRTNote then
@@ -598,9 +599,7 @@ function Private:Note(epNoteName, parseMRTNote)
 	end
 
 	local bossName = self:ParseNote(note)
-	if bossName then
-		note.bossName = bossName
-	end
+	note.bossName = bossName or currentBossName
 
 	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
 	utilities.UpdateRosterDataFromGroup(note.roster)

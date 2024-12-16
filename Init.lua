@@ -210,13 +210,13 @@ Private.classes.BossAbilityInstance = {
 Private.classes.EncounterPlannerDbRosterEntry = {}
 
 ---@class EncounterPlannerDbNote
----@field bossName string|nil
+---@field bossName string
 ---@field content table<integer, string>
 ---@field assignments table<integer, Assignment>
 ---@field roster table<string, EncounterPlannerDbRosterEntry>
 ---@field collapsed table<string, boolean>
 Private.classes.EncounterPlannerDbNote = {
-	bossName = nil,
+	bossName = "",
 	content = {},
 	assignments = {},
 	roster = {},

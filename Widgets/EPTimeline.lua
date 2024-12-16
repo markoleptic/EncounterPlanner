@@ -1,3 +1,6 @@
+local Private = select(2, ...)
+local spellDB = Private.spellDB
+
 local Type = "EPTimeline"
 local Version = 1
 
@@ -26,16 +29,6 @@ local split = string.split
 local type = type
 local unpack = unpack
 local xpcall = xpcall
-
-local function errorhandler(err)
-	return geterrorhandler()(err)
-end
-
-local function SafeCall(func, ...)
-	if type(func) == "function" then
-		return xpcall(func, errorhandler, ...)
-	end
-end
 
 local frameWidth = 900
 local frameHeight = 400
@@ -113,6 +106,29 @@ local function ResetLocalVariables()
 	timelineFrameIsDragging = false
 	totalTimelineDuration = 0
 	lastExecutionTime = 0
+end
+
+local function errorhandler(err)
+	return geterrorhandler()(err)
+end
+
+local function SafeCall(func, ...)
+	if type(func) == "function" then
+		return xpcall(func, errorhandler, ...)
+	end
+end
+
+---@param spellID integer
+---@return number|nil
+local function FindCooldownDurationFromSpellDB(spellID)
+	for className, spells in pairs(spellDB.classes) do
+		for _, spell in pairs(spells) do
+			if spell.spellID == spellID or spell.spec == spellID then
+				return spell.duration
+			end
+		end
+	end
+	return nil
 end
 
 ---@param value number
@@ -412,13 +428,23 @@ local function UpdateTickMarks(self)
 			assignmentTickTable = assignmentTicks[order]
 		end
 
-		local minFrameLevel = hugeNumber
+		local minFrameLevel = 1000
+		if #assignmentFrameIndices == 1 then
+			minFrameLevel = self.assignmentFrames[assignmentFrameIndices[1]]:GetFrameLevel()
+		end
 		sort(assignmentFrameIndices, function(a, b)
 			minFrameLevel = min(minFrameLevel, self.assignmentFrames[a]:GetFrameLevel())
 			local aLeft = self.assignmentFrames[a]:GetLeft() or 0
 			local bLeft = self.assignmentFrames[b]:GetLeft() or 0
 			if aLeft == bLeft then
-				return a < b -- always sort consistently to prevent switching frame levels rapidly
+				-- always sort consistently to prevent switching frame levels rapidly
+				local aSpellID = self.assignmentFrames[a].spellID
+				local bSpellID = self.assignmentFrames[b].spellID
+				if aSpellID and bSpellID then
+					return self.assignmentFrames[a].spellID < self.assignmentFrames[b].spellID
+				else
+					return self.assignmentFrames[a].assignmentIndex < self.assignmentFrames[b].assignmentIndex
+				end
 			end
 			return aLeft < bLeft
 		end)
@@ -778,8 +804,12 @@ local function StopMovingAssignment(self, assignmentFrame)
 	local time = ConvertTimelineOffsetToTime(assignmentFrame, self.bossAbilityTimeline.timelineFrame)
 	if time then
 		assignmentFrame.timelineAssignment.startTime = Round(time, 1)
-		assignmentFrame.timelineAssignment.assignment.time =
-			self.CalculateAssignmentTimeFromStart(assignmentFrame.timelineAssignment)
+		local relativeTime = self.CalculateAssignmentTimeFromStart(assignmentFrame.timelineAssignment)
+		if relativeTime then
+			assignmentFrame.timelineAssignment.assignment.time = relativeTime
+		else
+			assignmentFrame.timelineAssignment.assignment.time = assignmentFrame.timelineAssignment.startTime
+		end
 	end
 
 	assignmentFrame.timelineAssignment = nil
@@ -1039,17 +1069,18 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 		assignment.cooldownWidth = 0
 		assignment.assignmentFrame = timelineFrame
 		assignment.timelineAssignment = nil
+		assignment.spellID = spellID
 		assignment.spellTexture:SetScript("OnEnter", function()
-			if spellID and spellID ~= 0 then
+			if assignment.spellID and assignment.spellID ~= 0 then
 				tooltip:ClearLines()
-				tooltip:SetOwner(assignment, "ANCHOR_TOPLEFT", assignmentTextureSize.x / 2, 0)
-				tooltip:SetSpellByID(spellID)
+				tooltip:SetOwner(assignment, "ANCHOR_TOPLEFT")
+				tooltip:SetSpellByID(assignment.spellID)
 				local updateTooltipTimer = 0
 				tooltip:SetScript("OnUpdate", function(_, elapsed)
 					updateTooltipTimer = updateTooltipTimer - elapsed
 					if updateTooltipTimer <= 0 then
 						updateTooltipTimer = tooltipUpdateTime
-						tooltip:SetSpellByID(spellID)
+						tooltip:SetSpellByID(assignment.spellID)
 					end
 				end)
 			end
@@ -1090,25 +1121,31 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignment.spellTexture:SetTexture(iconID)
-		local cooldownEndPosition = nil
 		if showCooldown then
-			local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-			if not cooldownMS or cooldownMS <= 0 then
-				local chargeInfo = GetSpellCharges(spellID)
-				if chargeInfo then
-					cooldownEndPosition = ((startTime + chargeInfo.cooldownDuration) / totalTimelineDuration)
-						* timelineWidth
-				end
+			local duration = 0
+			local chargeInfo = GetSpellCharges(spellID)
+			if chargeInfo then
+				duration = chargeInfo.cooldownDuration
 			else
-				cooldownEndPosition = ((startTime + cooldownMS / 1000) / totalTimelineDuration) * timelineWidth
+				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+				if cooldownMS then
+					duration = cooldownMS / 1000
+				end
 			end
-		end
-		if showCooldown and cooldownEndPosition then
-			assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
-			assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
-			UpdateCooldownTextureAlignment(assignment, order)
-			assignment.cooldownTexture:Show()
-			assignment.cooldownBackGround:Show()
+			if duration <= 1 then
+				local spellDBDuration = FindCooldownDurationFromSpellDB(spellID)
+				if spellDBDuration then
+					duration = spellDBDuration
+				end
+			end
+			if duration > 1 then
+				local cooldownEndPosition = (startTime + duration) / totalTimelineDuration * timelineWidth
+				assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
+				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
+				UpdateCooldownTextureAlignment(assignment, order)
+				assignment.cooldownTexture:Show()
+				assignment.cooldownBackGround:Show()
+			end
 		end
 	end
 end
@@ -1119,9 +1156,11 @@ local function UpdateAssignments(self)
 	-- Hide existing assignments
 	for _, frame in pairs(self.assignmentFrames) do
 		frame:Hide()
+		frame:SetWidth(assignmentTextureSize.x)
 		frame.invalidTexture:Hide()
 		frame.cooldownBackGround:SetWidth(0)
 		frame.cooldownBackGround:Hide()
+		frame.cooldownTexture:SetWidth(0)
 		frame.cooldownTexture:Hide()
 		frame.cooldownWidth = 0
 	end
@@ -1669,8 +1708,10 @@ local function OnRelease(self)
 
 	for _, frame in ipairs(self.assignmentFrames) do
 		frame:Hide()
+		frame:SetWidth(assignmentTextureSize.x)
 		frame.cooldownBackGround:SetWidth(0)
 		frame.cooldownBackGround:Hide()
+		frame.cooldownTexture:SetWidth(0)
 		frame.cooldownTexture:Hide()
 		frame.spellTexture:SetTexture(nil)
 		frame.spellID = nil
