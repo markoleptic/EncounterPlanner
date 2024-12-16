@@ -45,6 +45,7 @@ local paddingBetweenTimelineAndScrollBar = 10
 local bossAbilityBarHeight = 30
 local assignmentTextureSize = { x = 30, y = 30 }
 local assignmentTextureSubLevel = 0
+local assignmentOverlapTolerance = 0.001
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
@@ -77,8 +78,8 @@ local colors = {
 }
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
 local cooldownPadding = 1
-local cooldownBackGroundColor = { 1, 1, 1, 0.75 }
-local cooldownTextureAlpha = 0.4
+local cooldownBackGroundColor = { 0.25, 0.25, 0.25, 1 }
+local cooldownTextureAlpha = 0.5
 
 local assignmentIsDragging = false
 local assignmentFrameBeingDragged = nil
@@ -119,10 +120,10 @@ end
 ---@return number
 local function Round(value, precision)
 	local factor = 10 ^ precision
-	if value >= 0 then
-		return ceil(value * factor - 0.5) / factor
-	else
+	if value > 0 then
 		return floor(value * factor + 0.5) / factor
+	else
+		return ceil(value * factor - 0.5) / factor
 	end
 end
 
@@ -240,14 +241,30 @@ local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset)
 	verticalPositionLine:Show()
 end
 
+---@param assignmentFrame Frame
+---@param order integer
+local function UpdateCooldownTextureAlignment(assignmentFrame, order)
+	local left = assignmentFrame:GetLeft()
+	if left then
+		local cdOffset = left % 64
+		if order % 2 == 0 then
+			cdOffset = cdOffset + 32
+		end
+		local cdTexture = assignmentFrame.cooldownTexture
+		cdTexture:SetWidth(assignmentFrame.cooldownWidth + cdOffset)
+		cdTexture:SetPoint("LEFT", assignmentFrame.cooldownBackGround, "LEFT", -cdOffset - 1, 0)
+	end
+end
+
 ---@param assignmentFrames table<integer, Frame>
 ---@param frameIndices table<integer, integer>
 ---@param tick Texture
 ---@param tickWidth number
 ---@param minFrameLevel number
 ---@param firstUpdate boolean
+---@param o integer
 ---@return boolean
-local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tickWidth, minFrameLevel, firstUpdate)
+local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tickWidth, minFrameLevel, firstUpdate, o)
 	local tickLeft = tick:GetLeft()
 	if not tickLeft then
 		return true
@@ -268,8 +285,8 @@ local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tick
 			end
 			if firstUpdate then
 				if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
-					if lastCdRight > cdLeft then
-						if lastCdLeft < cdLeft then
+					if lastCdRight + assignmentOverlapTolerance > cdLeft then
+						if lastCdLeft < cdLeft + assignmentOverlapTolerance then
 							local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
 							lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
 
@@ -277,7 +294,6 @@ local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tick
 							assignmentFrame.invalidTexture:Show()
 						else
 							lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
-							lastAssignmentFrame.invalidTexture:Show()
 
 							local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
 							assignmentFrame:SetWidth(newWidth)
@@ -287,7 +303,10 @@ local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tick
 						assignmentFrame.invalidTexture:Hide()
 						lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
 					end
+				else
+					assignmentFrame.invalidTexture:Hide()
 				end
+				UpdateCooldownTextureAlignment(assignmentFrame, o)
 				assignmentFrame:SetFrameLevel(minFrameLevel + index - 1)
 				lastCdLeft, lastCdRight, lastCdWidth = cdLeft, cdRight, cdWidth
 				lastAssignmentFrame = assignmentFrame
@@ -434,7 +453,8 @@ local function UpdateTickMarks(self)
 				assignmentTick,
 				currentTickWidth,
 				minFrameLevel,
-				i == 0
+				i == 0,
+				order
 			)
 			if showTick then
 				assignmentTick:Show()
@@ -992,11 +1012,13 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 		cooldownBackGround:SetColorTexture(unpack(cooldownBackGroundColor))
 		cooldownBackGround:SetPoint("TOPLEFT", assignment, "TOPLEFT")
 		cooldownBackGround:SetPoint("BOTTOMRIGHT", assignment, "BOTTOMRIGHT")
-		cooldownBackGround:SetAlpha(cooldownTextureAlpha)
+		-- cooldownBackGround:SetAlpha(cooldownTextureAlpha)
 		cooldownBackGround:Hide()
 
 		local cooldownTexture = assignment:CreateTexture(nil, "ARTWORK", nil, 0)
 		cooldownTexture:SetTexture(cooldownTextureFile, "REPEAT", "REPEAT")
+		cooldownTexture:SetSnapToPixelGrid(false)
+		cooldownTexture:SetTexelSnappingBias(0)
 		cooldownTexture:SetHorizTile(true)
 		cooldownTexture:SetVertTile(true)
 		cooldownTexture:SetPoint("LEFT", cooldownBackGround, "LEFT", cooldownPadding)
@@ -1082,22 +1104,11 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 			end
 		end
 		if showCooldown and cooldownEndPosition then
-			local left = assignment:GetLeft()
-			if left then
-				local cdOffset = left % 64
-				if order % 2 == 0 then
-					cdOffset = cdOffset + 32
-				end
-
-				assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition
-				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
-
-				local cooldownWidthAlignedToTextureGrid = assignment.cooldownWidth + cdOffset
-				assignment.cooldownTexture:SetWidth(cooldownWidthAlignedToTextureGrid)
-				assignment.cooldownTexture:SetPoint("LEFT", assignment.cooldownBackGround, "LEFT", -cdOffset - 1, 0)
-				assignment.cooldownTexture:Show()
-				assignment.cooldownBackGround:Show()
-			end
+			assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
+			assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
+			UpdateCooldownTextureAlignment(assignment, order)
+			assignment.cooldownTexture:Show()
+			assignment.cooldownBackGround:Show()
 		end
 	end
 end

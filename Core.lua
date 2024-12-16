@@ -316,7 +316,8 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				or getmetatable(assignment) == Private.classes.PhasedAssignment
 				or getmetatable(assignment) == Private.classes.TimedAssignment
 			then
-				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = tonumber(value)
+				timeValue = utilities.Round(timeValue, 1)
+				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = timeValue
 			end
 		end
 	elseif dataType == "OptionalText" then

@@ -47,9 +47,9 @@ end
 function Utilities.Round(value, precision)
 	local factor = 10 ^ precision
 	if value > 0 then
-		return ceil(value * factor - 0.5) / factor
-	else
 		return floor(value * factor + 0.5) / factor
+	else
+		return ceil(value * factor - 0.5) / factor
 	end
 end
 
