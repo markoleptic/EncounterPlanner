@@ -422,26 +422,28 @@ local function CreateOptionsMenu()
 		Private.optionsMenu = nil
 	end)
 
+	local MouseButtonKeyBindingValues = {
+		{ itemValue = "LeftButton", text = "Left Click" },
+		{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
+		{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
+		{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
+		{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
+		{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
+		{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
+		{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
+		{ itemValue = "RightButton", text = "Right Click" },
+		{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
+		{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
+		{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
+	}
+
 	local keyBindingOptions = {
 		{
 			label = "Pan",
 			type = "dropdown",
 			description = "Pans the timeline to the left and right when holding this key.",
 			category = "Timeline",
-			values = {
-				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
-			},
+			values = MouseButtonKeyBindingValues,
 			get = function()
 				return AddOn.db.profile.preferences.keyBindings.pan
 			end,
@@ -511,20 +513,7 @@ local function CreateOptionsMenu()
 			type = "dropdown",
 			description = "Creates a new assignment when this key is pressed when hovering over the timeline.",
 			category = "Assignment",
-			values = {
-				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
-			},
+			values = MouseButtonKeyBindingValues,
 			get = function(_)
 				return AddOn.db.profile.preferences.keyBindings.newAssignment
 			end,
@@ -543,20 +532,7 @@ local function CreateOptionsMenu()
 			type = "dropdown",
 			description = "Opens the assignment editor when this key is pressed when hovering over an assignment spell icon.",
 			category = "Assignment",
-			values = {
-				{ itemValue = "LeftButton", text = "Left Click" },
-				{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
-				{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
-				{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
-				{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-				{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
-				{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-				{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
-				{ itemValue = "RightButton", text = "Right Click" },
-				{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
-				{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
-				{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
-			},
+			values = MouseButtonKeyBindingValues,
 			get = function()
 				return AddOn.db.profile.preferences.keyBindings.editAssignment
 			end,
@@ -566,6 +542,27 @@ local function CreateOptionsMenu()
 			validate = function(key)
 				if AddOn.db.profile.preferences.keyBindings.pan == key then
 					return false, AddOn.db.profile.preferences.keyBindings.editAssignment
+				elseif AddOn.db.profile.preferences.keyBindings.duplicateAssignment == key then
+					return false, AddOn.db.profile.preferences.keyBindings.editAssignment
+				end
+				return true
+			end,
+		},
+		{
+			label = "Duplicate Assignment",
+			type = "dropdown",
+			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
+			category = "Assignment",
+			values = MouseButtonKeyBindingValues,
+			get = function()
+				return AddOn.db.profile.preferences.keyBindings.duplicateAssignment
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.keyBindings.duplicateAssignment = key
+			end,
+			validate = function(key)
+				if AddOn.db.profile.preferences.keyBindings.editAssignment == key then
+					return false, AddOn.db.profile.preferences.keyBindings.duplicateAssignment
 				end
 				return true
 			end,
@@ -652,6 +649,25 @@ local function CreateOptionsMenu()
 				else
 					AddOn.db.profile.preferences.zoomCenteredOnCursor = false
 				end
+			end,
+		},
+		{
+			label = "Show Spell Cooldown Duration",
+			type = "checkBox",
+			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
+			category = "Assignment",
+			get = function()
+				return AddOn.db.profile.preferences.showSpellCooldownDuration
+			end,
+			set = function(key)
+				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
+					AddOn.db.profile.preferences.showSpellCooldownDuration = key
+					Private.mainFrame:GetTimeline():UpdateTimeline()
+				end
+				AddOn.db.profile.preferences.showSpellCooldownDuration = key
+			end,
+			validate = function(key)
+				return true
 			end,
 		},
 	}
