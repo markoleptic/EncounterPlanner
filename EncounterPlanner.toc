@@ -1,4 +1,4 @@
-## Interface: 110002
+## Interface: 110007
 ## Version: 0.0.1
 ## Title: Encounter Planner
 ## Notes: 
@@ -18,4 +18,5 @@ Utilities.lua
 Note.lua
 Options.lua
 InterfaceUpdater.lua
+Interface.lua
 Core.lua
