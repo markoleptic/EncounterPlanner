@@ -328,6 +328,17 @@ function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
 	return instance
 end
 
+function Private.DuplicateAssignment(assignmentToCopy)
+	local newAssignment = Private.classes.Assignment:New()
+	local newId = newAssignment.uniqueID
+	for key, value in pairs(Private.DeepCopy(assignmentToCopy)) do
+		newAssignment[key] = value
+	end
+	newAssignment.uniqueID = newId
+	setmetatable(newAssignment, getmetatable(assignmentToCopy))
+	return newAssignment
+end
+
 -- Creates a timeline assignment from an assignment.
 ---@param assignment Assignment
 ---@return TimelineAssignment
@@ -414,6 +425,7 @@ end
 ---@field scroll ScrollKeyBinding
 ---@field editAssignment MouseButtonKeyBinding
 ---@field newAssignment MouseButtonKeyBinding
+---@field duplicateAssignment MouseButtonKeyBinding
 
 local defaults = {
 	---@class EncounterPlannerDefaultProfile
@@ -441,6 +453,7 @@ local defaults = {
 				scroll = "MouseScroll",
 				editAssignment = "LeftButton",
 				newAssignment = "LeftButton",
+				duplicateAssignment = "Ctrl-LeftButton",
 			},
 			assignmentSortType = "First Appearance",
 			timelineRows = {

@@ -1313,43 +1313,51 @@ function Private:CreateGUI()
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
-	timeline.CalculateAssignmentTimeFromStart = function(assignment)
+	timeline.CalculateAssignmentTimeFromStart = function(timelineAssignment)
+		local assignment = timelineAssignment.assignment
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			return utilities.ConvertAbsoluteTimeToCombatLogEventTime(
-				assignment.startTime,
+				timelineAssignment.startTime,
 				GetCurrentBossName(),
-				assignment
-					.assignment--[[@as CombatLogEventAssignment]]
-					.combatLogEventSpellID,
-				assignment
-					.assignment--[[@as CombatLogEventAssignment]]
-					.spellCount,
-				assignment
-					.assignment--[[@as CombatLogEventAssignment]]
-					.combatLogEventType
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+				assignment--[[@as CombatLogEventAssignment]].spellCount,
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventType
 			)
 		else
 			return nil
 		end
 	end
-	timeline.GetMinimumCombatLogEventTime = function(assignment)
-		return utilities.GetMinimumCombatLogEventTime(
-			GetCurrentBossName(),
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.combatLogEventSpellID,
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.spellCount,
-			assignment
-				.assignment--[[@as CombatLogEventAssignment]]
-				.combatLogEventType
-		)
+	timeline.GetMinimumCombatLogEventTime = function(timelineAssignment)
+		local assignment = timelineAssignment.assignment
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			return utilities.GetMinimumCombatLogEventTime(
+				GetCurrentBossName(),
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+				assignment--[[@as CombatLogEventAssignment]].spellCount,
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventType
+			)
+		else
+			return nil
+		end
 	end
 
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+	timeline:SetCallback("DuplicateAssignment", function(_, _, timelineAssignment)
+		local newAssignment = Private.DuplicateAssignment(timelineAssignment.assignment)
+		tinsert(GetCurrentAssignments(), newAssignment)
+		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local sortedTimelineAssignments = utilities.SortAssignments(
+			GetCurrentAssignments(),
+			GetCurrentRoster(),
+			AddOn.db.profile.preferences.assignmentSortType,
+			GetCurrentBossName()
+		)
+		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
+		return newAssignment.uniqueID
+	end)
 	timeline:SetCallback("ResizeBoundsCalculated", function(_, _, minHeight, maxHeight)
 		local heightDiff = Private.mainFrame.frame:GetHeight() - timeline.frame:GetHeight()
 		local minWidth = 0
