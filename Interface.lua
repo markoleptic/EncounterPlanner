@@ -59,12 +59,12 @@ end
 
 ---@return Boss|nil
 local function GetCurrentBoss()
-	return bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	return bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
 end
 
 ---@return string
 local function GetCurrentBossName()
-	return bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue()).name
+	return bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue()).name
 end
 
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
@@ -332,7 +332,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		assignmentEditor.previewLabel:SetText(previewText)
 	end
 
-	local timeline = Private.mainFrame:GetTimeline()
+	local timeline = Private.mainFrame.timeline
 	if timeline then
 		for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 			if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
@@ -372,7 +372,7 @@ local function CreateAssignmentEditor()
 			tremove(AddOn.db.profile.recentSpellAssignments, 1)
 		end
 		if Private.mainFrame then
-			local timeline = Private.mainFrame:GetTimeline()
+			local timeline = Private.mainFrame.timeline
 			if timeline then
 				timeline:ClearSelectedAssignments()
 				timeline:ClearSelectedBossAbilities()
@@ -592,7 +592,7 @@ local function CreateOptionsMenu()
 			end,
 			set = function(key)
 				AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow = tonumber(key)
-				local timeline = Private.mainFrame:GetTimeline()
+				local timeline = Private.mainFrame.timeline
 				if timeline then
 					timeline:UpdateHeight()
 					Private.mainFrame:DoLayout()
@@ -613,7 +613,7 @@ local function CreateOptionsMenu()
 			end,
 			set = function(key)
 				AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow = tonumber(key)
-				local timeline = Private.mainFrame:GetTimeline()
+				local timeline = Private.mainFrame.timeline
 				if timeline then
 					timeline:UpdateHeight()
 					Private.mainFrame:DoLayout()
@@ -658,7 +658,7 @@ local function CreateOptionsMenu()
 			set = function(key)
 				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
 					AddOn.db.profile.preferences.showSpellCooldownDuration = key
-					Private.mainFrame:GetTimeline():UpdateTimeline()
+					Private.mainFrame.timeline:UpdateTimeline()
 				end
 				AddOn.db.profile.preferences.showSpellCooldownDuration = key
 			end,
@@ -698,12 +698,12 @@ local function HandleImportNoteFromString(importType)
 		notes[newNoteName].content = textTable
 		bossName = Private:Note(newNoteName, bossName) or bossName
 		AddOn.db.profile.lastOpenNote = newNoteName
-		local noteDropdown = Private.mainFrame:GetNoteDropdown()
+		local noteDropdown = Private.mainFrame.noteDropdown
 		if noteDropdown then
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 			noteDropdown:SetValue(newNoteName)
 		end
-		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(newNoteName)
 		end
@@ -758,7 +758,7 @@ end
 ---@param value number|string
 ---@param selected boolean
 local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
-	local bossIndex = Private.mainFrame:GetBossSelectDropdown():GetValue()
+	local bossIndex = Private.mainFrame.bossSelectDropdown:GetValue()
 	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 	if bossDef then
 		local atLeastOneSelected = false
@@ -799,7 +799,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	interfaceUpdater.UpdateBoss(bossName, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossName)
 
-	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+	local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
 	end
@@ -819,7 +819,7 @@ local function HandleNoteTextChanged(lineEdit, _, value)
 	AddOn.db.profile.notes[value] = AddOn.db.profile.notes[currentNoteName]
 	AddOn.db.profile.notes[currentNoteName] = nil
 	AddOn.db.profile.lastOpenNote = value
-	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		noteDropdown:EditItemText(currentNoteName, value, value)
 	end
@@ -834,7 +834,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		end
 		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
 		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
-		local timeline = Private.mainFrame:GetTimeline()
+		local timeline = Private.mainFrame.timeline
 		if timeline then
 			timeline:ClearSelectedAssignments()
 			timeline:ClearSelectedBossAbilities()
@@ -929,19 +929,19 @@ local function HandleCreateNewNoteButtonClicked()
 	notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 	AddOn.db.profile.lastOpenNote = newNoteName
 
-	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossDef then
 		notes[newNoteName].bossName = bossDef.name
 	end
 
 	interfaceUpdater.UpdateAllAssignments(true, notes[newNoteName].bossName)
 
-	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 		noteDropdown:SetValue(newNoteName)
 	end
-	local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+	local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(newNoteName)
 	end
@@ -955,7 +955,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 	for _, _ in pairs(AddOn.db.profile.notes) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
-	local noteDropdown = Private.mainFrame:GetNoteDropdown()
+	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		local lastOpenNote = AddOn.db.profile.lastOpenNote
 		if lastOpenNote then
@@ -976,13 +976,13 @@ local function HandleDeleteCurrentNoteButtonClicked()
 			AddOn.db.profile.notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
 			AddOn.db.profile.lastOpenNote = newNoteName
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame:GetBossSelectDropdown():GetValue())
+			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 			if bossDef then
 				AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
 			end
 		end
 		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
-		local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 		end
@@ -1008,12 +1008,12 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 				bossName = Private:Note(newNoteName, bossName, true) or bossName
 				AddOn.db.profile.lastOpenNote = newNoteName
-				local noteDropdown = Private.mainFrame:GetNoteDropdown()
+				local noteDropdown = Private.mainFrame.noteDropdown
 				if noteDropdown then
 					noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 					noteDropdown:SetValue(newNoteName)
 				end
-				local renameNoteLineEdit = Private.mainFrame:GetNoteLineEdit()
+				local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 				if renameNoteLineEdit then
 					renameNoteLineEdit:SetText(newNoteName)
 				end
@@ -1136,7 +1136,7 @@ function Private:CreateInterface()
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
 		end
 		interfaceUpdater.UpdateAllAssignments(false, currentBossName)
-		Private.mainFrame:GetTimeline():SetMaxAssignmentHeight()
+		Private.mainFrame.timeline:SetMaxAssignmentHeight()
 		Private.mainFrame:DoLayout()
 	end)
 
@@ -1321,6 +1321,39 @@ function Private:CreateInterface()
 
 	topContainer:AddChild(bossContainer)
 	topContainer:AddChild(assignmentSortAndEditRosterContainer)
+
+	local openAssignmentFrameWidget = nil
+	local openAssignmentButton = AceGUI:Create("EPButton")
+	openAssignmentButton:SetText("Show Assignment")
+	openAssignmentButton:SetCallback("Clicked", function()
+		if not openAssignmentFrameWidget then
+			openAssignmentFrameWidget = AceGUI:Create("EPReminderAnchor")
+			openAssignmentFrameWidget.frame:SetParent(UIParent)
+			openAssignmentFrameWidget.frame:SetPoint("CENTER")
+		else
+			openAssignmentFrameWidget:Release()
+			openAssignmentFrameWidget = nil
+		end
+	end)
+
+	local simulateButton = AceGUI:Create("EPButton")
+	simulateButton:SetText("Simulate")
+	simulateButton:SetCallback("Clicked", function()
+		if Private:IsSimulatingBoss() then
+			Private:StopSimulatingBoss()
+		else
+			local sortedTimelineAssignments = utilities.SortAssignments(
+				GetCurrentAssignments(),
+				GetCurrentRoster(),
+				AddOn.db.profile.preferences.assignmentSortType,
+				GetCurrentBossName()
+			)
+			Private:SimulateBoss(sortedTimelineAssignments, GetCurrentRoster())
+		end
+	end)
+
+	topContainer:AddChild(openAssignmentButton)
+	topContainer:AddChild(simulateButton)
 	topContainer:AddChild(topLeftContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
@@ -1388,6 +1421,12 @@ function Private:CreateInterface()
 		"EPDropdownItemToggle",
 		true
 	)
+
+	Private.mainFrame.bossSelectDropdown = bossDropdown
+	Private.mainFrame.bossAbilitySelectDropdown = bossAbilitySelectDropdown
+	Private.mainFrame.noteDropdown = noteDropdown
+	Private.mainFrame.noteLineEdit = renameNoteLineEdit
+	Private.mainFrame.timeline = timeline
 
 	Private.mainFrame:AddChild(topContainer)
 	Private.mainFrame:AddChild(timeline)

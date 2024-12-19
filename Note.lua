@@ -507,8 +507,7 @@ end
 ---@param note EncounterPlannerDbNote
 ---@return string|nil
 function Private:ExportNote(note)
-	local bossName =
-		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossName then
 		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
 		sort(timelineAssignments, function(a, b)

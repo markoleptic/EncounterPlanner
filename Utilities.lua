@@ -41,6 +41,12 @@ for bossName, _ in pairs(Private.bosses["Nerub'ar Palace"]) do
 	absoluteSpellCastStartTables[bossName] = bossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
 end
 
+---@param bossName string
+---@return table<integer, table<integer, number>>
+function Utilities.AbsoluteSpellCastTimeTable(bossName)
+	return absoluteSpellCastStartTables[bossName]
+end
+
 ---@param value number
 ---@param precision integer
 ---@return number

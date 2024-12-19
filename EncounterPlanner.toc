@@ -17,6 +17,7 @@ BossUtilities.lua
 Utilities.lua
 Note.lua
 Options.lua
+Reminder.lua
 InterfaceUpdater.lua
 Interface.lua
 Core.lua

@@ -19,7 +19,8 @@ function AddOn:OnInitialize()
 	self.db = AceDB:New(AddOnName .. "DB", self.defaults --[[,true]])
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
-	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
+	self.db.RegisterCallback(self, "OnProfileReset", AddOn.Refresh)
+
 	local profile = self.db.profile
 	if profile then
 		-- Convert tables from DB into classes
@@ -44,6 +45,31 @@ function AddOn:OnInitialize()
 	self:RegisterChatCommand("ep", "SlashCommand")
 
 	self.OnInitialize = nil
+end
+
+function AddOn:OnEnable()
+	-- if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
+	-- 	BigWigsLoader.RegisterMessage({}, "BigWigs_SetStage", function(event, addon, stage)
+	-- 		print("Stage", stage)
+	-- 	end)
+	-- end
+	-- Private:RegisterEvent("ENCOUNTER_START", function(encounterID, encounterName, difficultyID, groupSize)
+	-- 	print(encounterID, encounterName, difficultyID, groupSize)
+	-- end)
+	-- Private:RegisterEvent("ENCOUNTER_END", function(encounterID, encounterName, difficultyID, groupSize, success)
+	-- 	print(encounterID, encounterName, difficultyID, groupSize, success)
+	-- end)
+	-- Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function()
+	-- 	local time, event, _, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellId, amount =
+	-- 		CombatLogGetCurrentEventInfo()
+	-- 	if event == "SPELL_CAST_SUCCESS" then
+	-- 		print(spellId)
+	-- 	end
+	-- end)
+end
+
+function AddOn:OnDisable()
+	-- Private:UnregisterAllEvents()
 end
 
 function AddOn:Refresh(db, newProfile)
@@ -71,7 +97,7 @@ function AddOn:SlashCommand(input)
 			end
 		elseif trimmed == "updatetimeline" then
 			if Private.mainFrame then
-				local timeline = Private.mainFrame:GetTimeline()
+				local timeline = Private.mainFrame.timeline
 				if timeline then
 					timeline:UpdateTimeline()
 				end

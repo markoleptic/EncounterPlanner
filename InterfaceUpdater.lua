@@ -57,7 +57,7 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
 			end
 		end
 		local bossName =
-			bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+			bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
 		if bossName then
 			InterfaceUpdater.UpdateAllAssignments(true, bossName)
 		end
@@ -68,8 +68,7 @@ end
 ---@param collapsed boolean
 local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
-	local bossName =
-		bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame:GetBossSelectDropdown():GetValue())
+	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossName then
 		InterfaceUpdater.UpdateAllAssignments(true, bossName)
 	end
@@ -80,10 +79,10 @@ end
 ---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
 	local boss = bossUtilities.GetBoss(bossName)
-	local timeline = Private.mainFrame:GetTimeline()
+	local timeline = Private.mainFrame.timeline
 	if boss and timeline then
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
-		local bossDropdown = Private.mainFrame:GetBossSelectDropdown()
+		local bossDropdown = Private.mainFrame.bossSelectDropdown
 		if bossAbilityContainer and bossDropdown then
 			if AddOn.db.profile.activeBossAbilities[bossName] == nil then
 				AddOn.db.profile.activeBossAbilities[bossName] = {}
@@ -130,7 +129,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				end
 			end
 			if updateBossAbilitySelectDropdown then
-				local bossAbilitySelectDropdown = Private.mainFrame:GetBossAbilitySelectDropdown()
+				local bossAbilitySelectDropdown = Private.mainFrame.bossAbilitySelectDropdown
 				if bossAbilitySelectDropdown then
 					bossAbilitySelectDropdown:Clear()
 					bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
@@ -147,7 +146,7 @@ end
 ---@param bossName string The name of the boss
 function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	local boss = bossUtilities.GetBoss(bossName)
-	local timeline = Private.mainFrame:GetTimeline()
+	local timeline = Private.mainFrame.timeline
 	if boss and timeline then
 		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossName)
 		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
@@ -174,7 +173,7 @@ end
 -- Clears and repopulates the list of assignments and spells.
 ---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
-	local timeline = Private.mainFrame:GetTimeline()
+	local timeline = Private.mainFrame.timeline
 	if timeline then
 		local assignmentContainer = timeline:GetAssignmentContainer()
 		if assignmentContainer then
@@ -223,7 +222,7 @@ end
 -- Sets the assignments and assignees for the timeline and rerenders it.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
-	local timeline = Private.mainFrame:GetTimeline()
+	local timeline = Private.mainFrame.timeline
 	if timeline then
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
 		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
@@ -235,7 +234,7 @@ end
 
 -- Clears and repopulates the add assignee dropdown from the current roster.
 function InterfaceUpdater.UpdateAddAssigneeDropdown()
-	local addAssigneeDropdown = Private.mainFrame:GetTimeline():GetAddAssigneeDropdown()
+	local addAssigneeDropdown = Private.mainFrame.timeline:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
 		addAssigneeDropdown:SetText("Add Assignee")

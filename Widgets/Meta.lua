@@ -65,6 +65,9 @@
 ---@alias EPCheckBoxType
 ---|"EPCheckBox"
 
+---@alias EPReminderAnchorType
+---|"EPReminderAnchor"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -81,6 +84,7 @@
 ---| EPTimelineSectionType
 ---| EPRadioButtonType
 ---| EPCheckBoxType
+---| EPReminderAnchorType
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -180,6 +184,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPOptionsType
 ---@return EPOptions
+function AceGUI:Create(type) end
+
+---@param type EPReminderAnchorType
+---@return EPReminderAnchor
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

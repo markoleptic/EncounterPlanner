@@ -35,7 +35,12 @@ local titleBarBackdrop = {
 ---@field settingsButton EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
----@field children table<integer, EPWidgetType|EPContainerType>
+---@field bossSelectDropdown EPDropdown
+---@field bossAbilitySelectDropdown EPDropdown
+---@field noteDropdown EPDropdown
+---@field noteLineEdit EPLineEdit
+---@field timeline EPTimeline
+---@field children table<integer, EPContainer>
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
@@ -120,6 +125,11 @@ local function OnRelease(self)
 	self.settingsButton = nil
 	self.collapseAllButton = nil
 	self.expandAllButton = nil
+	self.bossSelectDropdown = nil
+	self.bossAbilitySelectDropdown = nil
+	self.noteDropdown = nil
+	self.noteLineEdit = nil
+	self.timeline = nil
 end
 
 ---@param self EPMainFrame
@@ -131,94 +141,6 @@ local function LayoutFinished(self, width, height)
 			self:SetHeight(height + windowBarHeight + padding.top + padding.bottom)
 		end
 	end
-end
-
----@param self EPMainFrame
----@return EPDropdown|nil
-local function GetBossSelectDropdown(self)
-	local topContainer = self.children[1]
-	if topContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local bossContainer = topContainer.children[1]
-		if bossContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local bossSelectContainer = bossContainer.children[1]
-			if bossSelectContainer then
-				---@diagnostic disable-next-line: undefined-field
-				return bossSelectContainer.children[1]
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPDropdown|nil
-local function GetBossAbilitySelectDropdown(self)
-	local topContainer = self.children[1]
-	if topContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local bossContainer = topContainer.children[1]
-		if bossContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local bossAbilitySelectContainer = bossContainer.children[2]
-			if bossAbilitySelectContainer then
-				---@diagnostic disable-next-line: undefined-field
-				return bossAbilitySelectContainer.children[1]
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPDropdown|nil
-local function GetNoteDropdown(self)
-	---@diagnostic disable-next-line: undefined-field
-	local topContainer = self.children[1].children[3]
-	if topContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[1]
-		if outerNoteContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local noteContainer = outerNoteContainer.children[1]
-			if noteContainer then
-				---@diagnostic disable-next-line: undefined-field
-				return noteContainer.children[2]
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPLineEdit|nil
-local function GetNoteLineEdit(self)
-	---@diagnostic disable-next-line: undefined-field
-	local topContainer = self.children[1].children[3]
-	if topContainer then
-		---@diagnostic disable-next-line: undefined-field
-		local outerNoteContainer = topContainer.children[1]
-		if outerNoteContainer then
-			---@diagnostic disable-next-line: undefined-field
-			local renameNoteContainer = outerNoteContainer.children[2]
-			if renameNoteContainer then
-				---@diagnostic disable-next-line: undefined-field
-				return renameNoteContainer.children[2]
-			end
-		end
-	end
-	return nil
-end
-
----@param self EPMainFrame
----@return EPTimeline|nil
-local function GetTimeline(self)
-	local timeline = self.children[2] --[[@as EPTimeline]]
-	if timeline then
-		return timeline
-	end
-	return nil
 end
 
 ---@param self EPMainFrame
@@ -298,11 +220,6 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
-		GetBossSelectDropdown = GetBossSelectDropdown,
-		GetBossAbilitySelectDropdown = GetBossAbilitySelectDropdown,
-		GetNoteDropdown = GetNoteDropdown,
-		GetNoteLineEdit = GetNoteLineEdit,
-		GetTimeline = GetTimeline,
 		SetPadding = SetPadding,
 		frame = frame,
 		type = Type,
@@ -316,8 +233,8 @@ local function Constructor()
 				AceGUI:ClearFocus()
 				frame.isResizing = true
 				frame:StartSizing("BOTTOMRIGHT")
-				widget:GetTimeline():SetFullHeight(true)
-				widget:GetTimeline():SetAllowHeightResizing(true)
+				widget.timeline:SetFullHeight(true)
+				widget.timeline:SetAllowHeightResizing(true)
 			end
 		end
 	end)
@@ -328,8 +245,8 @@ local function Constructor()
 				frame.isResizing = nil
 				local x, y = frame:GetLeft(), frame:GetTop()
 				frame:StopMovingOrSizing()
-				widget:GetTimeline():SetFullHeight(false)
-				widget:GetTimeline():SetAllowHeightResizing(false)
+				widget.timeline:SetFullHeight(false)
+				widget.timeline:SetAllowHeightResizing(false)
 				frame:ClearAllPoints()
 				frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 				widget:DoLayout()
