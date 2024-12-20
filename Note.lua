@@ -91,7 +91,6 @@ local genericIcons = setmetatable({
 		if type(key) == "string" then
 			key = key:lower()
 			key = key:gsub("%s", "")
-			print(key)
 		end
 		return rawget(tbl, key)
 	end,
