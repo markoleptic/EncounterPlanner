@@ -1432,7 +1432,7 @@ function Private:CreateInterface()
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
-	interfaceUpdater.UpdateAllAssignments(true, bossName)
+	interfaceUpdater.UpdateAllAssignments(true, bossName, true)
 	if AddOn.db.profile.windowSize then
 		Private.mainFrame:SetWidth(AddOn.db.profile.windowSize.x)
 		Private.mainFrame:SetHeight(AddOn.db.profile.windowSize.y)

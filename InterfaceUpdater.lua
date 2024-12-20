@@ -178,7 +178,8 @@ end
 
 -- Clears and repopulates the list of assignments and spells.
 ---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
-function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
+---@param firstUpdate boolean|nil
+function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
 	local timeline = Private.mainFrame.timeline
 	if timeline then
 		local assignmentContainer = timeline:GetAssignmentContainer()
@@ -225,20 +226,28 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 				assignmentContainer:AddChildren(unpack(children))
 			end
 		end
-		Private.mainFrame:DoLayout()
+		if not firstUpdate then
+			Private.mainFrame:DoLayout()
+		end
 	end
 end
 
 -- Sets the assignments and assignees for the timeline and rerenders it.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
-function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
+---@param sortedWithSpellID table<integer, { assigneeNameOrRole: string, spellID: number|nil }>|nil
+---@param firstUpdate boolean|nil
+function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	local timeline = Private.mainFrame.timeline
 	if timeline then
 		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
-		local sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+		if not sortedWithSpellID then
+			sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+		end
 		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
-		timeline:UpdateTimeline()
-		Private.mainFrame:DoLayout()
+		if not firstUpdate then
+			timeline:UpdateTimeline()
+			Private.mainFrame:DoLayout()
+		end
 	end
 end
 
@@ -260,7 +269,8 @@ end
 -- dropdown.
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
 ---@param bossName string The boss to pass to the assignment sort function
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossName)
+---@param firstUpdate boolean|nil
+function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossName, firstUpdate)
 	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -271,8 +281,8 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossNa
 		sortedTimelineAssignments,
 		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
 	)
-	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID)
-	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments)
+	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
+	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	if updateAddAssigneeDropdown then
 		InterfaceUpdater.UpdateAddAssigneeDropdown()
 	end

@@ -450,9 +450,13 @@ function Utilities.CreateTimelineAssignments(assignments, bossName)
 		end
 	end
 	if allSucceeded == false then
-		local combinedString = format("%s: The following assignments failed to update:\n", AddOnName)
+		local alreadyPrinted = {}
+		local combinedString = format("%s: The following assignments failed to update:", AddOnName)
 		for _, warningString in pairs(warningStrings) do
-			combinedString = combinedString .. "\n" .. warningString
+			if not alreadyPrinted[warningString] then
+				combinedString = combinedString .. "\n" .. warningString
+				alreadyPrinted[warningString] = true
+			end
 		end
 		print(combinedString)
 	end
@@ -730,6 +734,7 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossNam
 					warningString = format(
 						'No spell cast times found for boss %s with spell ID "%d" with spell count %d.',
 						bossName,
+						assignment.combatLogEventSpellID,
 						assignment.spellCount
 					)
 				end
