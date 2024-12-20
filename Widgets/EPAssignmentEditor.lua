@@ -5,6 +5,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local getmetatable = getmetatable
 local tremove = tremove
 
 local frameWidth = 200

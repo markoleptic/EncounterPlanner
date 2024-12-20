@@ -5,6 +5,7 @@ local geterrorhandler = geterrorhandler
 local xpcall = xpcall
 local max = math.max
 local pairs = pairs
+local tinsert = tinsert
 local defaultSpacing = 10
 
 local function errorhandler(err)

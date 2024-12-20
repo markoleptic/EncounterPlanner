@@ -4,6 +4,9 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local ipairs = ipairs
+local select = select
+local tinsert = tinsert
 
 local defaultSpacing = { x = 10, y = 10 }
 local defaultHeight = 100

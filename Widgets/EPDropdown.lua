@@ -1,8 +1,15 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
+local floor = math.floor
 local ipairs = ipairs
+local max = math.max
+local min = math.min
 local pairs = pairs
+local select = select
+local tinsert = tinsert
+local tremove = tremove
+local type = type
 
 local textOffsetX = 4
 local fontSize = 14

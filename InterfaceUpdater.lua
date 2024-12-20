@@ -14,10 +14,12 @@ local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
-local ipairs = ipairs
 local GetSpellInfo = C_Spell.GetSpellInfo
+local ipairs = ipairs
+local pairs = pairs
 local tinsert = tinsert
 local tremove = tremove
+local type = type
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()

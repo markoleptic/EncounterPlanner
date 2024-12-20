@@ -31,6 +31,7 @@ local splitTable = strsplittable
 local tinsert = tinsert
 local tonumber = tonumber
 local tostring = tostring
+local type = type
 local UnitClass = UnitClass
 local UnitName = UnitName
 local wipe = wipe

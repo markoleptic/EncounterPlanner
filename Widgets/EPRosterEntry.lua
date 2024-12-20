@@ -2,7 +2,6 @@ local Type = "EPRosterEntry"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
 
 local mainFrameWidth = 1125

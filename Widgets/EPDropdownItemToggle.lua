@@ -3,6 +3,7 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
+local select = select
 local pi = math.pi
 
 local textOffsetX = 4
@@ -14,12 +15,12 @@ local dropdownItemHeight = 24
 local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 
-local function fixLevels(parent, ...)
+local function FixLevels(parent, ...)
 	local i = 1
 	local child = select(i, ...)
 	while child do
 		child:SetFrameLevel(parent:GetFrameLevel() + 1)
-		fixLevels(child, child:GetChildren())
+		FixLevels(child, child:GetChildren())
 		i = i + 1
 		child = select(i, ...)
 	end
@@ -100,7 +101,7 @@ function EPItemBase.SetPullout(self, pullout)
 	self.frame:SetParent(nil)
 	self.frame:SetParent(pullout.itemFrame)
 	self.parent = pullout.itemFrame
-	fixLevels(pullout.itemFrame, pullout.itemFrame:GetChildren())
+	FixLevels(pullout.itemFrame, pullout.itemFrame:GetChildren())
 end
 
 ---@param self EPItemBase
@@ -423,7 +424,7 @@ do
 				self.childPullout:AddItem(dropdownItemToggle)
 			end
 		end
-		fixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		FixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
 	end
 
 	---@param self EPDropdownItemMenu
@@ -471,7 +472,7 @@ do
 				end
 			end
 		end
-		fixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		FixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
 	end
 
 	---@param self EPDropdownItemMenu

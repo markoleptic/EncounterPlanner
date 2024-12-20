@@ -8,6 +8,7 @@ local LibStub = LibStub
 local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
+local getmetatable = getmetatable
 local pairs = pairs
 local setmetatable = setmetatable
 local type = type

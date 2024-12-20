@@ -9,6 +9,8 @@ local tooltip = EncounterPlanner.tooltip
 local ipairs = ipairs
 local pairs = pairs
 local type = type
+local tinsert = tinsert
+local unpack = unpack
 
 local frameWidth = 400
 local frameHeight = 400
