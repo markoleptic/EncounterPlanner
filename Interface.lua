@@ -1454,8 +1454,8 @@ function Private:CreateInterface()
 end
 
 function Private:InitializeInterface()
+	utilities.CreatePrettyClassNames()
 	spellDropdownItems = utilities.CreateSpellAssignmentDropdownItems()
 	assignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems()
 	classDropdownItems = utilities.CreateClassDropdownItemData()
-	utilities.CreatePrettyClassNames()
 end

@@ -41,6 +41,8 @@ function AddOn:OnInitialize()
 		end
 	end
 
+	Private:InitializeInterface()
+
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
 
