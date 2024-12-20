@@ -1111,6 +1111,46 @@ local bosses = {
 				castTime = 4.5,
 				duration = 0.0,
 			}),
+			[449986] = Private.classes.BossAbility:New({ -- Aphotic Communion
+				phases = {
+					[4] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 20.0,
+				duration = 0.0,
+			}),
+			[462693] = Private.classes.BossAbility:New({ -- Echoing Connection (Chamber Expeller)
+				phases = {
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 30.0, 0.0, 7.0, 0.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 0.0,
+				duration = 20.0,
+			}),
+			[448300] = Private.classes.BossAbility:New({ -- Echoing Connection (Ascended Voidspeaker)
+				phases = {
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 5.0, 0.0, 90.0, 0.0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 0.0,
+				duration = 20.0,
+			}),
+			[447207] = Private.classes.BossAbility:New({ -- Predation
+				phases = {
+					[2] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 0 },
+						repeatInterval = nil,
+					}),
+				},
+				castTime = 40.0,
+				duration = 0.0,
+			}),
 		},
 		phases = {
 			[1] = Private.classes.BossPhase:New({
