@@ -644,9 +644,9 @@ end
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
 ---@return string
 function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
-	local legibleString = ""
+	local legibleString = assigneeNameOrRole
 	if assigneeNameOrRole == "{everyone}" then
-		return "{everyone}"
+		return "Everyone"
 	else
 		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
 		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
