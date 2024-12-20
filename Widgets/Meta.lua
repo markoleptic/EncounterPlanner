@@ -214,5 +214,8 @@ function AceGUI:SetFocus(widget) end
 ---@param beforeWidget? AceGUIWidget|EPWidgetType
 function AceGUIContainer:AddChild(widget, beforeWidget) end
 
+---@param ... AceGUIWidget|EPWidgetType
+function AceGUIContainer:AddChildren(...) end
+
 ---@param layout AceGUILayoutType|EPLayoutType
 function AceGUIContainer:SetLayout(layout) end

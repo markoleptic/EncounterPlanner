@@ -57,6 +57,34 @@ local function SetSelfAlignment(self, alignment)
 	self.selfAlignment = alignment
 end
 
+-- Inserts a variable number of widgets before beforeWidget.
+---@param self EPContainer
+---@param beforeWidget AceGUIWidget|EPWidgetType
+---@param ... AceGUIWidget|EPWidgetType
+local function InsertChildren(self, beforeWidget, ...)
+	if not beforeWidget then
+		return
+	end
+
+	local childIndex = nil
+	for index, widget in ipairs(self.children) do
+		if widget == beforeWidget then
+			childIndex = index
+			break
+		end
+	end
+	if childIndex then
+		for i = 1, select("#", ...) do
+			local child = select(i, ...)
+			tinsert(self.children, childIndex, child)
+			childIndex = childIndex + 1
+			child:SetParent(self)
+			child.frame:Show()
+		end
+		self:DoLayout()
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -75,6 +103,7 @@ local function Constructor()
 		SetSpacing = SetSpacing,
 		SetAlignment = SetAlignment,
 		SetSelfAlignment = SetSelfAlignment,
+		InsertChildren = InsertChildren,
 		frame = frame,
 		type = Type,
 		content = content,
