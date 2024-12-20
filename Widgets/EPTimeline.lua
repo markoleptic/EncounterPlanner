@@ -287,64 +287,47 @@ end
 
 ---@param assignmentFrames table<integer, AssignmentFrame>
 ---@param frameIndices table<integer, integer>
----@param tick Texture
----@param tickWidth number
----@param minFrameLevel number
----@param firstUpdate boolean
----@param o integer
----@return boolean
-local function UpdateCooldownTextures(assignmentFrames, frameIndices, tick, tickWidth, minFrameLevel, firstUpdate, o)
-	local tickLeft = tick:GetLeft()
-	if not tickLeft then
-		return true
-	end
-
-	local showTick = true
-	local tickRight = tickLeft + tickWidth
+---@param order integer
+local function UpdateCooldownTexturesAndInvalidTextures(assignmentFrames, frameIndices, order)
 	local lastAssignmentFrame, lastCdLeft, lastCdRight, lastCdWidth = nil, nil, nil, nil
-
+	local first = assignmentFrames[frameIndices[1]]
+	local minFrameLevel = (first and first:GetFrameLevel()) or 1000
 	for index, assignmentFrameIndex in ipairs(frameIndices) do
 		local assignmentFrame = assignmentFrames[assignmentFrameIndex]
 		local cdLeft = assignmentFrame:GetLeft()
 		local cdWidth = assignmentFrame.cooldownWidth
 		if cdLeft and cdWidth > 0 then
 			local cdRight = cdLeft + cdWidth
-			if showTick and not (tickRight <= cdLeft or tickLeft >= cdRight) then
-				showTick = false
-			end
-			if firstUpdate then
-				if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
-					if lastCdRight + assignmentOverlapTolerance > cdLeft then
-						if lastCdLeft < cdLeft + assignmentOverlapTolerance then
-							local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
-							lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
+			if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
+				if lastCdRight + assignmentOverlapTolerance > cdLeft then
+					if lastCdLeft < cdLeft + assignmentOverlapTolerance then
+						local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
+						lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
 
-							assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
-							assignmentFrame.invalidTexture:Show()
-						else
-							lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
-
-							local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
-							assignmentFrame:SetWidth(newWidth)
-							assignmentFrame.invalidTexture:Hide()
-						end
+						assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
+						assignmentFrame.invalidTexture:Show()
 					else
-						assignmentFrame.invalidTexture:Hide()
 						lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
+
+						local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
+						assignmentFrame:SetWidth(newWidth)
+						assignmentFrame.invalidTexture:Hide()
 					end
 				else
 					assignmentFrame.invalidTexture:Hide()
+					lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
 				end
-				UpdateCooldownTextureAlignment(assignmentFrame, o)
-				assignmentFrame:SetFrameLevel(minFrameLevel + index - 1)
-				lastCdLeft, lastCdRight, lastCdWidth = cdLeft, cdRight, cdWidth
-				lastAssignmentFrame = assignmentFrame
+			else
+				assignmentFrame.invalidTexture:Hide()
 			end
-		elseif firstUpdate then
+			UpdateCooldownTextureAlignment(assignmentFrame, order)
+			assignmentFrame:SetFrameLevel(minFrameLevel + index - 1)
+			lastCdLeft, lastCdRight, lastCdWidth = cdLeft, cdRight, cdWidth
+			lastAssignmentFrame = assignmentFrame
+		else
 			assignmentFrame.invalidTexture:Hide()
 		end
 	end
-	return showTick
 end
 
 -- Updates the tick mark positions for the boss ability timeline and assignments timeline.
@@ -432,76 +415,84 @@ local function UpdateTickMarks(self)
 		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetStringWidth() / 2.0, 0)
 		label:Show()
 		label.wantsToShow = true
-	end
 
-	for order, assignmentFrameIndices in ipairs(self.orderedAssignmentFrames) do
-		local assignmentTickTable = assignmentTicks[order]
+		local assignmentTickTable = assignmentTicks[1]
 		if not assignmentTickTable then
-			assignmentTicks[order] = {}
-			assignmentTickTable = assignmentTicks[order]
+			assignmentTicks[1] = {}
+			assignmentTickTable = assignmentTicks[1]
 		end
 
-		local minFrameLevel = 1000
-		if #assignmentFrameIndices == 1 then
-			minFrameLevel = self.assignmentFrames[assignmentFrameIndices[1]]:GetFrameLevel()
+		local offsetX = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x)) + padding.x
+		local assignmentTick = assignmentTickTable[i]
+		if not assignmentTick then
+			assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
+			assignmentTick:SetColorTexture(unpack(tickColor))
+			assignmentTickTable[i] = assignmentTick
 		end
-		sort(assignmentFrameIndices, function(a, b)
-			minFrameLevel = min(minFrameLevel, self.assignmentFrames[a]:GetFrameLevel())
-			local aLeft = self.assignmentFrames[a]:GetLeft() or 0
-			local bLeft = self.assignmentFrames[b]:GetLeft() or 0
-			if aLeft == bLeft then
-				-- always sort consistently to prevent switching frame levels rapidly
-				local aSpellID = self.assignmentFrames[a].spellID
-				local bSpellID = self.assignmentFrames[b].spellID
-				if aSpellID and bSpellID then
-					return self.assignmentFrames[a].spellID < self.assignmentFrames[b].spellID
-				else
-					return self.assignmentFrames[a].assignmentIndex < self.assignmentFrames[b].assignmentIndex
-				end
-			end
-			return aLeft < bLeft
-		end)
 
-		local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
-
-		for i = 0, totalTimelineDuration, tickInterval do
-			local currentTickWidth = defaultTickWidth
-			if tickInterval == 60 then
-				currentTickWidth = defaultTickWidth
-			elseif i % 2 == 0 then
-				currentTickWidth = defaultTickWidth * 0.5
-			else
-				currentTickWidth = defaultTickWidth
-			end
-
-			local offsetX = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x)) + padding.x
-			local assignmentTick = assignmentTickTable[i]
-			if not assignmentTick then
-				assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
-				assignmentTick:SetColorTexture(unpack(tickColor))
-				assignmentTickTable[i] = assignmentTick
-			end
-
-			assignmentTick:SetWidth(currentTickWidth)
-			assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
-			assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, -offsetY + 1)
-
-			local showTick = UpdateCooldownTextures(
-				self.assignmentFrames,
-				assignmentFrameIndices,
-				assignmentTick,
-				currentTickWidth,
-				minFrameLevel,
-				i == 0,
-				order
-			)
-			if showTick then
-				assignmentTick:Show()
-			else
-				assignmentTick:Hide()
-			end
-		end
+		--local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
+		assignmentTick:SetWidth(tickWidth)
+		assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
+		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, 0)
+		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", offsetX, 0)
+		assignmentTick:Show()
 	end
+
+	-- for order, assignmentFrameIndices in ipairs(self.orderedAssignmentFrames) do
+	-- 	local assignmentTickTable = assignmentTicks[order]
+	-- 	if not assignmentTickTable then
+	-- 		assignmentTicks[order] = {}
+	-- 		assignmentTickTable = assignmentTicks[order]
+	-- 	end
+
+	-- 	local minFrameLevel = 1000
+	-- 	if #assignmentFrameIndices >= 1 then
+	-- 		minFrameLevel = self.assignmentFrames[assignmentFrameIndices[1]]:GetFrameLevel()
+	-- 	end
+	-- sort(assignmentFrameIndices, function(a, b)
+	-- 	minFrameLevel = min(minFrameLevel, self.assignmentFrames[a]:GetFrameLevel())
+	-- 	local aLeft = self.assignmentFrames[a]:GetLeft() or 0
+	-- 	local bLeft = self.assignmentFrames[b]:GetLeft() or 0
+	-- 	if aLeft == bLeft then
+	-- 		-- always sort consistently to prevent switching frame levels rapidly
+	-- 		local aSpellID = self.assignmentFrames[a].spellID
+	-- 		local bSpellID = self.assignmentFrames[b].spellID
+	-- 		if aSpellID and bSpellID then
+	-- 			return self.assignmentFrames[a].spellID < self.assignmentFrames[b].spellID
+	-- 		else
+	-- 			return self.assignmentFrames[a].assignmentIndex < self.assignmentFrames[b].assignmentIndex
+	-- 		end
+	-- 	end
+	-- 	return aLeft < bLeft
+	-- end)
+
+	-- local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
+
+	-- for i = 0, totalTimelineDuration, tickInterval do
+	-- 	local currentTickWidth = defaultTickWidth
+	-- 	if tickInterval == 60 then
+	-- 		currentTickWidth = defaultTickWidth
+	-- 	elseif i % 2 == 0 then
+	-- 		currentTickWidth = defaultTickWidth * 0.5
+	-- 	else
+	-- 		currentTickWidth = defaultTickWidth
+	-- 	end
+
+	-- 	local offsetX = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x)) + padding.x
+	-- 	local assignmentTick = assignmentTickTable[i]
+	-- 	if not assignmentTick then
+	-- 		assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
+	-- 		assignmentTick:SetColorTexture(unpack(tickColor))
+	-- 		assignmentTickTable[i] = assignmentTick
+	-- 	end
+
+	-- 	assignmentTick:SetWidth(currentTickWidth)
+	-- 	assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
+	-- 	assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, -offsetY + 1)
+	-- 	assignmentTick:Show()
+	-- end
+	-- UpdateCooldownTexturesOnly(self.assignmentFrames, assignmentFrameIndices, minFrameLevel, order)
+	-- end
 end
 
 ---@param horizontalScrollBar Frame
@@ -949,8 +940,11 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 	frame:SetPoint("TOPLEFT", newOffset, -offsetY)
 	UpdateLinePosition(self.assignmentTimeline.frame, self.assignmentTimeline.verticalPositionLine, lineOffset)
 	UpdateLinePosition(self.bossAbilityTimeline.frame, self.bossAbilityTimeline.verticalPositionLine, lineOffset)
-	UpdateTickMarks(self)
 	UpdateTimeLabels(self)
+	if assignmentFrameBeingDragged and assignmentFrameBeingDragged.timelineAssignment then
+		local order = assignmentFrameBeingDragged.timelineAssignment.order
+		UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, self.orderedAssignmentFrames[order], order)
+	end
 end
 
 ---@param self EPTimeline
@@ -1172,25 +1166,8 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	invalidTexture:SetColorTexture(unpack(invalidTextureColor))
 	invalidTexture:Hide()
 
-	spellTexture:SetScript("OnEnter", function()
-		if assignment.spellID and assignment.spellID ~= 0 then
-			tooltip:ClearLines()
-			tooltip:SetOwner(assignment, "ANCHOR_TOPLEFT")
-			tooltip:SetSpellByID(assignment.spellID)
-			local updateTooltipTimer = 0
-			tooltip:SetScript("OnUpdate", function(_, elapsed)
-				updateTooltipTimer = updateTooltipTimer - elapsed
-				if updateTooltipTimer <= 0 then
-					updateTooltipTimer = tooltipUpdateTime
-					tooltip:SetSpellByID(assignment.spellID)
-				end
-			end)
-		end
-	end)
-	spellTexture:SetScript("OnLeave", function()
-		tooltip:SetScript("OnUpdate", nil)
-		tooltip:Hide()
-	end)
+	spellTexture:SetScript("OnEnter", function() end)
+	spellTexture:SetScript("OnLeave", function() end)
 
 	local passThrough = spellTexture.SetPassThroughButtons
 	SafeCall(passThrough, spellTexture, "LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
@@ -1222,8 +1199,8 @@ end
 ---@param index integer index of the AssignmentFrame to use to display the assignment
 ---@param uniqueID integer unique index of the assignment
 ---@param order number the relative order of the assignee of the assignment
----@param showCooldown boolean
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown)
+---@param cooldownDuration number|nil
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, cooldownDuration)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -1252,36 +1229,16 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 
 	if spellID == 0 or spellID == nil then
 		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
-		assignment.cooldownBackground:Hide()
-		assignment.cooldownTexture:Hide()
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignment.spellTexture:SetTexture(iconID)
-		if showCooldown then
-			local duration = 0
-			local chargeInfo = GetSpellCharges(spellID)
-			if chargeInfo then
-				duration = chargeInfo.cooldownDuration
-			else
-				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-				if cooldownMS then
-					duration = cooldownMS / 1000
-				end
-			end
-			if duration <= 1 then
-				local spellDBDuration = FindCooldownDurationFromSpellDB(spellID)
-				if spellDBDuration then
-					duration = spellDBDuration
-				end
-			end
-			if duration > 1 then
-				local cooldownEndPosition = (startTime + duration) / totalTimelineDuration * timelineWidth
-				assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
-				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
-				UpdateCooldownTextureAlignment(assignment, order)
-				assignment.cooldownTexture:Show()
-				assignment.cooldownBackground:Show()
-			end
+		if cooldownDuration and cooldownDuration > 0 then
+			local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
+			assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
+			assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
+			UpdateCooldownTextureAlignment(assignment, order)
+			assignment.cooldownTexture:Show()
+			assignment.cooldownBackground:Show()
 		end
 	end
 end
@@ -1304,29 +1261,35 @@ local function UpdateAssignments(self)
 	wipe(self.orderedAssignmentFrames)
 	local maxOrder = -hugeNumber
 
-	for index, assignment in ipairs(self.timelineAssignments) do
-		if not self.orderedAssignmentFrames[assignment.order] then
-			self.orderedAssignmentFrames[assignment.order] = {}
+	for index, timelineAssignment in ipairs(self.timelineAssignments) do
+		local order = timelineAssignment.order
+		if not self.orderedAssignmentFrames[order] then
+			self.orderedAssignmentFrames[order] = {}
 		end
-		local showCooldown = not self.collapsed[assignment.assignment.assigneeNameOrRole]
+		local showCooldown = not self.collapsed[timelineAssignment.assignment.assigneeNameOrRole]
 			and self.preferences.showSpellCooldownDuration
 		DrawAssignment(
 			self,
-			assignment.startTime,
-			assignment.assignment.spellInfo.spellID,
+			timelineAssignment.startTime,
+			timelineAssignment.assignment.spellInfo.spellID,
 			index,
-			assignment.assignment.uniqueID,
-			assignment.order,
-			showCooldown
+			timelineAssignment.assignment.uniqueID,
+			order,
+			(showCooldown and timelineAssignment.spellCooldownDuration) or nil
 		)
 		if showCooldown then
-			tinsert(self.orderedAssignmentFrames[assignment.order], index)
+			tinsert(self.orderedAssignmentFrames[order], index)
 		end
-		maxOrder = max(maxOrder, assignment.order)
+		maxOrder = max(maxOrder, order)
 	end
 	for i = 1, maxOrder do
 		if not self.orderedAssignmentFrames[i] then
 			self.orderedAssignmentFrames[i] = {}
+		end
+	end
+	if self.preferences.showSpellCooldownDuration then
+		for order, indexedFrames in ipairs(self.orderedAssignmentFrames) do
+			UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, indexedFrames, order)
 		end
 	end
 end
@@ -1367,7 +1330,7 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 
 		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
 		local currentVerticalScroll = scrollFrame:GetVerticalScroll()
-		local snapValue = (timelineSection.textureHeight + timelineSection.listPadding) / 2
+		local snapValue = (timelineSection.textureHeight + timelineSection.listPadding)
 		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
 
 		if delta > 0 then
@@ -1944,6 +1907,30 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	self.timelineAssignments = assignments
 	self.assigneesAndSpells = assigneesAndSpells
 	self.collapsed = collapsed
+
+	for _, timelineAssignment in ipairs(self.timelineAssignments) do
+		local spellID = timelineAssignment.assignment.spellInfo.spellID
+		local duration = 0
+		if timelineAssignment.assignment.spellInfo.spellID > 0 then
+			local chargeInfo = GetSpellCharges(spellID)
+			if chargeInfo then
+				duration = chargeInfo.cooldownDuration
+			else
+				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+				if cooldownMS then
+					duration = cooldownMS / 1000
+				end
+			end
+			if duration <= 1 then
+				local spellDBDuration = FindCooldownDurationFromSpellDB(spellID)
+				if spellDBDuration then
+					duration = spellDBDuration
+				end
+			end
+		end
+		timelineAssignment.spellCooldownDuration = duration
+	end
+
 	self:UpdateHeight()
 end
 

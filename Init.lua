@@ -38,8 +38,6 @@ local type = type
 ---| "Role > Alphabetical"
 ---| "Role > First Appearance"
 
----@alias GameTooltipTemplate GameTooltip
-
 local assignmentIDCounter = 0
 
 Private.classes = {}
@@ -98,6 +96,7 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@field assignment Assignment The assignment
 ---@field startTime number Time used to place the assignment on the timeline
 ---@field order number The row of the assignment in the timeline.
+---@field spellCooldownDuration number Cached cooldown duration of the spell associated with the assignment.
 
 Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
