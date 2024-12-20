@@ -4,9 +4,11 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
+local min = math.min
 local sort = sort
 local tinsert = tinsert
 local tremove = tremove
+local unpack = unpack
 local wipe = wipe
 
 local mainFrameWidth = 500
@@ -137,7 +139,7 @@ end
 
 ---@param self EPRosterEditor
 ---@param rosterWidgetMapping RosterWidgetMapping|nil
-local function AddRosterEntry(self, rosterWidgetMapping)
+local function CreateRosterEntry(self, rosterWidgetMapping)
 	local newRosterEntry = AceGUI:Create("EPRosterEntry")
 	newRosterEntry:PopulateClassDropdown(self.classDropdownData)
 	if rosterWidgetMapping then
@@ -175,7 +177,7 @@ local function AddRosterEntry(self, rosterWidgetMapping)
 	newRosterEntry:SetCallback("DeleteButtonClicked", function(entry, _)
 		HandleRosterEntryDeleted(self, entry)
 	end)
-	self.activeContainer:AddChild(newRosterEntry, self.activeContainer.children[#self.activeContainer.children])
+	return newRosterEntry
 end
 
 ---@param self EPRosterEditor
@@ -212,8 +214,15 @@ local function PopulateActiveTab(self, tab)
 		for index = 1, min(currentCount, requiredCount) do
 			EditRosterEntry(self, rosterWidgetMap[index], index)
 		end
+		local children = {}
 		for index = currentCount + 1, requiredCount do
-			AddRosterEntry(self, rosterWidgetMap[index])
+			tinsert(children, CreateRosterEntry(self, rosterWidgetMap[index]))
+		end
+		if #children > 0 then
+			self.activeContainer:InsertChildren(
+				self.activeContainer.children[#self.activeContainer.children],
+				unpack(children)
+			)
 		end
 		if requiredCount < currentCount then
 			for i = currentCount, requiredCount + 1, -1 do
@@ -317,10 +326,7 @@ local function OnAcquire(self)
 		PopulateActiveTab(self, "SharedRoster")
 	end)
 
-	self.tabContainer:AddChild(currentRosterTab)
-	self.tabContainer:AddChild(sharedRosterTab)
-
-	self:AddChild(self.tabContainer)
+	self.tabContainer:AddChildren(currentRosterTab, sharedRosterTab)
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
@@ -330,12 +336,10 @@ local function OnAcquire(self)
 	addEntryButton:SetHeight(20)
 	addEntryButton:SetWidth(20)
 	addEntryButton:SetCallback("Clicked", function()
-		AddRosterEntry(self)
+		self.activeContainer:AddChild(CreateRosterEntry(self))
 		self:DoLayout()
 	end)
 	self.activeContainer:AddChild(addEntryButton)
-
-	self:AddChild(self.activeContainer)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
@@ -365,11 +369,9 @@ local function OnAcquire(self)
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
 	end)
 
-	self.buttonContainer:AddChild(updateRosterButton)
-	self.buttonContainer:AddChild(fillRosterButton)
-	self.buttonContainer:AddChild(importCurrentGroupButton)
+	self.buttonContainer:AddChildren(updateRosterButton, fillRosterButton, importCurrentGroupButton)
 
-	self:AddChild(self.buttonContainer)
+	self:AddChildren(self.tabContainer, self.activeContainer, self.buttonContainer)
 end
 
 ---@param self EPRosterEditor

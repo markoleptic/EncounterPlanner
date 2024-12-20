@@ -1289,38 +1289,20 @@ function Private:CreateInterface()
 	bossSelectContainer:AddChild(bossDropdown)
 	bossAbilitySelectContainer:AddChild(bossAbilitySelectDropdown)
 
-	bossContainer:AddChild(bossSelectContainer)
-	bossContainer:AddChild(bossAbilitySelectContainer)
-	assignmentSortContainer:AddChild(assignmentSortLabel)
-	assignmentSortContainer:AddChild(assignmentSortDropdown)
-	assignmentSortAndEditRosterContainer:AddChild(assignmentSortContainer)
-	assignmentSortAndEditRosterContainer:AddChild(editRosterButton)
-	noteContainer:AddChild(noteLabel)
-	noteContainer:AddChild(noteDropdown)
-	renameNoteContainer:AddChild(renameNoteLabel)
-	renameNoteContainer:AddChild(renameNoteLineEdit)
-	outerNoteContainer:AddChild(noteContainer)
-	outerNoteContainer:AddChild(renameNoteContainer)
-	noteButtonContainer:AddChild(createNewButton)
-	noteButtonContainer:AddChild(deleteButton)
-	importExportContainer:AddChild(importDropdown)
-	importExportContainer:AddChild(exportButton)
-
-	local topContainer = AceGUI:Create("EPContainer")
-	topContainer:SetLayout("EPHorizontalLayout")
-	topContainer:SetHeight(topContainerHeight)
-	topContainer:SetFullWidth(true)
+	bossContainer:AddChildren(bossSelectContainer, bossAbilitySelectContainer)
+	assignmentSortContainer:AddChildren(assignmentSortLabel, assignmentSortDropdown)
+	assignmentSortAndEditRosterContainer:AddChildren(assignmentSortContainer, editRosterButton)
+	noteContainer:AddChildren(noteLabel, noteDropdown)
+	renameNoteContainer:AddChildren(renameNoteLabel, renameNoteLineEdit)
+	outerNoteContainer:AddChildren(noteContainer, renameNoteContainer)
+	noteButtonContainer:AddChildren(createNewButton, deleteButton)
+	importExportContainer:AddChildren(importDropdown, exportButton)
 
 	local topLeftContainer = AceGUI:Create("EPContainer")
 	topLeftContainer:SetLayout("EPHorizontalLayout")
 	topLeftContainer:SetHeight(topContainerHeight)
-	topLeftContainer:AddChild(outerNoteContainer)
-	topLeftContainer:AddChild(noteButtonContainer)
-	topLeftContainer:AddChild(importExportContainer)
 	topLeftContainer:SetSelfAlignment("right")
-
-	topContainer:AddChild(bossContainer)
-	topContainer:AddChild(assignmentSortAndEditRosterContainer)
+	topLeftContainer:AddChildren(outerNoteContainer, noteButtonContainer, importExportContainer)
 
 	local openAssignmentFrameWidget = nil
 	local openAssignmentButton = AceGUI:Create("EPButton")
@@ -1330,6 +1312,9 @@ function Private:CreateInterface()
 			openAssignmentFrameWidget = AceGUI:Create("EPReminderAnchor")
 			openAssignmentFrameWidget.frame:SetParent(UIParent)
 			openAssignmentFrameWidget.frame:SetPoint("CENTER")
+			local x, y = openAssignmentFrameWidget.frame:GetLeft(), openAssignmentFrameWidget.frame:GetTop()
+			openAssignmentFrameWidget.frame:ClearAllPoints()
+			openAssignmentFrameWidget.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 		else
 			openAssignmentFrameWidget:Release()
 			openAssignmentFrameWidget = nil
@@ -1352,9 +1337,17 @@ function Private:CreateInterface()
 		end
 	end)
 
-	topContainer:AddChild(openAssignmentButton)
-	topContainer:AddChild(simulateButton)
-	topContainer:AddChild(topLeftContainer)
+	local topContainer = AceGUI:Create("EPContainer")
+	topContainer:SetLayout("EPHorizontalLayout")
+	topContainer:SetHeight(topContainerHeight)
+	topContainer:SetFullWidth(true)
+	topContainer:AddChildren(
+		bossContainer,
+		assignmentSortAndEditRosterContainer,
+		openAssignmentButton,
+		simulateButton,
+		topLeftContainer
+	)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
@@ -1428,8 +1421,7 @@ function Private:CreateInterface()
 	Private.mainFrame.noteLineEdit = renameNoteLineEdit
 	Private.mainFrame.timeline = timeline
 
-	Private.mainFrame:AddChild(topContainer)
-	Private.mainFrame:AddChild(timeline)
+	Private.mainFrame:AddChildren(topContainer, timeline)
 
 	-- Set default values
 	assignmentSortDropdown:SetValue(AddOn.db.profile.preferences.assignmentSortType)

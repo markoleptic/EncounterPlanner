@@ -55,6 +55,7 @@ local function CreateOptionWidget(option)
 	container:SetSpacing(0, 2)
 	container:SetFullWidth(true)
 
+	local containerChildren = {}
 	if option.type == "checkBox" then
 		local checkBox = AceGUI:Create("EPCheckBox")
 		checkBox:SetFullWidth(true)
@@ -78,7 +79,7 @@ local function CreateOptionWidget(option)
 		-- checkBox:SetCallback("OnLeave", function()
 		-- 	tooltip:Hide()
 		-- end)
-		container:AddChild(checkBox)
+		tinsert(containerChildren, checkBox)
 	else
 		local label = AceGUI:Create("EPLabel")
 		label:SetText(option.label)
@@ -86,7 +87,7 @@ local function CreateOptionWidget(option)
 		label:SetFullWidth(true)
 		label:SetFrameHeightFromText()
 		label.text:SetTextColor(1, 0.82, 0, 1)
-		container:AddChild(label)
+		tinsert(containerChildren, label)
 
 		if option.type == "dropdown" then
 			local dropdown = AceGUI:Create("EPDropdown")
@@ -113,20 +114,24 @@ local function CreateOptionWidget(option)
 				end
 				tooltip:Show()
 			end)
-			container:AddChild(dropdown)
+			tinsert(containerChildren, dropdown)
 		elseif option.type == "radioButtonGroup" then
 			local radioButtonGroup = AceGUI:Create("EPContainer")
 			radioButtonGroup:SetLayout("EPVerticalLayout")
 			radioButtonGroup:SetSpacing(0, 0)
 			radioButtonGroup:SetFullWidth(true)
+			local radioButtonGroupChildren = {}
 			for _, itemValueAndText in pairs(option.values) do
 				local radioButton = AceGUI:Create("EPRadioButton")
 				radioButton:SetFullWidth(true)
 				radioButton:SetLabelText(itemValueAndText.text)
 				radioButton:SetToggled(option.get() == itemValueAndText.itemValue)
 				radioButton:GetUserDataTable().key = itemValueAndText.itemValue
-
-				radioButtonGroup:AddChild(radioButton)
+				tinsert(radioButtonGroupChildren, radioButton)
+			end
+			if #radioButtonGroupChildren > 0 then
+				radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
+				tinsert(containerChildren, radioButtonGroup)
 			end
 			for _, child in ipairs(radioButtonGroup.children) do
 				child:SetCallback("Toggled", function(radioButton, _, _)
@@ -146,9 +151,13 @@ local function CreateOptionWidget(option)
 					tooltip:Show()
 				end)
 			end
-			container:AddChild(radioButtonGroup)
 		end
 	end
+
+	if #containerChildren > 0 then
+		container:AddChildren(unpack(containerChildren))
+	end
+
 	return container
 end
 
@@ -160,6 +169,7 @@ local function PopulateActiveTab(self, tab)
 	end
 	self.activeTab = tab
 	self.activeContainer:ReleaseChildren()
+	local activeContainerChildren = {}
 
 	if self.tabCategories[tab] then
 		for categoryIndex, category in ipairs(self.tabCategories[tab]) do
@@ -169,12 +179,12 @@ local function PopulateActiveTab(self, tab)
 			label:SetFullWidth(true)
 			label:SetFrameHeightFromText()
 			label.text:SetTextColor(1, 0.82, 0, 1)
-			self.activeContainer:AddChild(label)
+			tinsert(activeContainerChildren, label)
 
 			local preLineSpacer = AceGUI:Create("EPSpacer")
 			preLineSpacer:SetHeight(preLineSpacing)
 			preLineSpacer:SetFullWidth(true)
-			self.activeContainer:AddChild(preLineSpacer)
+			tinsert(activeContainerChildren, preLineSpacer)
 
 			local line = AceGUI:Create("EPSpacer")
 			line.frame:SetBackdrop({
@@ -188,46 +198,52 @@ local function PopulateActiveTab(self, tab)
 			line.frame:SetBackdropColor(0.25, 0.25, 0.25, 1)
 			line:SetHeight(2)
 			line:SetFullWidth(true)
-			self.activeContainer:AddChild(line)
+			tinsert(activeContainerChildren, line)
 
 			local postLineSpacer = AceGUI:Create("EPSpacer")
 			postLineSpacer:SetHeight(postLineSpacing)
 			postLineSpacer:SetFullWidth(true)
-			self.activeContainer:AddChild(postLineSpacer)
+			tinsert(activeContainerChildren, postLineSpacer)
 
 			local categoryContainer = AceGUI:Create("EPContainer")
 			categoryContainer:SetLayout("EPVerticalLayout")
 			categoryContainer:SetSpacing(0, spacingBetweenOptions)
 			categoryContainer:SetFullWidth(true)
+			local categoryContainerChildren = {}
 			for _, option in ipairs(self.optionTabs[tab]) do
 				if option.category == category then
-					categoryContainer:AddChild(CreateOptionWidget(option))
+					tinsert(categoryContainerChildren, CreateOptionWidget(option))
 				end
 			end
 
-			categoryContainer:DoLayout()
-			self.activeContainer:AddChild(categoryContainer)
+			if #categoryContainerChildren > 0 then
+				categoryContainer:AddChildren(unpack(categoryContainerChildren))
+				tinsert(activeContainerChildren, categoryContainer)
+			end
 
 			if categoryIndex ~= #self.tabCategories[tab] then
 				local spacer = AceGUI:Create("EPSpacer")
 				spacer:SetHeight(spacingBetweenCategories)
 				spacer:SetFullWidth(true)
-				self.activeContainer:AddChild(spacer)
+				tinsert(activeContainerChildren, spacer)
 			end
 		end
 	else
 		for index, option in ipairs(self.optionTabs[tab]) do
-			self.activeContainer:AddChild(CreateOptionWidget(option))
+			tinsert(activeContainerChildren, CreateOptionWidget(option))
 			if index ~= #self.optionTabs[tab] then
 				local spacer = AceGUI:Create("EPSpacer")
 				spacer:SetHeight(spacingBetweenOptions)
 				spacer:SetFullWidth(true)
-				self.activeContainer:AddChild(spacer)
+				tinsert(activeContainerChildren, spacer)
 			end
 		end
 	end
 
-	self.activeContainer:DoLayout()
+	if #activeContainerChildren > 0 then
+		self.activeContainer:AddChildren(unpack(activeContainerChildren))
+	end
+
 	self:DoLayout()
 end
 
@@ -280,13 +296,12 @@ local function OnAcquire(self)
 	self.tabTitleContainer = AceGUI:Create("EPContainer")
 	self.tabTitleContainer:SetLayout("EPHorizontalLayout")
 	self.tabTitleContainer:SetSpacing(0, 0)
-	self:AddChild(self.tabTitleContainer)
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
 	self.activeContainer:SetFullWidth(true)
-	self:AddChild(self.activeContainer)
+	self:AddChildren(self.tabTitleContainer, self.activeContainer)
 end
 
 ---@param self EPOptions

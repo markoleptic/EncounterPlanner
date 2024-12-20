@@ -237,9 +237,7 @@ local function OnAcquire(self)
 	self.assignmentTypeDropdown:SetCallback("OnValueChanged", HandleAssignmentTypeDropdownValueChanged)
 	self.assignmentTypeDropdown.obj = self
 	self.assignmentTypeDropdown:AddItems(assignmentTriggers, "EPDropdownItemToggle")
-	self.assignmentTypeContainer:AddChild(self.assignmentTypeLabel)
-	self.assignmentTypeContainer:AddChild(self.assignmentTypeDropdown)
-	self:AddChild(self.assignmentTypeContainer)
+	self.assignmentTypeContainer:AddChildren(self.assignmentTypeLabel, self.assignmentTypeDropdown)
 
 	self.combatLogEventContainer = AceGUI:Create("EPContainer")
 	self.combatLogEventContainer:SetLayout("EPVerticalLayout")
@@ -253,9 +251,11 @@ local function OnAcquire(self)
 	self.combatLogEventSpellIDDropdown:SetFullWidth(true)
 	self.combatLogEventSpellIDDropdown:SetCallback("OnValueChanged", HandleCombatLogEventSpellIDDropdownValueChanged)
 	self.combatLogEventSpellIDDropdown.obj = self
-	self.combatLogEventContainer:AddChild(self.combatLogEventSpellIDLabel)
-	self.combatLogEventContainer:AddChild(self.combatLogEventSpellIDDropdown)
-	self.combatLogEventContainer:AddChild(AceGUI:Create("EPSpacer"))
+	self.combatLogEventContainer:AddChildren(
+		self.combatLogEventSpellIDLabel,
+		self.combatLogEventSpellIDDropdown,
+		AceGUI:Create("EPSpacer")
+	)
 	self.combatLogEventSpellCountLabel = AceGUI:Create("EPLabel")
 	self.combatLogEventSpellCountLabel:SetText("Spell Count")
 	self.combatLogEventSpellCountLabel:SetFullWidth(true)
@@ -264,9 +264,7 @@ local function OnAcquire(self)
 	self.combatLogEventSpellCountLineEdit:SetFullWidth(true)
 	self.combatLogEventSpellCountLineEdit:SetCallback("OnTextChanged", HandleCombatLogEventSpellCountTextChanged)
 	self.combatLogEventSpellCountLineEdit.obj = self
-	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLabel)
-	self.combatLogEventContainer:AddChild(self.combatLogEventSpellCountLineEdit)
-	self:AddChild(self.combatLogEventContainer)
+	self.combatLogEventContainer:AddChildren(self.combatLogEventSpellCountLabel, self.combatLogEventSpellCountLineEdit)
 
 	self.assigneeTypeContainer = AceGUI:Create("EPContainer")
 	self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
@@ -280,9 +278,7 @@ local function OnAcquire(self)
 	self.assigneeTypeDropdown:SetFullWidth(true)
 	self.assigneeTypeDropdown:SetCallback("OnValueChanged", HandleAssigneeTypeDropdownValueChanged)
 	self.assigneeTypeDropdown.obj = self
-	self.assigneeTypeContainer:AddChild(self.assigneeTypeLabel)
-	self.assigneeTypeContainer:AddChild(self.assigneeTypeDropdown)
-	self:AddChild(self.assigneeTypeContainer)
+	self.assigneeTypeContainer:AddChildren(self.assigneeTypeLabel, self.assigneeTypeDropdown)
 
 	self.assigneeContainer = AceGUI:Create("EPContainer")
 	self.assigneeContainer:SetLayout("EPVerticalLayout")
@@ -296,9 +292,7 @@ local function OnAcquire(self)
 	self.assigneeDropdown:SetFullWidth(true)
 	self.assigneeDropdown:SetCallback("OnValueChanged", HandleAssigneeDropdownValueChanged)
 	self.assigneeDropdown.obj = self
-	self.assigneeContainer:AddChild(self.assigneeLabel)
-	self.assigneeContainer:AddChild(self.assigneeDropdown)
-	self:AddChild(self.assigneeContainer)
+	self.assigneeContainer:AddChildren(self.assigneeLabel, self.assigneeDropdown)
 
 	self.spellAssignmentContainer = AceGUI:Create("EPContainer")
 	self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
@@ -314,9 +308,7 @@ local function OnAcquire(self)
 	self.spellAssignmentDropdown.obj = self
 	self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
 	self.spellAssignmentDropdown:SetItemDisabled("Recent", true)
-	self.spellAssignmentContainer:AddChild(self.spellAssignmentLabel)
-	self.spellAssignmentContainer:AddChild(self.spellAssignmentDropdown)
-	self:AddChild(self.spellAssignmentContainer)
+	self.spellAssignmentContainer:AddChildren(self.spellAssignmentLabel, self.spellAssignmentDropdown)
 
 	self.timeContainer = AceGUI:Create("EPContainer")
 	self.timeContainer:SetLayout("EPVerticalLayout")
@@ -330,9 +322,7 @@ local function OnAcquire(self)
 	self.timeEditBox:SetFullWidth(true)
 	self.timeEditBox.obj = self
 	self.timeEditBox:SetCallback("OnTextChanged", HandleTimeTextChanged)
-	self.timeContainer:AddChild(self.timeLabel)
-	self.timeContainer:AddChild(self.timeEditBox)
-	self:AddChild(self.timeContainer)
+	self.timeContainer:AddChildren(self.timeLabel, self.timeEditBox)
 
 	self.optionalTextContainer = AceGUI:Create("EPContainer")
 	self.optionalTextContainer:SetLayout("EPVerticalLayout")
@@ -346,9 +336,7 @@ local function OnAcquire(self)
 	self.optionalTextLineEdit:SetFullWidth(true)
 	self.optionalTextLineEdit.obj = self
 	self.optionalTextLineEdit:SetCallback("OnTextChanged", HandleOptionalTextChanged)
-	self.optionalTextContainer:AddChild(self.optionalTextLabel)
-	self.optionalTextContainer:AddChild(self.optionalTextLineEdit)
-	self:AddChild(self.optionalTextContainer)
+	self.optionalTextContainer:AddChildren(self.optionalTextLabel, self.optionalTextLineEdit)
 
 	self.targetContainer = AceGUI:Create("EPContainer")
 	self.targetContainer:SetLayout("EPVerticalLayout")
@@ -362,9 +350,7 @@ local function OnAcquire(self)
 	self.targetDropdown:SetFullWidth(true)
 	self.targetDropdown:SetCallback("OnValueChanged", HandleTargetDropdownValueChanged)
 	self.targetDropdown.obj = self
-	self.targetContainer:AddChild(self.targetLabel)
-	self.targetContainer:AddChild(self.targetDropdown)
-	self:AddChild(self.targetContainer)
+	self.targetContainer:AddChildren(self.targetLabel, self.targetDropdown)
 
 	self.previewContainer = AceGUI:Create("EPContainer")
 	self.previewContainer:SetLayout("EPVerticalLayout")
@@ -378,9 +364,19 @@ local function OnAcquire(self)
 	self.previewLabel:SetText("Spell Target")
 	self.previewLabel:SetFullWidth(true)
 	self.previewLabel:SetFrameHeightFromText()
-	self.previewContainer:AddChild(previewLabelLabel)
-	self.previewContainer:AddChild(self.previewLabel)
-	self:AddChild(self.previewContainer)
+	self.previewContainer:AddChildren(previewLabelLabel, self.previewLabel)
+
+	self:AddChildren(
+		self.assignmentTypeContainer,
+		self.combatLogEventContainer,
+		self.assigneeTypeContainer,
+		self.assigneeContainer,
+		self.spellAssignmentContainer,
+		self.timeContainer,
+		self.optionalTextContainer,
+		self.targetContainer,
+		self.previewContainer
+	)
 
 	local edgeSize = frameBackdrop.edgeSize
 
@@ -417,8 +413,6 @@ local function OnAcquire(self)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Release()
 	end)
-
-	self:DoLayout()
 end
 
 ---@param self EPAssignmentEditor

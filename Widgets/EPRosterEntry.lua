@@ -55,11 +55,8 @@ local function OnAcquire(self)
 	self.deleteButton:SetCallback("Clicked", function()
 		self:Fire("DeleteButtonClicked")
 	end)
-	self:AddChild(self.nameLineEdit)
-	self:AddChild(self.classDropdown)
-	self:AddChild(self.groupDropdown)
-	self:AddChild(self.deleteButton)
-	self:DoLayout()
+
+	self:AddChildren(self.nameLineEdit, self.classDropdown, self.groupDropdown, self.deleteButton)
 end
 
 ---@param self EPRosterEntry

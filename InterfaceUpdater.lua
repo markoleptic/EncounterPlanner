@@ -93,6 +93,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				bossDropdown:SetValue(bossIndex)
 			end
 			bossAbilityContainer:ReleaseChildren()
+			local children = {}
 			local bossAbilitySelectItems = {}
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
 				if activeBossAbilities[abilityID] == nil then
@@ -118,7 +119,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 							AddOn.db.profile.activeBossAbilities[bossName][abilityID] = true
 						end
 					end)
-					bossAbilityContainer:AddChild(abilityEntry)
+					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then
 					local spellInfo = GetSpellInfo(abilityID)
@@ -128,6 +129,11 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 					end
 				end
 			end
+
+			if #children > 0 then
+				bossAbilityContainer:AddChildren(unpack(children))
+			end
+
 			if updateBossAbilitySelectDropdown then
 				local bossAbilitySelectDropdown = Private.mainFrame.bossAbilitySelectDropdown
 				if bossAbilitySelectDropdown then
@@ -178,6 +184,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 		local assignmentContainer = timeline:GetAssignmentContainer()
 		if assignmentContainer then
 			assignmentContainer:ReleaseChildren()
+			local children = {}
 			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, GetCurrentRoster())
 			for _, textTable in ipairs(map) do
 				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
@@ -190,7 +197,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 				assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
 				assigneeEntry:SetCollapsible(true)
 				assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
-				assignmentContainer:AddChild(assigneeEntry)
+				tinsert(children, assigneeEntry)
 				local collapsed =
 					AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[textTable.assigneeNameOrRole]
 				assigneeEntry:SetCollapsed(collapsed)
@@ -210,9 +217,12 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells)
 						spellEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
 						spellEntry.label.text:SetJustifyH("LEFT")
 						spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
-						assignmentContainer:AddChild(spellEntry)
+						tinsert(children, spellEntry)
 					end
 				end
+			end
+			if #children > 0 then
+				assignmentContainer:AddChildren(unpack(children))
 			end
 		end
 		Private.mainFrame:DoLayout()
