@@ -419,6 +419,17 @@ end
 ---| "Ctrl-RightButton"
 ---| "Shift-RightButton"
 
+---@alias AnchorPoint
+---| "TOPLEFT"
+---| "TOP"
+---| "TOPRIGHT"
+---| "RIGHT"
+---| "BOTTOMRIGHT"
+---| "BOTTOM"
+---| "LEFT"
+---| "BOTTOMLEFT"
+---| "CENTER"
+
 ---@class EncounterPlannerKeyBindings
 ---@field pan MouseButtonKeyBinding
 ---@field zoom ScrollKeyBinding
@@ -446,6 +457,7 @@ local defaults = {
 		---@field assignmentSortType AssignmentSortType
 		---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
 		---@field zoomCenteredOnCursor boolean
+		---@field reminder {point: AnchorPoint, relativeTo: string, relativePoint: AnchorPoint, x:number, y:number, growDown:boolean}
 		preferences = {
 			keyBindings = {
 				pan = "RightButton",
@@ -462,6 +474,14 @@ local defaults = {
 			},
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,
+			reminder = {
+				point = "CENTER",
+				relativeTo = "UIParent",
+				relativePoint = "CENTER",
+				x = 0,
+				y = 300,
+				growDown = false,
+			},
 		},
 	},
 }
@@ -481,6 +501,7 @@ Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
+Private.reminderAnchor = nil --[[@as EPReminderAnchor]]
 
 LSM:Register(
 	"font",

@@ -1090,6 +1090,9 @@ function Private:CreateInterface()
 		if Private.optionsMenu then
 			Private.optionsMenu:Release()
 		end
+		if Private.reminderAnchor then
+			Private.reminderAnchor:Release()
+		end
 	end)
 	Private.mainFrame:SetCallback("OnRelease", function()
 		Private.mainFrame = nil
@@ -1304,20 +1307,19 @@ function Private:CreateInterface()
 	topLeftContainer:SetSelfAlignment("right")
 	topLeftContainer:AddChildren(outerNoteContainer, noteButtonContainer, importExportContainer)
 
-	local openAssignmentFrameWidget = nil
-	local openAssignmentButton = AceGUI:Create("EPButton")
-	openAssignmentButton:SetText("Show Assignment")
-	openAssignmentButton:SetCallback("Clicked", function()
-		if not openAssignmentFrameWidget then
-			openAssignmentFrameWidget = AceGUI:Create("EPReminderAnchor")
-			openAssignmentFrameWidget.frame:SetParent(UIParent)
-			openAssignmentFrameWidget.frame:SetPoint("CENTER")
-			local x, y = openAssignmentFrameWidget.frame:GetLeft(), openAssignmentFrameWidget.frame:GetTop()
-			openAssignmentFrameWidget.frame:ClearAllPoints()
-			openAssignmentFrameWidget.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+	local reminderAnchorButton = AceGUI:Create("EPButton")
+	reminderAnchorButton:SetText("Show Reminder Anchor")
+	reminderAnchorButton:SetCallback("Clicked", function()
+		if not Private.reminderAnchor then
+			Private.reminderAnchor = AceGUI:Create("EPReminderAnchor")
+			Private.reminderAnchor.frame:SetParent(Private.mainFrame.frame)
+			Private.reminderAnchor:SetCallback("OnRelease", function()
+				Private.reminderAnchor = nil
+			end)
+			Private.reminderAnchor:SetPreferences(AddOn.db.profile.preferences)
 		else
-			openAssignmentFrameWidget:Release()
-			openAssignmentFrameWidget = nil
+			Private.reminderAnchor:Release()
+			Private.reminderAnchor = nil
 		end
 	end)
 
@@ -1344,7 +1346,7 @@ function Private:CreateInterface()
 	topContainer:AddChildren(
 		bossContainer,
 		assignmentSortAndEditRosterContainer,
-		openAssignmentButton,
+		reminderAnchorButton,
 		simulateButton,
 		topLeftContainer
 	)

@@ -157,6 +157,7 @@ end
 ---@field textFrame table|Frame
 ---@field type string
 ---@field assignmentText FontString
+---@field container EPContainer
 ---@field alignCenterButton EPButton
 ---@field alignLeftButton EPButton
 ---@field alignRightButton EPButton
@@ -165,6 +166,7 @@ end
 ---@field chooseAnchorFrameButton EPButton
 ---@field simulateButton EPButton
 ---@field anchorDropdown EPDropdown
+---@field anchorFrameNameLabel EPLabel
 ---@field relativeAnchorDropdown EPDropdown
 ---@field xPositionLineEdit EPLineEdit
 ---@field yPositionLineEdit EPLineEdit
@@ -178,46 +180,72 @@ local function OnAcquire(self)
 	self.frame:SetHeight(defaultFrameHeight)
 	self.frame:SetWidth(defaultFrameWidth)
 
+	self.container = AceGUI:Create("EPContainer")
+	self.container.frame:SetParent(self.frame)
+	self.container:SetLayout("EPVerticalLayout")
+	self.container:SetSpacing(0, 5)
+	self.container:SetWidth(70)
+
+	local textAlignLabel = AceGUI:Create("EPLabel")
+	textAlignLabel:SetText("Text Align:")
+	textAlignLabel:SetHeight(24)
+	textAlignLabel:SetFrameWidthFromText()
+	local fontSizeLabel = AceGUI:Create("EPLabel")
+	fontSizeLabel:SetText("Font Size: ")
+	fontSizeLabel:SetHeight(24)
+	fontSizeLabel:SetFrameWidthFromText()
+	local labelContainer = AceGUI:Create("EPContainer")
+	labelContainer:SetLayout("EPVerticalLayout")
+	labelContainer:SetFullWidth(true)
+	labelContainer:SetSpacing(0, 0)
+
+	local textAlignContainer = AceGUI:Create("EPContainer")
+	textAlignContainer:SetLayout("EPHorizontalLayout")
+	textAlignContainer:SetFullWidth(true)
+	textAlignContainer:SetSpacing(2, 0)
+	local leftTextAlignSpacer = AceGUI:Create("EPSpacer")
+	leftTextAlignSpacer:SetFillSpace(true)
+	local rightTextAlignSpacer = AceGUI:Create("EPSpacer")
+	rightTextAlignSpacer:SetFillSpace(true)
 	self.alignLeftButton = AceGUI:Create("EPButton")
-	self.alignLeftButton.frame:SetParent(self.frame)
-	self.alignLeftButton.frame:SetPoint("TOPLEFT", self.frame, "BOTTOMLEFT")
-	self.alignLeftButton:SetText("Align Left")
+	self.alignLeftButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-align-text-left-32]])
 	self.alignLeftButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.alignLeftButton:SetHeight(20)
-	self.alignLeftButton:SetWidthFromText()
+	self.alignLeftButton:SetHeight(24)
+	self.alignLeftButton:SetWidth(24)
 	self.alignLeftButton:SetCallback("Clicked", function()
 		self.assignmentText:SetJustifyH("LEFT")
 	end)
-
 	self.alignCenterButton = AceGUI:Create("EPButton")
-	self.alignCenterButton.frame:SetParent(self.frame)
-	self.alignCenterButton.frame:SetPoint("LEFT", self.alignLeftButton.frame, "RIGHT")
-	self.alignCenterButton:SetText("Align Center")
+	self.alignCenterButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-align-text-center-32]])
 	self.alignCenterButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.alignCenterButton:SetHeight(20)
-	self.alignCenterButton:SetWidthFromText()
+	self.alignCenterButton:SetHeight(24)
+	self.alignCenterButton:SetWidth(24)
 	self.alignCenterButton:SetCallback("Clicked", function()
 		self.assignmentText:SetJustifyH("CENTER")
 	end)
-
 	self.alignRightButton = AceGUI:Create("EPButton")
-	self.alignRightButton.frame:SetParent(self.frame)
-	self.alignRightButton.frame:SetPoint("LEFT", self.alignCenterButton.frame, "RIGHT")
-	self.alignRightButton:SetText("Align Right")
+	self.alignRightButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-align-text-right-32]])
 	self.alignRightButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.alignRightButton:SetHeight(20)
-	self.alignRightButton:SetWidthFromText()
+	self.alignRightButton:SetHeight(24)
+	self.alignRightButton:SetWidth(24)
 	self.alignRightButton:SetCallback("Clicked", function()
 		self.assignmentText:SetJustifyH("RIGHT")
 	end)
 
+	local fontSizeContainer = AceGUI:Create("EPContainer")
+	fontSizeContainer:SetLayout("EPHorizontalLayout")
+	fontSizeContainer:SetFullWidth(true)
+	fontSizeContainer:SetSpacing(2, 0)
+	fontSizeContainer:SetAlignment("center")
+	local leftFontSizeSpacer = AceGUI:Create("EPSpacer")
+	leftFontSizeSpacer:SetFillSpace(true)
+	local rightFontSizeSpacer = AceGUI:Create("EPSpacer")
+	rightFontSizeSpacer:SetFillSpace(true)
 	self.increaseFontSizeButton = AceGUI:Create("EPButton")
-	self.increaseFontSizeButton.frame:SetParent(self.frame)
-	self.increaseFontSizeButton.frame:SetPoint("TOPLEFT", self.frame, "TOPRIGHT")
-	self.increaseFontSizeButton.frame:SetPoint("BOTTOMLEFT", self.frame, "RIGHT")
 	self.increaseFontSizeButton:SetText("+")
 	self.increaseFontSizeButton:SetBackdropColor(0, 0, 0, 0.9)
-	self.increaseFontSizeButton:SetWidth(self.frame:GetHeight() / 2.0)
+	self.increaseFontSizeButton:SetWidth(24)
+	self.increaseFontSizeButton:SetHeight(24)
 	self.increaseFontSizeButton:SetCallback("Clicked", function()
 		local font, size, flags = self.assignmentText:GetFont()
 		if font then
@@ -227,13 +255,11 @@ local function OnAcquire(self)
 			self:UpdatePositionLineEdits(x, y)
 		end
 	end)
-
 	self.decreaseFontSizeButton = AceGUI:Create("EPButton")
-	self.decreaseFontSizeButton.frame:SetParent(self.frame)
-	self.decreaseFontSizeButton.frame:SetPoint("TOPRIGHT", self.increaseFontSizeButton.frame, "BOTTOMRIGHT")
-	self.decreaseFontSizeButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMRIGHT")
 	self.decreaseFontSizeButton:SetText("-")
 	self.decreaseFontSizeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.decreaseFontSizeButton:SetWidth(24)
+	self.decreaseFontSizeButton:SetHeight(24)
 	self.decreaseFontSizeButton:SetCallback("Clicked", function()
 		local font, size, flags = self.assignmentText:GetFont()
 		if font then
@@ -244,9 +270,44 @@ local function OnAcquire(self)
 		end
 	end)
 
+	local textAlignFontSizeContainer = AceGUI:Create("EPContainer")
+	textAlignFontSizeContainer:SetLayout("EPVerticalLayout")
+	textAlignFontSizeContainer:SetFullWidth(true)
+	textAlignFontSizeContainer:SetSpacing(0, 0)
+
+	local textAlignFontSizeLabelContainer = AceGUI:Create("EPContainer")
+	textAlignFontSizeLabelContainer:SetLayout("EPHorizontalLayout")
+	textAlignFontSizeLabelContainer:SetFullWidth(true)
+	textAlignFontSizeLabelContainer:SetSpacing(5, 0)
+
+	labelContainer:AddChildren(textAlignLabel, fontSizeLabel)
+	textAlignContainer:AddChildren(
+		leftTextAlignSpacer,
+		self.alignLeftButton,
+		self.alignCenterButton,
+		self.alignRightButton,
+		rightTextAlignSpacer
+	)
+	fontSizeContainer:AddChildren(
+		leftFontSizeSpacer,
+		self.decreaseFontSizeButton,
+		self.increaseFontSizeButton,
+		rightFontSizeSpacer
+	)
+	textAlignFontSizeContainer:AddChildren(textAlignContainer, fontSizeContainer)
+	textAlignFontSizeLabelContainer:AddChildren(labelContainer, textAlignFontSizeContainer)
+
+	local anchorContainer = AceGUI:Create("EPContainer")
+	anchorContainer:SetLayout("EPVerticalLayout")
+	anchorContainer:SetFullWidth(true)
+	anchorContainer:SetSpacing(0, 0)
+
+	local anchorDropdownLabel = AceGUI:Create("EPLabel")
+	anchorDropdownLabel:SetText("Reminder Anchor Point", 0)
+	anchorDropdownLabel:SetHeight(24)
+	anchorDropdownLabel:SetWidth(anchorDropdownLabel.text:GetStringWidth())
+
 	self.anchorDropdown = AceGUI:Create("EPDropdown")
-	self.anchorDropdown.frame:SetParent(self.frame)
-	self.anchorDropdown.frame:SetPoint("LEFT", self.alignRightButton.frame, "RIGHT")
 	self.anchorDropdown:AddItems({
 		{ itemValue = "TOPLEFT", text = "Top Left" },
 		{ itemValue = "TOP", text = "Top" },
@@ -258,15 +319,26 @@ local function OnAcquire(self)
 		{ itemValue = "BOTTOMLEFT", text = "Bottom Left" },
 		{ itemValue = "CENTER", text = "Center" },
 	}, "EPDropdownItemToggle")
-	self.anchorDropdown:SetHeight(20)
+	self.anchorDropdown:SetHeight(24)
 	self.anchorDropdown:SetWidth(100)
+	self.anchorDropdown:SetFullWidth(true)
 	self.anchorDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:SetFrameAnchorPoint(value)
 	end)
 
+	anchorContainer:AddChildren(anchorDropdownLabel, self.anchorDropdown)
+
+	local relativeAnchorContainer = AceGUI:Create("EPContainer")
+	relativeAnchorContainer:SetLayout("EPVerticalLayout")
+	relativeAnchorContainer:SetFullWidth(true)
+	relativeAnchorContainer:SetSpacing(0, 0)
+
+	local relativeAnchorDropdownLabel = AceGUI:Create("EPLabel")
+	relativeAnchorDropdownLabel:SetText("Relative Anchor Frame Point:", 0)
+	relativeAnchorDropdownLabel:SetHeight(24)
+	relativeAnchorDropdownLabel:SetWidth(relativeAnchorDropdownLabel.text:GetStringWidth())
+
 	self.relativeAnchorDropdown = AceGUI:Create("EPDropdown")
-	self.relativeAnchorDropdown.frame:SetParent(self.frame)
-	self.relativeAnchorDropdown.frame:SetPoint("LEFT", self.anchorDropdown.frame, "RIGHT")
 	self.relativeAnchorDropdown:AddItems({
 		{ itemValue = "TOPLEFT", text = "Top Left" },
 		{ itemValue = "TOP", text = "Top" },
@@ -278,18 +350,36 @@ local function OnAcquire(self)
 		{ itemValue = "BOTTOMLEFT", text = "Bottom Left" },
 		{ itemValue = "CENTER", text = "Center" },
 	}, "EPDropdownItemToggle")
-	self.relativeAnchorDropdown:SetHeight(20)
+	self.relativeAnchorDropdown:SetHeight(24)
 	self.relativeAnchorDropdown:SetWidth(100)
+	self.relativeAnchorDropdown:SetFullWidth(true)
 	self.relativeAnchorDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:SetRelativeFrameAnchorPoint(value)
 	end)
 
+	relativeAnchorContainer:AddChildren(relativeAnchorDropdownLabel, self.relativeAnchorDropdown)
+
+	local anchorFrameContainer = AceGUI:Create("EPContainer")
+	anchorFrameContainer:SetLayout("EPHorizontalLayout")
+	anchorFrameContainer:SetFullWidth(true)
+	anchorFrameContainer:SetSpacing(5, 0)
+
+	local anchorFrameLabel = AceGUI:Create("EPLabel")
+	anchorFrameLabel:SetText("Anchor Frame:", 0)
+	anchorFrameLabel:SetHeight(24)
+	anchorFrameLabel:SetWidth(anchorFrameLabel.text:GetStringWidth())
+
+	self.anchorFrameNameLabel = AceGUI:Create("EPLabel")
+	self.anchorFrameNameLabel:SetText("", 0)
+	self.anchorFrameNameLabel:SetHeight(24)
+	self.anchorFrameNameLabel:SetWidth(10)
+	self.anchorFrameNameLabel:SetFullWidth(true)
+
 	self.chooseAnchorFrameButton = AceGUI:Create("EPButton")
-	self.chooseAnchorFrameButton.frame:SetParent(self.frame)
-	self.chooseAnchorFrameButton.frame:SetPoint("LEFT", self.relativeAnchorDropdown.frame, "RIGHT")
 	self.chooseAnchorFrameButton:SetText("Choose Anchor Frame")
-	self.chooseAnchorFrameButton:SetHeight(20)
+	self.chooseAnchorFrameButton:SetHeight(24)
 	self.chooseAnchorFrameButton:SetWidthFromText()
+	self.chooseAnchorFrameButton:SetFullWidth(true)
 	self.chooseAnchorFrameButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.chooseAnchorFrameButton:SetCallback("Clicked", function()
 		if isChoosingFrame then
@@ -301,11 +391,19 @@ local function OnAcquire(self)
 		end
 	end)
 
+	anchorFrameContainer:AddChildren(anchorFrameLabel, self.anchorFrameNameLabel)
+
+	local xPositionContainer = AceGUI:Create("EPContainer")
+	xPositionContainer:SetLayout("EPHorizontalLayout")
+	xPositionContainer:SetFullWidth(true)
+	xPositionContainer:SetSpacing(5, 0)
+	local xPositionLabel = AceGUI:Create("EPLabel")
+	xPositionLabel:SetText("X:", 0)
+	xPositionLabel:SetHeight(24)
+	xPositionLabel:SetWidth(xPositionLabel.text:GetStringWidth())
 	self.xPositionLineEdit = AceGUI:Create("EPLineEdit")
-	self.xPositionLineEdit.frame:SetParent(self.frame)
-	self.xPositionLineEdit.frame:SetPoint("LEFT", self.chooseAnchorFrameButton.frame, "RIGHT")
-	self.xPositionLineEdit:SetHeight(20)
-	self.xPositionLineEdit:SetWidth(50)
+	self.xPositionLineEdit:SetHeight(24)
+	self.xPositionLineEdit:SetFullWidth(true)
 	self.xPositionLineEdit:SetCallback("OnTextSubmitted", function(_, _, text)
 		local numericValue = tonumber(text)
 		if numericValue then
@@ -313,12 +411,19 @@ local function OnAcquire(self)
 			self:SetFramePosition(numericValue, y)
 		end
 	end)
+	xPositionContainer:AddChildren(xPositionLabel, self.xPositionLineEdit)
 
+	local yPositionContainer = AceGUI:Create("EPContainer")
+	yPositionContainer:SetLayout("EPHorizontalLayout")
+	yPositionContainer:SetFullWidth(true)
+	yPositionContainer:SetSpacing(5, 0)
+	local yPositionLabel = AceGUI:Create("EPLabel")
+	yPositionLabel:SetText("Y:", 0)
+	yPositionLabel:SetHeight(24)
+	yPositionLabel.frame:SetWidth(yPositionLabel.text:GetStringWidth())
 	self.yPositionLineEdit = AceGUI:Create("EPLineEdit")
-	self.yPositionLineEdit.frame:SetParent(self.frame)
-	self.yPositionLineEdit.frame:SetPoint("LEFT", self.xPositionLineEdit.frame, "RIGHT")
-	self.yPositionLineEdit:SetHeight(20)
-	self.yPositionLineEdit:SetWidth(50)
+	self.yPositionLineEdit:SetHeight(24)
+	self.yPositionLineEdit:SetFullWidth(true)
 	self.yPositionLineEdit:SetCallback("OnTextSubmitted", function(_, _, text)
 		local numericValue = tonumber(text)
 		if numericValue then
@@ -326,15 +431,35 @@ local function OnAcquire(self)
 			self:SetFramePosition(x, numericValue)
 		end
 	end)
+	yPositionContainer:AddChildren(yPositionLabel, self.yPositionLineEdit)
 
 	self.simulateButton = AceGUI:Create("EPButton")
-	self.simulateButton.frame:SetParent(self.frame)
-	self.simulateButton.frame:SetPoint("LEFT", self.yPositionLineEdit.frame, "RIGHT")
 	self.simulateButton:SetText("Simulate")
-	self.simulateButton:SetHeight(20)
-	self.simulateButton:SetWidthFromText()
+	self.simulateButton:SetHeight(24)
+	self.simulateButton:SetWidth(100)
+	self.simulateButton:SetFullWidth(true)
 	self.simulateButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.simulateButton:SetCallback("Clicked", function() end)
+
+	self.container:SetPoint("TOPLEFT", self.frame, "TOPRIGHT", 10, -10)
+	self.container:AddChildren(
+		textAlignFontSizeLabelContainer,
+		anchorContainer,
+		anchorFrameContainer,
+		self.chooseAnchorFrameButton,
+		relativeAnchorContainer,
+		xPositionContainer,
+		yPositionContainer,
+		self.simulateButton
+	)
+
+	self.container:DoLayout()
+	self.container:DoLayout()
+
+	self.optionsFrame:SetPoint("TOPLEFT", self.container.frame, "TOPLEFT", -10, 10)
+	self.optionsFrame:SetPoint("BOTTOMRIGHT", self.container.frame, "BOTTOMRIGHT", 10, -10)
+	self.optionsFrame:SetFrameLevel(self.container.frame:GetFrameLevel() - 1)
+	self.optionsFrame:Show()
 
 	self.frame:SetHeight(self.assignmentText:GetStringHeight() + 8)
 	self.frame:Show()
@@ -342,39 +467,12 @@ end
 
 ---@param self EPReminderAnchor
 local function OnRelease(self)
-	if self.alignCenterButton then
-		self.alignCenterButton:Release()
+	self.optionsFrame:ClearAllPoints()
+	self.optionsFrame:Hide()
+	if self.container then
+		self.container:Release()
 	end
-	if self.alignLeftButton then
-		self.alignLeftButton:Release()
-	end
-	if self.alignRightButton then
-		self.alignRightButton:Release()
-	end
-	if self.increaseFontSizeButton then
-		self.increaseFontSizeButton:Release()
-	end
-	if self.decreaseFontSizeButton then
-		self.decreaseFontSizeButton:Release()
-	end
-	if self.anchorDropdown then
-		self.anchorDropdown:Release()
-	end
-	if self.relativeAnchorDropdown then
-		self.relativeAnchorDropdown:Release()
-	end
-	if self.chooseAnchorFrameButton then
-		self.chooseAnchorFrameButton:Release()
-	end
-	if self.xPositionLineEdit then
-		self.xPositionLineEdit:Release()
-	end
-	if self.yPositionLineEdit then
-		self.yPositionLineEdit:Release()
-	end
-	if self.simulateButton then
-		self.simulateButton:Release()
-	end
+	self.anchorFrameNameLabel = nil
 	self.alignCenterButton = nil
 	self.alignLeftButton = nil
 	self.alignRightButton = nil
@@ -416,8 +514,19 @@ local function ApplyPoint(self, point, relativeFrame, relativePoint)
 		relativeFrame:GetHeight(),
 		relativePoint
 	)
+	local relativeTo = relativeFrame:GetName()
 	self.frame:ClearAllPoints()
-	self.frame:SetPoint(point, relativeFrame:GetName(), relativePoint, x, y)
+	self.frame:SetPoint(point, relativeTo, relativePoint, x, y)
+
+	self.preferences.reminder.point = point
+	self.preferences.reminder.relativeTo = relativeTo
+	self.preferences.reminder.relativePoint = relativePoint
+	self.preferences.reminder.x = x
+	self.preferences.reminder.y = y
+
+	self.anchorFrameNameLabel:SetText(relativeTo)
+	self.anchorDropdown:SetValue(point)
+	self.relativeAnchorDropdown:SetValue(relativePoint)
 	self:UpdatePositionLineEdits(x, y)
 end
 
@@ -472,6 +581,22 @@ end
 ---@param preferences EncounterPlannerPreferences
 local function SetPreferences(self, preferences)
 	self.preferences = preferences
+	local relativeFrame = UIParent
+	if _G[self.preferences.reminder.relativeTo] and _G[self.preferences.reminder.relativeTo]:GetName() then
+		relativeFrame = _G[self.preferences.reminder.relativeTo]
+	end
+	self.frame:ClearAllPoints()
+	self.frame:SetPoint(
+		self.preferences.reminder.point,
+		relativeFrame:GetName(),
+		self.preferences.reminder.relativePoint,
+		self.preferences.reminder.x,
+		self.preferences.reminder.y
+	)
+	self:UpdatePositionLineEdits(self.preferences.reminder.x, self.preferences.reminder.y)
+	self.anchorFrameNameLabel:SetText(relativeFrame:GetName())
+	self.anchorDropdown:SetValue(self.preferences.reminder.point)
+	self.relativeAnchorDropdown:SetValue(self.preferences.reminder.relativePoint)
 end
 
 local function Constructor()
@@ -488,6 +613,13 @@ local function Constructor()
 	frame:SetResizable(true)
 	frame:SetResizeBounds(defaultFrameWidth, defaultFrameHeight, nil, nil)
 	frame:EnableMouse(true)
+
+	local optionsFrame = CreateFrame("Frame", Type .. "OptionsFrame" .. count, frame, "BackdropTemplate")
+	optionsFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+	optionsFrame:SetBackdrop(frameBackdrop)
+	optionsFrame:SetBackdropColor(0, 0, 0, 0.75)
+	optionsFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.75)
+	optionsFrame:Hide()
 
 	local textFrame = CreateFrame("Frame", "TextFrame", frame)
 	textFrame:SetPoint("TOPLEFT", 2, -2)
@@ -528,6 +660,7 @@ local function Constructor()
 		SetFramePosition = SetFramePosition,
 		ApplyPoint = ApplyPoint,
 		frame = frame,
+		optionsFrame = optionsFrame,
 		textFrame = textFrame,
 		type = Type,
 		assignmentText = assignmentText,
