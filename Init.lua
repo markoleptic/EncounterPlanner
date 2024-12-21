@@ -438,6 +438,19 @@ end
 ---@field newAssignment MouseButtonKeyBinding
 ---@field duplicateAssignment MouseButtonKeyBinding
 
+---@class EncounterPlannerTextToSpeechPreferences
+---@field enableAtAdvanceNotice boolean
+---@field enableAtTime boolean
+
+---@class EncounterPlannerReminderPreferences
+---@field point AnchorPoint
+---@field relativeTo string
+---@field relativePoint AnchorPoint
+---@field x number
+---@field y number
+---@field growDown boolean
+---@field textToSpeech EncounterPlannerTextToSpeechPreferences
+
 local defaults = {
 	---@class EncounterPlannerDefaultProfile
 	---@field activeBossAbilities table<string, table<integer, boolean>>
@@ -457,7 +470,7 @@ local defaults = {
 		---@field assignmentSortType AssignmentSortType
 		---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
 		---@field zoomCenteredOnCursor boolean
-		---@field reminder {point: AnchorPoint, relativeTo: string, relativePoint: AnchorPoint, x:number, y:number, growDown:boolean}
+		---@field reminder EncounterPlannerReminderPreferences
 		preferences = {
 			keyBindings = {
 				pan = "RightButton",
@@ -481,6 +494,11 @@ local defaults = {
 				x = 0,
 				y = 300,
 				growDown = false,
+				enableProgressBars = true,
+				textToSpeech = {
+					enableAtAdvanceNotice = false,
+					enableAtTime = false,
+				},
 			},
 		},
 	},

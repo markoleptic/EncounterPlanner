@@ -1143,6 +1143,23 @@ function Private:CreateInterface()
 		Private.mainFrame:DoLayout()
 	end)
 
+	local textToolbarButton = AceGUI:Create("EPDropdown")
+	textToolbarButton:SetWidth(50)
+	textToolbarButton:SetButtonVisibility(false)
+	textToolbarButton:SetAutoItemWidth(true)
+	textToolbarButton:AddItems({
+		{ itemValue = "Edit Current Boss Roster", text = "Edit Current Boss Roster" },
+		{ itemValue = "Edit Shared Roster", text = "Edit Shared Roster" },
+	}, "EPDropdownItemToggle", true)
+	textToolbarButton:SetText("Roster")
+	textToolbarButton:SetCallback("OnValueChanged", function(_, _, value)
+		print(value)
+		textToolbarButton:SetText("Roster")
+	end)
+	textToolbarButton.frame:SetParent(Private.mainFrame.windowBar)
+	textToolbarButton.frame:SetPoint("TOPLEFT", Private.mainFrame.windowBar, "TOPLEFT", 2, -2)
+	textToolbarButton.frame:SetHeight(Private.mainFrame.windowBar:GetHeight() - 4)
+
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
 	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
@@ -1309,6 +1326,7 @@ function Private:CreateInterface()
 
 	local reminderAnchorButton = AceGUI:Create("EPButton")
 	reminderAnchorButton:SetText("Show Reminder Anchor")
+	local progressBar = nil
 	reminderAnchorButton:SetCallback("Clicked", function()
 		if not Private.reminderAnchor then
 			Private.reminderAnchor = AceGUI:Create("EPReminderAnchor")
@@ -1320,6 +1338,19 @@ function Private:CreateInterface()
 		else
 			Private.reminderAnchor:Release()
 			Private.reminderAnchor = nil
+		end
+		if not progressBar then
+			progressBar = AceGUI:Create("EPProgressBar")
+			progressBar.frame:SetParent(Private.mainFrame.frame)
+			progressBar.frame:SetPoint("BOTTOMLEFT", Private.mainFrame.frame, "TOPLEFT", 0, 50)
+			progressBar:SetDuration(61, false)
+			progressBar:Start()
+			progressBar:SetCallback("OnRelease", function()
+				progressBar = nil
+			end)
+		else
+			progressBar:Release()
+			progressBar = nil
 		end
 	end)
 
