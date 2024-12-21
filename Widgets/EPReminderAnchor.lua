@@ -25,6 +25,64 @@ local frameBackdrop = {
 
 local isChoosingFrame = false
 
+---@param left number
+---@param top number
+---@param width number
+---@param height number
+---@param point "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
+---@param rLeft number
+---@param rTop number
+---@param rWidth number
+---@param rhHeight number
+---@param rPoint "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
+local function calculateNewOffset(left, top, width, height, point, rLeft, rTop, rWidth, rhHeight, rPoint)
+	if point == "TOP" then
+		left = left + width / 2.0
+	elseif point == "TOPRIGHT" then
+		left = left + width
+	elseif point == "RIGHT" then
+		left = left + width
+		top = top - height / 2.0
+	elseif point == "BOTTOMRIGHT" then
+		left = left + width
+		top = top - height
+	elseif point == "BOTTOM" then
+		left = left + width / 2.0
+		top = top - height
+	elseif point == "LEFT" then
+		top = top - height / 2.0
+	elseif point == "BOTTOMLEFT" then
+		top = top - height
+	elseif point == "CENTER" then
+		left = left + width / 2.0
+		top = top - height / 2.0
+	end
+
+	if rPoint == "TOP" then
+		rLeft = rLeft + rWidth / 2.0
+	elseif rPoint == "TOPRIGHT" then
+		rLeft = rLeft + rWidth
+	elseif rPoint == "RIGHT" then
+		rLeft = rLeft + rWidth
+		rTop = rTop - rhHeight / 2.0
+	elseif rPoint == "BOTTOMRIGHT" then
+		rLeft = rLeft + rWidth
+		rTop = rTop - rhHeight
+	elseif rPoint == "BOTTOM" then
+		rLeft = rLeft + rWidth / 2.0
+		rTop = rTop - rhHeight
+	elseif rPoint == "LEFT" then
+		rTop = rTop - rhHeight / 2.0
+	elseif rPoint == "BOTTOMLEFT" then
+		rTop = rTop - rhHeight
+	elseif rPoint == "CENTER" then
+		rLeft = rLeft + rWidth / 2.0
+		rTop = rTop - rhHeight / 2.0
+	end
+
+	return left - rLeft, top - rTop
+end
+
 local function GetName(frame)
 	if frame.GetName and frame:GetName() then
 		return frame:GetName()
@@ -53,15 +111,18 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox)
 	local oldFocus = nil
 	local oldFocusName = nil
 	local focusName = nil
-
+	SetCursor("CAST_CURSOR")
 	frameChooserFrame:SetScript("OnUpdate", function()
 		if IsMouseButtonDown("RightButton") then
 			StopChoosingFrame(frameChooserFrame, frameChooserBox, nil)
 			return
-		elseif IsMouseButtonDown("LeftButton") and oldFocusName then
-			StopChoosingFrame(frameChooserFrame, frameChooserBox, oldFocusName)
+		elseif IsMouseButtonDown("LeftButton") then
+			if oldFocusName then
+				StopChoosingFrame(frameChooserFrame, frameChooserBox, oldFocusName)
+			else
+				StopChoosingFrame(frameChooserFrame, frameChooserBox, "UIParent")
+			end
 		else
-			SetCursor("CAST_CURSOR")
 			local foci = GetMouseFoci()
 			local focus = foci[1] or nil
 			if focus then
@@ -84,6 +145,8 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox)
 			end
 			if not focusName then
 				frameChooserBox:Hide()
+			else
+				SetCursor("CAST_CURSOR")
 			end
 		end
 	end)
@@ -100,7 +163,9 @@ end
 ---@field increaseFontSizeButton EPButton
 ---@field decreaseFontSizeButton EPButton
 ---@field chooseAnchorFrameButton EPButton
+---@field simulateButton EPButton
 ---@field anchorDropdown EPDropdown
+---@field relativeAnchorDropdown EPDropdown
 ---@field xPositionLineEdit EPLineEdit
 ---@field yPositionLineEdit EPLineEdit
 ---@field preferences EncounterPlannerPreferences
@@ -131,7 +196,9 @@ local function OnAcquire(self)
 	self.alignCenterButton:SetBackdropColor(0, 0, 0, 0.9)
 	self.alignCenterButton:SetHeight(20)
 	self.alignCenterButton:SetWidthFromText()
-	self.alignCenterButton:SetCallback("Clicked", function() end)
+	self.alignCenterButton:SetCallback("Clicked", function()
+		self.assignmentText:SetJustifyH("CENTER")
+	end)
 
 	self.alignRightButton = AceGUI:Create("EPButton")
 	self.alignRightButton.frame:SetParent(self.frame)
@@ -197,9 +264,29 @@ local function OnAcquire(self)
 		self:SetFrameAnchorPoint(value)
 	end)
 
+	self.relativeAnchorDropdown = AceGUI:Create("EPDropdown")
+	self.relativeAnchorDropdown.frame:SetParent(self.frame)
+	self.relativeAnchorDropdown.frame:SetPoint("LEFT", self.anchorDropdown.frame, "RIGHT")
+	self.relativeAnchorDropdown:AddItems({
+		{ itemValue = "TOPLEFT", text = "Top Left" },
+		{ itemValue = "TOP", text = "Top" },
+		{ itemValue = "TOPRIGHT", text = "Top Right" },
+		{ itemValue = "RIGHT", text = "Right" },
+		{ itemValue = "BOTTOMRIGHT", text = "Bottom Right" },
+		{ itemValue = "BOTTOM", text = "Bottom" },
+		{ itemValue = "LEFT", text = "Left" },
+		{ itemValue = "BOTTOMLEFT", text = "Bottom Left" },
+		{ itemValue = "CENTER", text = "Center" },
+	}, "EPDropdownItemToggle")
+	self.relativeAnchorDropdown:SetHeight(20)
+	self.relativeAnchorDropdown:SetWidth(100)
+	self.relativeAnchorDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		self:SetRelativeFrameAnchorPoint(value)
+	end)
+
 	self.chooseAnchorFrameButton = AceGUI:Create("EPButton")
 	self.chooseAnchorFrameButton.frame:SetParent(self.frame)
-	self.chooseAnchorFrameButton.frame:SetPoint("LEFT", self.anchorDropdown.frame, "RIGHT")
+	self.chooseAnchorFrameButton.frame:SetPoint("LEFT", self.relativeAnchorDropdown.frame, "RIGHT")
 	self.chooseAnchorFrameButton:SetText("Choose Anchor Frame")
 	self.chooseAnchorFrameButton:SetHeight(20)
 	self.chooseAnchorFrameButton:SetWidthFromText()
@@ -240,6 +327,15 @@ local function OnAcquire(self)
 		end
 	end)
 
+	self.simulateButton = AceGUI:Create("EPButton")
+	self.simulateButton.frame:SetParent(self.frame)
+	self.simulateButton.frame:SetPoint("LEFT", self.yPositionLineEdit.frame, "RIGHT")
+	self.simulateButton:SetText("Simulate")
+	self.simulateButton:SetHeight(20)
+	self.simulateButton:SetWidthFromText()
+	self.simulateButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.simulateButton:SetCallback("Clicked", function() end)
+
 	self.frame:SetHeight(self.assignmentText:GetStringHeight() + 8)
 	self.frame:Show()
 end
@@ -264,6 +360,9 @@ local function OnRelease(self)
 	if self.anchorDropdown then
 		self.anchorDropdown:Release()
 	end
+	if self.relativeAnchorDropdown then
+		self.relativeAnchorDropdown:Release()
+	end
 	if self.chooseAnchorFrameButton then
 		self.chooseAnchorFrameButton:Release()
 	end
@@ -273,14 +372,20 @@ local function OnRelease(self)
 	if self.yPositionLineEdit then
 		self.yPositionLineEdit:Release()
 	end
+	if self.simulateButton then
+		self.simulateButton:Release()
+	end
 	self.alignCenterButton = nil
 	self.alignLeftButton = nil
 	self.alignRightButton = nil
 	self.increaseFontSizeButton = nil
 	self.decreaseFontSizeButton = nil
+	self.anchorDropdown = nil
+	self.relativeAnchorDropdown = nil
 	self.chooseAnchorFrameButton = nil
 	self.xPositionLineEdit = nil
 	self.yPositionLineEdit = nil
+	self.simulateButton = nil
 	self.preferences = nil
 end
 
@@ -291,14 +396,44 @@ local function SetText(self, text)
 end
 
 ---@param self EPReminderAnchor
----@param anchorPoint string
-local function SetFrameAnchorPoint(self, anchorPoint)
-	if anchorPoint then
-		local _, relativeTo, relativePoint, currentX, currentY = self.frame:GetPoint()
-		self.frame:ClearAllPoints()
-		self.frame:SetPoint(anchorPoint, relativeTo, relativePoint, currentX, currentY)
-		local x, y = select(4, self.frame:GetPoint())
-		self:UpdatePositionLineEdits(x, y)
+---@param point "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"|nil
+---@param relativeFrame Frame|ScriptRegion|nil
+---@param relativePoint "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"|nil
+local function ApplyPoint(self, point, relativeFrame, relativePoint)
+	local p, rF, rP, _, _ = self.frame:GetPoint()
+	point = point or p
+	relativeFrame = relativeFrame or rF
+	relativePoint = relativePoint or rP
+	local x, y = calculateNewOffset(
+		self.frame:GetLeft(),
+		self.frame:GetTop(),
+		self.frame:GetWidth(),
+		self.frame:GetHeight(),
+		point,
+		relativeFrame:GetLeft(),
+		relativeFrame:GetTop(),
+		relativeFrame:GetWidth(),
+		relativeFrame:GetHeight(),
+		relativePoint
+	)
+	self.frame:ClearAllPoints()
+	self.frame:SetPoint(point, relativeFrame:GetName(), relativePoint, x, y)
+	self:UpdatePositionLineEdits(x, y)
+end
+
+---@param self EPReminderAnchor
+---@param point "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
+local function SetFrameAnchorPoint(self, point)
+	if point then
+		self:ApplyPoint(point, nil, nil)
+	end
+end
+
+---@param self EPReminderAnchor
+---@param relativePoint "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
+local function SetRelativeFrameAnchorPoint(self, relativePoint)
+	if relativePoint then
+		self:ApplyPoint(nil, nil, relativePoint)
 	end
 end
 
@@ -318,10 +453,7 @@ end
 local function SetAnchorFrame(self, frameName)
 	if frameName then
 		if _G[frameName] and _G[frameName]:GetName() == frameName then
-			local currentPoint, _, relativePoint, currentX, currentY = self.frame:GetPoint()
-			self.frame:SetPoint(currentPoint, frameName, relativePoint, currentX, currentY)
-			local x, y = select(4, self.frame:GetPoint())
-			self:UpdatePositionLineEdits(x, y)
+			self:ApplyPoint(nil, _G[frameName], nil)
 		end
 	end
 end
@@ -390,9 +522,11 @@ local function Constructor()
 		GetText = GetText,
 		UpdatePositionLineEdits = UpdatePositionLineEdits,
 		SetFrameAnchorPoint = SetFrameAnchorPoint,
+		SetRelativeFrameAnchorPoint = SetRelativeFrameAnchorPoint,
 		SetAnchorFrame = SetAnchorFrame,
 		SetPreferences = SetPreferences,
 		SetFramePosition = SetFramePosition,
+		ApplyPoint = ApplyPoint,
 		frame = frame,
 		textFrame = textFrame,
 		type = Type,
@@ -405,13 +539,11 @@ local function Constructor()
 	local previousPointDetails = {}
 	frame:SetScript("OnMouseDown", function(self, button)
 		if button == "LeftButton" then
-			local point, relativeTo, relativePoint, x, y = frame:GetPoint()
+			local point, relativeTo, relativePoint, _, _ = frame:GetPoint()
 			previousPointDetails = {
 				point = point,
 				relativeTo = relativeTo,
 				relativePoint = relativePoint,
-				x = x,
-				y = y,
 			}
 			frame:StartMoving()
 		end
@@ -420,33 +552,10 @@ local function Constructor()
 	frame:SetScript("OnMouseUp", function(_, button)
 		if button == "LeftButton" then
 			frame:StopMovingOrSizing()
-
-			local left, top = frame:GetLeft(), frame:GetTop()
+			local point = previousPointDetails.point
 			local relativeFrame = previousPointDetails.relativeTo or UIParent
-			local scale = frame:GetEffectiveScale()
-
-			-- Correct for scale
-			local relativeScale = relativeFrame.GetEffectiveScale and relativeFrame:GetEffectiveScale() or 1
-			local adjustedScale = scale / relativeScale
-
-			-- Calculate offsets relative to the original parent
-			local relativeLeft = relativeFrame:GetLeft() or 0
-			local relativeTop = relativeFrame:GetTop() or 0
-			local newX = (left - relativeLeft) / adjustedScale
-			local newY = (top - relativeTop) / adjustedScale
-
-			-- Reapply the original anchor with the recalculated offsets
-			frame:ClearAllPoints()
-			frame:SetPoint(
-				previousPointDetails.point,
-				previousPointDetails.relativeTo,
-				previousPointDetails.relativePoint,
-				newX,
-				newY
-			)
-
-			-- Update any associated UI elements or data
-			widget:UpdatePositionLineEdits(newX, newY)
+			local relativePoint = previousPointDetails.relativePoint
+			widget:ApplyPoint(point, relativeFrame, relativePoint)
 		end
 	end)
 
