@@ -277,11 +277,17 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		end
 	elseif dataType == "CombatLogEventSpellID" then
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = tonumber(value)
+			local spellID = tonumber(value)
+			if spellID then
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+			end
 		end
 	elseif dataType == "CombatLogEventSpellCount" then
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			assignment--[[@as CombatLogEventAssignment]].spellCount = tonumber(value)
+			local spellCount = tonumber(value)
+			if spellCount then
+				assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+			end
 		end
 	elseif dataType == "PhaseNumber" then
 		if

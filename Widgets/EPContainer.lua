@@ -88,6 +88,26 @@ local function InsertChildren(self, beforeWidget, ...)
 	end
 end
 
+---@param self EPContainer
+---@param child AceGUIWidgetType|EPWidgetType|table
+local function AddChildNoDoLayout(self, child)
+	tinsert(self.children, child)
+	child:SetParent(self)
+	child.frame:Show()
+end
+
+---@param self EPContainer
+---@param child AceGUIWidgetType|EPWidgetType|table
+local function RemoveChildNoDoLayout(self, child)
+	for i = #self.children, 1, -1 do
+		if self.children[i] == child then
+			self.children[i]:Release()
+			tremove(self.children, i)
+			break
+		end
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -107,6 +127,8 @@ local function Constructor()
 		SetAlignment = SetAlignment,
 		SetSelfAlignment = SetSelfAlignment,
 		InsertChildren = InsertChildren,
+		AddChildNoDoLayout = AddChildNoDoLayout,
+		RemoveChildNoDoLayout = RemoveChildNoDoLayout,
 		frame = frame,
 		type = Type,
 		content = content,

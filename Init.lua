@@ -59,11 +59,11 @@ Private.classes.Assignment = {
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
----@field combatLogEventType CombatLogEventType|nil The type of combat log even the assignment is triggered by
----@field combatLogEventSpellID integer|nil The spell for the event
+---@field combatLogEventType CombatLogEventType The type of combat log even the assignment is triggered by
+---@field combatLogEventSpellID integer The spell for the event
 ---@field phase number|nil The phase the combat log event must occur in (Currently not used)
----@field spellCount integer|nil The number of times the combat log event must have occurred
----@field time number|nil The time from the combat log event to trigger the assignment
+---@field spellCount integer The number of times the combat log event must have occurred
+---@field time number The time from the combat log event to trigger the assignment
 Private.classes.CombatLogEventAssignment = setmetatable({
 	combatLogEventType = "SCS",
 	combatLogEventSpellID = 0,
@@ -442,6 +442,12 @@ end
 ---@field enableAtAdvanceNotice boolean
 ---@field enableAtTime boolean
 
+---@class EncounterPlannerSoundPreferences
+---@field enableAtAdvanceNotice boolean
+---@field enableAtTime boolean
+---@field advanceNoticeSound string
+---@field atSound string
+
 ---@class EncounterPlannerReminderPreferences
 ---@field point AnchorPoint
 ---@field relativeTo string
@@ -449,7 +455,12 @@ end
 ---@field x number
 ---@field y number
 ---@field growDown boolean
+---@field advanceNotice number
+---@field cancelIfAlreadyCasted boolean
+---@field enableProgressBars boolean
+---@field onlyShowMe boolean
 ---@field textToSpeech EncounterPlannerTextToSpeechPreferences
+---@field sound EncounterPlannerSoundPreferences
 
 local defaults = {
 	---@class EncounterPlannerDefaultProfile
@@ -494,8 +505,17 @@ local defaults = {
 				x = 0,
 				y = 300,
 				growDown = false,
+				advanceNotice = 10.0,
+				cancelIfAlreadyCasted = true,
 				enableProgressBars = true,
+				onlyShowMe = true,
 				textToSpeech = {
+					enableAtAdvanceNotice = false,
+					enableAtTime = false,
+				},
+				sound = {
+					advanceNoticeSound = "",
+					atSound = "",
 					enableAtAdvanceNotice = false,
 					enableAtTime = false,
 				},
@@ -521,6 +541,7 @@ Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
 Private.reminderAnchor = nil --[[@as EPReminderAnchor]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
+Private.reminderContainer = nil --[[@as EPContainer]]
 
 LSM:Register(
 	"font",

@@ -817,7 +817,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 		self.fakeAssignmentFrame:Hide()
 		assignmentBeingDuplicated = false
 		if timelineAssignment then
-			local assignmentFrameIndices = self.orderedAssignmentFrames[timelineAssignment.order]
+			local assignmentFrameIndices = self.orderedAssignmentFrameIndices[timelineAssignment.order]
 			if assignmentFrameIndices then
 				for currentIndex, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
 					if assignmentFrameIndex == self.fakeAssignmentFrame.temporaryAssignmentFrameIndex then
@@ -943,7 +943,11 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 	UpdateTimeLabels(self)
 	if assignmentFrameBeingDragged and assignmentFrameBeingDragged.timelineAssignment then
 		local order = assignmentFrameBeingDragged.timelineAssignment.order
-		UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, self.orderedAssignmentFrames[order], order)
+		UpdateCooldownTexturesAndInvalidTextures(
+			self.assignmentFrames,
+			self.orderedAssignmentFrameIndices[order],
+			order
+		)
 	end
 end
 
@@ -982,7 +986,7 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 
 		local timelineAssignment, index = FindTimelineAssignment(self.timelineAssignments, frame.assignmentIndex)
 		if timelineAssignment and index then
-			local assignmentFrameIndices = self.orderedAssignmentFrames[timelineAssignment.order]
+			local assignmentFrameIndices = self.orderedAssignmentFrameIndices[timelineAssignment.order]
 			if assignmentFrameIndices then
 				for currentIndex, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
 					if assignmentFrameIndex == index then
@@ -1258,13 +1262,13 @@ local function UpdateAssignments(self)
 		frame.cooldownWidth = 0
 	end
 
-	wipe(self.orderedAssignmentFrames)
+	wipe(self.orderedAssignmentFrameIndices)
 	local maxOrder = -hugeNumber
 
 	for index, timelineAssignment in ipairs(self.timelineAssignments) do
 		local order = timelineAssignment.order
-		if not self.orderedAssignmentFrames[order] then
-			self.orderedAssignmentFrames[order] = {}
+		if not self.orderedAssignmentFrameIndices[order] then
+			self.orderedAssignmentFrameIndices[order] = {}
 		end
 		local showCooldown = not self.collapsed[timelineAssignment.assignment.assigneeNameOrRole]
 			and self.preferences.showSpellCooldownDuration
@@ -1278,17 +1282,17 @@ local function UpdateAssignments(self)
 			(showCooldown and timelineAssignment.spellCooldownDuration) or nil
 		)
 		if showCooldown then
-			tinsert(self.orderedAssignmentFrames[order], index)
+			tinsert(self.orderedAssignmentFrameIndices[order], index)
 		end
 		maxOrder = max(maxOrder, order)
 	end
 	for i = 1, maxOrder do
-		if not self.orderedAssignmentFrames[i] then
-			self.orderedAssignmentFrames[i] = {}
+		if not self.orderedAssignmentFrameIndices[i] then
+			self.orderedAssignmentFrameIndices[i] = {}
 		end
 	end
 	if self.preferences.showSpellCooldownDuration then
-		for order, indexedFrames in ipairs(self.orderedAssignmentFrames) do
+		for order, indexedFrames in ipairs(self.orderedAssignmentFrameIndices) do
 			UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, indexedFrames, order)
 		end
 	end
@@ -1698,7 +1702,7 @@ end
 ---@field currentTimeLabel EPLabel
 ---@field assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, AssignmentFrame>
----@field orderedAssignmentFrames table<integer, table<integer, integer>>
+---@field orderedAssignmentFrameIndices table<integer, table<integer, integer>>
 ---@field fakeAssignmentFrame FakeAssignmentFrame
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
@@ -1719,7 +1723,7 @@ end
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
-	self.orderedAssignmentFrames = {}
+	self.orderedAssignmentFrameIndices = {}
 	self.bossAbilityFrames = self.bossAbilityFrames or {}
 	self.timelineLabels = self.timelineLabels or {}
 	self.zoomFactor = self.zoomFactor or 1.0
@@ -1857,7 +1861,7 @@ local function OnRelease(self)
 		frame.abilityInstance = nil
 	end
 
-	self.orderedAssignmentFrames = nil
+	self.orderedAssignmentFrameIndices = nil
 	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
