@@ -7,8 +7,9 @@ local select = select
 local pi = math.pi
 
 local textOffsetX = 4
-local checkOffsetLeftX = -2
-local checkOffsetRightX = -8
+local checkOffsetX = 2
+local childSelectedIndicatorOffsetX = 3
+local childSelectedIndicatorOffsetY = 1
 local checkSize = 16
 local fontSize = 14
 local dropdownItemHeight = 24
@@ -154,8 +155,8 @@ function EPItemBase.Create(type)
 	local text = frame:CreateFontString(type .. "Text" .. count, "OVERLAY", "GameFontNormalSmall")
 	text:SetTextColor(1, 1, 1)
 	text:SetJustifyH("LEFT")
+	text:SetJustifyV("MIDDLE")
 	text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
-	text:SetPoint("RIGHT", frame, "RIGHT", checkOffsetRightX, 0)
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
@@ -166,22 +167,28 @@ function EPItemBase.Create(type)
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
 	highlight:SetTexelSnappingBias(0.0)
 	highlight:SetSnapToPixelGrid(false)
-	highlight:SetPoint("TOPLEFT", 0, 0)
-	highlight:SetPoint("BOTTOMRIGHT", 0, 0)
+	highlight:SetPoint("TOPLEFT")
+	highlight:SetPoint("BOTTOMRIGHT")
 	highlight:SetBlendMode("ADD")
 	highlight:Hide()
 
 	local check = frame:CreateTexture(type .. "Check" .. count, "OVERLAY")
 	check:SetWidth(checkSize)
 	check:SetHeight(checkSize)
-	check:SetPoint("RIGHT", frame, "RIGHT", checkOffsetLeftX, 0)
+	check:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
 	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	check:Hide()
 
 	local childSelectedIndicator = frame:CreateTexture(type .. "ChildSelectedIndicator" .. count, "OVERLAY")
 	childSelectedIndicator:SetWidth(subHeight)
 	childSelectedIndicator:SetHeight(subHeight)
-	childSelectedIndicator:SetPoint("RIGHT", frame, "RIGHT", -3, -1)
+	childSelectedIndicator:SetPoint(
+		"RIGHT",
+		frame,
+		"RIGHT",
+		-childSelectedIndicatorOffsetX,
+		-childSelectedIndicatorOffsetY
+	)
 	childSelectedIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	childSelectedIndicator:SetRotation(pi / 2)
 	childSelectedIndicator:Hide()
@@ -206,6 +213,9 @@ function EPItemBase.Create(type)
 		Hide = EPItemBase.Hide,
 		SetOnLeave = EPItemBase.SetOnLeave,
 		SetOnEnter = EPItemBase.SetOnEnter,
+		textOffsetX = textOffsetX,
+		checkOffsetX = checkOffsetX,
+		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
 	}
 
 	frame.obj = widget
@@ -322,7 +332,6 @@ do
 			self.highlight:Hide()
 		end
 		if not self.disabled and self.childPullout then
-			-- self.frame:GetFrameLevel() + 100
 			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 0)
 		end
 	end
@@ -338,8 +347,8 @@ do
 	local function HandleChildPulloutOpen(childPullout)
 		local self = childPullout:GetUserDataTable().obj --[[@as EPDropdownItemMenu]]
 		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
-		for _, dropdownItem in childPullout:IterateItems() do
-			dropdownItem:SetIsSelected(dropdownItem:GetValue() == value)
+		for _, pulloutItem in ipairs(childPullout.items) do
+			pulloutItem:SetIsSelected(pulloutItem:GetValue() == value)
 		end
 		self.open = true
 		self:Fire("OnOpened")
@@ -353,12 +362,14 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
-	local function CreateChildPullout(self)
+	---@param autoWidth boolean
+	local function CreateChildPullout(self, autoWidth)
 		local childPullout = AceGUI:Create("EPDropdownPullout")
 		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		childPullout:GetUserDataTable().obj = self
 		childPullout:SetCallback("OnOpen", HandleChildPulloutOpen)
 		childPullout:SetCallback("OnClose", HandleChildPulloutClose)
+		childPullout:SetAutoWidth(autoWidth)
 		return childPullout
 	end
 
@@ -401,7 +412,7 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
 	local function SetMenuItems(self, dropdownItemData, dropdownParent)
-		self.childPullout = CreateChildPullout(self)
+		self.childPullout = CreateChildPullout(self, dropdownParent.pullout.autoWidth)
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
@@ -433,7 +444,7 @@ do
 	---@param index integer?
 	local function AddMenuItems(self, dropdownItemData, dropdownParent, index)
 		if not self.childPullout then
-			self.childPullout = CreateChildPullout(self)
+			self.childPullout = CreateChildPullout(self, dropdownParent.pullout.autoWidth)
 		end
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
