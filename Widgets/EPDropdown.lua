@@ -383,32 +383,46 @@ do
 	---@field pulloutWidth number
 	---@field dropdownItemHeight number
 	---@field obj any|nil
+	---@field showHighlight boolean
+	---@field itemTextFontSize number
+	---@field itemHorizontalPadding number
 
 	local Type = "EPDropdown"
 	local Version = 1
 
-	local function HandleDropdownHide(frame)
-		local self = frame.obj --[[@as EPDropdown]]
+	---@param self EPDropdown
+	local function HandleDropdownHide(self)
 		if self.open then
 			self.pullout:Close()
 		end
 	end
 
-	local function HandleButtonEnter(frame)
-		local self = frame.obj --[[@as EPDropdown]]
-		self.button:LockHighlight()
+	---@param self EPDropdown
+	local function HandleButtonEnter(self)
+		if self.showHighlight and not self.open then
+			local fadeOut = self.fadeOut
+			if fadeOut:IsPlaying() then
+				fadeOut:Stop()
+			end
+			self.fadeIn:Play()
+		end
 		self:Fire("OnEnter")
 	end
 
-	local function HandleButtonLeave(frame)
-		local self = frame.obj --[[@as EPDropdown]]
-		self.button:UnlockHighlight()
+	---@param self EPDropdown
+	local function HandleButtonLeave(self)
+		if self.showHighlight and not self.open then
+			local fadeIn = self.fadeIn
+			if fadeIn:IsPlaying() then
+				fadeIn:Stop()
+			end
+			self.fadeOut:Play()
+		end
 		self:Fire("OnLeave")
 	end
 
-	---@param frame EPDropdownPullout
-	local function HandleToggleDropdownPullout(frame)
-		local self = frame.obj --[[@as EPDropdown]]
+	---@param self EPDropdown
+	local function HandleToggleDropdownPullout(self)
 		if self.open then
 			self.open = nil
 			self.pullout:Close()
@@ -444,6 +458,13 @@ do
 		self.button:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
 		self.button:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
 		self.button:GetHighlightTexture():SetTexCoord(0, 1, 0, 1)
+		if self.showHighlight then
+			local fadeIn = self.fadeIn
+			if fadeIn:IsPlaying() then
+				fadeIn:Stop()
+			end
+			self.fadeOut:Play()
+		end
 		self:Fire("OnClosed")
 	end
 
@@ -509,6 +530,8 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
+		self.showHighlight = false
+		self.itemHorizontalPadding = 4
 		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
@@ -518,6 +541,8 @@ do
 		self.pullout:SetAutoWidth(true)
 		FixLevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
+		self:SetTextFontSize(fontSize)
+		self:SetItemTextFontSize(fontSize)
 		self:SetTextCentered(false)
 		self:SetHeight(self.dropdownItemHeight)
 		self:SetWidth(200)
@@ -674,6 +699,8 @@ do
 			dropdownMenuItem:GetUserDataTable().obj = self
 			dropdownMenuItem:SetValue(itemValue)
 			dropdownMenuItem:SetText(text)
+			dropdownMenuItem:SetFontSize(self.itemTextFontSize)
+			dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding)
 			dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 			self.pullout:AddItem(dropdownMenuItem)
 			if neverShowItemsAsSelected == true then
@@ -687,6 +714,8 @@ do
 			dropdownItemToggle:GetUserDataTable().obj = self
 			dropdownItemToggle:SetValue(itemValue)
 			dropdownItemToggle:SetText(text)
+			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
+			dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
 			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 			self.pullout:AddItem(dropdownItemToggle)
 			if neverShowItemsAsSelected == true then
@@ -825,13 +854,49 @@ do
 		SearchItems(self.pullout.items)
 	end
 
+	---@param self EPDropdown
+	---@param show boolean
+	local function SetShowHighlight(self, show)
+		self.showHighlight = show
+	end
+
+	---@param self EPDropdown
+	local function Open(self)
+		HandleToggleDropdownPullout(self)
+	end
+
+	---@param self EPDropdown
+	local function Close(self)
+		HandleToggleDropdownPullout(self)
+	end
+
+	---@param self EPDropdown
+	---@param size integer
+	local function SetTextFontSize(self, size)
+		local font, _, flags = self.text:GetFont()
+		if font then
+			self.text:SetFont(font, size, flags)
+		end
+	end
+
+	---@param self EPDropdown
+	---@param size integer
+	local function SetItemTextFontSize(self, size)
+		self.itemTextFontSize = size
+	end
+
+	---@param self EPDropdown
+	---@param size integer
+	local function SetItemHorizontalPadding(self, size)
+		self.itemHorizontalPadding = size
+	end
+
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(dropdownBackdrop)
 		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
 		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
-		frame:SetScript("OnHide", HandleDropdownHide)
 
 		local dropdown = CreateFrame("Frame", Type .. "Dropdown" .. count, frame, "UIDropDownMenuTemplate")
 		dropdown:ClearAllPoints()
@@ -859,11 +924,34 @@ do
 
 		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)
 		buttonCover:SetFrameLevel(button:GetFrameLevel() + 1)
-		buttonCover:SetPoint("TOPLEFT", frame, "TOPLEFT")
-		buttonCover:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
-		buttonCover:SetScript("OnEnter", HandleButtonEnter)
-		buttonCover:SetScript("OnLeave", HandleButtonLeave)
-		buttonCover:SetScript("OnClick", HandleToggleDropdownPullout)
+		buttonCover:SetPoint("TOPLEFT")
+		buttonCover:SetPoint("BOTTOMRIGHT")
+
+		local buttonCoverTexture = buttonCover:CreateTexture(nil, "BORDER")
+		buttonCoverTexture:SetColorTexture(0.25, 0.25, 0.5, 0.5)
+		buttonCoverTexture:SetPoint("TOPLEFT", 1, -1)
+		buttonCoverTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		buttonCoverTexture:Hide()
+
+		local fadeInGroup = buttonCoverTexture:CreateAnimationGroup()
+		fadeInGroup:SetScript("OnPlay", function()
+			buttonCoverTexture:Show()
+		end)
+		local fadeIn = fadeInGroup:CreateAnimation("Alpha")
+		fadeIn:SetFromAlpha(0)
+		fadeIn:SetToAlpha(1)
+		fadeIn:SetDuration(0.4)
+		fadeIn:SetSmoothing("OUT")
+
+		local fadeOutGroup = buttonCoverTexture:CreateAnimationGroup()
+		fadeOutGroup:SetScript("OnFinished", function()
+			buttonCoverTexture:Hide()
+		end)
+		local fadeOut = fadeOutGroup:CreateAnimation("Alpha")
+		fadeOut:SetFromAlpha(1)
+		fadeOut:SetToAlpha(0)
+		fadeOut:SetDuration(0.3)
+		fadeOut:SetSmoothing("OUT")
 
 		local text = _G[dropdown:GetName() .. "Text"]
 		text:ClearAllPoints()
@@ -902,7 +990,13 @@ do
 			SetItemIsSelected = SetItemIsSelected,
 			SetButtonVisibility = SetButtonVisibility,
 			SetAutoItemWidth = SetAutoItemWidth,
+			SetShowHighlight = SetShowHighlight,
+			Open = Open,
+			Close = Close,
 			Clear = Clear,
+			SetTextFontSize = SetTextFontSize,
+			SetItemTextFontSize = SetItemTextFontSize,
+			SetItemHorizontalPadding = SetItemHorizontalPadding,
 			frame = frame,
 			type = Type,
 			count = count,
@@ -910,13 +1004,23 @@ do
 			text = text,
 			buttonCover = buttonCover,
 			button = button,
+			buttonCoverTexture = buttonCoverTexture,
+			fadeIn = fadeInGroup,
+			fadeOut = fadeOutGroup,
 		}
 
-		frame.obj = widget
-		dropdown.obj = widget
-		text.obj = widget
-		buttonCover.obj = widget
-		button.obj = widget
+		buttonCover:SetScript("OnEnter", function()
+			HandleButtonEnter(widget)
+		end)
+		buttonCover:SetScript("OnLeave", function()
+			HandleButtonLeave(widget)
+		end)
+		buttonCover:SetScript("OnClick", function()
+			HandleToggleDropdownPullout(widget)
+		end)
+		frame:SetScript("OnHide", function()
+			HandleDropdownHide(widget)
+		end)
 
 		return AceGUI:RegisterAsWidget(widget)
 	end

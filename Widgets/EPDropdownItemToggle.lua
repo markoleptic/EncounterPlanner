@@ -112,6 +112,22 @@ function EPItemBase.SetText(self, text)
 end
 
 ---@param self EPItemBase
+---@param padding number
+function EPItemBase.SetHorizontalPadding(self, padding)
+	self.textOffsetX = padding
+	self.text:SetPoint("LEFT", self.frame, "LEFT", self.textOffsetX, 0)
+end
+
+---@param self EPItemBase
+---@param size integer
+function EPItemBase.SetFontSize(self, size)
+	local font, _, flags = self.text:GetFont()
+	if font then
+		self.text:SetFont(font, size, flags)
+	end
+end
+
+---@param self EPItemBase
 ---@return string
 function EPItemBase.GetText(self)
 	return self.text:GetText()
@@ -167,8 +183,8 @@ function EPItemBase.Create(type)
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
 	highlight:SetTexelSnappingBias(0.0)
 	highlight:SetSnapToPixelGrid(false)
-	highlight:SetPoint("TOPLEFT")
-	highlight:SetPoint("BOTTOMRIGHT")
+	highlight:SetPoint("TOPLEFT", 1, -1)
+	highlight:SetPoint("BOTTOMRIGHT", -1, 1)
 	highlight:SetBlendMode("ADD")
 	highlight:Hide()
 
@@ -213,6 +229,8 @@ function EPItemBase.Create(type)
 		Hide = EPItemBase.Hide,
 		SetOnLeave = EPItemBase.SetOnLeave,
 		SetOnEnter = EPItemBase.SetOnEnter,
+		SetFontSize = EPItemBase.SetFontSize,
+		SetHorizontalPadding = EPItemBase.SetHorizontalPadding,
 		textOffsetX = textOffsetX,
 		checkOffsetX = checkOffsetX,
 		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
@@ -231,12 +249,12 @@ do
 	local widgetVersion = 1
 
 	-- Updates the visibility of the check texture based on selected and neverShowItemsAsSelected
-	---@param dropdownItemToggle EPDropdownItemToggle
-	local function UpdateCheckVisibility(dropdownItemToggle)
-		if dropdownItemToggle.selected and not dropdownItemToggle.neverShowItemsAsSelected then
-			dropdownItemToggle.check:Show()
+	---@param self EPDropdownItemToggle
+	local function UpdateCheckVisibility(self)
+		if self.selected and not self.neverShowItemsAsSelected then
+			self.check:Show()
 		else
-			dropdownItemToggle.check:Hide()
+			self.check:Hide()
 		end
 	end
 
@@ -418,6 +436,8 @@ do
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
 				dropdownMenuItem:SetValue(itemData.itemValue)
 				dropdownMenuItem:SetText(itemData.text)
+				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
+				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -428,6 +448,8 @@ do
 				local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
 				dropdownItemToggle:SetValue(itemData.itemValue)
 				dropdownItemToggle:SetText(itemData.text)
+				dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
+				dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -452,6 +474,8 @@ do
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
 				dropdownMenuItem:SetValue(itemData.itemValue)
 				dropdownMenuItem:SetText(itemData.text)
+				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
+				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -470,6 +494,8 @@ do
 					local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
 					dropdownItemToggle:SetValue(itemData.itemValue)
 					dropdownItemToggle:SetText(itemData.text)
+					dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
+					dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)

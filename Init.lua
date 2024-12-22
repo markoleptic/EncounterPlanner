@@ -520,6 +520,7 @@ Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
 Private.reminderAnchor = nil --[[@as EPReminderAnchor]]
+Private.menuButtonContainer = nil --[[@as EPContainer]]
 
 LSM:Register(
 	"font",

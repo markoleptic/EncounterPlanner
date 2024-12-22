@@ -22,6 +22,7 @@ local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
 local pairs = pairs
+local sub = string.sub
 local tinsert = tinsert
 local tonumber = tonumber
 local tostring = tostring
@@ -169,7 +170,8 @@ local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 	end
 end
 
-local function CreateRosterEditor()
+---@param openToTab string
+local function CreateRosterEditor(openToTab)
 	if not Private.rosterEditor then
 		Private.rosterEditor = AceGUI:Create("EPRosterEditor")
 		Private.rosterEditor:SetCallback("OnRelease", function()
@@ -191,7 +193,7 @@ local function CreateRosterEditor()
 		Private.rosterEditor:SetLayout("EPVerticalLayout")
 		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
-		Private.rosterEditor:SetCurrentTab("CurrentBossRoster")
+		Private.rosterEditor:SetCurrentTab(openToTab)
 		yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
 		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 		Private.rosterEditor:DoLayout()
@@ -666,6 +668,31 @@ local function CreateOptionsMenu()
 				return true
 			end,
 		},
+		{
+			label = "Assignment Sort Priority",
+			type = "dropdown",
+			description = "Sorts the rows of the assignment timeline.",
+			category = "Assignment",
+			values = {
+				{ itemValue = "Alphabetical", text = "Alphabetical" },
+				{ itemValue = "First Appearance", text = "First Appearance" },
+				{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical" },
+				{ itemValue = "Role > First Appearance", text = "Role > First Appearance" },
+			},
+			get = function()
+				return AddOn.db.profile.preferences.assignmentSortType
+			end,
+			set = function(key)
+				if key ~= AddOn.db.profile.preferences.assignmentSortType then
+					AddOn.db.profile.preferences.assignmentSortType = key
+					interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossName())
+				end
+				AddOn.db.profile.preferences.assignmentSortType = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
 	}
 
 	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
@@ -776,12 +803,6 @@ local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, sele
 			AddOn.db.profile.activeBossAbilities[bossDef.name][value] = true
 		end
 	end
-end
-
----@param value string
-local function HandleAssignmentSortDropdownValueChanged(_, _, value)
-	AddOn.db.profile.preferences.assignmentSortType = value
-	interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossName())
 end
 
 ---@param value string
@@ -990,21 +1011,17 @@ local function HandleDeleteCurrentNoteButtonClicked()
 	end
 end
 
----@param importDropdown EPDropdown
----@param value any
-local function HandleImportDropdownValueChanged(importDropdown, _, value)
-	if value == "Import" then
-		return
-	end
+---@param importType string
+local function ImportPlan(importType)
 	if not Private.importEditBox then
-		if value == "FromMRTOverwrite" or value == "FromMRTNew" then
+		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
 			if Private.assignmentEditor then
 				Private.assignmentEditor:Release()
 			end
 			local bossName = GetCurrentBossName()
-			if value == "FromMRTOverwrite" then
+			if importType == "FromMRTOverwrite" then
 				bossName = Private:Note(AddOn.db.profile.lastOpenNote, bossName, true) or bossName
-			elseif value == "FromMRTNew" then
+			elseif importType == "FromMRTNew" then
 				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
 				bossName = Private:Note(newNoteName, bossName, true) or bossName
 				AddOn.db.profile.lastOpenNote = newNoteName
@@ -1020,11 +1037,10 @@ local function HandleImportDropdownValueChanged(importDropdown, _, value)
 			end
 			interfaceUpdater.UpdateBoss(bossName, true)
 			interfaceUpdater.UpdateAllAssignments(true, bossName or "")
-		elseif value == "FromStringOverwrite" or value == "FromStringNew" then
-			CreateImportEditBox(value)
+		elseif importType == "FromStringOverwrite" or importType == "FromStringNew" then
+			CreateImportEditBox(importType)
 		end
 	end
-	importDropdown:SetText("Import")
 end
 
 local function HandleExportButtonClicked()
@@ -1042,6 +1058,31 @@ local function HandleExportButtonClicked()
 	if text then
 		Private.exportEditBox:SetText(text)
 		Private.exportEditBox:HighlightTextAndFocus()
+	end
+end
+
+local function CleanUp()
+	Private.mainFrame = nil
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	if Private.exportEditBox then
+		Private.exportEditBox:Release()
+	end
+	if Private.importEditBox then
+		Private.importEditBox:Release()
+	end
+	if Private.rosterEditor then
+		Private.rosterEditor:Release()
+	end
+	if Private.optionsMenu then
+		Private.optionsMenu:Release()
+	end
+	if Private.reminderAnchor then
+		Private.reminderAnchor:Release()
+	end
+	if Private.menuButtonContainer then
+		Private.menuButtonContainer:Release()
 	end
 end
 
@@ -1070,48 +1111,13 @@ function Private:CreateInterface()
 			Private.optionsMenu = CreateOptionsMenu()
 		end
 	end)
+
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
 		Private.mainFrame:Release()
-		Private.mainFrame = nil
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.exportEditBox then
-			Private.exportEditBox:Release()
-		end
-		if Private.importEditBox then
-			Private.importEditBox:Release()
-		end
-		if Private.rosterEditor then
-			Private.rosterEditor:Release()
-		end
-		if Private.optionsMenu then
-			Private.optionsMenu:Release()
-		end
-		if Private.reminderAnchor then
-			Private.reminderAnchor:Release()
-		end
 	end)
-	Private.mainFrame:SetCallback("OnRelease", function()
-		Private.mainFrame = nil
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.exportEditBox then
-			Private.exportEditBox:Release()
-		end
-		if Private.importEditBox then
-			Private.importEditBox:Release()
-		end
-		if Private.rosterEditor then
-			Private.rosterEditor:Release()
-		end
-		if Private.optionsMenu then
-			Private.optionsMenu:Release()
-		end
-	end)
+	Private.mainFrame:SetCallback("OnRelease", CleanUp)
 	Private.mainFrame:SetCallback("CollapseAllButtonClicked", function()
 		local currentBossName = GetCurrentBossName()
 		local sortedTimelineAssignments = utilities.SortAssignments(
@@ -1143,22 +1149,135 @@ function Private:CreateInterface()
 		Private.mainFrame:DoLayout()
 	end)
 
-	local textToolbarButton = AceGUI:Create("EPDropdown")
-	textToolbarButton:SetWidth(50)
-	textToolbarButton:SetButtonVisibility(false)
-	textToolbarButton:SetAutoItemWidth(true)
-	textToolbarButton:AddItems({
+	Private.menuButtonContainer = AceGUI:Create("EPContainer")
+	Private.menuButtonContainer:SetLayout("EPHorizontalLayout")
+	Private.menuButtonContainer:SetSpacing(0, 0)
+	Private.menuButtonContainer.frame:SetParent(Private.mainFrame.windowBar)
+	Private.menuButtonContainer.frame:SetPoint("TOPLEFT", Private.mainFrame.windowBar, "TOPLEFT", 1, -1)
+	Private.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", Private.mainFrame.windowBar, "BOTTOMLEFT", 1, 1)
+	Private.menuButtonContainer:SetCallback("OnRelease", function()
+		Private.menuButtonContainer = nil
+	end)
+
+	local planMenuButton = AceGUI:Create("EPDropdown")
+	planMenuButton:SetTextFontSize(16)
+	planMenuButton:SetItemTextFontSize(16)
+	planMenuButton:SetText("Plan")
+	planMenuButton:SetTextCentered(true)
+	planMenuButton:SetButtonVisibility(false)
+	planMenuButton:SetAutoItemWidth(true)
+	planMenuButton:SetShowHighlight(true)
+	planMenuButton:SetItemHorizontalPadding(8)
+	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + 16)
+	planMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	planMenuButton:SetCallback("OnValueChanged", ImportPlan)
+	planMenuButton:AddItems({
+		{
+			itemValue = "New Plan",
+			text = utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], "New Plan"),
+		},
+		{
+			itemValue = "Import",
+			text = utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
+			dropdownItemMenuData = {
+				{
+					itemValue = "From MRT",
+					text = "From MRT",
+					dropdownItemMenuData = {
+						{ itemValue = "FromMRTOverwrite", text = "Overwrite current EP note" },
+						{ itemValue = "FromMRTNew", text = "Create new EP note" },
+					},
+				},
+				{
+					itemValue = "From String",
+					text = "From String",
+					dropdownItemMenuData = {
+						{ itemValue = "FromStringOverwrite", text = "Overwrite current EP note" },
+						{ itemValue = "FromStringNew", text = "Create new EP note" },
+					},
+				},
+			},
+		},
+		{
+			itemValue = "Export Current Plan",
+			text = utilities.AddIconBeforeText(
+				[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
+				"Export Current Plan"
+			),
+		},
+		{
+			itemValue = "Delete Current Plan",
+			text = utilities.AddIconBeforeText(
+				[[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]],
+				"Delete Current Plan"
+			),
+		},
+	}, "EPDropdownItemToggle", true)
+	planMenuButton:SetCallback("OnValueChanged", function(_, _, value)
+		if value == "Plan" then
+			return
+		end
+		if value == "New Plan" then
+			HandleCreateNewNoteButtonClicked()
+		elseif value == "Export Current Plan" then
+			HandleExportButtonClicked()
+		elseif value == "Delete Current Plan" then
+			HandleDeleteCurrentNoteButtonClicked()
+		elseif sub(value, 1, 4) == "From" then
+			ImportPlan(value)
+		end
+		planMenuButton:SetText("Plan")
+	end)
+
+	local rosterMenuButton = AceGUI:Create("EPDropdown")
+	rosterMenuButton:SetTextFontSize(16)
+	rosterMenuButton:SetItemTextFontSize(16)
+	rosterMenuButton:SetText("Roster")
+	rosterMenuButton:SetTextCentered(true)
+	rosterMenuButton:SetButtonVisibility(false)
+	rosterMenuButton:SetAutoItemWidth(true)
+	rosterMenuButton:SetShowHighlight(true)
+	rosterMenuButton:SetItemHorizontalPadding(8)
+	rosterMenuButton:SetWidth(rosterMenuButton.text:GetStringWidth() + 16)
+	rosterMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	rosterMenuButton:SetDropdownItemHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	rosterMenuButton:AddItems({
 		{ itemValue = "Edit Current Boss Roster", text = "Edit Current Boss Roster" },
 		{ itemValue = "Edit Shared Roster", text = "Edit Shared Roster" },
 	}, "EPDropdownItemToggle", true)
-	textToolbarButton:SetText("Roster")
-	textToolbarButton:SetCallback("OnValueChanged", function(_, _, value)
-		print(value)
-		textToolbarButton:SetText("Roster")
+	rosterMenuButton:SetCallback("OnValueChanged", function(_, _, value)
+		if value == "Roster" then
+			return
+		end
+		if value == "Edit Current Boss Roster" then
+			CreateRosterEditor("CurrentBossRoster")
+		elseif value == "Edit Shared Roster" then
+			CreateRosterEditor("SharedRoster")
+		end
+		rosterMenuButton:SetText("Roster")
 	end)
-	textToolbarButton.frame:SetParent(Private.mainFrame.windowBar)
-	textToolbarButton.frame:SetPoint("TOPLEFT", Private.mainFrame.windowBar, "TOPLEFT", 2, -2)
-	textToolbarButton.frame:SetHeight(Private.mainFrame.windowBar:GetHeight() - 4)
+
+	Private.menuButtonContainer:AddChildren(planMenuButton, rosterMenuButton)
+
+	local autoOpenNextEntered = nil
+	local buttonToClose = nil
+	for _, child in ipairs(Private.menuButtonContainer.children) do
+		child:SetCallback("OnEnter", function(frame, _)
+			if autoOpenNextEntered and buttonToClose then
+				buttonToClose:Close()
+				frame:Open()
+				buttonToClose = frame
+			end
+		end)
+		child:SetCallback("OnOpened", function(frame, _)
+			buttonToClose = frame
+			autoOpenNextEntered = true
+		end)
+		child:SetCallback("OnClosed", function(frame, _)
+			buttonToClose = nil
+			autoOpenNextEntered = false
+		end)
+	end
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
@@ -1175,7 +1294,7 @@ function Private:CreateInterface()
 	for index, instance in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
 		EJ_SelectEncounter(instance.journalEncounterID)
 		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterID)
-		local iconText = format("|T%s:16|t %s", iconImage, instance.name)
+		local iconText = format("|T%s:0|t %s", iconImage, instance.name)
 		tinsert(bossDropdownData, index, iconText)
 	end
 	bossDropdown:AddItems(bossDropdownData, "EPDropdownItemToggle")
@@ -1194,37 +1313,6 @@ function Private:CreateInterface()
 	end)
 	bossAbilitySelectDropdown:SetMultiselect(true)
 	bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-
-	local assignmentSortAndEditRosterContainer = AceGUI:Create("EPContainer")
-	assignmentSortAndEditRosterContainer:SetLayout("EPVerticalLayout")
-	assignmentSortAndEditRosterContainer:SetSpacing(unpack(dropdownContainerSpacing))
-
-	local assignmentSortContainer = AceGUI:Create("EPContainer")
-	assignmentSortContainer:SetLayout("EPHorizontalLayout")
-	assignmentSortContainer:SetSpacing(dropdownContainerSpacing[1] * 2, dropdownContainerSpacing[2])
-
-	local assignmentSortLabel = AceGUI:Create("EPLabel")
-	assignmentSortLabel:SetText("Assignment Sort Priority:", 0)
-	assignmentSortLabel:SetFrameWidthFromText()
-	assignmentSortLabel:SetFullWidth(true)
-
-	local assignmentSortDropdown = AceGUI:Create("EPDropdown")
-	assignmentSortDropdown:SetWidth(topContainerDropdownWidth)
-	assignmentSortDropdown:AddItems({
-		{ itemValue = "Alphabetical", text = "Alphabetical" },
-		{ itemValue = "First Appearance", text = "First Appearance" },
-		{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical" },
-		{ itemValue = "Role > First Appearance", text = "Role > First Appearance" },
-	}, "EPDropdownItemToggle")
-	assignmentSortDropdown:SetCallback("OnValueChanged", HandleAssignmentSortDropdownValueChanged)
-
-	local editRosterButton = AceGUI:Create("EPButton")
-	editRosterButton:SetCallback("Clicked", CreateRosterEditor)
-	editRosterButton:SetText("Edit Roster")
-	editRosterButton:SetWidthFromText()
-
-	local spacer = AceGUI:Create("EPSpacer")
-	spacer:SetFillSpace(true)
 
 	local outerNoteContainer = AceGUI:Create("EPContainer")
 	outerNoteContainer:SetLayout("EPVerticalLayout")
@@ -1260,69 +1348,19 @@ function Private:CreateInterface()
 	renameNoteLabel:SetFrameWidthFromText()
 	noteLabel:SetWidth(renameNoteLabel.frame:GetWidth())
 
-	local noteButtonContainer = AceGUI:Create("EPContainer")
-	noteButtonContainer:SetLayout("EPVerticalLayout")
-	noteButtonContainer:SetSpacing(unpack(dropdownContainerSpacing))
-
-	local createNewButton = AceGUI:Create("EPButton")
-	createNewButton:SetCallback("Clicked", HandleCreateNewNoteButtonClicked)
-	createNewButton:SetText("New EP note")
-
-	local deleteButton = AceGUI:Create("EPButton")
-	deleteButton:SetCallback("Clicked", HandleDeleteCurrentNoteButtonClicked)
-	deleteButton:SetText("Delete EP note")
-
-	local importExportContainer = AceGUI:Create("EPContainer")
-	importExportContainer:SetLayout("EPVerticalLayout")
-	importExportContainer:SetSpacing(unpack(dropdownContainerSpacing))
-
-	local importDropdown = AceGUI:Create("EPDropdown")
-	importDropdown:SetWidth(topContainerDropdownWidth)
-	importDropdown:SetTextCentered(true)
-	importDropdown:SetCallback("OnValueChanged", HandleImportDropdownValueChanged)
-	importDropdown:SetText("Import")
-	local importDropdownData = {
-		{
-			itemValue = "From MRT",
-			text = "From MRT",
-			dropdownItemMenuData = {
-				{ itemValue = "FromMRTOverwrite", text = "Overwrite current EP note" },
-				{ itemValue = "FromMRTNew", text = "Create new EP note" },
-			},
-		},
-		{
-			itemValue = "From String",
-			text = "From String",
-			dropdownItemMenuData = {
-				{ itemValue = "FromStringOverwrite", text = "Overwrite current EP note" },
-				{ itemValue = "FromStringNew", text = "Create new EP note" },
-			},
-		},
-	}
-	importDropdown:AddItems(importDropdownData, "EPDropdownItemToggle", true)
-
-	local exportButton = AceGUI:Create("EPButton")
-	exportButton:SetWidth(topContainerDropdownWidth)
-	exportButton:SetCallback("Clicked", HandleExportButtonClicked)
-	exportButton:SetText("Export")
-
 	bossSelectContainer:AddChild(bossDropdown)
 	bossAbilitySelectContainer:AddChild(bossAbilitySelectDropdown)
 
 	bossContainer:AddChildren(bossSelectContainer, bossAbilitySelectContainer)
-	assignmentSortContainer:AddChildren(assignmentSortLabel, assignmentSortDropdown)
-	assignmentSortAndEditRosterContainer:AddChildren(assignmentSortContainer, editRosterButton)
 	noteContainer:AddChildren(noteLabel, noteDropdown)
 	renameNoteContainer:AddChildren(renameNoteLabel, renameNoteLineEdit)
 	outerNoteContainer:AddChildren(noteContainer, renameNoteContainer)
-	noteButtonContainer:AddChildren(createNewButton, deleteButton)
-	importExportContainer:AddChildren(importDropdown, exportButton)
 
-	local topLeftContainer = AceGUI:Create("EPContainer")
-	topLeftContainer:SetLayout("EPHorizontalLayout")
-	topLeftContainer:SetHeight(topContainerHeight)
-	topLeftContainer:SetSelfAlignment("right")
-	topLeftContainer:AddChildren(outerNoteContainer, noteButtonContainer, importExportContainer)
+	local currentPlanContainer = AceGUI:Create("EPContainer")
+	currentPlanContainer:SetLayout("EPHorizontalLayout")
+	currentPlanContainer:SetHeight(topContainerHeight)
+	currentPlanContainer:SetSelfAlignment("right")
+	currentPlanContainer:AddChildren(outerNoteContainer)
 
 	local reminderAnchorButton = AceGUI:Create("EPButton")
 	reminderAnchorButton:SetText("Show Reminder Anchor")
@@ -1374,13 +1412,7 @@ function Private:CreateInterface()
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetHeight(topContainerHeight)
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(
-		bossContainer,
-		assignmentSortAndEditRosterContainer,
-		reminderAnchorButton,
-		simulateButton,
-		topLeftContainer
-	)
+	topContainer:AddChildren(bossContainer, reminderAnchorButton, simulateButton, currentPlanContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
@@ -1457,7 +1489,6 @@ function Private:CreateInterface()
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
 	-- Set default values
-	assignmentSortDropdown:SetValue(AddOn.db.profile.preferences.assignmentSortType)
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
 	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 

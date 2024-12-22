@@ -574,6 +574,10 @@ local function UpdatePositionLineEdits(self, x, y)
 	if type(x) == "number" and type(y) == "number" then
 		self.xPositionLineEdit:SetText(format("%.2f", x))
 		self.yPositionLineEdit:SetText(format("%.2f", y))
+		if self.preferences then
+			self.preferences.reminder.x = x
+			self.preferences.reminder.y = y
+		end
 	end
 end
 

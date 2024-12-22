@@ -984,9 +984,18 @@ function Utilities.SearchStringTableForBossName(stringTable)
 	return nil
 end
 
----@param spellID integer
+---@param iconID integer|string
+---@param text string
+---@param size? integer
 ---@return string
-function Utilities.SubSpellIconTextWithSpellIcon(spellID)
+function Utilities.AddIconBeforeText(iconID, text, size)
+	return format("|T%s:%d|t %s", iconID, size or 0, text)
+end
+
+---@param spellID integer
+---@param size? integer
+---@return string
+function Utilities.SubSpellIconTextWithSpellIcon(spellID, size)
 	local spellTexture = GetSpellTexture(spellID)
-	return "|T" .. (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]) .. ":16|t"
+	return format("|T%s:%|t", (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]), size or 0)
 end
