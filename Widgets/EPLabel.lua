@@ -51,10 +51,10 @@ local function UpdateIconAndTextAnchors(self)
 		self.icon:SetWidth(self.frame:GetHeight() - 2 * self.iconPadding.y)
 		self.icon:Show()
 		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", self.horizontalTextPadding, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
 	else
 		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", self.horizontalTextPadding, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
 		self.icon:Hide()
 	end
 end
