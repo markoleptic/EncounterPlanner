@@ -108,7 +108,6 @@ end
 
 local function EnqueueOperation(operation)
 	table.insert(operationQueue, operation)
-	print("EnqueueOperation: Queue size is now", #operationQueue)
 end
 
 local function AddProgressBar(assignment, roster, duration)

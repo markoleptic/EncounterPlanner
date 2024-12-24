@@ -9,8 +9,6 @@ local GetCursorPosition = GetCursorPosition
 local max = math.max
 local min = math.min
 
-local frameWidth = 400
-local frameHeight = 400
 local verticalPositionLineSubLevel = -8
 local verticalPositionLineColor = { 1, 0.82, 0, 1 }
 local scrollBarWidth = 20

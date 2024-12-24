@@ -2179,11 +2179,9 @@ local function UpdateHeightFromAssignments(self)
 	end
 	preferredAssignmentHeight = min(preferredAssignmentHeight, self.assignmentDimensions.max)
 	if assignmentFrameHeight - self.assignmentDimensions.max > 0.5 then
-		print(assignmentFrameHeight, self.assignmentDimensions.max)
 		height = height + self.assignmentDimensions.max
 		self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
 	elseif abs(assignmentFrameHeight - preferredAssignmentHeight) > 0.5 then
-		print(numberToShow, self.assignmentDimensions.step)
 		height = height + preferredAssignmentHeight
 		self.assignmentTimeline.frame:SetHeight(preferredAssignmentHeight)
 	else
