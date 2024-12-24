@@ -1746,7 +1746,7 @@ local function OnAcquire(self)
 	self.bossAbilityTimeline = AceGUI:Create("EPTimelineSection")
 	local bossAbilityTimelineSectionFrame = self.bossAbilityTimeline.frame
 	bossAbilityTimelineSectionFrame:SetParent(self.contentFrame)
-	self.bossAbilityTimeline:GetTicks()[1] = {}
+	self.bossAbilityTimeline:GetTicks()[1] = self.bossAbilityTimeline:GetTicks()[1] or {}
 
 	self.assignmentTimeline:SetListPadding(paddingBetweenAssignments)
 	self.bossAbilityTimeline:SetListPadding(paddingBetweenBossAbilityBars)
