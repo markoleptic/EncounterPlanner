@@ -25,6 +25,8 @@ local function OnAcquire(self)
 	self:SetHeight(defaultHeight)
 	self:SetWidth(defaultWidth)
 	self.content.spacing = defaultSpacing
+	self.content:SetScript("OnSizeChanged", nil)
+	self.frame:SetScript("OnSizeChanged", nil)
 	self.content.alignment = nil
 	self.selfAlignment = nil
 end
