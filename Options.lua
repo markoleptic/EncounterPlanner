@@ -17,8 +17,15 @@ local AddOn = Private.addOn
 
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
+local GetTtsVoices = C_VoiceChat.GetTtsVoices
+local pairs = pairs
+local sort = sort
+local tinsert = tinsert
+local tostring = tostring
+local tonumber = tonumber
 
 function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
@@ -313,7 +320,220 @@ function Private:CreateOptionsMenu()
 		},
 	}
 
+	local sounds = {}
+	for name, value in pairs(LSM:HashTable("sound")) do
+		tinsert(sounds, { itemValue = value, text = name })
+	end
+	sort(sounds, function(a, b)
+		return a.text < b.text
+	end)
+	local voices = {}
+	for _, ttsVoiceTable in pairs(GetTtsVoices()) do
+		tinsert(voices, { itemValue = ttsVoiceTable.voiceID, text = ttsVoiceTable.name })
+	end
+
+	local reminderOptions = {
+		{
+			label = "Only Show Reminders For Me",
+			type = "checkBox",
+			description = "Whether to show assignment reminders that are only relevant to you.",
+			category = nil,
+			values = nil,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.onlyShowMe
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.onlyShowMe = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Enable Messages",
+			type = "checkBox",
+			description = "Whether to show messages widgets for assignments.",
+			category = nil,
+			values = nil,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.enableMessages
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.enableMessages = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Enable Progress Bars",
+			type = "checkBox",
+			description = "Whether to show progress bar widgets for assignments.",
+			category = nil,
+			values = nil,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.showProgressBars
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.showProgressBars = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Reminder Advance Notice",
+			type = "lineEdit",
+			description = "How far ahead of assignment time to begin showing reminder widgets.",
+			category = nil,
+			values = nil,
+			get = function()
+				return tostring(AddOn.db.profile.preferences.reminder.advanceNotice)
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.advanceNotice = tonumber(key)
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Play Text to Speech at Advance Notice",
+			type = "checkBox",
+			description = "Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds).",
+			category = "Text to Speech",
+			values = nil,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.textToSpeech.enableAtAdvanceNotice
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.textToSpeech.enableAtAdvanceNotice = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Play Text to Speech at Assignment Time",
+			type = "checkBox",
+			description = "Whether to play text to speech sound at assignment time (i.e. Spell in x seconds).",
+			category = "Text to Speech",
+			get = function()
+				return AddOn.db.profile.preferences.reminder.textToSpeech.enableAtTime
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.textToSpeech.enableAtTime = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Text to Speech Voice",
+			type = "dropdown",
+			description = "The voice to use for Text to Speech",
+			category = "Text to Speech",
+			values = voices,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.textToSpeech.voiceID
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.textToSpeech.voiceID = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Text to Speech Volume",
+			type = "lineEdit",
+			description = "The volume to use for Text to Speech",
+			category = "Text to Speech",
+			get = function()
+				return tostring(AddOn.db.profile.preferences.reminder.textToSpeech.volume)
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.textToSpeech.volume = tonumber(key)
+			end,
+			validate = function(key)
+				local valid = false
+				local value = tonumber(key)
+				if value then
+					valid = value >= 0 and value <= 100
+				end
+				if not valid then
+					return false, AddOn.db.profile.preferences.reminder.textToSpeech.volume
+				end
+				return true
+			end,
+		},
+		{
+			label = "Play Sound at Advance Notice",
+			type = "checkBox",
+			description = "Whether to play a sound at advance notice time.",
+			category = "Sound",
+			get = function()
+				return AddOn.db.profile.preferences.reminder.sound.enableAtAdvanceNotice
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.sound.enableAtAdvanceNotice = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Sound to Play at Advance Notice",
+			type = "dropdown",
+			description = "The sound to play at advance notice time.",
+			category = "Sound",
+			values = sounds,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.sound.advanceNoticeSound
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.sound.advanceNoticeSound = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Play Sound at Assignment Time",
+			type = "checkBox",
+			description = "Whether to play a sound at assignment time.",
+			category = "Sound",
+			get = function()
+				return AddOn.db.profile.preferences.reminder.sound.enableAtTime
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.sound.enableAtTime = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Sound to Play at Assignment Time",
+			type = "dropdown",
+			description = "The sound to play at assignment time.",
+			category = "Sound",
+			values = sounds,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.sound.atSound
+			end,
+			set = function(key)
+				print(key)
+				AddOn.db.profile.preferences.reminder.sound.atSound = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+	}
+
 	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
+	optionsMenu:AddOptionTab("Reminder", reminderOptions, { "Text to Speech", "Sound" })
 	optionsMenu:AddOptionTab("View", viewOptions)
 	optionsMenu:SetCurrentTab("Keybindings")
 

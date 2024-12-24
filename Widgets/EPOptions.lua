@@ -15,10 +15,11 @@ local unpack = unpack
 local frameWidth = 400
 local frameHeight = 400
 local windowBarHeight = 28
-local contentFramePadding = { x = 10, y = 10 }
+local contentFramePadding = { x = 20, y = 20 }
 local title = "Preferences"
-local categoryFontSize = 16
+local categoryFontSize = 18
 local optionLabelFontSize = 14
+local horizontalCategoryOffset = 10
 local spacingBetweenOptions = 5
 local spacingBetweenCategories = 10
 local preLineSpacing = 2
@@ -70,17 +71,17 @@ local function CreateOptionWidget(option)
 				option.set(false)
 			end
 		end)
-		-- checkBox:SetCallback("OnEnter", function()
-		-- 	tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
-		-- 	tooltip:SetText(option.label, 1, 0.82, 0, true)
-		-- 	if type(option.description) == "string" then
-		-- 		tooltip:AddLine(option.description, 1, 1, 1, true)
-		-- 	end
-		-- 	tooltip:Show()
-		-- end)
-		-- checkBox:SetCallback("OnLeave", function()
-		-- 	tooltip:Hide()
-		-- end)
+		checkBox.button:SetCallback("OnEnter", function()
+			tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
+			tooltip:SetText(option.label, 1, 0.82, 0, true)
+			if type(option.description) == "string" then
+				tooltip:AddLine(option.description, 1, 1, 1, true)
+			end
+			tooltip:Show()
+		end)
+		checkBox.button:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
 		tinsert(containerChildren, checkBox)
 	else
 		local label = AceGUI:Create("EPLabel")
@@ -119,9 +120,8 @@ local function CreateOptionWidget(option)
 			tinsert(containerChildren, dropdown)
 		elseif option.type == "radioButtonGroup" then
 			local radioButtonGroup = AceGUI:Create("EPContainer")
-			radioButtonGroup:SetLayout("EPVerticalLayout")
+			radioButtonGroup:SetLayout("EPHorizontalLayout")
 			radioButtonGroup:SetSpacing(0, 0)
-			radioButtonGroup:SetFullWidth(true)
 			local radioButtonGroupChildren = {}
 			for _, itemValueAndText in pairs(option.values) do
 				local radioButton = AceGUI:Create("EPRadioButton")
@@ -153,6 +153,31 @@ local function CreateOptionWidget(option)
 					tooltip:Show()
 				end)
 			end
+		elseif option.type == "lineEdit" then
+			local lineEdit = AceGUI:Create("EPLineEdit")
+			lineEdit:SetFullWidth(true)
+			lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+				local valid, valueToRevertTo = option.validate(value)
+				if not valid and valueToRevertTo then
+					lineEdit:SetText(valueToRevertTo)
+					option.set(valueToRevertTo)
+				else
+					option.set(value)
+				end
+			end)
+			lineEdit:SetText(option.get())
+			lineEdit:SetCallback("OnLeave", function()
+				tooltip:Hide()
+			end)
+			lineEdit:SetCallback("OnEnter", function()
+				tooltip:SetOwner(lineEdit.frame, "ANCHOR_TOP")
+				tooltip:SetText(option.label, 1, 0.82, 0, true)
+				if type(option.description) == "string" then
+					tooltip:AddLine(option.description, 1, 1, 1, true)
+				end
+				tooltip:Show()
+			end)
+			tinsert(containerChildren, lineEdit)
 		end
 	end
 
@@ -174,6 +199,17 @@ local function PopulateActiveTab(self, tab)
 	local activeContainerChildren = {}
 
 	if self.tabCategories[tab] then
+		for index, option in ipairs(self.optionTabs[tab]) do
+			if not option.category then
+				tinsert(activeContainerChildren, CreateOptionWidget(option))
+				if index ~= #self.optionTabs[tab] then
+					local spacer = AceGUI:Create("EPSpacer")
+					spacer:SetHeight(spacingBetweenOptions)
+					spacer:SetFullWidth(true)
+					tinsert(activeContainerChildren, spacer)
+				end
+			end
+		end
 		for categoryIndex, category in ipairs(self.tabCategories[tab]) do
 			local label = AceGUI:Create("EPLabel")
 			label:SetText(category)
@@ -207,6 +243,14 @@ local function PopulateActiveTab(self, tab)
 			postLineSpacer:SetFullWidth(true)
 			tinsert(activeContainerChildren, postLineSpacer)
 
+			local categoryContainerWrapper = AceGUI:Create("EPContainer")
+			categoryContainerWrapper:SetLayout("EPHorizontalLayout")
+			categoryContainerWrapper:SetSpacing(0, 0)
+			categoryContainerWrapper:SetFullWidth(true)
+			local leftOffsetSpacer = AceGUI:Create("EPSpacer")
+			leftOffsetSpacer:SetWidth(horizontalCategoryOffset)
+			categoryContainerWrapper:AddChild(leftOffsetSpacer)
+
 			local categoryContainer = AceGUI:Create("EPContainer")
 			categoryContainer:SetLayout("EPVerticalLayout")
 			categoryContainer:SetSpacing(0, spacingBetweenOptions)
@@ -220,7 +264,8 @@ local function PopulateActiveTab(self, tab)
 
 			if #categoryContainerChildren > 0 then
 				categoryContainer:AddChildren(unpack(categoryContainerChildren))
-				tinsert(activeContainerChildren, categoryContainer)
+				categoryContainerWrapper:AddChild(categoryContainer)
+				tinsert(activeContainerChildren, categoryContainerWrapper)
 			end
 
 			if categoryIndex ~= #self.tabCategories[tab] then
@@ -353,8 +398,11 @@ local function AddOptionTab(self, tabName, options, categories)
 	tab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
 			for _, child in ipairs(self.tabTitleContainer.children) do
-				child:Toggle()
+				if child:IsToggled() then
+					child:Toggle()
+				end
 			end
+			button:Toggle()
 			PopulateActiveTab(self, button.button:GetText())
 		end
 	end)
@@ -365,9 +413,9 @@ end
 local function SetCurrentTab(self, tab)
 	self.activeTab = ""
 	for _, child in ipairs(self.tabTitleContainer.children) do
-		if child:IsToggled() then
+		if child.button:GetText() == tab and not child:IsToggled() then
 			child:Toggle()
-		elseif child.button:GetText() == tab then
+		elseif child:IsToggled() then
 			child:Toggle()
 		end
 	end

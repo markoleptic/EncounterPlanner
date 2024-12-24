@@ -263,8 +263,14 @@ local function Constructor()
 	frame.obj = widget
 	button.obj = widget
 
-	button:SetScript("OnEnter", HandleButtonEnter)
-	button:SetScript("OnLeave", HandleButtonLeave)
+	button:SetScript("OnEnter", function()
+		HandleButtonEnter(button)
+		widget:Fire("OnEnter")
+	end)
+	button:SetScript("OnLeave", function()
+		HandleButtonLeave(button)
+		widget:Fire("OnLeave")
+	end)
 	button:SetScript("OnClick", HandleButtonClicked)
 
 	return AceGUI:RegisterAsWidget(widget)

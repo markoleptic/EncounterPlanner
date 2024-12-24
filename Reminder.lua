@@ -106,12 +106,8 @@ local function ProcessNextOperation()
 	isLocked = false
 end
 
-local function EnqueueOperation(operation)
-	table.insert(operationQueue, operation)
-end
-
 local function AddProgressBar(assignment, roster, duration)
-	EnqueueOperation(function()
+	tinsert(operationQueue, function()
 		local progressBar = AceGUI:Create("EPProgressBar")
 		progressBar:SetDuration(duration, false)
 		progressBar:SetIconAndText(
@@ -119,7 +115,7 @@ local function AddProgressBar(assignment, roster, duration)
 			Private:CreateNotePreviewText(assignment, roster)
 		)
 		progressBar:SetCallback("Completed", function()
-			EnqueueOperation(function()
+			tinsert(operationQueue, function()
 				Private.reminderContainer:RemoveChildNoDoLayout(progressBar)
 			end)
 		end)

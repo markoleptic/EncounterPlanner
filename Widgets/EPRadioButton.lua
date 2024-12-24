@@ -137,6 +137,8 @@ end
 ---@param text string
 local function SetLabelText(self, text)
 	self.label:SetText(text or "")
+	self.label:SetFrameWidthFromText()
+	self.frame:SetWidth(self.label.frame:GetWidth() + self.button:GetWidth() + 4)
 end
 
 ---@param self EPRadioButton

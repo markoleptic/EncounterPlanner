@@ -17,8 +17,8 @@ local pairs = pairs
 -- Addon is first loaded
 function AddOn:OnInitialize()
 	self.db = AceDB:New(AddOnName .. "DB", self.defaults --[[,true]])
-	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
-	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
+	self.db.RegisterCallback(self, "OnProfileChanged", AddOn.Refresh)
+	self.db.RegisterCallback(self, "OnProfileCopied", AddOn.Refresh)
 	self.db.RegisterCallback(self, "OnProfileReset", AddOn.Refresh)
 
 	local profile = self.db.profile

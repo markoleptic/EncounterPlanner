@@ -458,6 +458,7 @@ end
 ---@field advanceNotice number
 ---@field cancelIfAlreadyCasted boolean
 ---@field enableProgressBars boolean
+---@field enableMessages boolean
 ---@field onlyShowMe boolean
 ---@field textToSpeech EncounterPlannerTextToSpeechPreferences
 ---@field sound EncounterPlannerSoundPreferences
@@ -508,10 +509,13 @@ local defaults = {
 				advanceNotice = 10.0,
 				cancelIfAlreadyCasted = true,
 				enableProgressBars = true,
+				enableMessages = true,
 				onlyShowMe = true,
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
 					enableAtTime = false,
+					voiceID = 0,
+					volume = 100,
 				},
 				sound = {
 					advanceNoticeSound = "",
