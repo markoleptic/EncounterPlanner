@@ -111,7 +111,7 @@ local function OnAcquire(self)
 	self.listContainer.frame:SetParent(self.listFrame)
 	self.listContainer.frame:SetPoint("TOPLEFT", self.listFrame, "TOPLEFT")
 	self.listContainer:SetLayout("EPVerticalLayout")
-	self.listContainer:SetFullWidth(true)
+	self.listContainer:SetWidth(listFrameWidth)
 	self:SetListPadding(defaultListPadding)
 	self.scrollFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", listFrameWidth + listTimelinePadding, 0)
 end
@@ -211,20 +211,18 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(frameWidth, frameHeight)
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 	scrollFrame:SetPoint("TOPLEFT")
 	scrollFrame:SetPoint("RIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
-	scrollFrame:SetSize(frameWidth - scrollBarWidth - paddingBetweenTimelineAndScrollBar, frameHeight)
 
 	local listScrollFrame = CreateFrame("ScrollFrame", Type .. "ListScrollFrame" .. count, frame)
 	listScrollFrame:SetPoint("TOPLEFT")
-	listScrollFrame:SetSize(listFrameWidth, frameHeight)
+	listScrollFrame:SetWidth(listFrameWidth)
 
 	local listFrame = CreateFrame("Frame", Type .. "ListFrame" .. count, listScrollFrame)
 	listFrame:SetPoint("TOPLEFT")
-	listFrame:SetSize(listFrameWidth, frameHeight)
+	listFrame:SetWidth(listFrameWidth)
 	listFrame:EnableMouse(true)
 
 	listScrollFrame:SetScrollChild(listFrame)
@@ -232,7 +230,6 @@ local function Constructor()
 
 	local timelineFrame = CreateFrame("Frame", Type .. "TimelineFrame" .. count, scrollFrame)
 	timelineFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	timelineFrame:SetSize(frameWidth - scrollBarWidth - paddingBetweenTimelineAndScrollBar, frameHeight)
 	timelineFrame:EnableMouse(true)
 	timelineFrame:RegisterForDrag("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
 

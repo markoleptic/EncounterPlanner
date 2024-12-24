@@ -1609,6 +1609,21 @@ local function CalculateRequiredAssignmentHeight(self, limit)
 end
 
 ---@param self EPTimeline
+local function UpdateResizeBounds(self)
+	local minHeight = self.assignmentDimensions.min
+		+ self.barDimensions.min
+		+ paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+	local maxHeight = self.assignmentDimensions.max
+		+ self.barDimensions.max
+		+ paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+	self:Fire("ResizeBoundsCalculated", minHeight, maxHeight)
+end
+
+---@param self EPTimeline
 local function CalculateMinMaxStepBarHeight(self)
 	local abilityCount = 1
 	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
@@ -1636,6 +1651,8 @@ local function CalculateMinMaxStepBarHeight(self)
 	self.barDimensions.min = minH
 	self.barDimensions.max = maxH
 	self.barDimensions.step = stepH
+
+	UpdateResizeBounds(self)
 end
 
 ---@param self EPTimeline
@@ -1662,6 +1679,8 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	self.assignmentDimensions.min = minH
 	self.assignmentDimensions.max = maxH
 	self.assignmentDimensions.step = stepH
+
+	UpdateResizeBounds(self)
 end
 
 ---@class AssignmentFrame : Frame
@@ -1727,8 +1746,8 @@ local function OnAcquire(self)
 	self.bossAbilityVisibility = {}
 	self.collapsed = {}
 	self.allowHeightResizing = false
-	self.barDimensions = {}
-	self.assignmentDimensions = {}
+	self.barDimensions = { min = 0, max = 0, step = 0 }
+	self.assignmentDimensions = { min = 0, max = 0, step = 0 }
 
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
 	local assignmentTimelineSectionFrame = self.assignmentTimeline.frame
@@ -1897,7 +1916,18 @@ local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrde
 		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
 	end
 
-	self:UpdateHeight()
+	self:UpdateHeightFromBossAbilities()
+
+	local bossScrollFrameHeight = self.bossAbilityTimeline.scrollFrame:GetHeight()
+	local bossTimelineFrameHeight = self.bossAbilityTimeline.timelineFrame:GetHeight()
+	local bossMaxVerticalScroll = bossTimelineFrameHeight - bossScrollFrameHeight
+	local bossCurrentVerticalScroll = self.bossAbilityTimeline.scrollFrame:GetVerticalScroll()
+	local bossSnapValue = (self.bossAbilityTimeline.textureHeight + self.bossAbilityTimeline.listPadding) / 2
+	local bossCurrentSnapValue = floor((bossCurrentVerticalScroll / bossSnapValue) + 0.5)
+	local bossNewVerticalScroll = max(min(bossCurrentSnapValue * bossSnapValue, bossMaxVerticalScroll), 0)
+	self.bossAbilityTimeline.scrollFrame:SetVerticalScroll(bossNewVerticalScroll)
+	self.bossAbilityTimeline.listScrollFrame:SetVerticalScroll(bossNewVerticalScroll)
+	self.bossAbilityTimeline:UpdateVerticalScroll()
 end
 
 ---@param self EPTimeline
@@ -1932,7 +1962,18 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 		timelineAssignment.spellCooldownDuration = duration
 	end
 
-	self:UpdateHeight()
+	self:UpdateHeightFromAssignments()
+
+	local assignmentScrollFrameHeight = self.assignmentTimeline.scrollFrame:GetHeight()
+	local assignmentTimelineFrameHeight = self.assignmentTimeline.timelineFrame:GetHeight()
+	local maxVerticalScroll = assignmentTimelineFrameHeight - assignmentScrollFrameHeight
+	local currentVerticalScroll = self.assignmentTimeline.scrollFrame:GetVerticalScroll()
+	local snapValue = (self.assignmentTimeline.textureHeight + self.assignmentTimeline.listPadding) / 2
+	local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
+	local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+	self.assignmentTimeline.scrollFrame:SetVerticalScroll(newVerticalScroll)
+	self.assignmentTimeline.listScrollFrame:SetVerticalScroll(newVerticalScroll)
+	self.assignmentTimeline:UpdateVerticalScroll()
 end
 
 local function UpdateAssignmentsAndTickMarks(self)
@@ -1969,28 +2010,6 @@ local function UpdateTimeline(self)
 	if not totalTimelineDuration or totalTimelineDuration <= 0 then
 		return
 	end
-
-	local assignmentScrollFrameHeight = self.assignmentTimeline.scrollFrame:GetHeight()
-	local assignmentTimelineFrameHeight = self.assignmentTimeline.timelineFrame:GetHeight()
-	local maxVerticalScroll = assignmentTimelineFrameHeight - assignmentScrollFrameHeight
-	local currentVerticalScroll = self.assignmentTimeline.scrollFrame:GetVerticalScroll()
-	local snapValue = (self.assignmentTimeline.textureHeight + self.assignmentTimeline.listPadding) / 2
-	local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
-	local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
-	self.assignmentTimeline.scrollFrame:SetVerticalScroll(newVerticalScroll)
-	self.assignmentTimeline.listScrollFrame:SetVerticalScroll(newVerticalScroll)
-	self.assignmentTimeline:UpdateVerticalScroll()
-
-	local bossScrollFrameHeight = self.bossAbilityTimeline.scrollFrame:GetHeight()
-	local bossTimelineFrameHeight = self.bossAbilityTimeline.timelineFrame:GetHeight()
-	local bossMaxVerticalScroll = bossTimelineFrameHeight - bossScrollFrameHeight
-	local bossCurrentVerticalScroll = self.bossAbilityTimeline.scrollFrame:GetVerticalScroll()
-	local bossSnapValue = (self.bossAbilityTimeline.textureHeight + self.bossAbilityTimeline.listPadding) / 2
-	local bossCurrentSnapValue = floor((bossCurrentVerticalScroll / bossSnapValue) + 0.5)
-	local bossNewVerticalScroll = max(min(bossCurrentSnapValue * bossSnapValue, bossMaxVerticalScroll), 0)
-	self.bossAbilityTimeline.scrollFrame:SetVerticalScroll(bossNewVerticalScroll)
-	self.bossAbilityTimeline.listScrollFrame:SetVerticalScroll(bossNewVerticalScroll)
-	self.bossAbilityTimeline:UpdateVerticalScroll()
 
 	local timelineWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
 	local visibleDuration = totalTimelineDuration / self.zoomFactor
@@ -2062,46 +2081,51 @@ local function UpdateTimeline(self)
 	UpdateTickMarks(self)
 end
 
--- Sets the height of the widget based on boss ability bars and assignment icons
+-- Sets the height of the widget based assignment frames
 ---@param self EPTimeline
-local function UpdateHeight(self)
+local function UpdateHeightFromAssignments(self)
 	CalculateMinMaxStepAssignmentHeight(self)
-	CalculateMinMaxStepBarHeight(self)
-	local minHeight = self.assignmentDimensions.min
-		+ self.barDimensions.min
-		+ paddingBetweenTimelines
+	local height = paddingBetweenTimelines
 		+ paddingBetweenTimelineAndScrollBar
 		+ horizontalScrollBarHeight
-	local maxHeight = self.assignmentDimensions.max
-		+ self.barDimensions.max
-		+ paddingBetweenTimelines
-		+ paddingBetweenTimelineAndScrollBar
-		+ horizontalScrollBarHeight
-	self:Fire("ResizeBoundsCalculated", minHeight, maxHeight)
-
-	local height = paddingBetweenTimelines + paddingBetweenTimelineAndScrollBar + horizontalScrollBarHeight
+		+ self.bossAbilityTimeline.frame:GetHeight()
 
 	local assignmentFrameHeight = self.assignmentTimeline.frame:GetHeight()
-	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
-
-	local preferredAssignmentHeight = self.preferences.timelineRows.numberOfAssignmentsToShow
-			* self.assignmentDimensions.step
-		- paddingBetweenAssignments
+	local numberToShow = self.preferences.timelineRows.numberOfAssignmentsToShow
+	local preferredAssignmentHeight = numberToShow * self.assignmentDimensions.step
+	if numberToShow > 1 then
+		preferredAssignmentHeight = preferredAssignmentHeight - paddingBetweenAssignments
+	end
 	preferredAssignmentHeight = min(preferredAssignmentHeight, self.assignmentDimensions.max)
-	local preferredBossHeight = self.preferences.timelineRows.numberOfBossAbilitiesToShow * self.barDimensions.step
-		- paddingBetweenBossAbilityBars
-	preferredBossHeight = min(preferredBossHeight, self.barDimensions.max)
-
 	if assignmentFrameHeight - self.assignmentDimensions.max > 0.5 then
+		print(assignmentFrameHeight, self.assignmentDimensions.max)
 		height = height + self.assignmentDimensions.max
 		self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
 	elseif abs(assignmentFrameHeight - preferredAssignmentHeight) > 0.5 then
+		print(numberToShow, self.assignmentDimensions.step)
 		height = height + preferredAssignmentHeight
 		self.assignmentTimeline.frame:SetHeight(preferredAssignmentHeight)
 	else
 		height = height + assignmentFrameHeight
 	end
+	self:SetHeight(height)
+end
 
+-- Sets the height of the widget based on boss ability frames
+---@param self EPTimeline
+local function UpdateHeightFromBossAbilities(self)
+	CalculateMinMaxStepBarHeight(self)
+	local height = paddingBetweenTimelines
+		+ paddingBetweenTimelineAndScrollBar
+		+ horizontalScrollBarHeight
+		+ self.assignmentTimeline.frame:GetHeight()
+	local bossFrameHeight = self.bossAbilityTimeline.frame:GetHeight()
+	local numberToShow = self.preferences.timelineRows.numberOfBossAbilitiesToShow
+	local preferredBossHeight = numberToShow * self.barDimensions.step
+	if numberToShow > 1 then
+		preferredBossHeight = preferredBossHeight - paddingBetweenBossAbilityBars
+	end
+	preferredBossHeight = min(preferredBossHeight, self.barDimensions.max)
 	if bossFrameHeight - self.barDimensions.max > 0.5 then
 		height = height + self.barDimensions.max
 		self.bossAbilityTimeline.frame:SetHeight(self.barDimensions.max)
@@ -2111,7 +2135,6 @@ local function UpdateHeight(self)
 	else
 		height = height + bossFrameHeight
 	end
-
 	self:SetHeight(height)
 end
 
@@ -2404,7 +2427,8 @@ local function Constructor()
 		SetAllowHeightResizing = SetAllowHeightResizing,
 		SetMaxAssignmentHeight = SetMaxAssignmentHeight,
 		SetPreferences = SetPreferences,
-		UpdateHeight = UpdateHeight,
+		UpdateHeightFromBossAbilities = UpdateHeightFromBossAbilities,
+		UpdateHeightFromAssignments = UpdateHeightFromAssignments,
 		UpdateAssignmentsAndTickMarks = UpdateAssignmentsAndTickMarks,
 		frame = frame,
 		splitterFrame = splitterFrame,

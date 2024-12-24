@@ -208,7 +208,7 @@ function Private:CreateOptionsMenu()
 				AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow = tonumber(key)
 				local timeline = Private.mainFrame.timeline
 				if timeline then
-					timeline:UpdateHeight()
+					timeline:UpdateHeightFromAssignments()
 					Private.mainFrame:DoLayout()
 				end
 			end,
@@ -229,7 +229,7 @@ function Private:CreateOptionsMenu()
 				AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow = tonumber(key)
 				local timeline = Private.mainFrame.timeline
 				if timeline then
-					timeline:UpdateHeight()
+					timeline:UpdateHeightFromBossAbilities()
 					Private.mainFrame:DoLayout()
 				end
 			end,
