@@ -216,8 +216,6 @@ end
 ---@param self EPTimeline
 local function UpdateTimeLabels(self)
 	local showCurrentTimeLabel = self.bossAbilityTimeline.verticalPositionLine:IsVisible()
-	local offset = self.bossAbilityTimeline.verticalPositionLine:GetLeft()
-		- self.bossAbilityTimeline.timelineFrame:GetLeft()
 	local time = ConvertTimelineOffsetToTime(
 		self.bossAbilityTimeline.verticalPositionLine,
 		self.bossAbilityTimeline.timelineFrame
@@ -232,6 +230,8 @@ local function UpdateTimeLabels(self)
 		self.currentTimeLabel:SetText(format("%d:%02d", minutes, seconds), 2)
 		self.currentTimeLabel:SetFrameWidthFromText()
 
+		local offset = self.bossAbilityTimeline.verticalPositionLine:GetLeft()
+			- self.bossAbilityTimeline.timelineFrame:GetLeft()
 		local left = offset - self.currentTimeLabel.text:GetStringWidth() / 2.0
 		self.currentTimeLabel:SetPoint("LEFT", self.splitterFrame, "LEFT", left, 0)
 
@@ -2356,6 +2356,7 @@ local function Constructor()
 
 	local splitterScrollFrame = CreateFrame("ScrollFrame", Type .. "SplitterScrollFrame" .. count, contentFrame)
 	splitterScrollFrame:SetHeight(paddingBetweenTimelines)
+	splitterScrollFrame:SetClipsChildren(true)
 
 	local splitterFrame = CreateFrame("Frame", Type .. "SplitterFrame" .. count, splitterScrollFrame)
 	splitterFrame:SetHeight(paddingBetweenTimelines)
