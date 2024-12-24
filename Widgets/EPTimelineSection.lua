@@ -99,6 +99,7 @@ end
 local function OnAcquire(self)
 	self.frame:Show()
 	self.ticks = self.ticks or {}
+	self.ticks[1] = self.ticks[1] or {}
 	self.verticalThumbOffsetWhenThumbClicked = 0
 	self.verticalScrollBarHeightWhenThumbClicked = 0
 	self.verticalThumbHeightWhenThumbClicked = 0
@@ -120,6 +121,16 @@ end
 local function OnRelease(self)
 	self.listContainer:Release()
 	self.listContainer = nil
+	for _, ticks in pairs(self.ticks) do
+		for _, tick in pairs(ticks) do
+			tick:Hide()
+		end
+	end
+	for _, ticks in pairs(self.ticks) do
+		for _, tick in pairs(ticks) do
+			tick:Hide()
+		end
+	end
 end
 
 ---@param self EPTimelineSection
