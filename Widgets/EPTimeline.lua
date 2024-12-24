@@ -492,69 +492,12 @@ local function UpdateTickMarks(self)
 			assignmentTickTable[i] = assignmentTick
 		end
 
-		--local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
 		assignmentTick:SetWidth(tickWidth)
 		assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
 		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, 0)
 		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", offsetX, 0)
 		assignmentTick:Show()
 	end
-
-	-- for order, assignmentFrameIndices in ipairs(self.orderedAssignmentFrames) do
-	-- 	local assignmentTickTable = assignmentTicks[order]
-	-- 	if not assignmentTickTable then
-	-- 		assignmentTicks[order] = {}
-	-- 		assignmentTickTable = assignmentTicks[order]
-	-- 	end
-
-	-- 	local minFrameLevel = 1000
-	-- 	if #assignmentFrameIndices >= 1 then
-	-- 		minFrameLevel = self.assignmentFrames[assignmentFrameIndices[1]]:GetFrameLevel()
-	-- 	end
-	-- sort(assignmentFrameIndices, function(a, b)
-	-- 	minFrameLevel = min(minFrameLevel, self.assignmentFrames[a]:GetFrameLevel())
-	-- 	local aLeft = self.assignmentFrames[a]:GetLeft() or 0
-	-- 	local bLeft = self.assignmentFrames[b]:GetLeft() or 0
-	-- 	if aLeft == bLeft then
-	-- 		-- always sort consistently to prevent switching frame levels rapidly
-	-- 		local aSpellID = self.assignmentFrames[a].spellID
-	-- 		local bSpellID = self.assignmentFrames[b].spellID
-	-- 		if aSpellID and bSpellID then
-	-- 			return self.assignmentFrames[a].spellID < self.assignmentFrames[b].spellID
-	-- 		else
-	-- 			return self.assignmentFrames[a].uniqueAssignmentID < self.assignmentFrames[b].uniqueAssignmentID
-	-- 		end
-	-- 	end
-	-- 	return aLeft < bLeft
-	-- end)
-
-	-- local offsetY = (order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
-
-	-- for i = 0, totalTimelineDuration, tickInterval do
-	-- 	local currentTickWidth = defaultTickWidth
-	-- 	if tickInterval == 60 then
-	-- 		currentTickWidth = defaultTickWidth
-	-- 	elseif i % 2 == 0 then
-	-- 		currentTickWidth = defaultTickWidth * 0.5
-	-- 	else
-	-- 		currentTickWidth = defaultTickWidth
-	-- 	end
-
-	-- 	local offsetX = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x)) + padding.x
-	-- 	local assignmentTick = assignmentTickTable[i]
-	-- 	if not assignmentTick then
-	-- 		assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
-	-- 		assignmentTick:SetColorTexture(unpack(tickColor))
-	-- 		assignmentTickTable[i] = assignmentTick
-	-- 	end
-
-	-- 	assignmentTick:SetWidth(currentTickWidth)
-	-- 	assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
-	-- 	assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, -offsetY + 1)
-	-- 	assignmentTick:Show()
-	-- end
-	-- UpdateCooldownTexturesOnly(self.assignmentFrames, assignmentFrameIndices, minFrameLevel, order)
-	-- end
 end
 
 -- Updates the position of the horizontal scroll bar thumb.
