@@ -23,6 +23,7 @@ local IsAltKeyDown = IsAltKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
 local max = math.max
 local min = math.min
+local next = next
 local pairs = pairs
 local select = select
 local split = string.split
@@ -77,8 +78,8 @@ local cooldownTextureAlpha = 0.5
 local assignmentIsDragging = false
 local assignmentBeingDuplicated = false
 local assignmentFrameBeingDragged = nil
-local assignmentFrameOffsetWhenClicked = 0
-local cursorPositionWhenAssignmentFrameClicked = 0
+local horizontalCursorAssignmentFrameOffsetWhenClicked = 0
+local horizontalCursorPositionWhenAssignmentFrameClicked = 0
 local thumbPadding = { x = 2, y = 2 }
 local timelineLinePadding = { x = 25, y = 25 }
 local thumbOffsetWhenThumbClicked = 0
@@ -96,8 +97,8 @@ local function ResetLocalVariables()
 	assignmentIsDragging = false
 	assignmentBeingDuplicated = false
 	assignmentFrameBeingDragged = nil
-	assignmentFrameOffsetWhenClicked = 0
-	cursorPositionWhenAssignmentFrameClicked = 0
+	horizontalCursorAssignmentFrameOffsetWhenClicked = 0
+	horizontalCursorPositionWhenAssignmentFrameClicked = 0
 	thumbPadding = { x = 2, y = 2 }
 	timelineLinePadding = { x = 25, y = 25 }
 	thumbOffsetWhenThumbClicked = 0
@@ -287,43 +288,94 @@ end
 
 ---@param assignmentFrames table<integer, AssignmentFrame>
 ---@param frameIndices table<integer, integer>
----@param order integer
-local function UpdateCooldownTexturesAndInvalidTextures(assignmentFrames, frameIndices, order)
-	local lastAssignmentFrame, lastCdLeft, lastCdRight, lastCdWidth = nil, nil, nil, nil
-	local first = assignmentFrames[frameIndices[1]]
-	local minFrameLevel = (first and first:GetFrameLevel()) or 1000
-	for index, assignmentFrameIndex in ipairs(frameIndices) do
+local function SortAssignmentFrameIndices(assignmentFrames, frameIndices)
+	sort(frameIndices, function(a, b)
+		local leftA = assignmentFrames[a]:GetLeft()
+		local leftB = assignmentFrames[b]:GetLeft()
+		if leftA and leftB then
+			return leftA < leftB
+		end
+		return false
+	end)
+end
+
+---@param cdLeft number
+---@param lastCdLeft number
+---@param lastCdRight number
+---@return integer
+local function IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight)
+	if lastCdRight + assignmentOverlapTolerance > cdLeft then
+		if lastCdLeft < cdLeft + assignmentOverlapTolerance then
+			return 1
+		else
+			return 2
+		end
+	else
+		return 0
+	end
+end
+
+---@param assignmentFrames table<integer, AssignmentFrame>
+---@param frameIndices table<integer, integer>
+local function UpdateInvalidTexturesOnly(assignmentFrames, frameIndices)
+	local lastCdLeft, lastCdRight = nil, nil
+	SortAssignmentFrameIndices(assignmentFrames, frameIndices)
+	for _, assignmentFrameIndex in ipairs(frameIndices) do
 		local assignmentFrame = assignmentFrames[assignmentFrameIndex]
 		local cdLeft = assignmentFrame:GetLeft()
 		local cdWidth = assignmentFrame.cooldownWidth
+		local show = false
+		if cdLeft and cdWidth > 0 then
+			local cdRight = cdLeft + cdWidth
+			if lastCdLeft and lastCdRight then
+				if IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight) > 0 then
+					show = true
+				end
+			end
+			lastCdLeft, lastCdRight = cdLeft, cdRight
+		end
+		if show then
+			assignmentFrame.invalidTexture:Show()
+		else
+			assignmentFrame.invalidTexture:Hide()
+		end
+	end
+end
+
+---@param assignmentFrames table<integer, AssignmentFrame>
+---@param frameIndices table<integer, integer>
+---@param order integer
+local function UpdateCooldownTexturesAndInvalidTextures(assignmentFrames, frameIndices, order)
+	local lastAssignmentFrame, lastCdLeft, lastCdRight, lastCdWidth = nil, nil, nil, nil
+	SortAssignmentFrameIndices(assignmentFrames, frameIndices)
+	for _, assignmentFrameIndex in ipairs(frameIndices) do
+		local assignmentFrame = assignmentFrames[assignmentFrameIndex]
+		local cdLeft = assignmentFrame:GetLeft()
+		local cdWidth = assignmentFrame.cooldownWidth
+		local show = false
 		if cdLeft and cdWidth > 0 then
 			local cdRight = cdLeft + cdWidth
 			if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
-				if lastCdRight + assignmentOverlapTolerance > cdLeft then
-					if lastCdLeft < cdLeft + assignmentOverlapTolerance then
-						local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
-						lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
-
-						assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
-						assignmentFrame.invalidTexture:Show()
-					else
-						lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
-
-						local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
-						assignmentFrame:SetWidth(newWidth)
-						assignmentFrame.invalidTexture:Hide()
-					end
-				else
-					assignmentFrame.invalidTexture:Hide()
+				local overlapType = IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight)
+				if overlapType == 1 then -- last frame is partially overlapping current frame
+					show = true
+					local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
+					lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
+					assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
+				elseif overlapType == 2 then -- last frame is fully overlapping current frame
+					show = true
+					lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
+					local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
+					assignmentFrame:SetWidth(newWidth)
+				else -- no overlap
 					lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
 				end
-			else
-				assignmentFrame.invalidTexture:Hide()
 			end
 			UpdateCooldownTextureAlignment(assignmentFrame, order)
-			assignmentFrame:SetFrameLevel(minFrameLevel + index - 1)
-			lastCdLeft, lastCdRight, lastCdWidth = cdLeft, cdRight, cdWidth
-			lastAssignmentFrame = assignmentFrame
+			lastCdLeft, lastCdRight, lastCdWidth, lastAssignmentFrame = cdLeft, cdRight, cdWidth, assignmentFrame
+		end
+		if show then
+			assignmentFrame.invalidTexture:Show()
 		else
 			assignmentFrame.invalidTexture:Hide()
 		end
@@ -809,7 +861,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 
 	assignmentFrame.timelineAssignment = nil
 	assignmentFrameBeingDragged = nil
-	cursorPositionWhenAssignmentFrameClicked = 0
+	horizontalCursorPositionWhenAssignmentFrameClicked = 0
 
 	local time = ConvertTimelineOffsetToTime(assignmentFrame, self.bossAbilityTimeline.timelineFrame)
 
@@ -817,14 +869,17 @@ local function StopMovingAssignment(self, assignmentFrame)
 		self.fakeAssignmentFrame:Hide()
 		assignmentBeingDuplicated = false
 		if timelineAssignment then
-			local assignmentFrameIndices = self.orderedAssignmentFrameIndices[timelineAssignment.order]
-			if assignmentFrameIndices then
-				for currentIndex, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
-					if assignmentFrameIndex == self.fakeAssignmentFrame.temporaryAssignmentFrameIndex then
-						tremove(self.assignmentFrames, assignmentFrameIndex)
-						tremove(assignmentFrameIndices, currentIndex)
-						break
+			local spellID = timelineAssignment.assignment.spellInfo.spellID
+			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
+			local spellIDTable = orderTable[spellID]
+			for index, assignmentFrameIndex in ipairs(spellIDTable) do
+				if assignmentFrameIndex == self.fakeAssignmentFrame.temporaryAssignmentFrameIndex then
+					tremove(self.assignmentFrames, assignmentFrameIndex)
+					tremove(spellIDTable, index)
+					if not next(orderTable[spellID]) then
+						orderTable[spellID] = nil
 					end
+					break
 				end
 			end
 
@@ -878,54 +933,62 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 		return
 	end
 
-	local x = GetCursorPosition() / UIParent:GetEffectiveScale()
-	if abs(x - cursorPositionWhenAssignmentFrameClicked) < 5 then
+	local horizontalCursorPosition = GetCursorPosition() / UIParent:GetEffectiveScale()
+	if abs(horizontalCursorPosition - horizontalCursorPositionWhenAssignmentFrameClicked) < 5 then
 		return
 	end
-	cursorPositionWhenAssignmentFrameClicked = 0
+	horizontalCursorPositionWhenAssignmentFrameClicked = 0
 
 	local timelineFrameLeft = self.bossAbilityTimeline.timelineFrame:GetLeft()
 	local timelineFrameWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
-	local newOffset = x - timelineFrameLeft - assignmentFrameOffsetWhenClicked
+	local minOffsetFromTimelineFrameLeft = timelineLinePadding.x
+	local maxOffsetFromTimelineFrameLeft = timelineFrameWidth - timelineLinePadding.x
 
-	local padding = timelineLinePadding.x
-
-	local minAllowedOffset = padding
 	local minTime = self.GetMinimumCombatLogEventTime(frame.timelineAssignment)
 	if minTime then
 		local minOffsetFromTime =
 			ConvertTimeToTimelineOffset(self.bossAbilityTimeline.timelineFrame:GetWidth(), minTime)
-		minAllowedOffset = max(minOffsetFromTime, minAllowedOffset)
+		minOffsetFromTimelineFrameLeft = max(minOffsetFromTime, minOffsetFromTimelineFrameLeft)
 	end
-	local maxAllowedOffset = timelineFrameWidth - padding - assignmentTextureSize.x
-	local lineOffset = -assignmentFrameOffsetWhenClicked
 
-	local assignmentLeft = timelineFrameLeft + newOffset
-	local assignmentRight = assignmentLeft + frame:GetWidth()
+	local assignmentFrameOffsetFromTimelineFrameLeft = horizontalCursorPosition
+		- timelineFrameLeft
+		- horizontalCursorAssignmentFrameOffsetWhenClicked
+
+	local lineOffset = -horizontalCursorAssignmentFrameOffsetWhenClicked
+	if assignmentFrameOffsetFromTimelineFrameLeft < minOffsetFromTimelineFrameLeft then
+		local negativeOverflow = minOffsetFromTimelineFrameLeft - assignmentFrameOffsetFromTimelineFrameLeft
+		assignmentFrameOffsetFromTimelineFrameLeft = minOffsetFromTimelineFrameLeft
+		lineOffset = lineOffset + negativeOverflow
+	elseif assignmentFrameOffsetFromTimelineFrameLeft > maxOffsetFromTimelineFrameLeft then
+		local positiveOverflow = assignmentFrameOffsetFromTimelineFrameLeft - maxOffsetFromTimelineFrameLeft
+		lineOffset = lineOffset - positiveOverflow
+		assignmentFrameOffsetFromTimelineFrameLeft = maxOffsetFromTimelineFrameLeft
+	end
+	assignmentFrameOffsetFromTimelineFrameLeft = max(
+		minOffsetFromTimelineFrameLeft,
+		min(maxOffsetFromTimelineFrameLeft, assignmentFrameOffsetFromTimelineFrameLeft)
+	)
+
+	local assignmentLeft = frame:GetLeft()
+	local assignmentRight = assignmentLeft + assignmentTextureSize.x
 	local horizontalScroll = self.bossAbilityTimeline.scrollFrame:GetHorizontalScroll()
 	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
 	local scrollFrameLeft = self.bossAbilityTimeline.scrollFrame:GetLeft()
 	local scrollFrameRight = scrollFrameLeft + scrollFrameWidth
 	local newHorizontalScroll = nil
-
-	if newOffset < minAllowedOffset then
-		lineOffset = lineOffset + minAllowedOffset - newOffset
-		newOffset = minAllowedOffset
-	elseif newOffset > maxAllowedOffset then
-		lineOffset = lineOffset - (newOffset - maxAllowedOffset)
-		newOffset = maxAllowedOffset
-	end
-
 	if assignmentLeft < scrollFrameLeft then
-		newHorizontalScroll = horizontalScroll - (scrollFrameLeft - assignmentLeft)
+		local negativeOverflow = scrollFrameLeft - assignmentLeft
+		newHorizontalScroll = horizontalScroll - negativeOverflow
 	elseif assignmentRight > scrollFrameRight then
-		newHorizontalScroll = horizontalScroll + (assignmentRight - scrollFrameRight)
+		local positiveOverflow = assignmentRight - scrollFrameRight
+		newHorizontalScroll = horizontalScroll + positiveOverflow
 	end
 
 	if newHorizontalScroll then
 		newHorizontalScroll = max(0, min(newHorizontalScroll, timelineFrameWidth - scrollFrameWidth))
-		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		UpdateHorizontalScroll(
 			self.horizontalScrollBar,
 			self.thumb,
@@ -935,18 +998,46 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 		)
 	end
 
-	local offsetY = (frame.timelineAssignment.order - 1) * (assignmentTextureSize.y + paddingBetweenAssignments)
-	frame:SetPoint("TOPLEFT", newOffset, -offsetY)
-	UpdateLinePosition(self.assignmentTimeline.frame, self.assignmentTimeline.verticalPositionLine, lineOffset)
-	UpdateLinePosition(self.bossAbilityTimeline.frame, self.bossAbilityTimeline.verticalPositionLine, lineOffset)
+	local verticalOffsetFromTimelineFrameTop = (frame.timelineAssignment.order - 1)
+		* (assignmentTextureSize.y + paddingBetweenAssignments)
+	frame:SetPoint("TOPLEFT", assignmentFrameOffsetFromTimelineFrameLeft, -verticalOffsetFromTimelineFrameTop)
+	UpdateLinePosition(
+		self.assignmentTimeline.frame,
+		self.assignmentTimeline.verticalPositionLine,
+		-horizontalCursorAssignmentFrameOffsetWhenClicked
+	)
+	UpdateLinePosition(
+		self.bossAbilityTimeline.frame,
+		self.bossAbilityTimeline.verticalPositionLine,
+		-horizontalCursorAssignmentFrameOffsetWhenClicked
+	)
 	UpdateTimeLabels(self)
 	if assignmentFrameBeingDragged and assignmentFrameBeingDragged.timelineAssignment then
 		local order = assignmentFrameBeingDragged.timelineAssignment.order
-		UpdateCooldownTexturesAndInvalidTextures(
-			self.assignmentFrames,
-			self.orderedAssignmentFrameIndices[order],
-			order
-		)
+		local collapsed = self.collapsed[assignmentFrameBeingDragged.timelineAssignment.assignment.assigneeNameOrRole]
+		local showCd = collapsed and self.preferences.showSpellCooldownDuration
+		local orderedAssignmentFrameIndices = {}
+		if showCd then
+			for _, assignmentFrameIndices in pairs(self.orderedWithSpellIDAssignmentFrameIndices[order]) do
+				UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, assignmentFrameIndices, order)
+				for _, index in ipairs(assignmentFrameIndices) do
+					orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
+				end
+			end
+		else
+			for _, assignmentFrameIndices in pairs(self.orderedWithSpellIDAssignmentFrameIndices[order]) do
+				UpdateInvalidTexturesOnly(self.assignmentFrames, assignmentFrameIndices)
+				for _, index in ipairs(assignmentFrameIndices) do
+					orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
+				end
+			end
+		end
+		SortAssignmentFrameIndices(self.assignmentFrames, orderedAssignmentFrameIndices)
+		local minFrameLevel = self.assignmentTimeline.timelineFrame:GetFrameLevel() + 1
+		for _, index in pairs(orderedAssignmentFrameIndices) do
+			self.assignmentFrames[index]:SetFrameLevel(minFrameLevel)
+			minFrameLevel = minFrameLevel + 1
+		end
 	end
 end
 
@@ -961,8 +1052,9 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 		return
 	end
 
-	cursorPositionWhenAssignmentFrameClicked = GetCursorPosition() / UIParent:GetEffectiveScale()
-	assignmentFrameOffsetWhenClicked = cursorPositionWhenAssignmentFrameClicked - frame:GetLeft()
+	horizontalCursorPositionWhenAssignmentFrameClicked = GetCursorPosition() / UIParent:GetEffectiveScale()
+	horizontalCursorAssignmentFrameOffsetWhenClicked = horizontalCursorPositionWhenAssignmentFrameClicked
+		- frame:GetLeft()
 
 	if isValidEdit then
 		assignmentIsDragging = true
@@ -985,16 +1077,16 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 
 		local timelineAssignment, index = FindTimelineAssignment(self.timelineAssignments, frame.assignmentIndex)
 		if timelineAssignment and index then
-			local assignmentFrameIndices = self.orderedAssignmentFrameIndices[timelineAssignment.order]
-			if assignmentFrameIndices then
-				for currentIndex, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
-					if assignmentFrameIndex == index then
-						local newIndex = #self.assignmentFrames
-						self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
-						self.assignmentFrames[newIndex] = self.fakeAssignmentFrame
-						tinsert(assignmentFrameIndices, currentIndex, newIndex)
-						break
-					end
+			local spellID = timelineAssignment.assignment.spellInfo.spellID
+			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
+			local spellIDTable = orderTable[spellID]
+			for currentIndex, assignmentFrameIndex in ipairs(spellIDTable) do
+				if assignmentFrameIndex == index then
+					local newIndex = #self.assignmentFrames
+					self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
+					self.assignmentFrames[newIndex] = self.fakeAssignmentFrame
+					tinsert(spellIDTable, currentIndex, newIndex)
+					break
 				end
 			end
 
@@ -1202,8 +1294,9 @@ end
 ---@param index integer index of the AssignmentFrame to use to display the assignment
 ---@param uniqueID integer unique index of the assignment
 ---@param order number the relative order of the assignee of the assignment
+---@param showCooldown boolean
 ---@param cooldownDuration number|nil
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, cooldownDuration)
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -1227,7 +1320,6 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 	assignment.assignmentIndex = uniqueID
 
 	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
-	assignment:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
 	assignment:Show()
 
 	if spellID == 0 or spellID == nil then
@@ -1238,10 +1330,12 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 		if cooldownDuration and cooldownDuration > 0 then
 			local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
 			assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
-			assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
-			UpdateCooldownTextureAlignment(assignment, order)
-			assignment.cooldownTexture:Show()
-			assignment.cooldownBackground:Show()
+			if showCooldown then
+				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
+				UpdateCooldownTextureAlignment(assignment, order)
+				assignment.cooldownTexture:Show()
+				assignment.cooldownBackground:Show()
+			end
 		end
 	end
 end
@@ -1261,38 +1355,57 @@ local function UpdateAssignments(self)
 		frame.cooldownWidth = 0
 	end
 
-	wipe(self.orderedAssignmentFrameIndices)
+	wipe(self.orderedWithSpellIDAssignmentFrameIndices)
 	local maxOrder = -hugeNumber
+
+	local showCooldownTable = {}
+	local orderedAssignmentFrameIndices = {}
 
 	for index, timelineAssignment in ipairs(self.timelineAssignments) do
 		local order = timelineAssignment.order
-		if not self.orderedAssignmentFrameIndices[order] then
-			self.orderedAssignmentFrameIndices[order] = {}
+		local spellID = timelineAssignment.assignment.spellInfo.spellID
+		if not self.orderedWithSpellIDAssignmentFrameIndices[order] then
+			self.orderedWithSpellIDAssignmentFrameIndices[order] = {}
+			showCooldownTable[order] = {}
+			orderedAssignmentFrameIndices[order] = {}
+		end
+		if not self.orderedWithSpellIDAssignmentFrameIndices[order][spellID] then
+			self.orderedWithSpellIDAssignmentFrameIndices[order][spellID] = {}
 		end
 		local showCooldown = not self.collapsed[timelineAssignment.assignment.assigneeNameOrRole]
 			and self.preferences.showSpellCooldownDuration
+		showCooldownTable[order][spellID] = showCooldown
 		DrawAssignment(
 			self,
 			timelineAssignment.startTime,
-			timelineAssignment.assignment.spellInfo.spellID,
+			spellID,
 			index,
 			timelineAssignment.assignment.uniqueID,
 			order,
-			(showCooldown and timelineAssignment.spellCooldownDuration) or nil
+			showCooldown,
+			timelineAssignment.spellCooldownDuration
 		)
-		if showCooldown then
-			tinsert(self.orderedAssignmentFrameIndices[order], index)
-		end
+		tinsert(self.orderedWithSpellIDAssignmentFrameIndices[order][spellID], index)
+		tinsert(orderedAssignmentFrameIndices[order], index)
 		maxOrder = max(maxOrder, order)
 	end
-	for i = 1, maxOrder do
-		if not self.orderedAssignmentFrameIndices[i] then
-			self.orderedAssignmentFrameIndices[i] = {}
+	for order, indexedSpellIDs in pairs(self.orderedWithSpellIDAssignmentFrameIndices) do
+		for spellID, assignmentFrameIndices in pairs(indexedSpellIDs) do
+			if showCooldownTable[order][spellID] then
+				UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, assignmentFrameIndices, order)
+			else
+				UpdateInvalidTexturesOnly(self.assignmentFrames, assignmentFrameIndices)
+			end
 		end
 	end
-	if self.preferences.showSpellCooldownDuration then
-		for order, indexedFrames in ipairs(self.orderedAssignmentFrameIndices) do
-			UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, indexedFrames, order)
+	for _, assignmentFrameIndices in pairs(orderedAssignmentFrameIndices) do
+		sort(assignmentFrameIndices, function(a, b)
+			return self.timelineAssignments[a].startTime < self.timelineAssignments[b].startTime
+		end)
+		local minFrameLevel = self.assignmentTimeline.timelineFrame:GetFrameLevel() + 1
+		for _, index in pairs(assignmentFrameIndices) do
+			self.assignmentFrames[index]:SetFrameLevel(minFrameLevel)
+			minFrameLevel = minFrameLevel + 1
 		end
 	end
 end
@@ -1712,7 +1825,7 @@ end
 ---@field currentTimeLabel EPLabel
 ---@field assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, AssignmentFrame>
----@field orderedAssignmentFrameIndices table<integer, table<integer, integer>>
+---@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
 ---@field fakeAssignmentFrame FakeAssignmentFrame
 ---@field bossAbilities table<integer, BossAbility>
 ---@field bossAbilityVisibility table<integer, boolean>
@@ -1733,7 +1846,7 @@ end
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
-	self.orderedAssignmentFrameIndices = {}
+	self.orderedWithSpellIDAssignmentFrameIndices = {}
 	self.bossAbilityFrames = self.bossAbilityFrames or {}
 	self.timelineLabels = self.timelineLabels or {}
 	self.zoomFactor = self.zoomFactor or 1.0
@@ -1877,7 +1990,7 @@ local function OnRelease(self)
 		frame.abilityInstance = nil
 	end
 
-	self.orderedAssignmentFrameIndices = nil
+	self.orderedWithSpellIDAssignmentFrameIndices = nil
 	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
