@@ -16,8 +16,8 @@ NerubarPalace.lua
 BossUtilities.lua
 Utilities.lua
 Note.lua
-Options.lua
 Reminder.lua
 InterfaceUpdater.lua
+Options.lua
 Interface.lua
 Core.lua
