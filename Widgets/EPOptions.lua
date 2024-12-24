@@ -19,11 +19,10 @@ local contentFramePadding = { x = 20, y = 20 }
 local title = "Preferences"
 local categoryFontSize = 18
 local optionLabelFontSize = 14
-local horizontalCategoryOffset = 10
 local spacingBetweenOptions = 5
 local spacingBetweenCategories = 10
-local preLineSpacing = 2
-local postLineSpacing = 4
+local spacingBetweenLabelAndWidget = 2
+local indentWidth = 26
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -39,6 +38,14 @@ local titleBarBackdrop = {
 	tileSize = 16,
 	edgeSize = 2,
 }
+local groupBoxBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 2,
+}
+local groupBoxBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 
 ---@param radioButton EPRadioButton
 ---@param radioButtonGroup EPContainer
@@ -55,8 +62,12 @@ end
 local function CreateOptionWidget(option)
 	local container = AceGUI:Create("EPContainer")
 	container:SetLayout("EPVerticalLayout")
-	container:SetSpacing(0, 2)
+	container:SetSpacing(0, spacingBetweenLabelAndWidget)
 	container:SetFullWidth(true)
+
+	if option.indent then
+		container:SetPadding(indentWidth, 0, 0, 0)
+	end
 
 	local containerChildren = {}
 	if option.type == "checkBox" then
@@ -184,7 +195,6 @@ local function CreateOptionWidget(option)
 	if #containerChildren > 0 then
 		container:AddChildren(unpack(containerChildren))
 	end
-
 	return container
 end
 
@@ -219,42 +229,12 @@ local function PopulateActiveTab(self, tab)
 			label.text:SetTextColor(1, 0.82, 0, 1)
 			tinsert(activeContainerChildren, label)
 
-			local preLineSpacer = AceGUI:Create("EPSpacer")
-			preLineSpacer:SetHeight(preLineSpacing)
-			preLineSpacer:SetFullWidth(true)
-			tinsert(activeContainerChildren, preLineSpacer)
-
-			local line = AceGUI:Create("EPSpacer")
-			line.frame:SetBackdrop({
-				bgFile = "Interface\\BUTTONS\\White8x8",
-				edgeFile = nil,
-				tile = false,
-				tileSize = 0,
-				edgeSize = 0,
-				insets = { left = 0, right = 0, top = 0, bottom = 0 },
-			})
-			line.frame:SetBackdropColor(0.25, 0.25, 0.25, 1)
-			line:SetHeight(2)
-			line:SetFullWidth(true)
-			tinsert(activeContainerChildren, line)
-
-			local postLineSpacer = AceGUI:Create("EPSpacer")
-			postLineSpacer:SetHeight(postLineSpacing)
-			postLineSpacer:SetFullWidth(true)
-			tinsert(activeContainerChildren, postLineSpacer)
-
-			local categoryContainerWrapper = AceGUI:Create("EPContainer")
-			categoryContainerWrapper:SetLayout("EPHorizontalLayout")
-			categoryContainerWrapper:SetSpacing(0, 0)
-			categoryContainerWrapper:SetFullWidth(true)
-			local leftOffsetSpacer = AceGUI:Create("EPSpacer")
-			leftOffsetSpacer:SetWidth(horizontalCategoryOffset)
-			categoryContainerWrapper:AddChild(leftOffsetSpacer)
-
 			local categoryContainer = AceGUI:Create("EPContainer")
 			categoryContainer:SetLayout("EPVerticalLayout")
 			categoryContainer:SetSpacing(0, spacingBetweenOptions)
 			categoryContainer:SetFullWidth(true)
+			categoryContainer:SetPadding(10, 10, 10, 10)
+			categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
 			local categoryContainerChildren = {}
 			for _, option in ipairs(self.optionTabs[tab]) do
 				if option.category == category then
@@ -264,8 +244,7 @@ local function PopulateActiveTab(self, tab)
 
 			if #categoryContainerChildren > 0 then
 				categoryContainer:AddChildren(unpack(categoryContainerChildren))
-				categoryContainerWrapper:AddChild(categoryContainer)
-				tinsert(activeContainerChildren, categoryContainerWrapper)
+				tinsert(activeContainerChildren, categoryContainer)
 			end
 
 			if categoryIndex ~= #self.tabCategories[tab] then
@@ -296,13 +275,15 @@ end
 
 ---@class EPSettingOption
 ---@field label string
----@field type "dropdown"|"radioButtonGroup"
+---@field type "dropdown"|"radioButtonGroup"|"lineEdit"|"checkBox"
 ---@field description string?
 ---@field category string?
+---@field indent? boolean
 ---@field values table<integer, string|DropdownItemData>
 ---@field get fun(): string|boolean
 ---@field set fun(value: string|boolean)
----@field validate fun(value: string): boolean, string?
+---@field enabled? fun(): boolean
+---@field validate? fun(value: string): boolean, string?
 
 ---@class EPOptions : AceGUIContainer
 ---@field type string

@@ -7,6 +7,7 @@ local CreateFrame = CreateFrame
 local ipairs = ipairs
 local select = select
 local tinsert = tinsert
+local unpack = unpack
 
 local defaultSpacing = { x = 10, y = 10 }
 local defaultHeight = 100
@@ -18,15 +19,21 @@ local defaultWidth = 100
 ---@field content table|Frame
 ---@field children table<AceGUIWidget>
 ---@field selfAlignment string|nil
+---@field padding {left: number, top: number, right: number, bottom: number}
 
 ---@param self EPContainer
 local function OnAcquire(self)
 	self.frame:Show()
+	self:SetPadding(0, 0, 0, 0)
 	self:SetHeight(defaultHeight)
 	self:SetWidth(defaultWidth)
 	self.content.spacing = defaultSpacing
 	self.content:SetScript("OnSizeChanged", nil)
 	self.frame:SetScript("OnSizeChanged", nil)
+end
+
+local function OnRelease(self)
+	self.frame:ClearBackdrop()
 	self.content.alignment = nil
 	self.selfAlignment = nil
 end
@@ -37,9 +44,9 @@ end
 local function LayoutFinished(self, width, height)
 	if width and height then
 		if width > 0 then
-			self:SetWidth(width)
+			self:SetWidth(width + self.padding.left + self.padding.right)
 		end
-		self:SetHeight(height)
+		self:SetHeight(height + self.padding.top + self.padding.bottom)
 	end
 end
 
@@ -48,6 +55,17 @@ end
 ---@param vertical number
 local function SetSpacing(self, horizontal, vertical)
 	self.content.spacing = { x = horizontal, y = vertical }
+end
+
+---@param self EPContainer
+---@param left number
+---@param top number
+---@param right number
+---@param bottom number
+local function SetPadding(self, left, top, right, bottom)
+	self.padding = { left = left, top = top, right = right, bottom = bottom }
+	self.content:SetPoint("TOPLEFT", left, -top)
+	self.content:SetPoint("BOTTOMRIGHT", -right, bottom)
 end
 
 ---@param self EPContainer
@@ -60,6 +78,20 @@ end
 ---@param alignment string
 local function SetSelfAlignment(self, alignment)
 	self.selfAlignment = alignment
+end
+
+---@param self EPContainer
+---@param backdropInfo backdropInfo
+---@param backdropColor table<number>?
+---@param backdropBorderColor table<number>?
+local function SetBackdrop(self, backdropInfo, backdropColor, backdropBorderColor)
+	self.frame:SetBackdrop(backdropInfo)
+	if backdropColor then
+		self.frame:SetBackdropColor(unpack(backdropColor))
+	end
+	if backdropBorderColor then
+		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	end
 end
 
 -- Inserts a variable number of widgets before beforeWidget.
@@ -112,7 +144,7 @@ end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("Frame", Type .. count, UIParent)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetHeight(defaultHeight)
 	frame:SetWidth(defaultWidth)
@@ -124,6 +156,7 @@ local function Constructor()
 	---@class EPContainer
 	local widget = {
 		OnAcquire = OnAcquire,
+		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		SetSpacing = SetSpacing,
 		SetAlignment = SetAlignment,
@@ -131,6 +164,8 @@ local function Constructor()
 		InsertChildren = InsertChildren,
 		AddChildNoDoLayout = AddChildNoDoLayout,
 		RemoveChildNoDoLayout = RemoveChildNoDoLayout,
+		SetBackdrop = SetBackdrop,
+		SetPadding = SetPadding,
 		frame = frame,
 		type = Type,
 		content = content,

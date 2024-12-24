@@ -29,9 +29,12 @@ local tonumber = tonumber
 
 function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
-	optionsMenu.frame:SetParent(UIParent) --Private.mainFrame.frame --[[@as Frame]])
-	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
-
+	if Private.mainFrame then
+		optionsMenu.frame:SetParent(Private.mainFrame.frame)
+	else
+		optionsMenu.frame:SetParent(UIParent)
+		optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	end
 	optionsMenu.frame:SetFrameLevel(100)
 
 	optionsMenu:SetLayout("EPVerticalLayout")
@@ -483,10 +486,11 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
-			label = "Sound to Play at Advance Notice",
+			label = "Sound to Play",
 			type = "dropdown",
 			description = "The sound to play at advance notice time.",
 			category = "Sound",
+			indent = true,
 			values = sounds,
 			get = function()
 				return AddOn.db.profile.preferences.reminder.sound.advanceNoticeSound
@@ -514,10 +518,11 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
-			label = "Sound to Play at Assignment Time",
+			label = "Sound to Play",
 			type = "dropdown",
 			description = "The sound to play at assignment time.",
 			category = "Sound",
+			indent = true,
 			values = sounds,
 			get = function()
 				return AddOn.db.profile.preferences.reminder.sound.atSound
@@ -525,6 +530,9 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				print(key)
 				AddOn.db.profile.preferences.reminder.sound.atSound = key
+			end,
+			enabled = function()
+				return AddOn.db.profile.preferences.reminder.sound.enableAtTime == true
 			end,
 			validate = function(key)
 				return true
@@ -537,10 +545,12 @@ function Private:CreateOptionsMenu()
 	optionsMenu:AddOptionTab("View", viewOptions)
 	optionsMenu:SetCurrentTab("Keybindings")
 
-	local yPos = -(UIParent:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
-	optionsMenu.frame:SetPoint("TOP", UIParent, "TOP", 0, yPos)
-	yPos = -(UIParent:GetHeight() / 2) + (optionsMenu.frame:GetHeight() / 2)
-	optionsMenu.frame:SetPoint("TOP", UIParent, "TOP", 0, yPos)
+	if Private.mainFrame then
+		optionsMenu.frame:SetPoint("CENTER", Private.mainFrame.frame, "CENTER", 0, 0)
+	else
+		optionsMenu.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+	end
+
 	optionsMenu:DoLayout()
 
 	Private.optionsMenu = optionsMenu
