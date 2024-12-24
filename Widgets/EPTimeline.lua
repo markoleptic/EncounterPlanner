@@ -926,7 +926,6 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 		newHorizontalScroll = max(0, min(newHorizontalScroll, timelineFrameWidth - scrollFrameWidth))
 		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		UpdateHorizontalScroll(
 			self.horizontalScrollBar,
 			self.thumb,
@@ -1410,16 +1409,10 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 
 		-- Recalculate the new scroll position based on the new visible start time
 		local newHorizontalScroll = (newVisibleStartTime / totalTimelineDuration) * newTimelineFrameWidth
-
-		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-
 		self.assignmentTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
 		self.bossAbilityTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
-
-		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		self.splitterFrame:SetWidth(newTimelineFrameWidth)
-
+		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		UpdateHorizontalScroll(
 			self.horizontalScrollBar,
 			self.thumb,
@@ -1466,7 +1459,6 @@ local function HandleThumbMouseDown(self)
 		local scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
 		bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
 		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(scrollOffset)
-		self.splitterScrollFrame:SetHorizontalScroll(scrollOffset)
 	end)
 end
 
@@ -1517,7 +1509,6 @@ local function HandleTimelineFrameDragUpdate(self)
 	newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
 	self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	timelineFrameOffsetWhenDragStarted = x
 	UpdateHorizontalScroll(
 		self.horizontalScrollBar,
@@ -1792,6 +1783,12 @@ local function OnAcquire(self)
 	self.assignmentTimeline.timelineFrame:SetScript("OnMouseUp", function(_, button)
 		HandleAssignmentTimelineFrameMouseUp(self, button)
 	end)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnSizeChanged", function(_, width, _)
+		self.splitterFrame:SetWidth(width)
+	end)
+	self.bossAbilityTimeline.scrollFrame:SetScript("OnHorizontalScroll", function(_, offset)
+		self.splitterScrollFrame:SetHorizontalScroll(offset)
+	end)
 
 	bossAbilityTimelineSectionFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT")
 	bossAbilityTimelineSectionFrame:SetPoint("TOPRIGHT", self.contentFrame, "TOPRIGHT")
@@ -2052,9 +2049,6 @@ local function UpdateTimeline(self)
 
 	self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 	self.bossAbilityTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
-
-	self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	self.splitterFrame:SetWidth(newTimelineFrameWidth)
 
 	UpdateHorizontalScroll(
 		self.horizontalScrollBar,
