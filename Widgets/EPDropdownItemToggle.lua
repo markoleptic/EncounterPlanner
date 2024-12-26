@@ -221,6 +221,7 @@ function EPItemBase.Create(type)
 		childSelectedIndicator = childSelectedIndicator,
 		highlight = highlight,
 		text = text,
+		enabled = true,
 		OnAcquire = EPItemBase.OnAcquire,
 		OnRelease = EPItemBase.OnRelease,
 		SetPullout = EPItemBase.SetPullout,

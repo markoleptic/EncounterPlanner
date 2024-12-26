@@ -65,6 +65,8 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	local fontString = self.button:GetFontString()
+	self.icon:SetDesaturated(not enabled)
+	self.button:SetEnabled(enabled)
 	if enabled then
 		fontString:SetTextColor(unpack(enabledTextColor))
 	else

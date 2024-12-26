@@ -335,13 +335,35 @@ function Private:CreateOptionsMenu()
 		tinsert(voices, { itemValue = ttsVoiceTable.voiceID, text = ttsVoiceTable.name })
 	end
 
+	local enableReminderOption = function()
+		return AddOn.db.profile.preferences.reminder.enabled == true
+	end
+
 	local reminderOptions = {
+		{
+			label = "Enable Reminders",
+			type = "checkBox",
+			description = "Whether to enable reminders for assignments.",
+			category = nil,
+			values = nil,
+			refreshEnabledAfterSet = true,
+			get = function()
+				return AddOn.db.profile.preferences.reminder.enabled
+			end,
+			set = function(key)
+				AddOn.db.profile.preferences.reminder.enabled = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
 		{
 			label = "Only Show Reminders For Me",
 			type = "checkBox",
 			description = "Whether to show assignment reminders that are only relevant to you.",
 			category = nil,
 			values = nil,
+			enabled = enableReminderOption,
 			get = function()
 				return AddOn.db.profile.preferences.reminder.onlyShowMe
 			end,
@@ -364,6 +386,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.enableMessages = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -380,6 +403,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.showProgressBars = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -396,6 +420,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.advanceNotice = tonumber(key)
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -412,6 +437,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.textToSpeech.enableAtAdvanceNotice = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -427,6 +453,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.textToSpeech.enableAtTime = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -443,6 +470,13 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.textToSpeech.voiceID = key
 			end,
+			enabled = function()
+				return AddOn.db.profile.preferences.reminder.enabled == true
+					and (
+						AddOn.db.profile.preferences.reminder.textToSpeech.enableAtTime
+						or AddOn.db.profile.preferences.reminder.textToSpeech.enableAtAdvanceNotice
+					)
+			end,
 			validate = function(key)
 				return true
 			end,
@@ -457,6 +491,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.textToSpeech.volume = tonumber(key)
+			end,
+			enabled = function()
+				return AddOn.db.profile.preferences.reminder.enabled == true
+					and (
+						AddOn.db.profile.preferences.reminder.textToSpeech.enableAtTime
+						or AddOn.db.profile.preferences.reminder.textToSpeech.enableAtAdvanceNotice
+					)
 			end,
 			validate = function(key)
 				local valid = false
@@ -481,6 +522,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.sound.enableAtAdvanceNotice = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -498,6 +540,10 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.sound.advanceNoticeSound = key
 			end,
+			enabled = function()
+				return AddOn.db.profile.preferences.reminder.enabled == true
+					and AddOn.db.profile.preferences.reminder.sound.enableAtAdvanceNotice == true
+			end,
 			validate = function(key)
 				return true
 			end,
@@ -513,6 +559,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				AddOn.db.profile.preferences.reminder.sound.enableAtTime = key
 			end,
+			enabled = enableReminderOption,
 			validate = function(key)
 				return true
 			end,
@@ -528,11 +575,11 @@ function Private:CreateOptionsMenu()
 				return AddOn.db.profile.preferences.reminder.sound.atSound
 			end,
 			set = function(key)
-				print(key)
 				AddOn.db.profile.preferences.reminder.sound.atSound = key
 			end,
 			enabled = function()
-				return AddOn.db.profile.preferences.reminder.sound.enableAtTime == true
+				return AddOn.db.profile.preferences.reminder.enabled == true
+					and AddOn.db.profile.preferences.reminder.sound.enableAtTime == true
 			end,
 			validate = function(key)
 				return true

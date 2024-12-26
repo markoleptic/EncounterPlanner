@@ -396,7 +396,7 @@ local function CreateAssignmentEditor()
 	local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 	assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 	assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
-	assignmentEditor.spellAssignmentDropdown:SetItemDisabled("Recent", #AddOn.db.profile.recentSpellAssignments == 0)
+	assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments ~= 0)
 	assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 		"Recent",
 		AddOn.db.profile.recentSpellAssignments

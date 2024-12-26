@@ -26,6 +26,9 @@ local indentWidth = 26
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local labelTextColor = { 1, 0.82, 0, 1 }
+local tooltipTitleColor = { 1, 0.82, 0 }
+local tooltipTextColor = { 1, 1, 1 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -60,9 +63,24 @@ local function handleRadioButtonToggled(radioButton, radioButtonGroup)
 	end
 end
 
+local function Refresh(refreshMap)
+	for _, tab in pairs(refreshMap) do
+		tab.widget:SetEnabled(tab.enabled())
+	end
+end
+
+local function ShowTooltip(frame, label, description)
+	tooltip:SetOwner(frame, "ANCHOR_TOP")
+	tooltip:SetText(label, 1, 0.82, 0, true)
+	if type(description) == "string" then
+		tooltip:AddLine(description, 1, 1, 1, true)
+	end
+	tooltip:Show()
+end
+
 ---@param option EPSettingOption
 ---@return EPContainer
-local function CreateOptionWidget(option)
+local function CreateOptionWidget(option, refreshMap)
 	local container = AceGUI:Create("EPContainer")
 	container:SetLayout("EPVerticalLayout")
 	container:SetSpacing(0, spacingBetweenLabelAndWidget)
@@ -78,20 +96,20 @@ local function CreateOptionWidget(option)
 		checkBox:SetFullWidth(true)
 		checkBox:SetText(option.label)
 		checkBox:SetChecked(option.get() == true)
+		if option.enabled then
+			checkBox:SetEnabled(option.enabled())
+			tinsert(refreshMap, { widget = checkBox, enabled = option.enabled })
+		end
 		checkBox:SetCallback("OnValueChanged", function(_, _, checked)
 			if checked then
 				option.set(true)
 			else
 				option.set(false)
 			end
+			Refresh(refreshMap)
 		end)
 		checkBox.button:SetCallback("OnEnter", function()
-			tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
-			tooltip:SetText(option.label, 1, 0.82, 0, true)
-			if type(option.description) == "string" then
-				tooltip:AddLine(option.description, 1, 1, 1, true)
-			end
-			tooltip:Show()
+			ShowTooltip(checkBox.frame, option.label, option.description)
 		end)
 		checkBox.button:SetCallback("OnLeave", function()
 			tooltip:Hide()
@@ -103,12 +121,16 @@ local function CreateOptionWidget(option)
 		label:SetFontSize(optionLabelFontSize)
 		label:SetFullWidth(true)
 		label:SetFrameHeightFromText()
-		label.text:SetTextColor(1, 0.82, 0, 1)
+		label.text:SetTextColor(unpack(labelTextColor))
 		tinsert(containerChildren, label)
 
 		if option.type == "dropdown" then
 			local dropdown = AceGUI:Create("EPDropdown")
 			dropdown:SetFullWidth(true)
+			if option.enabled then
+				dropdown:SetEnabled(option.enabled())
+				tinsert(refreshMap, { widget = dropdown, enabled = option.enabled })
+			end
 			dropdown:SetCallback("OnValueChanged", function(_, _, value, _)
 				local valid, valueToRevertTo = option.validate(value)
 				if not valid and valueToRevertTo then
@@ -117,19 +139,15 @@ local function CreateOptionWidget(option)
 				else
 					option.set(value)
 				end
+				Refresh(refreshMap)
 			end)
 			dropdown:AddItems(option.values, "EPDropdownItemToggle")
 			dropdown:SetValue(option.get())
+			dropdown:SetCallback("OnEnter", function()
+				ShowTooltip(dropdown.frame, option.label, option.description)
+			end)
 			dropdown:SetCallback("OnLeave", function()
 				tooltip:Hide()
-			end)
-			dropdown:SetCallback("OnEnter", function()
-				tooltip:SetOwner(dropdown.frame, "ANCHOR_TOP")
-				tooltip:SetText(option.label, 1, 0.82, 0, true)
-				if type(option.description) == "string" then
-					tooltip:AddLine(option.description, 1, 1, 1, true)
-				end
-				tooltip:Show()
 			end)
 			tinsert(containerChildren, dropdown)
 		elseif option.type == "radioButtonGroup" then
@@ -150,26 +168,30 @@ local function CreateOptionWidget(option)
 				tinsert(containerChildren, radioButtonGroup)
 			end
 			for _, child in ipairs(radioButtonGroup.children) do
+				if option.enabled then
+					child:SetEnabled(option.enabled())
+					tinsert(refreshMap, { widget = child, enabled = option.enabled })
+				end
 				child:SetCallback("Toggled", function(radioButton, _, _)
 					handleRadioButtonToggled(radioButton, radioButtonGroup)
 					local value = radioButton:GetUserData("key")
 					option.set(value)
+					Refresh(refreshMap)
+				end)
+				child:SetCallback("OnEnter", function()
+					ShowTooltip(radioButtonGroup.frame, option.label, option.description)
 				end)
 				child:SetCallback("OnLeave", function()
 					tooltip:Hide()
-				end)
-				child:SetCallback("OnEnter", function()
-					tooltip:SetOwner(radioButtonGroup.frame --[[@as Frame]], "ANCHOR_TOP")
-					tooltip:SetText(option.label, 1, 0.82, 0, true)
-					if type(option.description) == "string" then
-						tooltip:AddLine(option.description, 1, 1, 1, true)
-					end
-					tooltip:Show()
 				end)
 			end
 		elseif option.type == "lineEdit" then
 			local lineEdit = AceGUI:Create("EPLineEdit")
 			lineEdit:SetFullWidth(true)
+			if option.enabled then
+				lineEdit:SetEnabled(option.enabled())
+				tinsert(refreshMap, { widget = lineEdit, enabled = option.enabled })
+			end
 			lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 				local valid, valueToRevertTo = option.validate(value)
 				if not valid and valueToRevertTo then
@@ -178,18 +200,14 @@ local function CreateOptionWidget(option)
 				else
 					option.set(value)
 				end
+				Refresh(refreshMap)
 			end)
 			lineEdit:SetText(option.get())
 			lineEdit:SetCallback("OnLeave", function()
 				tooltip:Hide()
 			end)
 			lineEdit:SetCallback("OnEnter", function()
-				tooltip:SetOwner(lineEdit.frame, "ANCHOR_TOP")
-				tooltip:SetText(option.label, 1, 0.82, 0, true)
-				if type(option.description) == "string" then
-					tooltip:AddLine(option.description, 1, 1, 1, true)
-				end
-				tooltip:Show()
+				ShowTooltip(lineEdit.frame, option.label, option.description)
 			end)
 			tinsert(containerChildren, lineEdit)
 		end
@@ -210,11 +228,12 @@ local function PopulateActiveTab(self, tab)
 	self.activeTab = tab
 	self.activeContainer:ReleaseChildren()
 	local activeContainerChildren = {}
+	local refreshMap = {}
 
 	if self.tabCategories[tab] then
 		for index, option in ipairs(self.optionTabs[tab]) do
 			if not option.category then
-				tinsert(activeContainerChildren, CreateOptionWidget(option))
+				tinsert(activeContainerChildren, CreateOptionWidget(option, refreshMap))
 				if index ~= #self.optionTabs[tab] then
 					local spacer = AceGUI:Create("EPSpacer")
 					spacer:SetHeight(spacingBetweenOptions)
@@ -241,7 +260,7 @@ local function PopulateActiveTab(self, tab)
 			local categoryContainerChildren = {}
 			for _, option in ipairs(self.optionTabs[tab]) do
 				if option.category == category then
-					tinsert(categoryContainerChildren, CreateOptionWidget(option))
+					tinsert(categoryContainerChildren, CreateOptionWidget(option, refreshMap))
 				end
 			end
 
@@ -259,7 +278,7 @@ local function PopulateActiveTab(self, tab)
 		end
 	else
 		for index, option in ipairs(self.optionTabs[tab]) do
-			tinsert(activeContainerChildren, CreateOptionWidget(option))
+			tinsert(activeContainerChildren, CreateOptionWidget(option, refreshMap))
 			if index ~= #self.optionTabs[tab] then
 				local spacer = AceGUI:Create("EPSpacer")
 				spacer:SetHeight(spacingBetweenOptions)

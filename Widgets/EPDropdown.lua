@@ -15,6 +15,7 @@ local type = type
 local unpack = unpack
 
 local textOffsetX = 4
+local defaultHorizontalItemPadding = 4
 local fontSize = 14
 local defaultDropdownItemHeight = 24
 local minimumPulloutWidth = 40
@@ -25,6 +26,9 @@ local dropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local dropdownButtonCoverColor = { 0.25, 0.25, 0.5, 0.5 }
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
+local defaultDropdownWidth = 200
+local defaultPulloutWidth = 200
+local defaultMaxItems = 13
 
 local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -82,8 +86,6 @@ do
 
 	local Type = "EPDropdownPullout"
 	local Version = 1
-	local defaultWidth = 200
-	local defaultMaxItems = 13
 
 	---@param self EPDropdownPullout
 	local function OnAcquire(self)
@@ -304,7 +306,7 @@ do
 		frame:SetBackdropBorderColor(unpack(pulloutBackdropBorderColor))
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
-		frame:SetWidth(defaultWidth)
+		frame:SetWidth(defaultPulloutWidth)
 		frame:SetHeight(defaultDropdownItemHeight)
 
 		local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
@@ -315,7 +317,7 @@ do
 		scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 
 		local itemFrame = CreateFrame("Frame", Type .. "ItemFrame" .. count, scrollFrame)
-		itemFrame:SetWidth(defaultWidth)
+		itemFrame:SetWidth(defaultPulloutWidth)
 		itemFrame:SetToplevel(true)
 		itemFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 		scrollFrame:SetScrollChild(itemFrame)
@@ -542,7 +544,7 @@ do
 	---@param self EPDropdown
 	local function OnAcquire(self)
 		self.showHighlight = false
-		self.itemHorizontalPadding = 4
+		self.itemHorizontalPadding = defaultHorizontalItemPadding
 		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
@@ -556,9 +558,10 @@ do
 		self:SetItemTextFontSize(fontSize)
 		self:SetTextCentered(false)
 		self:SetHeight(self.dropdownItemHeight)
-		self:SetWidth(200)
+		self:SetWidth(defaultDropdownWidth)
 		self:SetPulloutWidth(nil)
 		self:SetButtonVisibility(true)
+		self:SetEnabled(true)
 		self.frame:Show()
 	end
 
@@ -932,6 +935,8 @@ do
 		button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+		button:SetDisabledTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+		button:GetDisabledTexture():SetVertexColor(unpack(disabledTextColor))
 
 		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)
 		buttonCover:SetFrameLevel(button:GetFrameLevel() + 1)

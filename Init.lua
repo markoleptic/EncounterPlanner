@@ -449,17 +449,18 @@ end
 ---@field atSound string
 
 ---@class EncounterPlannerReminderPreferences
+---@field enabled boolean
+---@field onlyShowMe boolean
+---@field cancelIfAlreadyCasted boolean
+---@field enableProgressBars boolean
+---@field enableMessages boolean
+---@field advanceNotice number
 ---@field point AnchorPoint
 ---@field relativeTo string
 ---@field relativePoint AnchorPoint
 ---@field x number
 ---@field y number
 ---@field growDown boolean
----@field advanceNotice number
----@field cancelIfAlreadyCasted boolean
----@field enableProgressBars boolean
----@field enableMessages boolean
----@field onlyShowMe boolean
 ---@field textToSpeech EncounterPlannerTextToSpeechPreferences
 ---@field sound EncounterPlannerSoundPreferences
 
@@ -500,17 +501,18 @@ local defaults = {
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,
 			reminder = {
+				enabled = true,
+				onlyShowMe = true,
+				cancelIfAlreadyCasted = true,
+				enableProgressBars = true,
+				enableMessages = true,
+				advanceNotice = 10.0,
 				point = "CENTER",
 				relativeTo = "UIParent",
 				relativePoint = "CENTER",
 				x = 0,
 				y = 300,
 				growDown = false,
-				advanceNotice = 10.0,
-				cancelIfAlreadyCasted = true,
-				enableProgressBars = true,
-				enableMessages = true,
-				onlyShowMe = true,
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
 					enableAtTime = false,
