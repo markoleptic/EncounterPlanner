@@ -3,13 +3,17 @@ local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 
 local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local windowBarHeight = 30
 local defaultPadding = 10
 local padding = { top = 10, right = 10, bottom = 10, left = 10 }
+local backdropColor = { 0, 0, 0, 0.9 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -63,7 +67,7 @@ local function OnAcquire(self)
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetBackdropColor(unpack(backdropColor))
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
@@ -75,7 +79,7 @@ local function OnAcquire(self)
 	self.settingsButton:SetIconPadding(2, 2)
 	self.settingsButton:SetWidth(buttonSize)
 	self.settingsButton:SetHeight(buttonSize)
-	self.settingsButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.settingsButton:SetBackdropColor(unpack(backdropColor))
 	self.settingsButton.frame:SetParent(self.frame)
 	self.settingsButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT", -edgeSize, 0)
 	self.settingsButton:SetCallback("Clicked", function()
@@ -87,7 +91,7 @@ local function OnAcquire(self)
 	self.collapseAllButton:SetIconPadding(2, 2)
 	self.collapseAllButton:SetWidth(buttonSize)
 	self.collapseAllButton:SetHeight(buttonSize)
-	self.collapseAllButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.collapseAllButton:SetBackdropColor(unpack(backdropColor))
 	self.collapseAllButton.frame:SetParent(self.frame)
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
 	self.collapseAllButton:SetCallback("Clicked", function()
@@ -99,7 +103,7 @@ local function OnAcquire(self)
 	self.expandAllButton:SetIconPadding(2, 2)
 	self.expandAllButton:SetWidth(buttonSize)
 	self.expandAllButton:SetHeight(buttonSize)
-	self.expandAllButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.expandAllButton:SetBackdropColor(unpack(backdropColor))
 	self.expandAllButton.frame:SetParent(self.frame)
 	self.expandAllButton.frame:SetPoint("LEFT", self.collapseAllButton.frame, "RIGHT", edgeSize, 0)
 	self.expandAllButton:SetCallback("Clicked", function()
@@ -173,8 +177,8 @@ local function Constructor()
 	frame:SetResizable(true)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 0.9)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
@@ -186,8 +190,8 @@ local function Constructor()
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0, 0, 0, 0.9)
-	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	windowBar:SetBackdropColor(unpack(backdropColor))
+	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText("Encounter Planner")

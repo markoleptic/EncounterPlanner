@@ -4,10 +4,19 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 
 local defaultFrameHeight = 24
 local defaultFrameWidth = 100
-local padding = { x = 2, y = 2 }
+local spacingBetweenCheckAndLabel = 4
+local buttonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0, 0.5 }
+local buttonBackdropColor = { 0, 0, 0, 0 }
+local checkBackdropColor = { 0, 0, 0, 0 }
+local checkBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
+local textColor = { 1, 0.82, 0, 1 }
+local checkBackgroundPadding = 2
+local buttonPadding = 1
+local defaultFontSize = 14
 
 local checkBackdrop = {
 	bgFile = nil,
@@ -22,43 +31,38 @@ local checkBackdrop = {
 ---@field label EPLabel
 ---@field button EPButton
 ---@field type string
----@field disabled boolean
+---@field enabled boolean
 ---@field checked boolean
-
----@param self EPCheckBox
-local function SetDisabled(self, disable)
-	self.disabled = disable
-	self.button:SetDisabled(disable)
-end
+---@field checkBackground Frame|BackdropTemplate|table
 
 ---@param self EPCheckBox
 local function OnAcquire(self)
-	self.checked = true
-
 	self.button = AceGUI:Create("EPButton")
 	self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])
-	self.button.frame:SetPoint("TOPLEFT", 1, -1)
-	self.button.frame:SetPoint("BOTTOMRIGHT", -1, 1)
-	self.button:SetWidth(defaultFrameHeight - 6)
-	self.button:SetBackdropColor(0, 0, 0, 0)
-	self.button:SetColor(74 / 255.0, 174 / 255.0, 242 / 255.0, 0.5)
+	self.button.frame:SetPoint("TOPLEFT", buttonPadding, -buttonPadding)
+	self.button.frame:SetPoint("BOTTOMRIGHT", -buttonPadding, buttonPadding)
+	self.button:SetWidth(defaultFrameHeight - 2 * checkBackgroundPadding - 2 * buttonPadding)
+	self.button:SetBackdropColor(unpack(buttonBackdropColor))
+	self.button:SetColor(unpack(buttonColor))
 	self.button:SetCallback("Clicked", function()
-		if not self.disabled then
+		if self.enabled then
 			self:SetChecked(not self.checked)
 			self:Fire("OnValueChanged", self.checked)
 		end
 	end)
+
 	self.label = AceGUI:Create("EPLabel")
-	self.label.frame:SetParent(self.frame --[[@as Frame]])
-	self.label.frame:SetPoint("LEFT", self.checkBackground, "RIGHT", 4, 0)
+	self.label.frame:SetParent(self.frame)
+	self.label.frame:SetPoint("LEFT", self.checkBackground, "RIGHT", spacingBetweenCheckAndLabel, 0)
 	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
 	self.label:SetHeight(defaultFrameHeight)
-	self.label:SetFontSize(14)
-	self.label.text:SetTextColor(1, 0.82, 0, 1)
+	self.label:SetFontSize(defaultFontSize)
+	self.label.text:SetTextColor(unpack(textColor))
 
+	self:SetEnabled(true)
+	self:SetChecked(true)
 	self.frame:Show()
-	self:SetDisabled(false)
 end
 
 ---@param self EPCheckBox
@@ -68,6 +72,14 @@ local function OnRelease(self)
 	self.button:Release()
 	self.button = nil
 	self.checked = nil
+end
+
+---@param self EPCheckBox
+---@param enabled boolean
+local function SetEnabled(self, enabled)
+	self.enabled = enabled
+	self.label:SetEnabled(enabled)
+	self.button:SetEnabled(enabled)
 end
 
 ---@param self EPCheckBox
@@ -105,17 +117,17 @@ local function Constructor()
 
 	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
 	checkBackground:SetBackdrop(checkBackdrop)
-	checkBackground:SetBackdropColor(0, 0, 0, 0)
-	checkBackground:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
-	checkBackground:SetPoint("TOPLEFT", 2, -2)
-	checkBackground:SetPoint("BOTTOMLEFT", 2, 2)
-	checkBackground:SetWidth(defaultFrameHeight - 4)
+	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
+	checkBackground:SetBackdropBorderColor(unpack(checkBackdropBorderColor))
+	checkBackground:SetPoint("TOPLEFT", checkBackgroundPadding, -checkBackgroundPadding)
+	checkBackground:SetPoint("BOTTOMLEFT", checkBackgroundPadding, checkBackgroundPadding)
+	checkBackground:SetWidth(defaultFrameHeight - 2 * checkBackgroundPadding)
 
 	---@class EPCheckBox
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		SetDisabled = SetDisabled,
+		SetEnabled = SetEnabled,
 		SetText = SetText,
 		LayoutFinished = LayoutFinished,
 		SetChecked = SetChecked,

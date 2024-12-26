@@ -17,6 +17,9 @@ local mainFrameWidth = 500
 local mainFrameHeight = 500
 local windowBarHeight = 28
 local contentFramePadding = { x = 10, y = 10 }
+local backdropColor = { 0, 0, 0, 1 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -292,7 +295,7 @@ local function OnAcquire(self)
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
@@ -463,8 +466,8 @@ local function Constructor()
 	frame:SetMovable(true)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 1)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
@@ -490,8 +493,8 @@ local function Constructor()
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0, 0, 0, 1)
-	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	windowBar:SetBackdropColor(unpack(backdropColor))
+	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText("Roster Editor")

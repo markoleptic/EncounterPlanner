@@ -5,11 +5,16 @@ local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local GetSpellInfo = C_Spell.GetSpellInfo
+local unpack = unpack
 local pi = math.pi
+local piOverTwo = pi / 2
 
 local frameWidth = 200
 local frameHeight = 30
 local padding = { x = 2, y = 2 }
+local backdropColor = { 0, 0, 0, 0.9 }
+local checkBackdropColor = { 0, 0, 0, 0 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local listItemBackdrop = {
 	bgFile = nil,
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -26,12 +31,6 @@ local checkBackdrop = {
 	edgeSize = 1,
 }
 
-local function HandleCollapseButtonMouseUp(frame)
-	local self = frame.obj
-	self:SetCollapsed(not self.collapsed)
-	self:Fire("CollapseButtonToggled", self.collapsed)
-end
-
 ---@class EPAbilityEntry : AceGUIWidget
 ---@field frame table|BackdropTemplate|Frame
 ---@field type string
@@ -40,7 +39,7 @@ end
 ---@field check EPButton
 ---@field checkBackground table|BackdropTemplate|Frame
 ---@field collapseButton Button|table
----@field disabled boolean
+---@field enabled boolean
 ---@field checked boolean
 ---@field key string|table|nil
 ---@field collapsed boolean
@@ -63,15 +62,15 @@ local function OnAcquire(self)
 	self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
 	self.check:SetWidth(checkSize)
 	self.check:SetHeight(checkSize)
-	self.check:SetBackdropColor(0, 0, 0, 0)
+	self.check:SetBackdropColor(unpack(checkBackdropColor))
 	self.check:SetCallback("Clicked", function()
-		if not self.disabled then
+		if self.enabled then
 			self:ToggleChecked()
 			self:Fire("OnValueChanged", self.checked)
 		end
 	end)
 
-	self:SetDisabled(false)
+	self:SetEnabled(true)
 	self:SetChecked(true)
 	self:SetCollapsible(false)
 	self:SetCollapsed(false)
@@ -88,10 +87,10 @@ local function OnRelease(self)
 end
 
 ---@param self EPAbilityEntry
----@param disabled boolean
-local function SetDisabled(self, disabled)
-	self.disabled = disabled
-	self.label:SetDisabled(disabled)
+---@param enabled boolean
+local function SetEnabled(self, enabled)
+	self.enabled = enabled
+	self.label:SetEnabled(enabled)
 end
 
 ---@param self EPAbilityEntry
@@ -186,7 +185,10 @@ local function SetCollapsible(self, collapsible)
 	if collapsible then
 		self.label.frame:SetPoint("LEFT", padding.x + (frameHeight - 2 * padding.y), 0)
 		self.collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
-		self.collapseButton:SetScript("OnClick", HandleCollapseButtonMouseUp)
+		self.collapseButton:SetScript("OnClick", function()
+			self:SetCollapsed(not self.collapsed)
+			self:Fire("CollapseButtonToggled", self.collapsed)
+		end)
 		self.collapseButton:Show()
 	else
 		self.label.frame:SetPoint("LEFT")
@@ -201,9 +203,9 @@ end
 local function SetCollapsed(self, collapsed)
 	self.collapsed = collapsed
 	if collapsed then
-		self.collapseButton:GetNormalTexture():SetRotation(pi / 2)
-		self.collapseButton:GetPushedTexture():SetRotation(pi / 2)
-		self.collapseButton:GetHighlightTexture():SetRotation(pi / 2)
+		self.collapseButton:GetNormalTexture():SetRotation(piOverTwo)
+		self.collapseButton:GetPushedTexture():SetRotation(piOverTwo)
+		self.collapseButton:GetHighlightTexture():SetRotation(piOverTwo)
 	else
 		self.collapseButton:GetNormalTexture():SetRotation(0)
 		self.collapseButton:GetPushedTexture():SetRotation(0)
@@ -216,8 +218,8 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(listItemBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 0.9)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 
@@ -232,8 +234,8 @@ local function Constructor()
 
 	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
 	checkBackground:SetBackdrop(checkBackdrop)
-	checkBackground:SetBackdropColor(0, 0, 0, 0)
-	checkBackground:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
+	checkBackground:SetBackdropBorderColor(unpack(backdropBorderColor))
 	checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
 	checkBackground:SetPoint("RIGHT", -padding.x, 0)
 
@@ -241,7 +243,7 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		SetDisabled = SetDisabled,
+		SetEnabled = SetEnabled,
 		SetCheckedTexture = SetCheckedTexture,
 		SetChecked = SetChecked,
 		GetChecked = GetChecked,
@@ -261,9 +263,6 @@ local function Constructor()
 		checkBackground = checkBackground,
 		collapseButton = button,
 	}
-
-	frame.obj = widget
-	button.obj = widget
 
 	return AceGUI:RegisterAsWidget(widget)
 end

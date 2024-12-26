@@ -61,6 +61,8 @@ local invalidTextureColor = { 0.8, 0.1, 0.1, 0.4 }
 local tickFontSize = 12
 local tooltip = EncounterPlanner.tooltip
 local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
+local scrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
+local scrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local colors = {
 	{ 255, 87, 51, 1 },
 	{ 51, 255, 87, 1 },
@@ -2472,7 +2474,7 @@ local function Constructor()
 
 	local scrollBarBackground = horizontalScrollBar:CreateTexture(Type .. "ScrollBarBackground" .. count, "BACKGROUND")
 	scrollBarBackground:SetAllPoints()
-	scrollBarBackground:SetColorTexture(0.25, 0.25, 0.25, 1)
+	scrollBarBackground:SetColorTexture(unpack(scrollBackgroundColor))
 
 	local thumb = CreateFrame("Button", Type .. "ScrollBarThumb" .. count, horizontalScrollBar)
 	thumb:SetPoint("LEFT", thumbPadding.x, 0)
@@ -2482,7 +2484,7 @@ local function Constructor()
 
 	local thumbBackground = thumb:CreateTexture(Type .. "ScrollBarThumbBackground" .. count, "BACKGROUND")
 	thumbBackground:SetAllPoints()
-	thumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
+	thumbBackground:SetColorTexture(unpack(scrollThumbBackgroundColor))
 
 	---@class EPTimeline
 	local widget = {

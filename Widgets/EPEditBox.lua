@@ -5,10 +5,18 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 
 local defaultFrameHeight = 200
 local defaultFrameWidth = 400
 local windowBarHeight = 28
+local backdropColor = { 0, 0, 0, 1 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
+local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local okayButtonHeight = 24
+local resizerSize = 16
+local framePadding = 10
+local resizerOffset = { -6, 7 }
 local title = "Export as MRT Note"
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -51,7 +59,7 @@ local function OnAcquire(self)
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
 	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
@@ -108,20 +116,20 @@ local function ShowOkayButton(self, show, okayButtonText)
 			self.okayButton = AceGUI:Create("EPButton")
 			self.okayButton.frame:SetParent(self.frame)
 			self.okayButton:SetText(okayButtonText or "Okay")
-			self.okayButton:SetHeight(24)
+			self.okayButton:SetHeight(okayButtonHeight)
 			self.okayButton:SetWidthFromText()
 			self.okayButton:SetCallback("Clicked", function()
 				self:Fire("OkayButtonClicked")
 			end)
-			self.okayButton:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, 10)
+			self.okayButton:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
 		end
-		self.scrollFrame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, 10)
+		self.scrollFrame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, framePadding)
 	else
 		if self.okayButton then
 			self.okayButton:Release()
 		end
 		self.okayButton = nil
-		self.scrollFrame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, 10 + 16)
+		self.scrollFrame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding + resizerSize)
 	end
 end
 
@@ -139,8 +147,8 @@ local function Constructor()
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 1)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
 	frame:SetResizable(true)
@@ -151,8 +159,8 @@ local function Constructor()
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetHeight(windowBarHeight)
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0, 0, 0, 1)
-	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	windowBar:SetBackdropColor(unpack(backdropColor))
+	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
@@ -171,10 +179,10 @@ local function Constructor()
 	end)
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame, "UIPanelScrollFrameTemplate")
-	scrollFrame:SetPoint("LEFT", 10, 0)
-	scrollFrame:SetPoint("RIGHT", -32, 0)
-	scrollFrame:SetPoint("TOP", 0, -windowBarHeight - 10)
-	scrollFrame:SetPoint("BOTTOM", 0, 10 + 16)
+	scrollFrame:SetPoint("LEFT", framePadding, 0)
+	scrollFrame:SetPoint("RIGHT", -2 * resizerSize, 0)
+	scrollFrame:SetPoint("TOP", 0, -windowBarHeight - framePadding)
+	scrollFrame:SetPoint("BOTTOM", 0, framePadding + resizerSize)
 
 	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, scrollFrame)
 	editBox:SetSize(scrollFrame:GetSize())
@@ -184,8 +192,8 @@ local function Constructor()
 	scrollFrame:SetScrollChild(editBox)
 
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
-	resizer:SetPoint("BOTTOMRIGHT", -6, 7)
-	resizer:SetSize(16, 16)
+	resizer:SetPoint("BOTTOMRIGHT", unpack(resizerOffset))
+	resizer:SetSize(resizerSize, resizerSize)
 	resizer:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
 	resizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
 	resizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")

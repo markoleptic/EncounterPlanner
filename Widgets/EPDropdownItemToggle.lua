@@ -4,6 +4,7 @@ local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
 local select = select
+local unpack = unpack
 local pi = math.pi
 
 local textOffsetX = 4
@@ -15,6 +16,8 @@ local fontSize = 14
 local dropdownItemHeight = 24
 local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
+local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
+local enabledTextColor = { 1, 1, 1, 1 }
 
 local function FixLevels(parent, ...)
 	local i = 1
@@ -38,7 +41,7 @@ end
 ---@field text FontString
 ---@field check Texture
 ---@field childSelectedIndicator Texture
----@field disabled boolean
+---@field enabled boolean
 ---@field parent table|Frame
 ---@field specialOnEnter function
 
@@ -68,15 +71,15 @@ local function HandleItemBaseFrameLeave(frame)
 end
 
 ---@param self EPItemBase
----@param disabled boolean
-function EPItemBase.SetDisabled(self, disabled)
-	self.disabled = disabled
-	if disabled then
-		self.useHighlight = false
-		self.text:SetTextColor(0.5, 0.5, 0.5)
-	else
+---@param enabled boolean
+function EPItemBase.SetEnabled(self, enabled)
+	self.enabled = enabled
+	if enabled then
 		self.useHighlight = true
-		self.text:SetTextColor(1, 1, 1)
+		self.text:SetTextColor(unpack(enabledTextColor))
+	else
+		self.useHighlight = false
+		self.text:SetTextColor(unpack(disabledTextColor))
 	end
 end
 
@@ -88,7 +91,7 @@ end
 
 ---@param self EPItemBase
 function EPItemBase.OnRelease(self)
-	self:SetDisabled(false)
+	self:SetEnabled(true)
 	self.parentPullout = nil
 	self.frame:SetParent(nil)
 	self.frame:ClearAllPoints()
@@ -223,7 +226,7 @@ function EPItemBase.Create(type)
 		SetPullout = EPItemBase.SetPullout,
 		GetText = EPItemBase.GetText,
 		SetText = EPItemBase.SetText,
-		SetDisabled = EPItemBase.SetDisabled,
+		SetEnabled = EPItemBase.SetEnabled,
 		SetPoint = EPItemBase.SetPoint,
 		Show = EPItemBase.Show,
 		Hide = EPItemBase.Hide,
@@ -260,7 +263,7 @@ do
 
 	local function HandleFrameClick(frame, _)
 		local self = frame.obj --[[@as EPDropdownItemToggle]]
-		if self.disabled then
+		if not self.enabled then
 			return
 		end
 		self.selected = not self.selected
@@ -349,7 +352,7 @@ do
 		else
 			self.highlight:Hide()
 		end
-		if not self.disabled and self.childPullout then
+		if self.enabled and self.childPullout then
 			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 0)
 		end
 	end

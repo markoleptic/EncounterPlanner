@@ -4,9 +4,14 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 
 local defaultFrameHeight = 24
 local defaultFrameWidth = 100
+local backdropColor = { 0, 0, 0, 0 }
+local hoverButtonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 }
+local iconColor = { 1, 1, 1, 1 }
+local selectedButtonColor = { 1, 1, 1 }
 local buttonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = nil,
@@ -116,8 +121,8 @@ local function OnAcquire(self)
 	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
 
 	self:SetIconPadding(2, 2)
-	self:SetBackdropColor(0, 0, 0, 0)
-	self:SetIconColor(1, 1, 1, 1)
+	self:SetBackdropColor(unpack(backdropColor))
+	self:SetIconColor(unpack(iconColor))
 	self:SetToggled(false)
 
 	self.button.icon:Show()
@@ -216,7 +221,7 @@ local function Constructor()
 	local button =
 		CreateFrame("Button", Type .. "Button" .. count, frame, BackdropTemplateMixin and "BackdropTemplate" or nil)
 	button:SetBackdrop(buttonBackdrop)
-	button:SetBackdropColor(0.25, 0.25, 0.25, 1)
+	button:SetBackdropColor(unpack(backdropColor))
 	button:RegisterForClicks("LeftButtonUp")
 	button:SetPoint("TOPLEFT")
 	button:SetPoint("BOTTOMLEFT")
@@ -262,8 +267,8 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		button = button,
-		blue = CreateColor(74 / 255.0, 174 / 255.0, 242 / 255.0),
-		white = CreateColor(1, 1, 1),
+		blue = CreateColor(unpack(hoverButtonColor)),
+		white = CreateColor(unpack(selectedButtonColor)),
 	}
 
 	button:SetScript("OnEnter", function()

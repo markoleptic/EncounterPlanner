@@ -8,6 +8,7 @@ local floor = math.floor
 local GetCursorPosition = GetCursorPosition
 local max = math.max
 local min = math.min
+local unpack = unpack
 
 local verticalPositionLineSubLevel = -8
 local verticalPositionLineColor = { 1, 0.82, 0, 1 }
@@ -17,6 +18,9 @@ local paddingBetweenTimelineAndScrollBar = 10
 local defaultListPadding = 4
 local listFrameWidth = 200
 local listTimelinePadding = 10
+local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
+local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
+local minThumbSize = 20
 
 ---@param self EPTimelineSection
 local function HandleVerticalThumbUpdate(self)
@@ -173,7 +177,7 @@ local function UpdateVerticalScroll(self)
 	local verticalScroll = self.scrollFrame:GetVerticalScroll()
 
 	local thumbHeight = (scrollFrameHeight / timelineHeight) * (scrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = max(thumbHeight, 20) -- Minimum size so it's always visible
+	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
 	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
 	self.thumb:SetHeight(thumbHeight)
 
@@ -261,7 +265,7 @@ local function Constructor()
 	local verticalScrollBarBackground =
 		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
 	verticalScrollBarBackground:SetAllPoints()
-	verticalScrollBarBackground:SetColorTexture(0.25, 0.25, 0.25, 1)
+	verticalScrollBarBackground:SetColorTexture(unpack(verticalScrollBackgroundColor))
 
 	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, verticalScrollBar)
 	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
@@ -271,7 +275,7 @@ local function Constructor()
 	local verticalThumbBackground =
 		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
 	verticalThumbBackground:SetAllPoints()
-	verticalThumbBackground:SetColorTexture(0.05, 0.05, 0.05, 1)
+	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
 
 	---@class EPTimelineSection
 	local widget = {

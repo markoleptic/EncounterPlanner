@@ -7,6 +7,7 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
 local tremove = tremove
+local unpack = unpack
 
 local frameWidth = 200
 local frameHeight = 200
@@ -14,6 +15,12 @@ local buttonFrameHeight = 28
 local windowBarHeight = 28
 local maxNumberOfRecentItems = 10
 local contentFramePadding = { x = 15, y = 15 }
+local backdropColor = { 0, 0, 0, 0.9 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
+local buttonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 }
+local containerSpacing = { 0, 2 }
+local closeButtonIconPadding = { 2, 2 }
+local buttonWidth = 75
 local title = "Assignment Editor"
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -227,7 +234,7 @@ local function OnAcquire(self)
 
 	self.assignmentTypeContainer = AceGUI:Create("EPContainer")
 	self.assignmentTypeContainer:SetLayout("EPVerticalLayout")
-	self.assignmentTypeContainer:SetSpacing(0, 2)
+	self.assignmentTypeContainer:SetSpacing(unpack(containerSpacing))
 	self.assignmentTypeContainer:SetFullWidth(true)
 	self.assignmentTypeLabel = AceGUI:Create("EPLabel")
 	self.assignmentTypeLabel:SetText("Assignment Trigger")
@@ -242,7 +249,7 @@ local function OnAcquire(self)
 
 	self.combatLogEventContainer = AceGUI:Create("EPContainer")
 	self.combatLogEventContainer:SetLayout("EPVerticalLayout")
-	self.combatLogEventContainer:SetSpacing(0, 2)
+	self.combatLogEventContainer:SetSpacing(unpack(containerSpacing))
 	self.combatLogEventContainer:SetFullWidth(true)
 	self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
 	self.combatLogEventSpellIDLabel:SetText("Combat Log Event Spell ID")
@@ -269,7 +276,7 @@ local function OnAcquire(self)
 
 	self.assigneeTypeContainer = AceGUI:Create("EPContainer")
 	self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
-	self.assigneeTypeContainer:SetSpacing(0, 2)
+	self.assigneeTypeContainer:SetSpacing(unpack(containerSpacing))
 	self.assigneeTypeContainer:SetFullWidth(true)
 	self.assigneeTypeLabel = AceGUI:Create("EPLabel")
 	self.assigneeTypeLabel:SetText("Assignment Type")
@@ -283,7 +290,7 @@ local function OnAcquire(self)
 
 	self.assigneeContainer = AceGUI:Create("EPContainer")
 	self.assigneeContainer:SetLayout("EPVerticalLayout")
-	self.assigneeContainer:SetSpacing(0, 2)
+	self.assigneeContainer:SetSpacing(unpack(containerSpacing))
 	self.assigneeContainer:SetFullWidth(true)
 	self.assigneeLabel = AceGUI:Create("EPLabel")
 	self.assigneeLabel:SetText("Person to Assign")
@@ -297,7 +304,7 @@ local function OnAcquire(self)
 
 	self.spellAssignmentContainer = AceGUI:Create("EPContainer")
 	self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
-	self.spellAssignmentContainer:SetSpacing(0, 2)
+	self.spellAssignmentContainer:SetSpacing(unpack(containerSpacing))
 	self.spellAssignmentContainer:SetFullWidth(true)
 	self.spellAssignmentLabel = AceGUI:Create("EPLabel")
 	self.spellAssignmentLabel:SetText("Spell Assignment")
@@ -308,12 +315,12 @@ local function OnAcquire(self)
 	self.spellAssignmentDropdown:SetCallback("OnValueChanged", HandleSpellAssignmentDropdownValueChanged)
 	self.spellAssignmentDropdown.obj = self
 	self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
-	self.spellAssignmentDropdown:SetItemDisabled("Recent", true)
+	self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
 	self.spellAssignmentContainer:AddChildren(self.spellAssignmentLabel, self.spellAssignmentDropdown)
 
 	self.timeContainer = AceGUI:Create("EPContainer")
 	self.timeContainer:SetLayout("EPVerticalLayout")
-	self.timeContainer:SetSpacing(0, 2)
+	self.timeContainer:SetSpacing(unpack(containerSpacing))
 	self.timeContainer:SetFullWidth(true)
 	self.timeLabel = AceGUI:Create("EPLabel")
 	self.timeLabel:SetText("Time")
@@ -327,7 +334,7 @@ local function OnAcquire(self)
 
 	self.optionalTextContainer = AceGUI:Create("EPContainer")
 	self.optionalTextContainer:SetLayout("EPVerticalLayout")
-	self.optionalTextContainer:SetSpacing(0, 2)
+	self.optionalTextContainer:SetSpacing(unpack(containerSpacing))
 	self.optionalTextContainer:SetFullWidth(true)
 	self.optionalTextLabel = AceGUI:Create("EPLabel")
 	self.optionalTextLabel:SetText("Assignment Text (Optional)")
@@ -341,7 +348,7 @@ local function OnAcquire(self)
 
 	self.targetContainer = AceGUI:Create("EPContainer")
 	self.targetContainer:SetLayout("EPVerticalLayout")
-	self.targetContainer:SetSpacing(0, 2)
+	self.targetContainer:SetSpacing(unpack(containerSpacing))
 	self.targetContainer:SetFullWidth(true)
 	self.targetLabel = AceGUI:Create("EPLabel")
 	self.targetLabel:SetText("Spell Assignment Target (Optional)")
@@ -355,7 +362,7 @@ local function OnAcquire(self)
 
 	self.previewContainer = AceGUI:Create("EPContainer")
 	self.previewContainer:SetLayout("EPVerticalLayout")
-	self.previewContainer:SetSpacing(0, 2)
+	self.previewContainer:SetSpacing(unpack(containerSpacing))
 	self.previewContainer:SetFullWidth(true)
 	local previewLabelLabel = AceGUI:Create("EPLabel")
 	previewLabelLabel:SetText("Preview")
@@ -383,8 +390,8 @@ local function OnAcquire(self)
 
 	self.okayButton = AceGUI:Create("EPButton")
 	self.okayButton:SetText("Okay")
-	self.okayButton:SetWidth(75)
-	self.okayButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.okayButton:SetWidth(buttonWidth)
+	self.okayButton:SetBackdropColor(unpack(backdropColor))
 	self.okayButton:SetCallback("Clicked", HandleOkayButtonClicked)
 	self.okayButton.frame:SetParent(self.buttonFrame)
 	self.okayButton:SetPoint("TOPRIGHT", self.buttonFrame, "TOPRIGHT", -edgeSize, -edgeSize)
@@ -393,8 +400,8 @@ local function OnAcquire(self)
 
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetText("Delete")
-	self.deleteButton:SetWidth(75)
-	self.deleteButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.deleteButton:SetWidth(buttonWidth)
+	self.deleteButton:SetBackdropColor(unpack(backdropColor))
 	self.deleteButton:SetCallback("Clicked", HandleDeleteButtonClicked)
 	self.deleteButton.frame:SetParent(self.buttonFrame)
 	self.deleteButton.frame:SetPoint("TOPLEFT", self.buttonFrame, "TOPLEFT", edgeSize, -edgeSize)
@@ -405,8 +412,8 @@ local function OnAcquire(self)
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetIconPadding(unpack(closeButtonIconPadding))
+	self.closeButton:SetBackdropColor(unpack(backdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
@@ -516,8 +523,8 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 0.9)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
@@ -527,8 +534,8 @@ local function Constructor()
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetHeight(windowBarHeight)
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0, 0, 0, 0.9)
-	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	windowBar:SetBackdropColor(unpack(backdropColor))
+	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
@@ -548,8 +555,8 @@ local function Constructor()
 
 	local buttonFrame = CreateFrame("Frame", Type .. "ButtonFrame" .. count, frame, "BackdropTemplate")
 	buttonFrame:SetBackdrop(buttonFrameBackdrop)
-	buttonFrame:SetBackdropColor(0.1, 0.1, 0.1, 1.0)
-	buttonFrame:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+	buttonFrame:SetBackdropColor(unpack(buttonFrameBackdropColor))
+	buttonFrame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	buttonFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
 	buttonFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 	buttonFrame:SetHeight(buttonFrameHeight)

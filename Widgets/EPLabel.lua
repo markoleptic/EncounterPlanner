@@ -5,12 +5,15 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 local tooltip = EncounterPlanner.tooltip
 local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
 
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultFontHeight = 14
+local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
+local enabledTextColor = { 1, 1, 1, 1 }
 local defaultIconPadding = { x = 2, y = 2 }
 local defaultTextPadding = { x = 0, y = 2 }
 
@@ -66,18 +69,19 @@ end
 ---@field highlight Texture
 ---@field icon Texture|nil
 ---@field spellID number|nil
----@field disabled boolean
+---@field enabled boolean
 ---@field showIcon boolean
 ---@field horizontalTextPadding number
 ---@field iconPadding table{x: number, y: number}
 
 ---@param self EPLabel
-local function SetDisabled(self, disable)
-	self.disabled = disable
-	if disable then
-		self.text:SetTextColor(0.5, 0.5, 0.5)
+---@param enabled boolean
+local function SetEnabled(self, enabled)
+	self.enabled = enabled
+	if enabled then
+		self.text:SetTextColor(unpack(enabledTextColor))
 	else
-		self.text:SetTextColor(1, 1, 1)
+		self.text:SetTextColor(unpack(disabledTextColor))
 	end
 end
 
@@ -91,7 +95,7 @@ local function OnAcquire(self)
 	self:SetHeight(defaultFrameHeight)
 	self:SetHorizontalTextAlignment("LEFT")
 	self:SetIcon(nil)
-	self:SetDisabled(false)
+	self:SetEnabled(true)
 	self.frame:Show()
 end
 
@@ -189,7 +193,7 @@ local function Constructor()
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		SetDisabled = SetDisabled,
+		SetEnabled = SetEnabled,
 		SetIcon = SetIcon,
 		SetText = SetText,
 		SetFontSize = SetFontSize,
@@ -204,13 +208,15 @@ local function Constructor()
 		spellID = nil,
 	}
 
-	frame.obj = widget
-
 	icon:SetScript("OnEnter", function()
-		HandleIconEnter(widget)
+		if widget.enabled then
+			HandleIconEnter(widget)
+		end
 	end)
 	icon:SetScript("OnLeave", function()
-		HandleIconLeave(widget)
+		if widget.enabled then
+			HandleIconLeave(widget)
+		end
 	end)
 
 	return AceGUI:RegisterAsWidget(widget)

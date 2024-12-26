@@ -8,7 +8,14 @@ local ClearCursor = ClearCursor
 local CreateFrame = CreateFrame
 local GetSpellInfo = C_Spell.GetSpellInfo
 local tostring = tostring
+local unpack = unpack
 
+local backdropColor = { 0.1, 0.1, 0.1, 1 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
+local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
+local enabledTextColor = { 1, 1, 1, 1 }
+local textInsets = { 4, 4, 0, 0 }
+local defaultFontSize = 14
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local backdrop = {
@@ -23,7 +30,7 @@ local backdrop = {
 ---@field frame table|Frame
 ---@field type string
 ---@field editBox EditBox|BackdropTemplate
----@field disabled boolean
+---@field enabled boolean
 ---@field lastText string
 ---@field obj any
 
@@ -93,7 +100,7 @@ end
 ---@param self EPLineEdit
 local function OnAcquire(self)
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
-	self:SetDisabled(false)
+	self:SetEnabled(true)
 	self:SetText()
 	self:SetMaxLetters(256)
 end
@@ -104,15 +111,15 @@ local function OnRelease(self)
 end
 
 ---@param self EPLineEdit
-local function SetDisabled(self, disabled)
-	self.disabled = disabled
-	if disabled then
+local function SetEnabled(self, enabled)
+	self.enabled = enabled
+	if enabled then
+		self.editBox:EnableMouse(true)
+		self.editBox:SetTextColor(unpack(enabledTextColor))
+	else
 		self.editBox:EnableMouse(false)
 		self.editBox:ClearFocus()
-		self.editBox:SetTextColor(0.5, 0.5, 0.5)
-	else
-		self.editBox:EnableMouse(true)
-		self.editBox:SetTextColor(1, 1, 1)
+		self.editBox:SetTextColor(unpack(disabledTextColor))
 	end
 end
 
@@ -155,8 +162,8 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(backdrop)
-	frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 
 	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
@@ -174,17 +181,17 @@ local function Constructor()
 	editBox:SetMaxLetters(256)
 	editBox:SetPoint("TOPLEFT")
 	editBox:SetPoint("BOTTOMRIGHT")
-	editBox:SetTextInsets(4, 4, 0, 0)
+	editBox:SetTextInsets(unpack(textInsets))
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		editBox:SetFont(fPath, 14, "")
+		editBox:SetFont(fPath, defaultFontSize, "")
 	end
 
 	---@class EPLineEdit
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		SetDisabled = SetDisabled,
+		SetEnabled = SetEnabled,
 		SetText = SetText,
 		GetText = GetText,
 		SetMaxLetters = SetMaxLetters,

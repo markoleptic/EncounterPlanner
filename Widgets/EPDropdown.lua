@@ -1,5 +1,6 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
 local abs = math.abs
 local CreateFrame = CreateFrame
 local floor = math.floor
@@ -11,11 +12,20 @@ local select = select
 local tinsert = tinsert
 local tremove = tremove
 local type = type
+local unpack = unpack
 
 local textOffsetX = 4
 local fontSize = 14
 local defaultDropdownItemHeight = 24
 local minimumPulloutWidth = 40
+local pulloutBackdropColor = { 0.1, 0.1, 0.1, 1 }
+local pulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local dropdownBackdropColor = { 0.1, 0.1, 0.1, 1 }
+local dropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local dropdownButtonCoverColor = { 0.25, 0.25, 0.5, 0.5 }
+local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
+local enabledTextColor = { 1, 1, 1, 1 }
+
 local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -75,16 +85,6 @@ do
 	local defaultWidth = 200
 	local defaultMaxItems = 13
 
-	---@param item EPDropdownItemToggle|EPDropdownItemMenu
-	local function OnEnter(item)
-		local self = item.parentPullout
-		for k, v in ipairs(self.items) do
-			if v.CloseMenu and v ~= item then
-				v--[[@as EPDropdownItemMenu]]:CloseMenu()
-			end
-		end
-	end
-
 	---@param self EPDropdownPullout
 	local function OnAcquire(self)
 		self.dropdownItemHeight = defaultDropdownItemHeight
@@ -99,6 +99,16 @@ do
 		self.scrollIndicatorFrame:Hide()
 		self.frame:ClearAllPoints()
 		self.frame:Hide()
+	end
+
+	---@param item EPDropdownItemToggle|EPDropdownItemMenu
+	local function OnEnter(item)
+		local self = item.parentPullout
+		for k, v in ipairs(self.items) do
+			if v.CloseMenu and v ~= item then
+				v--[[@as EPDropdownItemMenu]]:CloseMenu()
+			end
+		end
 	end
 
 	---@param self EPDropdownPullout
@@ -290,8 +300,8 @@ do
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(pulloutBackdrop)
-		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+		frame:SetBackdropColor(unpack(pulloutBackdropColor))
+		frame:SetBackdropBorderColor(unpack(pulloutBackdropBorderColor))
 		frame:SetFrameStrata("FULLSCREEN_DIALOG")
 		frame:SetClampedToScreen(true)
 		frame:SetWidth(defaultWidth)
@@ -314,8 +324,8 @@ do
 		local scrollIndicatorFrame =
 			CreateFrame("Frame", Type .. "ScrollIndicatorFrame" .. count, frame, "BackdropTemplate")
 		scrollIndicatorFrame:SetBackdrop(pulloutBackdrop)
-		scrollIndicatorFrame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-		scrollIndicatorFrame:SetBackdropBorderColor(0.1, 0.1, 0.1, 1)
+		scrollIndicatorFrame:SetBackdropColor(unpack(pulloutBackdropColor))
+		scrollIndicatorFrame:SetBackdropBorderColor(unpack(pulloutBackdropColor))
 		local scrollIndicator = scrollIndicatorFrame:CreateTexture(nil, "OVERLAY")
 		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 1, 1)
 		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
@@ -374,6 +384,7 @@ do
 	---@field count integer
 	---@field buttonCover Button
 	---@field button Button
+	---@field enabled boolean
 	---@field pullout EPDropdownPullout
 	---@field value any|nil
 	---@field open boolean|nil
@@ -560,7 +571,7 @@ do
 		self.pullout = nil
 
 		self:SetText("")
-		self:SetDisabled(false)
+		self:SetEnabled(true)
 		self:SetMultiselect(false)
 
 		self.value = nil
@@ -572,17 +583,17 @@ do
 	end
 
 	---@param self EPDropdown
-	---@param disabled any
-	local function SetDisabled(self, disabled)
-		self.disabled = disabled
-		if disabled then
-			self.text:SetTextColor(0.5, 0.5, 0.5)
-			self.button:Disable()
-			self.buttonCover:Disable()
-		else
+	---@param enabled boolean
+	local function SetEnabled(self, enabled)
+		self.enabled = enabled
+		if enabled then
 			self.button:Enable()
 			self.buttonCover:Enable()
-			self.text:SetTextColor(1, 1, 1)
+			self.text:SetTextColor(unpack(enabledTextColor))
+		else
+			self.button:Disable()
+			self.buttonCover:Disable()
+			self.text:SetTextColor(unpack(disabledTextColor))
 		end
 	end
 
@@ -652,11 +663,11 @@ do
 
 	---@param self EPDropdown
 	---@param itemValue any
-	---@param disabled any
-	local function SetItemDisabled(self, itemValue, disabled)
+	---@param enabled boolean
+	local function SetItemEnabled(self, itemValue, enabled)
 		for _, pulloutItem in ipairs(self.pullout.items) do
 			if pulloutItem:GetValue() == itemValue then
-				pulloutItem:SetDisabled(disabled)
+				pulloutItem:SetEnabled(enabled)
 			end
 		end
 	end
@@ -895,8 +906,8 @@ do
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetBackdrop(dropdownBackdrop)
-		frame:SetBackdropColor(0.1, 0.1, 0.1, 1)
-		frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+		frame:SetBackdropColor(unpack(dropdownBackdropColor))
+		frame:SetBackdropBorderColor(unpack(dropdownBackdropBorderColor))
 
 		local dropdown = CreateFrame("Frame", Type .. "Dropdown" .. count, frame, "UIDropDownMenuTemplate")
 		dropdown:ClearAllPoints()
@@ -928,7 +939,7 @@ do
 		buttonCover:SetPoint("BOTTOMRIGHT")
 
 		local buttonCoverTexture = buttonCover:CreateTexture(nil, "BORDER")
-		buttonCoverTexture:SetColorTexture(0.25, 0.25, 0.5, 0.5)
+		buttonCoverTexture:SetColorTexture(unpack(dropdownButtonCoverColor))
 		buttonCoverTexture:SetPoint("TOPLEFT", 1, -1)
 		buttonCoverTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 		buttonCoverTexture:Hide()
@@ -967,14 +978,14 @@ do
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
-			SetDisabled = SetDisabled,
+			SetEnabled = SetEnabled,
 			ClearFocus = ClearFocus,
 			FindItemAndText = FindItemAndText,
 			SetText = SetText,
 			SetTextCentered = SetTextCentered,
 			SetValue = SetValue,
 			GetValue = GetValue,
-			SetItemDisabled = SetItemDisabled,
+			SetItemEnabled = SetItemEnabled,
 			AddItem = AddItem,
 			RemoveItem = RemoveItem,
 			AddItems = AddItems,

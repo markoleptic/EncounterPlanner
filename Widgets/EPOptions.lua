@@ -23,6 +23,9 @@ local spacingBetweenOptions = 5
 local spacingBetweenCategories = 10
 local spacingBetweenLabelAndWidget = 2
 local indentWidth = 26
+local backdropColor = { 0, 0, 0, 1 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -311,7 +314,7 @@ local function OnAcquire(self)
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
-	self.closeButton:SetBackdropColor(0, 0, 0, 0.9)
+	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetIconPadding(2, 2)
@@ -408,8 +411,8 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(0, 0, 0, 1)
-	frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
@@ -419,8 +422,8 @@ local function Constructor()
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	windowBar:SetHeight(windowBarHeight)
 	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(0, 0, 0, 1)
-	windowBar:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+	windowBar:SetBackdropColor(unpack(backdropColor))
+	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
