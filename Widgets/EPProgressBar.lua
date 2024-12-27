@@ -8,9 +8,6 @@ local CreateFrame = CreateFrame
 local GetTime = GetTime
 local floor = math.floor
 
-local fPath = LSM:Fetch("font", "PT Sans Narrow")
-local defaultBackgroundTexture = LSM:Fetch("statusbar", "Clean")
-
 local defaultHeight = 24
 local defaultWidth = 200
 local defaultFontSize = 14
@@ -183,6 +180,8 @@ local function OnAcquire(self)
 	self:SetBackgroundColor(0.5, 0.5, 0.5, 0.3)
 	self:SetColor(0.5, 0.5, 0.5, 1)
 	self:SetIconAndText(self.iconTexture, "Text")
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
+	local defaultBackgroundTexture = LSM:Fetch("statusbar", "Clean")
 	self:SetTexture(defaultBackgroundTexture)
 	self:SetFont(fPath, defaultFontSize)
 
@@ -363,7 +362,8 @@ local function Constructor()
 
 	local repeater = updater:CreateAnimation()
 	repeater:SetDuration(animationTickRate)
-
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
+	local defaultBackgroundTexture = LSM:Fetch("statusbar", "Clean")
 	statusBar:SetStatusBarTexture(defaultBackgroundTexture --[[@as string]])
 	background:SetTexture(defaultBackgroundTexture)
 

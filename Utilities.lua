@@ -14,15 +14,18 @@ local ceil = math.ceil
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
+local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local hugeNumber = math.huge
 local ipairs = ipairs
+local IsInRaid = IsInRaid
 local pairs = pairs
 local print = print
 local rawget = rawget
 local rawset = rawset
+local select = select
 local setmetatable = setmetatable
 local sort = table.sort
 local tinsert = table.insert
@@ -998,4 +1001,90 @@ end
 function Utilities.SubSpellIconTextWithSpellIcon(spellID, size)
 	local spellTexture = GetSpellTexture(spellID)
 	return format("|T%s:%|t", (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]), size or 0)
+end
+
+---@return integer
+local function GetGroupNumber()
+	local playerName, _ = UnitName("player")
+	local myGroup = 1
+	if IsInRaid() then
+		for i = 1, GetNumGroupMembers() do
+			local name, _, subgroup = GetRaidRosterInfo(i)
+			if name == playerName then
+				myGroup = subgroup
+				break
+			end
+		end
+	end
+	return myGroup
+end
+
+---@param timelineAssignments table<integer, TimelineAssignment>
+---@return table<integer, TimelineAssignment>
+function Utilities.FilterSelf(timelineAssignments)
+	local filtered = {}
+	local unitName = select(1, UnitName("player"))
+	local unitClass = select(2, UnitClass("player"))
+	local unitRace = select(2, UnitRace("player"))
+	local spec = GetSpecialization()
+	local role = nil
+	if spec then
+		role = select(5, GetSpecializationInfo(spec))
+	end
+	local groupNumber = GetGroupNumber()
+	for _, timelineAssignment in ipairs(timelineAssignments) do
+		local nameOrRole = timelineAssignment.assignment.assigneeNameOrRole
+		if nameOrRole:find("class:") then
+			local className = nameOrRole:match("class:%s*(%a+)")
+			if className then
+				if className:upper() == unitClass then
+					tinsert(filtered, timelineAssignment)
+				end
+			end
+		elseif nameOrRole:find("group:") then
+			if nameOrRole:find(tostring(groupNumber)) then
+				tinsert(filtered, timelineAssignment)
+			end
+		elseif nameOrRole:find("role:") then
+			local roleName = nameOrRole:match("class:%s*(%a+)")
+			if roleName then
+				if roleName:upper() == role then
+					tinsert(filtered, timelineAssignment)
+				end
+			end
+		elseif nameOrRole:find("{everyone}") then
+			tinsert(filtered, timelineAssignment)
+		elseif unitName == nameOrRole then
+			tinsert(filtered, timelineAssignment)
+		end
+	end
+	return filtered
+end
+
+---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@return string
+function Utilities.CreateReminderProgressBarText(assignment, roster)
+	local reminderText = ""
+	if assignment.targetName ~= nil and assignment.targetName ~= "" then
+		local targetRosterEntry = roster[assignment.targetName]
+		if targetRosterEntry and targetRosterEntry.classColoredName and targetRosterEntry.classColoredName ~= "" then
+			reminderText = targetRosterEntry.classColoredName
+		else
+			reminderText = assignment.targetName or ""
+		end
+		-- TODO: Consider highlighting frame
+	elseif assignment.text ~= nil and assignment.text ~= "" then
+		reminderText = assignment.text
+	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+		if assignment.spellInfo.name then
+			reminderText = assignment.spellInfo.name
+		else
+			local spellName = GetSpellName(assignment.spellInfo.spellID)
+			if spellName then
+				reminderText = spellName
+			end
+		end
+	end
+	return reminderText
 end

@@ -430,7 +430,7 @@ end
 ---| "BOTTOMLEFT"
 ---| "CENTER"
 
----@class EncounterPlannerKeyBindings
+---@class KeyBindings
 ---@field pan MouseButtonKeyBinding
 ---@field zoom ScrollKeyBinding
 ---@field scroll ScrollKeyBinding
@@ -438,34 +438,53 @@ end
 ---@field newAssignment MouseButtonKeyBinding
 ---@field duplicateAssignment MouseButtonKeyBinding
 
----@class EncounterPlannerTextToSpeechPreferences
+---@class ReminderTextToSpeechPreferences
 ---@field enableAtAdvanceNotice boolean
 ---@field enableAtTime boolean
+---@field voiceID integer
+---@field volume number
 
----@class EncounterPlannerSoundPreferences
+---@class ReminderSoundPreferences
 ---@field enableAtAdvanceNotice boolean
 ---@field enableAtTime boolean
 ---@field advanceNoticeSound string
 ---@field atSound string
 
----@class EncounterPlannerReminderPreferences
+---@class GenericReminderPreferences
 ---@field enabled boolean
----@field onlyShowMe boolean
----@field cancelIfAlreadyCasted boolean
----@field enableProgressBars boolean
----@field enableMessages boolean
----@field advanceNotice number
+---@field textAlignment "LEFT"|"CENTER"|"RIGHT"
+---@field font "PT Sans Narrow",
+---@field fontSize integer
+---@field fontOutline ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+---@field fontMonochrome boolean
 ---@field point AnchorPoint
 ---@field relativeTo string
 ---@field relativePoint AnchorPoint
 ---@field x number
 ---@field y number
 ---@field growDown boolean
----@field textToSpeech EncounterPlannerTextToSpeechPreferences
----@field sound EncounterPlannerSoundPreferences
+
+---@class ProgressBarPreferences : GenericReminderPreferences
+---@field texture string
+---@field iconPosition "LEFT"|"RIGHT"
+---@field width number
+
+---@class MessagePreferences : GenericReminderPreferences
+---@field showOnlyAtExpiration boolean
+---@field showWithCountdown boolean
+
+---@class ReminderPreferences
+---@field enabled boolean
+---@field onlyShowMe boolean
+---@field cancelIfAlreadyCasted boolean
+---@field advanceNotice number
+---@field progressBars ProgressBarPreferences
+---@field messages GenericReminderPreferences
+---@field textToSpeech ReminderTextToSpeechPreferences
+---@field sound ReminderSoundPreferences
 
 local defaults = {
-	---@class EncounterPlannerDefaultProfile
+	---@class DefaultProfile
 	---@field activeBossAbilities table<string, table<integer, boolean>>
 	---@field assignmentSortType AssignmentSortType
 	---@field notes table<string, EncounterPlannerDbNote>
@@ -478,12 +497,12 @@ local defaults = {
 		sharedRoster = {},
 		lastOpenNote = "",
 		recentSpellAssignments = {},
-		---@class EncounterPlannerPreferences
-		---@field keyBindings EncounterPlannerKeyBindings
+		---@class Preferences
+		---@field keyBindings KeyBindings
 		---@field assignmentSortType AssignmentSortType
 		---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
 		---@field zoomCenteredOnCursor boolean
-		---@field reminder EncounterPlannerReminderPreferences
+		---@field reminder ReminderPreferences
 		preferences = {
 			keyBindings = {
 				pan = "RightButton",
@@ -504,15 +523,40 @@ local defaults = {
 				enabled = true,
 				onlyShowMe = true,
 				cancelIfAlreadyCasted = true,
-				enableProgressBars = true,
-				enableMessages = true,
 				advanceNotice = 10.0,
-				point = "CENTER",
-				relativeTo = "UIParent",
-				relativePoint = "CENTER",
-				x = 0,
-				y = 300,
-				growDown = false,
+				messages = {
+					enabled = true,
+					textAlignment = "LEFT",
+					font = "PT Sans Narrow",
+					fontSize = 24,
+					fontOutline = "",
+					fontMonochrome = false,
+					point = "CENTER",
+					relativeTo = "UIParent",
+					relativePoint = "CENTER",
+					x = 0,
+					y = 300,
+					growDown = false,
+					showOnlyAtExpiration = true,
+					showWithCountdown = false,
+				},
+				progressBars = {
+					enabled = true,
+					textAlignment = "LEFT",
+					font = "PT Sans Narrow",
+					fontSize = 14,
+					fontOutline = "",
+					fontMonochrome = false,
+					point = "RIGHT",
+					relativeTo = "UIParent",
+					relativePoint = "CENTER",
+					x = -100,
+					y = 0,
+					growDown = false,
+					texture = "Clean",
+					iconPosition = "LEFT",
+					width = 100,
+				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
 					enableAtTime = false,
@@ -545,7 +589,8 @@ Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
-Private.reminderAnchor = nil --[[@as EPReminderAnchor]]
+Private.messageAnchor = nil --[[@as EPReminderMessage]]
+Private.progressBarAnchor = nil --[[@as EPProgressBar]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.reminderContainer = nil --[[@as EPContainer]]
 

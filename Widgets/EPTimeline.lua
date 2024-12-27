@@ -1798,7 +1798,7 @@ end
 ---@field allowHeightResizing boolean
 ---@field bossAbilityDimensions {min: integer, max:integer, step:number}
 ---@field assignmentDimensions {min: integer, max:integer, step:number}
----@field preferences EncounterPlannerPreferences
+---@field preferences Preferences
 ---@field zoomFactor number
 ---@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
 ---@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
@@ -2437,7 +2437,7 @@ local function SetAllowHeightResizing(self, allow)
 end
 
 ---@param self EPTimeline
----@param preferences EncounterPlannerPreferences
+---@param preferences Preferences
 local function SetPreferences(self, preferences)
 	self.preferences = preferences
 end

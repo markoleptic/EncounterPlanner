@@ -12,11 +12,14 @@ local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 
 local getmetatable = getmetatable
+local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
 local ipairs = ipairs
 local NewTimer = C_Timer.NewTimer
 local next = next
 local pairs = pairs
+local PlaySoundFile = PlaySoundFile
+local SpeakText = C_VoiceChat.SpeakText
 local tinsert = tinsert
 local type = type
 local wipe = wipe
@@ -106,16 +109,42 @@ local function ProcessNextOperation()
 	isLocked = false
 end
 
-local function AddProgressBar(assignment, roster, duration)
+---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param duration number
+---@param reminderPreferences ReminderPreferences
+local function AddProgressBar(assignment, roster, duration, reminderPreferences)
 	tinsert(operationQueue, function()
 		local progressBar = AceGUI:Create("EPProgressBar")
 		progressBar:SetDuration(duration, false)
-		progressBar:SetIconAndText(
-			C_Spell.GetSpellTexture(assignment.spellInfo.spellID),
-			Private:CreateNotePreviewText(assignment, roster)
-		)
+		if assignment.spellInfo.iconID then
+			progressBar:SetIconAndText(
+				assignment.spellInfo.iconID,
+				utilities.CreateReminderProgressBarText(assignment, roster)
+			)
+		else
+			progressBar:SetIconAndText(
+				GetSpellTexture(assignment.spellInfo.spellID),
+				utilities.CreateReminderProgressBarText(assignment, roster)
+			)
+		end
+
 		progressBar:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
+				if reminderPreferences.textToSpeech.enableAtTime then
+					SpeakText(
+						reminderPreferences.textToSpeech.voiceID,
+						assignment.text,
+						Enum.VoiceTtsDestination.QueuedLocalPlayback,
+						1.0,
+						reminderPreferences.textToSpeech.volume
+					)
+				end
+				if reminderPreferences.sound.enableAtTime then
+					if reminderPreferences.sound.atSound and reminderPreferences.sound.atSound ~= "" then
+						PlaySoundFile(reminderPreferences.sound.atSound)
+					end
+				end
 				Private.reminderContainer:RemoveChildNoDoLayout(progressBar)
 			end)
 		end)
@@ -134,10 +163,53 @@ local function SimulateHandleCombatLogEventUnfiltered(time, event, spellID)
 			tinsert(
 				activeTimers,
 				NewTimer(start < 0 and 0.1 or start, function()
-					AddProgressBar(combatLogEventReminder.assignment, combatLogEventReminder.roster)
+					-- AddProgressBar(
+					-- 	combatLogEventReminder.assignment,
+					-- 	combatLogEventReminder.roster,
+					-- 	combatLogEventReminder.advanceNotice,
+					-- 	reminderPreferences.textToSpeech
+					-- )
 				end)
 			)
 		end
+	end
+end
+
+---@param timelineAssignment TimelineAssignment
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param reminderPreferences ReminderPreferences
+local function CreateTimer(timelineAssignment, roster, reminderPreferences)
+	local assignment = timelineAssignment.assignment
+	local startTime = timelineAssignment.startTime - reminderPreferences.advanceNotice -- (GetTime() - startTime)
+	if startTime < 0 then
+		startTime = 0.1
+	end
+	if timelineAssignment.startTime < reminderPreferences.advanceNotice then
+		AddProgressBar(assignment, roster, math.max(timelineAssignment.startTime, 0.1), reminderPreferences)
+	else
+		tinsert(
+			activeSimulationTimers,
+			NewTimer(startTime, function()
+				AddProgressBar(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences)
+				if reminderPreferences.textToSpeech.enableAtAdvanceNotice then
+					C_VoiceChat.SpeakText(
+						reminderPreferences.textToSpeech.voiceID,
+						assignment.text,
+						Enum.VoiceTtsDestination.QueuedLocalPlayback,
+						1.0,
+						reminderPreferences.textToSpeech.volume
+					)
+				end
+				if reminderPreferences.sound.enableAtAdvanceNotice then
+					if
+						reminderPreferences.sound.advanceNoticeSound
+						and reminderPreferences.sound.advanceNoticeSound ~= ""
+					then
+						PlaySoundFile(reminderPreferences.sound.advanceNoticeSound)
+					end
+				end
+			end)
+		)
 	end
 end
 
@@ -150,13 +222,13 @@ function Private:SimulateBoss(timelineAssignments, roster)
 	Private.reminderContainer.frame:SetFrameLevel(100)
 	Private.reminderContainer.content.growUp = true
 	Private.reminderContainer:SetSpacing(0, 0)
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as EncounterPlannerReminderPreferences]]
+	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	Private.reminderContainer.frame:SetPoint(
-		reminderPreferences.point,
-		_G[reminderPreferences.relativeTo],
-		reminderPreferences.relativePoint,
-		reminderPreferences.x,
-		reminderPreferences.y
+		reminderPreferences.messages.point,
+		_G[reminderPreferences.messages.relativeTo],
+		reminderPreferences.messages.relativePoint,
+		reminderPreferences.messages.x,
+		reminderPreferences.messages.y
 	)
 	Private.reminderContainer:SetCallback("OnRelease", function()
 		Private.reminderContainer.content.growUp = nil
@@ -173,7 +245,11 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		lastExecutionTime = currentTime
 		ProcessNextOperation()
 	end)
-	for _, timelineAssignment in ipairs(timelineAssignments) do
+	local filteredTimelineAssignments
+	if reminderPreferences.onlyShowMe then
+		filteredTimelineAssignments = utilities.FilterSelf(timelineAssignments)
+	end
+	for _, timelineAssignment in ipairs(filteredTimelineAssignments or timelineAssignments) do
 		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
 			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 			local combatLogEventType = combatLogEventMap[assignment.combatLogEventType]
@@ -198,30 +274,9 @@ function Private:SimulateBoss(timelineAssignments, roster)
 			}
 			tinsert(t3, reminder)
 
-			local start = timelineAssignment.startTime - reminderPreferences.advanceNotice -- (GetTime() - startTime)
-			if timelineAssignment.startTime < reminderPreferences.advanceNotice then
-				AddProgressBar(assignment, roster, math.max(timelineAssignment.startTime, 0.1))
-			else
-				tinsert(
-					activeSimulationTimers,
-					NewTimer(start < 0 and 0.1 or start, function()
-						AddProgressBar(assignment, roster, 10)
-					end)
-				)
-			end
+			CreateTimer(timelineAssignment, roster, reminderPreferences)
 		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
-			local start = timelineAssignment.startTime - reminderPreferences.advanceNotice -- (GetTime() - startTime)
-			if timelineAssignment.startTime < reminderPreferences.advanceNotice then
-				AddProgressBar(assignment, roster, math.max(timelineAssignment.startTime, 0.1))
-			else
-				tinsert(
-					activeSimulationTimers,
-					NewTimer(start < 0 and 0.1 or start, function()
-						AddProgressBar(assignment, roster, 10)
-					end)
-				)
-			end
+			CreateTimer(timelineAssignment, roster, reminderPreferences)
 		end
 	end
 end

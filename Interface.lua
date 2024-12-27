@@ -787,9 +787,6 @@ local function CleanUp()
 	if Private.optionsMenu then
 		Private.optionsMenu:Release()
 	end
-	if Private.reminderAnchor then
-		Private.reminderAnchor:Release()
-	end
 	if Private.menuButtonContainer then
 		Private.menuButtonContainer:Release()
 	end
@@ -1071,36 +1068,6 @@ function Private:CreateInterface()
 	currentPlanContainer:SetSelfAlignment("right")
 	currentPlanContainer:AddChildren(outerNoteContainer)
 
-	local reminderAnchorButton = AceGUI:Create("EPButton")
-	reminderAnchorButton:SetText("Show Reminder Anchor")
-	local progressBar = nil
-	reminderAnchorButton:SetCallback("Clicked", function()
-		if not Private.reminderAnchor then
-			Private.reminderAnchor = AceGUI:Create("EPReminderAnchor")
-			Private.reminderAnchor.frame:SetParent(Private.mainFrame.frame)
-			Private.reminderAnchor:SetCallback("OnRelease", function()
-				Private.reminderAnchor = nil
-			end)
-			Private.reminderAnchor:SetPreferences(AddOn.db.profile.preferences)
-		else
-			Private.reminderAnchor:Release()
-			Private.reminderAnchor = nil
-		end
-		if not progressBar then
-			progressBar = AceGUI:Create("EPProgressBar")
-			progressBar.frame:SetParent(Private.mainFrame.frame)
-			progressBar.frame:SetPoint("BOTTOMLEFT", Private.mainFrame.frame, "TOPLEFT", 0, 50)
-			progressBar:SetDuration(61, false)
-			progressBar:Start()
-			progressBar:SetCallback("OnRelease", function()
-				progressBar = nil
-			end)
-		else
-			progressBar:Release()
-			progressBar = nil
-		end
-	end)
-
 	local simulateButton = AceGUI:Create("EPButton")
 	simulateButton:SetText("Simulate")
 	simulateButton:SetCallback("Clicked", function()
@@ -1121,7 +1088,7 @@ function Private:CreateInterface()
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetHeight(topContainerHeight)
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossContainer, reminderAnchorButton, simulateButton, currentPlanContainer)
+	topContainer:AddChildren(bossContainer, simulateButton, currentPlanContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)

@@ -11,6 +11,7 @@ local defaultFrameWidth = 100
 local backdropColor = { 0, 0, 0, 0 }
 local hoverButtonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 }
 local iconColor = { 1, 1, 1, 1 }
+local disabledIconColor = { 0.5, 0.5, 0.5, 1 }
 local selectedButtonColor = { 1, 1, 1 }
 local buttonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -109,6 +110,7 @@ end
 ---@field type string
 ---@field obj any
 ---@field toggled boolean|nil
+---@field enabled boolean
 
 ---@param self EPRadioButton
 local function OnAcquire(self)
@@ -122,8 +124,8 @@ local function OnAcquire(self)
 
 	self:SetIconPadding(2, 2)
 	self:SetBackdropColor(unpack(backdropColor))
-	self:SetIconColor(unpack(iconColor))
 	self:SetToggled(false)
+	self:SetEnabled(true)
 
 	self.button.icon:Show()
 	self.frame:Show()
@@ -136,6 +138,19 @@ local function OnRelease(self)
 	end
 	self.label = nil
 	self.toggled = nil
+end
+
+---@param self EPRadioButton
+local function SetEnabled(self, enabled)
+	self.enabled = enabled
+	if enabled then
+		self:SetIconColor(unpack(iconColor))
+	else
+		self:SetIconColor(unpack(disabledIconColor))
+	end
+	self.button.icon:SetDesaturated(not enabled)
+	self.button:SetEnabled(enabled)
+	self.label:SetEnabled(enabled)
 end
 
 ---@param self EPRadioButton
@@ -264,6 +279,7 @@ local function Constructor()
 		IsToggled = IsToggled,
 		SetIconPadding = SetIconPadding,
 		SetIconColor = SetIconColor,
+		SetEnabled = SetEnabled,
 		frame = frame,
 		type = Type,
 		button = button,

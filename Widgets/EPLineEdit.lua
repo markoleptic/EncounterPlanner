@@ -130,7 +130,8 @@ local function SetText(self, text)
 	self.editBox:SetCursorPosition(0)
 end
 
-local function GetText(self, text)
+---@param self EPLineEdit
+local function GetText(self)
 	return self.editBox:GetText()
 end
 

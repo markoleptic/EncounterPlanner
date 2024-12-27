@@ -303,7 +303,8 @@ local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID)
 		if nameOrGroup then
 			nameOrGroup = nameOrGroup:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
 		end
-		local text = str:match(textRegex)
+		local text = str:match(textRegex):gsub("{everyone}", "") -- duplicate everyone
+		text = text:gsub("^%s*", ""):gsub("$^%s*", "") -- remove beginning/trailing whitespace
 		local assignment = Private.classes.Assignment:New({
 			assigneeNameOrRole = nameOrGroup or "",
 			text = text,

@@ -66,11 +66,11 @@
 ---@alias EPCheckBoxType
 ---|"EPCheckBox"
 
----@alias EPReminderAnchorType
----|"EPReminderAnchor"
-
 ---@alias EPProgressBarType
 ---|"EPProgressBar"
+
+---@alias EPReminderMessageType
+---|"EPReminderMessage"
 
 ---@alias EPWidgetType
 ---| EPSpacerType
@@ -88,8 +88,8 @@
 ---| EPTimelineSectionType
 ---| EPRadioButtonType
 ---| EPCheckBoxType
----| EPReminderAnchorType
 ---| EPProgressBarType
+---| EPReminderMessageType
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -191,12 +191,12 @@ function AceGUI:Create(type) end
 ---@return EPOptions
 function AceGUI:Create(type) end
 
----@param type EPReminderAnchorType
----@return EPReminderAnchor
-function AceGUI:Create(type) end
-
 ---@param type EPProgressBarType
 ---@return EPProgressBar
+function AceGUI:Create(type) end
+
+---@param type EPReminderMessageType
+---@return EPReminderMessage
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
