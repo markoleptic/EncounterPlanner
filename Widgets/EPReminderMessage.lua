@@ -5,12 +5,47 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local unpack = unpack
 
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultFontHeight = 14
 local defaultIconPadding = { x = 2, y = 2 }
 local defaultTextPadding = { x = 0, y = 2 }
+local defaultBackdropColor = { 0, 0, 0, 0 }
+local anchorModeBackdropColor = { 0.1, 0.1, 0.1, 0.25 }
+local frameBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = false,
+	edgeSize = 0,
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+}
+local previousPointDetails = {}
+
+---@param self EPReminderMessage
+local function HandleFrameMouseDown(self, button)
+	if button == "LeftButton" then
+		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
+		previousPointDetails = {
+			point = point,
+			relativeTo = relativeTo,
+			relativePoint = relativePoint,
+		}
+		self.frame:StartMoving()
+	end
+end
+
+---@param self EPReminderMessage
+local function HandleFrameMouseUp(self, button)
+	if button == "LeftButton" then
+		self.frame:StopMovingOrSizing()
+		local point = previousPointDetails.point
+		local relativeFrame = previousPointDetails.relativeTo or UIParent
+		local relativePoint = previousPointDetails.relativePoint
+		self:Fire("NewPoint", point, relativeFrame, relativePoint)
+	end
+end
 
 ---@param self EPReminderMessage
 local function UpdateIconAndTextAnchors(self)
@@ -29,7 +64,7 @@ local function UpdateIconAndTextAnchors(self)
 end
 
 ---@class EPReminderMessage : AceGUIWidget
----@field frame Frame
+---@field frame Frame|table
 ---@field type string
 ---@field text FontString
 ---@field highlight Texture
@@ -40,11 +75,15 @@ end
 
 ---@param self EPReminderMessage
 local function OnAcquire(self)
+	self.showIcon = false
 	self.horizontalTextPadding = defaultTextPadding.x
 	self.iconPadding = defaultIconPadding
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
-	self:SetFontSize(defaultFontHeight)
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
+	if fPath then
+		self:SetFont(fPath, defaultFontHeight, "")
+	end
 	self:SetHeight(defaultFrameHeight)
 	self:SetHorizontalTextAlignment("CENTER")
 	self:SetIcon(nil)
@@ -53,6 +92,7 @@ end
 
 ---@param self EPReminderMessage
 local function OnRelease(self)
+	self:SetAnchorMode(false)
 	self.horizontalTextPadding = nil
 	self.iconPadding = nil
 end
@@ -83,9 +123,10 @@ local function SetText(self, text, paddingX)
 end
 
 ---@param self EPReminderMessage
+---@param fontFile string
 ---@param size integer
-local function SetFontSize(self, size)
-	local fontFile, _, flags = self.text:GetFont()
+---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+local function SetFont(self, fontFile, size, flags)
 	if fontFile then
 		self.text:SetFont(fontFile, size, flags)
 	end
@@ -113,11 +154,35 @@ local function SetFrameWidthFromText(self)
 	end
 end
 
+---@param self EPReminderMessage
+---@param anchorMode boolean
+local function SetAnchorMode(self, anchorMode)
+	if anchorMode then
+		self:SetText("Cast spell or something")
+		self.frame:SetBackdropColor(unpack(anchorModeBackdropColor))
+		self.frame:SetMovable(true)
+		self.frame:SetScript("OnMouseDown", function(_, button)
+			HandleFrameMouseDown(self, button)
+		end)
+		self.frame:SetScript("OnMouseUp", function(_, button)
+			HandleFrameMouseUp(self, button)
+		end)
+	else
+		self:SetText("")
+		self.frame:SetBackdropColor(unpack(defaultBackdropColor))
+		self.frame:SetMovable(false)
+		self.frame:SetScript("OnMouseDown", nil)
+		self.frame:SetScript("OnMouseUp", nil)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
-	local frame = CreateFrame("Frame", Type .. count, UIParent)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetBackdrop(frameBackdrop)
+	frame:SetBackdropColor(unpack(defaultBackdropColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.x, -defaultIconPadding.y)
@@ -138,39 +203,17 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetIcon = SetIcon,
 		SetText = SetText,
-		SetFontSize = SetFontSize,
+		SetFont = SetFont,
 		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		GetText = GetText,
 		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetFrameWidthFromText = SetFrameWidthFromText,
+		SetAnchorMode = SetAnchorMode,
 		frame = frame,
 		type = Type,
 		icon = icon,
 		text = text,
 	}
-
-	local previousPointDetails = {}
-	frame:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then
-			local point, relativeTo, relativePoint, _, _ = frame:GetPoint()
-			previousPointDetails = {
-				point = point,
-				relativeTo = relativeTo,
-				relativePoint = relativePoint,
-			}
-			frame:StartMoving()
-		end
-	end)
-
-	frame:SetScript("OnMouseUp", function(_, button)
-		if button == "LeftButton" then
-			frame:StopMovingOrSizing()
-			local point = previousPointDetails.point
-			local relativeFrame = previousPointDetails.relativeTo or UIParent
-			local relativePoint = previousPointDetails.relativePoint
-			widget:Fire("NewPoint", point, relativeFrame, relativePoint)
-		end
-	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end

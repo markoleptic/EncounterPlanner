@@ -31,6 +31,31 @@ local frameBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
+local previousPointDetails = {}
+
+---@param self EPProgressBar
+local function HandleFrameMouseDown(self, button)
+	if button == "LeftButton" then
+		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
+		previousPointDetails = {
+			point = point,
+			relativeTo = relativeTo,
+			relativePoint = relativePoint,
+		}
+		self.frame:StartMoving()
+	end
+end
+
+---@param self EPProgressBar
+local function HandleFrameMouseUp(self, button)
+	if button == "LeftButton" then
+		self.frame:StopMovingOrSizing()
+		local point = previousPointDetails.point
+		local relativeFrame = previousPointDetails.relativeTo or UIParent
+		local relativePoint = previousPointDetails.relativePoint
+		self:Fire("NewPoint", point, relativeFrame, relativePoint)
+	end
+end
 
 ---@param self EPProgressBar
 local function RestyleBar(self)
@@ -193,6 +218,7 @@ end
 ---@param self EPProgressBar
 local function OnRelease(self)
 	self.updater:SetScript("OnLoop", nil)
+	self:SetAnchorMode(false)
 end
 
 ---@param self EPProgressBar
@@ -325,6 +351,24 @@ local function Resume(self)
 	end
 end
 
+---@param self EPProgressBar
+---@param anchorMode boolean
+local function SetAnchorMode(self, anchorMode)
+	if anchorMode then
+		self.frame:SetMovable(true)
+		self.frame:SetScript("OnMouseDown", function(_, button)
+			HandleFrameMouseDown(self, button)
+		end)
+		self.frame:SetScript("OnMouseUp", function(_, button)
+			HandleFrameMouseUp(self, button)
+		end)
+	else
+		self.frame:SetMovable(true)
+		self.frame:SetScript("OnMouseDown", nil)
+		self.frame:SetScript("OnMouseUp", nil)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -382,6 +426,7 @@ local function Constructor()
 		Start = Start,
 		Pause = Pause,
 		Resume = Resume,
+		SetAnchorMode = SetAnchorMode,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,

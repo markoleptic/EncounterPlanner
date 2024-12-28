@@ -159,7 +159,7 @@ local function ApplyPoint(frame, point, relativeFrame, relativePoint)
 		relativePoint
 	)
 	x = utilities.Round(x, 2)
-	y = utilities.Round(x, 2)
+	y = utilities.Round(y, 2)
 	local relativeTo = relativeFrame:GetName()
 	frame:ClearAllPoints()
 	frame:SetPoint(point, relativeTo, relativePoint, x, y)
@@ -1204,6 +1204,13 @@ function Private:CreateOptionsMenu()
 	Private.optionsMenu = optionsMenu
 
 	local messageAnchor = AceGUI:Create("EPReminderMessage")
+	messageAnchor:SetAnchorMode(true)
+	messageAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
+		local messages = reminderPreferences.messages
+		messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+			ApplyPoint(Private.messageAnchor.frame, point, relativeFrame, relativePoint)
+		Private.optionsMenu:UpdateOptions()
+	end)
 	messageAnchor.frame:SetParent(UIParent)
 	messageAnchor.frame:SetPoint(
 		reminderPreferences.messages.point,
@@ -1215,6 +1222,17 @@ function Private:CreateOptionsMenu()
 	Private.messageAnchor = messageAnchor
 
 	local progressBarAnchor = AceGUI:Create("EPProgressBar")
+	progressBarAnchor:SetAnchorMode(true)
+	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
+		local progressBars = reminderPreferences.progressBars
+		progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+			ApplyPoint(Private.progressBarAnchor.frame, point, relativeFrame, relativePoint)
+		Private.optionsMenu:UpdateOptions()
+	end)
+	progressBarAnchor:SetCallback("Completed", function()
+		progressBarAnchor:SetDuration(60)
+		progressBarAnchor:Start()
+	end)
 	progressBarAnchor.frame:SetParent(UIParent)
 	progressBarAnchor:SetDuration(60)
 	progressBarAnchor:Start()

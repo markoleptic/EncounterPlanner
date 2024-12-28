@@ -805,6 +805,15 @@ local function SetCurrentTab(self, tab)
 	PopulateActiveTab(self, tab)
 end
 
+---@param self EPOptions
+local function UpdateOptions(self)
+	for _, indices in pairs(self.updateIndices) do
+		for _, functions in pairs(indices) do
+			Update(functions)
+		end
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -888,6 +897,7 @@ local function Constructor()
 		AddOptionTab = AddOptionTab,
 		SetCurrentTab = SetCurrentTab,
 		UpdateVerticalScroll = UpdateVerticalScroll,
+		UpdateOptions = UpdateOptions,
 		frameChooserFrame = frameChooserFrame,
 		frameChooserBox = frameChooserBox,
 		scrollBar = verticalScrollBar,
