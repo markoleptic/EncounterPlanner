@@ -31,6 +31,7 @@ local backdrop = {
 ---@field type string
 ---@field editBox EditBox|BackdropTemplate
 ---@field enabled boolean
+---@field readOnly boolean
 ---@field lastText string
 ---@field obj any
 
@@ -99,6 +100,7 @@ end
 
 ---@param self EPLineEdit
 local function OnAcquire(self)
+	self.readOnly = false
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	self:SetEnabled(true)
 	self:SetText()
@@ -114,12 +116,20 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	if enabled then
-		self.editBox:EnableMouse(true)
+		self.editBox:EnableMouse(not self.readOnly)
 		self.editBox:SetTextColor(unpack(enabledTextColor))
 	else
 		self.editBox:EnableMouse(false)
 		self.editBox:ClearFocus()
 		self.editBox:SetTextColor(unpack(disabledTextColor))
+	end
+end
+
+---@param self EPLineEdit
+local function SetReadOnly(self, readOnly)
+	self.readOnly = readOnly
+	if self.enabled then
+		self.editBox:EnableMouse(not readOnly)
 	end
 end
 
@@ -199,6 +209,7 @@ local function Constructor()
 		ClearFocus = ClearFocus,
 		SetFocus = SetFocus,
 		HighlightText = HighlightText,
+		SetReadOnly = SetReadOnly,
 		frame = frame,
 		type = Type,
 		editBox = editBox,

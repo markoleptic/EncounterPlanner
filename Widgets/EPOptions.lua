@@ -23,10 +23,10 @@ local contentFramePadding = { x = 20, y = 20 }
 local title = "Preferences"
 local categoryFontSize = 18
 local optionLabelFontSize = 14
-local spacingBetweenOptions = 5
-local spacingBetweenCategories = 10
-local spacingBetweenLabelAndWidget = 2
-local indentWidth = 26
+local spacingBetweenOptions = 8
+local spacingBetweenCategories = 20
+local spacingBetweenLabelAndWidget = 8
+local indentWidth = 20
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
@@ -37,9 +37,9 @@ local thumbPadding = { x = 2, y = 2 }
 local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local minThumbSize = 20
-local frameChooserContainerSpacing = { 5, 0 }
-local doubleLineEditContainerSpacing = { 5, 0 }
-local radioButtonGroupSpacing = { 5, 0 }
+local frameChooserContainerSpacing = { 8, 0 }
+local doubleLineEditContainerSpacing = { 8, 0 }
+local radioButtonGroupSpacing = { 8, 0 }
 local categoryPadding = { 10, 10, 10, 10 }
 
 local frameBackdrop = {
@@ -243,42 +243,35 @@ end
 ---@param self EPOptions
 ---@param option EPSettingOption
 ---@param index integer
+---@param label EPLabel
 ---@return EPContainer
-local function CreateFrameChooser(self, option, index)
+local function CreateFrameChooser(self, option, index, label)
 	local frameChooserContainer = AceGUI:Create("EPContainer")
 	frameChooserContainer:SetFullWidth(true)
 	frameChooserContainer:SetLayout("EPHorizontalLayout")
 	frameChooserContainer:SetSpacing(unpack(frameChooserContainerSpacing))
 
-	local label = AceGUI:Create("EPLabel")
-	label:SetText(option.label)
-	label:SetFontSize(optionLabelFontSize)
-	label:SetFrameWidthFromText()
-	label:SetFullHeight(true)
-	label.text:SetTextColor(unpack(labelTextColor))
-
-	local valueLabel = AceGUI:Create("EPLabel")
-	valueLabel:SetText(option.get() --[[@as string]])
-	valueLabel:SetFontSize(optionLabelFontSize)
-	valueLabel:SetFrameWidthFromText()
-	valueLabel:SetFullHeight(true)
-	valueLabel.text:SetTextColor(unpack(labelTextColor))
+	local valueLineEdit = AceGUI:Create("EPLineEdit")
+	valueLineEdit:SetText(option.get() --[[@as string]])
+	valueLineEdit:SetRelativeWidth(0.75)
+	valueLineEdit:SetFullHeight(true)
+	valueLineEdit:SetReadOnly(true)
 
 	if option.updateIndices then
 		UpdateUpdateIndices(self.updateIndices, option, function()
-			valueLabel:SetText(option.get() --[[@as string]])
+			valueLineEdit:SetText(option.get() --[[@as string]])
 		end)
 	end
 
 	local button = AceGUI:Create("EPButton")
 	button:SetText("Choose")
-	button:SetWidthFromText()
+	button:SetRelativeWidth(0.25)
 	button:SetCallback("Clicked", function()
 		if not isChoosingFrame then
 			self.frameChooserFrame:Show()
 			StartChoosingFrame(self.frameChooserFrame, self.frameChooserBox, function(value)
 				option.set(value)
-				valueLabel:SetText(value)
+				valueLineEdit:SetText(value)
 				RefreshEnabledStates(self.refreshMap)
 				if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 					Update(self.updateIndices[option.category][index])
@@ -294,19 +287,20 @@ local function CreateFrameChooser(self, option, index)
 	end)
 
 	if option.enabled then
-		button:SetEnabled(option.enabled())
+		tinsert(self.refreshMap, { widget = valueLineEdit, enabled = option.enabled })
 		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
-	frameChooserContainer:AddChildren(label, valueLabel, button)
+	frameChooserContainer:AddChildren(valueLineEdit, button)
 	return frameChooserContainer
 end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
 ---@param index integer
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
+---@param label EPLabel
 ---@return EPContainer
-local function CreateRadioButtonGroup(self, option, index, refreshMap)
+local function CreateRadioButtonGroup(self, option, index, label)
 	local radioButtonGroup = AceGUI:Create("EPContainer")
 	radioButtonGroup:SetLayout("EPHorizontalLayout")
 	radioButtonGroup:SetSpacing(unpack(radioButtonGroupSpacing))
@@ -317,11 +311,10 @@ local function CreateRadioButtonGroup(self, option, index, refreshMap)
 		radioButton:SetLabelText(itemValueAndText.text)
 		radioButton:SetToggled(option.get() == itemValueAndText.itemValue)
 		radioButton:GetUserDataTable().key = itemValueAndText.itemValue
-		if option.enabled then
-			radioButton:SetEnabled(option.enabled())
-			tinsert(refreshMap, { widget = radioButton, enabled = option.enabled })
-		end
 		tinsert(radioButtonGroupChildren, radioButton)
+	end
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
 	if option.updateIndices then
@@ -334,13 +327,13 @@ local function CreateRadioButtonGroup(self, option, index, refreshMap)
 	for _, child in ipairs(radioButtonGroup.children) do
 		if option.enabled and child.SetEnabled then
 			child:SetEnabled(option.enabled())
-			tinsert(refreshMap, { widget = child, enabled = option.enabled })
+			tinsert(self.refreshMap, { widget = child, enabled = option.enabled })
 		end
 		child:SetCallback("Toggled", function(radioButton, _, _)
 			handleRadioButtonToggled(radioButton, radioButtonGroup)
 			local value = radioButton:GetUserData("key")
 			option.set(value)
-			RefreshEnabledStates(refreshMap)
+			RefreshEnabledStates(self.refreshMap)
 			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 				Update(self.updateIndices[option.category][index])
 			end
@@ -358,9 +351,9 @@ end
 ---@param self EPOptions
 ---@param option EPSettingOption
 ---@param index integer
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
+---@param label EPLabel
 ---@return EPContainer
-local function CreateDoubleLineEdit(self, option, index, refreshMap)
+local function CreateDoubleLineEdit(self, option, index, label)
 	local doubleLineEditContainer = AceGUI:Create("EPContainer")
 	doubleLineEditContainer:SetFullWidth(true)
 	doubleLineEditContainer:SetLayout("EPHorizontalLayout")
@@ -368,26 +361,26 @@ local function CreateDoubleLineEdit(self, option, index, refreshMap)
 
 	local labelX = AceGUI:Create("EPLabel")
 	labelX:SetText("X:")
-	labelX:SetFrameWidthFromText()
+	labelX:SetRelativeWidth(0.05)
 	labelX:SetFullHeight(true)
 
 	local lineEditX = AceGUI:Create("EPLineEdit")
-	lineEditX:SetWidth(100)
-
-	local lineEditY = AceGUI:Create("EPLineEdit")
-	lineEditY:SetWidth(100)
+	lineEditX:SetRelativeWidth(0.45)
 
 	local labelY = AceGUI:Create("EPLabel")
 	labelY:SetText("Y:")
-	labelY:SetFrameWidthFromText()
+	labelY:SetRelativeWidth(0.05)
 	labelY:SetFullHeight(true)
 
+	local lineEditY = AceGUI:Create("EPLineEdit")
+	lineEditY:SetRelativeWidth(0.45)
+
 	if option.enabled then
-		local result = option.enabled()
-		lineEditX:SetEnabled(result)
-		lineEditY:SetEnabled(result)
-		tinsert(refreshMap, { widget = lineEditX, enabled = option.enabled })
-		tinsert(refreshMap, { widget = lineEditY, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = labelX, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = lineEditX, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = labelY, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = lineEditY, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	if option.updateIndices then
 		UpdateUpdateIndices(self.updateIndices, option, function()
@@ -406,7 +399,7 @@ local function CreateDoubleLineEdit(self, option, index, refreshMap)
 		else
 			option.set(valueX, valueY)
 		end
-		RefreshEnabledStates(refreshMap)
+		RefreshEnabledStates(self.refreshMap)
 		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 			Update(self.updateIndices[option.category][index])
 		end
@@ -436,10 +429,10 @@ end
 ---@param option EPSettingOption
 ---@param index integer
 ---@return EPContainer
-local function CreateOptionWidget(self, option, index, refreshMap)
+local function CreateOptionWidget(self, option, index)
 	local container = AceGUI:Create("EPContainer")
-	container:SetLayout("EPVerticalLayout")
-	container:SetSpacing(0, spacingBetweenLabelAndWidget)
+	container:SetLayout("EPHorizontalLayout")
+	container:SetSpacing(spacingBetweenLabelAndWidget, 0)
 	container:SetFullWidth(true)
 
 	if option.indent then
@@ -448,20 +441,19 @@ local function CreateOptionWidget(self, option, index, refreshMap)
 
 	local containerChildren = {}
 	local widget, setWidgetValue, callbackName = nil, nil, nil
+	local label = nil
 	if option.type == "checkBox" then
 		widget = AceGUI:Create("EPCheckBox")
 		widget:SetFullWidth(true)
 		widget:SetText(option.label)
 		setWidgetValue = widget.SetChecked
 		callbackName = "OnValueChanged"
-	elseif option.type == "frameChooser" then
-		tinsert(containerChildren, CreateFrameChooser(self, option, index))
 	else
-		local label = AceGUI:Create("EPLabel")
-		label:SetText(option.label)
+		label = AceGUI:Create("EPLabel")
+		label:SetText(option.label .. ":")
 		label:SetFontSize(optionLabelFontSize)
-		label:SetFullWidth(true)
-		label:SetFrameHeightFromText()
+		label:SetFrameWidthFromText()
+		label:SetFullHeight(true)
 		label.text:SetTextColor(unpack(labelTextColor))
 		tinsert(containerChildren, label)
 
@@ -472,22 +464,26 @@ local function CreateOptionWidget(self, option, index, refreshMap)
 			setWidgetValue = widget.SetValue
 			callbackName = "OnValueChanged"
 		elseif option.type == "radioButtonGroup" then
-			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, refreshMap))
+			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
 		elseif option.type == "lineEdit" then
 			widget = AceGUI:Create("EPLineEdit")
 			widget:SetFullWidth(true)
 			setWidgetValue = widget.SetText
 			callbackName = "OnTextSubmitted"
 		elseif option.type == "doubleLineEdit" then
-			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, refreshMap))
+			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, label))
+		elseif option.type == "frameChooser" then
+			tinsert(containerChildren, CreateFrameChooser(self, option, index, label))
 		end
 	end
 
 	if widget and setWidgetValue and callbackName then
 		setWidgetValue(widget, option.get())
 		if option.enabled then
-			widget:SetEnabled(option.enabled())
-			tinsert(refreshMap, { widget = widget, enabled = option.enabled })
+			tinsert(self.refreshMap, { widget = widget, enabled = option.enabled })
+			if label then
+				tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
+			end
 		end
 		if option.updateIndices then
 			UpdateUpdateIndices(self.updateIndices, option, function()
@@ -506,7 +502,7 @@ local function CreateOptionWidget(self, option, index, refreshMap)
 			else
 				option.set(value)
 			end
-			RefreshEnabledStates(refreshMap)
+			RefreshEnabledStates(self.refreshMap)
 			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 				Update(self.updateIndices[option.category][index])
 			end
@@ -528,6 +524,41 @@ end
 
 ---@param self EPOptions
 ---@param tab string
+---@param activeContainerChildren table
+local function CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
+	local maxLabelWidth = 0
+	local children = {}
+	for index, option in ipairs(self.optionTabs[tab]) do
+		if not option.category then
+			local container = CreateOptionWidget(self, option, index)
+			if #container.children >= 2 and container.children[1].type == "EPLabel" then
+				maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
+			end
+			tinsert(children, container)
+			if index ~= #self.optionTabs[tab] then
+				local spacer = AceGUI:Create("EPSpacer")
+				spacer:SetHeight(spacingBetweenOptions)
+				spacer:SetFullWidth(true)
+				tinsert(children, spacer)
+			end
+		end
+	end
+	if maxLabelWidth > 0 then
+		for _, child in ipairs(children) do
+			if child.children and #child.children >= 2 and child.children[1].type == "EPLabel" then
+				child.children[1].frame:SetWidth(maxLabelWidth)
+			end
+			tinsert(activeContainerChildren, child)
+		end
+	else
+		for _, child in ipairs(children) do
+			tinsert(activeContainerChildren, child)
+		end
+	end
+end
+
+---@param self EPOptions
+---@param tab string
 local function PopulateActiveTab(self, tab)
 	if tab == self.activeTab then
 		return
@@ -539,17 +570,7 @@ local function PopulateActiveTab(self, tab)
 	local activeContainerChildren = {}
 
 	if self.tabCategories[tab] then
-		for index, option in ipairs(self.optionTabs[tab]) do
-			if not option.category then
-				tinsert(activeContainerChildren, CreateOptionWidget(self, option, index, self.refreshMap))
-				if index ~= #self.optionTabs[tab] then
-					local spacer = AceGUI:Create("EPSpacer")
-					spacer:SetHeight(spacingBetweenOptions)
-					spacer:SetFullWidth(true)
-					tinsert(activeContainerChildren, spacer)
-				end
-			end
-		end
+		CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
 		for categoryIndex, category in ipairs(self.tabCategories[tab]) do
 			local label = AceGUI:Create("EPLabel")
 			label:SetText(category)
@@ -566,13 +587,25 @@ local function PopulateActiveTab(self, tab)
 			categoryContainer:SetPadding(unpack(categoryPadding))
 			categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
 			local categoryContainerChildren = {}
+			local maxLabelWidth = 0
 			for index, option in ipairs(self.optionTabs[tab]) do
 				if option.category == category then
-					tinsert(categoryContainerChildren, CreateOptionWidget(self, option, index, self.refreshMap))
+					local container = CreateOptionWidget(self, option, index)
+					if #container.children >= 2 and container.children[1].type == "EPLabel" then
+						maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
+					end
+					tinsert(categoryContainerChildren, CreateOptionWidget(self, option, index))
 				end
 			end
 
 			if #categoryContainerChildren > 0 then
+				if maxLabelWidth > 0 then
+					for _, container in ipairs(categoryContainerChildren) do
+						if #container.children >= 2 and container.children[1].type == "EPLabel" then
+							container.children[1].frame:SetWidth(maxLabelWidth)
+						end
+					end
+				end
 				categoryContainer:AddChildren(unpack(categoryContainerChildren))
 				tinsert(activeContainerChildren, categoryContainer)
 			end
@@ -585,19 +618,12 @@ local function PopulateActiveTab(self, tab)
 			end
 		end
 	else
-		for index, option in ipairs(self.optionTabs[tab]) do
-			tinsert(activeContainerChildren, CreateOptionWidget(self, option, index, self.refreshMap))
-			if index ~= #self.optionTabs[tab] then
-				local spacer = AceGUI:Create("EPSpacer")
-				spacer:SetHeight(spacingBetweenOptions)
-				spacer:SetFullWidth(true)
-				tinsert(activeContainerChildren, spacer)
-			end
-		end
+		CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
 	end
 
 	if #activeContainerChildren > 0 then
 		self.activeContainer:AddChildren(unpack(activeContainerChildren))
+		RefreshEnabledStates(self.refreshMap)
 	end
 	self:UpdateVerticalScroll()
 end
@@ -658,21 +684,21 @@ local function OnAcquire(self)
 	self.tabTitleContainer:SetAlignment("center")
 	self.tabTitleContainer:SetSelfAlignment("center")
 	self.tabTitleContainer.frame:SetParent(self.frame)
-	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y / 2.0)
+	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y)
+
+	local halfPaddingX, halfPaddingY = contentFramePadding.x / 2.0, contentFramePadding.y / 2.0
+
 	self.scrollBar:ClearAllPoints()
-	self.scrollBar:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y / 2.0)
-	self.scrollBar:SetPoint(
-		"BOTTOMRIGHT",
-		self.frame,
-		"BOTTOMRIGHT",
-		-contentFramePadding.x / 2.0,
-		contentFramePadding.y / 2.0
-	)
+	self.scrollBar:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -halfPaddingY)
+	self.scrollBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
+
 	self.thumb:SetPoint("TOP", 0, thumbPadding.y)
+
 	self.scrollFrame:ClearAllPoints()
-	self.scrollFrame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y / 2.0)
-	self.scrollFrame:SetPoint("LEFT", self.frame, "LEFT", contentFramePadding.x / 2.0, 0)
-	self.scrollFrame:SetPoint("BOTTOMRIGHT", self.scrollBar, "BOTTOMLEFT", -contentFramePadding.x / 2.0, 0)
+	self.scrollFrame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -halfPaddingY)
+	self.scrollFrame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
+	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -halfPaddingX, 0)
+
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
@@ -815,8 +841,6 @@ local function Constructor()
 	end)
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
-	scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", contentFramePadding.x, -contentFramePadding.y - windowBarHeight)
-	scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -contentFramePadding.x * 2, contentFramePadding.y)
 
 	local frameChooserFrame = CreateFrame("Frame", nil, frame)
 	frameChooserFrame:Hide()
@@ -832,8 +856,8 @@ local function Constructor()
 
 	local verticalScrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
 	verticalScrollBar:SetWidth(scrollBarWidth)
-	verticalScrollBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -20, -contentFramePadding.y - windowBarHeight)
-	verticalScrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, contentFramePadding.y)
+	verticalScrollBar:SetPoint("TOPRIGHT")
+	verticalScrollBar:SetPoint("BOTTOMRIGHT")
 
 	local verticalScrollBarBackground =
 		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")

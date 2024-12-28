@@ -19,6 +19,7 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
+	local contentWidth = content:GetWidth()
 	local totalWidth = 0
 	local maxHeight = 0
 	local paddingX = defaultSpacing
@@ -76,6 +77,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			end
 		end
 	else
+		contentWidth = contentWidth - (childCount - 1) * paddingX
 		for i = 1, childCount do
 			local child = children[i]
 			local frame = child.frame
@@ -101,6 +103,8 @@ AceGUI:RegisterLayout(Type, function(content, children)
 
 				if child.width == "fill" and i == childCount then
 					frame:SetPoint("RIGHT", content)
+				elseif child.width == "relative" then
+					child:SetWidth(contentWidth * child.relWidth)
 				end
 				if child.height == "fill" then
 					frame:SetPoint("BOTTOM", content)

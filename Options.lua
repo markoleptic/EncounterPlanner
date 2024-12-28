@@ -320,7 +320,6 @@ function Private:CreateOptionsMenu()
 			label = "Preferred Number of Assignments to Show",
 			type = "dropdown",
 			description = "The assignment timeline will attempt to expand or shrink to show this many rows.",
-			category = nil,
 			values = rowValues,
 			get = function()
 				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow)
@@ -341,7 +340,6 @@ function Private:CreateOptionsMenu()
 			label = "Preferred Number of Boss Abilities to Show",
 			type = "dropdown",
 			description = "The boss ability timeline will attempt to expand or shrink to show this many rows.",
-			category = nil,
 			values = rowValues,
 			get = function()
 				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow)
@@ -383,27 +381,6 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
-			label = "Show Spell Cooldown Duration",
-			type = "checkBox",
-			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
-			category = "Assignment",
-			get = function()
-				return AddOn.db.profile.preferences.showSpellCooldownDuration
-			end,
-			set = function(key)
-				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
-					AddOn.db.profile.preferences.showSpellCooldownDuration = key
-					if Private.mainFrame.timeline then
-						Private.mainFrame.timeline:UpdateTimeline()
-					end
-				end
-				AddOn.db.profile.preferences.showSpellCooldownDuration = key
-			end,
-			validate = function(key)
-				return true
-			end,
-		},
-		{
 			label = "Assignment Sort Priority",
 			type = "dropdown",
 			description = "Sorts the rows of the assignment timeline.",
@@ -427,6 +404,27 @@ function Private:CreateOptionsMenu()
 					end
 				end
 				AddOn.db.profile.preferences.assignmentSortType = key
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
+		{
+			label = "Show Spell Cooldown Duration",
+			type = "checkBox",
+			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
+			category = "Assignment",
+			get = function()
+				return AddOn.db.profile.preferences.showSpellCooldownDuration
+			end,
+			set = function(key)
+				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
+					AddOn.db.profile.preferences.showSpellCooldownDuration = key
+					if Private.mainFrame.timeline then
+						Private.mainFrame.timeline:UpdateTimeline()
+					end
+				end
+				AddOn.db.profile.preferences.showSpellCooldownDuration = key
 			end,
 			validate = function(key)
 				return true
@@ -486,7 +484,7 @@ function Private:CreateOptionsMenu()
 		[2] = {
 			label = "Only Show Reminders For Me",
 			type = "checkBox",
-			description = "Whether to show assignment reminders that are only relevant to you.",
+			description = "Whether to only show assignment reminders that are relevant to you.",
 			enabled = enableReminderOption,
 			get = function()
 				return reminderPreferences.onlyShowMe
@@ -499,9 +497,9 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		[3] = {
-			label = "Don't Show/Cancel if Already Casted",
+			label = "Hide or Cancel if Spell on Cooldown",
 			type = "checkBox",
-			description = "If the assignment is a spell, don't show the assignment or cancel it.",
+			description = "If an assignment is a spell and it already on cooldown, the assignment will not be shown. If the spell is cast during its countdown, it will be cancelled.",
 			enabled = enableReminderOption,
 			get = function()
 				return reminderPreferences.cancelIfAlreadyCasted
@@ -516,7 +514,7 @@ function Private:CreateOptionsMenu()
 		[4] = {
 			label = "Reminder Advance Notice",
 			type = "lineEdit",
-			description = "How far ahead of assignment time to begin showing reminder widgets.",
+			description = "How far ahead of assignment time to begin showing reminders.",
 			category = nil,
 			values = nil,
 			get = function()
@@ -536,7 +534,7 @@ function Private:CreateOptionsMenu()
 		[5] = {
 			label = "Enable Messages",
 			type = "checkBox",
-			description = "Whether to show messages widgets for assignments.",
+			description = "Whether to show Messages for assignments.",
 			get = function()
 				return reminderPreferences.messages.enabled
 			end,
@@ -650,30 +648,12 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		[11] = {
-			label = "Grow Messages Down",
-			type = "checkBox",
-			description = "",
-			category = "Messages",
-			get = function()
-				return reminderPreferences.messages.growDown
-			end,
-			set = function(key)
-				reminderPreferences.messages.growDown = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
-			end,
-			validate = function(key)
-				return true
-			end,
-		},
-		[12] = {
-			label = "Message Anchor",
+			label = "Anchor Point",
 			type = "dropdown",
-			description = "",
+			description = 'Anchor point of the Message frame, or the "spot" on the Message frame that will be placed relative to another frame.',
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 12, 13, 14, 15 },
+			updateIndices = { 11, 12, 13, 14 },
 			get = function()
 				return reminderPreferences.messages.point
 			end,
@@ -693,12 +673,12 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[13] = {
-			label = "Message Anchor Frame:",
+		[12] = {
+			label = "Anchor Frame",
 			type = "frameChooser",
-			description = "",
+			description = "The frame that the Message frame is anchored to. Defaults to UIParent (screen).",
 			category = "Messages",
-			updateIndices = { 12, 13, 14, 15 },
+			updateIndices = { 11, 12, 13, 14 },
 			get = function()
 				return reminderPreferences.messages.relativeTo
 			end,
@@ -714,13 +694,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[14] = {
-			label = "Relative Anchor",
+		[13] = {
+			label = "Relative Anchor Point",
 			type = "dropdown",
-			description = "The Message frame is anchored to this point on the Anchor frame.",
+			description = "The anchor point on the frame that the Message frame is anchored to.",
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 12, 13, 14, 15 },
+			updateIndices = { 11, 12, 13, 14 },
 			get = function()
 				return reminderPreferences.messages.relativePoint
 			end,
@@ -736,14 +716,14 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[15] = {
+		[14] = {
 			label = "Position",
 			labels = { "X:", "Y:" },
 			type = "doubleLineEdit",
-			description = "",
+			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 12, 13, 14, 15 },
+			updateIndices = { 11, 12, 13, 14 },
 			get = function()
 				return reminderPreferences.messages.x, reminderPreferences.messages.y
 			end,
@@ -775,10 +755,28 @@ function Private:CreateOptionsMenu()
 				return false, reminderPreferences.messages.x, reminderPreferences.messages.y
 			end,
 		},
+		[15] = {
+			label = "Grow Down",
+			type = "checkBox",
+			description = "If checked, new Messages will be added underneath the most recent Message, if it exists.",
+			category = "Messages",
+			get = function()
+				return reminderPreferences.messages.growDown
+			end,
+			set = function(key)
+				reminderPreferences.messages.growDown = key
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+			end,
+			validate = function(key)
+				return true
+			end,
+		},
 		[16] = {
 			label = "Enable Progress Bars",
 			type = "checkBox",
-			description = "Whether to show progress bar widgets for assignments.",
+			description = "Whether to show Progress Bars for assignments.",
 			category = "Progress Bars",
 			get = function()
 				return reminderPreferences.progressBars.enabled
@@ -858,7 +856,7 @@ function Private:CreateOptionsMenu()
 		[20] = {
 			label = "Font Outline",
 			type = "dropdown",
-			description = "Font outline to use for Message text.",
+			description = "Font outline to use for Progress Bar text.",
 			category = "Progress Bars",
 			values = fontOutlineValues,
 			get = function()
@@ -877,7 +875,7 @@ function Private:CreateOptionsMenu()
 		[21] = {
 			label = "Monochrome",
 			type = "checkBox",
-			description = "Whether to use monochrome font for Message text.",
+			description = "Whether to use monochrome font for Progress Bar text.",
 			category = "Progress Bars",
 			get = function()
 				return reminderPreferences.progressBars.fontMonochrome
@@ -893,30 +891,12 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		[22] = {
-			label = "Grow Messages Down",
-			type = "checkBox",
-			description = "",
-			category = "Progress Bars",
-			get = function()
-				return reminderPreferences.progressBars.growDown
-			end,
-			set = function(key)
-				reminderPreferences.progressBars.growDown = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
-			end,
-			validate = function(key)
-				return true
-			end,
-		},
-		[23] = {
-			label = "Message Anchor",
+			label = "Anchor Point",
 			type = "dropdown",
-			description = "",
+			description = 'Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.',
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 23, 24, 25, 26 },
+			updateIndices = { 22, 23, 24, 25 },
 			get = function()
 				return reminderPreferences.progressBars.point
 			end,
@@ -937,12 +917,12 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[24] = {
-			label = "Message Anchor Frame:",
+		[23] = {
+			label = "Anchor Frame",
 			type = "frameChooser",
-			description = "",
+			description = "The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen).",
 			category = "Progress Bars",
-			updateIndices = { 23, 24, 25, 26 },
+			updateIndices = { 22, 23, 24, 25 },
 			get = function()
 				return reminderPreferences.progressBars.relativeTo
 			end,
@@ -963,13 +943,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[25] = {
-			label = "Relative Anchor:",
+		[24] = {
+			label = "Relative Anchor Point",
 			type = "dropdown",
-			description = "The Message frame is anchored to this point on the Anchor frame.",
+			description = "The anchor point on the frame that the Progress Bars frame is anchored to.",
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 23, 24, 25, 26 },
+			updateIndices = { 22, 23, 24, 25 },
 			get = function()
 				return reminderPreferences.progressBars.relativePoint
 			end,
@@ -990,13 +970,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[26] = {
+		[25] = {
 			label = "Position",
 			type = "doubleLineEdit",
-			description = "",
+			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 23, 24, 25, 26 },
+			updateIndices = { 22, 23, 24, 25 },
 			get = function()
 				return reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
 			end,
@@ -1026,6 +1006,24 @@ function Private:CreateOptionsMenu()
 					return true
 				end
 				return false, reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
+			end,
+		},
+		[26] = {
+			label = "Grow Down",
+			type = "checkBox",
+			description = "If checked, new Progress Bars will be added underneath the most recent Progress Bar, if it exists.",
+			category = "Progress Bars",
+			get = function()
+				return reminderPreferences.progressBars.growDown
+			end,
+			set = function(key)
+				reminderPreferences.progressBars.growDown = key
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+			validate = function(key)
+				return true
 			end,
 		},
 		[27] = {
@@ -1193,7 +1191,7 @@ function Private:CreateOptionsMenu()
 
 	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
 	optionsMenu:AddOptionTab("Reminder", reminderOptions, { "Messages", "Progress Bars", "Text to Speech", "Sound" })
-	optionsMenu:AddOptionTab("View", viewOptions)
+	optionsMenu:AddOptionTab("View", viewOptions, { "Assignment" })
 	optionsMenu:SetCurrentTab("Keybindings")
 
 	if Private.mainFrame then
