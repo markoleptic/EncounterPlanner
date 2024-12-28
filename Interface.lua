@@ -932,6 +932,7 @@ function Private:CreateInterface()
 		elseif sub(value, 1, 4) == "From" then
 			ImportPlan(value)
 		end
+		planMenuButton:SetValue("Plan")
 		planMenuButton:SetText("Plan")
 	end)
 
@@ -960,6 +961,7 @@ function Private:CreateInterface()
 		elseif value == "Edit Shared Roster" then
 			CreateRosterEditor("SharedRoster")
 		end
+		rosterMenuButton:SetValue("Roster")
 		rosterMenuButton:SetText("Roster")
 	end)
 
