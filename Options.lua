@@ -677,8 +677,8 @@ function Private:CreateOptionsMenu()
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y = ApplyPoint(
 					Private.messageAnchor.frame,
 					key,
-					_G[reminderPreferences.messages.relativeTo] or UIParent,
-					reminderPreferences.messages.relativePoint
+					_G[messages.relativeTo] or UIParent,
+					messages.relativePoint
 				)
 			end,
 			enabled = function()
@@ -699,12 +699,8 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local messages = reminderPreferences.messages
-				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y = ApplyPoint(
-					Private.messageAnchor.frame,
-					messages.point,
-					_G[key] or UIParent,
-					reminderPreferences.messages.relativePoint
-				)
+				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+					ApplyPoint(Private.messageAnchor.frame, messages.point, _G[key] or UIParent, messages.relativePoint)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -725,12 +721,8 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local messages = reminderPreferences.messages
-				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y = ApplyPoint(
-					Private.messageAnchor.frame,
-					messages.point,
-					_G[reminderPreferences.messages.relativeTo] or UIParent,
-					key
-				)
+				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+					ApplyPoint(Private.messageAnchor.frame, messages.point, _G[messages.relativeTo] or UIParent, key)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -752,10 +744,18 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key, key2)
 				local x = tonumber(key)
-				local y = tonumber(key)
+				local y = tonumber(key2)
 				if x and y then
 					reminderPreferences.messages.x = x
 					reminderPreferences.messages.y = y
+					local messages = reminderPreferences.messages
+					Private.progressBarAnchor.frame:SetPoint(
+						messages.point,
+						_G[messages.relativeTo] or UIParent,
+						messages.relativePoint,
+						x,
+						y
+					)
 				end
 			end,
 			enabled = function()
@@ -763,7 +763,7 @@ function Private:CreateOptionsMenu()
 			end,
 			validate = function(key, key2)
 				local x = tonumber(key)
-				local y = tonumber(key)
+				local y = tonumber(key2)
 				if x and y then
 					return true
 				end
@@ -911,11 +911,19 @@ function Private:CreateOptionsMenu()
 			description = "",
 			category = "Progress Bars",
 			values = anchorPointValues,
+			updateIndices = { 23, 24, 25, 26 },
 			get = function()
 				return reminderPreferences.progressBars.point
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.point = key
+				local progressBars = reminderPreferences.progressBars
+				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+					ApplyPoint(
+						Private.progressBarAnchor.frame,
+						key,
+						_G[progressBars.relativeTo] or UIParent,
+						progressBars.relativePoint
+					)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -929,11 +937,19 @@ function Private:CreateOptionsMenu()
 			type = "frameChooser",
 			description = "",
 			category = "Progress Bars",
+			updateIndices = { 23, 24, 25, 26 },
 			get = function()
 				return reminderPreferences.progressBars.relativeTo
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.relativeTo = key
+				local progressBars = reminderPreferences.progressBars
+				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+					ApplyPoint(
+						Private.progressBarAnchor.frame,
+						progressBars.point,
+						_G[key] or UIParent,
+						progressBars.relativePoint
+					)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -948,11 +964,19 @@ function Private:CreateOptionsMenu()
 			description = "The Message frame is anchored to this point on the Anchor frame.",
 			category = "Progress Bars",
 			values = anchorPointValues,
+			updateIndices = { 23, 24, 25, 26 },
 			get = function()
 				return reminderPreferences.progressBars.relativePoint
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.relativePoint = key
+				local progressBars = reminderPreferences.progressBars
+				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+					ApplyPoint(
+						Private.progressBarAnchor.frame,
+						progressBars.point,
+						_G[progressBars.relativeTo] or UIParent,
+						key
+					)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -967,15 +991,24 @@ function Private:CreateOptionsMenu()
 			description = "",
 			category = "Progress Bars",
 			values = anchorPointValues,
+			updateIndices = { 23, 24, 25, 26 },
 			get = function()
 				return reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
 			end,
 			set = function(key, key2)
 				local x = tonumber(key)
-				local y = tonumber(key)
+				local y = tonumber(key2)
 				if x and y then
 					reminderPreferences.progressBars.x = x
 					reminderPreferences.progressBars.y = y
+					local progressBars = reminderPreferences.progressBars
+					Private.progressBarAnchor.frame:SetPoint(
+						progressBars.point,
+						_G[progressBars.relativeTo] or UIParent,
+						progressBars.relativePoint,
+						x,
+						y
+					)
 				end
 			end,
 			enabled = function()
@@ -983,7 +1016,7 @@ function Private:CreateOptionsMenu()
 			end,
 			validate = function(key, key2)
 				local x = tonumber(key)
-				local y = tonumber(key)
+				local y = tonumber(key2)
 				if x and y then
 					return true
 				end
@@ -1176,11 +1209,12 @@ function Private:CreateOptionsMenu()
 		reminderPreferences.messages.x,
 		reminderPreferences.messages.y
 	)
-	messageAnchor.frame:Hide()
 	Private.messageAnchor = messageAnchor
 
 	local progressBarAnchor = AceGUI:Create("EPProgressBar")
 	progressBarAnchor.frame:SetParent(UIParent)
+	progressBarAnchor:SetDuration(60)
+	progressBarAnchor:Start()
 	progressBarAnchor.frame:SetPoint(
 		reminderPreferences.progressBars.point,
 		reminderPreferences.progressBars.relativeTo or UIParent,
@@ -1188,7 +1222,6 @@ function Private:CreateOptionsMenu()
 		reminderPreferences.progressBars.x,
 		reminderPreferences.progressBars.y
 	)
-	progressBarAnchor.frame:Hide()
 	Private.progressBarAnchor = progressBarAnchor
 end
 
