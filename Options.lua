@@ -7,6 +7,9 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class OptionsModule : AceModule
 local OptionsModule = Private.addOn.optionsModule
 
+---@class Utilities
+local utilities = Private.utilities
+
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
@@ -155,6 +158,8 @@ local function ApplyPoint(frame, point, relativeFrame, relativePoint)
 		relativeFrame:GetHeight(),
 		relativePoint
 	)
+	x = utilities.Round(x, 2)
+	y = utilities.Round(x, 2)
 	local relativeTo = relativeFrame:GetName()
 	frame:ClearAllPoints()
 	frame:SetPoint(point, relativeTo, relativePoint, x, y)
@@ -439,7 +444,7 @@ function Private:CreateOptionsMenu()
 
 	local fonts = {}
 	for name, value in pairs(LSM:HashTable("font")) do
-		tinsert(sounds, { itemValue = value, text = name })
+		tinsert(fonts, { itemValue = value, text = name })
 	end
 	sort(fonts, function(a, b)
 		return a.text < b.text

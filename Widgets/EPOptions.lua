@@ -68,64 +68,6 @@ local groupBoxBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 
 local isChoosingFrame = false
 
----@param left number
----@param top number
----@param width number
----@param height number
----@param point "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
----@param rLeft number
----@param rTop number
----@param rWidth number
----@param rhHeight number
----@param rPoint "TOPLEFT"|"TOP"|"TOPRIGHT"|"RIGHT"|"BOTTOMRIGHT"|"BOTTOM"|"LEFT"|"BOTTOMLEFT"|"CENTER"
-local function calculateNewOffset(left, top, width, height, point, rLeft, rTop, rWidth, rhHeight, rPoint)
-	if point == "TOP" then
-		left = left + width / 2.0
-	elseif point == "TOPRIGHT" then
-		left = left + width
-	elseif point == "RIGHT" then
-		left = left + width
-		top = top - height / 2.0
-	elseif point == "BOTTOMRIGHT" then
-		left = left + width
-		top = top - height
-	elseif point == "BOTTOM" then
-		left = left + width / 2.0
-		top = top - height
-	elseif point == "LEFT" then
-		top = top - height / 2.0
-	elseif point == "BOTTOMLEFT" then
-		top = top - height
-	elseif point == "CENTER" then
-		left = left + width / 2.0
-		top = top - height / 2.0
-	end
-
-	if rPoint == "TOP" then
-		rLeft = rLeft + rWidth / 2.0
-	elseif rPoint == "TOPRIGHT" then
-		rLeft = rLeft + rWidth
-	elseif rPoint == "RIGHT" then
-		rLeft = rLeft + rWidth
-		rTop = rTop - rhHeight / 2.0
-	elseif rPoint == "BOTTOMRIGHT" then
-		rLeft = rLeft + rWidth
-		rTop = rTop - rhHeight
-	elseif rPoint == "BOTTOM" then
-		rLeft = rLeft + rWidth / 2.0
-		rTop = rTop - rhHeight
-	elseif rPoint == "LEFT" then
-		rTop = rTop - rhHeight / 2.0
-	elseif rPoint == "BOTTOMLEFT" then
-		rTop = rTop - rhHeight
-	elseif rPoint == "CENTER" then
-		rLeft = rLeft + rWidth / 2.0
-		rTop = rTop - rhHeight / 2.0
-	end
-
-	return left - rLeft, top - rTop
-end
-
 local function GetName(frame)
 	if frame.GetName and frame:GetName() then
 		return frame:GetName()
@@ -253,7 +195,7 @@ local function handleRadioButtonToggled(radioButton, radioButtonGroup)
 end
 
 ---@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
-local function Refresh(refreshMap)
+local function RefreshEnabledStates(refreshMap)
 	for _, tab in pairs(refreshMap) do
 		---@diagnostic disable-next-line: undefined-field
 		if tab.widget.SetEnabled then
@@ -301,52 +243,8 @@ end
 ---@param self EPOptions
 ---@param option EPSettingOption
 ---@param index integer
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
----@return EPCheckBox
-local function CreateCheckBox(self, option, index, refreshMap)
-	local checkBox = AceGUI:Create("EPCheckBox")
-	checkBox:SetFullWidth(true)
-	checkBox:SetText(option.label)
-	checkBox:SetChecked(option.get() == true)
-	if option.enabled then
-		checkBox:SetEnabled(option.enabled())
-		tinsert(refreshMap, { widget = checkBox, enabled = option.enabled })
-	end
-
-	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
-			checkBox:SetChecked(option.get() == true)
-		end)
-	end
-
-	checkBox:SetCallback("OnValueChanged", function(_, _, checked)
-		if checked then
-			option.set(true)
-		else
-			option.set(false)
-		end
-		Refresh(refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
-		end
-	end)
-	checkBox.button:SetCallback("OnEnter", function()
-		ShowTooltip(checkBox.frame, option.label, option.description)
-	end)
-	checkBox.button:SetCallback("OnLeave", function()
-		tooltip:Hide()
-	end)
-	return checkBox
-end
-
----@param self EPOptions
----@param option EPSettingOption
----@param index integer
----@param frameChooserFrame Frame
----@param frameChooserBox Frame|BackdropTemplate
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
 ---@return EPContainer
-local function CreateFrameChooser(self, option, index, frameChooserFrame, frameChooserBox, refreshMap)
+local function CreateFrameChooser(self, option, index)
 	local frameChooserContainer = AceGUI:Create("EPContainer")
 	frameChooserContainer:SetFullWidth(true)
 	frameChooserContainer:SetLayout("EPHorizontalLayout")
@@ -377,11 +275,11 @@ local function CreateFrameChooser(self, option, index, frameChooserFrame, frameC
 	button:SetWidthFromText()
 	button:SetCallback("Clicked", function()
 		if not isChoosingFrame then
-			frameChooserFrame:Show()
-			StartChoosingFrame(frameChooserFrame, frameChooserBox, function(value)
+			self.frameChooserFrame:Show()
+			StartChoosingFrame(self.frameChooserFrame, self.frameChooserBox, function(value)
 				option.set(value)
 				valueLabel:SetText(value)
-				Refresh(refreshMap)
+				RefreshEnabledStates(self.refreshMap)
 				if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 					Update(self.updateIndices[option.category][index])
 				end
@@ -397,51 +295,10 @@ local function CreateFrameChooser(self, option, index, frameChooserFrame, frameC
 
 	if option.enabled then
 		button:SetEnabled(option.enabled())
-		tinsert(refreshMap, { widget = button, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
 	end
 	frameChooserContainer:AddChildren(label, valueLabel, button)
 	return frameChooserContainer
-end
-
----@param self EPOptions
----@param option EPSettingOption
----@param index integer
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
----@return EPDropdown
-local function CreateDropdown(self, option, index, refreshMap)
-	local dropdown = AceGUI:Create("EPDropdown")
-	dropdown:SetFullWidth(true)
-	if option.enabled then
-		dropdown:SetEnabled(option.enabled())
-		tinsert(refreshMap, { widget = dropdown, enabled = option.enabled })
-	end
-	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
-			dropdown:SetValue(option.get())
-		end)
-	end
-	dropdown:SetCallback("OnValueChanged", function(_, _, value, _)
-		local valid, valueToRevertTo = option.validate(value)
-		if not valid and valueToRevertTo then
-			dropdown:SetValue(valueToRevertTo)
-			option.set(valueToRevertTo)
-		else
-			option.set(value)
-		end
-		Refresh(refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
-		end
-	end)
-	dropdown:AddItems(option.values, "EPDropdownItemToggle")
-	dropdown:SetValue(option.get())
-	dropdown:SetCallback("OnEnter", function()
-		ShowTooltip(dropdown.frame, option.label, option.description)
-	end)
-	dropdown:SetCallback("OnLeave", function()
-		tooltip:Hide()
-	end)
-	return dropdown
 end
 
 ---@param self EPOptions
@@ -483,7 +340,7 @@ local function CreateRadioButtonGroup(self, option, index, refreshMap)
 			handleRadioButtonToggled(radioButton, radioButtonGroup)
 			local value = radioButton:GetUserData("key")
 			option.set(value)
-			Refresh(refreshMap)
+			RefreshEnabledStates(refreshMap)
 			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 				Update(self.updateIndices[option.category][index])
 			end
@@ -496,46 +353,6 @@ local function CreateRadioButtonGroup(self, option, index, refreshMap)
 		end)
 	end
 	return radioButtonGroup
-end
-
----@param self EPOptions
----@param option EPSettingOption
----@param index integer
----@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
----@return EPLineEdit
-local function CreateLineEdit(self, option, index, refreshMap)
-	local lineEdit = AceGUI:Create("EPLineEdit")
-	lineEdit:SetFullWidth(true)
-	if option.enabled then
-		lineEdit:SetEnabled(option.enabled())
-		tinsert(refreshMap, { widget = lineEdit, enabled = option.enabled })
-	end
-	lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-		local valid, valueToRevertTo = option.validate(value)
-		if not valid and valueToRevertTo then
-			lineEdit:SetText(valueToRevertTo)
-			option.set(valueToRevertTo)
-		else
-			option.set(value)
-		end
-		Refresh(refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
-		end
-	end)
-	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
-			lineEdit:SetText(option.get())
-		end)
-	end
-	lineEdit:SetText(option.get())
-	lineEdit:SetCallback("OnLeave", function()
-		tooltip:Hide()
-	end)
-	lineEdit:SetCallback("OnEnter", function()
-		ShowTooltip(lineEdit.frame, option.label, option.description)
-	end)
-	return lineEdit
 end
 
 ---@param self EPOptions
@@ -589,7 +406,7 @@ local function CreateDoubleLineEdit(self, option, index, refreshMap)
 		else
 			option.set(valueX, valueY)
 		end
-		Refresh(refreshMap)
+		RefreshEnabledStates(refreshMap)
 		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 			Update(self.updateIndices[option.category][index])
 		end
@@ -630,13 +447,15 @@ local function CreateOptionWidget(self, option, index, refreshMap)
 	end
 
 	local containerChildren = {}
+	local widget, setWidgetValue, callbackName = nil, nil, nil
 	if option.type == "checkBox" then
-		tinsert(containerChildren, CreateCheckBox(self, option, index, refreshMap))
+		widget = AceGUI:Create("EPCheckBox")
+		widget:SetFullWidth(true)
+		widget:SetText(option.label)
+		setWidgetValue = widget.SetChecked
+		callbackName = "OnValueChanged"
 	elseif option.type == "frameChooser" then
-		tinsert(
-			containerChildren,
-			CreateFrameChooser(self, option, index, self.frameChooserFrame, self.frameChooserBox, refreshMap)
-		)
+		tinsert(containerChildren, CreateFrameChooser(self, option, index))
 	else
 		local label = AceGUI:Create("EPLabel")
 		label:SetText(option.label)
@@ -647,14 +466,58 @@ local function CreateOptionWidget(self, option, index, refreshMap)
 		tinsert(containerChildren, label)
 
 		if option.type == "dropdown" then
-			tinsert(containerChildren, CreateDropdown(self, option, index, refreshMap))
+			widget = AceGUI:Create("EPDropdown")
+			widget:SetFullWidth(true)
+			widget:AddItems(option.values, "EPDropdownItemToggle")
+			setWidgetValue = widget.SetValue
+			callbackName = "OnValueChanged"
 		elseif option.type == "radioButtonGroup" then
 			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, refreshMap))
 		elseif option.type == "lineEdit" then
-			tinsert(containerChildren, CreateLineEdit(self, option, index, refreshMap))
+			widget = AceGUI:Create("EPLineEdit")
+			widget:SetFullWidth(true)
+			setWidgetValue = widget.SetText
+			callbackName = "OnTextSubmitted"
 		elseif option.type == "doubleLineEdit" then
 			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, refreshMap))
 		end
+	end
+
+	if widget and setWidgetValue and callbackName then
+		setWidgetValue(widget, option.get())
+		if option.enabled then
+			widget:SetEnabled(option.enabled())
+			tinsert(refreshMap, { widget = widget, enabled = option.enabled })
+		end
+		if option.updateIndices then
+			UpdateUpdateIndices(self.updateIndices, option, function()
+				setWidgetValue(widget, option.get())
+			end)
+		end
+		widget:SetCallback(callbackName, function(_, _, value)
+			if option.validate then
+				local valid, valueToRevertTo = option.validate(value)
+				if not valid and valueToRevertTo then
+					setWidgetValue(widget, valueToRevertTo)
+					option.set(valueToRevertTo)
+				else
+					option.set(value)
+				end
+			else
+				option.set(value)
+			end
+			RefreshEnabledStates(refreshMap)
+			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+				Update(self.updateIndices[option.category][index])
+			end
+		end)
+		widget:SetCallback("OnEnter", function()
+			ShowTooltip(widget.frame, option.label, option.description)
+		end)
+		widget:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
+		tinsert(containerChildren, widget)
 	end
 
 	if #containerChildren > 0 then

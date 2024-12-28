@@ -51,6 +51,12 @@ local function OnAcquire(self)
 			self:Fire("OnValueChanged", self.checked)
 		end
 	end)
+	self.button:SetCallback("OnEnter", function()
+		self:Fire("OnEnter")
+	end)
+	self.button:SetCallback("OnLeave", function()
+		self:Fire("OnLeave")
+	end)
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame)
