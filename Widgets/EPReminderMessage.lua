@@ -50,7 +50,11 @@ end
 
 ---@param self EPReminderMessage
 local function UpdateIconAndTextAnchors(self)
+	self.icon:ClearAllPoints()
+	self.text:ClearAllPoints()
+	self.frame:SetHeight(self.text:GetLineHeight() + defaultTextPadding.y * 2)
 	if self.showIcon then
+		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 2)
 		self.icon:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.iconPadding.x, -self.iconPadding.y)
 		self.icon:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.iconPadding.x, self.iconPadding.y)
 		self.icon:SetWidth(self.frame:GetHeight() - 2 * self.iconPadding.y)
@@ -58,8 +62,9 @@ local function UpdateIconAndTextAnchors(self)
 		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
 		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
 	else
-		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
+		self.frame:SetWidth(self.text:GetStringWidth() + self.horizontalTextPadding * 2)
+		self.text:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.horizontalTextPadding, 0)
+		self.text:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -self.horizontalTextPadding, 0)
 		self.icon:Hide()
 	end
 end
@@ -76,16 +81,10 @@ end
 
 ---@param self EPReminderMessage
 local function OnAcquire(self)
-	self.showIcon = false
-	self.horizontalTextPadding = defaultTextPadding.x
-	self.iconPadding = defaultIconPadding
-	self.text:ClearAllPoints()
-	self.icon:ClearAllPoints()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		self:SetFont(fPath, defaultFontHeight, "")
 	end
-	self:SetHeight(defaultFrameHeight)
 	self:SetHorizontalTextAlignment("CENTER")
 	self:SetIcon(nil)
 	self.frame:Show()
@@ -94,8 +93,10 @@ end
 ---@param self EPReminderMessage
 local function OnRelease(self)
 	self:SetAnchorMode(false)
-	self.horizontalTextPadding = nil
-	self.iconPadding = nil
+	self.text:ClearAllPoints()
+	self.icon:ClearAllPoints()
+	self.horizontalTextPadding = defaultTextPadding.x
+	self.iconPadding = defaultIconPadding
 end
 
 ---@param self EPReminderMessage
@@ -141,22 +142,6 @@ local function SetHorizontalTextAlignment(self, alignment)
 end
 
 ---@param self EPReminderMessage
----@param paddingY number|nil
-local function SetFrameHeightFromText(self, paddingY)
-	paddingY = paddingY or defaultTextPadding.y
-	self.frame:SetHeight(self.text:GetLineHeight() + paddingY * 2)
-end
-
----@param self EPReminderMessage
-local function SetFrameWidthFromText(self)
-	if self.showIcon then
-		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 2)
-	else
-		self.frame:SetWidth(self.text:GetStringWidth() + self.horizontalTextPadding * 2)
-	end
-end
-
----@param self EPReminderMessage
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
@@ -189,17 +174,13 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(defaultBackdropColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
-	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.x, -defaultIconPadding.y)
-	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", defaultIconPadding.x, defaultIconPadding.y)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
+	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		text:SetFont(fPath, defaultFontHeight)
 	end
-	text:SetPoint("LEFT", frame, "LEFT", defaultTextPadding.x, 0)
-	text:SetPoint("RIGHT", frame, "RIGHT", defaultTextPadding.x, 0)
-	text:SetWordWrap(false)
 
 	---@class EPReminderMessage
 	local widget = {
@@ -210,13 +191,14 @@ local function Constructor()
 		SetFont = SetFont,
 		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		GetText = GetText,
-		SetFrameHeightFromText = SetFrameHeightFromText,
-		SetFrameWidthFromText = SetFrameWidthFromText,
 		SetAnchorMode = SetAnchorMode,
 		frame = frame,
 		type = Type,
 		icon = icon,
 		text = text,
+		showIcon = false,
+		horizontalTextPadding = defaultTextPadding.x,
+		iconPadding = defaultIconPadding,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

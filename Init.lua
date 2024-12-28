@@ -452,7 +452,6 @@ end
 
 ---@class GenericReminderPreferences
 ---@field enabled boolean
----@field textAlignment "LEFT"|"CENTER"|"RIGHT"
 ---@field font "PT Sans Narrow",
 ---@field fontSize integer
 ---@field fontOutline ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
@@ -464,9 +463,12 @@ end
 ---@field growDown boolean
 
 ---@class ProgressBarPreferences : GenericReminderPreferences
+---@field textAlignment "LEFT"|"CENTER"|"RIGHT"
 ---@field texture string
 ---@field iconPosition "LEFT"|"RIGHT"
 ---@field width number
+---@field durationAlignment "LEFT"|"CENTER"|"RIGHT"
+---@field fill boolean
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
@@ -525,7 +527,6 @@ local defaults = {
 				advanceNotice = 10.0,
 				messages = {
 					enabled = true,
-					textAlignment = "LEFT",
 					font = "PT Sans Narrow",
 					fontSize = 24,
 					fontOutline = "",
@@ -553,6 +554,8 @@ local defaults = {
 					texture = "Clean",
 					iconPosition = "LEFT",
 					width = 100,
+					durationAlignment = "RIGHT",
+					fill = false,
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,

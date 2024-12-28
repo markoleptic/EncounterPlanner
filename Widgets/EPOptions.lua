@@ -19,12 +19,12 @@ local GetMouseFoci = GetMouseFoci
 local frameWidth = 400
 local frameHeight = 400
 local windowBarHeight = 28
-local contentFramePadding = { x = 20, y = 20 }
+local contentFramePadding = { x = 10, y = 10 }
 local title = "Preferences"
 local categoryFontSize = 18
 local optionLabelFontSize = 14
 local spacingBetweenOptions = 8
-local spacingBetweenCategories = 20
+local spacingBetweenCategories = 16
 local spacingBetweenLabelAndWidget = 8
 local indentWidth = 20
 local backdropColor = { 0, 0, 0, 1 }
@@ -32,7 +32,7 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local categoryTextColor = { 1, 0.82, 0, 1 }
 local labelTextColor = { 1, 1, 1, 1 }
-local scrollBarWidth = 20
+local scrollBarWidth = 16
 local thumbPadding = { x = 2, y = 2 }
 local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
@@ -63,6 +63,12 @@ local groupBoxBackdrop = {
 	tile = true,
 	tileSize = 16,
 	edgeSize = 2,
+}
+local lineBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	tile = false,
+	edgeSize = 0,
+	insets = { left = 0, right = 0, top = spacingBetweenOptions / 2, bottom = spacingBetweenOptions / 2 },
 }
 local groupBoxBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 
@@ -217,16 +223,17 @@ end
 ---@param updateIndices table<string, table<integer, table<integer, fun()>>>
 ---@param option EPSettingOption
 ---@param func fun()
-local function UpdateUpdateIndices(updateIndices, option, func)
+local function UpdateUpdateIndices(updateIndices, option, index, func)
 	if option.updateIndices then
 		if not updateIndices[option.category] then
 			updateIndices[option.category] = {}
 		end
-		for _, updateIndex in pairs(option.updateIndices) do
-			if not updateIndices[option.category][updateIndex] then
-				updateIndices[option.category][updateIndex] = {}
+		for _, relativeOptionIndex in pairs(option.updateIndices) do
+			local optionIndex = index + relativeOptionIndex
+			if not updateIndices[option.category][optionIndex] then
+				updateIndices[option.category][optionIndex] = {}
 			end
-			tinsert(updateIndices[option.category][updateIndex], func)
+			tinsert(updateIndices[option.category][optionIndex], func)
 		end
 	end
 end
@@ -258,7 +265,7 @@ local function CreateFrameChooser(self, option, index, label)
 	valueLineEdit:SetReadOnly(true)
 
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
 			valueLineEdit:SetText(option.get() --[[@as string]])
 		end)
 	end
@@ -318,7 +325,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	end
 	radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
 			for _, child in ipairs(radioButtonGroup.children) do
 				child:SetToggled(option.get() == child:GetUserDataTable().key)
 			end
@@ -383,7 +390,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, function()
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
 			local x, y = option.get()
 			lineEditX:SetText(x)
 			lineEditY:SetText(y)
@@ -427,6 +434,39 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
+---@return EPContainer, EPCheckBox, fun(EPCheckBox, boolean), string
+local function CreateCheckBoxBesideButton(self, option)
+	local checkBoxBesideButtonContainer = AceGUI:Create("EPContainer")
+	checkBoxBesideButtonContainer:SetFullWidth(true)
+	checkBoxBesideButtonContainer:SetLayout("EPHorizontalLayout")
+	checkBoxBesideButtonContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
+
+	local widget = AceGUI:Create("EPCheckBox")
+	widget:SetRelativeWidth(0.5)
+	widget:SetText(option.label)
+
+	local button = AceGUI:Create("EPButton")
+	button:SetText(option.buttonText)
+	button:SetRelativeWidth(0.5)
+	local checked = false
+	button:SetCallback("Clicked", function()
+		option.buttonCallback()
+		checked = not checked
+		if button.button:GetText() == option.buttonText then
+			button:SetText(option.toggledButtonText)
+		else
+			button:SetText(option.buttonText)
+		end
+	end)
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
+	end
+	checkBoxBesideButtonContainer:AddChildren(widget, button)
+	return checkBoxBesideButtonContainer, widget, widget.SetChecked, "OnValueChanged"
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
 ---@param index integer
 ---@return EPContainer
 local function CreateOptionWidget(self, option, index)
@@ -440,7 +480,7 @@ local function CreateOptionWidget(self, option, index)
 	end
 
 	local containerChildren = {}
-	local widget, setWidgetValue, callbackName = nil, nil, nil
+	local widget, setWidgetValue, callbackName, addWidget = nil, nil, nil, true
 	local label = nil
 	if option.type == "checkBox" then
 		widget = AceGUI:Create("EPCheckBox")
@@ -448,6 +488,11 @@ local function CreateOptionWidget(self, option, index)
 		widget:SetText(option.label)
 		setWidgetValue = widget.SetChecked
 		callbackName = "OnValueChanged"
+	elseif option.type == "checkBoxBesideButton" then
+		local checkBoxBesideButtonContainer
+		checkBoxBesideButtonContainer, widget, setWidgetValue, callbackName = CreateCheckBoxBesideButton(self, option)
+		tinsert(containerChildren, checkBoxBesideButtonContainer)
+		addWidget = false
 	else
 		label = AceGUI:Create("EPLabel")
 		label:SetText(option.label .. ":")
@@ -486,7 +531,7 @@ local function CreateOptionWidget(self, option, index)
 			end
 		end
 		if option.updateIndices then
-			UpdateUpdateIndices(self.updateIndices, option, function()
+			UpdateUpdateIndices(self.updateIndices, option, index, function()
 				setWidgetValue(widget, option.get())
 			end)
 		end
@@ -513,47 +558,58 @@ local function CreateOptionWidget(self, option, index)
 		widget:SetCallback("OnLeave", function()
 			tooltip:Hide()
 		end)
-		tinsert(containerChildren, widget)
+		if addWidget then
+			tinsert(containerChildren, widget)
+		end
 	end
 
-	if #containerChildren > 0 then
-		container:AddChildren(unpack(containerChildren))
-	end
+	container:AddChildren(unpack(containerChildren))
 	return container
 end
 
 ---@param self EPOptions
 ---@param tab string
----@param activeContainerChildren table
-local function CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
+---@return EPContainer|nil
+local function CreateUncategorizedOptionWidgets(self, tab)
+	local uncategorizedContainerChildren = {}
+	local labels = {}
 	local maxLabelWidth = 0
-	local children = {}
+
 	for index, option in ipairs(self.optionTabs[tab]) do
 		if not option.category then
-			local container = CreateOptionWidget(self, option, index)
-			if #container.children >= 2 and container.children[1].type == "EPLabel" then
-				maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
-			end
-			tinsert(children, container)
-			if index ~= #self.optionTabs[tab] then
-				local spacer = AceGUI:Create("EPSpacer")
-				spacer:SetHeight(spacingBetweenOptions)
-				spacer:SetFullWidth(true)
-				tinsert(children, spacer)
+			if option.type == "horizontalLine" then
+				local line = AceGUI:Create("EPSpacer")
+				line.frame:SetBackdrop(lineBackdrop)
+				line.frame:SetBackdropColor(unpack(backdropBorderColor))
+				line.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+				line:SetFullWidth(true)
+				line:SetHeight(2)
+				tinsert(uncategorizedContainerChildren, line)
+			else
+				local container = CreateOptionWidget(self, option, index)
+				if #container.children >= 2 and container.children[1].type == "EPLabel" then
+					maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
+					tinsert(labels, container.children[1])
+				end
+				tinsert(uncategorizedContainerChildren, container)
 			end
 		end
 	end
-	if maxLabelWidth > 0 then
-		for _, child in ipairs(children) do
-			if child.children and #child.children >= 2 and child.children[1].type == "EPLabel" then
-				child.children[1].frame:SetWidth(maxLabelWidth)
-			end
-			tinsert(activeContainerChildren, child)
-		end
+
+	for _, label in ipairs(labels) do
+		label:SetWidth(maxLabelWidth)
+	end
+
+	if #uncategorizedContainerChildren > 0 then
+		local uncategorizedContainer = AceGUI:Create("EPContainer")
+		uncategorizedContainer:SetLayout("EPVerticalLayout")
+		uncategorizedContainer:SetSpacing(0, spacingBetweenOptions)
+		uncategorizedContainer:SetFullWidth(true)
+
+		uncategorizedContainer:AddChildren(unpack(uncategorizedContainerChildren))
+		return uncategorizedContainer
 	else
-		for _, child in ipairs(children) do
-			tinsert(activeContainerChildren, child)
-		end
+		return nil
 	end
 end
 
@@ -569,68 +625,77 @@ local function PopulateActiveTab(self, tab)
 	wipe(self.refreshMap)
 	local activeContainerChildren = {}
 
-	if self.tabCategories[tab] then
-		CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
-		for categoryIndex, category in ipairs(self.tabCategories[tab]) do
-			local label = AceGUI:Create("EPLabel")
-			label:SetText(category)
-			label:SetFontSize(categoryFontSize)
-			label:SetFullWidth(true)
-			label:SetFrameHeightFromText()
-			label.text:SetTextColor(unpack(categoryTextColor))
-			tinsert(activeContainerChildren, label)
+	local uncategorizedContainer = CreateUncategorizedOptionWidgets(self, tab)
+	if uncategorizedContainer then
+		tinsert(activeContainerChildren, uncategorizedContainer)
+		local categorySpacer = AceGUI:Create("EPSpacer")
+		categorySpacer:SetHeight(spacingBetweenCategories)
+		tinsert(activeContainerChildren, categorySpacer)
+	end
 
-			local categoryContainer = AceGUI:Create("EPContainer")
-			categoryContainer:SetLayout("EPVerticalLayout")
-			categoryContainer:SetSpacing(0, spacingBetweenOptions)
-			categoryContainer:SetFullWidth(true)
-			categoryContainer:SetPadding(unpack(categoryPadding))
-			categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
-			local categoryContainerChildren = {}
-			local maxLabelWidth = 0
-			for index, option in ipairs(self.optionTabs[tab]) do
-				if option.category == category then
+	local categories = self.tabCategories[tab]
+	for categoryIndex, category in ipairs(categories) do
+		local categoryLabel = AceGUI:Create("EPLabel")
+		categoryLabel:SetText(category)
+		categoryLabel:SetFontSize(categoryFontSize)
+		categoryLabel:SetFullWidth(true)
+		categoryLabel:SetFrameHeightFromText()
+		categoryLabel.text:SetTextColor(unpack(categoryTextColor))
+		tinsert(activeContainerChildren, categoryLabel)
+
+		local categoryContainer = AceGUI:Create("EPContainer")
+		categoryContainer:SetLayout("EPVerticalLayout")
+		categoryContainer:SetSpacing(0, spacingBetweenOptions)
+		categoryContainer:SetFullWidth(true)
+		categoryContainer:SetPadding(unpack(categoryPadding))
+		categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
+
+		local categoryContainerChildren = {}
+		local labels = {}
+		local maxLabelWidth = 0
+
+		for index, option in ipairs(self.optionTabs[tab]) do
+			if option.category == category then
+				if option.type == "horizontalLine" then
+					local line = AceGUI:Create("EPSpacer")
+					line.frame:SetBackdrop(lineBackdrop)
+					line.frame:SetBackdropColor(unpack(backdropBorderColor))
+					line:SetFullWidth(true)
+					line:SetHeight(2 + spacingBetweenOptions)
+					tinsert(categoryContainerChildren, line)
+				else
 					local container = CreateOptionWidget(self, option, index)
 					if #container.children >= 2 and container.children[1].type == "EPLabel" then
 						maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
+						tinsert(labels, container.children[1])
 					end
-					tinsert(categoryContainerChildren, CreateOptionWidget(self, option, index))
+					tinsert(categoryContainerChildren, container)
 				end
-			end
-
-			if #categoryContainerChildren > 0 then
-				if maxLabelWidth > 0 then
-					for _, container in ipairs(categoryContainerChildren) do
-						if #container.children >= 2 and container.children[1].type == "EPLabel" then
-							container.children[1].frame:SetWidth(maxLabelWidth)
-						end
-					end
-				end
-				categoryContainer:AddChildren(unpack(categoryContainerChildren))
-				tinsert(activeContainerChildren, categoryContainer)
-			end
-
-			if categoryIndex ~= #self.tabCategories[tab] then
-				local spacer = AceGUI:Create("EPSpacer")
-				spacer:SetHeight(spacingBetweenCategories)
-				spacer:SetFullWidth(true)
-				tinsert(activeContainerChildren, spacer)
 			end
 		end
-	else
-		CreateUncategorizedOptionWidgets(self, tab, activeContainerChildren)
+
+		for _, label in ipairs(labels) do
+			label:SetWidth(maxLabelWidth)
+		end
+
+		categoryContainer:AddChildren(unpack(categoryContainerChildren))
+		tinsert(activeContainerChildren, categoryContainer)
+
+		if categoryIndex < #categories then
+			local categorySpacer = AceGUI:Create("EPSpacer")
+			categorySpacer:SetHeight(spacingBetweenCategories)
+			tinsert(activeContainerChildren, categorySpacer)
+		end
 	end
 
-	if #activeContainerChildren > 0 then
-		self.activeContainer:AddChildren(unpack(activeContainerChildren))
-		RefreshEnabledStates(self.refreshMap)
-	end
+	self.activeContainer:AddChildren(unpack(activeContainerChildren))
+	RefreshEnabledStates(self.refreshMap)
 	self:UpdateVerticalScroll()
 end
 
 ---@class EPSettingOption
 ---@field label string
----@field type "dropdown"|"radioButtonGroup"|"lineEdit"|"checkBox"|"frameChooser"|"doubleLineEdit"
+---@field type "dropdown"|"radioButtonGroup"|"lineEdit"|"checkBox"|"frameChooser"|"doubleLineEdit"|"horizontalLine"|"checkBoxBesideButton"
 ---@field description? string
 ---@field category? string
 ---@field indent? boolean
@@ -640,6 +705,9 @@ end
 ---@field enabled? fun(): boolean
 ---@field validate? fun(value: string, value2?: string): boolean, string?
 ---@field updateIndices? table<integer, integer>
+---@field buttonText? string
+---@field toggledButtonText? string
+---@field buttonCallback? fun()
 
 ---@class EPOptions : AceGUIWidget
 ---@field type string
@@ -757,6 +825,10 @@ local function UpdateVerticalScroll(self)
 		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
 	end
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
+
+	if verticalScroll > maxScroll then
+		self.scrollFrame:SetVerticalScroll(max(0, maxScroll))
+	end
 end
 
 local function OnHeightSet(self, width)

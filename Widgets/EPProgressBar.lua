@@ -11,6 +11,7 @@ local floor = math.floor
 local defaultHeight = 24
 local defaultWidth = 200
 local defaultFontSize = 14
+local defaultVerticalTextPadding = 4
 
 local animationTickRate = 0.04
 local greaterThanHourFormat = "%d:%02d:%02d"
@@ -118,7 +119,7 @@ local function BarUpdate(self)
 			local m = floor(relativeTime / 60)
 			local s = relativeTime - (m * 60)
 			self.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
-		elseif relativeTime < 10 then
+		elseif relativeTime < 9.99 then
 			self.duration:SetFormattedText(fallbackFormat, relativeTime)
 		else
 			self.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
@@ -145,7 +146,7 @@ local function BarUpdateApproximate(self)
 			local m = floor(relativeTime / 60)
 			local s = relativeTime - (m * 60)
 			self.duration:SetFormattedText(greaterThanMinuteFormatApproximate, m, s)
-		elseif relativeTime < 10 then
+		elseif relativeTime < 9.99 then
 			self.duration:SetFormattedText(greaterThanTenSecondsFormatApproximate, relativeTime)
 		else
 			self.duration:SetFormattedText(fallbackFormatApproximate, relativeTime)
@@ -180,20 +181,6 @@ end
 
 ---@param self EPProgressBar
 local function OnAcquire(self)
-	self.fill = false
-	self.showTime = true
-	self.showLabel = true
-	self.remaining = 0
-	self.isApproximate = false
-	self.paused = false
-	self.pauseTime = 0
-	self.expirationTime = 0
-	self.startTime = 0
-	self.running = false
-	self.gap = 0
-	self.iconPosition = "LEFT"
-	self.iconTexture = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
-
 	self.label:SetJustifyH("LEFT")
 	self.label:SetJustifyV("MIDDLE")
 
@@ -217,6 +204,19 @@ end
 
 ---@param self EPProgressBar
 local function OnRelease(self)
+	self.fill = false
+	self.showTime = true
+	self.showLabel = true
+	self.remaining = 0
+	self.isApproximate = false
+	self.paused = false
+	self.pauseTime = 0
+	self.expirationTime = 0
+	self.startTime = 0
+	self.running = false
+	self.gap = 0
+	self.iconPosition = "LEFT"
+	self.iconTexture = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 	self.updater:SetScript("OnLoop", nil)
 	self:SetAnchorMode(false)
 end
@@ -225,6 +225,10 @@ end
 local function SetFont(self, ...)
 	self.label:SetFont(...)
 	self.duration:SetFont(...)
+	self:SetHeight(self.label:GetStringHeight() + 2 * defaultVerticalTextPadding)
+	if self.running then
+		RestyleBar(self)
+	end
 end
 
 ---@param self EPProgressBar
@@ -283,6 +287,33 @@ end
 ---@param alignment "CENTER"|"LEFT"|"RIGHT"
 local function SetHorizontalTextAlignment(self, alignment)
 	self.label:SetJustifyH(alignment)
+	if self.running then
+		RestyleBar(self)
+	end
+end
+
+---@param self EPProgressBar
+---@param alignment "CENTER"|"LEFT"|"RIGHT"
+local function SetDurationTextAlignment(self, alignment)
+	self.duration:SetJustifyH(alignment)
+	if self.running then
+		RestyleBar(self)
+	end
+end
+
+---@param self EPProgressBar
+---@param alignment "LEFT"|"RIGHT"
+local function SetIconPosition(self, alignment)
+	self.iconPosition = alignment
+	if self.running then
+		RestyleBar(self)
+	end
+end
+
+---@param self EPProgressBar
+---@param fill boolean
+local function SetFill(self, fill)
+	self.fill = fill
 end
 
 ---@param self EPProgressBar
@@ -434,6 +465,9 @@ local function Constructor()
 		Resume = Resume,
 		SetAnchorMode = SetAnchorMode,
 		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
+		SetDurationTextAlignment = SetDurationTextAlignment,
+		SetIconPosition = SetIconPosition,
+		SetFill = SetFill,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,
