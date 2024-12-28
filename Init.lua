@@ -456,7 +456,6 @@ end
 ---@field font "PT Sans Narrow",
 ---@field fontSize integer
 ---@field fontOutline ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
----@field fontMonochrome boolean
 ---@field point AnchorPoint
 ---@field relativeTo string
 ---@field relativePoint AnchorPoint
@@ -530,7 +529,6 @@ local defaults = {
 					font = "PT Sans Narrow",
 					fontSize = 24,
 					fontOutline = "",
-					fontMonochrome = false,
 					point = "CENTER",
 					relativeTo = "UIParent",
 					relativePoint = "CENTER",
@@ -546,7 +544,6 @@ local defaults = {
 					font = "PT Sans Narrow",
 					fontSize = 14,
 					fontOutline = "",
-					fontMonochrome = false,
 					point = "RIGHT",
 					relativeTo = "UIParent",
 					relativePoint = "CENTER",

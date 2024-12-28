@@ -280,6 +280,12 @@ local function SetIconAndText(self, icon, text)
 end
 
 ---@param self EPProgressBar
+---@param alignment "CENTER"|"LEFT"|"RIGHT"
+local function SetHorizontalTextAlignment(self, alignment)
+	self.label:SetJustifyH(alignment)
+end
+
+---@param self EPProgressBar
 local function Start(self, maxValue)
 	RestyleBar(self)
 
@@ -427,6 +433,7 @@ local function Constructor()
 		Pause = Pause,
 		Resume = Resume,
 		SetAnchorMode = SetAnchorMode,
+		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,

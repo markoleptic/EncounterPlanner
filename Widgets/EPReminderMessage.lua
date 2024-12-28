@@ -16,8 +16,9 @@ local defaultBackdropColor = { 0, 0, 0, 0 }
 local anchorModeBackdropColor = { 0.1, 0.1, 0.1, 0.25 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
+	edgeFile = nil,
+	tile = true,
+	tileSize = 0,
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
@@ -129,6 +130,7 @@ end
 local function SetFont(self, fontFile, size, flags)
 	if fontFile then
 		self.text:SetFont(fontFile, size, flags)
+		UpdateIconAndTextAnchors(self)
 	end
 end
 
@@ -167,6 +169,7 @@ local function SetAnchorMode(self, anchorMode)
 		self.frame:SetScript("OnMouseUp", function(_, button)
 			HandleFrameMouseUp(self, button)
 		end)
+		UpdateIconAndTextAnchors(self)
 	else
 		self:SetText("")
 		self.frame:SetBackdropColor(unpack(defaultBackdropColor))
@@ -183,6 +186,7 @@ local function Constructor()
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(unpack(defaultBackdropColor))
+	frame:SetBackdropBorderColor(unpack(defaultBackdropColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.x, -defaultIconPadding.y)

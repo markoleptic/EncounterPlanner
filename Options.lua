@@ -557,6 +557,9 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.messages.textAlignment = key
+				if Private.messageAnchor then
+					Private.messageAnchor:SetHorizontalTextAlignment(reminderPreferences.messages.textAlignment)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -576,6 +579,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.messages.font = key
+				if Private.messageAnchor then
+					Private.messageAnchor:SetFont(
+						reminderPreferences.messages.font,
+						reminderPreferences.messages.fontSize,
+						reminderPreferences.messages.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -594,6 +604,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.messages.fontSize = key
+				if Private.messageAnchor then
+					Private.messageAnchor:SetFont(
+						reminderPreferences.messages.font,
+						reminderPreferences.messages.fontSize,
+						reminderPreferences.messages.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -621,6 +638,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.messages.fontOutline = key
+				if Private.messageAnchor then
+					Private.messageAnchor:SetFont(
+						reminderPreferences.messages.font,
+						reminderPreferences.messages.fontSize,
+						reminderPreferences.messages.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -630,30 +654,12 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		[10] = {
-			label = "Monochrome",
-			type = "checkBox",
-			description = "Whether to use monochrome font for Message text.",
-			category = "Messages",
-			get = function()
-				return reminderPreferences.messages.fontMonochrome
-			end,
-			set = function(key)
-				reminderPreferences.messages.fontMonochrome = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
-			end,
-			validate = function(key)
-				return true
-			end,
-		},
-		[11] = {
 			label = "Anchor Point",
 			type = "dropdown",
 			description = 'Anchor point of the Message frame, or the "spot" on the Message frame that will be placed relative to another frame.',
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 11, 12, 13, 14 },
+			updateIndices = { 10, 11, 12, 13 },
 			get = function()
 				return reminderPreferences.messages.point
 			end,
@@ -673,12 +679,12 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[12] = {
+		[11] = {
 			label = "Anchor Frame",
 			type = "frameChooser",
 			description = "The frame that the Message frame is anchored to. Defaults to UIParent (screen).",
 			category = "Messages",
-			updateIndices = { 11, 12, 13, 14 },
+			updateIndices = { 10, 11, 12, 13 },
 			get = function()
 				return reminderPreferences.messages.relativeTo
 			end,
@@ -694,13 +700,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[13] = {
+		[12] = {
 			label = "Relative Anchor Point",
 			type = "dropdown",
 			description = "The anchor point on the frame that the Message frame is anchored to.",
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 11, 12, 13, 14 },
+			updateIndices = { 10, 11, 12, 13 },
 			get = function()
 				return reminderPreferences.messages.relativePoint
 			end,
@@ -716,14 +722,14 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[14] = {
+		[13] = {
 			label = "Position",
 			labels = { "X:", "Y:" },
 			type = "doubleLineEdit",
 			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
 			category = "Messages",
 			values = anchorPointValues,
-			updateIndices = { 11, 12, 13, 14 },
+			updateIndices = { 10, 11, 12, 13 },
 			get = function()
 				return reminderPreferences.messages.x, reminderPreferences.messages.y
 			end,
@@ -755,7 +761,7 @@ function Private:CreateOptionsMenu()
 				return false, reminderPreferences.messages.x, reminderPreferences.messages.y
 			end,
 		},
-		[15] = {
+		[14] = {
 			label = "Grow Down",
 			type = "checkBox",
 			description = "If checked, new Messages will be added underneath the most recent Message, if it exists.",
@@ -773,7 +779,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[16] = {
+		[15] = {
 			label = "Enable Progress Bars",
 			type = "checkBox",
 			description = "Whether to show Progress Bars for assignments.",
@@ -789,7 +795,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[17] = {
+		[16] = {
 			label = "Text Alignment",
 			type = "radioButtonGroup",
 			description = "Alignment of Progress Bar text.",
@@ -800,6 +806,9 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.progressBars.textAlignment = key
+				if Private.progressBarAnchor then
+					Private.progressBarAnchor:SetHorizontalTextAlignment(reminderPreferences.progressBars.textAlignment)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -808,7 +817,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[18] = {
+		[17] = {
 			label = "Font",
 			type = "dropdown",
 			description = "Font to use for Progress Bar text.",
@@ -819,6 +828,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.progressBars.font = key
+				if Private.progressBarAnchor then
+					Private.progressBarAnchor:SetFont(
+						reminderPreferences.progressBars.font,
+						reminderPreferences.progressBars.fontSize,
+						reminderPreferences.progressBars.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -827,7 +843,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[19] = {
+		[18] = {
 			label = "Font Size",
 			type = "lineEdit",
 			description = "Font size to use for Progress Bar text.",
@@ -837,6 +853,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.progressBars.fontSize = key
+				if Private.progressBarAnchor then
+					Private.progressBarAnchor:SetFont(
+						reminderPreferences.progressBars.font,
+						reminderPreferences.progressBars.fontSize,
+						reminderPreferences.progressBars.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -853,7 +876,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[20] = {
+		[19] = {
 			label = "Font Outline",
 			type = "dropdown",
 			description = "Font outline to use for Progress Bar text.",
@@ -864,6 +887,13 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.progressBars.fontOutline = key
+				if Private.progressBarAnchor then
+					Private.progressBarAnchor:SetFont(
+						reminderPreferences.progressBars.font,
+						reminderPreferences.progressBars.fontSize,
+						reminderPreferences.progressBars.fontOutline
+					)
+				end
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -872,31 +902,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[21] = {
-			label = "Monochrome",
-			type = "checkBox",
-			description = "Whether to use monochrome font for Progress Bar text.",
-			category = "Progress Bars",
-			get = function()
-				return reminderPreferences.progressBars.fontMonochrome
-			end,
-			set = function(key)
-				reminderPreferences.progressBars.fontMonochrome = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
-			end,
-			validate = function(key)
-				return true
-			end,
-		},
-		[22] = {
+		[20] = {
 			label = "Anchor Point",
 			type = "dropdown",
 			description = 'Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.',
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 22, 23, 24, 25 },
+			updateIndices = { 20, 21, 22, 23 },
 			get = function()
 				return reminderPreferences.progressBars.point
 			end,
@@ -917,12 +929,12 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[23] = {
+		[21] = {
 			label = "Anchor Frame",
 			type = "frameChooser",
 			description = "The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen).",
 			category = "Progress Bars",
-			updateIndices = { 22, 23, 24, 25 },
+			updateIndices = { 20, 21, 22, 23 },
 			get = function()
 				return reminderPreferences.progressBars.relativeTo
 			end,
@@ -943,13 +955,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[24] = {
+		[22] = {
 			label = "Relative Anchor Point",
 			type = "dropdown",
 			description = "The anchor point on the frame that the Progress Bars frame is anchored to.",
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 22, 23, 24, 25 },
+			updateIndices = { 20, 21, 22, 23 },
 			get = function()
 				return reminderPreferences.progressBars.relativePoint
 			end,
@@ -970,13 +982,13 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[25] = {
+		[23] = {
 			label = "Position",
 			type = "doubleLineEdit",
 			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
 			category = "Progress Bars",
 			values = anchorPointValues,
-			updateIndices = { 22, 23, 24, 25 },
+			updateIndices = { 20, 21, 22, 23 },
 			get = function()
 				return reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
 			end,
@@ -1008,7 +1020,7 @@ function Private:CreateOptionsMenu()
 				return false, reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
 			end,
 		},
-		[26] = {
+		[24] = {
 			label = "Grow Down",
 			type = "checkBox",
 			description = "If checked, new Progress Bars will be added underneath the most recent Progress Bar, if it exists.",
@@ -1026,7 +1038,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[27] = {
+		[25] = {
 			label = "Play Text to Speech at Advance Notice",
 			type = "checkBox",
 			description = "Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds).",
@@ -1043,7 +1055,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[28] = {
+		[26] = {
 			label = "Play Text to Speech at Assignment Time",
 			type = "checkBox",
 			description = "Whether to play text to speech sound at assignment time (i.e. Spell in x seconds).",
@@ -1059,7 +1071,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[29] = {
+		[27] = {
 			label = "Text to Speech Voice",
 			type = "dropdown",
 			description = "The voice to use for Text to Speech",
@@ -1082,7 +1094,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[30] = {
+		[28] = {
 			label = "Text to Speech Volume",
 			type = "lineEdit",
 			description = "The volume to use for Text to Speech",
@@ -1115,7 +1127,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[31] = {
+		[29] = {
 			label = "Play Sound at Advance Notice",
 			type = "checkBox",
 			description = "Whether to play a sound at advance notice time.",
@@ -1131,7 +1143,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[32] = {
+		[30] = {
 			label = "Sound to Play",
 			type = "dropdown",
 			description = "The sound to play at advance notice time.",
@@ -1151,7 +1163,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[33] = {
+		[31] = {
 			label = "Play Sound at Assignment Time",
 			type = "checkBox",
 			description = "Whether to play a sound at assignment time.",
@@ -1167,7 +1179,7 @@ function Private:CreateOptionsMenu()
 				return true
 			end,
 		},
-		[34] = {
+		[32] = {
 			label = "Sound to Play",
 			type = "dropdown",
 			description = "The sound to play at assignment time.",
@@ -1205,6 +1217,12 @@ function Private:CreateOptionsMenu()
 
 	local messageAnchor = AceGUI:Create("EPReminderMessage")
 	messageAnchor:SetAnchorMode(true)
+	messageAnchor:SetFont(
+		reminderPreferences.messages.font,
+		reminderPreferences.messages.fontSize,
+		reminderPreferences.messages.fontOutline
+	)
+	messageAnchor:SetHorizontalTextAlignment(reminderPreferences.messages.textAlignment)
 	messageAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
 		local messages = reminderPreferences.messages
 		messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
@@ -1223,6 +1241,12 @@ function Private:CreateOptionsMenu()
 
 	local progressBarAnchor = AceGUI:Create("EPProgressBar")
 	progressBarAnchor:SetAnchorMode(true)
+	progressBarAnchor:SetFont(
+		reminderPreferences.progressBars.font,
+		reminderPreferences.progressBars.fontSize,
+		reminderPreferences.progressBars.fontOutline
+	)
+	progressBarAnchor:SetHorizontalTextAlignment(reminderPreferences.progressBars.textAlignment)
 	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
 		local progressBars = reminderPreferences.progressBars
 		progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
