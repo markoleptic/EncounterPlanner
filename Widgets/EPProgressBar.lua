@@ -2,7 +2,6 @@ local Type = "EPProgressBar"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local GetTime = GetTime
@@ -10,7 +9,7 @@ local floor = math.floor
 
 local defaultHeight = 24
 local defaultWidth = 200
-local defaultVerticalTextPadding = 4
+local defaultVerticalTextPadding = 2
 local defaultBackgroundColor = { 0.5, 0.5, 0.5, 0.3 }
 local defaultColor = { 0.5, 0.5, 0.5, 1 }
 local timeThreshold = 0.1
@@ -98,6 +97,25 @@ local function RestyleBar(self)
 	else
 		self.duration:Hide()
 	end
+
+	self.label:ClearAllPoints()
+	self.duration:ClearAllPoints()
+	if self.label:GetJustifyH() == "LEFT" and self.duration:GetJustifyH() == "RIGHT" then
+		self.label:SetWidth(self.statusBar:GetWidth() * 0.8)
+		self.label:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
+		self.duration:SetPoint("LEFT", self.label, "RIGHT", 0, 0)
+		self.duration:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
+	elseif self.label:GetJustifyH() == "RIGHT" and self.duration:GetJustifyH() == "LEFT" then
+		self.duration:SetWidth(self.statusBar:GetWidth() * 0.2)
+		self.duration:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
+		self.label:SetPoint("LEFT", self.duration, "RIGHT", 0, 0)
+		self.label:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
+	else
+		self.label:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
+		self.label:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
+		self.duration:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
+		self.duration:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
+	end
 end
 
 ---@param self EPProgressBar
@@ -105,6 +123,7 @@ local function BarUpdate(self)
 	local currentTime = GetTime()
 	if currentTime >= self.expirationTime then
 		self.updater:SetScript("OnLoop", nil)
+		self.running = false
 		self:Fire("Completed")
 	else
 		local relativeTime = self.expirationTime - currentTime
@@ -124,7 +143,6 @@ local function BarUpdate(self)
 		else
 			self.duration:SetFormattedText(fallbackFormat, relativeTime)
 		end
-		print(self.duration:GetText())
 	end
 end
 
@@ -171,8 +189,7 @@ end
 ---@field showLabel boolean
 ---@field remaining number
 ---@field isApproximate boolean
----@field paused boolean
----@field pauseTime number
+---@field paused number|nil
 ---@field expirationTime number
 ---@field startTime number
 ---@field running boolean
@@ -195,8 +212,7 @@ local function OnRelease(self)
 	self.showLabel = true
 	self.remaining = 0
 	self.isApproximate = false
-	self.paused = false
-	self.pauseTime = 0
+	self.paused = nil
 	self.expirationTime = 0
 	self.startTime = 0
 	self.running = false
@@ -309,9 +325,13 @@ end
 
 ---@param self EPProgressBar
 local function Start(self, maxValue)
+	if self.running and not self.paused then
+		return
+	end
 	RestyleBar(self)
 
 	self.running = true
+	self.paused = nil
 	local time = self.remaining
 	self.gap = maxValue and maxValue - time or 0
 	self.startTime = GetTime()
@@ -364,7 +384,7 @@ end
 local function Pause(self)
 	if not self.paused then
 		self.updater:Pause()
-		self.pauseTime = GetTime()
+		self.paused = GetTime()
 	end
 end
 
@@ -375,7 +395,7 @@ local function Resume(self)
 		self.expirationTime = time + self.remaining
 		self.startTime = self.startTime + (time - self.paused)
 		self.updater:Play()
-		self.paused = false
+		self.paused = nil
 	end
 end
 
@@ -394,6 +414,15 @@ local function SetAnchorMode(self, anchorMode)
 		self.frame:SetMovable(true)
 		self.frame:SetScript("OnMouseDown", nil)
 		self.frame:SetScript("OnMouseUp", nil)
+	end
+end
+
+---@param self EPProgressBar
+---@param width number
+local function SetProgressBarWidth(self, width)
+	self:SetWidth(width)
+	if self.running then
+		RestyleBar(self)
 	end
 end
 
@@ -426,15 +455,16 @@ local function Constructor()
 	iconBackdrop:SetFrameLevel(0)
 
 	local label = statusBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmallOutline")
-	label:SetPoint("TOPLEFT", statusBar, "TOPLEFT", 2, 0)
-	label:SetPoint("BOTTOMRIGHT", statusBar, "BOTTOMRIGHT", -2, 0)
+	label:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
+	label:SetPoint("RIGHT", statusBar, "RIGHT", -2, 0)
+	label:SetWordWrap(false)
 
 	label:SetJustifyH("LEFT")
 	label:SetJustifyV("MIDDLE")
 
 	local duration = statusBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmallOutline")
-	duration:SetPoint("TOPLEFT", statusBar, "TOPLEFT", 2, 0)
-	duration:SetPoint("BOTTOMRIGHT", statusBar, "BOTTOMRIGHT", -2, 0)
+	duration:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
+	duration:SetPoint("RIGHT", statusBar, "RIGHT", -2, 0)
 
 	duration:SetJustifyH("RIGHT")
 	duration:SetJustifyV("MIDDLE")
@@ -465,6 +495,7 @@ local function Constructor()
 		SetDurationTextAlignment = SetDurationTextAlignment,
 		SetIconPosition = SetIconPosition,
 		SetFill = SetFill,
+		SetProgressBarWidth = SetProgressBarWidth,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,
@@ -481,8 +512,7 @@ local function Constructor()
 		showLabel = true,
 		remaining = 0,
 		isApproximate = false,
-		paused = false,
-		pauseTime = 0,
+		paused = nil,
 		expirationTime = 0,
 		startTime = 0,
 		running = false,

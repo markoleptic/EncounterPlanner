@@ -471,7 +471,6 @@ end
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
----@field showWithCountdown boolean
 
 ---@class ReminderPreferences
 ---@field enabled boolean
@@ -535,7 +534,6 @@ local defaults = {
 					x = 0,
 					y = 300,
 					showOnlyAtExpiration = true,
-					showWithCountdown = false,
 				},
 				progressBars = {
 					enabled = true,

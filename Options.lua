@@ -30,6 +30,8 @@ local tinsert = tinsert
 local tostring = tostring
 local tonumber = tonumber
 
+local previewDuration = 15.0
+
 local MouseButtonKeyBindingValues = {
 	{ itemValue = "LeftButton", text = "Left Click" },
 	{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
@@ -181,7 +183,7 @@ local function CreateProgressBarAnchor()
 	progressBarAnchor:SetTexture(reminderPreferences.progressBars.texture)
 	progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
 	progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], "Progress Bar Text")
-	progressBarAnchor:SetWidth(reminderPreferences.progressBars.width)
+	progressBarAnchor:SetProgressBarWidth(reminderPreferences.progressBars.width)
 	progressBarAnchor:SetFill(reminderPreferences.progressBars.fill)
 	progressBarAnchor:SetCallback("OnRelease", function()
 		Private.progressBarAnchor = nil
@@ -195,12 +197,11 @@ local function CreateProgressBarAnchor()
 		end
 	end)
 	progressBarAnchor:SetCallback("Completed", function()
-		progressBarAnchor:SetDuration(15)
+		progressBarAnchor:SetDuration(previewDuration)
 		progressBarAnchor:Start()
 	end)
 	progressBarAnchor.frame:SetParent(UIParent)
-	progressBarAnchor:SetDuration(15)
-	progressBarAnchor:Start()
+	progressBarAnchor:SetDuration(previewDuration)
 	progressBarAnchor.frame:SetPoint(
 		reminderPreferences.progressBars.point,
 		reminderPreferences.progressBars.relativeTo or UIParent,
@@ -221,6 +222,7 @@ local function CreateMessageAnchor()
 		reminderPreferences.messages.fontSize,
 		reminderPreferences.messages.fontOutline
 	)
+	messageAnchor:SetIcon([[Interface\Icons\INV_MISC_QUESTIONMARK]])
 	messageAnchor:SetCallback("OnRelease", function()
 		Private.messageAnchor = nil
 	end)
@@ -231,6 +233,10 @@ local function CreateMessageAnchor()
 		if Private.optionsMenu then
 			Private.optionsMenu:UpdateOptions()
 		end
+	end)
+	messageAnchor:SetCallback("Completed", function()
+		messageAnchor:SetDuration(previewDuration)
+		messageAnchor:Start()
 	end)
 	messageAnchor.frame:SetParent(UIParent)
 	messageAnchor.frame:SetPoint(
@@ -552,6 +558,16 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.enabled
 			end,
 			set = function(key)
+				if key ~= reminderPreferences.enabled and key == false then
+					if Private.messageAnchor.frame:IsShown() then
+						Private.messageAnchor:Pause()
+						Private.messageAnchor.frame:Hide()
+					end
+					if Private.progressBarAnchor.frame:IsShown() then
+						Private.progressBarAnchor:Pause()
+						Private.progressBarAnchor.frame:Hide()
+					end
+				end
 				reminderPreferences.enabled = key
 			end,
 		},
@@ -605,17 +621,69 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.messages.enabled
 			end,
 			set = function(key)
+				if key ~= reminderPreferences.messages.enabled and key == false then
+					if Private.messageAnchor.frame:IsShown() then
+						Private.messageAnchor:Pause()
+						Private.messageAnchor.frame:Hide()
+					end
+				end
 				reminderPreferences.messages.enabled = key
 			end,
 			enabled = enableReminderOption,
-			buttonText = "Show Message Anchor",
-			toggledButtonText = "Hide Message Anchor",
+			buttonText = "Toggle Message Anchor",
+			buttonEnabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+			end,
 			buttonCallback = function()
 				if Private.messageAnchor.frame:IsShown() then
+					Private.messageAnchor:Pause()
 					Private.messageAnchor.frame:Hide()
 				else
+					if not reminderPreferences.messages.showOnlyAtExpiration then
+						Private.messageAnchor:SetDuration(previewDuration)
+						Private.messageAnchor:Start()
+					end
 					Private.messageAnchor.frame:Show()
 				end
+			end,
+		},
+		{
+			label = "Message Visibility",
+			type = "radioButtonGroup",
+			description = "When to show the Messages for assignments.",
+			category = "Messages",
+			values = {
+				{ itemValue = "expirationOnly", text = "Expiration Only" },
+				{ itemValue = "fullCountdown", text = "With Countdown" },
+			},
+			get = function()
+				if reminderPreferences.messages.showOnlyAtExpiration then
+					return "expirationOnly"
+				else
+					return "fullCountdown"
+				end
+			end,
+			set = function(key)
+				if key == "expirationOnly" then
+					if reminderPreferences.messages.showOnlyAtExpiration ~= true then
+						if Private.messageAnchor.frame:IsShown() then
+							Private.messageAnchor:Pause()
+							Private.messageAnchor:SetDuration(0)
+						end
+					end
+					reminderPreferences.messages.showOnlyAtExpiration = true
+				else
+					if reminderPreferences.messages.showOnlyAtExpiration ~= false then
+						if Private.messageAnchor.frame:IsShown() then
+							Private.messageAnchor:SetDuration(previewDuration)
+							Private.messageAnchor:Start()
+						end
+					end
+					reminderPreferences.messages.showOnlyAtExpiration = false
+				end
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
 			end,
 		},
 		{
@@ -803,15 +871,26 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.progressBars.enabled
 			end,
 			set = function(key)
+				if key ~= reminderPreferences.progressBars.enabled and key == false then
+					if Private.progressBarAnchor.frame:IsShown() then
+						Private.progressBarAnchor:Pause()
+						Private.progressBarAnchor.frame:Hide()
+					end
+				end
 				reminderPreferences.progressBars.enabled = key
 			end,
 			enabled = enableReminderOption,
-			buttonText = "Show Progress Bar Anchor",
-			toggledButtonText = "Hide Progress Bar Anchor",
+			buttonText = "Toggle Progress Bar Anchor",
+			buttonEnabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
 			buttonCallback = function()
 				if Private.progressBarAnchor.frame:IsShown() then
+					Private.progressBarAnchor:Pause()
 					Private.progressBarAnchor.frame:Hide()
 				else
+					Private.progressBarAnchor:SetDuration(previewDuration)
+					Private.progressBarAnchor:Start()
 					Private.progressBarAnchor.frame:Show()
 				end
 			end,
@@ -1067,7 +1146,7 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				reminderPreferences.progressBars.width = key
-				Private.progressBarAnchor:SetWidth(reminderPreferences.progressBars.width)
+				Private.progressBarAnchor:SetProgressBarWidth(reminderPreferences.progressBars.width)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true

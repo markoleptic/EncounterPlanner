@@ -11,6 +11,7 @@ local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
+local floor = math.floor
 local getmetatable = getmetatable
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
@@ -25,6 +26,7 @@ local tinsert = tinsert
 local type = type
 local wipe = wipe
 
+local messageDuration = 1.0
 local timers = {}
 local combatLogEventReminders = {}
 local eventFilter = {}
@@ -89,11 +91,11 @@ local function GetOrCreateTable(tbl, key)
 end
 
 ---@param preferences ProgressBarPreferences
+---@param text string
 ---@param duration number
 ---@param icon string|number|nil
----@param text string
 ---@return EPProgressBar
-local function CreateProgressBar(preferences, duration, icon, text)
+local function CreateProgressBar(preferences, text, duration, icon)
 	local progressBar = AceGUI:Create("EPProgressBar")
 	progressBar:SetHorizontalTextAlignment(preferences.textAlignment)
 	progressBar:SetDurationTextAlignment(preferences.durationAlignment)
@@ -109,11 +111,18 @@ end
 
 ---@param preferences MessagePreferences
 ---@param text string
+---@param duration number|nil
+---@param icon string|number|nil
 ---@return EPReminderMessage
-local function CreateMessage(preferences, text)
+local function CreateMessage(preferences, text, duration, icon)
 	local message = AceGUI:Create("EPReminderMessage")
-	message:SetText(text)
-	message:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+	message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
+	if duration then
+		message:SetDuration(duration)
+	end
+	if icon then
+		message:SetIcon(icon)
+	end
 	return message
 end
 
@@ -148,7 +157,7 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 	tinsert(operationQueue, function()
 		local icon = assignment.spellInfo.iconID or GetSpellTexture(assignment.spellInfo.spellID)
 		local text = utilities.CreateReminderProgressBarText(assignment, roster)
-		local progressBar = CreateProgressBar(progressBarPreferences, duration, icon > 0 and icon or nil, text)
+		local progressBar = CreateProgressBar(progressBarPreferences, text, duration, icon > 0 and icon or nil)
 		progressBar:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
 				Private.progressBarContainer:RemoveChildNoDoLayout(progressBar)
@@ -161,22 +170,33 @@ end
 
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
----@param duration number
+---@param duration number|nil If nil, the message will be shown for 1 second, otherwise will be shown with countdown.
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, roster, duration, messagePreferences)
 	tinsert(operationQueue, function()
 		local icon = assignment.spellInfo.iconID or GetSpellTexture(assignment.spellInfo.spellID)
 		local text = utilities.CreateReminderProgressBarText(assignment, roster)
-		local message = CreateMessage(messagePreferences, text)
-		tinsert(
-			timers,
-			NewTimer(duration, function()
+		local message = CreateMessage(messagePreferences, text, duration, icon > 0 and icon or nil)
+		if duration then
+			message:SetCallback("Completed", function()
 				tinsert(operationQueue, function()
 					Private.messageContainer:RemoveChildNoDoLayout(message)
 				end)
 			end)
-		)
+		else
+			tinsert(
+				timers,
+				NewTimer(messageDuration, function()
+					tinsert(operationQueue, function()
+						Private.messageContainer:RemoveChildNoDoLayout(message)
+					end)
+				end)
+			)
+		end
 		Private.messageContainer:AddChildNoDoLayout(message)
+		if duration then
+			message:Start()
+		end
 	end)
 end
 
@@ -218,8 +238,8 @@ local function CreateTimer(timelineAssignment, roster, reminderPreferences)
 	then
 		return
 	end
-
 	local assignment = timelineAssignment.assignment
+	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
 	local startTime = timelineAssignment.startTime - reminderPreferences.advanceNotice -- (GetTime() - startTime)
 	if timelineAssignment.startTime < reminderPreferences.advanceNotice then
 		startTime = timelineAssignment.startTime
@@ -230,12 +250,14 @@ local function CreateTimer(timelineAssignment, roster, reminderPreferences)
 		if reminderPreferences.progressBars.enabled then
 			AddProgressBar(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.progressBars)
 		end
-		if reminderPreferences.messages.showWithCountdown then
+		if not reminderPreferences.messages.showOnlyAtExpiration then
 			AddMessage(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.messages)
 		end
 		if ttsPreferences.enableAtAdvanceNotice then
-			-- TODO: Consider including duration in voice message
-			SpeakText(ttsPreferences.voiceID, assignment.text, 4, 1.0, ttsPreferences.volume)
+			if reminderText:len() > 0 then
+				local textWithAdvanceNotice = reminderText .. " in " .. floor(reminderPreferences.advanceNotice)
+				SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
+			end
 		end
 		if soundPreferences.enableAtAdvanceNotice then
 			if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
@@ -247,12 +269,14 @@ local function CreateTimer(timelineAssignment, roster, reminderPreferences)
 
 		if reminderPreferences.messages.showOnlyAtExpiration then
 			deferredFunctions[#deferredFunctions + 1] = function()
-				AddMessage(assignment, roster, 1.0, reminderPreferences.messages)
+				AddMessage(assignment, roster, nil, reminderPreferences.messages)
 			end
 		end
 		if ttsPreferences.enableAtTime then
-			deferredFunctions[#deferredFunctions + 1] = function()
-				SpeakText(ttsPreferences.voiceID, assignment.text, 4, 1.0, ttsPreferences.volume)
+			if reminderText:len() > 0 then
+				deferredFunctions[#deferredFunctions + 1] = function()
+					SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
+				end
 			end
 		end
 		if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then

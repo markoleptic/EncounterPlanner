@@ -448,18 +448,9 @@ local function CreateCheckBoxBesideButton(self, option)
 	local button = AceGUI:Create("EPButton")
 	button:SetText(option.buttonText)
 	button:SetRelativeWidth(0.5)
-	local checked = false
-	button:SetCallback("Clicked", function()
-		option.buttonCallback()
-		checked = not checked
-		if button.button:GetText() == option.buttonText then
-			button:SetText(option.toggledButtonText)
-		else
-			button:SetText(option.buttonText)
-		end
-	end)
-	if option.enabled then
-		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
+	button:SetCallback("Clicked", option.buttonCallback)
+	if option.buttonEnabled then
+		tinsert(self.refreshMap, { widget = button, enabled = option.buttonEnabled })
 	end
 	checkBoxBesideButtonContainer:AddChildren(widget, button)
 	return checkBoxBesideButtonContainer, widget, widget.SetChecked, "OnValueChanged"
@@ -707,6 +698,7 @@ end
 ---@field updateIndices? table<integer, integer>
 ---@field buttonText? string
 ---@field toggledButtonText? string
+---@field buttonEnabled? fun(): boolean
 ---@field buttonCallback? fun()
 
 ---@class EPOptions : AceGUIWidget

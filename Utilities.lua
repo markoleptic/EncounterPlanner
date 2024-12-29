@@ -1066,16 +1066,26 @@ end
 ---@return string
 function Utilities.CreateReminderProgressBarText(assignment, roster)
 	local reminderText = ""
-	if assignment.targetName ~= nil and assignment.targetName ~= "" then
+	if assignment.text ~= nil and assignment.text ~= "" then
+		reminderText = assignment.text
+	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
+		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+			if assignment.spellInfo.name then
+				reminderText = assignment.spellInfo.name
+			else
+				local spellName = GetSpellName(assignment.spellInfo.spellID)
+				if spellName then
+					reminderText = spellName
+				end
+			end
+		end
 		local targetRosterEntry = roster[assignment.targetName]
 		if targetRosterEntry and targetRosterEntry.classColoredName and targetRosterEntry.classColoredName ~= "" then
-			reminderText = targetRosterEntry.classColoredName
+			reminderText = reminderText .. " " .. targetRosterEntry.classColoredName
 		else
-			reminderText = assignment.targetName or ""
+			reminderText = reminderText .. " " .. (assignment.targetName or "")
 		end
 		-- TODO: Consider highlighting frame
-	elseif assignment.text ~= nil and assignment.text ~= "" then
-		reminderText = assignment.text
 	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
 		if assignment.spellInfo.name then
 			reminderText = assignment.spellInfo.name
