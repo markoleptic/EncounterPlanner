@@ -329,7 +329,7 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		Private.progressBarContainer:SetLayout("EPProgressBarLayout")
 		Private.progressBarContainer.frame:SetFrameStrata("MEDIUM")
 		Private.progressBarContainer.frame:SetFrameLevel(100)
-		Private.progressBarContainer:SetSpacing(0, progressBarPreferences.showBorder and -1 or 0)
+		Private.progressBarContainer:SetSpacing(0, reminderPreferences.progressBars.spacing)
 		local anchorFrame = _G[progressBarPreferences.relativeTo] or UIParent
 		local point, relativePoint = progressBarPreferences.point, progressBarPreferences.relativePoint
 		local x, y = progressBarPreferences.x, progressBarPreferences.y

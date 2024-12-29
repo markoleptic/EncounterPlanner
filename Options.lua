@@ -1363,6 +1363,35 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
+			label = "Spacing",
+			type = "lineEdit",
+			description = "Spacing between Progress Bars (-1 - 100).",
+			category = "Progress Bars",
+			get = function()
+				return reminderPreferences.progressBars.spacing
+			end,
+			set = function(key)
+				local value = tonumber(key)
+				if value then
+					reminderPreferences.progressBars.spacing = value
+				end
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+			validate = function(key)
+				local value = tonumber(key)
+				if value then
+					if value < -1 or value > 100 then
+						return false, utilities.Clamp(value, -1, 100)
+					else
+						return true
+					end
+				end
+				return false, reminderPreferences.progressBars.spacing
+			end,
+		},
+		{
 			label = "Play Text to Speech at Advance Notice",
 			type = "checkBox",
 			description = "Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds).",

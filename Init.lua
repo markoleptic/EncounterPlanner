@@ -473,6 +473,7 @@ end
 ---@field showIconBorder boolean
 ---@field color {r:number, g:number, b:number, a:number}
 ---@field backgroundColor {r:number, g:number, b:number, a:number}
+---@field spacing integer
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
@@ -564,6 +565,7 @@ local defaults = {
 					showIconBorder = false,
 					color = { 0.05, 0.05, 0.05, 0.25 },
 					backgroundColor = { 0.5, 0.5, 0.5, 0.75 },
+					spacing = -1,
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
