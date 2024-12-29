@@ -19,7 +19,6 @@ end
 AceGUI:RegisterLayout(Type, function(content, children)
 	local totalHeight = 0
 	local contentWidth = content.width or content:GetWidth() or 0
-	local growUp = content.growUp or false
 	local maxWidth = 0
 	local paddingY = defaultSpacing
 	if content.spacing then
@@ -27,7 +26,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	end
 
 	local childCount = #children
-	if growUp then
+	if content.growDown == false then
 		for i = #children, 1, -1 do
 			local child = children[i]
 			local frame = child.frame

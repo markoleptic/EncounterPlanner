@@ -480,7 +480,7 @@ end
 ---@field cancelIfAlreadyCasted boolean
 ---@field advanceNotice number
 ---@field progressBars ProgressBarPreferences
----@field messages GenericReminderPreferences
+---@field messages MessagePreferences
 ---@field textToSpeech ReminderTextToSpeechPreferences
 ---@field sound ReminderSoundPreferences
 
@@ -592,7 +592,8 @@ Private.optionsMenu = nil --[[@as EPOptions]]
 Private.messageAnchor = nil --[[@as EPReminderMessage]]
 Private.progressBarAnchor = nil --[[@as EPProgressBar]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
-Private.reminderContainer = nil --[[@as EPContainer]]
+Private.messageContainer = nil --[[@as EPContainer]]
+Private.progressBarContainer = nil --[[@as EPContainer]]
 
 LSM:Register(
 	"font",

@@ -11,7 +11,7 @@ local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultFontHeight = 14
 local defaultIconPadding = { x = 2, y = 2 }
-local defaultTextPadding = { x = 0, y = 2 }
+local defaultTextPadding = 2
 local defaultBackdropColor = { 0, 0, 0, 0 }
 local anchorModeBackdropColor = { 0.1, 0.1, 0.1, 0.25 }
 local frameBackdrop = {
@@ -52,7 +52,7 @@ end
 local function UpdateIconAndTextAnchors(self)
 	self.icon:ClearAllPoints()
 	self.text:ClearAllPoints()
-	self.frame:SetHeight(self.text:GetLineHeight() + defaultTextPadding.y * 2)
+	self.frame:SetHeight(self.text:GetLineHeight() + self.horizontalTextPadding * 2)
 	if self.showIcon then
 		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 2)
 		self.icon:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.iconPadding.x, -self.iconPadding.y)
@@ -81,12 +81,9 @@ end
 
 ---@param self EPReminderMessage
 local function OnAcquire(self)
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		self:SetFont(fPath, defaultFontHeight, "")
-	end
-	self:SetHorizontalTextAlignment("CENTER")
 	self:SetIcon(nil)
+	self.frame:SetFrameStrata("MEDIUM")
+	self.frame:SetFrameLevel(100)
 	self.frame:Show()
 end
 
@@ -95,7 +92,7 @@ local function OnRelease(self)
 	self:SetAnchorMode(false)
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
-	self.horizontalTextPadding = defaultTextPadding.x
+	self.horizontalTextPadding = defaultTextPadding
 	self.iconPadding = defaultIconPadding
 end
 
@@ -136,12 +133,6 @@ local function SetFont(self, fontFile, size, flags)
 end
 
 ---@param self EPReminderMessage
----@param alignment "CENTER"|"LEFT"|"RIGHT"
-local function SetHorizontalTextAlignment(self, alignment)
-	self.text:SetJustifyH(alignment)
-end
-
----@param self EPReminderMessage
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
@@ -176,6 +167,7 @@ local function Constructor()
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
+	text:SetJustifyH("CENTER")
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
@@ -189,7 +181,6 @@ local function Constructor()
 		SetIcon = SetIcon,
 		SetText = SetText,
 		SetFont = SetFont,
-		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		GetText = GetText,
 		SetAnchorMode = SetAnchorMode,
 		frame = frame,
@@ -197,7 +188,7 @@ local function Constructor()
 		icon = icon,
 		text = text,
 		showIcon = false,
-		horizontalTextPadding = defaultTextPadding.x,
+		horizontalTextPadding = defaultTextPadding,
 		iconPadding = defaultIconPadding,
 	}
 

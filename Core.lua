@@ -50,28 +50,11 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	-- if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
-	-- 	BigWigsLoader.RegisterMessage({}, "BigWigs_SetStage", function(event, addon, stage)
-	-- 		print("Stage", stage)
-	-- 	end)
-	-- end
-	-- Private:RegisterEvent("ENCOUNTER_START", function(encounterID, encounterName, difficultyID, groupSize)
-	-- 	print(encounterID, encounterName, difficultyID, groupSize)
-	-- end)
-	-- Private:RegisterEvent("ENCOUNTER_END", function(encounterID, encounterName, difficultyID, groupSize, success)
-	-- 	print(encounterID, encounterName, difficultyID, groupSize, success)
-	-- end)
-	-- Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function()
-	-- 	local time, event, _, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellId, amount =
-	-- 		CombatLogGetCurrentEventInfo()
-	-- 	if event == "SPELL_CAST_SUCCESS" then
-	-- 		print(spellId)
-	-- 	end
-	-- end)
+	Private:InitializeReminder()
 end
 
 function AddOn:OnDisable()
-	-- Private:UnregisterAllEvents()
+	Private:UnregisterAllEvents()
 end
 
 function AddOn:Refresh(db, newProfile)
