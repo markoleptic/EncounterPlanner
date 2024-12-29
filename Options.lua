@@ -29,6 +29,7 @@ local sort = sort
 local tinsert = tinsert
 local tostring = tostring
 local tonumber = tonumber
+local unpack = unpack
 
 local previewDuration = 15.0
 
@@ -185,8 +186,11 @@ local function CreateProgressBarAnchor()
 	progressBarAnchor:SetTexture(reminderPreferences.progressBars.texture)
 	progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
 	progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], "Progress Bar Text")
+	progressBarAnchor:SetColor(unpack(reminderPreferences.progressBars.color))
+	progressBarAnchor:SetBackgroundColor(unpack(reminderPreferences.progressBars.backgroundColor))
 	progressBarAnchor:SetProgressBarWidth(reminderPreferences.progressBars.width)
 	progressBarAnchor:SetFill(reminderPreferences.progressBars.fill)
+	progressBarAnchor:SetAlpha(reminderPreferences.progressBars.alpha)
 	progressBarAnchor:SetCallback("OnRelease", function()
 		Private.progressBarAnchor = nil
 	end)
@@ -225,6 +229,8 @@ local function CreateMessageAnchor()
 		reminderPreferences.messages.fontOutline
 	)
 	messageAnchor:SetIcon([[Interface\Icons\INV_MISC_QUESTIONMARK]])
+	messageAnchor:SetAlpha(reminderPreferences.messages.alpha)
+	messageAnchor:SetTextColor(unpack(reminderPreferences.messages.textColor))
 	messageAnchor:SetCallback("OnRelease", function()
 		Private.messageAnchor = nil
 	end)
@@ -750,9 +756,12 @@ function Private:CreateOptionsMenu()
 		},
 		{
 			label = "Position",
-			labels = { "X:", "Y:" },
+			labels = { "X", "Y" },
 			type = "doubleLineEdit",
-			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+			descriptions = {
+				"The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+				"The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+			},
 			category = "Messages",
 			values = anchorPointValues,
 			updateIndices = { -3, -2, -1, 0 },
@@ -865,6 +874,53 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
+			label = "Text Color",
+			type = "colorPicker",
+			description = "Text color to use for Message text.",
+			category = "Messages",
+			get = function()
+				return unpack(reminderPreferences.messages.textColor)
+			end,
+			set = function(r, g, b, a)
+				reminderPreferences.messages.textColor = { r, g, b, a }
+				Private.messageAnchor:SetTextColor(r, g, b, a)
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+			end,
+		},
+		{
+			label = "Alpha",
+			type = "lineEdit",
+			description = "Transparency of Messages (0.0 - 1.0).",
+			category = "Messages",
+			get = function()
+				return reminderPreferences.messages.alpha
+			end,
+			set = function(key)
+				local value = tonumber(key)
+				if value then
+					reminderPreferences.messages.alpha = value
+					Private.messageAnchor:SetAlpha(value)
+				end
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+			end,
+			validate = function(key)
+				local value = tonumber(key)
+				if value then
+					local valid = value >= 0.0 and value <= 1.0
+					if valid then
+						return true
+					else
+						return false, utilities.Clamp(value, 0.0, 1.0)
+					end
+				end
+				return false, reminderPreferences.messages.alpha
+			end,
+		},
+		{
 			label = "Enable Progress Bars",
 			type = "checkBoxBesideButton",
 			description = "Whether to show Progress Bars for assignments.",
@@ -970,8 +1026,12 @@ function Private:CreateOptionsMenu()
 		},
 		{
 			label = "Position",
+			labels = { "X", "Y" },
 			type = "doubleLineEdit",
-			description = "The offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+			descriptions = {
+				"The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+				"The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+			},
 			category = "Progress Bars",
 			values = anchorPointValues,
 			updateIndices = { -3, -2, -1, 0 },
@@ -1204,6 +1264,68 @@ function Private:CreateOptionsMenu()
 				reminderPreferences.progressBars.iconPosition = key
 				Private.progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
 			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+		},
+		{
+			label = "Alpha",
+			type = "lineEdit",
+			description = "Transparency of Progress Bars (0.0 - 1.0).",
+			category = "Progress Bars",
+			get = function()
+				return reminderPreferences.progressBars.alpha
+			end,
+			set = function(key)
+				local value = tonumber(key)
+				if value then
+					reminderPreferences.progressBars.alpha = value
+					Private.progressBarAnchor:SetAlpha(value)
+				end
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+			validate = function(key)
+				local value = tonumber(key)
+				if value then
+					local valid = value >= 0.0 and value <= 1.0
+					if valid then
+						return true
+					else
+						return false, utilities.Clamp(value, 0.0, 1.0)
+					end
+				end
+				return false, reminderPreferences.progressBars.alpha
+			end,
+		},
+		{
+			label = "Color",
+			labels = { "Foreground", "Background" },
+			type = "doubleColorPicker",
+			descriptions = {
+				"Foreground color for Progress Bars.",
+				"Background color for Progress Bars.",
+			},
+			category = "Progress Bars",
+			get = {
+				function()
+					return unpack(reminderPreferences.progressBars.color)
+				end,
+				function()
+					return unpack(reminderPreferences.progressBars.backgroundColor)
+				end,
+			},
+			set = {
+				function(r, g, b, a)
+					reminderPreferences.progressBars.color = { r, g, b, a }
+					Private.progressBarAnchor:SetColor(r, g, b, a)
+				end,
+				function(r, g, b, a)
+					reminderPreferences.progressBars.backgroundColor = { r, g, b, a }
+					Private.progressBarAnchor:SetBackgroundColor(r, g, b, a)
+				end,
+			},
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
 			end,

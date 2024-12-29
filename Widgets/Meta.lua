@@ -72,6 +72,9 @@
 ---@alias EPReminderMessageType
 ---|"EPReminderMessage"
 
+---@alias EPColorPickerType
+---|"EPColorPicker"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -90,6 +93,7 @@
 ---| EPCheckBoxType
 ---| EPProgressBarType
 ---| EPReminderMessageType
+---| EPColorPickerType
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -197,6 +201,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPReminderMessageType
 ---@return EPReminderMessage
+function AceGUI:Create(type) end
+
+---@param type EPColorPickerType
+---@return EPColorPicker
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

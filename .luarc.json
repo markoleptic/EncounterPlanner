@@ -233,7 +233,9 @@
 		"MenuUtil",
 		"GMRT",
 		"VMRT",
-		"DevTool"
+		"DevTool",
+		"ColorPickerFrame",
+		"OpacitySliderFrame"
 	],
 	"runtime.version": "Lua 5.1",
 	"workspace.ignoreDir": [".github", ".vscode", "Libs"]

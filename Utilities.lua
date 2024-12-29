@@ -62,6 +62,14 @@ function Utilities.Round(value, precision)
 	end
 end
 
+---@param value number
+---@param minValue number
+---@param maxValue number
+---@return number
+function Utilities.Clamp(value, minValue, maxValue)
+	return min(maxValue, max(minValue, value))
+end
+
 ---@param notes table<integer, EncounterPlannerDbNote>
 ---@return string
 function Utilities.CreateUniqueNoteName(notes)

@@ -460,6 +460,7 @@ end
 ---@field relativePoint AnchorPoint
 ---@field x number
 ---@field y number
+---@field alpha number
 
 ---@class ProgressBarPreferences : GenericReminderPreferences
 ---@field textAlignment "LEFT"|"CENTER"|"RIGHT"
@@ -470,9 +471,12 @@ end
 ---@field fill boolean
 ---@field showBorder boolean
 ---@field showIconBorder boolean
+---@field color {r:number, g:number, b:number, a:number}
+---@field backgroundColor {r:number, g:number, b:number, a:number}
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
+---@field textColor {r:number, g:number, b:number, a:number}
 
 ---@class ReminderPreferences
 ---@field enabled boolean
@@ -535,7 +539,9 @@ local defaults = {
 					relativePoint = "CENTER",
 					x = 0,
 					y = 300,
+					alpha = 0.95,
 					showOnlyAtExpiration = true,
+					textColor = { 1, 0.82, 0, 0.95 },
 				},
 				progressBars = {
 					enabled = true,
@@ -548,6 +554,7 @@ local defaults = {
 					relativePoint = "CENTER",
 					x = -100,
 					y = 0,
+					alpha = 0.95,
 					texture = "Clean",
 					iconPosition = "LEFT",
 					width = 100,
@@ -555,6 +562,8 @@ local defaults = {
 					fill = false,
 					showBorder = true,
 					showIconBorder = false,
+					color = { 0.05, 0.05, 0.05, 0.25 },
+					backgroundColor = { 0.5, 0.5, 0.5, 0.75 },
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,

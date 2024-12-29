@@ -24,6 +24,7 @@ local PlaySoundFile = PlaySoundFile
 local SpeakText = C_VoiceChat.SpeakText
 local tinsert = tinsert
 local type = type
+local unpack = unpack
 local wipe = wipe
 
 local messageDuration = 1.0
@@ -104,7 +105,10 @@ local function CreateProgressBar(preferences, text, duration, icon)
 	progressBar:SetShowIconBorder(preferences.showIconBorder)
 	progressBar:SetTexture(preferences.texture)
 	progressBar:SetIconPosition(preferences.iconPosition)
+	progressBar:SetColor(unpack(preferences.color))
+	progressBar:SetBackgroundColor(unpack(preferences.backgroundColor))
 	progressBar:SetFill(preferences.fill)
+	progressBar:SetAlpha(preferences.alpha)
 	progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	progressBar:SetDuration(duration)
 	progressBar:SetIconAndText(icon, text)
@@ -119,6 +123,8 @@ end
 local function CreateMessage(preferences, text, duration, icon)
 	local message = AceGUI:Create("EPReminderMessage")
 	message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
+	message:SetAlpha(preferences.alpha)
+	message:SetTextColor(unpack(preferences.textColor))
 	if duration then
 		message:SetDuration(duration)
 	end

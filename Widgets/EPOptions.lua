@@ -41,6 +41,7 @@ local frameChooserContainerSpacing = { 8, 0 }
 local doubleLineEditContainerSpacing = { 8, 0 }
 local radioButtonGroupSpacing = { 8, 0 }
 local categoryPadding = { 10, 10, 10, 10 }
+local scrollMultiplier = 25
 
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -367,7 +368,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	doubleLineEditContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
 
 	local labelX = AceGUI:Create("EPLabel")
-	labelX:SetText("X:")
+	labelX:SetText(option.labels[1] .. ":")
 	labelX:SetRelativeWidth(0.05)
 	labelX:SetFullHeight(true)
 
@@ -375,7 +376,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	lineEditX:SetRelativeWidth(0.45)
 
 	local labelY = AceGUI:Create("EPLabel")
-	labelY:SetText("Y:")
+	labelY:SetText(option.labels[2] .. ":")
 	labelY:SetRelativeWidth(0.05)
 	labelY:SetFullHeight(true)
 
@@ -417,10 +418,10 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	lineEditX:SetText(x)
 	lineEditY:SetText(y)
 	lineEditX:SetCallback("OnEnter", function()
-		ShowTooltip(lineEditX.frame, option.label, option.description)
+		ShowTooltip(lineEditX.frame, option.labels[1], option.descriptions[1])
 	end)
 	lineEditY:SetCallback("OnEnter", function()
-		ShowTooltip(lineEditY.frame, option.label, option.description)
+		ShowTooltip(lineEditY.frame, option.labels[2], option.descriptions[2])
 	end)
 	lineEditX:SetCallback("OnLeave", function()
 		tooltip:Hide()
@@ -430,6 +431,71 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	end)
 	doubleLineEditContainer:AddChildren(labelX, lineEditX, labelY, lineEditY)
 	return doubleLineEditContainer
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
+---@param index integer
+---@param label EPLabel
+---@return EPContainer
+local function CreateDoubleColorPicker(self, option, index, label)
+	local doubleColorPickerContainer = AceGUI:Create("EPContainer")
+	doubleColorPickerContainer:SetFullWidth(true)
+	doubleColorPickerContainer:SetLayout("EPHorizontalLayout")
+	doubleColorPickerContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
+
+	local colorPickerOne = AceGUI:Create("EPColorPicker")
+	colorPickerOne:SetFullHeight(true)
+	colorPickerOne:SetRelativeWidth(0.5)
+	colorPickerOne:SetLabelText(option.labels[1] .. ":", spacingBetweenLabelAndWidget)
+	colorPickerOne:SetColor(option.get[1]())
+
+	local colorPickerTwo = AceGUI:Create("EPColorPicker")
+	colorPickerTwo:SetFullHeight(true)
+	colorPickerTwo:SetRelativeWidth(0.5)
+	colorPickerTwo:SetLabelText(option.labels[2] .. ":", spacingBetweenLabelAndWidget)
+	colorPickerTwo:SetColor(option.get[2]())
+
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = colorPickerOne, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = colorPickerTwo, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
+	end
+	if option.updateIndices then
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
+			colorPickerOne:SetColor(option.get[1]())
+			colorPickerTwo:SetColor(option.get[2]())
+		end)
+	end
+	colorPickerOne:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[1](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+	colorPickerTwo:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[2](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+
+	colorPickerOne:SetCallback("OnEnter", function()
+		ShowTooltip(colorPickerOne.frame, option.labels[1], option.descriptions[1])
+	end)
+	colorPickerTwo:SetCallback("OnEnter", function()
+		ShowTooltip(colorPickerTwo.frame, option.labels[2], option.descriptions[2])
+	end)
+	colorPickerOne:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	colorPickerTwo:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	doubleColorPickerContainer:AddChildren(colorPickerOne, colorPickerTwo)
+	return doubleColorPickerContainer
 end
 
 ---@param self EPOptions
@@ -499,13 +565,20 @@ local function CreateOptionWidget(self, option, index)
 			widget:AddItems(option.values, "EPDropdownItemToggle")
 			setWidgetValue = widget.SetValue
 			callbackName = "OnValueChanged"
-		elseif option.type == "radioButtonGroup" then
-			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
 		elseif option.type == "lineEdit" then
 			widget = AceGUI:Create("EPLineEdit")
 			widget:SetFullWidth(true)
 			setWidgetValue = widget.SetText
 			callbackName = "OnTextSubmitted"
+		elseif option.type == "colorPicker" then
+			widget = AceGUI:Create("EPColorPicker")
+			widget:SetFullWidth(true)
+			setWidgetValue = widget.SetColor
+			callbackName = "OnValueChanged"
+		elseif option.type == "doubleColorPicker" then
+			tinsert(containerChildren, CreateDoubleColorPicker(self, option, index, label))
+		elseif option.type == "radioButtonGroup" then
+			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
 		elseif option.type == "doubleLineEdit" then
 			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, label))
 		elseif option.type == "frameChooser" then
@@ -526,17 +599,17 @@ local function CreateOptionWidget(self, option, index)
 				setWidgetValue(widget, option.get())
 			end)
 		end
-		widget:SetCallback(callbackName, function(_, _, value)
+		widget:SetCallback(callbackName, function(_, _, ...)
 			if option.validate then
-				local valid, valueToRevertTo = option.validate(value)
+				local valid, valueToRevertTo = option.validate(...)
 				if not valid and valueToRevertTo then
 					setWidgetValue(widget, valueToRevertTo)
 					option.set(valueToRevertTo)
 				else
-					option.set(value)
+					option.set(...)
 				end
 			else
-				option.set(value)
+				option.set(...)
 			end
 			RefreshEnabledStates(self.refreshMap)
 			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
@@ -684,20 +757,33 @@ local function PopulateActiveTab(self, tab)
 	self:UpdateVerticalScroll()
 end
 
+---@alias EPSettingOptionType
+---| "dropdown"
+---| "radioButtonGroup"
+---| "lineEdit"
+---| "checkBox"
+---| "frameChooser"
+---| "doubleLineEdit"
+---| "horizontalLine"
+---| "checkBoxBesideButton"
+---| "colorPicker"
+---| "doubleColorPicker"
+
 ---@class EPSettingOption
 ---@field label string
----@field type "dropdown"|"radioButtonGroup"|"lineEdit"|"checkBox"|"frameChooser"|"doubleLineEdit"|"horizontalLine"|"checkBoxBesideButton"
+---@field labels? string[]
+---@field type EPSettingOptionType
+---@field get fun(): string|boolean|number|...|[fun(): ...]
+---@field set fun(value: string|boolean|number|..., value2?: string|boolean)|[fun(value: ...)]
 ---@field description? string
+---@field descriptions? [string]
+---@field validate? fun(value: string|number, value2?: string): boolean, string|number?
 ---@field category? string
 ---@field indent? boolean
 ---@field values? table<integer, string|DropdownItemData>
----@field get fun(): string|boolean
----@field set fun(value: string|boolean, value2?: string|boolean)
 ---@field enabled? fun(): boolean
----@field validate? fun(value: string, value2?: string): boolean, string?
 ---@field updateIndices? table<integer, integer>
 ---@field buttonText? string
----@field toggledButtonText? string
 ---@field buttonEnabled? fun(): boolean
 ---@field buttonCallback? fun()
 
@@ -769,7 +855,7 @@ local function OnAcquire(self)
 		local timelineFrameHeight = self.activeContainer.frame:GetHeight()
 		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
 		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
-		local newVerticalScroll = max(min(currentVerticalScroll - (delta * 20), maxVerticalScroll), 0)
+		local newVerticalScroll = max(min(currentVerticalScroll - (delta * scrollMultiplier), maxVerticalScroll), 0)
 		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
 		self:UpdateVerticalScroll()
 	end)

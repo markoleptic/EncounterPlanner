@@ -196,6 +196,7 @@ local function OnRelease(self)
 	self.paused = nil
 	self:SetAnchorMode(false)
 	self:SetIcon(nil)
+	self:SetAlpha(1.0)
 	self.horizontalTextPadding = defaultTextPadding
 end
 
@@ -308,6 +309,21 @@ local function SetFont(self, fontFile, size, flags)
 end
 
 ---@param self EPReminderMessage
+---@param r number
+---@param g number
+---@param b number
+---@param a number
+local function SetTextColor(self, r, g, b, a)
+	self.text:SetTextColor(r, g, b, a)
+end
+
+---@param self EPReminderMessage
+---@param alpha number
+local function SetAlpha(self, alpha)
+	self.frame:SetAlpha(alpha)
+end
+
+---@param self EPReminderMessage
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
@@ -362,6 +378,8 @@ local function Constructor()
 		Start = Start,
 		Pause = Pause,
 		Resume = Resume,
+		SetTextColor = SetTextColor,
+		SetAlpha = SetAlpha,
 		frame = frame,
 		type = Type,
 		icon = icon,

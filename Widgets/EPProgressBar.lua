@@ -244,7 +244,7 @@ local function OnRelease(self)
 	self.label:SetJustifyV("MIDDLE")
 	self.duration:SetJustifyH("RIGHT")
 	self.duration:SetJustifyV("MIDDLE")
-
+	self:SetAlpha(1.0)
 	self:SetAnchorMode(false)
 end
 
@@ -387,6 +387,12 @@ end
 ---@param fill boolean
 local function SetFill(self, fill)
 	self.fill = fill
+end
+
+---@param self EPProgressBar
+---@param alpha number
+local function SetAlpha(self, alpha)
+	self.frame:SetAlpha(alpha)
 end
 
 ---@param self EPProgressBar
@@ -565,6 +571,7 @@ local function Constructor()
 		SetProgressBarWidth = SetProgressBarWidth,
 		SetShowBorder = SetShowBorder,
 		SetShowIconBorder = SetShowIconBorder,
+		SetAlpha = SetAlpha,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,
