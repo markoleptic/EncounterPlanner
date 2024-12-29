@@ -178,6 +178,8 @@ local function CreateProgressBarAnchor()
 		reminderPreferences.progressBars.fontSize,
 		reminderPreferences.progressBars.fontOutline
 	)
+	progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
+	progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
 	progressBarAnchor:SetHorizontalTextAlignment(reminderPreferences.progressBars.textAlignment)
 	progressBarAnchor:SetDurationTextAlignment(reminderPreferences.progressBars.durationAlignment)
 	progressBarAnchor:SetTexture(reminderPreferences.progressBars.texture)
@@ -1201,6 +1203,38 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				reminderPreferences.progressBars.iconPosition = key
 				Private.progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+		},
+		{
+			label = "Show Border",
+			type = "checkBox",
+			description = "Whether to show a 1px border around Progress Bars.",
+			category = "Progress Bars",
+			get = function()
+				return reminderPreferences.progressBars.showBorder
+			end,
+			set = function(key)
+				reminderPreferences.progressBars.showBorder = key
+				Private.progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
+			end,
+			enabled = function()
+				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+			end,
+		},
+		{
+			label = "Show Icon Border",
+			type = "checkBox",
+			description = "Whether to show a 1px border around Progress Bar icons.",
+			category = "Progress Bars",
+			get = function()
+				return reminderPreferences.progressBars.showIconBorder
+			end,
+			set = function(key)
+				reminderPreferences.progressBars.showIconBorder = key
+				Private.progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true

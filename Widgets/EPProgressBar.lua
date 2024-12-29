@@ -6,11 +6,12 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 local floor = math.floor
+local ceil = math.ceil
 
 local defaultHeight = 24
 local defaultWidth = 200
 local defaultVerticalTextPadding = 2
-local defaultBackgroundColor = { 0.5, 0.5, 0.5, 0.3 }
+local defaultBackgroundColor = { 0.05, 0.05, 0.05, 0.3 }
 local defaultColor = { 0.5, 0.5, 0.5, 1 }
 local timeThreshold = 0.1
 local secondsInHour = 3600.0
@@ -29,6 +30,21 @@ local greaterThanHourFormatApproximate = "~%d:%02d:%02d"
 local greaterThanMinuteFormatApproximate = "~%d:%02d"
 local greaterThanTenSecondsFormatApproximate = "~%.1f"
 local fallbackFormatApproximate = "~%.0f"
+
+local backdropColor = { 0, 0, 0, 0 }
+local backdropBorderColor = { 0, 0, 0, 1 }
+local frameBackdrop = {
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = false,
+	edgeSize = 1,
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+}
+local iconFrameBackdrop = {
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = false,
+	edgeSize = 1,
+	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+}
 
 local previousPointDetails = {}
 
@@ -58,31 +74,35 @@ end
 
 ---@param self EPProgressBar
 local function RestyleBar(self)
-	self.icon:ClearAllPoints()
+	self.iconBackdrop:ClearAllPoints()
 	self.statusBar:ClearAllPoints()
-	self:SetHeight(self.label:GetStringHeight() + 2 * defaultVerticalTextPadding)
+
+	local edgeSize = frameBackdrop.edgeSize
+	self:SetHeight(ceil(self.label:GetLineHeight()) + 2 * defaultVerticalTextPadding + 2 * edgeSize)
+
 	if self.iconTexture then
-		self.icon:SetWidth(self.frame:GetHeight())
+		self.iconBackdrop:SetWidth(self.frame:GetHeight())
 		if self.iconPosition == "RIGHT" then
-			self.icon:SetPoint("TOPRIGHT", self.frame)
-			self.icon:SetPoint("BOTTOMRIGHT", self.frame)
-			self.statusBar:SetPoint("TOPRIGHT", self.icon, "TOPLEFT")
-			self.statusBar:SetPoint("BOTTOMRIGHT", self.icon, "BOTTOMLEFT")
-			self.statusBar:SetPoint("TOPLEFT", self.frame)
-			self.statusBar:SetPoint("BOTTOMLEFT", self.frame)
+			self.iconBackdrop:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+			self.iconBackdrop:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
+			self.statusBar:SetPoint("RIGHT", self.iconBackdrop, "LEFT")
+			self.statusBar:SetPoint("TOPLEFT", self.frame, "TOPLEFT", edgeSize, -edgeSize)
+			self.statusBar:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", edgeSize, edgeSize)
 		else
-			self.icon:SetPoint("TOPLEFT", self.frame)
-			self.icon:SetPoint("BOTTOMLEFT", self.frame)
-			self.statusBar:SetPoint("TOPLEFT", self.icon, "TOPRIGHT")
-			self.statusBar:SetPoint("BOTTOMLEFT", self.icon, "BOTTOMRIGHT")
-			self.statusBar:SetPoint("TOPRIGHT", self.frame)
-			self.statusBar:SetPoint("BOTTOMRIGHT", self.frame)
+			self.iconBackdrop:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+			self.iconBackdrop:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT")
+			self.statusBar:SetPoint("LEFT", self.iconBackdrop, "RIGHT")
+			self.statusBar:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -edgeSize, -edgeSize)
+			self.statusBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -edgeSize, edgeSize)
 		end
-		self.icon:Show()
+		self.iconBackdrop:Show()
+		local iconEdgeSize = iconFrameBackdrop.edgeSize
+		self.icon:SetPoint("TOPLEFT", iconEdgeSize, -iconEdgeSize)
+		self.icon:SetPoint("BOTTOMRIGHT", -iconEdgeSize, iconEdgeSize)
 	else
-		self.statusBar:SetPoint("TOPLEFT", self.frame)
-		self.statusBar:SetPoint("BOTTOMRIGHT", self.frame)
-		self.icon:Hide()
+		self.statusBar:SetPoint("TOPLEFT", self.frame, "TOPLEFT", edgeSize, -edgeSize)
+		self.statusBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -edgeSize, edgeSize)
+		self.iconBackdrop:Hide()
 	end
 
 	local text = self.label:GetText()
@@ -101,14 +121,16 @@ local function RestyleBar(self)
 	self.label:ClearAllPoints()
 	self.duration:ClearAllPoints()
 	if self.label:GetJustifyH() == "LEFT" and self.duration:GetJustifyH() == "RIGHT" then
-		self.label:SetWidth(self.statusBar:GetWidth() * 0.8)
+		local stringWidth = self.statusBar:GetWidth() - 4
+		self.label:SetWidth(stringWidth * 0.8)
+		self.duration:SetWidth(stringWidth * 0.2)
 		self.label:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
-		self.duration:SetPoint("LEFT", self.label, "RIGHT", 0, 0)
 		self.duration:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
 	elseif self.label:GetJustifyH() == "RIGHT" and self.duration:GetJustifyH() == "LEFT" then
-		self.duration:SetWidth(self.statusBar:GetWidth() * 0.2)
+		local stringWidth = self.statusBar:GetWidth() - 4
+		self.label:SetWidth(stringWidth * 0.8)
+		self.duration:SetWidth(stringWidth * 0.2)
 		self.duration:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
-		self.label:SetPoint("LEFT", self.duration, "RIGHT", 0, 0)
 		self.label:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
 	else
 		self.label:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
@@ -178,8 +200,7 @@ end
 ---@field type string
 ---@field statusBar StatusBar
 ---@field background Texture
----@field backdrop BackdropTemplate|Frame
----@field iconBackdrop table|Frame
+---@field iconBackdrop table|Frame|BackdropTemplate
 ---@field duration FontString
 ---@field label FontString
 ---@field updater AnimationGroup
@@ -237,6 +258,7 @@ local function SetFont(self, ...)
 end
 
 ---@param self EPProgressBar
+---@param texture string|integer
 local function SetTexture(self, texture)
 	self.statusBar:SetStatusBarTexture(texture)
 	self.background:SetTexture(texture)
@@ -245,16 +267,57 @@ local function SetTexture(self, texture)
 end
 
 ---@param self EPProgressBar
+---@param r number
+---@param g number
+---@param b number
+---@param a number
 local function SetColor(self, r, g, b, a)
 	self.statusBar:SetStatusBarColor(r, g, b, a)
 end
 
 ---@param self EPProgressBar
+---@param r number
+---@param g number
+---@param b number
+---@param a number
 local function SetBackgroundColor(self, r, g, b, a)
 	self.background:SetVertexColor(r, g, b, a)
 end
 
 ---@param self EPProgressBar
+---@param show boolean
+local function SetShowBorder(self, show)
+	self.frame:ClearBackdrop()
+	if show then
+		frameBackdrop.edgeSize = 1
+		self.frame:SetBackdrop(frameBackdrop)
+		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	else
+		frameBackdrop.edgeSize = 0
+	end
+	if self.running then
+		RestyleBar(self)
+	end
+end
+
+---@param self EPProgressBar
+---@param show boolean
+local function SetShowIconBorder(self, show)
+	self.iconBackdrop:ClearBackdrop()
+	if show then
+		iconFrameBackdrop.edgeSize = 1
+		self.iconBackdrop:SetBackdrop(iconFrameBackdrop)
+		self.iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+	else
+		iconFrameBackdrop.edgeSize = 0
+	end
+	if self.running then
+		RestyleBar(self)
+	end
+end
+
+---@param self EPProgressBar
+---@param show boolean
 local function SetTimeVisibility(self, show)
 	self.showTime = show
 	if show then
@@ -265,6 +328,7 @@ local function SetTimeVisibility(self, show)
 end
 
 ---@param self EPProgressBar
+---@param show boolean
 local function SetLabelVisibility(self, show)
 	self.showLabel = show
 	if show then
@@ -275,9 +339,11 @@ local function SetLabelVisibility(self, show)
 end
 
 ---@param self EPProgressBar
+---@param duration number
+---@param isApprox? boolean
 local function SetDuration(self, duration, isApprox)
 	self.remaining = duration
-	self.isApproximate = isApprox
+	self.isApproximate = isApprox or false
 end
 
 ---@param self EPProgressBar
@@ -324,6 +390,7 @@ local function SetFill(self, fill)
 end
 
 ---@param self EPProgressBar
+---@param maxValue? number
 local function Start(self, maxValue)
 	if self.running and not self.paused then
 		return
@@ -428,31 +495,30 @@ end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
-	local frame = CreateFrame("Frame", Type .. count, UIParent)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(defaultWidth, defaultHeight)
-
 	frame:SetFrameStrata("MEDIUM")
 	frame:SetFrameLevel(100)
-
-	local icon = frame:CreateTexture()
-	icon:SetPoint("TOPLEFT")
-	icon:SetPoint("BOTTOMLEFT")
-	icon:Show()
+	frame:SetBackdrop(frameBackdrop)
+	frame:SetBackdropColor(unpack(backdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 
 	local statusBar = CreateFrame("StatusBar", Type .. "StatusBar" .. count, frame)
 	statusBar:SetStatusBarColor(unpack(defaultColor))
-	statusBar:SetPoint("TOPRIGHT")
-	statusBar:SetPoint("BOTTOMRIGHT")
+	statusBar:SetSize(defaultWidth, defaultHeight)
 
 	local background = statusBar:CreateTexture(nil, "BACKGROUND")
 	background:SetVertexColor(unpack(defaultBackgroundColor))
 	background:SetAllPoints()
 
-	local backdrop = CreateFrame("Frame", Type .. "Backdrop" .. count, frame, "BackdropTemplate")
-	backdrop:SetFrameLevel(0)
-
 	local iconBackdrop = CreateFrame("Frame", Type .. "IconBackdrop" .. count, frame, "BackdropTemplate")
-	iconBackdrop:SetFrameLevel(0)
+	iconBackdrop:SetBackdrop(iconFrameBackdrop)
+	iconBackdrop:SetBackdropColor(unpack(backdropColor))
+	iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+
+	local icon = iconBackdrop:CreateTexture()
+	icon:SetPoint("TOPLEFT")
+	icon:SetPoint("BOTTOMRIGHT")
 
 	local label = statusBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmallOutline")
 	label:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
@@ -465,6 +531,7 @@ local function Constructor()
 	local duration = statusBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmallOutline")
 	duration:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
 	duration:SetPoint("RIGHT", statusBar, "RIGHT", -2, 0)
+	duration:SetWordWrap(false)
 
 	duration:SetJustifyH("RIGHT")
 	duration:SetJustifyV("MIDDLE")
@@ -496,11 +563,12 @@ local function Constructor()
 		SetIconPosition = SetIconPosition,
 		SetFill = SetFill,
 		SetProgressBarWidth = SetProgressBarWidth,
+		SetShowBorder = SetShowBorder,
+		SetShowIconBorder = SetShowIconBorder,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,
 		background = background,
-		backdrop = backdrop,
 		icon = icon,
 		iconBackdrop = iconBackdrop,
 		duration = duration,

@@ -97,15 +97,17 @@ end
 ---@return EPProgressBar
 local function CreateProgressBar(preferences, text, duration, icon)
 	local progressBar = AceGUI:Create("EPProgressBar")
+	progressBar:SetProgressBarWidth(preferences.width)
 	progressBar:SetHorizontalTextAlignment(preferences.textAlignment)
 	progressBar:SetDurationTextAlignment(preferences.durationAlignment)
+	progressBar:SetShowBorder(preferences.showBorder)
+	progressBar:SetShowIconBorder(preferences.showIconBorder)
 	progressBar:SetTexture(preferences.texture)
 	progressBar:SetIconPosition(preferences.iconPosition)
-	progressBar:SetWidth(preferences.width)
 	progressBar:SetFill(preferences.fill)
+	progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	progressBar:SetDuration(duration)
 	progressBar:SetIconAndText(icon, text)
-	progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	return progressBar
 end
 
@@ -321,7 +323,7 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		Private.progressBarContainer:SetLayout("EPProgressBarLayout")
 		Private.progressBarContainer.frame:SetFrameStrata("MEDIUM")
 		Private.progressBarContainer.frame:SetFrameLevel(100)
-		Private.progressBarContainer:SetSpacing(0, 0)
+		Private.progressBarContainer:SetSpacing(0, progressBarPreferences.showBorder and -1 or 0)
 		local anchorFrame = _G[progressBarPreferences.relativeTo] or UIParent
 		local point, relativePoint = progressBarPreferences.point, progressBarPreferences.relativePoint
 		local x, y = progressBarPreferences.x, progressBarPreferences.y

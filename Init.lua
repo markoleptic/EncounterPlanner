@@ -468,6 +468,8 @@ end
 ---@field width number
 ---@field durationAlignment "LEFT"|"CENTER"|"RIGHT"
 ---@field fill boolean
+---@field showBorder boolean
+---@field showIconBorder boolean
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
@@ -551,6 +553,8 @@ local defaults = {
 					width = 100,
 					durationAlignment = "RIGHT",
 					fill = false,
+					showBorder = true,
+					showIconBorder = false,
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
