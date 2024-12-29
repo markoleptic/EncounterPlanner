@@ -824,7 +824,7 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Font Size",
 			type = "lineEdit",
-			description = "Font size to use for Message text.",
+			description = "Font size to use for Message text (8 - 48).",
 			category = "Messages",
 			get = function()
 				return reminderPreferences.messages.fontSize
@@ -841,15 +841,16 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
 			end,
 			validate = function(key)
-				local valid = false
 				local value = tonumber(key)
 				if value then
-					valid = value >= 8 and value <= 48
-				end
-				if not valid then
+					if value < 8 or value > 48 then
+						return false, utilities.Clamp(value, 8, 48)
+					else
+						return true
+					end
+				else
 					return false, reminderPreferences.messages.fontSize
 				end
-				return true
 			end,
 		},
 		{
@@ -910,14 +911,14 @@ function Private:CreateOptionsMenu()
 			validate = function(key)
 				local value = tonumber(key)
 				if value then
-					local valid = value >= 0.0 and value <= 1.0
-					if valid then
-						return true
-					else
+					if value < 0.0 or value > 1.0 then
 						return false, utilities.Clamp(value, 0.0, 1.0)
+					else
+						return true
 					end
+				else
+					return false, reminderPreferences.messages.alpha
 				end
-				return false, reminderPreferences.messages.alpha
 			end,
 		},
 		{
@@ -1111,15 +1112,16 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
 			end,
 			validate = function(key)
-				local valid = false
 				local value = tonumber(key)
 				if value then
-					valid = value >= 8 and value <= 48
-				end
-				if not valid then
+					if value < 8 or value > 48 then
+						return false, utilities.Clamp(value, 8, 48)
+					else
+						return true
+					end
+				else
 					return false, reminderPreferences.progressBars.fontSize
 				end
-				return true
 			end,
 		},
 		{
@@ -1215,12 +1217,12 @@ function Private:CreateOptionsMenu()
 			end,
 			validate = function(key)
 				local value = tonumber(key)
-				local valid = false
 				if value then
-					valid = value > 0 and value < 500
-				end
-				if valid then
-					return true
+					if value < 0.0 or value < 500.0 then
+						return false, utilities.Clamp(value, 0.0, 500.0)
+					else
+						return true
+					end
 				else
 					return false, reminderPreferences.progressBars.width
 				end
@@ -1289,11 +1291,10 @@ function Private:CreateOptionsMenu()
 			validate = function(key)
 				local value = tonumber(key)
 				if value then
-					local valid = value >= 0.0 and value <= 1.0
-					if valid then
-						return true
-					else
+					if value < 0.0 or value > 1.0 then
 						return false, utilities.Clamp(value, 0.0, 1.0)
+					else
+						return true
 					end
 				end
 				return false, reminderPreferences.progressBars.alpha
@@ -1430,76 +1431,81 @@ function Private:CreateOptionsMenu()
 					)
 			end,
 			validate = function(key)
-				local valid = false
 				local value = tonumber(key)
 				if value then
-					valid = value >= 0 and value <= 100
+					if value < 0.0 or value > 100.0 then
+						return false, utilities.Clamp(value, 0.0, 100.0)
+					else
+						return true
+					end
+				else
+					return false, reminderPreferences.messages.fontSize
 				end
-				if not valid then
-					return false, reminderPreferences.textToSpeech.volume
-				end
-				return true
 			end,
 		},
 		{
 			label = "Play Sound at Advance Notice",
-			type = "checkBox",
-			description = "Whether to play a sound at advance notice time.",
+			labels = { "Play Sound at Advance Notice", "Sound to Play at Advance Notice" },
+			type = "checkBoxWithDropdown",
+			descriptions = {
+				"Whether to play a sound at advance notice time.",
+				"The sound to play at advance notice time.",
+			},
 			category = "Sound",
-			get = function()
-				return reminderPreferences.sound.enableAtAdvanceNotice
-			end,
-			set = function(key)
-				reminderPreferences.sound.enableAtAdvanceNotice = key
-			end,
-			enabled = enableReminderOption,
-		},
-		{
-			label = "Sound to Play",
-			type = "dropdown",
-			description = "The sound to play at advance notice time.",
-			category = "Sound",
-			indent = true,
 			values = sounds,
-			get = function()
-				return reminderPreferences.sound.advanceNoticeSound
-			end,
-			set = function(key)
-				reminderPreferences.sound.advanceNoticeSound = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.sound.enableAtAdvanceNotice == true
-			end,
+			get = {
+				function()
+					return reminderPreferences.sound.enableAtAdvanceNotice
+				end,
+				function()
+					return reminderPreferences.sound.advanceNoticeSound
+				end,
+			},
+			set = {
+				function(key)
+					reminderPreferences.sound.enableAtAdvanceNotice = key
+				end,
+				function(key)
+					reminderPreferences.sound.advanceNoticeSound = key
+				end,
+			},
+			enabled = {
+				enableReminderOption,
+				function()
+					return reminderPreferences.enabled == true
+						and reminderPreferences.sound.enableAtAdvanceNotice == true
+				end,
+			},
 		},
 		{
 			label = "Play Sound at Assignment Time",
-			type = "checkBox",
-			description = "Whether to play a sound at assignment time.",
+			labels = { "Play Sound at Assignment Time", "Sound to Play at Assignment Time" },
+			type = "checkBoxWithDropdown",
+			descriptions = { "Whether to play a sound at assignment time.", "The sound to play at assignment time." },
 			category = "Sound",
-			get = function()
-				return reminderPreferences.sound.enableAtTime
-			end,
-			set = function(key)
-				reminderPreferences.sound.enableAtTime = key
-			end,
-			enabled = enableReminderOption,
-		},
-		{
-			label = "Sound to Play",
-			type = "dropdown",
-			description = "The sound to play at assignment time.",
-			category = "Sound",
-			indent = true,
 			values = sounds,
-			get = function()
-				return reminderPreferences.sound.atSound
-			end,
-			set = function(key)
-				reminderPreferences.sound.atSound = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.sound.enableAtTime == true
-			end,
+			get = {
+				function()
+					return reminderPreferences.sound.enableAtTime
+				end,
+				function()
+					return reminderPreferences.sound.atSound
+				end,
+			},
+			set = {
+				function(key)
+					reminderPreferences.sound.enableAtTime = key
+				end,
+				function(key)
+					reminderPreferences.sound.atSound = key
+				end,
+			},
+			enabled = {
+				enableReminderOption,
+				function()
+					return reminderPreferences.enabled == true and reminderPreferences.sound.enableAtTime == true
+				end,
+			},
 		},
 	}
 

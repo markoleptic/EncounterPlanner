@@ -312,10 +312,12 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	local radioButtonGroup = AceGUI:Create("EPContainer")
 	radioButtonGroup:SetLayout("EPHorizontalLayout")
 	radioButtonGroup:SetSpacing(unpack(radioButtonGroupSpacing))
+	radioButtonGroup:SetFullWidth(true)
 	local radioButtonGroupChildren = {}
+	local relativeWidth = 1.0 / #option.values
 	for _, itemValueAndText in pairs(option.values) do
 		local radioButton = AceGUI:Create("EPRadioButton")
-		radioButton:SetFullWidth(true)
+		radioButton:SetRelativeWidth(relativeWidth)
 		radioButton:SetLabelText(itemValueAndText.text)
 		radioButton:SetToggled(option.get() == itemValueAndText.itemValue)
 		radioButton:GetUserDataTable().key = itemValueAndText.itemValue
@@ -565,6 +567,68 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
+---@param index integer
+---@return EPContainer
+local function CreateCheckBoxWithDropdown(self, option, index)
+	local checkBoxWithDropdownContainer = AceGUI:Create("EPContainer")
+	checkBoxWithDropdownContainer:SetFullWidth(true)
+	checkBoxWithDropdownContainer:SetLayout("EPHorizontalLayout")
+	checkBoxWithDropdownContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
+
+	local checkBox = AceGUI:Create("EPCheckBox")
+	checkBox:SetFullHeight(true)
+	checkBox:SetRelativeWidth(0.5)
+	checkBox:SetText(option.label)
+	checkBox:SetChecked(option.get[1]())
+
+	local dropdown = AceGUI:Create("EPDropdown")
+	dropdown:SetRelativeWidth(0.5)
+	dropdown:AddItems(option.values, "EPDropdownItemToggle")
+	dropdown:SetValue(option.get[2]())
+
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = checkBox, enabled = option.enabled[1] })
+		tinsert(self.refreshMap, { widget = dropdown, enabled = option.enabled[2] })
+	end
+	if option.updateIndices then
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
+			checkBox:SetChecked(option.get[1]())
+			dropdown:SetValue(option.get[2]())
+		end)
+	end
+	checkBox:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[1](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+	dropdown:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[2](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+
+	checkBox:SetCallback("OnEnter", function()
+		ShowTooltip(checkBox.frame, option.labels[1], option.descriptions[1])
+	end)
+	dropdown:SetCallback("OnEnter", function()
+		ShowTooltip(dropdown.frame, option.labels[2], option.descriptions[2])
+	end)
+	checkBox:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	dropdown:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	checkBoxWithDropdownContainer:AddChildren(checkBox, dropdown)
+	return checkBoxWithDropdownContainer
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
 ---@return EPContainer, EPCheckBox, fun(EPCheckBox, boolean), string
 local function CreateCheckBoxBesideButton(self, option)
 	local checkBoxBesideButtonContainer = AceGUI:Create("EPContainer")
@@ -615,6 +679,8 @@ local function CreateOptionWidget(self, option, index)
 		checkBoxBesideButtonContainer, widget, setWidgetValue, callbackName = CreateCheckBoxBesideButton(self, option)
 		tinsert(containerChildren, checkBoxBesideButtonContainer)
 		addWidget = false
+	elseif option.type == "checkBoxWithDropdown" then
+		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, index))
 	else
 		label = AceGUI:Create("EPLabel")
 		label:SetText(option.label .. ":")
@@ -836,6 +902,7 @@ end
 ---| "colorPicker"
 ---| "doubleColorPicker"
 ---| "doubleCheckBox"
+---| "checkBoxWithDropdown"
 
 ---@class EPSettingOption
 ---@field label string
