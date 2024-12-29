@@ -500,6 +500,71 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
+---@param index integer
+---@param label EPLabel
+---@return EPContainer
+local function CreateDoubleCheckBox(self, option, index, label)
+	local doubleCheckBoxContainer = AceGUI:Create("EPContainer")
+	doubleCheckBoxContainer:SetFullWidth(true)
+	doubleCheckBoxContainer:SetLayout("EPHorizontalLayout")
+	doubleCheckBoxContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
+
+	local checkBoxOne = AceGUI:Create("EPCheckBox")
+	checkBoxOne:SetFullHeight(true)
+	checkBoxOne:SetRelativeWidth(0.5)
+	checkBoxOne:SetText(option.labels[1])
+	checkBoxOne:SetChecked(option.get[1]())
+
+	local checkBoxTwo = AceGUI:Create("EPCheckBox")
+	checkBoxTwo:SetFullHeight(true)
+	checkBoxTwo:SetRelativeWidth(0.5)
+	checkBoxTwo:SetText(option.labels[2])
+	checkBoxOne:SetChecked(option.get[2]())
+
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = checkBoxOne, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = checkBoxTwo, enabled = option.enabled })
+		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
+	end
+	if option.updateIndices then
+		UpdateUpdateIndices(self.updateIndices, option, index, function()
+			checkBoxOne:SetChecked(option.get[1]())
+			checkBoxTwo:SetChecked(option.get[2]())
+		end)
+	end
+	checkBoxOne:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[1](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+	checkBoxTwo:SetCallback("OnValueChanged", function(_, _, ...)
+		option.set[2](...)
+		RefreshEnabledStates(self.refreshMap)
+		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+			Update(self.updateIndices[option.category][index])
+		end
+	end)
+
+	checkBoxOne:SetCallback("OnEnter", function()
+		ShowTooltip(checkBoxOne.frame, option.labels[1], option.descriptions[1])
+	end)
+	checkBoxTwo:SetCallback("OnEnter", function()
+		ShowTooltip(checkBoxTwo.frame, option.labels[2], option.descriptions[2])
+	end)
+	checkBoxOne:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	checkBoxTwo:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	doubleCheckBoxContainer:AddChildren(checkBoxOne, checkBoxTwo)
+	return doubleCheckBoxContainer
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
 ---@return EPContainer, EPCheckBox, fun(EPCheckBox, boolean), string
 local function CreateCheckBoxBesideButton(self, option)
 	local checkBoxBesideButtonContainer = AceGUI:Create("EPContainer")
@@ -577,6 +642,8 @@ local function CreateOptionWidget(self, option, index)
 			callbackName = "OnValueChanged"
 		elseif option.type == "doubleColorPicker" then
 			tinsert(containerChildren, CreateDoubleColorPicker(self, option, index, label))
+		elseif option.type == "doubleCheckBox" then
+			tinsert(containerChildren, CreateDoubleCheckBox(self, option, index, label))
 		elseif option.type == "radioButtonGroup" then
 			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
 		elseif option.type == "doubleLineEdit" then
@@ -768,6 +835,7 @@ end
 ---| "checkBoxBesideButton"
 ---| "colorPicker"
 ---| "doubleColorPicker"
+---| "doubleCheckBox"
 
 ---@class EPSettingOption
 ---@field label string

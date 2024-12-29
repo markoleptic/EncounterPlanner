@@ -1331,33 +1331,32 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
-			label = "Show Border",
-			type = "checkBox",
-			description = "Whether to show a 1px border around Progress Bars.",
+			label = "Border",
+			labels = { "Show Border", "Show Icon Border" },
+			type = "doubleCheckBox",
+			descriptions = {
+				"Whether to show a 1px border around Progress Bars.",
+				"Whether to show a 1px border around Progress Bar icons.",
+			},
 			category = "Progress Bars",
-			get = function()
-				return reminderPreferences.progressBars.showBorder
-			end,
-			set = function(key)
-				reminderPreferences.progressBars.showBorder = key
-				Private.progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
-			end,
-		},
-		{
-			label = "Show Icon Border",
-			type = "checkBox",
-			description = "Whether to show a 1px border around Progress Bar icons.",
-			category = "Progress Bars",
-			get = function()
-				return reminderPreferences.progressBars.showIconBorder
-			end,
-			set = function(key)
-				reminderPreferences.progressBars.showIconBorder = key
-				Private.progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
-			end,
+			get = {
+				function()
+					return reminderPreferences.progressBars.showBorder
+				end,
+				function()
+					return reminderPreferences.progressBars.showIconBorder
+				end,
+			},
+			set = {
+				function(key)
+					reminderPreferences.progressBars.showBorder = key
+					Private.progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
+				end,
+				function(key)
+					reminderPreferences.progressBars.showIconBorder = key
+					Private.progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
+				end,
+			},
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
 			end,
