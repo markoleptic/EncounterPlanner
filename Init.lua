@@ -452,7 +452,7 @@ end
 
 ---@class GenericReminderPreferences
 ---@field enabled boolean
----@field font "PT Sans Narrow",
+---@field font string,
 ---@field fontSize integer
 ---@field fontOutline ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
 ---@field point AnchorPoint
@@ -460,7 +460,6 @@ end
 ---@field relativePoint AnchorPoint
 ---@field x number
 ---@field y number
----@field growDown boolean
 
 ---@class ProgressBarPreferences : GenericReminderPreferences
 ---@field textAlignment "LEFT"|"CENTER"|"RIGHT"
@@ -535,7 +534,6 @@ local defaults = {
 					relativePoint = "CENTER",
 					x = 0,
 					y = 300,
-					growDown = false,
 					showOnlyAtExpiration = true,
 					showWithCountdown = false,
 				},
@@ -550,7 +548,6 @@ local defaults = {
 					relativePoint = "CENTER",
 					x = -100,
 					y = 0,
-					growDown = false,
 					texture = "Clean",
 					iconPosition = "LEFT",
 					width = 100,

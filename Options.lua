@@ -795,21 +795,6 @@ function Private:CreateOptionsMenu()
 			end,
 		},
 		{
-			label = "Grow Down",
-			type = "checkBox",
-			description = "If checked, new Messages will be added underneath the most recent Message, if it exists.",
-			category = "Messages",
-			get = function()
-				return reminderPreferences.messages.growDown
-			end,
-			set = function(key)
-				reminderPreferences.messages.growDown = key
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
-			end,
-		},
-		{
 			label = "Enable Progress Bars",
 			type = "checkBoxBesideButton",
 			description = "Whether to show Progress Bars for assignments.",
@@ -1137,21 +1122,6 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				reminderPreferences.progressBars.iconPosition = key
 				Private.progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
-			end,
-			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
-			end,
-		},
-		{
-			label = "Grow Down",
-			type = "checkBox",
-			description = "If checked, new Progress Bars will be added underneath the most recent Progress Bar, if it exists.",
-			category = "Progress Bars",
-			get = function()
-				return reminderPreferences.progressBars.growDown
-			end,
-			set = function(key)
-				reminderPreferences.progressBars.growDown = key
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true

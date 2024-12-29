@@ -283,14 +283,12 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		Private.messageContainer:SetLayout("EPProgressBarLayout")
 		Private.messageContainer.frame:SetFrameStrata("MEDIUM")
 		Private.messageContainer.frame:SetFrameLevel(100)
-		Private.messageContainer.content.growUp = not messagePreferences.growDown
 		Private.messageContainer:SetSpacing(0, 0)
 		local anchorFrame = _G[messagePreferences.relativeTo] or UIParent
 		local point, relativePoint = messagePreferences.point, messagePreferences.relativePoint
 		local x, y = messagePreferences.x, messagePreferences.y
 		Private.messageContainer.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
 		Private.messageContainer:SetCallback("OnRelease", function()
-			Private.messageContainer.content.growUp = nil
 			Private.messageContainer = nil
 		end)
 	end
@@ -299,14 +297,12 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		Private.progressBarContainer:SetLayout("EPProgressBarLayout")
 		Private.progressBarContainer.frame:SetFrameStrata("MEDIUM")
 		Private.progressBarContainer.frame:SetFrameLevel(100)
-		Private.progressBarContainer.content.growUp = not progressBarPreferences.growDown
 		Private.progressBarContainer:SetSpacing(0, 0)
 		local anchorFrame = _G[progressBarPreferences.relativeTo] or UIParent
 		local point, relativePoint = progressBarPreferences.point, progressBarPreferences.relativePoint
 		local x, y = progressBarPreferences.x, progressBarPreferences.y
 		Private.progressBarContainer.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
 		Private.progressBarContainer:SetCallback("OnRelease", function()
-			Private.progressBarContainer.content.growUp = nil
 			Private.progressBarContainer = nil
 		end)
 	end
