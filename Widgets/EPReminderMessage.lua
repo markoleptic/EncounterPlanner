@@ -16,6 +16,8 @@ local defaultFrameWidth = 200
 local defaultTextPadding = 4
 local defaultBackdropColor = { 0, 0, 0, 0 }
 local anchorModeBackdropColor = { 0.1, 0.1, 0.1, 0.25 }
+local defaultDisplayTime = 2
+local defaultFadeDuration = 1.2
 local timerTickRate = 0.1
 local timeThreshold = 0.1
 local secondsInHour = 3600.0
@@ -61,6 +63,30 @@ local function HandleFrameMouseUp(self, button)
 	end
 end
 
+local scaleUpTime, scaleDownTime = 0.2, 0.4
+local scaleDownMinusScaleUp = scaleDownTime - scaleUpTime
+---@param self EPReminderMessage
+local function BounceAnimation(self, elapsed, minSize, maxSize, sizeDiff, minIconSize)
+	if elapsed <= scaleUpTime then
+		local value = floor(minSize + (sizeDiff * elapsed / scaleUpTime))
+		self.text:SetTextHeight(value)
+		self.duration:SetTextHeight(value)
+		local iconValue = value / minSize * minIconSize
+		self.icon:SetSize(iconValue, iconValue)
+	elseif elapsed <= scaleDownTime then
+		local value = floor(maxSize - (sizeDiff * (elapsed - scaleUpTime) / scaleDownMinusScaleUp))
+		self.text:SetTextHeight(value)
+		self.duration:SetTextHeight(value)
+		local iconValue = value / minSize * minIconSize
+		self.icon:SetSize(iconValue, iconValue)
+	else
+		self.text:SetTextHeight(minSize)
+		self.duration:SetTextHeight(minSize)
+		self.icon:SetSize(minIconSize, minIconSize)
+		self.textAnimationGroup:SetScript("OnUpdate", nil)
+	end
+end
+
 ---@param self EPReminderMessage
 local function UpdateFrameWidth(self)
 	if self.showIcon then
@@ -87,6 +113,9 @@ local function TextUpdate(self)
 		self.durationTicker:Cancel()
 		self.running = false
 		self.currentThreshold = ""
+		self.iconAnimationGroup:Stop()
+		self.textAnimationGroup:Stop()
+		self.textAnimationGroup:SetScript("OnUpdate", nil)
 		self:Fire("Completed")
 	else
 		local relativeTime = self.expirationTime - currentTime
@@ -127,36 +156,42 @@ local function UpdateIconAndTextAnchors(self)
 	self.duration:ClearAllPoints()
 
 	local lineHeight = self.text:GetLineHeight()
-	self.frame:SetHeight(lineHeight + self.horizontalTextPadding * 2)
+	local hasDuration = self.remaining > 0
+	local hasIcon = self.showIcon
+	local horizontalPadding = self.horizontalTextPadding
 
-	if self.showIcon then
-		if self.remaining > 0 then
-			local stringWidth = self.text:GetStringWidth() + self.duration:GetStringWidth()
-			self.frame:SetWidth(self.frame:GetHeight() + stringWidth + self.horizontalTextPadding * 3)
-			self.duration:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
-			self.duration:Show()
-		else
-			self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 3)
-			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
-			self.duration:Hide()
-		end
-		self.icon:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
+	self.frame:SetHeight(lineHeight + horizontalPadding * 2)
+
+	local durationWidth = hasDuration and self.duration:GetStringWidth() or 0
+	local iconWidth = hasIcon and lineHeight or 0
+	local textWidth = self.text:GetStringWidth()
+	local totalWidth = textWidth + iconWidth + durationWidth
+
+	local offset, paddingCount
+	if hasIcon then
+		offset = hasDuration and (lineHeight - durationWidth) / 2.0 or (horizontalPadding + lineHeight) / 2.0
+		paddingCount = hasDuration and 4 or 3
+	else
+		offset = hasDuration and -(horizontalPadding + durationWidth) / 2.0 or 0
+		paddingCount = hasDuration and 3 or 2
+	end
+
+	self.frame:SetWidth(totalWidth * 1.4 + horizontalPadding * paddingCount)
+	self.text:SetPoint("CENTER", self.frame, "CENTER", offset, 0)
+
+	if hasIcon then
 		self.icon:SetSize(lineHeight, lineHeight)
-		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
+		self.icon:SetPoint("RIGHT", self.text, "LEFT", -horizontalPadding, 0)
 		self.icon:Show()
 	else
-		if self.remaining > 0 then
-			local stringWidth = self.text:GetStringWidth() + self.duration:GetStringWidth()
-			self.frame:SetWidth(stringWidth + self.horizontalTextPadding * 3)
-			self.duration:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
-			self.duration:Show()
-		else
-			self.frame:SetWidth(self.text:GetStringWidth() + self.horizontalTextPadding * 2)
-			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
-			self.duration:Hide()
-		end
-		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
 		self.icon:Hide()
+	end
+
+	if hasDuration then
+		self.duration:SetPoint("LEFT", self.text, "RIGHT", horizontalPadding, 0)
+		self.duration:Show()
+	else
+		self.duration:Hide()
 	end
 end
 
@@ -181,6 +216,7 @@ local function OnAcquire(self)
 	self.frame:SetFrameStrata("MEDIUM")
 	self.frame:SetFrameLevel(100)
 	self.frame:Show()
+	self.text:Show()
 end
 
 ---@param self EPReminderMessage
@@ -188,6 +224,9 @@ local function OnRelease(self)
 	if self.durationTicker then
 		self.durationTicker:Cancel()
 	end
+	self.iconAnimationGroup:Stop()
+	self.textAnimationGroup:Stop()
+	self.textAnimationGroup:SetScript("OnUpdate", nil)
 	self.durationTicker = nil
 	self.remaining = 0
 	self.expirationTime = 0
@@ -236,15 +275,49 @@ local function SetDuration(self, duration)
 end
 
 ---@param self EPReminderMessage
-local function Start(self)
+---@param showCountdown boolean
+local function Start(self, showCountdown)
 	if self.running and not self.paused then
+		return
+	end
+
+	UpdateIconAndTextAnchors(self)
+
+	self.iconAnimationGroup:Stop()
+	self.textAnimationGroup:Stop()
+
+	self.textFade:SetFromAlpha(self.text:GetAlpha())
+	self.iconFade:SetFromAlpha(self.icon:GetAlpha())
+
+	local totalElapsed = 0
+	local _, minSize, _ = self.text:GetFont()
+	local maxSize = minSize + 10
+	local minIconSize = self.icon:GetWidth()
+	self.textAnimationGroup:SetScript("OnUpdate", function(_, elapsed)
+		totalElapsed = totalElapsed + elapsed
+		BounceAnimation(self, totalElapsed, minSize, maxSize, 10, minIconSize)
+	end)
+
+	if not showCountdown then
+		self.textFade:SetStartDelay(defaultDisplayTime)
+		self.iconFade:SetStartDelay(defaultDisplayTime)
+	else
+		self.textFade:SetStartDelay(self.remaining + defaultDisplayTime)
+		self.iconFade:SetStartDelay(self.remaining + defaultDisplayTime)
+	end
+
+	self.iconAnimationGroup:Play()
+	self.textAnimationGroup:Play()
+
+	self.running = true
+	self.paused = nil
+
+	if not showCountdown then
 		return
 	end
 
 	local time = self.remaining
 	self.expirationTime = GetTime() + time
-	self.running = true
-	self.paused = nil
 
 	if time > slightlyUnderSecondsInHour then
 		local h = floor(time / secondsInHour)
@@ -265,8 +338,6 @@ local function Start(self)
 		self.duration:SetFormattedText(fallbackFormat, time)
 	end
 
-	UpdateIconAndTextAnchors(self)
-
 	local iterations = ceil(time / timerTickRate) + 1
 	self.durationTicker = NewTicker(timerTickRate, function()
 		TextUpdate(self)
@@ -279,6 +350,8 @@ local function Pause(self)
 		if self.durationTicker then
 			self.durationTicker:Cancel()
 		end
+		self.iconAnimationGroup:Pause()
+		self.textAnimationGroup:Pause()
 		self.paused = GetTime()
 	end
 end
@@ -287,11 +360,15 @@ end
 local function Resume(self)
 	if self.paused then
 		local time = GetTime()
-		self.expirationTime = time + self.remaining
-		local iterations = ceil(self.remaining / timerTickRate) + 1
-		self.durationTicker = NewTicker(timerTickRate, function()
-			TextUpdate(self)
-		end, iterations)
+		if self.expirationTime > 0 then
+			self.expirationTime = time + self.remaining
+			local iterations = ceil(self.remaining / timerTickRate) + 1
+			self.durationTicker = NewTicker(timerTickRate, function()
+				TextUpdate(self)
+			end, iterations)
+		end
+		self.iconAnimationGroup:Play(false, self.iconAnimationGroup:GetElapsed())
+		self.textAnimationGroup:Play(false, self.textAnimationGroup:GetElapsed())
 		self.paused = nil
 	end
 end
@@ -315,6 +392,7 @@ end
 ---@param a number
 local function SetTextColor(self, r, g, b, a)
 	self.text:SetTextColor(r, g, b, a)
+	self.duration:SetTextColor(r, g, b, a)
 end
 
 ---@param self EPReminderMessage
@@ -365,6 +443,20 @@ local function Constructor()
 	duration:SetJustifyH("RIGHT")
 	duration:Hide()
 
+	local textAnimationGroup = frame:CreateAnimationGroup()
+	local textFade = textAnimationGroup:CreateAnimation("Alpha")
+	textFade:SetStartDelay(defaultDisplayTime)
+	textFade:SetDuration(defaultFadeDuration)
+	textFade:SetFromAlpha(1)
+	textFade:SetToAlpha(0)
+
+	local iconAnimationGroup = icon:CreateAnimationGroup()
+	local iconFade = iconAnimationGroup:CreateAnimation("Alpha")
+	iconFade:SetStartDelay(defaultDisplayTime)
+	iconFade:SetDuration(defaultFadeDuration)
+	iconFade:SetFromAlpha(1)
+	iconFade:SetToAlpha(0)
+
 	---@class EPReminderMessage
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -391,7 +483,19 @@ local function Constructor()
 		expirationTime = 0,
 		currentThreshold = "",
 		running = false,
+		textFade = textFade,
+		iconFade = iconFade,
+		textAnimationGroup = textAnimationGroup,
+		iconAnimationGroup = iconAnimationGroup,
 	}
+
+	textAnimationGroup:SetScript("OnFinished", function()
+		widget.text:Hide()
+		widget.icon:Hide()
+		if widget.expirationTime == 0 then
+			widget:Fire("Completed")
+		end
+	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end

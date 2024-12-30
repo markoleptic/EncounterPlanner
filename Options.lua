@@ -251,7 +251,7 @@ local function CreateMessageAnchor()
 	end)
 	messageAnchor:SetCallback("Completed", function()
 		messageAnchor:SetDuration(previewDuration)
-		messageAnchor:Start()
+		messageAnchor:Start(true)
 	end)
 	messageAnchor.frame:SetParent(UIParent)
 	messageAnchor.frame:SetPoint(
@@ -654,7 +654,7 @@ function Private:CreateOptionsMenu()
 				else
 					if not reminderPreferences.messages.showOnlyAtExpiration then
 						Private.messageAnchor:SetDuration(previewDuration)
-						Private.messageAnchor:Start()
+						Private.messageAnchor:Start(true)
 					end
 					Private.messageAnchor.frame:Show()
 				end
@@ -681,15 +681,15 @@ function Private:CreateOptionsMenu()
 					if reminderPreferences.messages.showOnlyAtExpiration ~= true then
 						if Private.messageAnchor.frame:IsShown() then
 							Private.messageAnchor:Pause()
-							Private.messageAnchor:SetDuration(0)
 						end
+						Private.messageAnchor:SetDuration(0)
 					end
 					reminderPreferences.messages.showOnlyAtExpiration = true
-				else
+				else -- if key == "fullCountdown" then
 					if reminderPreferences.messages.showOnlyAtExpiration ~= false then
+						Private.messageAnchor:SetDuration(previewDuration)
 						if Private.messageAnchor.frame:IsShown() then
-							Private.messageAnchor:SetDuration(previewDuration)
-							Private.messageAnchor:Start()
+							Private.messageAnchor:Start(true)
 						end
 					end
 					reminderPreferences.messages.showOnlyAtExpiration = false

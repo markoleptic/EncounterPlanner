@@ -27,8 +27,6 @@ local type = type
 local unpack = unpack
 local wipe = wipe
 
-local messageDuration = 1.0
-
 local combatLogEventMap = {
 	["SCC"] = "SPELL_CAST_SUCCESS",
 	["SCS"] = "SPELL_CAST_START",
@@ -260,36 +258,26 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 	end)
 end
 
--- Creates an EPReminderMessage widget and schedules its cleanup (either based on countdown completion or by adding a
--- timer). Starts the countdown if applicable.
+-- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
----@param duration number|nil If nil, the message will be shown for 1 second, otherwise will be shown with countdown.
+---@param duration number|nil
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, roster, duration, messagePreferences)
 	tinsert(operationQueue, function()
 		local icon = assignment.spellInfo.iconID or GetSpellTexture(assignment.spellInfo.spellID)
 		local text = utilities.CreateReminderProgressBarText(assignment, roster)
 		local message = CreateMessage(messagePreferences, text, duration, icon > 0 and icon or nil)
-		if duration then
-			message:SetCallback("Completed", function()
-				tinsert(operationQueue, function()
-					Private.messageContainer:RemoveChildNoDoLayout(message)
-				end)
+		message:SetCallback("Completed", function()
+			tinsert(operationQueue, function()
+				Private.messageContainer:RemoveChildNoDoLayout(message)
 			end)
-		else
-			tinsert(
-				timers,
-				NewTimer(messageDuration, function()
-					tinsert(operationQueue, function()
-						Private.messageContainer:RemoveChildNoDoLayout(message)
-					end)
-				end)
-			)
-		end
+		end)
 		Private.messageContainer:AddChildNoDoLayout(message)
 		if duration then
-			message:Start()
+			message:Start(true)
+		else
+			message:Start(false)
 		end
 	end)
 end
