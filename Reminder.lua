@@ -28,18 +28,90 @@ local unpack = unpack
 local wipe = wipe
 
 local messageDuration = 1.0
-local timers = {}
-local combatLogEventReminders = {}
-local eventFilter = {}
-local spellCounts = {}
+
 local combatLogEventMap = {
 	["SCC"] = "SPELL_CAST_SUCCESS",
 	["SCS"] = "SPELL_CAST_START",
 	["SAA"] = "SPELL_AURA_APPLIED",
 	["SAR"] = "SPELL_AURA_REMOVED",
 }
+---@alias FullCombatLogEventType
+---| "SPELL_AURA_APPLIED"
+---| "SPELL_AURA_REMOVED"
+---| "SPELL_CAST_START"
+---| "SPELL_CAST_SUCCESS"
 
+---@class CombatLogEventAssignmentData
+---@field preferences ReminderPreferences
+---@field assignment CombatLogEventAssignment
+---@field roster table<string, EncounterPlannerDbRosterEntry>
+
+---@type table<integer, FunctionContainer>
+local timers = {}
+---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
+local combatLogEventReminders = {} -- Table of active reminders for responding to combat log events
+---@type table<FullCombatLogEventType, boolean>
+local eventFilter = {} -- Table to filter CombatLogEventUnfiltered
+---@type table<FullCombatLogEventType, table<integer, integer>>
+local spellCounts = {} -- Spell occurrences registered combat log events
+
+local operationQueue = {} -- Queue holding pending message or progress bar operations.
+local isLocked = false -- Operation Queue lock state.
+local lastExecutionTime = 0
+local updateFrameTickRate = 0.04
 local updateFrame = CreateFrame("Frame")
+
+local function ResetLocalVariables()
+	wipe(operationQueue)
+	updateFrame:SetScript("OnUpdate", nil)
+	for _, timer in pairs(timers) do
+		if timer.Cancel then
+			timer:Cancel()
+		end
+	end
+	wipe(timers)
+	if Private.messageContainer then
+		Private.messageContainer:Release()
+	end
+	if Private.progressBarContainer then
+		Private.progressBarContainer:Release()
+	end
+	lastExecutionTime = 0
+	isLocked = false
+	wipe(combatLogEventReminders)
+	wipe(eventFilter)
+	wipe(spellCounts)
+end
+
+-- Locks the Operation Queue and dequeues until empty. Updates Message container and Progress Bar Container at end.
+local function ProcessNextOperation()
+	if not isLocked then
+		isLocked = true
+		while #operationQueue > 0 do
+			local nextOperation = table.remove(operationQueue, 1)
+			if not nextOperation then
+				break
+			end
+			nextOperation()
+		end
+		if Private.messageContainer then
+			Private.messageContainer:DoLayout()
+		end
+		if Private.progressBarContainer then
+			Private.progressBarContainer:DoLayout()
+		end
+	end
+	isLocked = false
+end
+
+local function HandleFrameUpdate(_, elapsed)
+	local currentTime = GetTime()
+	if currentTime - lastExecutionTime < updateFrameTickRate then
+		return
+	end
+	lastExecutionTime = currentTime
+	ProcessNextOperation()
+end
 
 do
 	local eventMap = {}
@@ -84,13 +156,46 @@ do
 	end
 end
 
-local function GetOrCreateTable(tbl, key)
-	if not tbl[key] then
-		tbl[key] = {}
-	end
-	return tbl[key]
+-- Creates a container for adding progress bars or messages to.
+---@param preferences GenericReminderPreferences
+---@param spacing number|nil
+---@return EPContainer
+local function CreateReminderContainer(preferences, spacing)
+	local container = AceGUI:Create("EPContainer")
+	container:SetLayout("EPProgressBarLayout")
+	container.frame:SetFrameStrata("MEDIUM")
+	container.frame:SetFrameLevel(100)
+	container:SetSpacing(0, spacing or 0)
+	local anchorFrame = _G[preferences.relativeTo] or UIParent
+	local point, relativePoint = preferences.point, preferences.relativePoint
+	local x, y = preferences.x, preferences.y
+	container.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
+	return container
 end
 
+-- Creates a container for adding progress bars to using preferences.
+---@param preferences MessagePreferences
+local function CreateMessageContainer(preferences)
+	if not Private.messageContainer then
+		Private.messageContainer = CreateReminderContainer(preferences)
+		Private.messageContainer:SetCallback("OnRelease", function()
+			Private.messageContainer = nil
+		end)
+	end
+end
+
+-- Creates a container for adding progress bars to using preferences.
+---@param preferences ProgressBarPreferences
+local function CreateProgressBarContainer(preferences)
+	if not Private.progressBarContainer then
+		Private.progressBarContainer = CreateReminderContainer(preferences, preferences.spacing)
+		Private.progressBarContainer:SetCallback("OnRelease", function()
+			Private.progressBarContainer = nil
+		end)
+	end
+end
+
+-- Creates an EPProgressBar widget using preferences.
 ---@param preferences ProgressBarPreferences
 ---@param text string
 ---@param duration number
@@ -115,6 +220,7 @@ local function CreateProgressBar(preferences, text, duration, icon)
 	return progressBar
 end
 
+-- Creates an EPReminderMessage widget using preferences.
 ---@param preferences MessagePreferences
 ---@param text string
 ---@param duration number|nil
@@ -134,29 +240,7 @@ local function CreateMessage(preferences, text, duration, icon)
 	return message
 end
 
-local operationQueue = {} -- Queue to hold pending operations
-local isLocked = false -- Mutex lock state
-
-local function ProcessNextOperation()
-	if not isLocked then
-		isLocked = true
-		while #operationQueue > 0 do
-			local nextOperation = table.remove(operationQueue, 1)
-			if not nextOperation then
-				break
-			end
-			nextOperation()
-		end
-		if Private.messageContainer then
-			Private.messageContainer:DoLayout()
-		end
-		if Private.progressBarContainer then
-			Private.progressBarContainer:DoLayout()
-		end
-	end
-	isLocked = false
-end
-
+-- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@param duration number
@@ -176,6 +260,8 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 	end)
 end
 
+-- Creates an EPReminderMessage widget and schedules its cleanup (either based on countdown completion or by adding a
+-- timer). Starts the countdown if applicable.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@param duration number|nil If nil, the message will be shown for 1 second, otherwise will be shown with countdown.
@@ -208,32 +294,10 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 	end)
 end
 
-local function SimulateHandleCombatLogEventUnfiltered(time, event, spellID)
-	-- local time, event, _, _, sourceName, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
-	if eventFilter[event] then
-		spellCounts[spellID] = spellCounts[spellID] + 1
-		local combatLogEventReminder = combatLogEventReminders[event][spellID][spellCounts[spellID]]
-		if combatLogEventReminder then
-			local start = combatLogEventReminder.relativeStartTime - combatLogEventReminder.advanceNotice
-			tinsert(
-				timers,
-				NewTimer(start < 0 and 0.1 or start, function()
-					-- AddProgressBar(
-					-- 	combatLogEventReminder.assignment,
-					-- 	combatLogEventReminder.roster,
-					-- 	combatLogEventReminder.advanceNotice,
-					-- 	reminderPreferences.textToSpeech
-					-- )
-				end)
-			)
-		end
-	end
-end
-
 ---@param timelineAssignment TimelineAssignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@param reminderPreferences ReminderPreferences
-local function CreateTimer(timelineAssignment, roster, reminderPreferences)
+local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
 	local ttsPreferences = reminderPreferences.textToSpeech
 	local soundPreferences = reminderPreferences.sound
 	if
@@ -303,141 +367,261 @@ local function CreateTimer(timelineAssignment, roster, reminderPreferences)
 	end)
 end
 
+-- Sets up reminders to simulate a boss encounter using static timings.
 ---@param timelineAssignments table<integer, TimelineAssignment>
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 function Private:SimulateBoss(timelineAssignments, roster)
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
-	local messagePreferences = reminderPreferences.messages
-	local progressBarPreferences = reminderPreferences.progressBars
 
-	do
-		Private.messageContainer = AceGUI:Create("EPContainer")
-		Private.messageContainer:SetLayout("EPProgressBarLayout")
-		Private.messageContainer.frame:SetFrameStrata("MEDIUM")
-		Private.messageContainer.frame:SetFrameLevel(100)
-		Private.messageContainer:SetSpacing(0, 0)
-		local anchorFrame = _G[messagePreferences.relativeTo] or UIParent
-		local point, relativePoint = messagePreferences.point, messagePreferences.relativePoint
-		local x, y = messagePreferences.x, messagePreferences.y
-		Private.messageContainer.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
-		Private.messageContainer:SetCallback("OnRelease", function()
-			Private.messageContainer = nil
-		end)
+	if not Private.messageContainer then
+		CreateMessageContainer(reminderPreferences.messages)
 	end
-	do
-		Private.progressBarContainer = AceGUI:Create("EPContainer")
-		Private.progressBarContainer:SetLayout("EPProgressBarLayout")
-		Private.progressBarContainer.frame:SetFrameStrata("MEDIUM")
-		Private.progressBarContainer.frame:SetFrameLevel(100)
-		Private.progressBarContainer:SetSpacing(0, reminderPreferences.progressBars.spacing)
-		local anchorFrame = _G[progressBarPreferences.relativeTo] or UIParent
-		local point, relativePoint = progressBarPreferences.point, progressBarPreferences.relativePoint
-		local x, y = progressBarPreferences.x, progressBarPreferences.y
-		Private.progressBarContainer.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
-		Private.progressBarContainer:SetCallback("OnRelease", function()
-			Private.progressBarContainer = nil
-		end)
+	if not Private.progressBarContainer then
+		CreateProgressBarContainer(reminderPreferences.progressBars)
 	end
 
-	local startTime = GetTime()
-	local lastExecutionTime = 0
-	updateFrame:SetScript("OnUpdate", function(_, elapsed)
-		local currentTime = GetTime()
-		if currentTime - lastExecutionTime < 0.04 then
-			return
-		end
-		lastExecutionTime = currentTime
-		ProcessNextOperation()
-	end)
-	local filteredTimelineAssignments
+	local filtered
 	if reminderPreferences.onlyShowMe then
-		filteredTimelineAssignments = utilities.FilterSelf(timelineAssignments)
+		filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
 	end
-	for _, timelineAssignment in ipairs(filteredTimelineAssignments or timelineAssignments) do
+	for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
 		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
-			local combatLogEventType = combatLogEventMap[assignment.combatLogEventType]
-
-			if not eventFilter[combatLogEventType] then
-				eventFilter[combatLogEventType] = true
-				GetOrCreateTable(spellCounts, combatLogEventType)
-			end
-			if not spellCounts[combatLogEventType][assignment.combatLogEventSpellID] then
-				spellCounts[combatLogEventType][assignment.combatLogEventSpellID] = 0
-			end
-			local t1 = GetOrCreateTable(combatLogEventReminders, assignment.combatLogEventType)
-			local t2 = GetOrCreateTable(t1, assignment.combatLogEventSpellID)
-			local t3 = GetOrCreateTable(t2, assignment.spellCount)
-			local reminder = {
-				advanceNotice = 10,
-				cancelIfAlreadyCasted = true,
-				assignment = assignment,
-				relativeStartTime = timelineAssignment.startTime,
-				order = timelineAssignment.order,
-				roster = roster,
-			}
-			tinsert(t3, reminder)
-
-			CreateTimer(timelineAssignment, roster, reminderPreferences)
+			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
 		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			CreateTimer(timelineAssignment, roster, reminderPreferences)
+			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
 		end
 	end
+
+	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
 end
 
+-- Clears all timers and reminder widgets.
 function Private:StopSimulatingBoss()
-	wipe(operationQueue)
-	updateFrame:SetScript("OnUpdate", nil)
-	if Private.messageContainer then
-		Private.messageContainer:Release()
-	end
-	if Private.progressBarContainer then
-		Private.progressBarContainer:Release()
-	end
-	for _, timer in pairs(timers) do
-		if timer.Cancel then
-			timer:Cancel()
-		end
-	end
-	wipe(timers)
-	wipe(eventFilter)
-	wipe(combatLogEventReminders)
-	wipe(spellCounts)
+	ResetLocalVariables()
 end
 
+-- Returns true if SimulateBoss has been called without calling StopSimulatingBoss afterwards.
 ---@return boolean
 function Private:IsSimulatingBoss()
 	return #timers > 0
 end
 
-function Private:InitializeReminder()
-	-- TODO: Disable/update based on reminderPreferences.enabled
-	if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
-		BigWigsLoader.RegisterMessage(self, "BigWigs_SetStage", function(event, addon, stage)
-			print("Stage", stage)
-		end)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage", function(...)
-			print("OnBossEngage", ...)
-		end)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin", function(...)
-			print("OnBossWin", ...)
-		end)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe", function(...)
-			print("OnBossWipe", ...)
-		end)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable", function(...)
-			print("OnBossDisable", ...)
-		end)
+---@param assignment TimedAssignment|CombatLogEventAssignment
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param reminderPreferences ReminderPreferences
+---@param elapsed number
+local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
+	local ttsPreferences = reminderPreferences.textToSpeech
+	local soundPreferences = reminderPreferences.sound
+	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
+	local startTime = assignment.time - reminderPreferences.advanceNotice - elapsed
+	if assignment.time < reminderPreferences.advanceNotice then
+		startTime = assignment.time
 	end
-	Private:RegisterEvent("ENCOUNTER_START", function(encounterID, encounterName, difficultyID, groupSize)
-		print(encounterID, encounterName, difficultyID, groupSize)
-		Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function()
-			local time, subEvent, _, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, spellId, spellName, spellSchool, extraSpellId, amount =
-				CombatLogGetCurrentEventInfo()
-		end)
+	startTime = max(startTime, 0.1)
+
+	timers[#timers + 1] = NewTimer(startTime, function()
+		if reminderPreferences.progressBars.enabled then
+			AddProgressBar(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.progressBars)
+		end
+		if not reminderPreferences.messages.showOnlyAtExpiration then
+			AddMessage(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.messages)
+		end
+		if ttsPreferences.enableAtAdvanceNotice then
+			if reminderText:len() > 0 then
+				local textWithAdvanceNotice = reminderText .. " in " .. floor(reminderPreferences.advanceNotice)
+				SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
+			end
+		end
+		if soundPreferences.enableAtAdvanceNotice then
+			if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
+				PlaySoundFile(soundPreferences.advanceNoticeSound)
+			end
+		end
+
+		local deferredFunctions = {}
+
+		if reminderPreferences.messages.showOnlyAtExpiration then
+			deferredFunctions[#deferredFunctions + 1] = function()
+				AddMessage(assignment, roster, nil, reminderPreferences.messages)
+			end
+		end
+		if ttsPreferences.enableAtTime then
+			if reminderText:len() > 0 then
+				deferredFunctions[#deferredFunctions + 1] = function()
+					SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
+				end
+			end
+		end
+		if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then
+			deferredFunctions[#deferredFunctions + 1] = function()
+				PlaySoundFile(soundPreferences.atSound)
+			end
+		end
+
+		if #deferredFunctions > 0 then
+			timers[#timers + 1] = NewTimer(reminderPreferences.advanceNotice, function()
+				for _, func in ipairs(deferredFunctions) do
+					func()
+				end
+			end)
+		end
 	end)
-	Private:RegisterEvent("ENCOUNTER_END", function(encounterID, encounterName, difficultyID, groupSize, success)
-		print(encounterID, encounterName, difficultyID, groupSize, success)
-		Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	end)
+end
+
+-- Creates an empty table entry so that a CombatLogEventAssignment can be inserted into it.
+---@param combatLogEventType "SPELL_AURA_APPLIED"|"SPELL_AURA_REMOVED"|"SPELL_CAST_START"|"SPELL_CAST_SUCCESS"
+---@param spellID integer
+---@param spellCount integer
+local function CreateCombatLogEventReminderAndSpellCountEntry(combatLogEventType, spellID, spellCount)
+	if not eventFilter[combatLogEventType] then
+		eventFilter[combatLogEventType] = true
+		spellCounts[combatLogEventType] = {}
+	end
+	if not spellCounts[combatLogEventType][spellID] then
+		spellCounts[combatLogEventType][spellID] = 0
+	end
+	if not combatLogEventReminders[combatLogEventType] then
+		combatLogEventReminders[combatLogEventType] = {}
+	end
+	if not combatLogEventReminders[combatLogEventType][spellID] then
+		combatLogEventReminders[combatLogEventType][spellID] = {}
+	end
+	if not combatLogEventReminders[combatLogEventType][spellID][spellCount] then
+		combatLogEventReminders[combatLogEventType][spellID][spellCount] = {}
+	end
+end
+
+---@param notes table<string, EncounterPlannerDbNote>
+---@param preferences ReminderPreferences
+---@param startTime number
+local function SetupReminders(notes, preferences, startTime)
+	if not Private.messageContainer then
+		CreateMessageContainer(preferences.messages)
+	end
+	if not Private.progressBarContainer then
+		CreateProgressBarContainer(preferences.progressBars)
+	end
+
+	for _, note in pairs(notes) do
+		local roster = note.roster
+		local assignments = note.assignments
+		local filteredAssignments = nil
+		if preferences.onlyShowMe then
+			filteredAssignments = utilities.FilterSelf(assignments) --[[@as table<integer, Assignment>]]
+		end
+		for _, assignment in ipairs(filteredAssignments or assignments) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local abbreviatedCombatLogEventType = assignment--[[@as CombatLogEventAssignment]].combatLogEventType
+				local fullCombatLogEventType = combatLogEventMap[abbreviatedCombatLogEventType]
+				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
+				CreateCombatLogEventReminderAndSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
+
+				local currentSize = #combatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
+				combatLogEventReminders[fullCombatLogEventType][spellID][spellCount][currentSize + 1] = {
+					preferences = preferences,
+					assignment = assignment --[[@as CombatLogEventAssignment]],
+					roster = roster,
+				}
+			elseif getmetatable(assignment) == Private.classes.TimedAssignment then
+				CreateTimer(assignment--[[@as TimedAssignment]], roster, preferences, GetTime() - startTime)
+			end
+		end
+	end
+
+	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+end
+
+-- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
+-- CombatLogEventAssignments.
+local function HandleCombatLogEventUnfiltered()
+	local _, subEvent, _, _, _, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
+	if eventFilter[subEvent] and spellID then
+		local spellCount = spellCounts[subEvent][spellID] + 1
+		spellCounts[subEvent][spellID] = spellCount
+		local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
+		for _, reminder in ipairs(reminders) do
+			CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+		end
+		-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
+	end
+end
+
+-- BigWigs event handler function.
+---@param event string Name of the event.
+---@param addon string AddOn name maybe?
+---@param ... any args
+local function HandleBigWigsEvent(event, addon, ...)
+	print(event, addon, ...)
+end
+
+---@param encounterID integer
+---@param encounterName string
+---@param difficultyID integer
+---@param groupSize integer
+local function HandleEncounterStart(encounterID, encounterName, difficultyID, groupSize)
+	ResetLocalVariables()
+	print("HandleEncounterStart", encounterID, encounterName, difficultyID, groupSize)
+	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
+	-- or difficultyID == 23 or difficultyID == 8 Mythic dung, M+
+	if reminderPreferences.messages.enabled or reminderPreferences.progressBars.enabled then
+		if difficultyID == 16 then -- Mythic raid
+			local startTime = GetTime()
+			local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
+			local activeNotes = {}
+			for _, note in pairs(notes) do
+				if note.dungeonEncounterID == encounterID then
+					-- TODO: Also check if note is active
+					tinsert(activeNotes, note)
+				end
+			end
+			if #activeNotes > 0 then
+				SetupReminders(activeNotes, reminderPreferences, startTime)
+				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+			end
+		end
+	end
+end
+
+---@param encounterID integer ID for the specific encounter that ended.
+---@param encounterName string Name of the encounter that ended.
+---@param difficultyID integer ID representing the difficulty of the encounter.
+---@param groupSize integer Group size for the encounter.
+---@param success integer 1 if success, 0 for wipe.
+local function HandleEncounterEnd(encounterID, encounterName, difficultyID, groupSize, success)
+	print("HandleEncounterEnd", encounterID, encounterName, difficultyID, groupSize, success)
+	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	ResetLocalVariables()
+end
+
+-- Registers callbacks from BigWigs, Encounter start/end.
+function Private:RegisterReminderEvents()
+	if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
+		BigWigsLoader.RegisterMessage(self, "BigWigs_SetStage", HandleBigWigsEvent)
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage", HandleBigWigsEvent)
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin", HandleBigWigsEvent)
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe", HandleBigWigsEvent)
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable", HandleBigWigsEvent)
+	end
+
+	Private:RegisterEvent("ENCOUNTER_START", HandleEncounterStart)
+	Private:RegisterEvent("ENCOUNTER_END", HandleEncounterEnd)
+end
+
+-- Unregisters callbacks from BigWigs, Encounter start/end, and CombatLogEventUnfiltered.
+function Private:UnregisterReminderEvents()
+	ResetLocalVariables()
+
+	if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
+		BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage")
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin")
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe")
+		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable")
+	end
+
+	Private:UnregisterEvent("ENCOUNTER_START")
+	Private:UnregisterEvent("ENCOUNTER_END")
+	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end

@@ -7,6 +7,8 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
+local tooltip = EncounterPlanner.tooltip
+
 local abs = math.abs
 local ceil = math.ceil
 local CreateFrame = CreateFrame
@@ -59,8 +61,6 @@ local assignmentOutlineColor = { 0.25, 0.25, 0.25, 1 }
 local assignmentSelectOutlineColor = { 1, 0.82, 0, 1 }
 local invalidTextureColor = { 0.8, 0.1, 0.1, 0.4 }
 local tickFontSize = 12
-local tooltip = EncounterPlanner.tooltip
-local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
 local scrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local scrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local colors = {

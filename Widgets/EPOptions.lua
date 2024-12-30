@@ -4,8 +4,9 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
-local CreateFrame = CreateFrame
 local tooltip = EncounterPlanner.tooltip
+
+local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
 local type = type

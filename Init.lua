@@ -97,7 +97,6 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@field startTime number Time used to place the assignment on the timeline
 ---@field order number The row of the assignment in the timeline.
 ---@field spellCooldownDuration number Cached cooldown duration of the spell associated with the assignment.
-
 Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
@@ -211,12 +210,16 @@ Private.classes.EncounterPlannerDbRosterEntry = {}
 
 ---@class EncounterPlannerDbNote
 ---@field bossName string
+---@field dungeonEncounterID integer
+---@field instanceID integer
 ---@field content table<integer, string>
 ---@field assignments table<integer, Assignment>
 ---@field roster table<string, EncounterPlannerDbRosterEntry>
 ---@field collapsed table<string, boolean>
 Private.classes.EncounterPlannerDbNote = {
 	bossName = "",
+	dungeonEncounterID = 0,
+	instanceID = 0,
 	content = {},
 	assignments = {},
 	roster = {},
@@ -614,7 +617,4 @@ LSM:Register(
 
 ---@class EncounterPlanner
 EncounterPlanner = {}
-
 EncounterPlanner.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
-EncounterPlanner.tooltipUpdateTime = 0.2
-EncounterPlanner.tooltip.updateTooltipTimer = EncounterPlanner.tooltipUpdateTime

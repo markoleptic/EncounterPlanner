@@ -1027,8 +1027,8 @@ local function GetGroupNumber()
 	return myGroup
 end
 
----@param timelineAssignments table<integer, TimelineAssignment>
----@return table<integer, TimelineAssignment>
+---@param timelineAssignments table<integer, TimelineAssignment>|table<integer, Assignment>
+---@return table<integer, TimelineAssignment|Assignment>
 function Utilities.FilterSelf(timelineAssignments)
 	local filtered = {}
 	local unitName = select(1, UnitName("player"))
@@ -1041,7 +1041,7 @@ function Utilities.FilterSelf(timelineAssignments)
 	end
 	local groupNumber = GetGroupNumber()
 	for _, timelineAssignment in ipairs(timelineAssignments) do
-		local nameOrRole = timelineAssignment.assignment.assigneeNameOrRole
+		local nameOrRole = timelineAssignment.assigneeNameOrRole or timelineAssignment.assignment.assigneeNameOrRole
 		if nameOrRole:find("class:") then
 			local className = nameOrRole:match("class:%s*(%a+)")
 			if className then

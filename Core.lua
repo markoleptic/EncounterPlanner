@@ -8,6 +8,9 @@ local AddOnName = ...
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
 
+---@class BossUtilities
+local BossUtilities = Private.bossUtilities
+
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
@@ -21,10 +24,18 @@ function AddOn:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileCopied", AddOn.Refresh)
 	self.db.RegisterCallback(self, "OnProfileReset", AddOn.Refresh)
 
-	local profile = self.db.profile
+	local profile = self.db.profile --[[@as DefaultProfile]]
 	if profile then
 		-- Convert tables from DB into classes
 		for _, note in pairs(profile.notes) do
+			if not note.instanceID then
+				if note.bossName then
+					local bossDefinition = BossUtilities.GetBossDefinition(note.bossName)
+					if bossDefinition then
+						note.instanceID = bossDefinition.dungeonEncounterID
+					end
+				end
+			end
 			for _, assignment in pairs(note.assignments) do
 				assignment = Private.classes.Assignment:New(assignment)
 				---@diagnostic disable-next-line: undefined-field
@@ -50,7 +61,7 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	Private:InitializeReminder()
+	Private:RegisterReminderEvents()
 end
 
 function AddOn:OnDisable()

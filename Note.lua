@@ -600,6 +600,10 @@ function Private:Note(epNoteName, currentBossName, parseMRTNote)
 
 	local bossName = self:ParseNote(note)
 	note.bossName = bossName or currentBossName
+	local bossDef = bossUtilities.GetBossDefinition(note.bossName)
+	if bossDef then
+		note.instanceID = bossDef.dungeonEncounterID
+	end
 
 	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
 	utilities.UpdateRosterDataFromGroup(note.roster)

@@ -4,10 +4,10 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
+local tooltip = EncounterPlanner.tooltip
+
 local CreateFrame = CreateFrame
 local unpack = unpack
-local tooltip = EncounterPlanner.tooltip
-local tooltipUpdateTime = EncounterPlanner.tooltipUpdateTime
 
 local defaultFrameHeight = 24
 local defaultFrameWidth = 200
@@ -17,27 +17,14 @@ local enabledTextColor = { 1, 1, 1, 1 }
 local defaultIconPadding = { x = 2, y = 2 }
 local defaultTextPadding = { x = 0, y = 2 }
 
----@param frame table|GameTooltip
----@param elapsed number
-local function HandleTooltipOnUpdate(frame, elapsed)
-	frame.updateTooltipTimer = frame.updateTooltipTimer - elapsed
-	if frame.updateTooltipTimer > 0 then
-		return
-	end
-	frame.updateTooltipTimer = tooltipUpdateTime
-	local owner = frame:GetOwner()
-	if owner and frame.spellID then
-		frame:SetSpellByID(frame.spellID)
-	end
-end
-
 ---@param epLabel EPLabel
 local function HandleIconEnter(epLabel)
 	if epLabel.spellID then
 		tooltip:ClearLines()
 		tooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
 		tooltip:SetSpellByID(epLabel.spellID)
-		tooltip:SetScript("OnUpdate", HandleTooltipOnUpdate)
+		tooltip:RefreshData()
+		tooltip:Show()
 	end
 end
 

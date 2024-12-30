@@ -81,6 +81,13 @@ local anchorPointValues = {
 	{ itemValue = "CENTER", text = "Center" },
 }
 
+local fontOutlineValues = {
+	{ itemValue = "", text = "None" },
+	{ itemValue = "MONOCHROME", text = "Monochrome" },
+	{ itemValue = "OUTLINE", text = "Outline" },
+	{ itemValue = "THICKOUTLINE", text = "Thick Outline" },
+}
+
 ---@param left number
 ---@param top number
 ---@param width number
@@ -539,13 +546,6 @@ function Private:CreateOptionsMenu()
 		return a.text < b.text
 	end)
 
-	local fontOutlineValues = {
-		{ itemValue = "", text = "None" },
-		{ itemValue = "MONOCHROME", text = "Monochrome" },
-		{ itemValue = "OUTLINE", text = "Outline" },
-		{ itemValue = "THICKOUTLINE", text = "Thick Outline" },
-	}
-
 	local voices = {}
 	for _, ttsVoiceTable in pairs(GetTtsVoices()) do
 		tinsert(voices, { itemValue = ttsVoiceTable.voiceID, text = ttsVoiceTable.name })
@@ -566,14 +566,19 @@ function Private:CreateOptionsMenu()
 				return reminderPreferences.enabled
 			end,
 			set = function(key)
-				if key ~= reminderPreferences.enabled and key == false then
-					if Private.messageAnchor.frame:IsShown() then
-						Private.messageAnchor:Pause()
-						Private.messageAnchor.frame:Hide()
-					end
-					if Private.progressBarAnchor.frame:IsShown() then
-						Private.progressBarAnchor:Pause()
-						Private.progressBarAnchor.frame:Hide()
+				if key ~= reminderPreferences.enabled then
+					if key == true then
+						Private:RegisterReminderEvents()
+					else
+						Private:UnregisterReminderEvents()
+						if Private.messageAnchor.frame:IsShown() then
+							Private.messageAnchor:Pause()
+							Private.messageAnchor.frame:Hide()
+						end
+						if Private.progressBarAnchor.frame:IsShown() then
+							Private.progressBarAnchor:Pause()
+							Private.progressBarAnchor.frame:Hide()
+						end
 					end
 				end
 				reminderPreferences.enabled = key
