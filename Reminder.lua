@@ -294,10 +294,90 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 	end)
 end
 
+-- Executes the actions that occur at the time in which reminders are first displayed. This is usually at advance notice
+-- time before the assignment, but can also be sooner if towards the start of the encounter. Creates timers for actions
+-- that occur at assignment time.
+---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param reminderPreferences ReminderPreferences
+---@param reminderText string
+---@param duration number
+local function ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+	local ttsPreferences = reminderPreferences.textToSpeech
+	local soundPreferences = reminderPreferences.sound
+	if reminderPreferences.progressBars.enabled then
+		AddProgressBar(assignment, roster, duration, reminderPreferences.progressBars)
+	end
+	if reminderPreferences.messages.enabled and not reminderPreferences.messages.showOnlyAtExpiration then
+		AddMessage(assignment, roster, duration, reminderPreferences.messages)
+	end
+	if ttsPreferences.enableAtAdvanceNotice then
+		if reminderText:len() > 0 then
+			local textWithAdvanceNotice = reminderText .. " in " .. floor(duration)
+			SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
+		end
+	end
+	if soundPreferences.enableAtAdvanceNotice then
+		if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
+			PlaySoundFile(soundPreferences.advanceNoticeSound)
+		end
+	end
+
+	local deferredFunctions = {}
+
+	if reminderPreferences.messages.enabled and reminderPreferences.messages.showOnlyAtExpiration then
+		deferredFunctions[#deferredFunctions + 1] = function()
+			AddMessage(assignment, roster, nil, reminderPreferences.messages)
+		end
+	end
+	if ttsPreferences.enableAtTime then
+		if reminderText:len() > 0 then
+			deferredFunctions[#deferredFunctions + 1] = function()
+				SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
+			end
+		end
+	end
+	if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then
+		deferredFunctions[#deferredFunctions + 1] = function()
+			PlaySoundFile(soundPreferences.atSound)
+		end
+	end
+
+	if #deferredFunctions > 0 then
+		timers[#timers + 1] = NewTimer(duration, function()
+			for _, func in ipairs(deferredFunctions) do
+				func()
+			end
+		end)
+	end
+end
+
 ---@param timelineAssignment TimelineAssignment
 ---@param roster table<string, EncounterPlannerDbRosterEntry>
 ---@param reminderPreferences ReminderPreferences
 local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
+	local assignment = timelineAssignment.assignment
+	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
+	local duration = reminderPreferences.advanceNotice
+	local startTime = timelineAssignment.startTime - duration
+	if startTime < 0 then
+		duration = max(0.1, timelineAssignment.startTime)
+	end
+	if startTime < 0.1 then
+		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+	else
+		timers[#timers + 1] = NewTimer(startTime, function()
+			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+		end)
+	end
+end
+
+-- Sets up reminders to simulate a boss encounter using static timings.
+---@param timelineAssignments table<integer, TimelineAssignment>
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+function Private:SimulateBoss(timelineAssignments, roster)
+	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
+
 	local ttsPreferences = reminderPreferences.textToSpeech
 	local soundPreferences = reminderPreferences.sound
 	if
@@ -310,68 +390,6 @@ local function CreateSimulationTimer(timelineAssignment, roster, reminderPrefere
 	then
 		return
 	end
-	local assignment = timelineAssignment.assignment
-	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
-	local startTime = timelineAssignment.startTime - reminderPreferences.advanceNotice -- (GetTime() - startTime)
-	if timelineAssignment.startTime < reminderPreferences.advanceNotice then
-		startTime = timelineAssignment.startTime
-	end
-	startTime = max(startTime, 0.1)
-
-	timers[#timers + 1] = NewTimer(startTime, function()
-		if reminderPreferences.progressBars.enabled then
-			AddProgressBar(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.progressBars)
-		end
-		if not reminderPreferences.messages.showOnlyAtExpiration then
-			AddMessage(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.messages)
-		end
-		if ttsPreferences.enableAtAdvanceNotice then
-			if reminderText:len() > 0 then
-				local textWithAdvanceNotice = reminderText .. " in " .. floor(reminderPreferences.advanceNotice)
-				SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
-			end
-		end
-		if soundPreferences.enableAtAdvanceNotice then
-			if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
-				PlaySoundFile(soundPreferences.advanceNoticeSound)
-			end
-		end
-
-		local deferredFunctions = {}
-
-		if reminderPreferences.messages.showOnlyAtExpiration then
-			deferredFunctions[#deferredFunctions + 1] = function()
-				AddMessage(assignment, roster, nil, reminderPreferences.messages)
-			end
-		end
-		if ttsPreferences.enableAtTime then
-			if reminderText:len() > 0 then
-				deferredFunctions[#deferredFunctions + 1] = function()
-					SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
-				end
-			end
-		end
-		if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then
-			deferredFunctions[#deferredFunctions + 1] = function()
-				PlaySoundFile(soundPreferences.atSound)
-			end
-		end
-
-		if #deferredFunctions > 0 then
-			timers[#timers + 1] = NewTimer(reminderPreferences.advanceNotice, function()
-				for _, func in ipairs(deferredFunctions) do
-					func()
-				end
-			end)
-		end
-	end)
-end
-
--- Sets up reminders to simulate a boss encounter using static timings.
----@param timelineAssignments table<integer, TimelineAssignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
-function Private:SimulateBoss(timelineAssignments, roster)
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 
 	if not Private.messageContainer then
 		CreateMessageContainer(reminderPreferences.messages)
@@ -411,62 +429,21 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
-	local ttsPreferences = reminderPreferences.textToSpeech
-	local soundPreferences = reminderPreferences.sound
 	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
-	local startTime = assignment.time - reminderPreferences.advanceNotice - elapsed
-	if assignment.time < reminderPreferences.advanceNotice then
-		startTime = assignment.time
+	local duration = reminderPreferences.advanceNotice
+	local startTime = assignment.time - duration - elapsed
+
+	if startTime < 0 then
+		duration = max(0.1, assignment.time - elapsed)
 	end
-	startTime = max(startTime, 0.1)
 
-	timers[#timers + 1] = NewTimer(startTime, function()
-		if reminderPreferences.progressBars.enabled then
-			AddProgressBar(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.progressBars)
-		end
-		if not reminderPreferences.messages.showOnlyAtExpiration then
-			AddMessage(assignment, roster, reminderPreferences.advanceNotice, reminderPreferences.messages)
-		end
-		if ttsPreferences.enableAtAdvanceNotice then
-			if reminderText:len() > 0 then
-				local textWithAdvanceNotice = reminderText .. " in " .. floor(reminderPreferences.advanceNotice)
-				SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
-			end
-		end
-		if soundPreferences.enableAtAdvanceNotice then
-			if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
-				PlaySoundFile(soundPreferences.advanceNoticeSound)
-			end
-		end
-
-		local deferredFunctions = {}
-
-		if reminderPreferences.messages.showOnlyAtExpiration then
-			deferredFunctions[#deferredFunctions + 1] = function()
-				AddMessage(assignment, roster, nil, reminderPreferences.messages)
-			end
-		end
-		if ttsPreferences.enableAtTime then
-			if reminderText:len() > 0 then
-				deferredFunctions[#deferredFunctions + 1] = function()
-					SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
-				end
-			end
-		end
-		if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then
-			deferredFunctions[#deferredFunctions + 1] = function()
-				PlaySoundFile(soundPreferences.atSound)
-			end
-		end
-
-		if #deferredFunctions > 0 then
-			timers[#timers + 1] = NewTimer(reminderPreferences.advanceNotice, function()
-				for _, func in ipairs(deferredFunctions) do
-					func()
-				end
-			end)
-		end
-	end)
+	if startTime < 0.1 then
+		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+	else
+		timers[#timers + 1] = NewTimer(startTime, function()
+			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+		end)
+	end
 end
 
 -- Creates an empty table entry so that a CombatLogEventAssignment can be inserted into it.
@@ -492,6 +469,8 @@ local function CreateCombatLogEventReminderAndSpellCountEntry(combatLogEventType
 	end
 end
 
+-- Populates the combatLogEventReminders table with CombatLogEventAssignments, creates timers for timed assignments, and
+-- sets the script that updates the operation queue.
 ---@param notes table<string, EncounterPlannerDbNote>
 ---@param preferences ReminderPreferences
 ---@param startTime number
@@ -565,21 +544,29 @@ local function HandleEncounterStart(encounterID, encounterName, difficultyID, gr
 	print("HandleEncounterStart", encounterID, encounterName, difficultyID, groupSize)
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	-- or difficultyID == 23 or difficultyID == 8 Mythic dung, M+
-	if reminderPreferences.messages.enabled or reminderPreferences.progressBars.enabled then
-		if difficultyID == 16 then -- Mythic raid
-			local startTime = GetTime()
-			local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
-			local activeNotes = {}
-			for _, note in pairs(notes) do
-				if note.dungeonEncounterID == encounterID then
-					-- TODO: Also check if note is active
-					tinsert(activeNotes, note)
-				end
+	if
+		not reminderPreferences.messages.enabled
+		and not reminderPreferences.progressBars.enabled
+		and not reminderPreferences.sound.enableAtAdvanceNotice
+		and not reminderPreferences.sound.enableAtTime
+		and not reminderPreferences.textToSpeech.enableAtAdvanceNotice
+		and not reminderPreferences.textToSpeech.enableAtTime
+	then
+		return
+	end
+	if difficultyID == 16 then -- Mythic raid
+		local startTime = GetTime()
+		local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
+		local activeNotes = {}
+		for _, note in pairs(notes) do
+			if note.dungeonEncounterID == encounterID then
+				-- TODO: Also check if note is active
+				tinsert(activeNotes, note)
 			end
-			if #activeNotes > 0 then
-				SetupReminders(activeNotes, reminderPreferences, startTime)
-				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
-			end
+		end
+		if #activeNotes > 0 then
+			SetupReminders(activeNotes, reminderPreferences, startTime)
+			Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end
 end
