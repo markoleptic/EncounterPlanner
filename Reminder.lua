@@ -48,10 +48,8 @@ local combatLogEventMap = {
 local timers = {}
 ---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
 local combatLogEventReminders = {} -- Table of active reminders for responding to combat log events
----@type table<FullCombatLogEventType, boolean>
-local eventFilter = {} -- Table to filter CombatLogEventUnfiltered
 ---@type table<FullCombatLogEventType, table<integer, integer>>
-local spellCounts = {} -- Spell occurrences registered combat log events
+local spellCounts = {} -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events.
 
 local operationQueue = {} -- Queue holding pending message or progress bar operations.
 local isLocked = false -- Operation Queue lock state.
@@ -77,7 +75,6 @@ local function ResetLocalVariables()
 	lastExecutionTime = 0
 	isLocked = false
 	wipe(combatLogEventReminders)
-	wipe(eventFilter)
 	wipe(spellCounts)
 end
 
@@ -438,9 +435,8 @@ end
 ---@param combatLogEventType "SPELL_AURA_APPLIED"|"SPELL_AURA_REMOVED"|"SPELL_CAST_START"|"SPELL_CAST_SUCCESS"
 ---@param spellID integer
 ---@param spellCount integer
-local function CreateCombatLogEventReminderAndSpellCountEntry(combatLogEventType, spellID, spellCount)
-	if not eventFilter[combatLogEventType] then
-		eventFilter[combatLogEventType] = true
+local function CreateSpellCountEntry(combatLogEventType, spellID, spellCount)
+	if not spellCounts[combatLogEventType] then
 		spellCounts[combatLogEventType] = {}
 	end
 	if not spellCounts[combatLogEventType][spellID] then
@@ -483,7 +479,7 @@ local function SetupReminders(notes, preferences, startTime)
 				local fullCombatLogEventType = combatLogEventMap[abbreviatedCombatLogEventType]
 				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
-				CreateCombatLogEventReminderAndSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
+				CreateSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
 
 				local currentSize = #combatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
 				combatLogEventReminders[fullCombatLogEventType][spellID][spellCount][currentSize + 1] = {
@@ -504,7 +500,7 @@ end
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
 	local _, subEvent, _, _, _, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
-	if eventFilter[subEvent] and spellID then
+	if spellCounts[subEvent] and spellID and spellCounts[subEvent][spellID] then
 		local spellCount = spellCounts[subEvent][spellID] + 1
 		spellCounts[subEvent][spellID] = spellCount
 		local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
