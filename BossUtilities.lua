@@ -27,6 +27,34 @@ end
 
 ---@param bossName string
 ---@return integer|nil
+function BossUtilities.GetBossDungeonEncounterID(bossName)
+	local raidInstances = Private.raidInstances --[[@as table<string, RaidInstance>]]
+	for _, raidInstance in pairs(raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			if boss.name == bossName then
+				return boss.dungeonEncounterID
+			end
+		end
+	end
+	return nil
+end
+
+---@param bossName string
+---@return integer|nil
+function BossUtilities.GetBossInstanceID(bossName)
+	local raidInstances = Private.raidInstances --[[@as table<string, RaidInstance>]]
+	for _, raidInstance in pairs(raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			if boss.name == bossName then
+				return boss.instanceID
+			end
+		end
+	end
+	return nil
+end
+
+---@param bossName string
+---@return integer|nil
 function BossUtilities.GetBossDefinitionIndex(bossName)
 	for index, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
 		if bossDefinition.name == bossName then

@@ -9,7 +9,7 @@ local AddOnName = ...
 local Private = select(2, ...) --[[@as Private]]
 
 ---@class BossUtilities
-local BossUtilities = Private.bossUtilities
+local bossUtilities = Private.bossUtilities
 
 local AddOn = Private.addOn
 local LibStub = LibStub
@@ -26,16 +26,24 @@ function AddOn:OnInitialize()
 
 	local profile = self.db.profile --[[@as DefaultProfile]]
 	if profile then
-		-- Convert tables from DB into classes
 		for _, note in pairs(profile.notes) do
-			if not note.instanceID then
+			if not note.dungeonEncounterID or note.dungeonEncounterID == 0 then -- TODO: Temp remove
 				if note.bossName then
-					local bossDefinition = BossUtilities.GetBossDefinition(note.bossName)
-					if bossDefinition then
-						note.instanceID = bossDefinition.dungeonEncounterID
+					local bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterID(note.bossName)
+					if bossDungeonEncounterID then
+						note.dungeonEncounterID = bossDungeonEncounterID
 					end
 				end
 			end
+			if not note.instanceID or note.instanceID == 0 then -- TODO: Temp remove
+				if note.bossName then
+					local bossInstanceID = bossUtilities.GetBossInstanceID(note.bossName)
+					if bossInstanceID then
+						note.instanceID = bossInstanceID
+					end
+				end
+			end
+			-- Convert tables from DB into classes
 			for _, assignment in pairs(note.assignments) do
 				assignment = Private.classes.Assignment:New(assignment)
 				---@diagnostic disable-next-line: undefined-field

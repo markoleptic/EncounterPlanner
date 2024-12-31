@@ -101,14 +101,14 @@ Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
 ---@class RaidInstance
----@field name string The name of the raid
----@field journalInstanceID number The journal instance ID of the raid. All bosses share the same JournalInstanceID
----@field instanceId number The instance ID for the zone the boss is located in (?)
+---@field name string The name of the raid.
+---@field journalInstanceID number The journal instance ID of the raid. All bosses share the same JournalInstanceID.
+---@field instanceID number The instance ID for the zone the boss is located in. All bosses share the same instanceID.
 ---@field bosses table<integer, BossDefinition>
 Private.classes.RaidInstance = {
 	name = "",
 	journalInstanceID = 0,
-	instanceId = 0,
+	instanceID = 0,
 	bosses = {},
 }
 
@@ -117,11 +117,13 @@ Private.classes.RaidInstance = {
 ---@field bossID table<integer,integer> ID of the boss or bosses
 ---@field journalEncounterID integer Journal encounter ID of the boss encounter
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter
+---@field instanceID number The instance ID for the zone the boss is located in.
 Private.classes.BossDefinition = {
 	name = "",
 	bossID = {},
 	journalEncounterID = 0,
 	dungeonEncounterID = 0,
+	instanceID = 0,
 }
 
 ---@class Boss

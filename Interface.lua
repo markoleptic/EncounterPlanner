@@ -485,7 +485,8 @@ local function HandleBossDropdownValueChanged(value)
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
 			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].instanceID = bossDef.dungeonEncounterID
+			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].dungeonEncounterID = bossDef.dungeonEncounterID
+			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].instanceID = bossDef.instanceID
 			interfaceUpdater.UpdateBoss(bossDef.name, true)
 		end
 	end
@@ -663,7 +664,8 @@ local function HandleCreateNewNoteButtonClicked()
 	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossDef then
 		notes[newNoteName].bossName = bossDef.name
-		notes[newNoteName].instanceID = bossDef.dungeonEncounterID
+		notes[newNoteName].dungeonEncounterID = bossDef.dungeonEncounterID
+		notes[newNoteName].instanceID = bossDef.instanceID
 	end
 
 	interfaceUpdater.UpdateAllAssignments(true, notes[newNoteName].bossName)
@@ -711,7 +713,8 @@ local function HandleDeleteCurrentNoteButtonClicked()
 			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 			if bossDef then
 				AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
-				AddOn.db.profile.notes[newNoteName].instanceID = bossDef.dungeonEncounterID
+				AddOn.db.profile.notes[newNoteName].dungeonEncounterID = bossDef.dungeonEncounterID
+				AddOn.db.profile.notes[newNoteName].instanceID = bossDef.instanceID
 			end
 		end
 		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
@@ -809,7 +812,8 @@ function Private:CreateInterface()
 			defaultNoteName = utilities.CreateUniqueNoteName(notes)
 			notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
 			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
-			notes[defaultNoteName].instanceID = 2902
+			notes[defaultNoteName].instanceID = 2657
+			notes[defaultNoteName].dungeonEncounterID = 2902
 		end
 		AddOn.db.profile.lastOpenNote = defaultNoteName
 	end
