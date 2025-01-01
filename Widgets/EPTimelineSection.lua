@@ -150,7 +150,7 @@ local function OnAcquire(self)
 
 	self.thumb:ClearAllPoints()
 	self.thumb:SetParent(self.scrollBar)
-	self.thumb:SetPoint("TOP", 0, thumbPadding.y)
+	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
 	self.thumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), self.scrollBar:GetHeight() - 2 * thumbPadding.y)
 	self.thumb:Show()
 
@@ -170,11 +170,13 @@ local function OnRelease(self)
 	self.listScrollFrame:SetParent(UIParent)
 	self.listScrollFrame:Hide()
 	self.listScrollFrame:SetHorizontalScroll(0)
+	self.listScrollFrame:SetVerticalScroll(0)
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(UIParent)
 	self.scrollFrame:Hide()
 	self.scrollFrame:SetHorizontalScroll(0)
+	self.scrollFrame:SetVerticalScroll(0)
 
 	self.listFrame:ClearAllPoints()
 	self.listFrame:SetParent(UIParent)

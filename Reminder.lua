@@ -543,8 +543,7 @@ local function HandleEncounterStart(encounterID, encounterName, difficultyID, gr
 		local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
 		local activeNotes = {}
 		for _, note in pairs(notes) do
-			if note.dungeonEncounterID == encounterID then
-				-- TODO: Also check if note is active
+			if note.dungeonEncounterID == encounterID and note.remindersEnabled then
 				tinsert(activeNotes, note)
 			end
 		end

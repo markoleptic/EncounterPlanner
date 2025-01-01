@@ -218,6 +218,7 @@ Private.classes.EncounterPlannerDbRosterEntry = {}
 ---@field assignments table<integer, Assignment>
 ---@field roster table<string, EncounterPlannerDbRosterEntry>
 ---@field collapsed table<string, boolean>
+---@field remindersEnabled boolean
 Private.classes.EncounterPlannerDbNote = {
 	bossName = "",
 	dungeonEncounterID = 0,
@@ -226,6 +227,7 @@ Private.classes.EncounterPlannerDbNote = {
 	assignments = {},
 	roster = {},
 	collapsed = {},
+	remindersEnabled = true,
 }
 
 --- Copies a table

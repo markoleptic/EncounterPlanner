@@ -89,8 +89,8 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			else
 				if i > 1 then
 					if i == childCount then
-						if child.selfAlignment == "right" then
-							frame:SetPoint("RIGHT", content, "RIGHT")
+						if child.selfAlignment == "topRight" then
+							frame:SetPoint("TOPRIGHT", content, "TOPRIGHT")
 						else
 							frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT", paddingX, 0)
 						end

@@ -14,7 +14,6 @@ local buttonBackdropColor = { 0, 0, 0, 0 }
 local checkBackdropColor = { 0, 0, 0, 0 }
 local checkBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local textColor = { 1, 0.82, 0, 1 }
-local checkBackgroundPadding = 2
 local buttonPadding = 1
 local defaultFontSize = 14
 
@@ -42,7 +41,7 @@ local function OnAcquire(self)
 	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])
 	self.button.frame:SetPoint("TOPLEFT", buttonPadding, -buttonPadding)
 	self.button.frame:SetPoint("BOTTOMRIGHT", -buttonPadding, buttonPadding)
-	self.button:SetWidth(defaultFrameHeight - 2 * checkBackgroundPadding - 2 * buttonPadding)
+	self.button:SetWidth(defaultFrameHeight - 2 * buttonPadding)
 	self.button:SetBackdropColor(unpack(buttonBackdropColor))
 	self.button:SetColor(unpack(buttonColor))
 	self.button:SetCallback("Clicked", function()
@@ -111,9 +110,22 @@ local function IsChecked(self)
 end
 
 ---@param self EPCheckBox
----@param width number|nil
----@param height number|nil
-local function LayoutFinished(self, width, height) end
+local function SetFrameWidthFromText(self)
+	self.label:SetFrameWidthFromText()
+	self:SetWidth(self.checkBackground:GetWidth() + spacingBetweenCheckAndLabel + self.label.frame:GetWidth())
+end
+
+---@param self EPCheckBox
+local function OnHeightSet(self, height)
+	if height > 0 then
+		local checkBackgroundHeight = self.checkBackground:GetHeight()
+		if height == checkBackgroundHeight then
+			if self.checkBackground:GetWidth() ~= checkBackgroundHeight then
+				self.checkBackground:SetWidth(checkBackgroundHeight)
+			end
+		end
+	end
+end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
@@ -125,9 +137,9 @@ local function Constructor()
 	checkBackground:SetBackdrop(checkBackdrop)
 	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
 	checkBackground:SetBackdropBorderColor(unpack(checkBackdropBorderColor))
-	checkBackground:SetPoint("TOPLEFT", checkBackgroundPadding, -checkBackgroundPadding)
-	checkBackground:SetPoint("BOTTOMLEFT", checkBackgroundPadding, checkBackgroundPadding)
-	checkBackground:SetWidth(defaultFrameHeight - 2 * checkBackgroundPadding)
+	checkBackground:SetPoint("TOPLEFT")
+	checkBackground:SetPoint("BOTTOMLEFT")
+	checkBackground:SetWidth(defaultFrameHeight)
 
 	---@class EPCheckBox
 	local widget = {
@@ -135,9 +147,10 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetEnabled = SetEnabled,
 		SetText = SetText,
-		LayoutFinished = LayoutFinished,
+		OnHeightSet = OnHeightSet,
 		SetChecked = SetChecked,
 		IsChecked = IsChecked,
+		SetFrameWidthFromText = SetFrameWidthFromText,
 		frame = frame,
 		type = Type,
 		checkBackground = checkBackground,

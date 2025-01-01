@@ -18,7 +18,7 @@ end
 
 AceGUI:RegisterLayout(Type, function(content, children)
 	local totalHeight = 0
-	local contentWidth = content.width or content:GetWidth() or 0
+	local contentWidth = content:GetWidth() or 0
 	local maxWidth = 0
 	local paddingY = defaultSpacing
 	if content.spacing then

@@ -34,9 +34,9 @@ local assignmentMetaTables = {
 	TimedAssignment = Private.classes.TimedAssignment,
 	PhasedAssignment = Private.classes.PhasedAssignment,
 }
-local dropdownContainerLabelSpacing = { 2, 2 }
-local dropdownContainerSpacing = { 2, 2 }
-local noteContainerSpacing = { 5, 2 }
+local dropdownContainerLabelSpacing = 4
+local dropdownContainerSpacing = { 0, 4 }
+local noteContainerSpacing = { 0, 4 }
 local topContainerDropdownWidth = 150
 local topContainerHeight = 36
 local spellDropdownItems = {}
@@ -999,11 +999,7 @@ function Private:CreateInterface()
 	bossContainer:SetLayout("EPVerticalLayout")
 	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
 	bossContainer:SetWidth(topContainerDropdownWidth)
-
-	local bossSelectContainer = AceGUI:Create("EPContainer")
-	bossSelectContainer:SetLayout("EPHorizontalLayout")
-	bossSelectContainer:SetFullWidth(true)
-	bossSelectContainer:SetSpacing(unpack(noteContainerSpacing))
+	bossContainer:SetFullHeight(true)
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	local bossDropdownData = {}
@@ -1018,11 +1014,6 @@ function Private:CreateInterface()
 		HandleBossDropdownValueChanged(value)
 	end)
 
-	local bossAbilitySelectContainer = AceGUI:Create("EPContainer")
-	bossAbilitySelectContainer:SetLayout("EPHorizontalLayout")
-	bossAbilitySelectContainer:SetFullWidth(true)
-	bossAbilitySelectContainer:SetSpacing(unpack(noteContainerSpacing))
-
 	local bossAbilitySelectDropdown = AceGUI:Create("EPDropdown")
 	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(dropdown, _, value, selected)
 		HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
@@ -1033,14 +1024,17 @@ function Private:CreateInterface()
 	local outerNoteContainer = AceGUI:Create("EPContainer")
 	outerNoteContainer:SetLayout("EPVerticalLayout")
 	outerNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+	outerNoteContainer:SetFullHeight(true)
+	outerNoteContainer:SetSelfAlignment("topRight")
 
 	local noteContainer = AceGUI:Create("EPContainer")
 	noteContainer:SetLayout("EPHorizontalLayout")
 	noteContainer:SetFullWidth(true)
-	noteContainer:SetSpacing(unpack(noteContainerSpacing))
+	noteContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local noteLabel = AceGUI:Create("EPLabel")
-	noteLabel:SetText("Current:", unpack(dropdownContainerLabelSpacing))
+	noteLabel:SetText("Current Plan:", dropdownContainerLabelSpacing)
+	noteLabel:SetFullHeight(true)
 
 	local noteDropdown = AceGUI:Create("EPDropdown")
 	noteDropdown:SetWidth(topContainerDropdownWidth)
@@ -1050,36 +1044,36 @@ function Private:CreateInterface()
 		tinsert(noteDropdownData, { itemValue = noteName, text = noteName })
 	end
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
+	noteDropdown:SetFullHeight(true)
+
+	local renameNoteContainer = AceGUI:Create("EPContainer")
+	renameNoteContainer:SetLayout("EPHorizontalLayout")
+	renameNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
 	renameNoteLineEdit:SetWidth(topContainerDropdownWidth)
 	renameNoteLineEdit:SetCallback("OnTextChanged", HandleNoteTextChanged)
-
-	local renameNoteContainer = AceGUI:Create("EPContainer")
-	renameNoteContainer:SetLayout("EPHorizontalLayout")
-	renameNoteContainer:SetSpacing(unpack(noteContainerSpacing))
+	renameNoteLineEdit:SetFullHeight(true)
 
 	local renameNoteLabel = AceGUI:Create("EPLabel")
-	renameNoteLabel:SetText("Rename current:", unpack(dropdownContainerLabelSpacing))
+	renameNoteLabel:SetText("Rename Current Plan:", dropdownContainerLabelSpacing)
 	renameNoteLabel:SetFrameWidthFromText()
+	renameNoteLabel:SetFullHeight(true)
 	noteLabel:SetWidth(renameNoteLabel.frame:GetWidth())
 
-	bossSelectContainer:AddChild(bossDropdown)
-	bossAbilitySelectContainer:AddChild(bossAbilitySelectDropdown)
-
-	bossContainer:AddChildren(bossSelectContainer, bossAbilitySelectContainer)
+	bossContainer:AddChildren(bossDropdown, bossAbilitySelectDropdown)
 	noteContainer:AddChildren(noteLabel, noteDropdown)
 	renameNoteContainer:AddChildren(renameNoteLabel, renameNoteLineEdit)
 	outerNoteContainer:AddChildren(noteContainer, renameNoteContainer)
 
-	local currentPlanContainer = AceGUI:Create("EPContainer")
-	currentPlanContainer:SetLayout("EPHorizontalLayout")
-	currentPlanContainer:SetHeight(topContainerHeight)
-	currentPlanContainer:SetSelfAlignment("right")
-	currentPlanContainer:AddChildren(outerNoteContainer)
+	local simulateContainer = AceGUI:Create("EPContainer")
+	simulateContainer:SetLayout("EPVerticalLayout")
+	simulateContainer:SetFullHeight(true)
+	simulateContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local simulateButton = AceGUI:Create("EPButton")
 	simulateButton:SetText("Simulate")
+	simulateButton:SetFullWidth(true)
 	simulateButton:SetCallback("Clicked", function()
 		if Private:IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
@@ -1094,11 +1088,19 @@ function Private:CreateInterface()
 		end
 	end)
 
+	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
+	planReminderEnableCheckBox:SetText("Reminders Enabled for Plan")
+	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
+		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].remindersEnabled = value
+	end)
+	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
+	planReminderEnableCheckBox:SetFrameWidthFromText()
+	simulateContainer:AddChildren(simulateButton, planReminderEnableCheckBox)
+
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
-	topContainer:SetHeight(topContainerHeight)
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossContainer, simulateButton, currentPlanContainer)
+	topContainer:AddChildren(bossContainer, simulateContainer, outerNoteContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
