@@ -95,6 +95,15 @@ function AddOn:SlashCommand(input)
 			if Private.mainFrame then
 				Private.mainFrame:Release()
 			end
+		elseif trimmed == "reset" then
+			if Private.mainFrame then
+				Private.mainFrame.frame:ClearAllPoints()
+				Private.mainFrame.frame:SetPoint("CENTER")
+				local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
+				Private.mainFrame.frame:ClearAllPoints()
+				Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+				Private.mainFrame:DoLayout()
+			end
 		elseif trimmed == "dolayout" then
 			if Private.mainFrame then
 				Private.mainFrame:DoLayout()
