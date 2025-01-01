@@ -11,11 +11,28 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
+---@class Utilities
+local utilities = Private.utilities
+
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
-
+local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local pairs = pairs
+local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
+
+local function HandleGroupRosterUpdate()
+	local enableButton = false
+	if IsInGroup() or IsInRaid() then
+		utilities.UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
+		if UnitIsGroupAssistant("player") or UnitIsGroupLeader("player") then
+			enableButton = true
+		end
+	end
+	if Private.mainFrame and Private.mainFrame.sendPlanButton then
+		Private.mainFrame.sendPlanButton:SetEnabled(enableButton)
+	end
+end
 
 -- Addon is first loaded
 function AddOn:OnInitialize()
@@ -44,23 +61,9 @@ function AddOn:OnInitialize()
 				end
 			end
 			-- Convert tables from DB into classes
-			for _, assignment in pairs(note.assignments) do
-				assignment = Private.classes.Assignment:New(assignment)
-				---@diagnostic disable-next-line: undefined-field
-				if assignment.combatLogEventType then
-					assignment = Private.classes.CombatLogEventAssignment:New(assignment)
-				---@diagnostic disable-next-line: undefined-field
-				elseif assignment.phase then
-					assignment = Private.classes.PhasedAssignment:New(assignment)
-				---@diagnostic disable-next-line: undefined-field
-				elseif assignment.time then
-					assignment = Private.classes.TimedAssignment:New(assignment)
-				end
-			end
+			utilities.SetAssignmentMetaTables(note.assignments)
 		end
 	end
-
-	Private:InitializeInterface()
 
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
@@ -69,7 +72,10 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
+	Private:InitializeInterface()
+	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
+	self:RegisterEvent("GROUP_ROSTER_UPDATE", HandleGroupRosterUpdate)
 end
 
 function AddOn:OnDisable()

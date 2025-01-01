@@ -16,5 +16,7 @@
     <Include file="Libs\Ace3\AceEvent-3.0\AceEvent-3.0.xml"/>
     <Include file="Libs\Ace3\AceTab-3.0\AceTab-3.0.xml"/>
     <Include file="Libs\Ace3\AceTimer-3.0\AceTimer-3.0.xml"/>
+    <Script file="Libs\LibCompress\LibCompress.lua"/>
+    <Script file="Libs\LibDeflate\LibDeflate.lua"/>
     <Include file="Libs\LibSharedMedia-3.0\lib.xml"/>
 </Ui>

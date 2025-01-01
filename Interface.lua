@@ -17,16 +17,19 @@ local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 
+local EJ_GetCreatureInfo = EJ_GetCreatureInfo
+local EJ_SelectEncounter = EJ_SelectEncounter
 local format = format
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
+local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local pairs = pairs
 local sub = string.sub
 local tinsert = tinsert
 local tonumber = tonumber
-local tostring = tostring
 local tremove = tremove
+local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 local unpack = unpack
 
 local assignmentMetaTables = {
@@ -43,6 +46,8 @@ local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
 local classDropdownItems = {}
 local maxNumberOfRecentItems = 10
+local menuButtonFontSize = 16
+local menuButtonHorizontalPadding = 16
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -882,17 +887,19 @@ function Private:CreateInterface()
 		Private.menuButtonContainer = nil
 	end)
 
+	local menuButtonHeight = Private.mainFrame.windowBar:GetHeight() - 2
 	local planMenuButton = AceGUI:Create("EPDropdown")
-	planMenuButton:SetTextFontSize(16)
-	planMenuButton:SetItemTextFontSize(16)
+	planMenuButton:SetTextFontSize(menuButtonFontSize)
+	planMenuButton:SetItemTextFontSize(menuButtonFontSize)
 	planMenuButton:SetText("Plan")
 	planMenuButton:SetTextCentered(true)
 	planMenuButton:SetButtonVisibility(false)
 	planMenuButton:SetAutoItemWidth(true)
 	planMenuButton:SetShowHighlight(true)
-	planMenuButton:SetItemHorizontalPadding(8)
-	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + 16)
-	planMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	planMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	planMenuButton:SetHeight(menuButtonHeight)
+	planMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	planMenuButton:SetCallback("OnValueChanged", ImportPlan)
 	planMenuButton:AddItems({
 		{
@@ -954,17 +961,17 @@ function Private:CreateInterface()
 	end)
 
 	local rosterMenuButton = AceGUI:Create("EPDropdown")
-	rosterMenuButton:SetTextFontSize(16)
-	rosterMenuButton:SetItemTextFontSize(16)
+	rosterMenuButton:SetTextFontSize(menuButtonFontSize)
+	rosterMenuButton:SetItemTextFontSize(menuButtonFontSize)
 	rosterMenuButton:SetText("Roster")
 	rosterMenuButton:SetTextCentered(true)
 	rosterMenuButton:SetButtonVisibility(false)
 	rosterMenuButton:SetAutoItemWidth(true)
 	rosterMenuButton:SetShowHighlight(true)
-	rosterMenuButton:SetItemHorizontalPadding(8)
-	rosterMenuButton:SetWidth(rosterMenuButton.text:GetStringWidth() + 16)
-	rosterMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
-	rosterMenuButton:SetDropdownItemHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	rosterMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	rosterMenuButton:SetWidth(rosterMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	rosterMenuButton:SetHeight(menuButtonHeight)
+	rosterMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	rosterMenuButton:AddItems({
 		{ itemValue = "Edit Current Boss Roster", text = "Edit Current Boss Roster" },
 		{ itemValue = "Edit Shared Roster", text = "Edit Shared Roster" },
@@ -1104,12 +1111,23 @@ function Private:CreateInterface()
 	end)
 	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
+	simulateContainer:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
 	simulateContainer:AddChildren(simulateButton, planReminderEnableCheckBox)
+
+	local sendButton = AceGUI:Create("EPButton")
+	sendButton:SetText("Send Plan to Group")
+	sendButton:SetWidthFromText()
+	sendButton:SetCallback("Clicked", function()
+		Private:SendPlanToGroup(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
+	end)
+	sendButton:SetEnabled(
+		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
+	)
 
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossContainer, simulateContainer, outerNoteContainer)
+	topContainer:AddChildren(bossContainer, simulateContainer, sendButton, outerNoteContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
@@ -1183,6 +1201,7 @@ function Private:CreateInterface()
 	Private.mainFrame.noteLineEdit = renameNoteLineEdit
 	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
 	Private.mainFrame.timeline = timeline
+	Private.mainFrame.sendPlanButton = sendButton
 
 	Private.mainFrame:AddChildren(topContainer, timeline)
 

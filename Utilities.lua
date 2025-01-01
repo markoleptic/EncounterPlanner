@@ -1106,3 +1106,20 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 	end
 	return reminderText
 end
+
+---@param assignments table<integer, Assignment>
+function Utilities.SetAssignmentMetaTables(assignments)
+	for _, assignment in pairs(assignments) do
+		assignment = Private.classes.Assignment:New(assignment)
+		---@diagnostic disable-next-line: undefined-field
+		if assignment.combatLogEventType then
+			assignment = Private.classes.CombatLogEventAssignment:New(assignment)
+			---@diagnostic disable-next-line: undefined-field
+		elseif assignment.phase then
+			assignment = Private.classes.PhasedAssignment:New(assignment)
+			---@diagnostic disable-next-line: undefined-field
+		elseif assignment.time then
+			assignment = Private.classes.TimedAssignment:New(assignment)
+		end
+	end
+end

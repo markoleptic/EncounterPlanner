@@ -591,9 +591,9 @@ local defaults = {
 	},
 }
 
-Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0")
+Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
-Private.addOn.optionsModule = Private.addOn:NewModule("Options", "AceConsole-3.0") --[[@as OptionsModule]]
+Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
 Private.interfaceUpdater = {}
 Private.bosses = {} --[[@as table<string, Boss>]]
 Private.bossUtilities = {}

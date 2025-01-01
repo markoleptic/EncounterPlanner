@@ -45,6 +45,7 @@ local titleBarBackdrop = {
 ---@field noteLineEdit EPLineEdit
 ---@field timeline EPTimeline
 ---@field planReminderEnableCheckBox EPCheckBox
+---@field sendPlanButton EPButton
 ---@field children table<integer, EPContainer>
 
 ---@param self EPMainFrame
@@ -136,6 +137,7 @@ local function OnRelease(self)
 	self.noteLineEdit = nil
 	self.timeline = nil
 	self.planReminderEnableCheckBox = nil
+	self.sendPlanButton = nil
 end
 
 ---@param self EPMainFrame
