@@ -385,12 +385,14 @@ do
 
 	---@param self EPDropdownItemMenu
 	---@param autoWidth boolean
-	local function CreateChildPullout(self, autoWidth)
+	---@param height number
+	local function CreateChildPullout(self, autoWidth, height)
 		local childPullout = AceGUI:Create("EPDropdownPullout")
 		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		childPullout:GetUserDataTable().obj = self
 		childPullout:SetCallback("OnOpen", HandleChildPulloutOpen)
 		childPullout:SetCallback("OnClose", HandleChildPulloutClose)
+		childPullout:SetItemHeight(height)
 		childPullout:SetAutoWidth(autoWidth)
 		return childPullout
 	end
@@ -434,7 +436,8 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
 	local function SetMenuItems(self, dropdownItemData, dropdownParent)
-		self.childPullout = CreateChildPullout(self, dropdownParent.pullout.autoWidth)
+		self.childPullout =
+			CreateChildPullout(self, dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight)
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
@@ -442,6 +445,7 @@ do
 				dropdownMenuItem:SetText(itemData.text)
 				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
 				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -454,6 +458,7 @@ do
 				dropdownItemToggle:SetText(itemData.text)
 				dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
 				dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+				dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -470,7 +475,8 @@ do
 	---@param index integer?
 	local function AddMenuItems(self, dropdownItemData, dropdownParent, index)
 		if not self.childPullout then
-			self.childPullout = CreateChildPullout(self, dropdownParent.pullout.autoWidth)
+			self.childPullout =
+				CreateChildPullout(self, dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight)
 		end
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
@@ -480,6 +486,7 @@ do
 				dropdownMenuItem:SetText(itemData.text)
 				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
 				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
@@ -500,6 +507,7 @@ do
 					dropdownItemToggle:SetText(itemData.text)
 					dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
 					dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+					dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
 					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
