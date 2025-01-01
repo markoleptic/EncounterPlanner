@@ -445,6 +445,7 @@ local function HandleImportNoteFromString(importType)
 		end
 	end
 
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
 	interfaceUpdater.UpdateBossAbilityList(bossName, true)
 	interfaceUpdater.UpdateTimelineBossAbilities(bossName)
 	interfaceUpdater.UpdateAllAssignments(true, bossName)
@@ -535,6 +536,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(value)
 	end
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
 	Private.mainFrame:DoLayout()
 end
 
@@ -679,6 +681,7 @@ local function HandleCreateNewNoteButtonClicked()
 	if renameNoteLineEdit then
 		renameNoteLineEdit:SetText(newNoteName)
 	end
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[newNoteName].remindersEnabled)
 end
 
 local function HandleDeleteCurrentNoteButtonClicked()
@@ -712,16 +715,20 @@ local function HandleDeleteCurrentNoteButtonClicked()
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 			if bossDef then
-				AddOn.db.profile.notes[newNoteName].bossName = bossDef.name
-				AddOn.db.profile.notes[newNoteName].dungeonEncounterID = bossDef.dungeonEncounterID
-				AddOn.db.profile.notes[newNoteName].instanceID = bossDef.instanceID
+				local newNote = AddOn.db.profile.notes[newNoteName]
+				newNote.bossName = bossDef.name
+				newNote.dungeonEncounterID = bossDef.dungeonEncounterID
+				newNote.instanceID = bossDef.instanceID
 			end
 		end
-		noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+		local newLastOpenNote = AddOn.db.profile.lastOpenNote
+		noteDropdown:SetValue(newLastOpenNote)
 		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
+			renameNoteLineEdit:SetText(newLastOpenNote)
 		end
+		local remindersEnabled = AddOn.db.profile.notes[newLastOpenNote].remindersEnabled
+		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 	end
 end
@@ -749,6 +756,8 @@ local function ImportPlan(importType)
 				if renameNoteLineEdit then
 					renameNoteLineEdit:SetText(newNoteName)
 				end
+				local remindersEnabled = AddOn.db.profile.notes[newNoteName].remindersEnabled
+				Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 			end
 			interfaceUpdater.UpdateBoss(bossName, true)
 			interfaceUpdater.UpdateAllAssignments(true, bossName or "")
@@ -1172,6 +1181,7 @@ function Private:CreateInterface()
 	Private.mainFrame.bossAbilitySelectDropdown = bossAbilitySelectDropdown
 	Private.mainFrame.noteDropdown = noteDropdown
 	Private.mainFrame.noteLineEdit = renameNoteLineEdit
+	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
 	Private.mainFrame.timeline = timeline
 
 	Private.mainFrame:AddChildren(topContainer, timeline)
