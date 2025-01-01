@@ -88,7 +88,7 @@ end
 ---@field verticalPositionLine Texture
 ---@field scrollBar table|Frame
 ---@field thumb table|Frame
----@field ticks table<number, table<number, Texture>>
+---@field ticks table<number, Texture>
 ---@field verticalThumbOffsetWhenThumbClicked number
 ---@field verticalScrollBarHeightWhenThumbClicked number
 ---@field verticalThumbHeightWhenThumbClicked number
@@ -99,39 +99,108 @@ end
 
 ---@param self EPTimelineSection
 local function OnAcquire(self)
-	self.frame:Show()
 	self.ticks = self.ticks or {}
-	self.ticks[1] = self.ticks[1] or {}
 	self.verticalThumbOffsetWhenThumbClicked = 0
 	self.verticalScrollBarHeightWhenThumbClicked = 0
 	self.verticalThumbHeightWhenThumbClicked = 0
 	self.verticalThumbIsDragging = false
 	self.textureHeight = 0
 	self.listPadding = defaultListPadding
-	self.listContainer = AceGUI:Create("EPContainer")
-	self.listFrame:SetWidth(listFrameWidth)
+
+	self.listScrollFrame:ClearAllPoints()
+	self.listScrollFrame:SetParent(self.frame)
+	self.listScrollFrame:SetPoint("TOP")
+	self.listScrollFrame:SetPoint("LEFT")
 	self.listScrollFrame:SetWidth(listFrameWidth)
+	self.listScrollFrame:Show()
+
+	self.listFrame:ClearAllPoints()
+	self.listFrame:SetParent(self.listScrollFrame)
+	self.listScrollFrame:SetScrollChild(self.listFrame)
+	self.listFrame:SetPoint("TOPLEFT")
+	self.listFrame:SetWidth(listFrameWidth)
+	self.listFrame:Show()
+
+	self.scrollFrame:ClearAllPoints()
+	self.scrollFrame:SetParent(self.frame)
+	self.scrollFrame:SetPoint("TOP")
+	self.scrollFrame:SetPoint("LEFT", listFrameWidth + listTimelinePadding, 0)
+	self.scrollFrame:SetPoint("RIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
+	self.scrollFrame:Show()
+
+	self.timelineFrame:ClearAllPoints()
+	self.timelineFrame:SetParent(self.scrollFrame)
+	self.scrollFrame:SetScrollChild(self.timelineFrame)
+	self.timelineFrame:SetPoint("TOPLEFT")
+	self.timelineFrame:Show()
+
+	self.verticalPositionLine:ClearAllPoints()
+	self.verticalPositionLine:SetParent(self.timelineFrame)
+	self.verticalPositionLine:SetPoint("TOP", self.scrollFrame, "TOPLEFT")
+	self.verticalPositionLine:SetPoint("BOTTOM", self.scrollFrame, "BOTTOMLEFT")
+	self.verticalPositionLine:SetWidth(1)
+	self.verticalPositionLine:Hide()
+
+	self.scrollBar:ClearAllPoints()
+	self.scrollBar:SetParent(self.frame)
+	self.scrollBar:SetWidth(scrollBarWidth)
+	self.scrollBar:SetPoint("TOPRIGHT")
+	self.scrollBar:SetPoint("BOTTOMRIGHT")
+	self.scrollBar:Show()
+
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(self.scrollBar)
+	self.thumb:SetPoint("TOP", 0, thumbPadding.y)
+	self.thumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), self.scrollBar:GetHeight() - 2 * thumbPadding.y)
+	self.thumb:Show()
+
+	self.listContainer = AceGUI:Create("EPContainer")
 	self.listContainer.frame:SetParent(self.listFrame)
-	self.listContainer.frame:SetPoint("TOPLEFT", self.listFrame, "TOPLEFT")
+	self.listContainer.frame:SetPoint("TOPLEFT")
 	self.listContainer:SetLayout("EPVerticalLayout")
 	self.listContainer:SetWidth(listFrameWidth)
 	self:SetListPadding(defaultListPadding)
-	self.scrollFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", listFrameWidth + listTimelinePadding, 0)
+
+	self.frame:Show()
 end
 
 ---@param self EPTimelineSection
 local function OnRelease(self)
+	self.listScrollFrame:ClearAllPoints()
+	self.listScrollFrame:SetParent(UIParent)
+	self.listScrollFrame:Hide()
+	self.listScrollFrame:SetHorizontalScroll(0)
+
+	self.scrollFrame:ClearAllPoints()
+	self.scrollFrame:SetParent(UIParent)
+	self.scrollFrame:Hide()
+	self.scrollFrame:SetHorizontalScroll(0)
+
+	self.listFrame:ClearAllPoints()
+	self.listFrame:SetParent(UIParent)
+	self.listFrame:Hide()
+
+	self.timelineFrame:ClearAllPoints()
+	self.timelineFrame:SetParent(UIParent)
+	self.timelineFrame:Hide()
+
+	self.verticalPositionLine:ClearAllPoints()
+	self.verticalPositionLine:SetParent(UIParent)
+	self.verticalPositionLine:Hide()
+
+	self.scrollBar:ClearAllPoints()
+	self.scrollBar:SetParent(UIParent)
+	self.scrollBar:Hide()
+
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(UIParent)
+	self.thumb:Hide()
+
 	self.listContainer:Release()
 	self.listContainer = nil
-	for _, ticks in pairs(self.ticks) do
-		for _, tick in pairs(ticks) do
-			tick:Hide()
-		end
-	end
-	for _, ticks in pairs(self.ticks) do
-		for _, tick in pairs(ticks) do
-			tick:Hide()
-		end
+
+	for _, tick in pairs(self.ticks) do
+		tick:Hide()
 	end
 end
 
@@ -143,7 +212,7 @@ local function OnHeightSet(self, height)
 end
 
 ---@param self EPTimelineSection
----@return table<number, table<number, Texture>>
+---@return table<number, Texture>
 local function GetTicks(self)
 	return self.ticks
 end
@@ -160,7 +229,6 @@ end
 local function SetTimelineFrameHeight(self, height)
 	self.timelineFrame:SetHeight(height)
 	self.listFrame:SetHeight(height)
-	self:UpdateVerticalScroll()
 end
 
 ---@param self EPTimelineSection
@@ -180,16 +248,9 @@ local function UpdateVerticalScroll(self)
 	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
 	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
 	self.thumb:SetHeight(thumbHeight)
-
 	local maxScroll = timelineHeight - scrollFrameHeight
 	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
-	local verticalThumbPosition = 0
-	if maxScroll > 0 then
-		verticalThumbPosition = (verticalScroll / maxScroll) * maxThumbPosition
-		verticalThumbPosition = verticalThumbPosition + thumbPadding.x
-	else
-		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
-	end
+	local verticalThumbPosition = max(thumbPadding.y, verticalScroll / maxScroll * maxThumbPosition + thumbPadding.y)
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 

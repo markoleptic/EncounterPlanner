@@ -45,6 +45,7 @@ local assignmentOverlapTolerance = 0.001
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
+local minimumSpacingBetweenLabels = 2
 local minimumNumberOfAssignmentRows = 1
 local maximumNumberOfAssignmentRows = 12
 local minimumNumberOfBossAbilityRows = 1
@@ -63,6 +64,7 @@ local invalidTextureColor = { 0.8, 0.1, 0.1, 0.4 }
 local tickFontSize = 12
 local scrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local scrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
+local tickIntervals = { 5, 10, 30, 60, 90 }
 local colors = {
 	{ 255, 87, 51, 1 },
 	{ 51, 255, 87, 1 },
@@ -241,13 +243,15 @@ local function UpdateTimeLabels(self)
 			currentTimeLabel:SetPoint("LEFT", self.splitterFrame, "LEFT", labelOffsetFromTimelineFrame, 0)
 
 			for _, label in pairs(self.timelineLabels) do
-				local text = currentTimeLabel.text
-				local textLeft, textRight = text:GetLeft(), text:GetRight()
-				local labelLeft, labelRight = label:GetLeft(), label:GetRight()
-				if not (textRight <= labelLeft or textLeft >= labelRight) then
-					label:Hide()
-				elseif label.wantsToShow then
-					label:Show()
+				if label.wantsToShow then
+					local text = currentTimeLabel.text
+					local textLeft, textRight = text:GetLeft(), text:GetRight()
+					local labelLeft, labelRight = label:GetLeft(), label:GetRight()
+					if not (textRight <= labelLeft or textLeft >= labelRight) then
+						label:Hide()
+					elseif label.wantsToShow then
+						label:Show()
+					end
 				end
 			end
 		end
@@ -403,15 +407,11 @@ end
 local function UpdateTickMarks(self)
 	local assignmentTicks = self.assignmentTimeline:GetTicks()
 	local bossTicks = self.bossAbilityTimeline:GetTicks()
-	for _, ticks in pairs(bossTicks) do
-		for _, tick in pairs(ticks) do
-			tick:Hide()
-		end
+	for _, tick in pairs(bossTicks) do
+		tick:Hide()
 	end
-	for _, ticks in pairs(assignmentTicks) do
-		for _, tick in pairs(ticks) do
-			tick:Hide()
-		end
+	for _, tick in pairs(assignmentTicks) do
+		tick:Hide()
 	end
 	for _, label in pairs(self.timelineLabels) do
 		label:Hide()
@@ -421,45 +421,48 @@ local function UpdateTickMarks(self)
 		return
 	end
 
-	-- Define visible range in time (based on zoomFactor)
-	local visibleDuration = totalTimelineDuration / self.zoomFactor
-	local tickInterval
-	if visibleDuration >= 600 then
-		tickInterval = 60 -- Show tick marks every 1 minute
-	elseif visibleDuration >= 120 then
-		tickInterval = 30 -- Show tick marks every 30 seconds
-	elseif visibleDuration >= 60 then
-		tickInterval = 10 -- Show tick marks every 10 seconds
-	else
-		tickInterval = 5 -- Show tick marks every 5 seconds
-	end
-
 	local assignmentTimelineFrame = self.assignmentTimeline.timelineFrame
 	local bossTimelineFrame = self.bossAbilityTimeline.timelineFrame
 	local timelineWidth = bossTimelineFrame:GetWidth()
 	local padding = timelineLinePadding
+	local timelineWidthWithoutPadding = timelineWidth - (2 * padding.x)
 
-	-- Loop through to create the tick marks at the calculated intervals
-	for i = 0, totalTimelineDuration, tickInterval do
-		local position = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x))
-		local tickWidth = defaultTickWidth
-		if tickInterval == 60 then
-			tickWidth = defaultTickWidth
-		elseif i % 2 == 0 then
-			tickWidth = defaultTickWidth * 0.5
-		else
-			tickWidth = defaultTickWidth
+	local tickInterval = tickIntervals[1]
+	for i = 2, #tickIntervals do
+		local interval = tickIntervals[i]
+		if (interval / totalTimelineDuration) * timelineWidthWithoutPadding >= self.minTickInterval then
+			tickInterval = interval
+			break
 		end
-		local bossTick = bossTicks[1][i]
+	end
+
+	for i = 0, totalTimelineDuration, tickInterval do
+		local position = (i / totalTimelineDuration) * timelineWidthWithoutPadding
+		local tickPosition = position + padding.x
+		local tickWidth = (i % 2 == 0) and defaultTickWidth * 0.5 or defaultTickWidth
+		local bossTick = bossTicks[i]
 		if not bossTick then
 			bossTick = bossTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
 			bossTick:SetColorTexture(unpack(tickColor))
-			bossTicks[1][i] = bossTick
+			bossTicks[i] = bossTick
 		end
 		bossTick:SetWidth(tickWidth)
-		bossTick:SetPoint("TOP", bossTimelineFrame, "TOPLEFT", position + padding.x, 0)
-		bossTick:SetPoint("BOTTOM", bossTimelineFrame, "BOTTOMLEFT", position + padding.x, 0)
+		bossTick:SetPoint("TOP", bossTimelineFrame, "TOPLEFT", tickPosition, 0)
+		bossTick:SetPoint("BOTTOM", bossTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
 		bossTick:Show()
+
+		local assignmentTick = assignmentTicks[i]
+		if not assignmentTick then
+			assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
+			assignmentTick:SetColorTexture(unpack(tickColor))
+			assignmentTicks[i] = assignmentTick
+		end
+
+		assignmentTick:SetWidth(tickWidth)
+		assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
+		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", tickPosition, 0)
+		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
+		assignmentTick:Show()
 
 		---@class FontString
 		local label = self.timelineLabels[i]
@@ -476,29 +479,9 @@ local function UpdateTickMarks(self)
 		local seconds = time % 60
 
 		label:SetText(format("%d:%02d", minutes, seconds))
-		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetStringWidth() / 2.0, 0)
+		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetWidth() / 2.0, 0)
 		label:Show()
 		label.wantsToShow = true
-
-		local assignmentTickTable = assignmentTicks[1]
-		if not assignmentTickTable then
-			assignmentTicks[1] = {}
-			assignmentTickTable = assignmentTicks[1]
-		end
-
-		local offsetX = (i / totalTimelineDuration) * (timelineWidth - (2 * padding.x)) + padding.x
-		local assignmentTick = assignmentTickTable[i]
-		if not assignmentTick then
-			assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
-			assignmentTick:SetColorTexture(unpack(tickColor))
-			assignmentTickTable[i] = assignmentTick
-		end
-
-		assignmentTick:SetWidth(tickWidth)
-		assignmentTick:SetHeight(assignmentTextureSize.y + paddingBetweenAssignments)
-		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", offsetX, 0)
-		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", offsetX, 0)
-		assignmentTick:Show()
 	end
 end
 
@@ -946,6 +929,7 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 		newHorizontalScroll = max(0, min(newHorizontalScroll, timelineFrameWidth - scrollFrameWidth))
 		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		UpdateHorizontalScrollBarThumb(
 			self.horizontalScrollBar:GetWidth(),
 			self.thumb,
@@ -1481,10 +1465,15 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 
 		-- Recalculate the new scroll position based on the new visible start time
 		local newHorizontalScroll = (newVisibleStartTime / totalTimelineDuration) * newTimelineFrameWidth
-		self.assignmentTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
+
 		self.bossAbilityTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
+		self.assignmentTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
+		self.splitterFrame:SetWidth(newTimelineFrameWidth)
+
 		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
+
 		UpdateHorizontalScrollBarThumb(
 			self.horizontalScrollBar:GetWidth(),
 			self.thumb,
@@ -1501,6 +1490,7 @@ end
 ---@param self EPTimeline
 local function HandleThumbMouseDown(self)
 	local thumb = self.thumb
+	local splitterScrollFrame = self.splitterScrollFrame
 	local horizontalScrollBar = self.horizontalScrollBar
 	local assignmentScrollFrame = self.assignmentTimeline.scrollFrame
 	local bossAbilityScrollFrame = self.bossAbilityTimeline.scrollFrame
@@ -1535,6 +1525,7 @@ local function HandleThumbMouseDown(self)
 		local scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
 		bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
 		assignmentScrollFrame:SetHorizontalScroll(scrollOffset)
+		splitterScrollFrame:SetHorizontalScroll(scrollOffset)
 	end)
 end
 
@@ -1588,6 +1579,7 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 
 	UpdateTimeLabels(self)
 
+	local splitterScrollFrame = self.splitterScrollFrame
 	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
 	local timelineFrameWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
 	local bossAbilityScrollFrame = self.bossAbilityTimeline.scrollFrame
@@ -1604,6 +1596,7 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 			newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
 			bossAbilityScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			assignmentScrollFrame:SetHorizontalScroll(newHorizontalScroll)
+			splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			timelineFrameOffsetWhenDragStarted = x
 			UpdateHorizontalScrollBarThumb(
 				horizontalScrollBarWidth,
@@ -1802,14 +1795,15 @@ end
 ---@field zoomFactor number
 ---@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
 ---@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
+---@field minTickInterval number
 
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
-	self.orderedWithSpellIDAssignmentFrameIndices = {}
 	self.bossAbilityFrames = self.bossAbilityFrames or {}
 	self.timelineLabels = self.timelineLabels or {}
 	self.zoomFactor = self.zoomFactor or 1.0
+	self.orderedWithSpellIDAssignmentFrameIndices = {}
 	self.bossAbilities = {}
 	self.bossAbilityOrder = {}
 	self.bossPhaseOrder = {}
@@ -1822,19 +1816,22 @@ local function OnAcquire(self)
 	self.bossAbilityDimensions = { min = 0, max = 0, step = 0 }
 	self.assignmentDimensions = { min = 0, max = 0, step = 0 }
 
+	self.contentFrame:SetParent(self.frame)
+	self.contentFrame:SetPoint("TOPLEFT")
+	self.contentFrame:SetPoint("TOPRIGHT")
+	self.contentFrame:SetPoint("BOTTOM", self.horizontalScrollBar, "TOP", 0, paddingBetweenTimelineAndScrollBar)
+	self.contentFrame:Show()
+
 	self.assignmentTimeline = AceGUI:Create("EPTimelineSection")
-	local assignmentTimelineSectionFrame = self.assignmentTimeline.frame
-	assignmentTimelineSectionFrame:SetParent(self.contentFrame)
+	self.assignmentTimeline.frame:SetParent(self.contentFrame)
+	self.assignmentTimeline:SetListPadding(paddingBetweenAssignments)
+	self.assignmentTimeline:SetTextureHeight(assignmentTextureSize.y)
 
 	self.bossAbilityTimeline = AceGUI:Create("EPTimelineSection")
-	local bossAbilityTimelineSectionFrame = self.bossAbilityTimeline.frame
-	bossAbilityTimelineSectionFrame:SetParent(self.contentFrame)
-
-	self.assignmentTimeline:SetListPadding(paddingBetweenAssignments)
+	self.bossAbilityTimeline.frame:SetParent(self.contentFrame)
 	self.bossAbilityTimeline:SetListPadding(paddingBetweenBossAbilityBars)
-
-	self.assignmentTimeline:SetTextureHeight(assignmentTextureSize.y)
 	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
+
 	self.assignmentTimeline.listFrame:SetScript("OnMouseWheel", function(_, delta)
 		HandleTimelineFrameMouseWheel(self, false, delta)
 	end)
@@ -1874,17 +1871,54 @@ local function OnAcquire(self)
 	self.assignmentTimeline.timelineFrame:SetScript("OnMouseUp", function(_, button)
 		HandleAssignmentTimelineFrameMouseUp(self, button)
 	end)
-	self.bossAbilityTimeline.timelineFrame:SetScript("OnSizeChanged", function(_, width, _)
-		self.splitterFrame:SetWidth(width)
-	end)
-	self.bossAbilityTimeline.scrollFrame:SetScript("OnHorizontalScroll", function(_, offset)
-		self.splitterScrollFrame:SetHorizontalScroll(offset)
-	end)
 
-	bossAbilityTimelineSectionFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT")
-	bossAbilityTimelineSectionFrame:SetPoint("TOPRIGHT", self.contentFrame, "TOPRIGHT")
-	assignmentTimelineSectionFrame:SetPoint("TOPLEFT", bossAbilityTimelineSectionFrame, "BOTTOMLEFT", 0, -36)
-	assignmentTimelineSectionFrame:SetPoint("TOPRIGHT", bossAbilityTimelineSectionFrame, "BOTTOMRIGHT", 0, -36)
+	local bossAbilityFrame = self.bossAbilityTimeline.frame
+	bossAbilityFrame:SetPoint("TOP", self.contentFrame, "TOP")
+	bossAbilityFrame:SetPoint("LEFT", self.contentFrame, "LEFT")
+	bossAbilityFrame:SetPoint("RIGHT", self.contentFrame, "RIGHT")
+
+	local assignmentFrame = self.assignmentTimeline.frame
+	assignmentFrame:SetPoint("TOPLEFT", bossAbilityFrame, "BOTTOMLEFT", 0, -paddingBetweenTimelines)
+	assignmentFrame:SetPoint("TOPRIGHT", bossAbilityFrame, "BOTTOMRIGHT", 0, -paddingBetweenTimelines)
+
+	self.splitterScrollFrame:SetParent(self.contentFrame)
+	self.splitterScrollFrame:SetPoint("TOP", bossAbilityFrame, "BOTTOM")
+	self.splitterScrollFrame:SetPoint("LEFT", 210, 0)
+	self.splitterScrollFrame:SetPoint("RIGHT", -paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight, 0)
+	self.splitterScrollFrame:SetHeight(paddingBetweenTimelines)
+	self.splitterScrollFrame:Show()
+
+	self.splitterFrame:SetParent(self.splitterScrollFrame)
+	self.splitterScrollFrame:SetScrollChild(self.splitterFrame)
+	self.splitterFrame:SetPoint("LEFT")
+	self.splitterFrame:Show()
+
+	local label = self.timelineLabels[1]
+	if not label then
+		label = self.splitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.timelineLabels[1] = label
+		if fontPath then
+			label:SetFont(fontPath, tickFontSize)
+			label:SetTextColor(unpack(tickLabelColor))
+		end
+		label:Hide()
+		label:SetPoint("LEFT")
+		label:SetText("00:00")
+		self.minTickInterval = label:GetStringWidth() + minimumSpacingBetweenLabels
+	end
+
+	self.horizontalScrollBar:SetHeight(horizontalScrollBarHeight)
+	self.horizontalScrollBar:SetParent(self.frame)
+	self.horizontalScrollBar:SetPoint("BOTTOMLEFT", 210, 0)
+	self.horizontalScrollBar:SetPoint("BOTTOMRIGHT", -horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar, 0)
+	self.horizontalScrollBar:Show()
+
+	self.thumb:SetParent(self.horizontalScrollBar)
+	self.thumb:SetPoint("LEFT", thumbPadding.x, 0)
+	local scrollBarThumbWidth = self.horizontalScrollBar:GetWidth() - 2 * thumbPadding.x
+	local scrollBarThumbHeight = horizontalScrollBarHeight - (2 * thumbPadding.y)
+	self.thumb:SetSize(scrollBarThumbWidth, scrollBarThumbHeight)
+	self.thumb:Show()
 
 	self.addAssigneeDropdown = AceGUI:Create("EPDropdown")
 	self.addAssigneeDropdown.frame:SetParent(self.contentFrame)
@@ -1897,60 +1931,106 @@ local function OnAcquire(self)
 	self.currentTimeLabel.frame:SetPoint("CENTER", self.splitterScrollFrame, "LEFT", 200, 0)
 	self.currentTimeLabel.frame:Hide()
 
-	local fakeAssignmentFrame = CreateAssignmentFrame(self, 0, self.assignmentTimeline.timelineFrame, 0, 0)
-	fakeAssignmentFrame.spellTexture:SetScript("OnEnter", nil)
-	fakeAssignmentFrame.spellTexture:SetScript("OnLeave", nil)
-	fakeAssignmentFrame:SetScript("OnMouseDown", nil)
-	fakeAssignmentFrame:SetScript("OnMouseUp", nil)
-	fakeAssignmentFrame:Hide()
-	self.fakeAssignmentFrame = fakeAssignmentFrame --[[@as FakeAssignmentFrame]]
+	self.fakeAssignmentFrame:SetParent(assignmentFrame)
+	self.fakeAssignmentFrame:Hide()
+
+	self.frame:Show()
 end
 
 ---@param self EPTimeline
 local function OnRelease(self)
+	self.contentFrame:ClearAllPoints()
+	self.contentFrame:SetParent(UIParent)
+	self.contentFrame:Hide()
+	self.splitterScrollFrame:ClearAllPoints()
+	self.splitterScrollFrame:SetParent(UIParent)
+	self.splitterScrollFrame:Hide()
+	self.splitterFrame:ClearAllPoints()
+	self.splitterFrame:SetParent(UIParent)
+	self.splitterFrame:Hide()
+	self.horizontalScrollBar:ClearAllPoints()
+	self.horizontalScrollBar:SetParent(UIParent)
+	self.horizontalScrollBar:Hide()
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(UIParent)
+	self.thumb:Hide()
+
+	self.assignmentTimeline.listFrame:SetScript("OnMouseWheel", nil)
+	self.bossAbilityTimeline.listFrame:SetScript("OnMouseWheel", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnMouseWheel", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnMouseWheel", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnDragStart", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnDragStart", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnDragStop", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnDragStop", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnEnter", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnEnter", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnLeave", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnLeave", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnMouseUp", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnSizeChanged", nil)
+	self.bossAbilityTimeline.scrollFrame:SetScript("OnHorizontalScroll", nil)
+
 	self.assignmentTimeline:Release()
 	self.assignmentTimeline = nil
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
 	self.addAssigneeDropdown:Release()
+	self.addAssigneeDropdown = nil
 	self.currentTimeLabel:Release()
 	self.currentTimeLabel = nil
 
-	self:ClearSelectedAssignments()
-	self:ClearSelectedBossAbilities()
-
 	for _, frame in ipairs(self.assignmentFrames) do
+		frame:ClearAllPoints()
 		frame:Hide()
 		frame:SetWidth(assignmentTextureSize.x)
 		frame.cooldownBackground:SetWidth(0)
 		frame.cooldownBackground:Hide()
 		frame.cooldownTexture:SetWidth(0)
 		frame.cooldownTexture:Hide()
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+		frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 		frame.spellID = nil
 		frame.uniqueAssignmentID = nil
 		frame.timelineAssignment = nil
 	end
 
+	for _, frame in ipairs(self.bossAbilityFrames) do
+		frame:ClearAllPoints()
+		frame:Hide()
+		frame.spellTexture:SetTexture(nil)
+		frame.abilityInstance = nil
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+	end
+
+	for _, label in pairs(self.timelineLabels) do
+		label:ClearAllPoints()
+		label:Hide()
+		label.wantsToShow = nil
+	end
+
+	self.fakeAssignmentFrame:ClearAllPoints()
 	self.fakeAssignmentFrame:Hide()
 	self.fakeAssignmentFrame:SetWidth(assignmentTextureSize.x)
 	self.fakeAssignmentFrame.cooldownBackground:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownBackground:Hide()
 	self.fakeAssignmentFrame.cooldownTexture:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownTexture:Hide()
+	self.fakeAssignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
+	self.fakeAssignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+	self.fakeAssignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+	self.fakeAssignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 	self.fakeAssignmentFrame.spellID = nil
 	self.fakeAssignmentFrame.uniqueAssignmentID = nil
 	self.fakeAssignmentFrame.timelineAssignment = nil
 
-	for _, frame in ipairs(self.bossAbilityFrames) do
-		frame:Hide()
-		frame.spellTexture:SetTexture(nil)
-		frame.abilityInstance = nil
-	end
-
 	self.orderedWithSpellIDAssignmentFrameIndices = nil
-	self.addAssigneeDropdown = nil
 	self.bossAbilities = nil
 	self.bossAbilityOrder = nil
 	self.bossPhaseOrder = nil
@@ -2087,6 +2167,9 @@ local function UpdateTimeline(self, skipUpdateAssignments, skipUpdateBossAbility
 	if not totalTimelineDuration or totalTimelineDuration <= 0 then
 		return
 	end
+	if self.bossAbilityTimeline.scrollFrame:GetWidth() == 0 then
+		return
+	end
 
 	local bossAbilityScrollFrame = self.bossAbilityTimeline.scrollFrame
 	local bossAbilityTimelineFrame = self.bossAbilityTimeline.timelineFrame
@@ -2140,11 +2223,13 @@ local function UpdateTimeline(self, skipUpdateAssignments, skipUpdateBossAbility
 	-- Recalculate the new scroll position based on the new visible start time
 	local newHorizontalScroll = (newVisibleStartTime / totalTimelineDuration) * newTimelineFrameWidth
 
-	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+	bossAbilityTimelineFrame:SetWidth(newTimelineFrameWidth)
 	self.assignmentTimeline.timelineFrame:SetWidth(newTimelineFrameWidth)
+	self.splitterFrame:SetWidth(newTimelineFrameWidth)
 
 	bossAbilityScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-	bossAbilityTimelineFrame:SetWidth(newTimelineFrameWidth)
+	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
+	self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 
 	UpdateHorizontalScrollBarThumb(
 		self.horizontalScrollBar:GetWidth(),
@@ -2231,13 +2316,6 @@ local function SetMaxAssignmentHeight(self)
 	self:SetHeight(height + self.assignmentDimensions.max)
 end
 
--- Called when the width is set for EPTimeline widget.
----@param self EPTimeline
----@param width number
-local function OnWidthSet(self, width)
-	self:UpdateTimeline()
-end
-
 -- Called when the height is set for EPTimeline widget.
 ---@param self EPTimeline
 ---@param height number
@@ -2287,16 +2365,11 @@ local function OnHeightSet(self, height)
 	local fullBarHeight = CalculateRequiredBarHeight(self)
 
 	self.assignmentTimeline:SetTimelineFrameHeight(fullAssignmentHeight)
-	self.bossAbilityTimeline:SetTimelineFrameHeight(fullBarHeight)
+	self.assignmentTimeline:UpdateVerticalScroll()
 
-	self.splitterScrollFrame:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT", 210, -barHeight)
-	self.splitterScrollFrame:SetPoint(
-		"TOPRIGHT",
-		self.contentFrame,
-		"TOPRIGHT",
-		-paddingBetweenTimelineAndScrollBar - horizontalScrollBarHeight,
-		-barHeight
-	)
+	self.bossAbilityTimeline:SetTimelineFrameHeight(fullBarHeight)
+	self.bossAbilityTimeline:UpdateVerticalScroll()
+
 	self.contentFrame:SetHeight(newContentFrameHeight)
 	self:UpdateTimeline()
 end
@@ -2431,7 +2504,7 @@ local function SetAllowHeightResizing(self, allow)
 			+ barHeight
 			+ assignmentHeight
 
-		self:SetHeight(totalHeight) -- todo :remove
+		self:SetHeight(totalHeight)
 		self:UpdateTimeline()
 	end
 end
@@ -2445,11 +2518,8 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(frameWidth, frameHeight)
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
-	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 	contentFrame:SetSize(frameWidth, frameHeight - horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar)
 
 	local splitterScrollFrame = CreateFrame("ScrollFrame", Type .. "SplitterScrollFrame" .. count, contentFrame)
@@ -2458,19 +2528,10 @@ local function Constructor()
 
 	local splitterFrame = CreateFrame("Frame", Type .. "SplitterFrame" .. count, splitterScrollFrame)
 	splitterFrame:SetHeight(paddingBetweenTimelines)
-	splitterFrame:SetPoint("LEFT")
 	splitterScrollFrame:SetScrollChild(splitterFrame)
 
 	local horizontalScrollBar = CreateFrame("Frame", Type .. "HorizontalScrollBar" .. count, frame)
-	horizontalScrollBar:SetHeight(horizontalScrollBarHeight)
-	horizontalScrollBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 210, 0)
-	horizontalScrollBar:SetPoint(
-		"BOTTOMRIGHT",
-		frame,
-		"BOTTOMRIGHT",
-		-horizontalScrollBarHeight - paddingBetweenTimelineAndScrollBar,
-		0
-	)
+	horizontalScrollBar:SetSize(frameWidth, horizontalScrollBarHeight)
 
 	local scrollBarBackground = horizontalScrollBar:CreateTexture(Type .. "ScrollBarBackground" .. count, "BACKGROUND")
 	scrollBarBackground:SetAllPoints()
@@ -2497,7 +2558,6 @@ local function Constructor()
 		GetBossAbilityContainer = GetBossAbilityContainer,
 		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
 		UpdateTimeline = UpdateTimeline,
-		OnWidthSet = OnWidthSet,
 		OnHeightSet = OnHeightSet,
 		SelectAssignment = SelectAssignment,
 		ClearSelectedAssignment = ClearSelectedAssignment,
@@ -2519,6 +2579,14 @@ local function Constructor()
 		horizontalScrollBar = horizontalScrollBar,
 		thumb = thumb,
 	}
+
+	local fakeAssignmentFrame = CreateAssignmentFrame(widget, 0, frame, 0, 0)
+	fakeAssignmentFrame.spellTexture:SetScript("OnEnter", nil)
+	fakeAssignmentFrame.spellTexture:SetScript("OnLeave", nil)
+	fakeAssignmentFrame:SetScript("OnMouseDown", nil)
+	fakeAssignmentFrame:SetScript("OnMouseUp", nil)
+	fakeAssignmentFrame:Hide()
+	widget.fakeAssignmentFrame = fakeAssignmentFrame --[[@as FakeAssignmentFrame]]
 
 	thumb:SetScript("OnMouseDown", function()
 		HandleThumbMouseDown(widget)
