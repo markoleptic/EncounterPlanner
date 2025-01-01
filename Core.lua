@@ -43,23 +43,7 @@ function AddOn:OnInitialize()
 
 	local profile = self.db.profile --[[@as DefaultProfile]]
 	if profile then
-		for _, note in pairs(profile.notes) do
-			if not note.dungeonEncounterID or note.dungeonEncounterID == 0 then -- TODO: Temp remove
-				if note.bossName then
-					local bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterID(note.bossName)
-					if bossDungeonEncounterID then
-						note.dungeonEncounterID = bossDungeonEncounterID
-					end
-				end
-			end
-			if not note.instanceID or note.instanceID == 0 then -- TODO: Temp remove
-				if note.bossName then
-					local bossInstanceID = bossUtilities.GetBossInstanceID(note.bossName)
-					if bossInstanceID then
-						note.instanceID = bossInstanceID
-					end
-				end
-			end
+		for _, note in pairs(profile.plans) do
 			-- Convert tables from DB into classes
 			utilities.SetAssignmentMetaTables(note.assignments)
 		end

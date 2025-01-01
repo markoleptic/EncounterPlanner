@@ -210,7 +210,8 @@ Private.classes.BossAbilityInstance = {
 ---@field role RaidGroupRole|nil
 Private.classes.EncounterPlannerDbRosterEntry = {}
 
----@class EncounterPlannerDbNote
+---@class Plan
+---@field name string
 ---@field bossName string
 ---@field dungeonEncounterID integer
 ---@field instanceID integer
@@ -219,7 +220,8 @@ Private.classes.EncounterPlannerDbRosterEntry = {}
 ---@field roster table<string, EncounterPlannerDbRosterEntry>
 ---@field collapsed table<string, boolean>
 ---@field remindersEnabled boolean
-Private.classes.EncounterPlannerDbNote = {
+Private.classes.Plan = {
+	name = "",
 	bossName = "",
 	dungeonEncounterID = 0,
 	instanceID = 0,
@@ -395,9 +397,13 @@ function Private.classes.BossPhase:New(o)
 	return CreateNewInstance(self, o)
 end
 
----@return EncounterPlannerDbNote
-function Private.classes.EncounterPlannerDbNote:New(o)
-	return CreateNewInstance(self, o)
+---@param o any
+---@param name string
+---@return Plan
+function Private.classes.Plan:New(o, name)
+	local instance = CreateNewInstance(self, o)
+	instance.name = name
+	return instance
 end
 
 ---@alias RaidGroupRole
@@ -500,13 +506,13 @@ local defaults = {
 	---@class DefaultProfile
 	---@field activeBossAbilities table<string, table<integer, boolean>>
 	---@field assignmentSortType AssignmentSortType
-	---@field notes table<string, EncounterPlannerDbNote>
+	---@field plans table<string, Plan>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
 	---@field recentSpellAssignments table<string, DropdownItemData>
 	profile = {
 		activeBossAbilities = {},
-		notes = {},
+		plans = {},
 		sharedRoster = {},
 		lastOpenNote = "",
 		recentSpellAssignments = {},

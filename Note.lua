@@ -381,7 +381,7 @@ end
 
 -- Repopulates assignments for the note based on the note content. Returns a boss name if one was found using spellIDs
 -- in the text.
----@param note EncounterPlannerDbNote Note to repopulate
+---@param note Plan Plan to repopulate
 ---@return string|nil
 function Private:ParseNote(note)
 	wipe(note.assignments)
@@ -505,7 +505,7 @@ local function CreateAssignmentExportString(assignment, roster)
 	return assignmentString
 end
 
----@param note EncounterPlannerDbNote
+---@param note Plan
 ---@return string|nil
 function Private:ExportNote(note)
 	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
@@ -576,7 +576,7 @@ end
 -- will be parsed.
 ---@return string|nil
 function Private:Note(epNoteName, currentBossName, parseMRTNote)
-	local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
+	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
 	if parseMRTNote then
 		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
@@ -586,10 +586,10 @@ function Private:Note(epNoteName, currentBossName, parseMRTNote)
 		end
 	end
 
-	if not notes[epNoteName] then
-		notes[epNoteName] = Private.classes.EncounterPlannerDbNote:New()
+	if not plans[epNoteName] then
+		plans[epNoteName] = Private.classes.Plan:New(nil, epNoteName)
 	end
-	local note = notes[epNoteName]
+	local note = plans[epNoteName]
 
 	if parseMRTNote then
 		if VMRT and VMRT.Note then

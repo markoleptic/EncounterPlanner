@@ -52,14 +52,14 @@ local menuButtonHorizontalPadding = 16
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.notes[lastOpenNote]
+	local note = AddOn.db.profile.plans[lastOpenNote]
 	return note.roster
 end
 
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.notes[lastOpenNote]
+	local note = AddOn.db.profile.plans[lastOpenNote]
 	return note.assignments
 end
 
@@ -82,7 +82,7 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 		for _, rosterWidgetMapping in ipairs(currentRosterMap) do
 			tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
 		end
-		AddOn.db.profile.notes[lastOpenNote].roster = tempRoster
+		AddOn.db.profile.plans[lastOpenNote].roster = tempRoster
 	end
 
 	local tempRoster = {}
@@ -428,14 +428,14 @@ local function HandleImportNoteFromString(importType)
 	Private.importEditBox:Release()
 	local bossName = GetCurrentBossName()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local notes = AddOn.db.profile.notes
+	local notes = AddOn.db.profile.plans
 
 	if importType == "FromStringOverwrite" then
 		notes[lastOpenNote].content = textTable
 		bossName = Private:Note(lastOpenNote, bossName) or bossName
 	elseif importType == "FromStringNew" then
 		local newNoteName = utilities.CreateUniqueNoteName(notes)
-		notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+		notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 		notes[newNoteName].content = textTable
 		bossName = Private:Note(newNoteName, bossName) or bossName
 		AddOn.db.profile.lastOpenNote = newNoteName
@@ -490,9 +490,9 @@ local function HandleBossDropdownValueChanged(value)
 	if bossIndex then
 		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
 		if bossDef then
-			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].dungeonEncounterID = bossDef.dungeonEncounterID
-			AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].instanceID = bossDef.instanceID
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].dungeonEncounterID = bossDef.dungeonEncounterID
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].instanceID = bossDef.instanceID
 			interfaceUpdater.UpdateBoss(bossDef.name, true)
 		end
 	end
@@ -528,7 +528,7 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 		Private.assignmentEditor:Release()
 	end
 	AddOn.db.profile.lastOpenNote = value
-	local note = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote]
+	local note = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote]
 	local bossName = note.bossName
 	if not bossName then
 		bossName = utilities.SearchStringTableForBossName(note.content) or GetCurrentBossName()
@@ -551,12 +551,13 @@ local function HandleNoteTextChanged(lineEdit, _, value)
 	local currentNoteName = AddOn.db.profile.lastOpenNote
 	if value == currentNoteName then
 		return
-	elseif AddOn.db.profile.notes[value] then
+	elseif AddOn.db.profile.plans[value] then
 		lineEdit:SetText(currentNoteName)
 		return
 	end
-	AddOn.db.profile.notes[value] = AddOn.db.profile.notes[currentNoteName]
-	AddOn.db.profile.notes[currentNoteName] = nil
+	AddOn.db.profile.plans[value] = AddOn.db.profile.plans[currentNoteName]
+	AddOn.db.profile.plans[currentNoteName] = nil
+	AddOn.db.profile.plans[value].name = value
 	AddOn.db.profile.lastOpenNote = value
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
@@ -622,7 +623,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 		GetCurrentBossName()
 	)
 	local sortedAssigneesAndSpells =
-		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed)
+		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed)
 	local nameAndSpell = sortedAssigneesAndSpells[assigneeIndex]
 	if nameAndSpell then
 		local assignment = Private.classes.Assignment:New()
@@ -662,10 +663,10 @@ local function HandleCreateNewNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local notes = AddOn.db.profile.notes
+	local notes = AddOn.db.profile.plans
 	local newNoteName = utilities.CreateUniqueNoteName(notes)
 
-	notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+	notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
 
 	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
@@ -694,33 +695,33 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local beforeRemovalCount = 0
-	for _, _ in pairs(AddOn.db.profile.notes) do
+	for _, _ in pairs(AddOn.db.profile.plans) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		local lastOpenNote = AddOn.db.profile.lastOpenNote
 		if lastOpenNote then
-			AddOn.db.profile.notes[lastOpenNote] = nil
+			AddOn.db.profile.plans[lastOpenNote] = nil
 			noteDropdown:RemoveItem(lastOpenNote)
 		end
 		if beforeRemovalCount > 1 then
-			for name, _ in pairs(AddOn.db.profile.notes) do
+			for name, _ in pairs(AddOn.db.profile.plans) do
 				AddOn.db.profile.lastOpenNote = name
-				local bossName = AddOn.db.profile.notes[name].bossName
+				local bossName = AddOn.db.profile.plans[name].bossName
 				if bossName then
 					interfaceUpdater.UpdateBoss(bossName, true)
 				end
 				break
 			end
 		else
-			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
-			AddOn.db.profile.notes[newNoteName] = Private.classes.EncounterPlannerDbNote:New()
+			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans)
+			AddOn.db.profile.plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
 			if bossDef then
-				local newNote = AddOn.db.profile.notes[newNoteName]
+				local newNote = AddOn.db.profile.plans[newNoteName]
 				newNote.bossName = bossDef.name
 				newNote.dungeonEncounterID = bossDef.dungeonEncounterID
 				newNote.instanceID = bossDef.instanceID
@@ -732,7 +733,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(newLastOpenNote)
 		end
-		local remindersEnabled = AddOn.db.profile.notes[newLastOpenNote].remindersEnabled
+		local remindersEnabled = AddOn.db.profile.plans[newLastOpenNote].remindersEnabled
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossName())
 	end
@@ -749,7 +750,7 @@ local function ImportPlan(importType)
 			if importType == "FromMRTOverwrite" then
 				bossName = Private:Note(AddOn.db.profile.lastOpenNote, bossName, true) or bossName
 			elseif importType == "FromMRTNew" then
-				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.notes)
+				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans)
 				bossName = Private:Note(newNoteName, bossName, true) or bossName
 				AddOn.db.profile.lastOpenNote = newNoteName
 				local noteDropdown = Private.mainFrame.noteDropdown
@@ -761,7 +762,7 @@ local function ImportPlan(importType)
 				if renameNoteLineEdit then
 					renameNoteLineEdit:SetText(newNoteName)
 				end
-				local remindersEnabled = AddOn.db.profile.notes[newNoteName].remindersEnabled
+				local remindersEnabled = AddOn.db.profile.plans[newNoteName].remindersEnabled
 				Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 			end
 			interfaceUpdater.UpdateBoss(bossName, true)
@@ -783,7 +784,7 @@ local function HandleExportButtonClicked()
 			Private.exportEditBox = nil
 		end)
 	end
-	local text = Private:ExportNote(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
+	local text = Private:ExportNote(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote])
 	if text then
 		Private.exportEditBox:SetText(text)
 		Private.exportEditBox:HighlightTextAndFocus()
@@ -814,7 +815,7 @@ end
 
 function Private:CreateInterface()
 	local bossName = "Ulgrax the Devourer"
-	local notes = AddOn.db.profile.notes
+	local notes = AddOn.db.profile.plans
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
 
 	if lastOpenNote and lastOpenNote ~= "" then
@@ -824,7 +825,7 @@ function Private:CreateInterface()
 		bossName = Private:Note(defaultNoteName, "Ulgrax the Devourer", true) or bossName
 		if not notes[defaultNoteName] then -- MRT not loaded
 			defaultNoteName = utilities.CreateUniqueNoteName(notes)
-			notes[defaultNoteName] = Private.classes.EncounterPlannerDbNote:New()
+			notes[defaultNoteName] = Private.classes.Plan:New(nil, defaultNoteName)
 			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
 			notes[defaultNoteName].instanceID = 2657
 			notes[defaultNoteName].dungeonEncounterID = 2902
@@ -854,7 +855,7 @@ function Private:CreateInterface()
 			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossName
 		)
-		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = true
 		end
@@ -868,7 +869,7 @@ function Private:CreateInterface()
 			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossName
 		)
-		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
 		end
@@ -1056,7 +1057,7 @@ function Private:CreateInterface()
 	noteDropdown:SetWidth(topContainerDropdownWidth)
 	local noteDropdownData = {}
 	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
-	for noteName, _ in pairs(AddOn.db.profile.notes) do
+	for noteName, _ in pairs(AddOn.db.profile.plans) do
 		tinsert(noteDropdownData, { itemValue = noteName, text = noteName })
 	end
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
@@ -1107,9 +1108,9 @@ function Private:CreateInterface()
 	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
 	planReminderEnableCheckBox:SetText("Reminders Enabled for Plan")
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
-		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].remindersEnabled = value
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled = value
 	end)
-	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
+	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
 	simulateContainer:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
 	simulateContainer:AddChildren(simulateButton, planReminderEnableCheckBox)
@@ -1118,7 +1119,7 @@ function Private:CreateInterface()
 	sendButton:SetText("Send Plan to Group")
 	sendButton:SetWidthFromText()
 	sendButton:SetCallback("Clicked", function()
-		Private:SendPlanToGroup(AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote])
+		Private:SendPlanToGroup(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote])
 	end)
 	sendButton:SetEnabled(
 		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
@@ -1165,7 +1166,7 @@ function Private:CreateInterface()
 	timeline:SetCallback("DuplicateAssignment", function(_, _, timelineAssignment)
 		local newAssignment = Private.DuplicateAssignment(timelineAssignment.assignment)
 		tinsert(GetCurrentAssignments(), newAssignment)
-		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),

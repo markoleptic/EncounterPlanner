@@ -455,7 +455,7 @@ end
 
 -- Populates the combatLogEventReminders table with CombatLogEventAssignments, creates timers for timed assignments, and
 -- sets the script that updates the operation queue.
----@param notes table<string, EncounterPlannerDbNote>
+---@param notes table<string, Plan>
 ---@param preferences ReminderPreferences
 ---@param startTime number
 local function SetupReminders(notes, preferences, startTime)
@@ -540,7 +540,7 @@ local function HandleEncounterStart(encounterID, encounterName, difficultyID, gr
 	end
 	if difficultyID == 16 then -- Mythic raid
 		local startTime = GetTime()
-		local notes = AddOn.db.profile.notes --[[@as table<string, EncounterPlannerDbNote>]]
+		local notes = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 		local activeNotes = {}
 		for _, note in pairs(notes) do
 			if note.dungeonEncounterID == encounterID and note.remindersEnabled then

@@ -70,7 +70,7 @@ function Utilities.Clamp(value, minValue, maxValue)
 	return min(maxValue, max(minValue, value))
 end
 
----@param notes table<integer, EncounterPlannerDbNote>
+---@param notes table<string, Plan>
 ---@return string
 function Utilities.CreateUniqueNoteName(notes)
 	local newNoteName = "Unnamed"

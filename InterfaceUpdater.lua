@@ -23,12 +23,12 @@ local type = type
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
-	return AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].roster
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].roster
 end
 
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
-	return AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].assignments
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].assignments
 end
 
 ---@param abilityEntry EPAbilityEntry
@@ -69,7 +69,7 @@ end
 ---@param abilityEntry EPAbilityEntry
 ---@param collapsed boolean
 local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
-	AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
+	AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
 	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossName then
 		InterfaceUpdater.UpdateAllAssignments(true, bossName)
@@ -202,7 +202,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 				assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 				tinsert(children, assigneeEntry)
 				local collapsed =
-					AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed[textTable.assigneeNameOrRole]
+					AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[textTable.assigneeNameOrRole]
 				assigneeEntry:SetCollapsed(collapsed)
 				if not collapsed then
 					for _, spellID in ipairs(textTable.spells) do
@@ -241,7 +241,7 @@ end
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	local timeline = Private.mainFrame.timeline
 	if timeline then
-		local collapsed = AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 		if not sortedWithSpellID then
 			sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 		end
@@ -281,11 +281,36 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossNa
 	)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
-		AddOn.db.profile.notes[AddOn.db.profile.lastOpenNote].collapsed
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 	)
 	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
 	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	if updateAddAssigneeDropdown then
 		InterfaceUpdater.UpdateAddAssigneeDropdown()
+	end
+end
+
+---@param noteName string
+function InterfaceUpdater.UpdateFromNote(noteName)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	if Private.mainFrame then
+		local note = AddOn.db.profile.plans[noteName]
+		local bossName = note.bossName
+		if not bossName then
+			bossName = utilities.SearchStringTableForBossName(note.content)
+				or bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue()).name
+		end
+
+		InterfaceUpdater.UpdateBoss(bossName, true)
+		InterfaceUpdater.UpdateAllAssignments(true, bossName)
+
+		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
+		if renameNoteLineEdit then
+			renameNoteLineEdit:SetText(noteName)
+		end
+		Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
+		Private.mainFrame:DoLayout()
 	end
 end
