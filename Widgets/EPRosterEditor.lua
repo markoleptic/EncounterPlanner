@@ -5,6 +5,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
 local ipairs = ipairs
+local max = math.max
 local min = math.min
 local pairs = pairs
 local sort = sort
@@ -15,11 +16,19 @@ local wipe = wipe
 
 local mainFrameWidth = 500
 local mainFrameHeight = 500
+local minScrollFrameHeight = 400
+local maxScrollFrameHeight = 600
 local windowBarHeight = 28
 local contentFramePadding = { x = 10, y = 10 }
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local scrollBarWidth = 16
+local thumbPadding = { x = 2, y = 2 }
+local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
+local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
+local minThumbSize = 20
+local scrollMultiplier = 25
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -36,14 +45,72 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
+---@param container EPContainer
+local function SetButtonWidths(container)
+	local maxWidth = 0
+	for _, child in ipairs(container.children) do
+		maxWidth = max(maxWidth, child.frame:GetWidth())
+	end
+	for _, child in ipairs(container.children) do
+		child:SetWidth(maxWidth)
+	end
+end
+
+---@param self EPRosterEditor
+local function HandleVerticalThumbUpdate(self)
+	if not self.verticalThumbIsDragging then
+		return
+	end
+
+	local currentOffset = self.verticalThumbOffsetWhenThumbClicked
+	local currentHeight = self.verticalThumbHeightWhenThumbClicked
+	local currentScrollBarHeight = self.verticalScrollBarHeightWhenThumbClicked
+	local _, yPosition = GetCursorPosition()
+	local newOffset = self.scrollBar:GetTop() - (yPosition / UIParent:GetEffectiveScale()) - currentOffset
+
+	local minAllowedOffset = thumbPadding.y
+	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
+	newOffset = max(newOffset, minAllowedOffset)
+	newOffset = min(newOffset, maxAllowedOffset)
+	self.thumb:SetPoint("TOP", 0, -newOffset)
+
+	local scrollFrame = self.scrollFrame
+	local scrollFrameHeight = scrollFrame:GetHeight()
+	local timelineHeight = self.activeContainer.frame:GetHeight()
+	local maxScroll = timelineHeight - scrollFrameHeight
+
+	-- Calculate the scroll frame's vertical scroll based on the thumb's position
+	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
+	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	scrollFrame:SetVerticalScroll(max(0, scrollOffset))
+end
+
+---@param self EPRosterEditor
+local function HandleVerticalThumbMouseDown(self)
+	local _, y = GetCursorPosition()
+	self.verticalThumbOffsetWhenThumbClicked = self.thumb:GetTop() - (y / UIParent:GetEffectiveScale())
+	self.verticalScrollBarHeightWhenThumbClicked = self.scrollBar:GetHeight()
+	self.verticalThumbHeightWhenThumbClicked = self.thumb:GetHeight()
+	self.verticalThumbIsDragging = true
+	self.thumb:SetScript("OnUpdate", function()
+		HandleVerticalThumbUpdate(self)
+	end)
+end
+
+---@param self EPRosterEditor
+local function HandleVerticalThumbMouseUp(self)
+	self.verticalThumbIsDragging = false
+	self.thumb:SetScript("OnUpdate", nil)
+end
+
 ---@param self EPRosterEditor
 ---@param rosterEntry EPRosterEntry
 ---@param newName string
 local function HandleRosterEntryNameChanged(self, rosterEntry, newName)
 	local rosterWidgetMap = nil
-	if self.activeTab == "CurrentBossRoster" then
+	if self.activeTab == "Current Plan Roster" then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "SharedRoster" then
+	elseif self.activeTab == "Shared Roster" then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -74,9 +141,9 @@ end
 ---@param newClass string
 local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 	local rosterWidgetMap = nil
-	if self.activeTab == "CurrentBossRoster" then
+	if self.activeTab == "Current Plan Roster" then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "SharedRoster" then
+	elseif self.activeTab == "Shared Roster" then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -95,9 +162,9 @@ end
 ---@param newRole string
 local function HandleRosterEntryRoleChanged(self, rosterEntry, newRole)
 	local rosterWidgetMap = nil
-	if self.activeTab == "SharedRoster" then
+	if self.activeTab == "Shared Roster" then
 		rosterWidgetMap = self.sharedRosterWidgetMap
-	elseif self.activeTab == "CurrentBossRoster" then
+	elseif self.activeTab == "Current Plan Roster" then
 		rosterWidgetMap = self.currentRosterWidgetMap
 	end
 
@@ -115,9 +182,9 @@ end
 ---@param rosterEntry EPRosterEntry
 local function HandleRosterEntryDeleted(self, rosterEntry)
 	local rosterWidgetMap = nil
-	if self.activeTab == "CurrentBossRoster" then
+	if self.activeTab == "Current Plan Roster" then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "SharedRoster" then
+	elseif self.activeTab == "Shared Roster" then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -130,16 +197,15 @@ local function HandleRosterEntryDeleted(self, rosterEntry)
 		end
 	end
 
-	for index, child in ipairs(self.activeContainer.children) do
+	for _, child in ipairs(self.activeContainer.children) do
 		if child == rosterEntry then
-			AceGUI:Release(child)
-			tremove(self.activeContainer.children, index)
+			self.activeContainer:RemoveChildNoDoLayout(child)
 			break
 		end
 	end
 
 	self.activeContainer:DoLayout()
-	self:DoLayout()
+	self:Resize()
 end
 
 ---@param self EPRosterEditor
@@ -155,13 +221,13 @@ local function CreateRosterEntry(self, rosterWidgetMapping)
 			rosterWidgetMapping.dbEntry.role
 		)
 	else
-		if self.activeTab == "CurrentBossRoster" then
+		if self.activeTab == "Current Plan Roster" then
 			tinsert(self.currentRosterWidgetMap, {
 				name = "",
 				dbEntry = { class = "", role = "", classColoredName = "" },
 				widgetEntry = newRosterEntry,
 			})
-		elseif self.activeTab == "SharedRoster" then
+		elseif self.activeTab == "Shared Roster" then
 			tinsert(self.sharedRosterWidgetMap, {
 				name = "",
 				dbEntry = { class = "", role = "", classColoredName = "" },
@@ -208,9 +274,9 @@ local function PopulateActiveTab(self, tab)
 	end
 
 	local rosterWidgetMap = nil
-	if tab == "CurrentBossRoster" then
+	if tab == "Current Plan Roster" then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif tab == "SharedRoster" then
+	elseif tab == "Shared Roster" then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 	if rosterWidgetMap then
@@ -231,23 +297,27 @@ local function PopulateActiveTab(self, tab)
 		end
 		if requiredCount < currentCount then
 			for i = currentCount, requiredCount + 1, -1 do
-				AceGUI:Release(self.activeContainer.children[i])
-				tremove(self.activeContainer.children, i)
+				self.activeContainer:RemoveChildNoDoLayout(self.activeContainer.children[i])
 			end
+			self.activeContainer:DoLayout()
 		end
 	end
 
-	self.activeContainer:DoLayout()
-
-	if tab == "CurrentBossRoster" and #self.buttonContainer.children >= 2 then
+	if tab == "Current Plan Roster" and #self.buttonContainer.children >= 2 then
 		self.buttonContainer.children[1]:SetText("Update from Shared Roster")
+		self.buttonContainer.children[1]:SetWidthFromText()
 		self.buttonContainer.children[2]:SetText("Fill from Shared Roster")
-	elseif tab == "SharedRoster" and #self.buttonContainer.children >= 2 then
-		self.buttonContainer.children[1]:SetText("Update from Current Boss Roster")
-		self.buttonContainer.children[2]:SetText("Fill from Current Boss Roster")
+		self.buttonContainer.children[2]:SetWidthFromText()
+	elseif tab == "Shared Roster" and #self.buttonContainer.children >= 2 then
+		self.buttonContainer.children[1]:SetText("Update from Current Plan Roster")
+		self.buttonContainer.children[1]:SetWidthFromText()
+		self.buttonContainer.children[2]:SetText("Fill from Current Plan Roster")
+		self.buttonContainer.children[2]:SetWidthFromText()
 	end
 
-	self:DoLayout()
+	SetButtonWidths(self.buttonContainer)
+	self.buttonContainer:DoLayout()
+	self:Resize()
 	self.activeTab = tab
 end
 
@@ -257,14 +327,13 @@ end
 ---@field widgetEntry EPRosterEntry
 
 ---@alias EPRosterEditorTab
----| "SharedRoster"
----| "CurrentBossRoster"
+---| "Shared Roster"
+---| "Current Plan Roster"
 ---| ""
 
----@class EPRosterEditor : AceGUIContainer
----@field frame table|BackdropTemplate|Frame
+---@class EPRosterEditor : AceGUIWidget
+---@field frame Frame|table
 ---@field type string
----@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
 ---@field children table<integer, AceGUIWidget>
@@ -281,15 +350,11 @@ local function OnAcquire(self)
 	self.activeTab = ""
 	self.currentRosterWidgetMap = {}
 	self.sharedRosterWidgetMap = {}
-
-	self.frame:SetParent(UIParent)
-	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
 
-	self.content.alignment = "center"
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
 	self.closeButton:SetIconPadding(2, 2)
@@ -305,101 +370,239 @@ local function OnAcquire(self)
 	self.tabContainer = AceGUI:Create("EPContainer")
 	self.tabContainer:SetLayout("EPHorizontalLayout")
 	self.tabContainer:SetSpacing(0, 0)
+	self.tabContainer:SetAlignment("center")
+	self.tabContainer:SetSelfAlignment("center")
+	self.tabContainer.frame:SetParent(self.frame)
+	self.tabContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y)
 
 	local currentRosterTab = AceGUI:Create("EPButton")
-	local sharedRosterTab = AceGUI:Create("EPButton")
-
 	currentRosterTab:SetIsToggleable(true)
-	currentRosterTab:SetText("Current Boss Roster")
-	currentRosterTab:SetWidth(150)
-	currentRosterTab:SetCallback("Clicked", function()
-		if not currentRosterTab:IsToggled() then
-			currentRosterTab:Toggle()
-			sharedRosterTab:Toggle()
-			PopulateActiveTab(self, "CurrentBossRoster")
+	currentRosterTab:SetText("Current Plan Roster")
+	currentRosterTab:SetWidthFromText()
+	currentRosterTab:SetCallback("Clicked", function(button, _)
+		if not button:IsToggled() then
+			for _, child in ipairs(self.tabContainer.children) do
+				if child:IsToggled() then
+					child:Toggle()
+				end
+			end
+			button:Toggle()
+			PopulateActiveTab(self, button.button:GetText())
 		end
 	end)
 
+	local sharedRosterTab = AceGUI:Create("EPButton")
 	sharedRosterTab:SetIsToggleable(true)
 	sharedRosterTab:SetText("Shared Roster")
-	sharedRosterTab:SetWidth(150)
-	sharedRosterTab:SetCallback("Clicked", function()
-		if not sharedRosterTab:IsToggled() then
-			sharedRosterTab:Toggle()
-			currentRosterTab:Toggle()
+	sharedRosterTab:SetWidthFromText()
+	sharedRosterTab:SetCallback("Clicked", function(button, _)
+		if not button:IsToggled() then
+			for _, child in ipairs(self.tabContainer.children) do
+				if child:IsToggled() then
+					child:Toggle()
+				end
+			end
+			button:Toggle()
+			PopulateActiveTab(self, button.button:GetText())
 		end
-		PopulateActiveTab(self, "SharedRoster")
 	end)
-
-	self.tabContainer:AddChildren(currentRosterTab, sharedRosterTab)
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 4)
+	self.activeContainer.frame:EnableMouse(true)
+	self.activeContainer.frame:SetScript("OnMouseWheel", function(_, delta)
+		local scrollFrameHeight = self.scrollFrame:GetHeight()
+		local timelineFrameHeight = self.activeContainer.frame:GetHeight()
+		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
+		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
+		local newVerticalScroll = max(min(currentVerticalScroll - (delta * scrollMultiplier), maxVerticalScroll), 0)
+		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+		self:UpdateVerticalScroll()
+	end)
 	local addEntryButton = AceGUI:Create("EPButton")
 	addEntryButton:SetText("+")
 	addEntryButton:SetHeight(20)
 	addEntryButton:SetWidth(20)
 	addEntryButton:SetCallback("Clicked", function()
-		self.activeContainer:AddChild(CreateRosterEntry(self))
-		self:DoLayout()
+		self.activeContainer:AddChild(CreateRosterEntry(self), addEntryButton)
+		self:Resize()
 	end)
-	self.activeContainer:AddChild(addEntryButton)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
 	self.buttonContainer:SetSpacing(2, 0)
+	self.buttonContainer:SetAlignment("center")
+	self.buttonContainer:SetSelfAlignment("center")
+	self.buttonContainer.frame:SetParent(self.frame)
+	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, contentFramePadding.y)
 
 	local updateRosterButton = AceGUI:Create("EPButton")
 	updateRosterButton:SetText("Update from Shared Roster")
-	updateRosterButton:SetWidth(200)
+	updateRosterButton:SetWidthFromText()
 	updateRosterButton.obj = self
 	updateRosterButton:SetCallback("Clicked", function()
 		self:Fire("UpdateRosterButtonClicked", self.activeTab)
 	end)
-
 	local fillRosterButton = AceGUI:Create("EPButton")
 	fillRosterButton:SetText("Fill from Shared Roster")
-	fillRosterButton:SetWidth(200)
+	fillRosterButton:SetWidthFromText()
 	fillRosterButton.obj = self
 	fillRosterButton:SetCallback("Clicked", function()
 		self:Fire("FillRosterButtonClicked", self.activeTab)
 	end)
-
 	local importCurrentGroupButton = AceGUI:Create("EPButton")
 	importCurrentGroupButton:SetText("Import Current Party/Raid Group")
-	importCurrentGroupButton:SetWidth(200)
+	importCurrentGroupButton:SetWidthFromText()
 	importCurrentGroupButton.obj = self
 	importCurrentGroupButton:SetCallback("Clicked", function()
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
 	end)
 
-	self.buttonContainer:AddChildren(updateRosterButton, fillRosterButton, importCurrentGroupButton)
+	self.scrollBar:ClearAllPoints()
+	self.scrollBar:SetParent(self.frame)
+	self.scrollBar:SetPoint("RIGHT", -contentFramePadding.x, 0)
+	self.scrollBar:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
+	self.scrollBar:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
+	self.scrollBar:Show()
 
-	self:AddChildren(self.tabContainer, self.activeContainer, self.buttonContainer)
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(self.scrollBar)
+	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+	self.thumb:SetScript("OnMouseDown", function()
+		HandleVerticalThumbMouseDown(self)
+	end)
+	self.thumb:SetScript("OnMouseUp", function()
+		HandleVerticalThumbMouseUp(self)
+	end)
+	self.thumb:Show()
+
+	self.scrollFrame:ClearAllPoints()
+	self.scrollFrame:SetParent(self.frame)
+	self.scrollFrame:SetPoint("LEFT", contentFramePadding.x, 0)
+	self.scrollFrame:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
+	self.scrollFrame:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
+	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+	self.scrollFrame:Show()
+
+	self.activeContainer.frame:SetParent(self.scrollFrame)
+	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]])
+	self.activeContainer.frame:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
+
+	self.tabContainer:AddChildren(currentRosterTab, sharedRosterTab)
+	SetButtonWidths(self.tabContainer)
+	self.tabContainer:DoLayout()
+
+	self.buttonContainer:AddChildren(updateRosterButton, fillRosterButton, importCurrentGroupButton)
+	SetButtonWidths(self.buttonContainer)
+	self.buttonContainer:DoLayout()
+
+	self.activeContainer:AddChild(addEntryButton)
 end
 
 ---@param self EPRosterEditor
 local function OnRelease(self)
-	if self.closeButton then
-		self.closeButton:Release()
-	end
+	self.closeButton:Release()
 	self.closeButton = nil
+
+	self.tabContainer:Release()
 	self.tabContainer = nil
+
+	self.activeContainer.frame:EnableMouse(false)
+	self.activeContainer.frame:SetScript("OnMouseWheel", nil)
+	self.activeContainer:Release()
 	self.activeContainer = nil
+
+	self.buttonContainer:Release()
 	self.buttonContainer = nil
+
+	self.scrollFrame:ClearAllPoints()
+	self.scrollFrame:SetParent(UIParent)
+	self.scrollFrame:Hide()
+
+	self.scrollBar:ClearAllPoints()
+	self.scrollBar:SetParent(UIParent)
+	self.scrollBar:Hide()
+
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(UIParent)
+	self.thumb:Hide()
+
+	self.thumb:SetScript("OnMouseDown", nil)
+	self.thumb:SetScript("OnMouseUp", nil)
+	self.thumb:SetScript("OnUpdate", nil)
+
 	self.currentRosterWidgetMap = nil
 	self.sharedRosterWidgetMap = nil
 	self.activeTab = nil
 end
 
 ---@param self EPRosterEditor
----@param width number|nil
----@param height number|nil
-local function LayoutFinished(self, width, height)
-	if width and height then
-		self.frame:SetSize(width + contentFramePadding.x * 2, height + windowBarHeight + contentFramePadding.y * 2)
+local function OnHeightSet(self, height)
+	self:UpdateVerticalScroll()
+end
+
+---@param self EPRosterEditor
+local function UpdateVerticalScroll(self)
+	local scrollBarHeight = self.scrollBar:GetHeight()
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local containerHeight = self.activeContainer.frame:GetHeight()
+	local verticalScroll = self.scrollFrame:GetVerticalScroll()
+
+	local thumbHeight = (scrollFrameHeight / containerHeight) * (scrollBarHeight - (2 * thumbPadding.y))
+	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
+	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	self.thumb:SetHeight(thumbHeight)
+
+	local maxScroll = containerHeight - scrollFrameHeight
+	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
+	local verticalThumbPosition = 0
+	if maxScroll > 0 then
+		verticalThumbPosition = (verticalScroll / maxScroll) * maxThumbPosition
+		verticalThumbPosition = verticalThumbPosition + thumbPadding.x
+	else
+		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
 	end
+	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
+
+	if verticalScroll > maxScroll then
+		self.scrollFrame:SetVerticalScroll(max(0, maxScroll))
+	end
+end
+
+---@param self EPRosterEditor
+local function Resize(self)
+	local tableTitleContainerHeight = self.tabContainer.frame:GetHeight()
+	local containerHeight = self.activeContainer.frame:GetHeight()
+	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
+	local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
+	local paddingHeight = contentFramePadding.y * 4
+
+	local width = contentFramePadding.x * 2
+	if containerHeight < self.scrollFrame:GetHeight() then
+		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
+		self.scrollBar:SetWidth(0)
+		self.scrollBar:Hide()
+	else
+		self.scrollBar:Show()
+		self.scrollBar:SetWidth(scrollBarWidth)
+		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+		width = width + self.scrollBar:GetWidth() + contentFramePadding.x / 2.0
+	end
+
+	local tabWidth = self.tabContainer.frame:GetWidth()
+	local activeWidth = self.activeContainer.frame:GetWidth()
+	local buttonWidth = self.buttonContainer.frame:GetWidth()
+	width = width + max(tabWidth, max(activeWidth, buttonWidth))
+
+	local height = windowBarHeight
+		+ tableTitleContainerHeight
+		+ scrollAreaHeight
+		+ buttonContainerHeight
+		+ paddingHeight
+	self.frame:SetSize(width, height)
+	self.activeContainer:DoLayout()
+	self:UpdateVerticalScroll()
 end
 
 ---@param self EPRosterEditor
@@ -407,14 +610,11 @@ end
 local function SetCurrentTab(self, tab)
 	self.activeTab = ""
 	for _, child in ipairs(self.tabContainer.children) do
-		if child:IsToggled() then
+		if child.button:GetText() == tab and not child:IsToggled() then
+			child:Toggle()
+		elseif child:IsToggled() then
 			child:Toggle()
 		end
-	end
-	if tab == "CurrentBossRoster" then
-		self.tabContainer.children[1]:Toggle()
-	elseif tab == "SharedRoster" then
-		self.tabContainer.children[2]:Toggle()
 	end
 	PopulateActiveTab(self, tab)
 end
@@ -470,23 +670,7 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
-	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
-	contentFrame:SetPoint(
-		"TOPLEFT",
-		frame,
-		"TOPLEFT",
-		contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y)
-	)
-	contentFrame:SetPoint(
-		"TOPRIGHT",
-		frame,
-		"TOPRIGHT",
-		-contentFramePadding.x,
-		-(windowBarHeight + contentFramePadding.y)
-	)
-	contentFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
-	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
+	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetHeight(windowBarHeight)
@@ -511,21 +695,49 @@ local function Constructor()
 		frame:StopMovingOrSizing()
 	end)
 
+	local verticalScrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
+	verticalScrollBar:SetWidth(scrollBarWidth)
+	verticalScrollBar:SetPoint("TOPRIGHT")
+	verticalScrollBar:SetPoint("BOTTOMRIGHT")
+
+	local verticalScrollBarBackground =
+		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
+	verticalScrollBarBackground:SetAllPoints()
+	verticalScrollBarBackground:SetColorTexture(unpack(verticalScrollBackgroundColor))
+
+	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, verticalScrollBar)
+	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
+	verticalThumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), verticalScrollBar:GetHeight() - 2 * thumbPadding.y)
+	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
+
+	local verticalThumbBackground =
+		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
+	verticalThumbBackground:SetAllPoints()
+	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
+
 	---@class EPRosterEditor
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		LayoutFinished = LayoutFinished,
+		UpdateVerticalScroll = UpdateVerticalScroll,
 		SetCurrentTab = SetCurrentTab,
 		SetClassDropdownData = SetClassDropdownData,
 		SetRosters = SetRosters,
+		Resize = Resize,
+		OnHeightSet = OnHeightSet,
 		frame = frame,
+		scrollFrame = scrollFrame,
 		type = Type,
-		content = contentFrame,
 		windowBar = windowBar,
+		scrollBar = verticalScrollBar,
+		thumb = verticalThumb,
+		verticalThumbOffsetWhenThumbClicked = 0,
+		verticalScrollBarHeightWhenThumbClicked = 0,
+		verticalThumbHeightWhenThumbClicked = 0,
+		verticalThumbIsDragging = false,
 	}
 
-	return AceGUI:RegisterAsContainer(widget)
+	return AceGUI:RegisterAsWidget(widget)
 end
 
 AceGUI:RegisterWidgetType(Type, Constructor, Version)

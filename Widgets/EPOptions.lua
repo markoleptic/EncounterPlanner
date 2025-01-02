@@ -148,6 +148,17 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
 	end)
 end
 
+---@param container EPContainer
+local function SetButtonWidths(container)
+	local maxWidth = 0
+	for _, child in ipairs(container.children) do
+		maxWidth = max(maxWidth, child.frame:GetWidth())
+	end
+	for _, child in ipairs(container.children) do
+		child:SetWidth(maxWidth)
+	end
+end
+
 ---@param self EPOptions
 local function HandleVerticalThumbUpdate(self)
 	if not self.verticalThumbIsDragging then
@@ -891,7 +902,7 @@ local function PopulateActiveTab(self, tab)
 
 	self.activeContainer:AddChildren(unpack(activeContainerChildren))
 	RefreshEnabledStates(self.refreshMap)
-	self:UpdateVerticalScroll()
+	self:Resize()
 end
 
 ---@alias EPSettingOptionType
@@ -971,18 +982,29 @@ local function OnAcquire(self)
 	self.tabTitleContainer.frame:SetParent(self.frame)
 	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y)
 
-	local halfPaddingX, halfPaddingY = contentFramePadding.x / 2.0, contentFramePadding.y / 2.0
-
 	self.scrollBar:ClearAllPoints()
-	self.scrollBar:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -halfPaddingY)
+	self.scrollBar:SetParent(self.frame)
+	self.scrollBar:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
 	self.scrollBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
+	self.scrollBar:Show()
 
-	self.thumb:SetPoint("TOP", 0, thumbPadding.y)
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(self.scrollBar)
+	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+	self.thumb:SetScript("OnMouseDown", function()
+		HandleVerticalThumbMouseDown(self)
+	end)
+	self.thumb:SetScript("OnMouseUp", function()
+		HandleVerticalThumbMouseUp(self)
+	end)
+	self.thumb:Show()
 
 	self.scrollFrame:ClearAllPoints()
-	self.scrollFrame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -halfPaddingY)
+	self.scrollFrame:SetParent(self.frame)
+	self.scrollFrame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
 	self.scrollFrame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
-	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -halfPaddingX, 0)
+	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+	self.scrollFrame:Show()
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
@@ -1007,12 +1029,31 @@ end
 local function OnRelease(self)
 	self.closeButton:Release()
 	self.closeButton = nil
+
 	self.tabTitleContainer:Release()
 	self.tabTitleContainer = nil
+
 	self.activeContainer.frame:EnableMouse(false)
 	self.activeContainer.frame:SetScript("OnMouseWheel", nil)
 	self.activeContainer:Release()
 	self.activeContainer = nil
+
+	self.scrollFrame:ClearAllPoints()
+	self.scrollFrame:SetParent(UIParent)
+	self.scrollFrame:Hide()
+
+	self.scrollBar:ClearAllPoints()
+	self.scrollBar:SetParent(UIParent)
+	self.scrollBar:Hide()
+
+	self.thumb:ClearAllPoints()
+	self.thumb:SetParent(UIParent)
+	self.thumb:Hide()
+
+	self.thumb:SetScript("OnMouseDown", nil)
+	self.thumb:SetScript("OnMouseUp", nil)
+	self.thumb:SetScript("OnUpdate", nil)
+
 	self.optionTabs = nil
 	self.activeTab = nil
 	self.tabCategories = nil
@@ -1067,6 +1108,7 @@ local function AddOptionTab(self, tabName, options, categories)
 	local tab = AceGUI:Create("EPButton")
 	tab:SetIsToggleable(true)
 	tab:SetText(tabName)
+	tab:SetWidthFromText()
 	self.tabTitleContainer:AddChild(tab)
 	tab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
@@ -1077,9 +1119,10 @@ local function AddOptionTab(self, tabName, options, categories)
 			end
 			button:Toggle()
 			PopulateActiveTab(self, button.button:GetText())
-			self:Resize()
 		end
 	end)
+	SetButtonWidths(self.tabTitleContainer)
+	self.tabTitleContainer:DoLayout()
 end
 
 ---@param self EPOptions
@@ -1094,7 +1137,6 @@ local function SetCurrentTab(self, tab)
 		end
 	end
 	PopulateActiveTab(self, tab)
-	self:Resize()
 end
 
 ---@param self EPOptions
@@ -1111,16 +1153,25 @@ local function Resize(self)
 	local tableTitleContainerHeight = self.tabTitleContainer.frame:GetHeight()
 	local containerHeight = self.activeContainer.frame:GetHeight()
 	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
-	local paddingHeight = contentFramePadding.y * 2 + contentFramePadding.y / 2.0
+	local paddingHeight = contentFramePadding.y * 3
+
+	local width = contentFramePadding.x * 2
 	if containerHeight < self.scrollFrame:GetHeight() then
 		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
 		self.scrollBar:Hide()
 	else
-		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
 		self.scrollBar:Show()
+		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+		width = width + self.scrollBar:GetWidth() + contentFramePadding.x * 0.5
 	end
-	self:SetHeight(windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight)
+
+	local tabWidth = self.tabTitleContainer.frame:GetWidth()
+	local activeWidth = self.activeContainer.frame:GetWidth()
+	width = width + max(tabWidth, activeWidth)
+
+	self.frame:SetSize(width, windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight)
 	self.activeContainer:DoLayout()
+	self:UpdateVerticalScroll()
 end
 
 local function Constructor()
@@ -1217,13 +1268,6 @@ local function Constructor()
 		verticalThumbHeightWhenThumbClicked = 0,
 		verticalThumbIsDragging = false,
 	}
-
-	verticalThumb:SetScript("OnMouseDown", function()
-		HandleVerticalThumbMouseDown(widget)
-	end)
-	verticalThumb:SetScript("OnMouseUp", function()
-		HandleVerticalThumbMouseUp(widget)
-	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end

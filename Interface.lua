@@ -101,10 +101,10 @@ end
 local function HandleImportCurrentGroupButtonClicked(_, _, rosterTab)
 	local importRosterWidgetMapping = nil
 	local noChangeRosterWidgetMapping = nil
-	if rosterTab == "SharedRoster" then
+	if rosterTab == "Shared Roster" then
 		noChangeRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 		importRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-	elseif rosterTab == "CurrentBossRoster" then
+	elseif rosterTab == "Current Plan Roster" then
 		noChangeRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
 		importRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 	end
@@ -119,9 +119,9 @@ local function HandleImportCurrentGroupButtonClicked(_, _, rosterTab)
 		end
 		utilities.ImportGroupIntoRoster(importRoster)
 		utilities.UpdateRosterDataFromGroup(importRoster)
-		if rosterTab == "SharedRoster" then
+		if rosterTab == "Shared Roster" then
 			Private.rosterEditor:SetRosters(noChangeRoster, importRoster)
-		elseif rosterTab == "CurrentBossRoster" then
+		elseif rosterTab == "Current Plan Roster" then
 			Private.rosterEditor:SetRosters(importRoster, noChangeRoster)
 		end
 		Private.rosterEditor:SetCurrentTab(rosterTab)
@@ -133,10 +133,10 @@ end
 local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 	local fromRosterWidgetMapping = nil
 	local toRosterWidgetMapping = nil
-	if rosterTab == "SharedRoster" then
+	if rosterTab == "Shared Roster" then
 		fromRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 		toRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-	elseif rosterTab == "CurrentBossRoster" then
+	elseif rosterTab == "Current Plan Roster" then
 		fromRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
 		toRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
 	end
@@ -166,9 +166,9 @@ local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 				end
 			end
 		end
-		if rosterTab == "SharedRoster" then
+		if rosterTab == "Shared Roster" then
 			Private.rosterEditor:SetRosters(fromRoster, toRoster)
-		elseif rosterTab == "CurrentBossRoster" then
+		elseif rosterTab == "Current Plan Roster" then
 			Private.rosterEditor:SetRosters(toRoster, fromRoster)
 		end
 		Private.rosterEditor:SetCurrentTab(rosterTab)
@@ -191,17 +191,17 @@ local function CreateRosterEditor(openToTab)
 			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
 		end)
 		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.rosterEditor.frame:SetFrameLevel(25)
-		local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
-		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
-
-		Private.rosterEditor:SetLayout("EPVerticalLayout")
+		Private.rosterEditor.frame:SetFrameLevel(80)
 		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
+		Private.rosterEditor:SetPoint("CENTER", Private.mainFrame.frame, "CENTER", 0, 0)
 		Private.rosterEditor:SetCurrentTab(openToTab)
-		yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
-		Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
-		Private.rosterEditor:DoLayout()
+
+		-- local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
+		-- Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+
+		-- yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
+		-- Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
 	end
 end
 
@@ -993,17 +993,17 @@ function Private:CreateInterface()
 	rosterMenuButton:SetHeight(menuButtonHeight)
 	rosterMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	rosterMenuButton:AddItems({
-		{ itemValue = "Edit Current Boss Roster", text = "Edit Current Boss Roster" },
+		{ itemValue = "Edit Current Plan Roster", text = "Edit Current Plan Roster" },
 		{ itemValue = "Edit Shared Roster", text = "Edit Shared Roster" },
 	}, "EPDropdownItemToggle", true)
 	rosterMenuButton:SetCallback("OnValueChanged", function(_, _, value)
 		if value == "Roster" then
 			return
 		end
-		if value == "Edit Current Boss Roster" then
-			CreateRosterEditor("CurrentBossRoster")
+		if value == "Edit Current Plan Roster" then
+			CreateRosterEditor("Current Plan Roster")
 		elseif value == "Edit Shared Roster" then
-			CreateRosterEditor("SharedRoster")
+			CreateRosterEditor("Shared Roster")
 		end
 		rosterMenuButton:SetValue("Roster")
 		rosterMenuButton:SetText("Roster")

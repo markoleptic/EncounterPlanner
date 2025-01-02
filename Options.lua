@@ -272,7 +272,7 @@ function Private:CreateOptionsMenu()
 		optionsMenu.frame:SetParent(UIParent)
 		optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	end
-	optionsMenu.frame:SetFrameLevel(100)
+	optionsMenu.frame:SetFrameLevel(90)
 	optionsMenu:SetCallback("OnRelease", function()
 		if Private.messageAnchor then
 			Private.messageAnchor:Release()
