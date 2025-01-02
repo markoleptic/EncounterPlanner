@@ -15,6 +15,7 @@ local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
 local GetSpellInfo = C_Spell.GetSpellInfo
+local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
 local pairs = pairs
 local tinsert = tinsert
@@ -190,24 +191,35 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 			local children = {}
 			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, GetCurrentRoster())
 			for _, textTable in ipairs(map) do
+				local assigneeNameOrRole = textTable.assigneeNameOrRole
+				local coloredAssigneeNameOrRole = textTable.text
 				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-				assigneeEntry:SetText(textTable.text, textTable.assigneeNameOrRole)
+				assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
 				assigneeEntry:SetFullWidth(true)
 				assigneeEntry:SetHeight(30)
 				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
-				assigneeEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+				assigneeEntry:SetCallback("OnValueChanged", function(widget, name, value)
+					local messageBox = InterfaceUpdater.CreateMessageBox(
+						"Delete Assignments Confirmation",
+						format("Are you sure you want to delete all assignments for %s?", coloredAssigneeNameOrRole)
+					)
+					if messageBox then
+						messageBox:SetCallback("Accepted", function()
+							HandleDeleteAssigneeRowClicked(widget, name, value)
+						end)
+					end
+				end)
 				assigneeEntry.label.text:SetJustifyH("LEFT")
 				assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
 				assigneeEntry:SetCollapsible(true)
 				assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 				tinsert(children, assigneeEntry)
-				local collapsed =
-					AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[textTable.assigneeNameOrRole]
+				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[assigneeNameOrRole]
 				assigneeEntry:SetCollapsed(collapsed)
 				if not collapsed then
 					for _, spellID in ipairs(textTable.spells) do
 						local spellEntry = AceGUI:Create("EPAbilityEntry")
-						local key = { assigneeNameOrRole = textTable.assigneeNameOrRole, spellID = spellID }
+						local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
 						if spellID == 0 then
 							spellEntry:SetNullAbility(key)
 						else
@@ -217,7 +229,23 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 						spellEntry:SetLeftIndent(15 - 2)
 						spellEntry:SetHeight(30)
 						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
-						spellEntry:SetCallback("OnValueChanged", HandleDeleteAssigneeRowClicked)
+						spellEntry:SetCallback("OnValueChanged", function(widget, name, value)
+							local spellEntryKey = widget:GetKey()
+							local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
+							local messageBox = InterfaceUpdater.CreateMessageBox(
+								"Delete Assignments Confirmation",
+								format(
+									"Are you sure you want to delete all %s assignments for %s?",
+									spellName,
+									coloredAssigneeNameOrRole
+								)
+							)
+							if messageBox then
+								messageBox:SetCallback("Accepted", function()
+									HandleDeleteAssigneeRowClicked(widget, name, value)
+								end)
+							end
+						end)
 						spellEntry.label.text:SetJustifyH("LEFT")
 						spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
 						tinsert(children, spellEntry)
@@ -313,4 +341,26 @@ function InterfaceUpdater.UpdateFromNote(noteName)
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
 		Private.mainFrame:DoLayout()
 	end
+end
+
+---@param title string
+---@param text string
+---@return EPMessageBox|nil
+function InterfaceUpdater.CreateMessageBox(title, text)
+	if not Private.messageBox then
+		if Private.mainFrame then
+			local messageBox = AceGUI:Create("EPMessageBox")
+			messageBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			messageBox.frame:SetFrameLevel(110)
+			messageBox.frame:SetPoint("CENTER")
+			messageBox:SetTitle(title)
+			messageBox:SetText(text)
+			messageBox:SetCallback("OnRelease", function()
+				Private.messageBox = nil
+			end)
+			Private.messageBox = messageBox
+			return messageBox
+		end
+	end
+	return nil
 end

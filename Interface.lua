@@ -901,7 +901,6 @@ function Private:CreateInterface()
 	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
 	planMenuButton:SetHeight(menuButtonHeight)
 	planMenuButton:SetDropdownItemHeight(menuButtonHeight)
-	planMenuButton:SetCallback("OnValueChanged", ImportPlan)
 	planMenuButton:AddItems({
 		{
 			itemValue = "New Plan",
@@ -953,9 +952,29 @@ function Private:CreateInterface()
 		elseif value == "Export Current Plan" then
 			HandleExportButtonClicked()
 		elseif value == "Delete Current Plan" then
-			HandleDeleteCurrentNoteButtonClicked()
+			local messageBox = interfaceUpdater.CreateMessageBox(
+				"Delete Plan Confirmation",
+				format('Are you sure you want to delete the plan "%s"?', AddOn.db.profile.lastOpenNote)
+			)
+			if messageBox then
+				messageBox:SetCallback("Accepted", function()
+					HandleDeleteCurrentNoteButtonClicked()
+				end)
+			end
 		elseif sub(value, 1, 4) == "From" then
-			ImportPlan(value)
+			if string.find(value, "Overwrite") then
+				local messageBox = interfaceUpdater.CreateMessageBox(
+					"Overwrite Plan Confirmation",
+					format('Are you sure you want to overwrite the plan "%s"?', AddOn.db.profile.lastOpenNote)
+				)
+				if messageBox then
+					messageBox:SetCallback("Accepted", function()
+						ImportPlan(value)
+					end)
+				end
+			else
+				ImportPlan(value)
+			end
 		end
 		planMenuButton:SetValue("Plan")
 		planMenuButton:SetText("Plan")

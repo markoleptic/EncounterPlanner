@@ -617,6 +617,7 @@ Private.progressBarAnchor = nil --[[@as EPProgressBar]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
+Private.messageBox = nil --[[@as EPMessageBox]]
 
 LSM:Register(
 	"font",

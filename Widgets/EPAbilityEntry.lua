@@ -65,13 +65,11 @@ local function OnAcquire(self)
 	self.check:SetBackdropColor(unpack(checkBackdropColor))
 	self.check:SetCallback("Clicked", function()
 		if self.enabled then
-			self:ToggleChecked()
 			self:Fire("OnValueChanged", self.checked)
 		end
 	end)
 
 	self:SetEnabled(true)
-	self:SetChecked(true)
 	self:SetCollapsible(false)
 	self:SetCollapsed(false)
 	self.frame:Show()
@@ -106,28 +104,6 @@ end
 ---@param a number
 local function SetCheckedTextureColor(self, r, g, b, a)
 	self.check:SetIconColor(r, g, b, a)
-end
-
----@param self EPAbilityEntry
----@param value boolean
-local function SetChecked(self, value)
-	self.checked = value
-	if value then
-		self.check.frame:Show()
-	else
-		self.check.frame:Hide()
-	end
-end
-
----@param self EPAbilityEntry
----@return boolean
-local function GetChecked(self)
-	return self.checked
-end
-
----@param self EPAbilityEntry
-local function ToggleChecked(self)
-	self:SetChecked(not self:GetChecked())
 end
 
 ---@param self EPAbilityEntry
@@ -245,9 +221,6 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetEnabled = SetEnabled,
 		SetCheckedTexture = SetCheckedTexture,
-		SetChecked = SetChecked,
-		GetChecked = GetChecked,
-		ToggleChecked = ToggleChecked,
 		SetAbility = SetAbility,
 		SetNullAbility = SetNullAbility,
 		SetLeftIndent = SetLeftIndent,
