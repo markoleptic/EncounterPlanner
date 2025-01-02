@@ -14,12 +14,13 @@ local bossUtilities = Private.bossUtilities
 local interfaceUpdater = Private.interfaceUpdater
 
 local AddOn = Private.addOn
+local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
 local LibStub = LibStub
 local LibDeflate = LibStub("LibDeflate")
-local getmetatable, setmetatable = getmetatable, setmetatable
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local print = print
+local type = type
 local UnitFullName = UnitFullName
 
 local configForDeflate = {
@@ -33,6 +34,88 @@ local configForDeflate = {
 	[8] = { level = 8 },
 	[9] = { level = 9 },
 }
+
+---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
+---@return table
+local function SerializeAssignment(assignment)
+	local required =
+		{ assignment.assigneeNameOrRole, assignment.spellInfo.spellID, assignment.text, assignment.targetName }
+	if assignment.time then
+		required[5] = assignment.time
+	end
+	if assignment.combatLogEventType then
+		required[6] = assignment.combatLogEventType
+		required[7] = assignment.combatLogEventSpellID
+		required[8] = assignment.spellCount
+	end
+	return required
+end
+
+---@param data table
+---@return CombatLogEventAssignment|TimedAssignment
+local function DeserializeAssignment(data)
+	local assignment = {
+		assigneeNameOrRole = data[1],
+		spellInfo = GetSpellInfo(data[2])
+			or { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
+		text = data[3],
+		targetName = data[4],
+		time = data[5],
+	}
+	if data[8] then
+		assignment.combatLogEventType = data[6]
+		assignment.combatLogEventSpellID = data[7]
+		assignment.spellCount = data[8]
+		return Private.classes.CombatLogEventAssignment:New(assignment)
+	else
+		return Private.classes.TimedAssignment:New(assignment)
+	end
+end
+
+---@param plan Plan
+---@return table<integer|string|table>
+local function SerializePlan(plan)
+	local required = {
+		plan.name,
+		plan.bossName,
+		plan.dungeonEncounterID,
+		plan.instanceID,
+		{},
+		{},
+	}
+	local assignments = required[5]
+	for _, assignment in ipairs(plan.assignments) do
+		assignments[#assignments + 1] = SerializeAssignment(assignment)
+	end
+	local roster = required[6]
+	for name, rosterInfo in pairs(plan.roster) do
+		roster[#roster + 1] = { name, rosterInfo.class or "", rosterInfo.role or "", rosterInfo.classColoredName or "" }
+	end
+	return required
+end
+
+---@param data table
+---@return Plan
+local function DeserializePlan(data)
+	local plan = {
+		name = data[1],
+		bossName = data[2],
+		dungeonEncounterID = data[3],
+		instanceID = data[4],
+	}
+	plan.assignments = {}
+	for _, assignment in ipairs(data[5]) do
+		plan.assignments[#plan.assignments + 1] = DeserializeAssignment(assignment)
+	end
+	plan.roster = {}
+	for _, entry in ipairs(data[6]) do
+		plan.roster[entry[1]] = { class = entry[2], role = entry[3], classColoredName = entry[4] }
+	end
+	plan.content = {}
+	plan.collapsed = {}
+	plan.remindersEnabled = true
+	return plan
+end
 
 ---@param inTable table
 ---@param forChat boolean
@@ -91,10 +174,9 @@ function AddOn:OnCommReceived(prefix, message, distribution, sender)
 	if prefix == "EPDistributePlan" then
 		local package = StringToTable(message, false)
 		if type(package == "table") then
-			local assignments = package.assignments
-			utilities.SetAssignmentMetaTables(assignments)
+			local plan = DeserializePlan(package --[[@as table]])
 			local plans = AddOn.db.profile.plans
-			plans[package.name] = package -- TODO: Consider asking about overriding
+			plans[package.name] = plan -- TODO: Consider asking about overriding
 			interfaceUpdater.UpdateFromNote(package.name)
 			local noteDropdown = Private.mainFrame.noteDropdown
 			if noteDropdown then
@@ -109,7 +191,6 @@ function AddOn:OnCommReceived(prefix, message, distribution, sender)
 		elseif type(package) == "string" then
 			print(format("%s: ", AddOnName, package))
 		end
-		DevTool:AddData(package)
 	end
 end
 
@@ -124,17 +205,7 @@ function Private:SendPlanToGroup(plan)
 	if not inGroup then
 		return
 	end
-	local metaTables = {}
-	for index, assignment in ipairs(plan.assignments) do
-		metaTables[index] = getmetatable(assignment)
-		setmetatable(assignment, nil)
-		assignment.New = nil
-	end
-	local export = TableToString(plan, false)
-	for index, assignment in ipairs(plan.assignments) do
-		setmetatable(assignment, metaTables[index])
-	end
-
+	local export = TableToString(SerializePlan(plan), false)
 	local function callback(callbackArg, sent, total)
 		print(sent, total)
 	end

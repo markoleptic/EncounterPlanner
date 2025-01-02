@@ -310,8 +310,8 @@ local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID)
 			text = text,
 			spellInfo = spellInfo,
 			targetName = targetName,
-			generalText = generalText,
-			generalTextSpellID = generalTextSpellID,
+			-- generalText = generalText,
+			-- generalTextSpellID = generalTextSpellID,
 		})
 		tinsert(assignments, assignment)
 	end

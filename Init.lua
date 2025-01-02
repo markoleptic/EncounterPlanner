@@ -43,18 +43,17 @@ local assignmentIDCounter = 0
 Private.classes = {}
 
 ---@class Assignment
+---@field uniqueID integer
 ---@field assigneeNameOrRole string Who to assign the assignment to
 ---@field text string The originally parsed portion of the assignment containing a {text}{/text} block
 ---@field spellInfo SpellInfo The spell info for the assignment
 ---@field targetName string|nil The target's name if the assignment has a '@'
 Private.classes.Assignment = {
+	uniqueID = 0,
 	assigneeNameOrRole = "",
 	text = "",
 	spellInfo = { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
 	targetName = "",
-	uniqueID = 0,
-	generalText = "",
-	generalTextSpellID = -1,
 }
 
 -- An assignment based on a combat log event.
