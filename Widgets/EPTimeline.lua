@@ -7,7 +7,6 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
-local tooltip = EncounterPlanner.tooltip
 
 local abs = math.abs
 local ceil = math.ceil
@@ -999,8 +998,6 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 
 	if isValidEdit then
 		assignmentIsDragging = true
-		tooltip:SetScript("OnUpdate", nil)
-		tooltip:Hide()
 		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 		frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
 		frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
@@ -1013,9 +1010,6 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 	else
 		assignmentIsDragging = true
 		assignmentBeingDuplicated = true
-		tooltip:SetScript("OnUpdate", nil)
-		tooltip:Hide()
-
 		local timelineAssignment, index = FindTimelineAssignment(self.timelineAssignments, frame.uniqueAssignmentID)
 		if timelineAssignment and index then
 			local spellID = timelineAssignment.assignment.spellInfo.spellID
@@ -1201,9 +1195,6 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	invalidTexture:SetAllPoints(spellTexture)
 	invalidTexture:SetColorTexture(unpack(invalidTextureColor))
 	invalidTexture:Hide()
-
-	spellTexture:SetScript("OnEnter", function() end)
-	spellTexture:SetScript("OnLeave", function() end)
 
 	local passThrough = spellTexture.SetPassThroughButtons
 	SafeCall(passThrough, spellTexture, "LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
@@ -1919,6 +1910,12 @@ local function OnAcquire(self)
 	local scrollBarThumbHeight = horizontalScrollBarHeight - (2 * thumbPadding.y)
 	self.thumb:SetSize(scrollBarThumbWidth, scrollBarThumbHeight)
 	self.thumb:Show()
+	self.thumb:SetScript("OnMouseDown", function()
+		HandleThumbMouseDown(self)
+	end)
+	self.thumb:SetScript("OnMouseUp", function()
+		HandleThumbMouseUp(self)
+	end)
 
 	self.addAssigneeDropdown = AceGUI:Create("EPDropdown")
 	self.addAssigneeDropdown.frame:SetParent(self.contentFrame)
@@ -1954,6 +1951,9 @@ local function OnRelease(self)
 	self.thumb:ClearAllPoints()
 	self.thumb:SetParent(UIParent)
 	self.thumb:Hide()
+	self.thumb:SetScript("OnMouseDown", nil)
+	self.thumb:SetScript("OnMouseUp", nil)
+	self.thumb:SetScript("OnUpdate", nil)
 
 	self.assignmentTimeline.listFrame:SetScript("OnMouseWheel", nil)
 	self.bossAbilityTimeline.listFrame:SetScript("OnMouseWheel", nil)
@@ -1968,8 +1968,8 @@ local function OnRelease(self)
 	self.assignmentTimeline.timelineFrame:SetScript("OnLeave", nil)
 	self.bossAbilityTimeline.timelineFrame:SetScript("OnLeave", nil)
 	self.assignmentTimeline.timelineFrame:SetScript("OnMouseUp", nil)
-	self.bossAbilityTimeline.timelineFrame:SetScript("OnSizeChanged", nil)
-	self.bossAbilityTimeline.scrollFrame:SetScript("OnHorizontalScroll", nil)
+	self.assignmentTimeline.timelineFrame:SetScript("OnUpdate", nil)
+	self.bossAbilityTimeline.timelineFrame:SetScript("OnUpdate", nil)
 
 	self.assignmentTimeline:Release()
 	self.assignmentTimeline = nil
@@ -1984,6 +1984,7 @@ local function OnRelease(self)
 		frame:ClearAllPoints()
 		frame:Hide()
 		frame:SetWidth(assignmentTextureSize.x)
+		frame:SetScript("OnUpdate", nil)
 		frame.cooldownBackground:SetWidth(0)
 		frame.cooldownBackground:Hide()
 		frame.cooldownTexture:SetWidth(0)
@@ -1993,6 +1994,7 @@ local function OnRelease(self)
 		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
 		frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
 		frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
+
 		frame.spellID = nil
 		frame.uniqueAssignmentID = nil
 		frame.timelineAssignment = nil
@@ -2581,19 +2583,10 @@ local function Constructor()
 	}
 
 	local fakeAssignmentFrame = CreateAssignmentFrame(widget, 0, frame, 0, 0)
-	fakeAssignmentFrame.spellTexture:SetScript("OnEnter", nil)
-	fakeAssignmentFrame.spellTexture:SetScript("OnLeave", nil)
 	fakeAssignmentFrame:SetScript("OnMouseDown", nil)
 	fakeAssignmentFrame:SetScript("OnMouseUp", nil)
 	fakeAssignmentFrame:Hide()
 	widget.fakeAssignmentFrame = fakeAssignmentFrame --[[@as FakeAssignmentFrame]]
-
-	thumb:SetScript("OnMouseDown", function()
-		HandleThumbMouseDown(widget)
-	end)
-	thumb:SetScript("OnMouseUp", function()
-		HandleThumbMouseUp(widget)
-	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end

@@ -153,6 +153,12 @@ local function OnAcquire(self)
 	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
 	self.thumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), self.scrollBar:GetHeight() - 2 * thumbPadding.y)
 	self.thumb:Show()
+	self.thumb:SetScript("OnMouseDown", function()
+		HandleVerticalThumbMouseDown(self)
+	end)
+	self.thumb:SetScript("OnMouseUp", function()
+		HandleVerticalThumbMouseUp(self)
+	end)
 
 	self.listContainer = AceGUI:Create("EPContainer")
 	self.listContainer.frame:SetParent(self.listFrame)
@@ -197,6 +203,10 @@ local function OnRelease(self)
 	self.thumb:ClearAllPoints()
 	self.thumb:SetParent(UIParent)
 	self.thumb:Hide()
+	self.thumb:SetScript("OnUpdate", nil)
+
+	self.thumb:SetScript("OnMouseDown", nil)
+	self.thumb:SetScript("OnMouseUp", nil)
 
 	self.listContainer:Release()
 	self.listContainer = nil
@@ -365,13 +375,6 @@ local function Constructor()
 		verticalThumbHeightWhenThumbClicked = 0,
 		verticalThumbIsDragging = false,
 	}
-
-	verticalThumb:SetScript("OnMouseDown", function()
-		HandleVerticalThumbMouseDown(widget)
-	end)
-	verticalThumb:SetScript("OnMouseUp", function()
-		HandleVerticalThumbMouseUp(widget)
-	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end
