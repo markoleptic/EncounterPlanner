@@ -8,6 +8,7 @@ local tooltip = EncounterPlanner.tooltip
 
 local CreateFrame = CreateFrame
 local ipairs = ipairs
+local min = math.min
 local pairs = pairs
 local type = type
 local tinsert = tinsert
@@ -17,8 +18,10 @@ local ResetCursor = ResetCursor
 local SetCursor = SetCursor
 local GetMouseFoci = GetMouseFoci
 
-local frameWidth = 400
-local frameHeight = 400
+local frameWidth = 500
+local frameHeight = 500
+local minScrollFrameHeight = 400
+local maxScrollFrameHeight = 600
 local windowBarHeight = 28
 local contentFramePadding = { x = 10, y = 10 }
 local title = "Preferences"
@@ -996,8 +999,8 @@ local function OnAcquire(self)
 		self:UpdateVerticalScroll()
 	end)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]])
-	self.activeContainer.frame:SetPoint("TOPLEFT", self.scrollFrame)
-	self.activeContainer.frame:SetPoint("TOPRIGHT", self.scrollFrame)
+	self.activeContainer.frame:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
+	self.activeContainer.frame:SetPoint("RIGHT", self.scrollFrame, "RIGHT")
 end
 
 ---@param self EPOptions
@@ -1045,7 +1048,8 @@ local function UpdateVerticalScroll(self)
 	end
 end
 
-local function OnHeightSet(self, width)
+---@param self EPOptions
+local function OnHeightSet(self, height)
 	self:UpdateVerticalScroll()
 end
 
@@ -1073,6 +1077,7 @@ local function AddOptionTab(self, tabName, options, categories)
 			end
 			button:Toggle()
 			PopulateActiveTab(self, button.button:GetText())
+			self:Resize()
 		end
 	end)
 end
@@ -1089,6 +1094,7 @@ local function SetCurrentTab(self, tab)
 		end
 	end
 	PopulateActiveTab(self, tab)
+	self:Resize()
 end
 
 ---@param self EPOptions
@@ -1098,6 +1104,23 @@ local function UpdateOptions(self)
 			Update(functions)
 		end
 	end
+end
+
+---@param self EPOptions
+local function Resize(self)
+	local tableTitleContainerHeight = self.tabTitleContainer.frame:GetHeight()
+	local containerHeight = self.activeContainer.frame:GetHeight()
+	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
+	local paddingHeight = contentFramePadding.y * 2 + contentFramePadding.y / 2.0
+	if containerHeight < self.scrollFrame:GetHeight() then
+		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
+		self.scrollBar:Hide()
+	else
+		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+		self.scrollBar:Show()
+	end
+	self:SetHeight(windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight)
+	self.activeContainer:DoLayout()
 end
 
 local function Constructor()
@@ -1184,6 +1207,7 @@ local function Constructor()
 		SetCurrentTab = SetCurrentTab,
 		UpdateVerticalScroll = UpdateVerticalScroll,
 		UpdateOptions = UpdateOptions,
+		Resize = Resize,
 		frameChooserFrame = frameChooserFrame,
 		frameChooserBox = frameChooserBox,
 		scrollBar = verticalScrollBar,

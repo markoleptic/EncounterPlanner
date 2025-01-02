@@ -1109,7 +1109,6 @@ function Private:CreateInterface()
 
 	local simulateButton = AceGUI:Create("EPButton")
 	simulateButton:SetText("Simulate")
-	simulateButton:SetFullWidth(true)
 	simulateButton:SetCallback("Clicked", function()
 		if Private:IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
@@ -1131,6 +1130,7 @@ function Private:CreateInterface()
 	end)
 	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
+	simulateButton:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
 	simulateContainer:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
 	simulateContainer:AddChildren(simulateButton, planReminderEnableCheckBox)
 
