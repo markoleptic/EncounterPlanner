@@ -71,13 +71,18 @@ function Utilities.Clamp(value, minValue, maxValue)
 end
 
 ---@param notes table<string, Plan>
+---@param bossName string
 ---@return string
-function Utilities.CreateUniqueNoteName(notes)
-	local newNoteName = "Unnamed"
-	local num = 2
+function Utilities.CreateUniqueNoteName(notes, bossName)
+	local newNoteName = bossName
 	if notes then
+		local num = 2
+		if notes[newNoteName] then
+			newNoteName = newNoteName .. " "
+		end
+		local newNoteNameLength = newNoteName:len()
 		while notes[newNoteName] do
-			newNoteName = newNoteName:sub(1, 7) .. num
+			newNoteName = newNoteName:sub(1, newNoteNameLength) .. num
 			num = num + 1
 		end
 	end

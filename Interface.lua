@@ -171,7 +171,6 @@ local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 		elseif rosterTab == "Current Plan Roster" then
 			Private.rosterEditor:SetRosters(toRoster, fromRoster)
 		end
-		Private.rosterEditor:SetCurrentTab(rosterTab)
 	end
 end
 
@@ -434,7 +433,7 @@ local function HandleImportNoteFromString(importType)
 		notes[lastOpenNote].content = textTable
 		bossName = Private:Note(lastOpenNote, bossName) or bossName
 	elseif importType == "FromStringNew" then
-		local newNoteName = utilities.CreateUniqueNoteName(notes)
+		local newNoteName = utilities.CreateUniqueNoteName(notes, bossName)
 		notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 		notes[newNoteName].content = textTable
 		bossName = Private:Note(newNoteName, bossName) or bossName
@@ -664,7 +663,7 @@ local function HandleCreateNewNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local notes = AddOn.db.profile.plans
-	local newNoteName = utilities.CreateUniqueNoteName(notes)
+	local newNoteName = utilities.CreateUniqueNoteName(notes, GetCurrentBossName())
 
 	notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
@@ -715,7 +714,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 				break
 			end
 		else
-			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans)
+			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans, GetCurrentBossName())
 			AddOn.db.profile.plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
@@ -750,7 +749,7 @@ local function ImportPlan(importType)
 			if importType == "FromMRTOverwrite" then
 				bossName = Private:Note(AddOn.db.profile.lastOpenNote, bossName, true) or bossName
 			elseif importType == "FromMRTNew" then
-				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans)
+				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans, bossName)
 				bossName = Private:Note(newNoteName, bossName, true) or bossName
 				AddOn.db.profile.lastOpenNote = newNoteName
 				local noteDropdown = Private.mainFrame.noteDropdown
@@ -824,9 +823,9 @@ function Private:CreateInterface()
 		local defaultNoteName = "SharedMRTNote"
 		bossName = Private:Note(defaultNoteName, "Ulgrax the Devourer", true) or bossName
 		if not notes[defaultNoteName] then -- MRT not loaded
-			defaultNoteName = utilities.CreateUniqueNoteName(notes)
+			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossName)
 			notes[defaultNoteName] = Private.classes.Plan:New(nil, defaultNoteName)
-			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
+			notes[defaultNoteName].bossName = bossName
 			notes[defaultNoteName].instanceID = 2657
 			notes[defaultNoteName].dungeonEncounterID = 2902
 		end
