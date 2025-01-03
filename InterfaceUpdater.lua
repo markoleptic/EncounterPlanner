@@ -352,12 +352,13 @@ function InterfaceUpdater.CreateMessageBox(title, text)
 			local messageBox = AceGUI:Create("EPMessageBox")
 			messageBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 			messageBox.frame:SetFrameLevel(110)
-			messageBox.frame:SetPoint("CENTER")
 			messageBox:SetTitle(title)
 			messageBox:SetText(text)
 			messageBox:SetCallback("OnRelease", function()
 				Private.messageBox = nil
 			end)
+			messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+			messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 			Private.messageBox = messageBox
 			return messageBox
 		end

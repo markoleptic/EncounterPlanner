@@ -1552,14 +1552,9 @@ function Private:CreateOptionsMenu()
 	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
 	optionsMenu:AddOptionTab("Reminder", reminderOptions, { "Messages", "Progress Bars", "Text to Speech", "Sound" })
 	optionsMenu:AddOptionTab("View", viewOptions, { "Assignment" })
-
-	if Private.mainFrame then
-		optionsMenu.frame:SetPoint("CENTER", Private.mainFrame.frame, "CENTER", 0, 0)
-	else
-		optionsMenu.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-	end
-	optionsMenu.frame:SetSize(500, 500)
+	optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	optionsMenu:SetCurrentTab("Keybindings")
+	optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 	Private.optionsMenu = optionsMenu
 end

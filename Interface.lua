@@ -193,14 +193,9 @@ local function CreateRosterEditor(openToTab)
 		Private.rosterEditor.frame:SetFrameLevel(80)
 		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
-		Private.rosterEditor:SetPoint("CENTER", Private.mainFrame.frame, "CENTER", 0, 0)
+		Private.rosterEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		Private.rosterEditor:SetCurrentTab(openToTab)
-
-		-- local yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
-		-- Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
-
-		-- yPos = -(Private.mainFrame.frame:GetHeight() / 2) + (Private.rosterEditor.frame:GetHeight() / 2)
-		-- Private.rosterEditor.frame:SetPoint("TOP", Private.mainFrame.frame, "TOP", 0, yPos)
+		Private.rosterEditor:SetPoint("TOP", UIParent, "TOP", 0, -Private.rosterEditor.frame:GetBottom())
 	end
 end
 
