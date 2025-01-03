@@ -494,6 +494,7 @@ local function SetupReminders(notes, preferences, startTime)
 	end
 
 	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+	print("Timers active:", #timers, "combatLogEventReminders", #combatLogEventReminders)
 end
 
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
@@ -523,9 +524,8 @@ end
 ---@param encounterName string
 ---@param difficultyID integer
 ---@param groupSize integer
-local function HandleEncounterStart(encounterID, encounterName, difficultyID, groupSize)
+local function HandleEncounterStart(_, encounterID, encounterName, difficultyID, groupSize)
 	ResetLocalVariables()
-	print("HandleEncounterStart", encounterID, encounterName, difficultyID, groupSize)
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	-- or difficultyID == 23 or difficultyID == 8 Mythic dung, M+
 	if
@@ -559,8 +559,7 @@ end
 ---@param difficultyID integer ID representing the difficulty of the encounter.
 ---@param groupSize integer Group size for the encounter.
 ---@param success integer 1 if success, 0 for wipe.
-local function HandleEncounterEnd(encounterID, encounterName, difficultyID, groupSize, success)
-	print("HandleEncounterEnd", encounterID, encounterName, difficultyID, groupSize, success)
+local function HandleEncounterEnd(_, encounterID, encounterName, difficultyID, groupSize, success)
 	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	ResetLocalVariables()
 end
