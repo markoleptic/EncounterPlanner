@@ -431,7 +431,7 @@ local function OnAcquire(self)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
-	self.buttonContainer:SetSpacing(2, 0)
+	self.buttonContainer:SetSpacing(contentFramePadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
 	self.buttonContainer.frame:SetParent(self.frame)
