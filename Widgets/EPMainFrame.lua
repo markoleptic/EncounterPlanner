@@ -39,7 +39,9 @@ local lastExecutionTime = 0
 ---@field content table|Frame
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
----@field settingsButton EPButton
+---@field minimizeButton EPButton
+---@field maximizeButton EPButton
+---@field closeButtonMinimizeFrame EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
 ---@field bossSelectDropdown EPDropdown
@@ -68,7 +70,7 @@ local function OnAcquire(self)
 	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
 
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
@@ -79,17 +81,48 @@ local function OnAcquire(self)
 		self:Fire("CloseButtonClicked")
 	end)
 
-	self.settingsButton = AceGUI:Create("EPButton")
-	self.settingsButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-settings-96]])
-	self.settingsButton:SetIconPadding(2, 2)
-	self.settingsButton:SetWidth(buttonSize)
-	self.settingsButton:SetHeight(buttonSize)
-	self.settingsButton:SetBackdropColor(unpack(backdropColor))
-	self.settingsButton.frame:SetParent(self.frame)
-	self.settingsButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT", -edgeSize, 0)
-	self.settingsButton:SetCallback("Clicked", function()
-		self:Fire("SettingsButtonClicked")
+	self.minimizeButton = AceGUI:Create("EPButton")
+	self.minimizeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]])
+	self.minimizeButton:SetIconPadding(2, 2)
+	self.minimizeButton:SetWidth(buttonSize)
+	self.minimizeButton:SetHeight(buttonSize)
+	self.minimizeButton:SetBackdropColor(unpack(backdropColor))
+	self.minimizeButton.frame:SetParent(self.windowBar)
+	self.minimizeButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT", -edgeSize, 0)
+	self.minimizeButton:SetCallback("Clicked", function()
+		self.frame:Hide()
+		self.minimizeFrame:Show()
 	end)
+
+	self.closeButtonMinimizeFrame = AceGUI:Create("EPButton")
+	self.closeButtonMinimizeFrame:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+	self.closeButtonMinimizeFrame:SetIconPadding(2, 2)
+	self.closeButtonMinimizeFrame:SetWidth(buttonSize)
+	self.closeButtonMinimizeFrame:SetHeight(buttonSize)
+	self.closeButtonMinimizeFrame:SetBackdropColor(unpack(backdropColor))
+	self.closeButtonMinimizeFrame.frame:SetParent(self.minimizeFrame --[[@as Frame]])
+	self.closeButtonMinimizeFrame.frame:SetPoint("RIGHT", self.minimizeFrame, "RIGHT", -edgeSize, 0)
+	self.closeButtonMinimizeFrame:SetCallback("Clicked", function()
+		self:Fire("CloseButtonClicked")
+	end)
+
+	self.maximizeButton = AceGUI:Create("EPButton")
+	self.maximizeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]])
+	self.maximizeButton:SetIconPadding(2, 2)
+	self.maximizeButton:SetWidth(buttonSize)
+	self.maximizeButton:SetHeight(buttonSize)
+	self.maximizeButton:SetBackdropColor(unpack(backdropColor))
+	self.maximizeButton.frame:SetParent(self.minimizeFrame --[[@as Frame]])
+	self.maximizeButton.frame:SetPoint("RIGHT", self.closeButtonMinimizeFrame.frame, "LEFT", -edgeSize, 0)
+	self.maximizeButton:SetCallback("Clicked", function()
+		self.minimizeFrame:Hide()
+		self.frame:Show()
+	end)
+
+	local buttonWidth = self.maximizeButton.frame:GetWidth()
+		+ self.closeButtonMinimizeFrame.frame:GetWidth()
+		+ 2 * edgeSize
+	self.minimizeFrame:SetWidth(2 * (buttonWidth + (self.minimizeFrameText:GetStringWidth() / 2.0) + padding.right))
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
 	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
@@ -121,8 +154,14 @@ local function OnRelease(self)
 	if self.closeButton then
 		self.closeButton:Release()
 	end
-	if self.settingsButton then
-		self.settingsButton:Release()
+	if self.minimizeButton then
+		self.minimizeButton:Release()
+	end
+	if self.maximizeButton then
+		self.maximizeButton:Release()
+	end
+	if self.closeButtonMinimizeFrame then
+		self.closeButtonMinimizeFrame:Release()
 	end
 	if self.collapseAllButton then
 		self.collapseAllButton:Release()
@@ -130,8 +169,11 @@ local function OnRelease(self)
 	if self.expandAllButton then
 		self.expandAllButton:Release()
 	end
+	self.minimizeFrame:Hide()
 	self.closeButton = nil
-	self.settingsButton = nil
+	self.minimizeButton = nil
+	self.maximizeButton = nil
+	self.closeButtonMinimizeFrame = nil
 	self.collapseAllButton = nil
 	self.expandAllButton = nil
 	self.bossSelectDropdown = nil
@@ -219,6 +261,44 @@ local function Constructor()
 		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
 	end)
 
+	local minimizeFrame = CreateFrame("Frame", Type .. "MinimizeFrame" .. count, UIParent, "BackdropTemplate")
+	minimizeFrame:SetMovable(true)
+	minimizeFrame:SetResizable(true)
+	minimizeFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+	minimizeFrame:SetHeight(windowBarHeight)
+	minimizeFrame:SetPoint("TOP")
+	minimizeFrame:SetBackdrop(titleBarBackdrop)
+	minimizeFrame:SetBackdropColor(unpack(backdropColor))
+	minimizeFrame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	minimizeFrame:EnableMouse(true)
+	minimizeFrame:SetClampedToScreen(true)
+	local minimizeFrameText = minimizeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+	minimizeFrameText:SetText("Encounter Planner")
+	minimizeFrameText:SetPoint("CENTER", minimizeFrame, "CENTER")
+	if fPath then
+		minimizeFrameText:SetFont(fPath, h)
+	end
+	minimizeFrame:SetScript("OnMouseDown", function()
+		minimizeFrame:StartMoving()
+	end)
+	minimizeFrame:SetScript("OnMouseUp", function()
+		minimizeFrame:StopMovingOrSizing()
+		local x, y = minimizeFrame:GetLeft(), minimizeFrame:GetTop()
+		minimizeFrame:ClearAllPoints()
+		minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+	end)
+	minimizeFrame:Hide()
+
+	windowBar:SetScript("OnMouseDown", function()
+		frame:StartMoving()
+	end)
+	windowBar:SetScript("OnMouseUp", function()
+		frame:StopMovingOrSizing()
+		local x, y = frame:GetLeft(), frame:GetTop()
+		frame:ClearAllPoints()
+		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+	end)
+
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(16, 16)
@@ -236,6 +316,8 @@ local function Constructor()
 		type = Type,
 		content = contentFrame,
 		windowBar = windowBar,
+		minimizeFrame = minimizeFrame,
+		minimizeFrameText = minimizeFrameText,
 	}
 
 	resizer:SetScript("OnMouseDown", function(_, mouseButton)

@@ -47,7 +47,7 @@ local function OnAcquire(self)
 		{ itemValue = "role:damager", text = "Damager" },
 	}, "EPDropdownItemToggle")
 	self.deleteButton = AceGUI:Create("EPButton")
-	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.deleteButton:SetIconPadding(0, 0)
 	self.deleteButton:SetHeight(20)
 	self.deleteButton:SetWidth(20)

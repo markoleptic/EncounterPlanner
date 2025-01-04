@@ -876,12 +876,16 @@ do
 
 	---@param self EPDropdown
 	local function Open(self)
-		HandleToggleDropdownPullout(self)
+		if not self.open then
+			HandleToggleDropdownPullout(self)
+		end
 	end
 
 	---@param self EPDropdown
 	local function Close(self)
-		HandleToggleDropdownPullout(self)
+		if self.open then
+			HandleToggleDropdownPullout(self)
+		end
 	end
 
 	---@param self EPDropdown
@@ -943,15 +947,15 @@ do
 		buttonCover:SetPoint("TOPLEFT")
 		buttonCover:SetPoint("BOTTOMRIGHT")
 
-		local buttonCoverTexture = buttonCover:CreateTexture(nil, "BORDER")
-		buttonCoverTexture:SetColorTexture(unpack(dropdownButtonCoverColor))
-		buttonCoverTexture:SetPoint("TOPLEFT", 1, -1)
-		buttonCoverTexture:SetPoint("BOTTOMRIGHT", -1, 1)
-		buttonCoverTexture:Hide()
+		local background = dropdown:CreateTexture(Type .. "Background" .. count, "BORDER")
+		background:SetPoint("TOPLEFT", buttonCover)
+		background:SetPoint("BOTTOMRIGHT", buttonCover)
+		background:SetColorTexture(unpack(dropdownButtonCoverColor))
+		background:Hide()
 
-		local fadeInGroup = buttonCoverTexture:CreateAnimationGroup()
+		local fadeInGroup = background:CreateAnimationGroup()
 		fadeInGroup:SetScript("OnPlay", function()
-			buttonCoverTexture:Show()
+			background:Show()
 		end)
 		local fadeIn = fadeInGroup:CreateAnimation("Alpha")
 		fadeIn:SetFromAlpha(0)
@@ -959,9 +963,9 @@ do
 		fadeIn:SetDuration(0.4)
 		fadeIn:SetSmoothing("OUT")
 
-		local fadeOutGroup = buttonCoverTexture:CreateAnimationGroup()
+		local fadeOutGroup = background:CreateAnimationGroup()
 		fadeOutGroup:SetScript("OnFinished", function()
-			buttonCoverTexture:Hide()
+			background:Hide()
 		end)
 		local fadeOut = fadeOutGroup:CreateAnimation("Alpha")
 		fadeOut:SetFromAlpha(1)
@@ -1020,7 +1024,7 @@ do
 			text = text,
 			buttonCover = buttonCover,
 			button = button,
-			buttonCoverTexture = buttonCoverTexture,
+			background = background,
 			fadeIn = fadeInGroup,
 			fadeOut = fadeOutGroup,
 		}
@@ -1032,6 +1036,9 @@ do
 			HandleButtonLeave(widget)
 		end)
 		buttonCover:SetScript("OnClick", function()
+			if #widget.pullout.items == 0 then
+				widget:Fire("Clicked")
+			end
 			HandleToggleDropdownPullout(widget)
 		end)
 		frame:SetScript("OnHide", function()

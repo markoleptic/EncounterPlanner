@@ -965,7 +965,7 @@ local function OnAcquire(self)
 	local buttonSize = windowBarHeight - 2 * edgeSize
 
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)

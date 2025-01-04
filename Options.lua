@@ -255,12 +255,8 @@ end
 
 function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
-	if Private.mainFrame then
-		optionsMenu.frame:SetParent(Private.mainFrame.frame)
-	else
-		optionsMenu.frame:SetParent(UIParent)
-		optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	end
+	optionsMenu.frame:SetParent(UIParent)
+	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	optionsMenu.frame:SetFrameLevel(90)
 	optionsMenu:SetCallback("OnRelease", function()
 		if Private.messageAnchor then

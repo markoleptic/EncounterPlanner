@@ -197,7 +197,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 				assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
 				assigneeEntry:SetFullWidth(true)
 				assigneeEntry:SetHeight(30)
-				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 				assigneeEntry:SetCallback("OnValueChanged", function(widget, name, value)
 					local messageBox = InterfaceUpdater.CreateMessageBox(
 						"Delete Assignments Confirmation",
@@ -228,7 +228,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 						spellEntry:SetFullWidth(true)
 						spellEntry:SetLeftIndent(15 - 2)
 						spellEntry:SetHeight(30)
-						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]])
+						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 						spellEntry:SetCallback("OnValueChanged", function(widget, name, value)
 							local spellEntryKey = widget:GetKey()
 							local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
@@ -350,7 +350,7 @@ function InterfaceUpdater.CreateMessageBox(title, text)
 	if not Private.messageBox then
 		if Private.mainFrame then
 			local messageBox = AceGUI:Create("EPMessageBox")
-			messageBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			messageBox.frame:SetParent(UIParent)
 			messageBox.frame:SetFrameLevel(110)
 			messageBox:SetTitle(title)
 			messageBox:SetText(text)

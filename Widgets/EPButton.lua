@@ -46,10 +46,12 @@ local function OnAcquire(self)
 	self.background:SetPoint("BOTTOMRIGHT")
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	self:SetIconPadding(0, 0)
+	self:SetBackdrop(buttonBackdrop, defaultBackdropColor)
 	self:SetBackdropColor(unpack(defaultBackdropColor))
 	self:SetColor(unpack(defaultBackgroundColor))
 	self:SetIconColor(unpack(defaultIconColor))
 	self:SetIcon(nil)
+	self:SetFontSize(defaultFontHeight)
 	self.frame:Show()
 	self:SetEnabled(true)
 end
@@ -78,6 +80,15 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.button:SetText(text or "")
+end
+
+---@param self EPButton
+---@param size integer
+local function SetFontSize(self, size)
+	local fontFile, _, flags = self.button:GetFontString():GetFont()
+	if fontFile then
+		self.button:GetFontString():SetFont(fontFile, size, flags)
+	end
 end
 
 ---@param self EPButton
@@ -139,6 +150,20 @@ end
 ---@param self EPButton
 local function IsToggled(self)
 	return self.toggled
+end
+
+---@param self EPButton
+---@param backdropInfo backdropInfo
+---@param backdropColor table<number>?
+---@param backdropBorderColor table<number>?
+local function SetBackdrop(self, backdropInfo, backdropColor, backdropBorderColor)
+	self.button:SetBackdrop(backdropInfo)
+	if backdropColor then
+		self.button:SetBackdropColor(unpack(backdropColor))
+	end
+	if backdropBorderColor then
+		self.button:SetBackdropBorderColor(unpack(backdropBorderColor))
+	end
 end
 
 ---@param self EPButton
@@ -247,6 +272,8 @@ local function Constructor()
 		SetIcon = SetIcon,
 		SetIconPadding = SetIconPadding,
 		SetIconColor = SetIconColor,
+		SetBackdrop = SetBackdrop,
+		SetFontSize = SetFontSize,
 		frame = frame,
 		type = Type,
 		button = button,

@@ -48,6 +48,16 @@ local classDropdownItems = {}
 local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 16
+local preferencesMenuButtonBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 1,
+}
+local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
+local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
 
 ---@return table<string, EncounterPlannerDbRosterEntry>
 local function GetCurrentRoster()
@@ -189,7 +199,7 @@ local function CreateRosterEditor(openToTab)
 		Private.rosterEditor:SetCallback("UpdateRosterButtonClicked", function(_, _, tabName)
 			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
 		end)
-		Private.rosterEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.rosterEditor.frame:SetParent(UIParent)
 		Private.rosterEditor.frame:SetFrameLevel(80)
 		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
@@ -829,12 +839,6 @@ function Private:CreateInterface()
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
-	Private.mainFrame:SetCallback("SettingsButtonClicked", function()
-		if not Private.optionsMenu then
-			Private:CreateOptionsMenu()
-		end
-	end)
-
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
@@ -932,7 +936,7 @@ function Private:CreateInterface()
 		{
 			itemValue = "Delete Current Plan",
 			text = utilities.AddIconBeforeText(
-				[[Interface\AddOns\EncounterPlanner\Media\icons8-close-96]],
+				[[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
 				"Delete Current Plan"
 			),
 		},
@@ -1003,27 +1007,53 @@ function Private:CreateInterface()
 		rosterMenuButton:SetText("Roster")
 	end)
 
-	Private.menuButtonContainer:AddChildren(planMenuButton, rosterMenuButton)
+	local preferencesMenuButton = AceGUI:Create("EPButton")
+	preferencesMenuButton:SetText("Preferences")
+	preferencesMenuButton:SetFontSize(menuButtonFontSize)
+	preferencesMenuButton:SetHeight(menuButtonHeight)
+	preferencesMenuButton:SetWidth(
+		preferencesMenuButton.button:GetFontString():GetStringWidth() + menuButtonHorizontalPadding
+	)
+	preferencesMenuButton:SetBackdrop(
+		preferencesMenuButtonBackdrop,
+		preferencesMenuButtonBackdropColor,
+		preferencesMenuButtonBackdropBorderColor
+	)
+	preferencesMenuButton:SetColor(unpack(preferencesMenuButtonColor))
+	Private.menuButtonContainer:AddChildren(planMenuButton, rosterMenuButton, preferencesMenuButton)
 
 	local autoOpenNextEntered = nil
 	local buttonToClose = nil
 	for _, child in ipairs(Private.menuButtonContainer.children) do
-		child:SetCallback("OnEnter", function(frame, _)
-			if autoOpenNextEntered and buttonToClose then
-				buttonToClose:Close()
-				frame:Open()
+		if child ~= preferencesMenuButton then
+			child:SetCallback("OnEnter", function(frame, _)
+				if frame.open then
+					return
+				end
+				if autoOpenNextEntered and buttonToClose then
+					buttonToClose:Close()
+					frame:Open()
+					buttonToClose = frame
+				end
+			end)
+			child:SetCallback("OnOpened", function(frame, _)
+				autoOpenNextEntered = true
 				buttonToClose = frame
-			end
-		end)
-		child:SetCallback("OnOpened", function(frame, _)
-			buttonToClose = frame
-			autoOpenNextEntered = true
-		end)
-		child:SetCallback("OnClosed", function(frame, _)
-			buttonToClose = nil
-			autoOpenNextEntered = false
-		end)
+			end)
+			child:SetCallback("OnClosed", function(frame, _)
+				autoOpenNextEntered = false
+				buttonToClose = nil
+			end)
+		end
 	end
+
+	preferencesMenuButton:SetCallback("Clicked", function()
+		if not Private.optionsMenu then
+			Private:CreateOptionsMenu()
+		end
+		planMenuButton:Close()
+		rosterMenuButton:Close()
+	end)
 
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
