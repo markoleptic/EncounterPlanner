@@ -30,6 +30,9 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
+local throttleInterval = 0.015 -- Minimum time between executions, in seconds
+local lastExecutionTime = 0
+
 ---@class EPMainFrame : AceGUIContainer
 ---@field frame table|Frame
 ---@field type string
@@ -241,7 +244,7 @@ local function Constructor()
 				AceGUI:ClearFocus()
 				frame.isResizing = true
 				frame:StartSizing("BOTTOMRIGHT")
-				widget.timeline:SetFullHeight(true)
+				widget.timeline.frame:SetPoint("BOTTOMRIGHT", widget.content, "BOTTOMRIGHT")
 				widget.timeline:SetAllowHeightResizing(true)
 			end
 		end
@@ -254,7 +257,6 @@ local function Constructor()
 				local x, y = frame:GetLeft(), frame:GetTop()
 				frame:StopMovingOrSizing()
 				widget.timeline:SetAllowHeightResizing(false)
-				widget.timeline:SetFullHeight(false)
 				frame:ClearAllPoints()
 				frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 				widget:DoLayout()
@@ -262,7 +264,24 @@ local function Constructor()
 		end
 	end)
 
-	return AceGUI:RegisterAsContainer(widget)
+	local registered = AceGUI:RegisterAsContainer(widget)
+
+	widget.frame:SetScript("OnSizeChanged", nil)
+	widget.content:SetScript("OnSizeChanged", function()
+		if widget.frame.isResizing then
+			return
+		end
+		local currentTime = GetTime()
+		if currentTime - lastExecutionTime < throttleInterval then
+			return
+		end
+		lastExecutionTime = currentTime
+		if widget.DoLayout then
+			widget:DoLayout()
+		end
+	end)
+
+	return registered
 end
 
 AceGUI:RegisterWidgetType(Type, Constructor, Version)
