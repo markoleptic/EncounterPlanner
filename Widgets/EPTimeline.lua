@@ -27,6 +27,7 @@ local min = math.min
 local next = next
 local pairs = pairs
 local select = select
+local sort = sort
 local split = string.split
 local type = type
 local unpack = unpack
@@ -41,6 +42,7 @@ local bossAbilityBarHeight = 30
 local assignmentTextureSize = { x = 30, y = 30 }
 local assignmentTextureSubLevel = 0
 local assignmentOverlapTolerance = 0.001
+local cooldownWidthTolerance = 0.01
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
@@ -74,6 +76,7 @@ local colors = {
 	{ 184, 51, 255, 1 },
 }
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
+local cooldownTextureHalfSize = 32
 local cooldownPadding = 1
 local cooldownBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local cooldownTextureAlpha = 0.5
@@ -281,22 +284,6 @@ local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset)
 	verticalPositionLine:Show()
 end
 
--- Updates a cooldown texture's alignment based on the row number so the textures appear tiled from the same texture.
----@param assignmentFrame Frame|table
----@param order integer
-local function UpdateCooldownTextureAlignment(assignmentFrame, order)
-	local left = assignmentFrame:GetLeft()
-	if left then
-		local cdOffset = left % 64
-		if order % 2 == 0 then
-			cdOffset = cdOffset + 32
-		end
-		local cdTexture = assignmentFrame.cooldownTexture
-		cdTexture:SetWidth(assignmentFrame.cooldownWidth + cdOffset)
-		cdTexture:SetPoint("LEFT", assignmentFrame.cooldownBackground, "LEFT", -cdOffset - 1, 0)
-	end
-end
-
 ---@param assignmentFrames table<integer, AssignmentFrame>
 ---@param frameIndices table<integer, integer>
 local function SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
@@ -334,7 +321,7 @@ end
 -- Shows and hides assignment invalid textures based on cooldown overlapping.
 ---@param assignmentFrames table<integer, AssignmentFrame>
 ---@param frameIndices table<integer, integer>
-local function UpdateInvalidTexturesOnly(assignmentFrames, frameIndices)
+local function UpdateInvalidTextures(assignmentFrames, frameIndices)
 	local lastCdLeft, lastCdRight = nil, nil
 	SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
 	for _, assignmentFrameIndex in ipairs(frameIndices) do
@@ -350,48 +337,6 @@ local function UpdateInvalidTexturesOnly(assignmentFrames, frameIndices)
 				end
 			end
 			lastCdLeft, lastCdRight = cdLeft, cdRight
-		end
-		if show then
-			assignmentFrame.invalidTexture:Show()
-		else
-			assignmentFrame.invalidTexture:Hide()
-		end
-	end
-end
-
--- Updates assignment frame widths to prevent cooldown texture overlapping, updates cooldown texture alignment, and
--- shows/hides assignment invalid textures based on cooldown overlapping.
----@param assignmentFrames table<integer, AssignmentFrame>
----@param frameIndices table<integer, integer>
----@param order integer
-local function UpdateCooldownTexturesAndInvalidTextures(assignmentFrames, frameIndices, order)
-	local lastAssignmentFrame, lastCdLeft, lastCdRight, lastCdWidth = nil, nil, nil, nil
-	SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
-	for _, assignmentFrameIndex in ipairs(frameIndices) do
-		local assignmentFrame = assignmentFrames[assignmentFrameIndex]
-		local cdLeft = assignmentFrame:GetLeft()
-		local cdWidth = assignmentFrame.cooldownWidth
-		local show = false
-		if cdLeft and cdWidth > 0 then
-			local cdRight = cdLeft + cdWidth
-			if lastCdLeft and lastCdRight and lastCdWidth and lastAssignmentFrame then
-				local overlapType = IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight)
-				if overlapType == 1 then
-					show = true
-					local newLastWidth = min(lastCdWidth - (lastCdRight - cdLeft), lastCdWidth)
-					lastAssignmentFrame:SetWidth(max(newLastWidth, assignmentTextureSize.x))
-					assignmentFrame:SetWidth(max(cdWidth, assignmentTextureSize.x))
-				elseif overlapType == 2 then -- last frame is fully overlapping current frame
-					show = true
-					lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
-					local newWidth = max(min(lastCdLeft - cdLeft, cdWidth), assignmentTextureSize.x)
-					assignmentFrame:SetWidth(newWidth)
-				else -- no overlap
-					lastAssignmentFrame:SetWidth(max(lastCdWidth, assignmentTextureSize.x))
-				end
-			end
-			UpdateCooldownTextureAlignment(assignmentFrame, order)
-			lastCdLeft, lastCdRight, lastCdWidth, lastAssignmentFrame = cdLeft, cdRight, cdWidth, assignmentFrame
 		end
 		if show then
 			assignmentFrame.invalidTexture:Show()
@@ -791,6 +736,7 @@ end
 -- Called when an assignment has stopped being dragged.
 ---@param self EPTimeline
 ---@param assignmentFrame AssignmentFrame
+---@return boolean
 local function StopMovingAssignment(self, assignmentFrame)
 	assignmentIsDragging = false
 	assignmentFrame:SetScript("OnUpdate", nil)
@@ -841,8 +787,6 @@ local function StopMovingAssignment(self, assignmentFrame)
 		self.fakeAssignmentFrame:SetWidth(assignmentTextureSize.x)
 		self.fakeAssignmentFrame.cooldownBackground:SetWidth(0)
 		self.fakeAssignmentFrame.cooldownBackground:Hide()
-		self.fakeAssignmentFrame.cooldownTexture:SetWidth(0)
-		self.fakeAssignmentFrame.cooldownTexture:Hide()
 		self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
 		self.fakeAssignmentFrame.spellID = nil
 		self.fakeAssignmentFrame.uniqueAssignmentID = nil
@@ -861,6 +805,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 			end
 		end
 	end
+	return false
 end
 
 -- Called while an assignment is being dragged.
@@ -954,28 +899,27 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 	UpdateTimeLabels(self)
 	if assignmentFrameBeingDragged and assignmentFrameBeingDragged.timelineAssignment then
 		local order = assignmentFrameBeingDragged.timelineAssignment.order
-		local collapsed = self.collapsed[assignmentFrameBeingDragged.timelineAssignment.assignment.assigneeNameOrRole]
-		local showCd = collapsed and self.preferences.showSpellCooldownDuration
+		local spellIDAssignmentFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices[order]
+		local assignmentFrames = self.assignmentFrames
 		local orderedAssignmentFrameIndices = {}
-		if showCd then
-			for _, assignmentFrameIndices in pairs(self.orderedWithSpellIDAssignmentFrameIndices[order]) do
-				UpdateCooldownTexturesAndInvalidTextures(self.assignmentFrames, assignmentFrameIndices, order)
-				for _, index in ipairs(assignmentFrameIndices) do
-					orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
-				end
-			end
-		else
-			for _, assignmentFrameIndices in pairs(self.orderedWithSpellIDAssignmentFrameIndices[order]) do
-				UpdateInvalidTexturesOnly(self.assignmentFrames, assignmentFrameIndices)
-				for _, index in ipairs(assignmentFrameIndices) do
-					orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
-				end
+
+		for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
+			UpdateInvalidTextures(assignmentFrames, assignmentFrameIndices)
+			for _, index in ipairs(assignmentFrameIndices) do
+				orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
 			end
 		end
-		SortAssignmentFrameIndicesByHorizontalOffset(self.assignmentFrames, orderedAssignmentFrameIndices)
-		local minFrameLevel = self.assignmentTimeline.timelineFrame:GetFrameLevel() + 1
+
+		SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, orderedAssignmentFrameIndices)
+
+		local timelineFrame = self.assignmentTimeline.timelineFrame
+		local minFrameLevel = timelineFrame:GetFrameLevel() + 1
+		local left = (order % 2 == 0) and cooldownTextureHalfSize or 0
+
 		for _, index in pairs(orderedAssignmentFrameIndices) do
-			self.assignmentFrames[index]:SetFrameLevel(minFrameLevel)
+			local assignmentFrame = assignmentFrames[index]
+			assignmentFrame:SetFrameLevel(minFrameLevel)
+			assignmentFrame.cooldownBackground:SetPoint("LEFT", timelineFrame, left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
 	end
@@ -1031,28 +975,27 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			fakeAssignmentFrame.cooldownWidth = frame.cooldownWidth
 			fakeAssignmentFrame.uniqueAssignmentID = frame.uniqueAssignmentID
 			fakeAssignmentFrame:SetPoint(frame:GetPointByName("TOPLEFT"))
-			fakeAssignmentFrame:SetWidth(max(assignmentTextureSize.x, fakeAssignmentFrame.cooldownWidth))
+			fakeAssignmentFrame:SetWidth(frame:GetWidth())
 			fakeAssignmentFrame.spellTexture:SetTexture(frame.spellTexture:GetTexture())
 
-			if frame.cooldownWidth > 0 then
-				UpdateCooldownTextureAlignment(fakeAssignmentFrame, timelineAssignment.order)
+			if frame.cooldownBackground:GetWidth() > 0 then
+				fakeAssignmentFrame.cooldownBackground:SetPoint("TOPRIGHT", fakeAssignmentFrame, "TOPRIGHT")
+				fakeAssignmentFrame.cooldownBackground:SetPoint("BOTTOMRIGHT", fakeAssignmentFrame, "BOTTOMRIGHT")
+				local left = (timelineAssignment.order % 2 == 0) and cooldownTextureHalfSize or 0
+				fakeAssignmentFrame.cooldownBackground:SetPoint("LEFT", self.assignmentTimeline.timelineFrame, left, 0)
+			else
+				fakeAssignmentFrame.cooldownBackground:SetWidth(0)
 			end
 			if frame.cooldownBackground:IsShown() then
 				fakeAssignmentFrame.cooldownBackground:Show()
 			else
 				fakeAssignmentFrame.cooldownBackground:Hide()
 			end
-			if frame.cooldownTexture:IsShown() then
-				fakeAssignmentFrame.cooldownTexture:Show()
-			else
-				fakeAssignmentFrame.cooldownTexture:Hide()
-			end
 			if frame.invalidTexture:IsShown() then
 				fakeAssignmentFrame.invalidTexture:Show()
 			else
 				fakeAssignmentFrame.invalidTexture:Hide()
 			end
-
 			fakeAssignmentFrame:SetFrameLevel(frame:GetFrameLevel() - 1)
 			fakeAssignmentFrame:Show()
 
@@ -1075,6 +1018,7 @@ end
 local function HandleAssignmentMouseUp(self, frame, mouseButton)
 	if assignmentIsDragging then
 		if StopMovingAssignment(self, frame) then
+			UpdateTimeLabels(self)
 			return
 		end
 	end
@@ -1176,8 +1120,10 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 
 	local cooldownBackground = assignment:CreateTexture(nil, "ARTWORK", nil, -1)
 	cooldownBackground:SetColorTexture(unpack(cooldownBackgroundColor))
-	cooldownBackground:SetPoint("TOPLEFT", assignment, "TOPLEFT")
+	cooldownBackground:SetPoint("TOPRIGHT", assignment, "TOPRIGHT")
 	cooldownBackground:SetPoint("BOTTOMRIGHT", assignment, "BOTTOMRIGHT")
+	cooldownBackground:SetPoint("LEFT", timelineFrame, "LEFT")
+	cooldownBackground:SetHeight(assignmentTextureSize.y)
 	cooldownBackground:Hide()
 
 	local cooldownTexture = assignment:CreateTexture(nil, "ARTWORK", nil, 0)
@@ -1186,10 +1132,10 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	cooldownTexture:SetTexelSnappingBias(0)
 	cooldownTexture:SetHorizTile(true)
 	cooldownTexture:SetVertTile(true)
-	cooldownTexture:SetPoint("LEFT", cooldownBackground, "LEFT", cooldownPadding)
+	cooldownTexture:SetPoint("TOPLEFT", cooldownBackground, "TOPLEFT", cooldownPadding, -cooldownPadding)
+	cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownBackground, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
 	cooldownTexture:SetHeight(assignmentTextureSize.y - 2 * cooldownPadding)
 	cooldownTexture:SetAlpha(cooldownTextureAlpha)
-	cooldownTexture:Hide()
 
 	local invalidTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
 	invalidTexture:SetAllPoints(spellTexture)
@@ -1261,11 +1207,12 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 		assignment.spellTexture:SetTexture(iconID)
 		if cooldownDuration and cooldownDuration > 0 then
 			local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
-			assignment.cooldownWidth = cooldownEndPosition - timelineStartPosition - 0.01
+			assignment.cooldownWidth = (cooldownEndPosition - timelineStartPosition) - cooldownWidthTolerance
 			if showCooldown then
 				assignment:SetWidth(max(assignmentTextureSize.x, assignment.cooldownWidth))
-				UpdateCooldownTextureAlignment(assignment, order)
-				assignment.cooldownTexture:Show()
+				assignment.cooldownBackground:SetPoint("LEFT", timelineFrame, "LEFT")
+				assignment.cooldownBackground:SetPoint("RIGHT", assignment, "RIGHT")
+				assignment.cooldownBackground:SetHeight(assignmentTextureSize.y)
 				assignment.cooldownBackground:Show()
 			end
 		end
@@ -1275,20 +1222,16 @@ end
 -- Updates the rendering of assignments on the timeline.
 ---@param self EPTimeline
 local function UpdateAssignments(self)
-	-- Hide existing assignments
 	for _, frame in pairs(self.assignmentFrames) do
 		frame:Hide()
 		frame:SetWidth(assignmentTextureSize.x)
 		frame.invalidTexture:Hide()
 		frame.cooldownBackground:SetWidth(0)
 		frame.cooldownBackground:Hide()
-		frame.cooldownTexture:SetWidth(0)
-		frame.cooldownTexture:Hide()
 		frame.cooldownWidth = 0
 	end
 
 	wipe(self.orderedWithSpellIDAssignmentFrameIndices)
-	local showCooldown = {}
 	local orderedFrameIndices = {}
 	local collapsed = self.collapsed
 	local showSpellCooldownDuration = self.preferences.showSpellCooldownDuration
@@ -1301,44 +1244,38 @@ local function UpdateAssignments(self)
 		if not orderedSpellIDFrameIndices[order] then
 			orderedSpellIDFrameIndices[order] = {}
 			orderedFrameIndices[order] = {}
-			showCooldown[order] = {}
 		end
 		if not orderedSpellIDFrameIndices[order][spellID] then
 			orderedSpellIDFrameIndices[order][spellID] = {}
 		end
-		showCooldown[order][spellID] = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
-		DrawAssignment(
-			self,
-			timelineAssignment.startTime,
-			spellID,
-			index,
-			assignment.uniqueID,
-			order,
-			showCooldown[order][spellID],
-			timelineAssignment.spellCooldownDuration
-		)
+		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
+		local startTime, duration = timelineAssignment.startTime, timelineAssignment.spellCooldownDuration
+
+		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
+
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
 	end
 	local assignmentFrames = self.assignmentFrames
-	for order, indexedSpellIDs in pairs(orderedSpellIDFrameIndices) do
-		for spellID, assignmentFrameIndices in pairs(indexedSpellIDs) do
-			if showCooldown[order][spellID] then
-				UpdateCooldownTexturesAndInvalidTextures(assignmentFrames, assignmentFrameIndices, order)
-			else
-				UpdateInvalidTexturesOnly(assignmentFrames, assignmentFrameIndices)
-			end
+
+	for _, indexedSpellIDs in pairs(orderedSpellIDFrameIndices) do
+		for _, assignmentFrameIndices in pairs(indexedSpellIDs) do
+			UpdateInvalidTextures(assignmentFrames, assignmentFrameIndices)
 		end
 	end
 	local timelineAssignments = self.timelineAssignments
+	local timelineFrame = self.assignmentTimeline.timelineFrame
 	local timelineFrameLevel = self.assignmentTimeline.timelineFrame:GetFrameLevel()
-	for _, assignmentFrameIndices in pairs(orderedFrameIndices) do
+	for order, assignmentFrameIndices in pairs(orderedFrameIndices) do
 		sort(assignmentFrameIndices, function(a, b)
 			return timelineAssignments[a].startTime < timelineAssignments[b].startTime
 		end)
 		local minFrameLevel = timelineFrameLevel + 1
+		local left = (order % 2 == 0) and cooldownTextureHalfSize or 0
 		for _, index in ipairs(assignmentFrameIndices) do
-			assignmentFrames[index]:SetFrameLevel(minFrameLevel)
+			local assignmentFrame = assignmentFrames[index]
+			assignmentFrame:SetFrameLevel(minFrameLevel)
+			assignmentFrame.cooldownBackground:SetPoint("LEFT", timelineFrame, left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
 	end
@@ -1928,7 +1865,8 @@ local function OnAcquire(self)
 	self.currentTimeLabel.frame:SetPoint("CENTER", self.splitterScrollFrame, "LEFT", 200, 0)
 	self.currentTimeLabel.frame:Hide()
 
-	self.fakeAssignmentFrame:SetParent(assignmentFrame)
+	self.fakeAssignmentFrame:SetParent(self.assignmentTimeline.timelineFrame)
+	self.fakeAssignmentFrame.cooldownBackground:SetPoint("LEFT", self.assignmentTimeline.timelineFrame, "LEFT")
 	self.fakeAssignmentFrame:Hide()
 
 	self.frame:Show()
@@ -1987,8 +1925,6 @@ local function OnRelease(self)
 		frame:SetScript("OnUpdate", nil)
 		frame.cooldownBackground:SetWidth(0)
 		frame.cooldownBackground:Hide()
-		frame.cooldownTexture:SetWidth(0)
-		frame.cooldownTexture:Hide()
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
 		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
@@ -2017,12 +1953,11 @@ local function OnRelease(self)
 	end
 
 	self.fakeAssignmentFrame:ClearAllPoints()
+	self.fakeAssignmentFrame:SetParent(UIParent)
 	self.fakeAssignmentFrame:Hide()
 	self.fakeAssignmentFrame:SetWidth(assignmentTextureSize.x)
 	self.fakeAssignmentFrame.cooldownBackground:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownBackground:Hide()
-	self.fakeAssignmentFrame.cooldownTexture:SetWidth(0)
-	self.fakeAssignmentFrame.cooldownTexture:Hide()
 	self.fakeAssignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
 	self.fakeAssignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
@@ -2586,6 +2521,7 @@ local function Constructor()
 	fakeAssignmentFrame:SetScript("OnMouseDown", nil)
 	fakeAssignmentFrame:SetScript("OnMouseUp", nil)
 	fakeAssignmentFrame:Hide()
+	fakeAssignmentFrame.assignmentFrame = nil
 	widget.fakeAssignmentFrame = fakeAssignmentFrame --[[@as FakeAssignmentFrame]]
 
 	return AceGUI:RegisterAsWidget(widget)
