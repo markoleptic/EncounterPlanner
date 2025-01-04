@@ -14,6 +14,7 @@ local verticalPositionLineSubLevel = -8
 local verticalPositionLineColor = { 1, 0.82, 0, 1 }
 local scrollBarWidth = 20
 local thumbPadding = { x = 2, y = 2 }
+local totalVerticalThumbPadding = 2 * thumbPadding.y
 local paddingBetweenTimelineAndScrollBar = 10
 local defaultListPadding = 4
 local listFrameWidth = 200
@@ -221,6 +222,14 @@ end
 local function OnHeightSet(self, height)
 	self.scrollFrame:SetHeight(height)
 	self.listScrollFrame:SetHeight(height)
+	local heightDifference = self.timelineFrame:GetHeight() - height
+	if heightDifference > 0 then
+		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
+		if scrollPercentage > 1.0 then
+			self.scrollFrame:SetVerticalScroll(heightDifference)
+			self.listScrollFrame:SetVerticalScroll(heightDifference)
+		end
+	end
 end
 
 ---@param self EPTimelineSection
@@ -251,18 +260,17 @@ end
 
 ---@param self EPTimelineSection
 local function UpdateVerticalScroll(self)
-	local scrollBarHeight = self.scrollBar:GetHeight()
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
 	local timelineHeight = self.timelineFrame:GetHeight()
-	local verticalScroll = self.scrollFrame:GetVerticalScroll()
+	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
+	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
-	local thumbHeight = (scrollFrameHeight / timelineHeight) * (scrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
-	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
+	thumbHeight = min(max(thumbHeight, minThumbSize), availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
-	local maxScroll = timelineHeight - scrollFrameHeight
-	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
-	local verticalThumbPosition = max(thumbPadding.y, verticalScroll / maxScroll * maxThumbPosition + thumbPadding.y)
+
+	local maxThumbPosition = availableThumbHeight - thumbHeight
+	local verticalThumbPosition = max(0, min(maxThumbPosition, (scrollPercentage * maxThumbPosition))) + thumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 

@@ -38,6 +38,7 @@ local categoryTextColor = { 1, 0.82, 0, 1 }
 local labelTextColor = { 1, 1, 1, 1 }
 local scrollBarWidth = 16
 local thumbPadding = { x = 2, y = 2 }
+local totalVerticalThumbPadding = 2 * thumbPadding.y
 local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local minThumbSize = 20
@@ -1063,36 +1064,22 @@ end
 
 ---@param self EPOptions
 local function UpdateVerticalScroll(self)
-	local scrollBarHeight = self.scrollBar:GetHeight()
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
-	local containerHeight = self.activeContainer.frame:GetHeight()
-	local verticalScroll = self.scrollFrame:GetVerticalScroll()
+	local timelineHeight = self.activeContainer.frame:GetHeight()
+	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
+	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
-	local thumbHeight = (scrollFrameHeight / containerHeight) * (scrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
-	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
+	thumbHeight = min(max(thumbHeight, minThumbSize), availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
 
-	local maxScroll = containerHeight - scrollFrameHeight
-	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
-	local verticalThumbPosition = 0
-	if maxScroll > 0 then
-		verticalThumbPosition = (verticalScroll / maxScroll) * maxThumbPosition
-		verticalThumbPosition = verticalThumbPosition + thumbPadding.x
-	else
-		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
-	end
+	local maxThumbPosition = availableThumbHeight - thumbHeight
+	local verticalThumbPosition = max(0, min(maxThumbPosition, (scrollPercentage * maxThumbPosition))) + thumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
-
-	if verticalScroll > maxScroll then
-		self.scrollFrame:SetVerticalScroll(max(0, maxScroll))
-	end
 end
 
 ---@param self EPOptions
-local function OnHeightSet(self, height)
-	self:UpdateVerticalScroll()
-end
+local function OnHeightSet(self, height) end
 
 local function OnWidthSet(self, width) end
 
@@ -1156,13 +1143,19 @@ local function Resize(self)
 	local paddingHeight = contentFramePadding.y * 3
 
 	local width = contentFramePadding.x * 2
-	if containerHeight < self.scrollFrame:GetHeight() then
+	local heightDifference = containerHeight - self.scrollFrame:GetHeight()
+	if heightDifference <= 0.0 then
+		self.scrollFrame:SetVerticalScroll(0)
 		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
 		self.scrollBar:Hide()
 	else
 		self.scrollBar:Show()
 		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
 		width = width + self.scrollBar:GetWidth() + contentFramePadding.x * 0.5
+		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
+		if scrollPercentage > 1.0 then
+			self.scrollFrame:SetVerticalScroll(heightDifference)
+		end
 	end
 
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()

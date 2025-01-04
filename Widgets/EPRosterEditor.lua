@@ -14,8 +14,8 @@ local tremove = tremove
 local unpack = unpack
 local wipe = wipe
 
-local mainFrameWidth = 500
-local mainFrameHeight = 500
+local defaultFrameWidth = 800
+local defaultFrameHeight = 800
 local minScrollFrameHeight = 400
 local maxScrollFrameHeight = 600
 local windowBarHeight = 28
@@ -25,6 +25,7 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local scrollBarWidth = 16
 local thumbPadding = { x = 2, y = 2 }
+local totalVerticalThumbPadding = 2 * thumbPadding.y
 local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local minThumbSize = 20
@@ -350,7 +351,6 @@ local function OnAcquire(self)
 	self.activeTab = ""
 	self.currentRosterWidgetMap = {}
 	self.sharedRosterWidgetMap = {}
-	self.frame:Show()
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
@@ -459,11 +459,20 @@ local function OnAcquire(self)
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
 	end)
 
+	self.tabContainer:AddChildren(currentRosterTab, sharedRosterTab)
+	SetButtonWidths(self.tabContainer)
+	self.tabContainer:DoLayout()
+
+	self.buttonContainer:AddChildren(updateRosterButton, fillRosterButton, importCurrentGroupButton)
+	SetButtonWidths(self.buttonContainer)
+	self.buttonContainer:DoLayout()
+
+	local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
+
 	self.scrollBar:ClearAllPoints()
 	self.scrollBar:SetParent(self.frame)
-	self.scrollBar:SetPoint("RIGHT", -contentFramePadding.x, 0)
+	self.scrollBar:SetPoint("BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y * 2 + buttonContainerHeight)
 	self.scrollBar:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
-	self.scrollBar:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
 	self.scrollBar:Show()
 
 	self.thumb:ClearAllPoints()
@@ -479,9 +488,8 @@ local function OnAcquire(self)
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.frame)
-	self.scrollFrame:SetPoint("LEFT", contentFramePadding.x, 0)
 	self.scrollFrame:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
-	self.scrollFrame:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
+	self.scrollFrame:SetPoint("BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y * 2 + buttonContainerHeight)
 	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
 	self.scrollFrame:Show()
 
@@ -489,15 +497,9 @@ local function OnAcquire(self)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]])
 	self.activeContainer.frame:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
 
-	self.tabContainer:AddChildren(currentRosterTab, sharedRosterTab)
-	SetButtonWidths(self.tabContainer)
-	self.tabContainer:DoLayout()
-
-	self.buttonContainer:AddChildren(updateRosterButton, fillRosterButton, importCurrentGroupButton)
-	SetButtonWidths(self.buttonContainer)
-	self.buttonContainer:DoLayout()
-
 	self.activeContainer:AddChild(addEntryButton)
+
+	self.frame:Show()
 end
 
 ---@param self EPRosterEditor
@@ -538,71 +540,63 @@ local function OnRelease(self)
 end
 
 ---@param self EPRosterEditor
-local function OnHeightSet(self, height)
-	self:UpdateVerticalScroll()
-end
+local function OnHeightSet(self, height) end
 
 ---@param self EPRosterEditor
 local function UpdateVerticalScroll(self)
-	local scrollBarHeight = self.scrollBar:GetHeight()
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
-	local containerHeight = self.activeContainer.frame:GetHeight()
-	local verticalScroll = self.scrollFrame:GetVerticalScroll()
+	local timelineHeight = self.activeContainer.frame:GetHeight()
+	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
+	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
-	local thumbHeight = (scrollFrameHeight / containerHeight) * (scrollBarHeight - (2 * thumbPadding.y))
-	thumbHeight = max(thumbHeight, minThumbSize) -- Minimum size so it's always visible
-	thumbHeight = min(thumbHeight, scrollFrameHeight - (2 * thumbPadding.y))
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
+	thumbHeight = min(max(thumbHeight, minThumbSize), availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
 
-	local maxScroll = containerHeight - scrollFrameHeight
-	local maxThumbPosition = scrollBarHeight - thumbHeight - (2 * thumbPadding.y)
-	local verticalThumbPosition = 0
-	if maxScroll > 0 then
-		verticalThumbPosition = (verticalScroll / maxScroll) * maxThumbPosition
-		verticalThumbPosition = verticalThumbPosition + thumbPadding.x
-	else
-		verticalThumbPosition = thumbPadding.y -- If no scrolling is possible, reset the thumb to the start
-	end
+	local maxThumbPosition = availableThumbHeight - thumbHeight
+	local verticalThumbPosition = max(0, min(maxThumbPosition, (scrollPercentage * maxThumbPosition))) + thumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
-
-	if verticalScroll > maxScroll then
-		self.scrollFrame:SetVerticalScroll(max(0, maxScroll))
-	end
 end
 
 ---@param self EPRosterEditor
 local function Resize(self)
-	local tableTitleContainerHeight = self.tabContainer.frame:GetHeight()
-	local containerHeight = self.activeContainer.frame:GetHeight()
-	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
-	local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
-	local paddingHeight = contentFramePadding.y * 4
+	do
+		local tableTitleContainerHeight = self.tabContainer.frame:GetHeight()
+		local containerHeight = self.activeContainer.frame:GetHeight()
+		local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
+		local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
+		local paddingHeight = contentFramePadding.y * 4
+		local width = contentFramePadding.x * 2
+		local heightDifference = containerHeight - scrollAreaHeight
+		if heightDifference <= 0.0 then
+			self.scrollFrame:SetVerticalScroll(0)
+			self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
+			self.scrollBar:Hide()
+		else
+			self.scrollBar:Show()
+			self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
+			width = width + self.scrollBar:GetWidth() + contentFramePadding.x / 2.0
+			local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
+			if scrollPercentage > 1.0 then
+				self.scrollFrame:SetVerticalScroll(heightDifference)
+			end
+		end
 
-	local width = contentFramePadding.x * 2
-	if containerHeight < self.scrollFrame:GetHeight() then
-		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
-		self.scrollBar:SetWidth(0)
-		self.scrollBar:Hide()
-	else
-		self.scrollBar:Show()
-		self.scrollBar:SetWidth(scrollBarWidth)
-		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
-		width = width + self.scrollBar:GetWidth() + contentFramePadding.x / 2.0
+		local tabWidth = self.tabContainer.frame:GetWidth()
+		local activeWidth = self.activeContainer.frame:GetWidth()
+		local buttonWidth = self.buttonContainer.frame:GetWidth()
+
+		width = width + max(tabWidth, max(activeWidth, buttonWidth))
+
+		local height = windowBarHeight
+			+ tableTitleContainerHeight
+			+ scrollAreaHeight
+			+ buttonContainerHeight
+			+ paddingHeight
+		self.frame:SetSize(width, height)
+		self.activeContainer:DoLayout()
+		self:UpdateVerticalScroll()
 	end
-
-	local tabWidth = self.tabContainer.frame:GetWidth()
-	local activeWidth = self.activeContainer.frame:GetWidth()
-	local buttonWidth = self.buttonContainer.frame:GetWidth()
-	width = width + max(tabWidth, max(activeWidth, buttonWidth))
-
-	local height = windowBarHeight
-		+ tableTitleContainerHeight
-		+ scrollAreaHeight
-		+ buttonContainerHeight
-		+ paddingHeight
-	self.frame:SetSize(width, height)
-	self.activeContainer:DoLayout()
-	self:UpdateVerticalScroll()
 end
 
 ---@param self EPRosterEditor
@@ -668,7 +662,7 @@ local function Constructor()
 	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(unpack(backdropColor))
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(mainFrameWidth, mainFrameHeight)
+	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 
