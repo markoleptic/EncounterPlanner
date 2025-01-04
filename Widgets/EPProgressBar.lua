@@ -54,7 +54,7 @@ local function HandleFrameMouseDown(self, button)
 		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
 		previousPointDetails = {
 			point = point,
-			relativeTo = relativeTo,
+			relativeTo = relativeTo:GetName(),
 			relativePoint = relativePoint,
 		}
 		self.frame:StartMoving()
@@ -66,7 +66,7 @@ local function HandleFrameMouseUp(self, button)
 	if button == "LeftButton" then
 		self.frame:StopMovingOrSizing()
 		local point = previousPointDetails.point
-		local relativeFrame = previousPointDetails.relativeTo or UIParent
+		local relativeFrame = previousPointDetails.relativeTo
 		local relativePoint = previousPointDetails.relativePoint
 		self:Fire("NewPoint", point, relativeFrame, relativePoint)
 	end

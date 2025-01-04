@@ -161,10 +161,10 @@ local function CreateReminderContainer(preferences, spacing)
 	container.frame:SetFrameStrata("MEDIUM")
 	container.frame:SetFrameLevel(100)
 	container:SetSpacing(0, spacing or 0)
-	local anchorFrame = _G[preferences.relativeTo] or UIParent
+	local regionName = utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 	local point, relativePoint = preferences.point, preferences.relativePoint
 	local x, y = preferences.x, preferences.y
-	container.frame:SetPoint(point, anchorFrame, relativePoint, x, y)
+	container.frame:SetPoint(point, regionName, relativePoint, x, y)
 	return container
 end
 

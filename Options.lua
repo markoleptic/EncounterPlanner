@@ -148,63 +148,63 @@ end
 
 ---@param frame Frame
 ---@param point AnchorPoint|nil
----@param relativeFrame Frame|ScriptRegion|nil
+---@param regionName string|nil
 ---@param relativePoint AnchorPoint|nil
 ---@return AnchorPoint, string, AnchorPoint, number, number
-local function ApplyPoint(frame, point, relativeFrame, relativePoint)
+local function ApplyPoint(frame, point, regionName, relativePoint)
 	local p, rF, rP, _, _ = frame:GetPoint()
 	point = point or p
-	relativeFrame = relativeFrame or rF
+	local relativeFrame = utilities.IsValidRegionName(regionName) and _G[regionName] or rF
 	relativePoint = relativePoint or rP
-	local x, y = CalculateNewOffset(
-		frame:GetLeft(),
-		frame:GetTop(),
-		frame:GetWidth(),
-		frame:GetHeight(),
-		point,
-		relativeFrame:GetLeft(),
-		relativeFrame:GetTop(),
-		relativeFrame:GetWidth(),
-		relativeFrame:GetHeight(),
-		relativePoint
-	)
+	local left, top, width, height = frame:GetLeft(), frame:GetTop(), frame:GetWidth(), frame:GetHeight()
+	local rLeft, rTop, rWidth, rHeight =
+		relativeFrame:GetLeft(), relativeFrame:GetTop(), relativeFrame:GetWidth(), relativeFrame:GetHeight()
+
+	local x, y = CalculateNewOffset(left, top, width, height, point, rLeft, rTop, rWidth, rHeight, relativePoint)
 	x = utilities.Round(x, 2)
 	y = utilities.Round(y, 2)
+
 	local relativeTo = relativeFrame:GetName()
 	frame:ClearAllPoints()
 	frame:SetPoint(point, relativeTo, relativePoint, x, y)
+
 	return point, relativeTo, relativePoint, x, y
 end
 
 ---@return EPProgressBar
 local function CreateProgressBarAnchor()
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	local progressBarAnchor = AceGUI:Create("EPProgressBar")
-	progressBarAnchor:SetAnchorMode(true)
-	progressBarAnchor:SetFont(
-		reminderPreferences.progressBars.font,
-		reminderPreferences.progressBars.fontSize,
-		reminderPreferences.progressBars.fontOutline
-	)
-	progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
-	progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
-	progressBarAnchor:SetHorizontalTextAlignment(reminderPreferences.progressBars.textAlignment)
-	progressBarAnchor:SetDurationTextAlignment(reminderPreferences.progressBars.durationAlignment)
-	progressBarAnchor:SetTexture(reminderPreferences.progressBars.texture)
-	progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
-	progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], "Progress Bar Text")
-	progressBarAnchor:SetColor(unpack(reminderPreferences.progressBars.color))
-	progressBarAnchor:SetBackgroundColor(unpack(reminderPreferences.progressBars.backgroundColor))
-	progressBarAnchor:SetProgressBarWidth(reminderPreferences.progressBars.width)
-	progressBarAnchor:SetFill(reminderPreferences.progressBars.fill)
-	progressBarAnchor:SetAlpha(reminderPreferences.progressBars.alpha)
+	progressBarAnchor.frame:SetParent(UIParent)
+
+	do
+		local preferences = AddOn.db.profile.preferences.reminder.progressBars --[[@as ProgressBarPreferences]]
+		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
+		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
+		progressBarAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
+		progressBarAnchor:SetAnchorMode(true)
+		progressBarAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		progressBarAnchor:SetShowBorder(preferences.showBorder)
+		progressBarAnchor:SetShowIconBorder(preferences.showIconBorder)
+		progressBarAnchor:SetHorizontalTextAlignment(preferences.textAlignment)
+		progressBarAnchor:SetDurationTextAlignment(preferences.durationAlignment)
+		progressBarAnchor:SetTexture(preferences.texture)
+		progressBarAnchor:SetIconPosition(preferences.iconPosition)
+		progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], "Progress Bar Text")
+		progressBarAnchor:SetColor(unpack(preferences.color))
+		progressBarAnchor:SetBackgroundColor(unpack(preferences.backgroundColor))
+		progressBarAnchor:SetProgressBarWidth(preferences.width)
+		progressBarAnchor:SetFill(preferences.fill)
+		progressBarAnchor:SetAlpha(preferences.alpha)
+		progressBarAnchor:SetDuration(previewDuration)
+	end
+
 	progressBarAnchor:SetCallback("OnRelease", function()
 		Private.progressBarAnchor = nil
 	end)
-	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
-		local progressBars = reminderPreferences.progressBars
-		progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
-			ApplyPoint(Private.progressBarAnchor.frame, point, relativeFrame, relativePoint)
+	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, regionName, relativePoint)
+		local preferences = AddOn.db.profile.preferences.reminder.progressBars --[[@as ProgressBarPreferences]]
+		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
+			ApplyPoint(Private.progressBarAnchor.frame, point, regionName, relativePoint)
 		if Private.optionsMenu then
 			Private.optionsMenu:UpdateOptions()
 		end
@@ -213,37 +213,33 @@ local function CreateProgressBarAnchor()
 		progressBarAnchor:SetDuration(previewDuration)
 		progressBarAnchor:Start()
 	end)
-	progressBarAnchor.frame:SetParent(UIParent)
-	progressBarAnchor:SetDuration(previewDuration)
-	progressBarAnchor.frame:SetPoint(
-		reminderPreferences.progressBars.point,
-		reminderPreferences.progressBars.relativeTo or UIParent,
-		reminderPreferences.progressBars.relativePoint,
-		reminderPreferences.progressBars.x,
-		reminderPreferences.progressBars.y
-	)
+
 	return progressBarAnchor
 end
 
 ---@return EPReminderMessage
 local function CreateMessageAnchor()
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	local messageAnchor = AceGUI:Create("EPReminderMessage")
-	messageAnchor:SetAnchorMode(true)
-	messageAnchor:SetFont(
-		reminderPreferences.messages.font,
-		reminderPreferences.messages.fontSize,
-		reminderPreferences.messages.fontOutline
-	)
-	messageAnchor:SetIcon([[Interface\Icons\INV_MISC_QUESTIONMARK]])
-	messageAnchor:SetAlpha(reminderPreferences.messages.alpha)
-	messageAnchor:SetTextColor(unpack(reminderPreferences.messages.textColor))
+	messageAnchor.frame:SetParent(UIParent)
+
+	do
+		local preferences = AddOn.db.profile.preferences.reminder.messages --[[@as MessagePreferences]]
+		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
+		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
+		messageAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
+		messageAnchor:SetAnchorMode(true)
+		messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		messageAnchor:SetIcon([[Interface\Icons\INV_MISC_QUESTIONMARK]])
+		messageAnchor:SetAlpha(preferences.alpha)
+		messageAnchor:SetTextColor(unpack(preferences.textColor))
+	end
+
 	messageAnchor:SetCallback("OnRelease", function()
 		Private.messageAnchor = nil
 	end)
 	messageAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
-		local messages = reminderPreferences.messages
-		messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+		local preferences = AddOn.db.profile.preferences.reminder.messages --[[@as MessagePreferences]]
+		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
 			ApplyPoint(Private.messageAnchor.frame, point, relativeFrame, relativePoint)
 		if Private.optionsMenu then
 			Private.optionsMenu:UpdateOptions()
@@ -253,14 +249,7 @@ local function CreateMessageAnchor()
 		messageAnchor:SetDuration(previewDuration)
 		messageAnchor:Start(true)
 	end)
-	messageAnchor.frame:SetParent(UIParent)
-	messageAnchor.frame:SetPoint(
-		reminderPreferences.messages.point,
-		reminderPreferences.messages.relativeTo or UIParent,
-		reminderPreferences.messages.relativePoint,
-		reminderPreferences.messages.x,
-		reminderPreferences.messages.y
-	)
+
 	return messageAnchor
 end
 
@@ -711,12 +700,8 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local messages = reminderPreferences.messages
-				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y = ApplyPoint(
-					Private.messageAnchor.frame,
-					key,
-					_G[messages.relativeTo] or UIParent,
-					messages.relativePoint
-				)
+				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+					ApplyPoint(Private.messageAnchor.frame, key, messages.relativeTo, messages.relativePoint)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -734,7 +719,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				local messages = reminderPreferences.messages
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
-					ApplyPoint(Private.messageAnchor.frame, messages.point, _G[key] or UIParent, messages.relativePoint)
+					ApplyPoint(Private.messageAnchor.frame, messages.point, key, messages.relativePoint)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -753,7 +738,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				local messages = reminderPreferences.messages
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
-					ApplyPoint(Private.messageAnchor.frame, messages.point, _G[messages.relativeTo] or UIParent, key)
+					ApplyPoint(Private.messageAnchor.frame, messages.point, messages.relativeTo, key)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
@@ -780,13 +765,9 @@ function Private:CreateOptionsMenu()
 					reminderPreferences.messages.x = x
 					reminderPreferences.messages.y = y
 					local messages = reminderPreferences.messages
-					Private.messageAnchor.frame:SetPoint(
-						messages.point,
-						_G[messages.relativeTo] or UIParent,
-						messages.relativePoint,
-						x,
-						y
-					)
+					local regionName = utilities.IsValidRegionName(messages.relativeTo) and messages.relativeTo
+						or "UIParent"
+					Private.messageAnchor.frame:SetPoint(messages.point, regionName, messages.relativePoint, x, y)
 				end
 			end,
 			enabled = function()
@@ -975,7 +956,7 @@ function Private:CreateOptionsMenu()
 					ApplyPoint(
 						Private.progressBarAnchor.frame,
 						key,
-						_G[progressBars.relativeTo] or UIParent,
+						progressBars.relativeTo,
 						progressBars.relativePoint
 					)
 			end,
@@ -995,12 +976,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				local progressBars = reminderPreferences.progressBars
 				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
-					ApplyPoint(
-						Private.progressBarAnchor.frame,
-						progressBars.point,
-						_G[key] or UIParent,
-						progressBars.relativePoint
-					)
+					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, key, progressBars.relativePoint)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -1019,12 +995,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				local progressBars = reminderPreferences.progressBars
 				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
-					ApplyPoint(
-						Private.progressBarAnchor.frame,
-						progressBars.point,
-						_G[progressBars.relativeTo] or UIParent,
-						key
-					)
+					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, progressBars.relativeTo, key)
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -1051,9 +1022,11 @@ function Private:CreateOptionsMenu()
 					reminderPreferences.progressBars.x = x
 					reminderPreferences.progressBars.y = y
 					local progressBars = reminderPreferences.progressBars
+					local regionName = utilities.IsValidRegionName(progressBars.relativeTo) and progressBars.relativeTo
+						or "UIParent"
 					Private.progressBarAnchor.frame:SetPoint(
 						progressBars.point,
-						_G[progressBars.relativeTo] or UIParent,
+						regionName,
 						progressBars.relativePoint,
 						x,
 						y

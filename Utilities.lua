@@ -1128,3 +1128,13 @@ function Utilities.SetAssignmentMetaTables(assignments)
 		end
 	end
 end
+
+---@param regionName string|nil
+---@return boolean
+function Utilities.IsValidRegionName(regionName)
+	if regionName then
+		local region = _G[regionName]
+		return region ~= nil and region.SetPoint ~= nil
+	end
+	return false
+end
