@@ -84,7 +84,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 5.0, 25.0, 28.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 6.0,
@@ -94,7 +93,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 20.0, 47.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 6.0,
@@ -104,7 +102,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.0, 36.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 6.0,
@@ -114,7 +111,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 90.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 0.0,
@@ -124,7 +120,6 @@ local bosses = {
 				phases = {
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 16.7, 7.1, 7.1, 7.1 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 8.0,
@@ -144,7 +139,6 @@ local bosses = {
 				phases = {
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 6 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 0.0,
@@ -154,12 +148,10 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 90 },
-						repeatInterval = nil,
 						signifiesPhaseEnd = true,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 80 },
-						repeatInterval = nil,
 						signifiesPhaseEnd = true,
 					}),
 				},
@@ -192,7 +184,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 3.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 1.0,
@@ -202,7 +193,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 14.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 40.0,
@@ -212,7 +202,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 32.0, 59.0, 69.0, 59.0, 69.0, 59.0, 69.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 20.0,
@@ -222,7 +211,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 120.0, 128.0, 128.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 10.0,
@@ -232,7 +220,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 11.0, 128.0, 128.0, 128.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 5.0,
@@ -242,7 +229,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 19.0, 28.0, 31.0, 28.0, 41.0, 28.0, 31.0, 28.0, 41.0, 28.0, 31.0, 28.0, 41.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 12.0,
@@ -252,7 +238,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 9.0, 32.0, 27.0, 32.0, 37.0, 32.0, 27.0, 32.0, 37.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 5.0,
@@ -296,7 +281,6 @@ local bosses = {
 							27.2,
 							28.0,
 						},
-						repeatInterval = nil,
 					}),
 				},
 				duration = 6.0,
@@ -322,7 +306,6 @@ local bosses = {
 							28.0,
 							28.1,
 						},
-						repeatInterval = nil,
 					}),
 				},
 				duration = 20.0,
@@ -332,7 +315,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 51.2, 26.6, 75.6, 27.1, 72.0, 28.1, 70.8, 27.9, 70.7, 28.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 0.0,
@@ -357,7 +339,6 @@ local bosses = {
 							26.9,
 							26.8,
 						},
-						repeatInterval = nil,
 					}),
 				},
 				duration = 8.0,
@@ -367,7 +348,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 90.0, 98.0, 98.0, 98.0, 98.0, 98.0, 98.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 10.0,
@@ -390,19 +370,15 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 35.1 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 40.7 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 15.9 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 20.7 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 3.0,
@@ -412,23 +388,18 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 18.7 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 14.4 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 14.3, 20.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 14.3, 24.8 },
-						repeatInterval = nil,
 					}),
 					[6] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 19.1 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 2.5,
@@ -438,23 +409,18 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 14.2 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 33.8 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 18.7, 15.2 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 18.7 },
-						repeatInterval = nil,
 					}),
 					[6] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 13.9, 20.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 3.0,
@@ -464,27 +430,21 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.1 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 18.6 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.6 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.6 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 33.9 },
-						repeatInterval = nil,
 					}),
 					[6] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.6 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 2.5,
@@ -494,27 +454,21 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 					[6] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.3 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 1.0,
@@ -524,27 +478,21 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 8.1, 40.0 },
-						repeatInterval = nil,
 					}),
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 23.7 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 23.7 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 23.7 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 23.7 },
-						repeatInterval = nil,
 					}),
 					[6] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 23.7 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 4.0,
@@ -602,7 +550,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 2.0 },
-						repeatInterval = nil,
 					}),
 				},
 				eventTriggers = {
@@ -622,7 +569,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 15.0 },
-						repeatInterval = nil,
 					}),
 				},
 				eventTriggers = {
@@ -642,7 +588,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 19.0, 171.0, 172.0 },
-						repeatInterval = nil,
 					}),
 				},
 				duration = 15.0,
@@ -652,7 +597,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = nil,
-						repeatInterval = nil,
 					}),
 				},
 				eventTriggers = {
@@ -685,7 +629,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 15.0, 130.0, 130.0, 130.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 0.0,
@@ -695,7 +638,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 10.0, 30.0, 30.0, 70.0, 30.0, 30.0, 70.0, 30.0, 30.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 0.0,
@@ -705,7 +647,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 22.0, 30.0, 30.0, 70.0, 30.0, 30.0, 70.0, 30.0, 30.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.0,
@@ -715,7 +656,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 34.0, 30.0, 100.0, 30.0, 100.0, 30.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 5.0,
@@ -725,7 +665,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 45.0, 30.0, 100.0, 30.0, 100.0, 30.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.5,
@@ -735,7 +674,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 96.1, 130.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 5.0,
@@ -745,7 +683,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 356.1 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 5.0,
@@ -768,11 +705,9 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 8.0, 20.0, 34.0, 20.0 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 11.0, 30.0, 30.0, 30.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -782,15 +717,12 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 13.0, 20.0, 27.0, 20.0 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 16.0, 20.0, 25.0, 15.0, 20.0, 25.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 20.0, 17.0, 32.0, 20.0, 21.0, 20.0, 36.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.5,
@@ -800,11 +732,9 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 25.0, 53.0 },
-						repeatInterval = nil,
 					}),
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 31.0, 61.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 3,
@@ -814,11 +744,9 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 35.0, 60.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 43.0, 98.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.8,
@@ -828,11 +756,9 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.5, 60.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 46.1, 98.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.8,
@@ -842,7 +768,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 42.1, 60.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.0,
@@ -852,7 +777,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 16.7, 70.2 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.5,
@@ -862,7 +786,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 19.8, 33.3, 26.8 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.5,
@@ -872,11 +795,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 25.0, 58.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 81.1, 57.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 2.0,
@@ -886,11 +807,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 32.0, 36.0, 24.0 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 22.2, 33.7, 24.9, 43.0, 33.8, 24.9, 43.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -900,11 +819,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.7, 34.2, 23.6, 29.2 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 49.3, 40.5, 29.1, 30.1, 2.6, 38.4, 29.2, 30.1, 2.7 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 1.0,
@@ -914,11 +831,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 20.2, 55.8 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 33.4, 33.7, 63.8, 33.7, 64.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 2.0,
@@ -928,11 +843,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 25.4, 55.8 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 38.7, 33.7, 63.8, 33.7, 64.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -942,11 +855,9 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 41.7, 57.9 },
-						repeatInterval = nil,
 					}),
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 92.7, 61.8 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 10.0,
@@ -956,7 +867,6 @@ local bosses = {
 				phases = {
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 170.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 3.0,
@@ -966,7 +876,6 @@ local bosses = {
 				phases = {
 					[5] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 170.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 3.0,
@@ -976,7 +885,6 @@ local bosses = {
 				phases = {
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 45.0,
@@ -986,7 +894,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 45.0,
@@ -1037,7 +944,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 21.1, 56.0, 56.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1047,7 +953,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 12.3, 40.0, 57.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1057,7 +962,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 6.4, 40.0, 54.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1067,7 +971,6 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 8.4, 40.0, 54.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1077,11 +980,9 @@ local bosses = {
 				phases = {
 					[1] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 20.3, 40.0, 13.0, 25.0, 19.0, 23.0 },
-						repeatInterval = nil,
 					}),
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 48.3, 37.0, 21.0, 17.0, 42.0, 21.0, 19.0, 36.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1091,7 +992,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 43.3, 64.0, 83.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1101,7 +1001,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 111.4, 86.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1111,7 +1010,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 30.0, 66.0, 80.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1121,7 +1019,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 32.0, 66.0, 80.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1131,7 +1028,6 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 45.0, 80.0, 88.0, 35.5 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 4.5,
@@ -1142,7 +1038,6 @@ local bosses = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0 },
 						signifiesPhaseStart = true,
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 20.0,
@@ -1152,7 +1047,6 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 30.0, 0.0, 7.0, 0.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 0.0,
@@ -1162,7 +1056,6 @@ local bosses = {
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 5.0, 0.0, 90.0, 0.0 },
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 0.0,
@@ -1174,7 +1067,6 @@ local bosses = {
 						castTimes = { 0 },
 						signifiesPhaseStart = true,
 						signifiesPhaseEnd = true,
-						repeatInterval = nil,
 					}),
 				},
 				castTime = 40.0,
