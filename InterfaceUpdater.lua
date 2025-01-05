@@ -19,6 +19,8 @@ local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
 local pairs = pairs
 local tinsert = tinsert
+local tonumber = tonumber
+local tostring = tostring
 local tremove = tremove
 local type = type
 
@@ -33,7 +35,7 @@ local function GetCurrentAssignments()
 end
 
 ---@param abilityEntry EPAbilityEntry
-local function HandleDeleteAssigneeRowClicked(abilityEntry, _, _)
+local function HandleDeleteAssigneeRowClicked(abilityEntry)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
@@ -77,6 +79,27 @@ local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	end
 end
 
+---@param abilityEntry EPAbilityEntry
+local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
+	local key = tonumber(abilityEntry:GetKey())
+	local bossIndex = Private.mainFrame.bossSelectDropdown:GetValue()
+	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
+	if key and bossDef then
+		local bossName = bossDef.name
+		local atLeastOneSelected = false
+		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossName]) do
+			if currentAbilityID ~= key and currentSelected then
+				atLeastOneSelected = true
+				break
+			end
+		end
+		if atLeastOneSelected then
+			AddOn.db.profile.activeBossAbilities[bossName][key] = false
+			InterfaceUpdater.UpdateBoss(bossName, true)
+		end
+	end
+end
+
 -- Clears and repopulates the boss ability container based on the boss name.
 ---@param bossName string The name of the boss
 ---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
@@ -105,23 +128,8 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
-					abilityEntry:SetAbility(abilityID)
-					abilityEntry:SetCallback("OnValueChanged", function(entry, _, checked)
-						local atLeastOneSelected = false
-						for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossName]) do
-							if currentAbilityID ~= abilityID and currentSelected then
-								atLeastOneSelected = true
-								break
-							end
-						end
-						if atLeastOneSelected then
-							AddOn.db.profile.activeBossAbilities[bossName][abilityID] = checked
-							InterfaceUpdater.UpdateBoss(bossName, true)
-						else
-							entry:SetChecked(true)
-							AddOn.db.profile.activeBossAbilities[bossName][abilityID] = true
-						end
-					end)
+					abilityEntry:SetAbility(abilityID, tostring(abilityID))
+					abilityEntry:SetCallback("OnValueChanged", HandleBossAbilityAbilityEntryValueChanged)
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then
@@ -198,14 +206,14 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 				assigneeEntry:SetFullWidth(true)
 				assigneeEntry:SetHeight(30)
 				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-				assigneeEntry:SetCallback("OnValueChanged", function(widget, name, value)
+				assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
 					local messageBox = InterfaceUpdater.CreateMessageBox(
 						"Delete Assignments Confirmation",
 						format("Are you sure you want to delete all assignments for %s?", coloredAssigneeNameOrRole)
 					)
 					if messageBox then
 						messageBox:SetCallback("Accepted", function()
-							HandleDeleteAssigneeRowClicked(widget, name, value)
+							HandleDeleteAssigneeRowClicked(widget)
 						end)
 					end
 				end)
@@ -229,7 +237,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 						spellEntry:SetLeftIndent(15 - 2)
 						spellEntry:SetHeight(30)
 						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-						spellEntry:SetCallback("OnValueChanged", function(widget, name, value)
+						spellEntry:SetCallback("OnValueChanged", function(widget, _)
 							local spellEntryKey = widget:GetKey()
 							local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
 							local messageBox = InterfaceUpdater.CreateMessageBox(
@@ -242,7 +250,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 							)
 							if messageBox then
 								messageBox:SetCallback("Accepted", function()
-									HandleDeleteAssigneeRowClicked(widget, name, value)
+									HandleDeleteAssigneeRowClicked(widget)
 								end)
 							end
 						end)
