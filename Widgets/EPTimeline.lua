@@ -46,7 +46,7 @@ local cooldownWidthTolerance = 0.01
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
-local minimumSpacingBetweenLabels = 2
+local minimumSpacingBetweenLabels = 4
 local minimumNumberOfAssignmentRows = 1
 local maximumNumberOfAssignmentRows = 12
 local minimumNumberOfBossAbilityRows = 1
@@ -380,7 +380,7 @@ local function UpdateTickMarks(self)
 	local timelineWidthWithoutPadding = timelineWidth - (2 * padding.x)
 
 	local tickInterval = tickIntervals[1]
-	for i = 2, #tickIntervals do
+	for i = 1, #tickIntervals do
 		local interval = tickIntervals[i]
 		if (interval / totalTimelineDuration) * timelineWidthWithoutPadding >= self.minTickInterval then
 			tickInterval = interval
