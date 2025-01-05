@@ -78,7 +78,7 @@ function Utilities.CreateUniqueNoteName(notes, bossName)
 	if notes then
 		local num = 2
 		if notes[newNoteName] then
-			newNoteName = newNoteName .. " "
+			newNoteName = newNoteName .. " " .. num
 		end
 		local newNoteNameLength = newNoteName:len()
 		while notes[newNoteName] do
