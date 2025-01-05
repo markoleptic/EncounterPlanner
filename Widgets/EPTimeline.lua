@@ -533,24 +533,15 @@ end
 
 -- Helper function to draw a boss ability timeline bar.
 ---@param self EPTimeline
----@param startTime number absolute start time of the bar.
----@param endTime number absolute end time of the bar.
----@param color integer[] color of the bar.
 ---@param index integer index into the bars table.
+---@param horizontalOffset number offset from the left of the timeline frame.
 ---@param verticalOffset number offset from the top of the timeline frame.
+---@param width number width of bar.
+---@param color integer[] color of the bar.
+---@param level integer
 ---@param abilityInstance BossAbilityInstance
-local function DrawBossAbilityBar(self, startTime, endTime, color, index, verticalOffset, abilityInstance)
-	if totalTimelineDuration <= 0.0 then
-		return nil
-	end
-
-	local padding = timelineLinePadding
+local function DrawBossAbilityBar(self, index, horizontalOffset, verticalOffset, width, color, level, abilityInstance)
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
-	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
-
-	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
-	local timelineEndPosition = (endTime / totalTimelineDuration) * timelineWidth
-	local horizontalOffset = timelineStartPosition + padding.x
 
 	---@class Frame
 	local frame = self.bossAbilityFrames[index]
@@ -577,13 +568,10 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, vertic
 
 	local r, g, b, a = unpack(color)
 	frame.spellTexture:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
-	local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
 	frame:SetSize(width, bossAbilityBarHeight)
 	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
-	frame:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
+	frame:SetFrameLevel(level)
 	frame:Show()
-
-	return horizontalOffset, width
 end
 
 ---@param self EPTimeline
@@ -624,23 +612,31 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
 	local cumulativePhaseCastTimes = bossPhaseStartTime
 	local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
+	local padding = timelineLinePadding
+	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
+	local frameLevel = timelineFrame:GetFrameLevel() + 1
+
 	for _, castTime in ipairs(bossAbilityPhase.castTimes) do
 		local castStart = cumulativePhaseCastTimes + castTime
 		local castEnd = castStart + bossAbility.castTime
 		local effectEnd = castEnd + bossAbility.duration
-		local hOffset, width = DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
+		local timelineStartPosition = (castStart / totalTimelineDuration) * timelineWidth
+		local timelineEndPosition = (effectEnd / totalTimelineDuration) * timelineWidth
+		local horizontalOffset = timelineStartPosition + padding.x
+		local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
+		DrawBossAbilityBar(self, bossAbilityInstanceIndex, horizontalOffset, offset, width, color, frameLevel, {
 			spellID = bossAbilitySpellID,
 			phase = bossPhaseIndex,
 			castTime = castStart,
 			spellOccurrence = spellCount[bossAbilitySpellID],
 		})
-		if hOffset and width then
-			if bossAbilityPhase.signifiesPhaseStart and bossPhaseName then
-				DrawBossPhaseIndicator(self, true, bossPhaseIndex, bossPhaseName, hOffset, width)
-			end
-			if bossAbilityPhase.signifiesPhaseEnd and nextBossPhaseName then
-				DrawBossPhaseIndicator(self, false, bossPhaseIndex, nextBossPhaseName, hOffset, width)
-			end
+		frameLevel = frameLevel + 1
+		if bossAbilityPhase.signifiesPhaseStart and bossPhaseName then
+			DrawBossPhaseIndicator(self, true, bossPhaseIndex, bossPhaseName, horizontalOffset, width)
+		end
+		if bossAbilityPhase.signifiesPhaseEnd and nextBossPhaseName then
+			DrawBossPhaseIndicator(self, false, bossPhaseIndex, nextBossPhaseName, horizontalOffset, width)
 		end
 		spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
@@ -651,13 +647,18 @@ local function DrawPhaseOrTimeBasedBossAbility(
 			while nextRepeatStart < bossPhaseStartTime + bossPhaseDuration do
 				local repeatEnd = nextRepeatStart + bossAbility.castTime
 				local repeatEffectEnd = repeatEnd + bossAbility.duration
-				DrawBossAbilityBar(self, nextRepeatStart, repeatEffectEnd, color, bossAbilityInstanceIndex, offset, {
+				timelineStartPosition = (nextRepeatStart / totalTimelineDuration) * timelineWidth
+				timelineEndPosition = (repeatEffectEnd / totalTimelineDuration) * timelineWidth
+				horizontalOffset = timelineStartPosition + padding.x
+				width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
+				DrawBossAbilityBar(self, bossAbilityInstanceIndex, horizontalOffset, offset, width, color, frameLevel, {
 					spellID = bossAbilitySpellID,
 					phase = bossPhaseIndex,
 					castTime = nextRepeatStart,
 					repeatInstance = repeatInstance,
 					spellOccurrence = spellCount[bossAbilitySpellID],
 				})
+				frameLevel = frameLevel + 1
 				spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 				bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 				nextRepeatStart = nextRepeatStart + repeatInterval
@@ -702,6 +703,10 @@ local function DrawEventTriggerBossAbility(
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
+	local padding = timelineLinePadding
+	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
+	local frameLevel = timelineFrame:GetFrameLevel() + 1
 
 	for triggerSpellID, eventTrigger in pairs(bossAbility.eventTriggers) do
 		local bossAbilityTrigger = self.bossAbilities[triggerSpellID]
@@ -713,16 +718,30 @@ local function DrawEventTriggerBossAbility(
 					local castStart = cumulativeCastTime + castTime
 					local castEnd = castStart + bossAbility.castTime
 					local effectEnd = castEnd + bossAbility.duration
-					DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
-						combatLogEventType = eventTrigger.combatLogEventType,
-						spellID = bossAbilitySpellID,
-						spellOccurrence = spellCount[bossAbilitySpellID],
-						phase = bossPhaseIndex,
-						castTime = castStart,
-						relativeCastTime = castTime,
-						triggerSpellID = triggerSpellID,
-						triggerCastIndex = triggerCastIndex,
-					})
+					local timelineStartPosition = (castStart / totalTimelineDuration) * timelineWidth
+					local timelineEndPosition = (effectEnd / totalTimelineDuration) * timelineWidth
+					local horizontalOffset = timelineStartPosition + padding.x
+					local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
+					DrawBossAbilityBar(
+						self,
+						bossAbilityInstanceIndex,
+						horizontalOffset,
+						offset,
+						width,
+						color,
+						frameLevel,
+						{
+							combatLogEventType = eventTrigger.combatLogEventType,
+							spellID = bossAbilitySpellID,
+							spellOccurrence = spellCount[bossAbilitySpellID],
+							phase = bossPhaseIndex,
+							castTime = castStart,
+							relativeCastTime = castTime,
+							triggerSpellID = triggerSpellID,
+							triggerCastIndex = triggerCastIndex,
+						}
+					)
+					frameLevel = frameLevel + 1
 					spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 					bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 					cumulativeCastTime = cumulativeCastTime + castTime
@@ -735,13 +754,18 @@ local function DrawEventTriggerBossAbility(
 							local castEnd = castStart + bossAbility.castTime
 							local effectEnd = castEnd + bossAbility.duration
 							if effectEnd < bossPhaseEndTime then
+								local timelineStartPosition = (castStart / totalTimelineDuration) * timelineWidth
+								local timelineEndPosition = (effectEnd / totalTimelineDuration) * timelineWidth
+								local horizontalOffset = timelineStartPosition + padding.x
+								local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
 								DrawBossAbilityBar(
 									self,
-									castStart,
-									effectEnd,
-									color,
 									bossAbilityInstanceIndex,
+									horizontalOffset,
 									offset,
+									width,
+									color,
+									frameLevel,
 									{
 										combatLogEventType = eventTrigger.combatLogEventType,
 										spellID = bossAbilitySpellID,
@@ -755,6 +779,7 @@ local function DrawEventTriggerBossAbility(
 										repeatCastIndex = repeatCastIndex,
 									}
 								)
+								frameLevel = frameLevel + 1
 								spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 								bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 								repeatInstance = repeatInstance + 1
@@ -781,6 +806,10 @@ local function UpdateBossAbilityBars(self)
 			texture:Hide()
 			texture.label:Hide()
 		end
+	end
+
+	if totalTimelineDuration <= 0.0 then
+		return
 	end
 
 	local cumulativePhaseStartTime = 0
