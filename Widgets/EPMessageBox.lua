@@ -74,8 +74,6 @@ local function OnAcquire(self)
 	self.rejectButton:SetWidth(maxWidth)
 	self.acceptButton:SetWidth(maxWidth)
 
-	self.text:SetPoint("BOTTOM", self.acceptButton.frame, "TOPRIGHT", framePadding / 2.0, framePadding)
-
 	self.frame:Show()
 end
 
@@ -100,7 +98,10 @@ end
 ---@param self EPMessageBox
 ---@param text string
 local function SetText(self, text)
-	self.text:SetText(text or "")
+	self.text:ClearAllPoints()
+	self.text:SetText(text)
+	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
+	self.text:SetWidth(self.frame:GetWidth() - 2 * framePadding)
 	self:SetHeight(self.windowBar:GetHeight() + self.text:GetStringHeight() + defaultButtonHeight + framePadding * 3)
 end
 
@@ -132,8 +133,7 @@ local function Constructor()
 	if fPath then
 		text:SetFont(fPath, defaultFontSize)
 	end
-	text:SetPoint("TOPLEFT", windowBar, "BOTTOMLEFT", framePadding, -framePadding)
-	text:SetPoint("TOPRIGHT", windowBar, "BOTTOMRIGHT", -framePadding, -framePadding)
+	text:SetPoint("TOP", windowBar, "BOTTOM", 0, -framePadding)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(title)
