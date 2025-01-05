@@ -72,13 +72,16 @@ local scrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local scrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
 local tickIntervals = { 5, 10, 30, 60, 90 }
 local colors = {
-	{ 255, 87, 51, 1 },
-	{ 51, 255, 87, 1 },
-	{ 51, 87, 255, 1 },
-	{ 255, 51, 184, 1 },
-	{ 255, 214, 51, 1 },
-	{ 51, 255, 249, 1 },
-	{ 184, 51, 255, 1 },
+	{ 0.122, 0.467, 0.706, 1 },
+	{ 1.0, 0.498, 0.055, 1 },
+	{ 0.173, 0.627, 0.173, 1 },
+	{ 0.839, 0.153, 0.157, 1 },
+	{ 0.58, 0.404, 0.741, 1 },
+	{ 0.549, 0.337, 0.294, 1 },
+	{ 0.89, 0.467, 0.761, 1 },
+	{ 0.498, 0.498, 0.498, 1 },
+	{ 0.737, 0.741, 0.133, 1 },
+	{ 0.09, 0.745, 0.812, 1 },
 }
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
 local cooldownTextureHalfSize = 32
@@ -566,8 +569,7 @@ local function DrawBossAbilityBar(self, index, horizontalOffset, verticalOffset,
 
 	frame.abilityInstance = abilityInstance
 
-	local r, g, b, a = unpack(color)
-	frame.spellTexture:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
+	frame.spellTexture:SetColorTexture(unpack(color))
 	frame:SetSize(width, bossAbilityBarHeight)
 	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
 	frame:SetFrameLevel(level)
