@@ -575,6 +575,7 @@ local function DrawBossAbilityBar(self, index, horizontalOffset, verticalOffset,
 end
 
 ---@param self EPTimeline
+---@param show boolean
 ---@param bossAbility BossAbility
 ---@param bossPhaseIndex integer
 ---@param bossPhaseName string|nil
@@ -589,6 +590,7 @@ end
 ---@return integer
 local function DrawPhaseOrTimeBasedBossAbility(
 	self,
+	show,
 	bossAbility,
 	bossPhaseIndex,
 	bossPhaseName,
@@ -625,22 +627,24 @@ local function DrawPhaseOrTimeBasedBossAbility(
 		local timelineEndPosition = (effectEnd / totalTimelineDuration) * timelineWidth
 		local horizontalOffset = timelineStartPosition + padding.x
 		local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
-		DrawBossAbilityBar(self, bossAbilityInstanceIndex, horizontalOffset, offset, width, color, frameLevel, {
-			spellID = bossAbilitySpellID,
-			phase = bossPhaseIndex,
-			castTime = castStart,
-			spellOccurrence = spellCount[bossAbilitySpellID],
-		})
-		frameLevel = frameLevel + 1
+		if show then
+			DrawBossAbilityBar(self, bossAbilityInstanceIndex, horizontalOffset, offset, width, color, frameLevel, {
+				spellID = bossAbilitySpellID,
+				phase = bossPhaseIndex,
+				castTime = castStart,
+				spellOccurrence = spellCount[bossAbilitySpellID],
+			})
+			frameLevel = frameLevel + 1
+			spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
+			bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+		end
 		if bossAbilityPhase.signifiesPhaseStart and bossPhaseName then
 			DrawBossPhaseIndicator(self, true, bossPhaseIndex, bossPhaseName, horizontalOffset, width)
 		end
 		if bossAbilityPhase.signifiesPhaseEnd and nextBossPhaseName then
 			DrawBossPhaseIndicator(self, false, bossPhaseIndex, nextBossPhaseName, horizontalOffset, width)
 		end
-		spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
-		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
-		if bossAbilityPhase.repeatInterval then
+		if show and bossAbilityPhase.repeatInterval then
 			local repeatInterval = bossAbilityPhase.repeatInterval
 			local nextRepeatStart = castStart + repeatInterval
 			local repeatInstance = 1
@@ -830,22 +834,24 @@ local function UpdateBossAbilityBars(self)
 			local nextPhaseName = self.bossPhases[bossPhaseIndex + 1] and self.bossPhases[bossPhaseIndex + 1].name
 			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 			for bossAbilityOrderIndex, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
-				if self.bossAbilityVisibility[bossAbilitySpellID] == true then
-					local bossAbility = self.bossAbilities[bossAbilitySpellID]
-					bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
-						self,
-						bossAbility,
-						bossPhaseIndex,
-						phaseName,
-						nextPhaseName,
-						bossAbilitySpellID,
-						cumulativePhaseStartTime,
-						bossPhase.duration,
-						bossAbilityOrderIndex,
-						bossAbilityInstanceIndex,
-						offsets[bossAbilitySpellID],
-						spellCount
-					)
+				local show = self.bossAbilityVisibility[bossAbilitySpellID] == true
+				local bossAbility = self.bossAbilities[bossAbilitySpellID]
+				bossAbilityInstanceIndex = DrawPhaseOrTimeBasedBossAbility(
+					self,
+					show,
+					bossAbility,
+					bossPhaseIndex,
+					phaseName,
+					nextPhaseName,
+					bossAbilitySpellID,
+					cumulativePhaseStartTime,
+					bossPhase.duration,
+					bossAbilityOrderIndex,
+					bossAbilityInstanceIndex,
+					offsets[bossAbilitySpellID],
+					spellCount
+				) -- Always call so that phase indicators are drawn
+				if show then
 					bossAbilityInstanceIndex = DrawEventTriggerBossAbility(
 						self,
 						bossAbility,
@@ -1962,6 +1968,7 @@ local function OnAcquire(self)
 	self.phaseNameFrame:SetPoint("BOTTOMLEFT", self.frame, "TOPLEFT", 210, 0)
 	self.phaseNameFrame:SetPoint("BOTTOMRIGHT", self.frame, "TOPRIGHT")
 	self.phaseNameFrame:SetHeight(40)
+	self.phaseNameFrame:Show()
 
 	local label = self.timelineLabels[1]
 	if not label then
