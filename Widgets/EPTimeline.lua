@@ -553,8 +553,8 @@ local function DrawBossAbilityBar(self, index, horizontalOffset, verticalOffset,
 
 		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
 		spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
-		spellTexture:SetPoint("TOPLEFT", 1, -1)
-		spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+		spellTexture:SetPoint("TOPLEFT", 2, -2)
+		spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
 
 		local outlineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel - 1)
 		outlineTexture:SetAllPoints()
@@ -2104,8 +2104,6 @@ local function OnRelease(self)
 		frame.spellTexture:SetTexture(nil)
 		frame.abilityInstance = nil
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 	end
 
 	for _, textureGroup in ipairs(self.bossPhaseIndicators) do
@@ -2529,8 +2527,6 @@ local function SelectBossAbility(self, spellID, spellOccurrence)
 	for _, frame in pairs(self.bossAbilityFrames) do
 		if frame.abilityInstance.spellID == spellID and frame.abilityInstance.spellOccurrence == spellOccurrence then
 			frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-			frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-			frame.spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
 			local y = select(5, frame:GetPointByName("TOPLEFT"))
 			self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
 			break
@@ -2545,8 +2541,6 @@ local function ClearSelectedBossAbility(self, spellID, spellOccurrence)
 	for _, frame in pairs(self.bossAbilityFrames) do
 		if frame.abilityInstance.spellID == spellID and frame.abilityInstance.spellOccurrence == spellOccurrence then
 			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-			frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-			frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 			break
 		end
 	end
@@ -2566,8 +2560,6 @@ end
 local function ClearSelectedBossAbilities(self)
 	for _, frame in pairs(self.bossAbilityFrames) do
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 	end
 end
 
