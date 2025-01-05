@@ -578,6 +578,7 @@ end
 ---@param show boolean
 ---@param bossAbility BossAbility
 ---@param bossPhaseIndex integer
+---@param bossPhaseOrderIndex integer
 ---@param bossPhaseName string|nil
 ---@param nextBossPhaseName string|nil
 ---@param bossAbilitySpellID integer
@@ -593,6 +594,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	show,
 	bossAbility,
 	bossPhaseIndex,
+	bossPhaseOrderIndex,
 	bossPhaseName,
 	nextBossPhaseName,
 	bossAbilitySpellID,
@@ -639,10 +641,10 @@ local function DrawPhaseOrTimeBasedBossAbility(
 			bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 		end
 		if bossAbilityPhase.signifiesPhaseStart and bossPhaseName then
-			DrawBossPhaseIndicator(self, true, bossPhaseIndex, bossPhaseName, horizontalOffset, width)
+			DrawBossPhaseIndicator(self, true, bossPhaseOrderIndex, bossPhaseName, horizontalOffset, width)
 		end
 		if bossAbilityPhase.signifiesPhaseEnd and nextBossPhaseName then
-			DrawBossPhaseIndicator(self, false, bossPhaseIndex, nextBossPhaseName, horizontalOffset, width)
+			DrawBossPhaseIndicator(self, false, bossPhaseOrderIndex, nextBossPhaseName, horizontalOffset, width)
 		end
 		if show and bossAbilityPhase.repeatInterval then
 			local repeatInterval = bossAbilityPhase.repeatInterval
@@ -827,11 +829,19 @@ local function UpdateBossAbilityBars(self)
 		end
 	end
 	local spellCount = {}
-	for _, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
+	for bossPhaseOrderIndex, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
 		local bossPhase = self.bossPhases[bossPhaseIndex]
 		if bossPhase then
-			local phaseName = bossPhase.name
-			local nextPhaseName = self.bossPhases[bossPhaseIndex + 1] and self.bossPhases[bossPhaseIndex + 1].name
+			local bossPhaseName = bossPhase.name
+			local nextBossPhaseName
+			local nextBossPhaseIndex = self.bossPhaseOrder[bossPhaseOrderIndex + 1]
+			if nextBossPhaseIndex then
+				local nextBossPhase = self.bossPhases[nextBossPhaseIndex]
+				if nextBossPhase then
+					nextBossPhaseName = nextBossPhase.name
+				end
+			end
+
 			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 			for bossAbilityOrderIndex, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 				local show = self.bossAbilityVisibility[bossAbilitySpellID] == true
@@ -841,8 +851,9 @@ local function UpdateBossAbilityBars(self)
 					show,
 					bossAbility,
 					bossPhaseIndex,
-					phaseName,
-					nextPhaseName,
+					bossPhaseOrderIndex,
+					bossPhaseName,
+					nextBossPhaseName,
 					bossAbilitySpellID,
 					cumulativePhaseStartTime,
 					bossPhase.duration,
@@ -2163,8 +2174,11 @@ local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrde
 	self.bossAbilityVisibility = bossAbilityVisibility
 
 	totalTimelineDuration = 0
-	for index, phaseData in pairs(self.bossPhases) do
+	for _, phaseData in pairs(self.bossPhases) do
 		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
+	end
+
+	for index, _ in pairs(self.bossPhaseOrder) do
 		if not self.bossPhaseIndicators[index] then
 			self.bossPhaseIndicators[index] = {}
 			self.bossPhaseIndicators[index][1] = CreatePhaseIndicatorTexture(self)
