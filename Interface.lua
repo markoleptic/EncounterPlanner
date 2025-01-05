@@ -839,6 +839,7 @@ function Private:CreateInterface()
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
+	Private.mainFrame.content.spacing = { x = 0, y = 15 }
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
@@ -978,6 +979,34 @@ function Private:CreateInterface()
 		planMenuButton:SetText("Plan")
 	end)
 
+	local bossMenuButton = AceGUI:Create("EPDropdown")
+	bossMenuButton:SetTextFontSize(menuButtonFontSize)
+	bossMenuButton:SetItemTextFontSize(menuButtonFontSize)
+	bossMenuButton:SetText("Boss")
+	bossMenuButton:SetTextCentered(true)
+	bossMenuButton:SetButtonVisibility(false)
+	bossMenuButton:SetAutoItemWidth(true)
+	bossMenuButton:SetShowHighlight(true)
+	bossMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	bossMenuButton:SetWidth(bossMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	bossMenuButton:SetHeight(menuButtonHeight)
+	bossMenuButton:SetDropdownItemHeight(menuButtonHeight)
+	bossMenuButton:AddItems({
+		{
+			itemValue = "Edit Phase Timings",
+			text = "Edit Phase Timings",
+		},
+	}, "EPDropdownItemToggle", true)
+	bossMenuButton:SetCallback("OnValueChanged", function(_, _, value)
+		if value == "Boss" then
+			return
+		end
+		if value == "Edit Phase Timings" then
+		end
+		bossMenuButton:SetValue("Boss")
+		bossMenuButton:SetText("Boss")
+	end)
+
 	local rosterMenuButton = AceGUI:Create("EPDropdown")
 	rosterMenuButton:SetTextFontSize(menuButtonFontSize)
 	rosterMenuButton:SetItemTextFontSize(menuButtonFontSize)
@@ -1020,7 +1049,7 @@ function Private:CreateInterface()
 		preferencesMenuButtonBackdropBorderColor
 	)
 	preferencesMenuButton:SetColor(unpack(preferencesMenuButtonColor))
-	Private.menuButtonContainer:AddChildren(planMenuButton, rosterMenuButton, preferencesMenuButton)
+	Private.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
 	local autoOpenNextEntered = nil
 	local buttonToClose = nil
@@ -1052,6 +1081,7 @@ function Private:CreateInterface()
 			Private:CreateOptionsMenu()
 		end
 		planMenuButton:Close()
+		bossMenuButton:Close()
 		rosterMenuButton:Close()
 	end)
 
