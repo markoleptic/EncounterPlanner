@@ -153,6 +153,7 @@ Private.classes.BossAbility = {
 ---@field count number The number of times the boss phase occurs
 ---@field defaultCount number The default number of times the boss phase occurs
 ---@field repeatAfter number|nil Which phase this phase repeats after
+---@field name string|nil Optional nickname for phase
 Private.classes.BossPhase = {
 	duration = 0,
 	defaultDuration = 0,
@@ -164,6 +165,8 @@ Private.classes.BossPhase = {
 ---@class BossAbilityPhase
 ---@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
 ---@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time
+---@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
+---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 	repeatInterval = nil,
@@ -190,6 +193,8 @@ Private.classes.EventTrigger = {
 ---@field triggerCastIndex number|nil
 ---@field repeatInstance number|nil
 ---@field repeatCastIndex number|nil
+---@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
+---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
 Private.classes.BossAbilityInstance = {
 	spellID = 0,
 	spellOccurrence = 1,

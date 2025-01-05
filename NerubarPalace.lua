@@ -1123,6 +1123,7 @@ local bosses = {
 				phases = {
 					[4] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0 },
+						signifiesPhaseStart = true,
 						repeatInterval = nil,
 					}),
 				},
@@ -1153,6 +1154,8 @@ local bosses = {
 				phases = {
 					[2] = Private.classes.BossAbilityPhase:New({
 						castTimes = { 0 },
+						signifiesPhaseStart = true,
+						signifiesPhaseEnd = true,
 						repeatInterval = nil,
 					}),
 				},
@@ -1174,6 +1177,7 @@ local bosses = {
 				count = 1,
 				defaultCount = 1,
 				repeatAfter = nil,
+				name = "Int",
 			}),
 			[3] = Private.classes.BossPhase:New({
 				duration = 126,
@@ -1181,6 +1185,7 @@ local bosses = {
 				count = 1,
 				defaultCount = 1,
 				repeatAfter = nil,
+				name = "P2",
 			}),
 			[4] = Private.classes.BossPhase:New({
 				duration = 240,
@@ -1188,6 +1193,7 @@ local bosses = {
 				count = 1,
 				defaultCount = 1,
 				repeatAfter = nil,
+				name = "P3",
 			}),
 		},
 	}),

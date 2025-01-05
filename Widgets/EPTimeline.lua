@@ -9,10 +9,10 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 
 local abs = math.abs
-local ceil = math.ceil
+local ceil, floor = math.ceil, math.floor
+local cos, sin = math.cos, math.sin
 local CreateFrame = CreateFrame
 local format = string.format
-local floor = math.floor
 local GetCursorPosition = GetCursorPosition
 local geterrorhandler = geterrorhandler
 local GetSpellBaseCooldown = GetSpellBaseCooldown
@@ -22,10 +22,10 @@ local hugeNumber = math.huge
 local ipairs = ipairs
 local IsAltKeyDown = IsAltKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
-local max = math.max
-local min = math.min
+local max, min = math.max, math.min
 local next = next
 local pairs = pairs
+local rad = math.rad
 local select = select
 local sort = sort
 local split = string.split
@@ -60,6 +60,11 @@ local fontPath = LSM:Fetch("font", "PT Sans Narrow")
 local tickColor = { 1, 1, 1, 0.75 }
 local tickLabelColor = { 1, 1, 1, 1 }
 local assignmentOutlineColor = { 0.25, 0.25, 0.25, 1 }
+local phaseIndicatorColor = { 1, 0.82, 0, 1 }
+local phaseIndicatorWidth = 2
+local phaseIndicatorFontSize = 11
+local phaseIndicatorRotationRad = rad(45)
+local phaseIndicatorTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]]
 local assignmentSelectOutlineColor = { 1, 0.82, 0, 1 }
 local invalidTextureColor = { 0.8, 0.1, 0.1, 0.4 }
 local tickFontSize = 12
@@ -459,17 +464,84 @@ local function UpdateHorizontalScrollBarThumb(scrollBarWidth, thumb, scrollFrame
 	thumb:SetPoint("LEFT", horizontalThumbPosition, 0)
 end
 
+---@param self EPTimeline
+---@return BossPhaseIndicatorTexture
+local function CreatePhaseIndicatorTexture(self)
+	local frame = self.bossAbilityTimeline.timelineFrame
+	local level = bossAbilityTextureSubLevel - 2
+	local phaseIndicator = frame:CreateTexture(nil, "BACKGROUND", nil, level) --[[@as BossPhaseIndicatorTexture]]
+	phaseIndicator:SetTexture(phaseIndicatorTexture, "REPEAT", "REPEAT")
+	phaseIndicator:SetVertTile(true)
+	phaseIndicator:SetHorizTile(true)
+	phaseIndicator:SetVertexColor(unpack(phaseIndicatorColor))
+	phaseIndicator:SetWidth(phaseIndicatorWidth)
+	phaseIndicator:Hide()
+
+	local phaseIndicatorLabel = self.phaseNameFrame:CreateFontString(nil, "OVERLAY")
+	phaseIndicatorLabel:SetRotation(phaseIndicatorRotationRad)
+	if fontPath then
+		phaseIndicatorLabel:SetFont(fontPath, phaseIndicatorFontSize)
+		phaseIndicatorLabel:SetTextColor(unpack(phaseIndicatorColor))
+	end
+	phaseIndicatorLabel:Hide()
+
+	phaseIndicator.label = phaseIndicatorLabel
+	return phaseIndicator
+end
+
+---@param width number
+---@param height number
+---@param rotationInRadians number
+---@return number, number
+local function CalculateRotatedOffset(width, height, rotationInRadians)
+	local cosRotation, sinRotation = cos(rotationInRadians), sin(rotationInRadians)
+	local widthRotated = width * cosRotation + height * sinRotation
+	local heightRotated = height * cosRotation + width * sinRotation
+	local additionalHorizontalOffset = height * sinRotation
+	local horizontalOffset = abs(width - widthRotated) / 2.0 + additionalHorizontalOffset
+	local verticalOffset = abs(height - heightRotated) / 2.0
+	return horizontalOffset, verticalOffset
+end
+
+---@param self EPTimeline
+---@param index integer
+---@param name string
+---@param offset number
+---@param width number
+local function DrawBossPhaseIndicator(self, phaseStart, index, name, offset, width)
+	local indicator = self.bossPhaseIndicators[index][phaseStart and 1 or 2]
+	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+
+	local startHorizontalOffset = offset
+	if phaseStart then
+		startHorizontalOffset = startHorizontalOffset + phaseIndicatorWidth
+	else
+		startHorizontalOffset = startHorizontalOffset + width - phaseIndicatorWidth
+	end
+
+	indicator:SetPoint("TOP", timelineFrame, "TOPLEFT", startHorizontalOffset, 0)
+	indicator:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", startHorizontalOffset, 0)
+	indicator:Show()
+	local label = indicator.label
+	label:SetText(name)
+	local w, h = label:GetStringWidth(), label:GetStringHeight()
+	local horizontal, vertical = CalculateRotatedOffset(w, h, phaseIndicatorRotationRad)
+	label:SetPoint("BOTTOM", self.phaseNameFrame, "BOTTOM", 0, vertical)
+	label:SetPoint("LEFT", timelineFrame, "LEFT", startHorizontalOffset - horizontal + phaseIndicatorWidth / 2.0, 0)
+	label:Show()
+end
+
 -- Helper function to draw a boss ability timeline bar.
 ---@param self EPTimeline
 ---@param startTime number absolute start time of the bar.
 ---@param endTime number absolute end time of the bar.
 ---@param color integer[] color of the bar.
 ---@param index integer index into the bars table.
----@param offset number offset from the top of the timeline frame.
+---@param verticalOffset number offset from the top of the timeline frame.
 ---@param abilityInstance BossAbilityInstance
-local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset, abilityInstance)
+local function DrawBossAbilityBar(self, startTime, endTime, color, index, verticalOffset, abilityInstance)
 	if totalTimelineDuration <= 0.0 then
-		return
+		return nil
 	end
 
 	local padding = timelineLinePadding
@@ -478,19 +550,26 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 
 	local timelineStartPosition = (startTime / totalTimelineDuration) * timelineWidth
 	local timelineEndPosition = (endTime / totalTimelineDuration) * timelineWidth
+	local horizontalOffset = timelineStartPosition + padding.x
 
 	---@class Frame
 	local frame = self.bossAbilityFrames[index]
 	if not frame then
 		frame = CreateFrame("Frame", nil, timelineFrame)
-		frame.spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
-		frame.outlineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel - 1)
-		frame.outlineTexture:SetAllPoints()
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.outlineTexture:Show()
-		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+
+		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
+		spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
+		spellTexture:SetPoint("TOPLEFT", 1, -1)
+		spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
+
+		local outlineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel - 1)
+		outlineTexture:SetAllPoints()
+		outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		outlineTexture:Show()
+
 		frame.assignmentFrame = timelineFrame
+		frame.spellTexture = spellTexture
+		frame.outlineTexture = outlineTexture
 		self.bossAbilityFrames[index] = frame
 	end
 
@@ -498,15 +577,20 @@ local function DrawBossAbilityBar(self, startTime, endTime, color, index, offset
 
 	local r, g, b, a = unpack(color)
 	frame.spellTexture:SetColorTexture(r / 255.0, g / 255.0, b / 255.0, a)
-	frame:SetSize(max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition), bossAbilityBarHeight)
-	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", timelineStartPosition + padding.x, -offset)
+	local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
+	frame:SetSize(width, bossAbilityBarHeight)
+	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
 	frame:SetFrameLevel(timelineFrame:GetFrameLevel() + 1 + floor(startTime))
 	frame:Show()
+
+	return horizontalOffset, width
 end
 
 ---@param self EPTimeline
 ---@param bossAbility BossAbility
 ---@param bossPhaseIndex integer
+---@param bossPhaseName string|nil
+---@param nextBossPhaseName string|nil
 ---@param bossAbilitySpellID integer
 ---@param bossPhaseStartTime number
 ---@param bossPhaseDuration number
@@ -519,6 +603,8 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	self,
 	bossAbility,
 	bossPhaseIndex,
+	bossPhaseName,
+	nextBossPhaseName,
 	bossAbilitySpellID,
 	bossPhaseStartTime,
 	bossPhaseDuration,
@@ -542,12 +628,20 @@ local function DrawPhaseOrTimeBasedBossAbility(
 		local castStart = cumulativePhaseCastTimes + castTime
 		local castEnd = castStart + bossAbility.castTime
 		local effectEnd = castEnd + bossAbility.duration
-		DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
+		local hOffset, width = DrawBossAbilityBar(self, castStart, effectEnd, color, bossAbilityInstanceIndex, offset, {
 			spellID = bossAbilitySpellID,
 			phase = bossPhaseIndex,
 			castTime = castStart,
 			spellOccurrence = spellCount[bossAbilitySpellID],
 		})
+		if hOffset and width then
+			if bossAbilityPhase.signifiesPhaseStart and bossPhaseName then
+				DrawBossPhaseIndicator(self, true, bossPhaseIndex, bossPhaseName, hOffset, width)
+			end
+			if bossAbilityPhase.signifiesPhaseEnd and nextBossPhaseName then
+				DrawBossPhaseIndicator(self, false, bossPhaseIndex, nextBossPhaseName, hOffset, width)
+			end
+		end
 		spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] + 1
 		bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 		if bossAbilityPhase.repeatInterval then
@@ -679,9 +773,14 @@ end
 -- Updates the rendering of boss abilities on the timeline.
 ---@param self EPTimeline
 local function UpdateBossAbilityBars(self)
-	-- Hide existing bars
-	for _, texture in pairs(self.bossAbilityFrames) do
-		texture:Hide()
+	for _, frame in pairs(self.bossAbilityFrames) do
+		frame:Hide()
+	end
+	for _, textureGroup in ipairs(self.bossPhaseIndicators) do
+		for _, texture in ipairs(textureGroup) do
+			texture:Hide()
+			texture.label:Hide()
+		end
 	end
 
 	local cumulativePhaseStartTime = 0
@@ -698,6 +797,8 @@ local function UpdateBossAbilityBars(self)
 	for _, bossPhaseIndex in ipairs(self.bossPhaseOrder) do
 		local bossPhase = self.bossPhases[bossPhaseIndex]
 		if bossPhase then
+			local phaseName = bossPhase.name
+			local nextPhaseName = self.bossPhases[bossPhaseIndex + 1] and self.bossPhases[bossPhaseIndex + 1].name
 			local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 			for bossAbilityOrderIndex, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 				if self.bossAbilityVisibility[bossAbilitySpellID] == true then
@@ -706,6 +807,8 @@ local function UpdateBossAbilityBars(self)
 						self,
 						bossAbility,
 						bossPhaseIndex,
+						phaseName,
+						nextPhaseName,
 						bossAbilitySpellID,
 						cumulativePhaseStartTime,
 						bossPhase.duration,
@@ -1677,6 +1780,9 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	UpdateResizeBounds(self)
 end
 
+---@class BossPhaseIndicatorTexture : Texture
+---@field label FontString
+
 ---@class AssignmentFrame : Frame
 ---@field spellTexture Texture
 ---@field invalidTexture Texture
@@ -1712,6 +1818,7 @@ end
 ---@field bossAbilityVisibility table<integer, boolean>
 ---@field bossAbilityOrder table<integer, integer>
 ---@field bossAbilityFrames table<integer, Frame>
+---@field bossPhaseIndicators table<integer, table<1|2, BossPhaseIndicatorTexture>>
 ---@field bossPhaseOrder table<integer, integer>
 ---@field bossPhases table<integer, BossPhase>
 ---@field collapsed table<string, boolean>
@@ -1729,6 +1836,7 @@ end
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
 	self.bossAbilityFrames = self.bossAbilityFrames or {}
+	self.bossPhaseIndicators = self.bossPhaseIndicators or {}
 	self.timelineLabels = self.timelineLabels or {}
 	self.zoomFactor = self.zoomFactor or 1.0
 	self.orderedWithSpellIDAssignmentFrameIndices = {}
@@ -1820,6 +1928,11 @@ local function OnAcquire(self)
 	self.splitterScrollFrame:SetScrollChild(self.splitterFrame)
 	self.splitterFrame:SetPoint("LEFT")
 	self.splitterFrame:Show()
+
+	self.phaseNameFrame:SetParent(self.frame)
+	self.phaseNameFrame:SetPoint("BOTTOMLEFT", self.frame, "TOPLEFT", 210, 0)
+	self.phaseNameFrame:SetPoint("BOTTOMRIGHT", self.frame, "TOPRIGHT")
+	self.phaseNameFrame:SetHeight(40)
 
 	local label = self.timelineLabels[1]
 	if not label then
@@ -1946,11 +2059,24 @@ local function OnRelease(self)
 		frame.spellTexture:SetPoint("BOTTOMRIGHT", -1, 1)
 	end
 
+	for _, textureGroup in ipairs(self.bossPhaseIndicators) do
+		for _, texture in ipairs(textureGroup) do
+			texture:ClearAllPoints()
+			texture:Hide()
+			texture.label:ClearAllPoints()
+			texture.label:Hide()
+		end
+	end
+
 	for _, label in pairs(self.timelineLabels) do
 		label:ClearAllPoints()
 		label:Hide()
 		label.wantsToShow = nil
 	end
+
+	self.phaseNameFrame:ClearAllPoints()
+	self.phaseNameFrame:SetParent(UIParent)
+	self.phaseNameFrame:Hide()
 
 	self.fakeAssignmentFrame:ClearAllPoints()
 	self.fakeAssignmentFrame:SetParent(UIParent)
@@ -2001,8 +2127,13 @@ local function SetBossAbilities(self, abilities, abilityOrder, phases, phaseOrde
 	self.bossAbilityVisibility = bossAbilityVisibility
 
 	totalTimelineDuration = 0
-	for _, phaseData in pairs(self.bossPhases) do
+	for index, phaseData in pairs(self.bossPhases) do
 		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
+		if not self.bossPhaseIndicators[index] then
+			self.bossPhaseIndicators[index] = {}
+			self.bossPhaseIndicators[index][1] = CreatePhaseIndicatorTexture(self)
+			self.bossPhaseIndicators[index][2] = CreatePhaseIndicatorTexture(self)
+		end
 	end
 
 	self:UpdateHeightFromBossAbilities()
@@ -2484,6 +2615,9 @@ local function Constructor()
 	thumbBackground:SetAllPoints()
 	thumbBackground:SetColorTexture(unpack(scrollThumbBackgroundColor))
 
+	local phaseNameFrame = CreateFrame("Frame", nil, frame)
+	phaseNameFrame:SetClipsChildren(true)
+
 	---@class EPTimeline
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -2515,6 +2649,7 @@ local function Constructor()
 		type = Type,
 		horizontalScrollBar = horizontalScrollBar,
 		thumb = thumb,
+		phaseNameFrame = phaseNameFrame,
 	}
 
 	local fakeAssignmentFrame = CreateAssignmentFrame(widget, 0, frame, 0, 0)
