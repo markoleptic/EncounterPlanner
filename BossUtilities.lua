@@ -4,9 +4,11 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class BossUtilities
 local BossUtilities = Private.bossUtilities
 
-local bosses = Private.bosses
+local hugeNumber = math.huge
 local ipairs = ipairs
+local min = math.min
 local pairs = pairs
+local sort = sort
 local tinsert = tinsert
 local type = type
 
@@ -67,9 +69,12 @@ end
 ---@param bossName string
 ---@return Boss|nil
 function BossUtilities.GetBoss(bossName)
-	local boss = bosses["Nerub'ar Palace"][bossName]
-	if boss then
-		return boss
+	for _, raidInstanceBosses in pairs(Private.bosses) do
+		for currentBossName, boss in pairs(raidInstanceBosses) do
+			if currentBossName == bossName then
+				return boss
+			end
+		end
 	end
 	return nil
 end
@@ -77,9 +82,11 @@ end
 ---@param spellID integer
 ---@return string|nil
 function BossUtilities.GetBossNameFromSpellID(spellID)
-	for bossName, boss in pairs(bosses["Nerub'ar Palace"]) do
-		if boss.abilities[spellID] then
-			return bossName
+	for _, raidInstanceBosses in pairs(Private.bosses) do
+		for bossName, boss in pairs(raidInstanceBosses) do
+			if boss.abilities[spellID] then
+				return bossName
+			end
 		end
 	end
 	return nil
@@ -99,9 +106,11 @@ end
 ---@param spellID integer
 ---@return Boss|nil
 function BossUtilities.GetBossFromSpellID(spellID)
-	for _, boss in pairs(bosses["Nerub'ar Palace"]) do
-		if boss.abilities[spellID] then
-			return boss
+	for _, raidInstanceBosses in pairs(Private.bosses) do
+		for _, boss in pairs(raidInstanceBosses) do
+			if boss.abilities[spellID] then
+				return boss
+			end
 		end
 	end
 	return nil
@@ -112,7 +121,13 @@ end
 function BossUtilities.GetBossFromBossDefinitionIndex(bossDefinitionIndex)
 	local bossDef = BossUtilities.GetBossDefinition(bossDefinitionIndex)
 	if bossDef then
-		return bosses["Nerub'ar Palace"][bossDef.name]
+		for _, raidInstanceBosses in pairs(Private.bosses) do
+			for bossName, boss in pairs(raidInstanceBosses) do
+				if bossDef.name == bossName then
+					return boss
+				end
+			end
+		end
 	end
 	return nil
 end
@@ -120,9 +135,11 @@ end
 ---@param spellID number
 ---@return BossAbility|nil
 function BossUtilities.FindBossAbility(spellID)
-	for _, boss in pairs(bosses["Nerub'ar Palace"]) do
-		if boss.abilities[spellID] then
-			return boss.abilities[spellID]
+	for _, raidInstanceBosses in pairs(Private.bosses) do
+		for _, boss in pairs(raidInstanceBosses) do
+			if boss.abilities[spellID] then
+				return boss.abilities[spellID]
+			end
 		end
 	end
 	return nil
@@ -219,16 +236,16 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
-				for _, bossAbilitySpellID in ipairs(boss.sortedAbilityIDs) do
+				for bossAbilitySpellID, _ in pairs(boss.abilities) do
 					if not spellCount[bossAbilitySpellID] then
 						spellCount[bossAbilitySpellID] = {}
 					end
 					local bossAbility = boss.abilities[bossAbilitySpellID]
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					if bossAbilityPhase then
-						local cumulativePhaseCastTimes = cumulativePhaseStartTime
+						local cumulativePhaseCastTime = cumulativePhaseStartTime
 						for _, castTime in ipairs(bossAbilityPhase.castTimes) do
-							local castStart = cumulativePhaseCastTimes + castTime
+							local castStart = cumulativePhaseCastTime + castTime
 							tinsert(spellCount[bossAbilitySpellID], castStart)
 							if bossAbilityPhase.repeatInterval then
 								local repeatInterval = bossAbilityPhase.repeatInterval
@@ -238,7 +255,7 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
 									nextRepeatStart = nextRepeatStart + repeatInterval
 								end
 							end
-							cumulativePhaseCastTimes = castStart
+							cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
 						end
 					end
 
@@ -287,4 +304,27 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
 		end
 	end
 	return spellCount
+end
+
+do -- Generate a list of abilities for each boss sorted by their first cast time
+	for _, raidInstanceBosses in pairs(Private.bosses) do
+		for bossName, boss in pairs(raidInstanceBosses) do
+			local earliestCastTimes = {}
+			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
+			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
+				local earliestCastTime = hugeNumber
+				for _, castTime in pairs(spellOccurrenceNumbers) do
+					earliestCastTime = min(earliestCastTime, castTime)
+				end
+				tinsert(earliestCastTimes, { spellID = spellID, earliestCastTime = earliestCastTime })
+			end
+			sort(earliestCastTimes, function(a, b)
+				return a.earliestCastTime < b.earliestCastTime
+			end)
+			boss.sortedAbilityIDs = {}
+			for _, entry in ipairs(earliestCastTimes) do
+				tinsert(boss.sortedAbilityIDs, entry.spellID)
+			end
+		end
+	end
 end

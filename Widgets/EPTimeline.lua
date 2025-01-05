@@ -616,7 +616,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	end
 
 	local color = colors[((bossAbilityOrderIndex - 1) % #colors) + 1]
-	local cumulativePhaseCastTimes = bossPhaseStartTime
+	local cumulativePhaseCastTime = bossPhaseStartTime
 	local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 	local padding = timelineLinePadding
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
@@ -624,7 +624,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 	local frameLevel = timelineFrame:GetFrameLevel() + 1
 
 	for _, castTime in ipairs(bossAbilityPhase.castTimes) do
-		local castStart = cumulativePhaseCastTimes + castTime
+		local castStart = cumulativePhaseCastTime + castTime
 		local castEnd = castStart + bossAbility.castTime
 		local effectEnd = castEnd + bossAbility.duration
 		local timelineStartPosition = (castStart / totalTimelineDuration) * timelineWidth
@@ -673,7 +673,7 @@ local function DrawPhaseOrTimeBasedBossAbility(
 				repeatInstance = repeatInstance + 1
 			end
 		end
-		cumulativePhaseCastTimes = castStart
+		cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
 	end
 
 	return bossAbilityInstanceIndex

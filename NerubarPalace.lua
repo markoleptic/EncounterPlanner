@@ -4,13 +4,6 @@ local Private = select(2, ...) --[[@as Private]]
 ---@class TimelineAssignment
 local TimelineAssignment = Private.classes.TimelineAssignment
 
-local hugeNumber = math.huge
-local ipairs = ipairs
-local min = math.min
-local pairs = pairs
-local sort = sort
-local tinsert = tinsert
-
 Private.raidInstances = {
 	["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 		name = "Nerub'ar Palace",
@@ -1043,10 +1036,19 @@ local bosses = {
 				castTime = 20.0,
 				duration = 0.0,
 			}),
+			[462692] = Private.classes.BossAbility:New({ -- Echoing Connection (Chamber Guardian)
+				phases = {
+					[3] = Private.classes.BossAbilityPhase:New({
+						castTimes = { 30.0, 0.0 },
+					}),
+				},
+				castTime = 0.0,
+				duration = 20.0,
+			}),
 			[462693] = Private.classes.BossAbility:New({ -- Echoing Connection (Chamber Expeller)
 				phases = {
 					[3] = Private.classes.BossAbilityPhase:New({
-						castTimes = { 30.0, 0.0, 7.0, 0.0 },
+						castTimes = { 30.0, 0.0, 30.0, 0.0 },
 					}),
 				},
 				castTime = 0.0,
@@ -1108,69 +1110,5 @@ local bosses = {
 		},
 	}),
 }
-
--- Generate a list of abilities for each boss sorted by their first cast time
-for _, boss in pairs(bosses) do
-	local firstAppearances = {}
-	local firstAppearancesMap = {}
-	for spellID, data in pairs(boss.abilities) do
-		local earliestCastTime = hugeNumber
-		for phaseNumber, phase in pairs(data.phases) do
-			if phase.castTimes then
-				for _, castTime in ipairs(phase.castTimes) do
-					if phaseNumber > 1 then
-						local phaseTimeOffset = boss.phases[phaseNumber].duration
-						earliestCastTime = min(earliestCastTime, phaseTimeOffset + castTime)
-					else
-						earliestCastTime = min(earliestCastTime, castTime)
-					end
-				end
-			end
-		end
-		firstAppearancesMap[spellID] = earliestCastTime
-		tinsert(firstAppearances, { spellID = spellID, earliestCastTime = earliestCastTime })
-	end
-	local firstEventTriggerAppearancesMap = {}
-	for spellID, data in pairs(boss.abilities) do
-		local earliestCastTime = hugeNumber
-		if data.eventTriggers then
-			for triggerSpellID, eventTrigger in pairs(data.eventTriggers) do
-				local earliestTriggerCastTime = firstAppearancesMap[triggerSpellID]
-				local castTime = earliestTriggerCastTime
-					+ boss.abilities[triggerSpellID].castTime
-					+ eventTrigger.castTimes[1]
-				earliestCastTime = min(earliestCastTime, castTime)
-			end
-			firstEventTriggerAppearancesMap[spellID] = earliestCastTime
-		end
-	end
-
-	for _, data in pairs(firstAppearances) do
-		if firstEventTriggerAppearancesMap[data.spellID] then
-			data.earliestCastTime = min(data.earliestCastTime, firstEventTriggerAppearancesMap[data.spellID])
-		end
-	end
-
-	for spellID, earliestCastTime in pairs(firstEventTriggerAppearancesMap) do
-		local found = false
-		for _, data in pairs(firstAppearances) do
-			if data.spellID == spellID then
-				found = true
-				break
-			end
-		end
-		if not found then
-			tinsert(firstAppearances, { spellID = spellID, earliestCastTime = earliestCastTime })
-		end
-	end
-
-	sort(firstAppearances, function(a, b)
-		return a.earliestCastTime < b.earliestCastTime
-	end)
-	boss.sortedAbilityIDs = {}
-	for _, entry in ipairs(firstAppearances) do
-		tinsert(boss.sortedAbilityIDs, entry.spellID)
-	end
-end
 
 Private.bosses["Nerub'ar Palace"] = bosses
