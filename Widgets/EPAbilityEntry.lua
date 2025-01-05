@@ -40,7 +40,6 @@ local checkBackdrop = {
 ---@field checkBackground table|BackdropTemplate|Frame
 ---@field collapseButton Button|table
 ---@field enabled boolean
----@field checked boolean
 ---@field key string|table|nil
 ---@field collapsed boolean
 
@@ -65,7 +64,7 @@ local function OnAcquire(self)
 	self.check:SetBackdropColor(unpack(checkBackdropColor))
 	self.check:SetCallback("Clicked", function()
 		if self.enabled then
-			self:Fire("OnValueChanged", self.checked)
+			self:Fire("OnValueChanged")
 		end
 	end)
 
