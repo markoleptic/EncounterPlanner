@@ -62,7 +62,7 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry)
 			end
 		end
 		local bossName =
-			bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
+			bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
 		if bossName then
 			InterfaceUpdater.UpdateAllAssignments(true, bossName)
 		end
@@ -73,7 +73,7 @@ end
 ---@param collapsed boolean
 local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
-	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
+	local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossName then
 		InterfaceUpdater.UpdateAllAssignments(true, bossName)
 	end
@@ -82,10 +82,9 @@ end
 ---@param abilityEntry EPAbilityEntry
 local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
 	local key = tonumber(abilityEntry:GetKey())
-	local bossIndex = Private.mainFrame.bossSelectDropdown:GetValue()
-	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
-	if key and bossDef then
-		local bossName = bossDef.name
+	local boss = bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+	if key and boss then
+		local bossName = boss.name
 		local atLeastOneSelected = false
 		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossName]) do
 			if currentAbilityID ~= key and currentSelected then
@@ -114,10 +113,7 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 				AddOn.db.profile.activeBossAbilities[bossName] = {}
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
-			local bossIndex = bossUtilities.GetBossDefinitionIndex(bossName)
-			if bossIndex and bossDropdown:GetValue() ~= bossIndex then
-				bossDropdown:SetValue(bossIndex)
-			end
+			bossDropdown:SetValue(boss.dungeonEncounterID)
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}
 			local bossAbilitySelectItems = {}
@@ -336,11 +332,13 @@ function InterfaceUpdater.UpdateFromNote(noteName)
 		local bossName = note.bossName
 		if not bossName then
 			bossName = utilities.SearchStringTableForBossName(note.content)
-				or bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue()).name
+				or bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
 		end
 
-		InterfaceUpdater.UpdateBoss(bossName, true)
-		InterfaceUpdater.UpdateAllAssignments(true, bossName)
+		if bossName then
+			InterfaceUpdater.UpdateBoss(bossName, true)
+			InterfaceUpdater.UpdateAllAssignments(true, bossName)
+		end
 
 		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 		if renameNoteLineEdit then

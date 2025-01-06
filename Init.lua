@@ -103,7 +103,7 @@ Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 ---@field name string The name of the raid.
 ---@field journalInstanceID number The journal instance ID of the raid. All bosses share the same JournalInstanceID.
 ---@field instanceID number The instance ID for the zone the boss is located in. All bosses share the same instanceID.
----@field bosses table<integer, BossDefinition>
+---@field bosses table<integer, Boss>
 Private.classes.RaidInstance = {
 	name = "",
 	journalInstanceID = 0,
@@ -111,25 +111,21 @@ Private.classes.RaidInstance = {
 	bosses = {},
 }
 
----@class BossDefinition
+---@class Boss
 ---@field name string Name of the boss
 ---@field bossID table<integer,integer> ID of the boss or bosses
 ---@field journalEncounterID integer Journal encounter ID of the boss encounter
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter
 ---@field instanceID number The instance ID for the zone the boss is located in.
-Private.classes.BossDefinition = {
+---@field abilities table<integer, BossAbility> A list of abilities
+---@field phases table<integer, BossPhase> A list of phases
+---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance
+Private.classes.Boss = {
 	name = "",
 	bossID = {},
 	journalEncounterID = 0,
 	dungeonEncounterID = 0,
 	instanceID = 0,
-}
-
----@class Boss
----@field abilities table<integer, BossAbility> A list of abilities
----@field phases table<integer, BossPhase> A list of phases
----@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance
-Private.classes.Boss = {
 	abilities = {},
 	phases = {},
 	sortedAbilityIDs = {},
@@ -371,11 +367,6 @@ function Private.classes.RaidInstance:New(o)
 	return CreateNewInstance(self, o)
 end
 
----@return BossDefinition
-function Private.classes.BossDefinition:New(o)
-	return CreateNewInstance(self, o)
-end
-
 ---@return Boss
 function Private.classes.Boss:New(o)
 	return CreateNewInstance(self, o)
@@ -604,8 +595,8 @@ local defaults = {
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
+Private.raidInstances = {} --[[@as table<string, RaidInstance>]]
 Private.interfaceUpdater = {}
-Private.bosses = {} --[[@as table<string, table<string, Boss>>]]
 Private.bossUtilities = {}
 Private.utilities = {}
 Private.mainFrame = nil --[[@as EPMainFrame]]

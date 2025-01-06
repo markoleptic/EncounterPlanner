@@ -10,17 +10,40 @@ local min = math.min
 local pairs = pairs
 local sort = sort
 local tinsert = tinsert
-local type = type
 
----@param bossNameOrIndex string|integer
----@return BossDefinition|nil
-function BossUtilities.GetBossDefinition(bossNameOrIndex)
-	if type(bossNameOrIndex) == "number" then
-		return Private.raidInstances["Nerub'ar Palace"].bosses[bossNameOrIndex]
-	elseif type(bossNameOrIndex) == "string" then
-		for _, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
-			if bossDefinition.name == bossNameOrIndex then
-				return bossDefinition
+---@param bossName string
+---@return Boss|nil
+function BossUtilities.GetBoss(bossName)
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			if boss.name == bossName then
+				return boss
+			end
+		end
+	end
+	return nil
+end
+
+---@param dungeonEncounterID integer
+---@return string|nil
+function BossUtilities.GetBossNameFromDungeonEncounterID(dungeonEncounterID)
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			if boss.dungeonEncounterID == dungeonEncounterID then
+				return boss.name
+			end
+		end
+	end
+	return nil
+end
+
+---@param dungeonEncounterID integer
+---@return Boss|nil
+function BossUtilities.GetBossFromDungeonEncounterID(dungeonEncounterID)
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			if boss.dungeonEncounterID == dungeonEncounterID then
+				return boss
 			end
 		end
 	end
@@ -30,8 +53,7 @@ end
 ---@param bossName string
 ---@return integer|nil
 function BossUtilities.GetBossDungeonEncounterID(bossName)
-	local raidInstances = Private.raidInstances --[[@as table<string, RaidInstance>]]
-	for _, raidInstance in pairs(raidInstances) do
+	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.name == bossName then
 				return boss.dungeonEncounterID
@@ -44,8 +66,7 @@ end
 ---@param bossName string
 ---@return integer|nil
 function BossUtilities.GetBossInstanceID(bossName)
-	local raidInstances = Private.raidInstances --[[@as table<string, RaidInstance>]]
-	for _, raidInstance in pairs(raidInstances) do
+	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.name == bossName then
 				return boss.instanceID
@@ -55,49 +76,14 @@ function BossUtilities.GetBossInstanceID(bossName)
 	return nil
 end
 
----@param bossName string
----@return integer|nil
-function BossUtilities.GetBossDefinitionIndex(bossName)
-	for index, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
-		if bossDefinition.name == bossName then
-			return index
-		end
-	end
-	return nil
-end
-
----@param bossName string
----@return Boss|nil
-function BossUtilities.GetBoss(bossName)
-	for _, raidInstanceBosses in pairs(Private.bosses) do
-		for currentBossName, boss in pairs(raidInstanceBosses) do
-			if currentBossName == bossName then
-				return boss
-			end
-		end
-	end
-	return nil
-end
-
 ---@param spellID integer
 ---@return string|nil
 function BossUtilities.GetBossNameFromSpellID(spellID)
-	for _, raidInstanceBosses in pairs(Private.bosses) do
-		for bossName, boss in pairs(raidInstanceBosses) do
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.abilities[spellID] then
-				return bossName
+				return boss.name
 			end
-		end
-	end
-	return nil
-end
-
----@param index integer
----@return string|nil
-function BossUtilities.GetBossNameFromBossDefinitionIndex(index)
-	for currentIndex, bossDefinition in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
-		if currentIndex == index then
-			return bossDefinition.name
 		end
 	end
 	return nil
@@ -106,26 +92,10 @@ end
 ---@param spellID integer
 ---@return Boss|nil
 function BossUtilities.GetBossFromSpellID(spellID)
-	for _, raidInstanceBosses in pairs(Private.bosses) do
-		for _, boss in pairs(raidInstanceBosses) do
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.abilities[spellID] then
 				return boss
-			end
-		end
-	end
-	return nil
-end
-
----@param bossDefinitionIndex integer
----@return Boss|nil
-function BossUtilities.GetBossFromBossDefinitionIndex(bossDefinitionIndex)
-	local bossDef = BossUtilities.GetBossDefinition(bossDefinitionIndex)
-	if bossDef then
-		for _, raidInstanceBosses in pairs(Private.bosses) do
-			for bossName, boss in pairs(raidInstanceBosses) do
-				if bossDef.name == bossName then
-					return boss
-				end
 			end
 		end
 	end
@@ -135,8 +105,8 @@ end
 ---@param spellID number
 ---@return BossAbility|nil
 function BossUtilities.FindBossAbility(spellID)
-	for _, raidInstanceBosses in pairs(Private.bosses) do
-		for _, boss in pairs(raidInstanceBosses) do
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.abilities[spellID] then
 				return boss.abilities[spellID]
 			end
@@ -307,10 +277,10 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
 end
 
 do -- Generate a list of abilities for each boss sorted by their first cast time
-	for _, raidInstanceBosses in pairs(Private.bosses) do
-		for bossName, boss in pairs(raidInstanceBosses) do
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
 			local earliestCastTimes = {}
-			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
+			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(boss.name)
 			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
 				local earliestCastTime = hugeNumber
 				for _, castTime in pairs(spellOccurrenceNumbers) do

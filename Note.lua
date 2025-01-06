@@ -513,7 +513,7 @@ end
 ---@param note Plan
 ---@return string|nil
 function Private:ExportNote(note)
-	local bossName = bossUtilities.GetBossNameFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
+	local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
 	if bossName then
 		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
 		sort(timelineAssignments, function(a, b)
@@ -605,10 +605,10 @@ function Private:Note(epNoteName, currentBossName, parseMRTNote)
 
 	local bossName = self:ParseNote(note)
 	note.bossName = bossName or currentBossName
-	local bossDef = bossUtilities.GetBossDefinition(note.bossName)
-	if bossDef then
-		note.dungeonEncounterID = bossDef.dungeonEncounterID
-		note.instanceID = bossDef.instanceID
+	local boss = bossUtilities.GetBoss(note.bossName)
+	if boss then
+		note.dungeonEncounterID = boss.dungeonEncounterID
+		note.instanceID = boss.instanceID
 	end
 
 	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)

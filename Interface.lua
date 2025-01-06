@@ -74,12 +74,12 @@ end
 
 ---@return Boss|nil
 local function GetCurrentBoss()
-	return bossUtilities.GetBossFromBossDefinitionIndex(Private.mainFrame.bossSelectDropdown:GetValue())
+	return bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
 end
 
 ---@return string
 local function GetCurrentBossName()
-	return bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue()).name
+	return bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue()).name
 end
 
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
@@ -502,14 +502,14 @@ local function HandleBossDropdownValueChanged(value)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local bossIndex = tonumber(value)
-	if bossIndex then
-		local bossDef = bossUtilities.GetBossDefinition(bossIndex)
-		if bossDef then
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].bossName = bossDef.name
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].dungeonEncounterID = bossDef.dungeonEncounterID
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].instanceID = bossDef.instanceID
-			interfaceUpdater.UpdateBoss(bossDef.name, true)
+	local bossDungeonEncounterID = tonumber(value)
+	if bossDungeonEncounterID then
+		local boss = bossUtilities.GetBossFromDungeonEncounterID(bossDungeonEncounterID)
+		if boss then
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].bossName = boss.name
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].dungeonEncounterID = boss.dungeonEncounterID
+			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].instanceID = boss.instanceID
+			interfaceUpdater.UpdateBoss(boss.name, true)
 		end
 	end
 end
@@ -518,22 +518,21 @@ end
 ---@param value number|string
 ---@param selected boolean
 local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
-	local bossIndex = Private.mainFrame.bossSelectDropdown:GetValue()
-	local bossDef = bossUtilities.GetBossDefinition(bossIndex)
-	if bossDef then
+	local boss = bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+	if boss then
 		local atLeastOneSelected = false
-		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDef.name]) do
+		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[boss.name]) do
 			if currentAbilityID ~= value and currentSelected then
 				atLeastOneSelected = true
 				break
 			end
 		end
 		if atLeastOneSelected then
-			AddOn.db.profile.activeBossAbilities[bossDef.name][value] = selected
-			interfaceUpdater.UpdateBoss(bossDef.name, false)
+			AddOn.db.profile.activeBossAbilities[boss.name][value] = selected
+			interfaceUpdater.UpdateBoss(boss.name, false)
 		else
 			dropdown:SetItemIsSelected(value, true)
-			AddOn.db.profile.activeBossAbilities[bossDef.name][value] = true
+			AddOn.db.profile.activeBossAbilities[boss.name][value] = true
 		end
 	end
 end
@@ -685,11 +684,11 @@ local function HandleCreateNewNoteButtonClicked()
 	notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
 
-	local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
-	if bossDef then
-		notes[newNoteName].bossName = bossDef.name
-		notes[newNoteName].dungeonEncounterID = bossDef.dungeonEncounterID
-		notes[newNoteName].instanceID = bossDef.instanceID
+	local boss = bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+	if boss then
+		notes[newNoteName].bossName = boss.name
+		notes[newNoteName].dungeonEncounterID = boss.dungeonEncounterID
+		notes[newNoteName].instanceID = boss.instanceID
 	end
 
 	interfaceUpdater.UpdateAllAssignments(true, notes[newNoteName].bossName)
@@ -735,12 +734,12 @@ local function HandleDeleteCurrentNoteButtonClicked()
 			AddOn.db.profile.plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-			local bossDef = bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue())
-			if bossDef then
+			local boss = bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+			if boss then
 				local newNote = AddOn.db.profile.plans[newNoteName]
-				newNote.bossName = bossDef.name
-				newNote.dungeonEncounterID = bossDef.dungeonEncounterID
-				newNote.instanceID = bossDef.instanceID
+				newNote.bossName = boss.name
+				newNote.dungeonEncounterID = boss.dungeonEncounterID
+				newNote.instanceID = boss.instanceID
 			end
 		end
 		local newLastOpenNote = AddOn.db.profile.lastOpenNote
@@ -1105,11 +1104,19 @@ function Private:CreateInterface()
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	local bossDropdownData = {}
-	for index, instance in ipairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
-		EJ_SelectEncounter(instance.journalEncounterID)
-		local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, instance.journalEncounterID)
-		local iconText = format("|T%s:0|t %s", iconImage, instance.name)
-		tinsert(bossDropdownData, index, iconText)
+	for raidInstanceName, raidInstance in pairs(Private.raidInstances) do
+		EJ_SelectInstance(raidInstance.journalInstanceID)
+		local _, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
+		local instanceIconText = format("|T%s:0|t %s", buttonImage2, raidInstanceName)
+		local instanceDropdownData =
+			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+		for _, boss in ipairs(raidInstance.bosses) do
+			EJ_SelectEncounter(boss.journalEncounterID)
+			local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+			local iconText = format("|T%s:0|t %s", iconImage, boss.name)
+			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
+		end
+		tinsert(bossDropdownData, instanceDropdownData)
 	end
 	bossDropdown:AddItems(bossDropdownData, "EPDropdownItemToggle")
 	bossDropdown:SetCallback("OnValueChanged", function(_, _, value)

@@ -40,14 +40,8 @@ local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 
 ---@type table<string, table<integer, table<integer, number>>>
 local absoluteSpellCastStartTables = {}
-for bossName, _ in pairs(Private.bosses["Nerub'ar Palace"]) do
-	absoluteSpellCastStartTables[bossName] = bossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
-end
-
----@param bossName string
----@return table<integer, table<integer, number>>
-function Utilities.AbsoluteSpellCastTimeTable(bossName)
-	return absoluteSpellCastStartTables[bossName]
+for _, boss in pairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
+	absoluteSpellCastStartTables[boss.name] = bossUtilities.CreateAbsoluteSpellCastTimeTable(boss.name)
 end
 
 ---@param value number

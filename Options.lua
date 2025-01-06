@@ -479,9 +479,12 @@ function Private:CreateOptionsMenu()
 				if key ~= AddOn.db.profile.preferences.assignmentSortType then
 					AddOn.db.profile.preferences.assignmentSortType = key
 					if Private.mainFrame.bossSelectDropdown then
-						local bossName =
-							bossUtilities.GetBossDefinition(Private.mainFrame.bossSelectDropdown:GetValue()).name
-						interfaceUpdater.UpdateAllAssignments(false, bossName)
+						local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(
+							Private.mainFrame.bossSelectDropdown:GetValue()
+						)
+						if bossName then
+							interfaceUpdater.UpdateAllAssignments(false, bossName)
+						end
 					end
 				end
 				AddOn.db.profile.preferences.assignmentSortType = key
