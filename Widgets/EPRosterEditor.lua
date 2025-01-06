@@ -19,7 +19,8 @@ local defaultFrameHeight = 800
 local minScrollFrameHeight = 400
 local maxScrollFrameHeight = 600
 local windowBarHeight = 28
-local contentFramePadding = { x = 10, y = 10 }
+local contentFramePadding = { x = 15, y = 15 }
+local otherPadding = { x = 10, y = 10 }
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
@@ -431,7 +432,7 @@ local function OnAcquire(self)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
-	self.buttonContainer:SetSpacing(contentFramePadding.x, 0)
+	self.buttonContainer:SetSpacing(otherPadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
 	self.buttonContainer.frame:SetParent(self.frame)

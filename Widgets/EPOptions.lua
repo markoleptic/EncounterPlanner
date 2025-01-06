@@ -23,12 +23,12 @@ local frameHeight = 500
 local minScrollFrameHeight = 400
 local maxScrollFrameHeight = 600
 local windowBarHeight = 28
-local contentFramePadding = { x = 10, y = 10 }
+local contentFramePadding = { x = 15, y = 15 }
 local title = "Preferences"
 local categoryFontSize = 18
 local optionLabelFontSize = 14
-local spacingBetweenOptions = 8
-local spacingBetweenCategories = 16
+local spacingBetweenOptions = 10
+local spacingBetweenCategories = 15
 local spacingBetweenLabelAndWidget = 8
 local indentWidth = 20
 local backdropColor = { 0, 0, 0, 1 }
@@ -36,7 +36,7 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local categoryTextColor = { 1, 0.82, 0, 1 }
 local labelTextColor = { 1, 1, 1, 1 }
-local scrollBarWidth = 16
+local scrollBarWidth = 15
 local thumbPadding = { x = 2, y = 2 }
 local totalVerticalThumbPadding = 2 * thumbPadding.y
 local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
@@ -45,7 +45,7 @@ local minThumbSize = 20
 local frameChooserContainerSpacing = { 8, 0 }
 local doubleLineEditContainerSpacing = { 8, 0 }
 local radioButtonGroupSpacing = { 8, 0 }
-local categoryPadding = { 10, 10, 10, 10 }
+local categoryPadding = { 15, 15, 15, 15 }
 local scrollMultiplier = 25
 
 local frameBackdrop = {
