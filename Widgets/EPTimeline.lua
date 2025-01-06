@@ -296,12 +296,18 @@ end
 ---@param frameIndices table<integer, integer>
 local function SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
 	sort(frameIndices, function(a, b)
-		local leftA = assignmentFrames[a]:GetLeft()
-		local leftB = assignmentFrames[b]:GetLeft()
+		local leftA, leftB = assignmentFrames[a]:GetLeft(), assignmentFrames[b]:GetLeft()
 		if leftA and leftB then
+			if leftA == leftB then
+				local spellIDA, spellIDB = assignmentFrames[a].spellID, assignmentFrames[b].spellID
+				if spellIDA == spellIDB then
+					return a < b
+				end
+				return spellIDA < spellIDB
+			end
 			return leftA < leftB
 		end
-		return false
+		return a < b
 	end)
 end
 
