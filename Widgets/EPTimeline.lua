@@ -981,8 +981,7 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 
 	local minTime = self.GetMinimumCombatLogEventTime(frame.timelineAssignment)
 	if minTime then
-		local minOffsetFromTime =
-			ConvertTimeToTimelineOffset(self.bossAbilityTimeline.timelineFrame:GetWidth(), minTime)
+		local minOffsetFromTime = ConvertTimeToTimelineOffset(minTime, timelineFrameWidth)
 		minOffsetFromTimelineFrameLeft = max(minOffsetFromTime, minOffsetFromTimelineFrameLeft)
 	end
 
