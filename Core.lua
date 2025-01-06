@@ -47,6 +47,17 @@ function AddOn:OnInitialize()
 			-- Convert tables from DB into classes
 			utilities.SetAssignmentMetaTables(note.assignments)
 		end
+		local clearTable = false
+		if profile.activeBossAbilities then -- TODO: Temp remove
+			for str, _ in pairs(profile.activeBossAbilities) do
+				if type(str) == "string" then
+					clearTable = true
+				end
+			end
+		end
+		if clearTable then
+			profile.activeBossAbilities = {}
+		end
 	end
 
 	self:RegisterChatCommand(AddOnName, "SlashCommand")

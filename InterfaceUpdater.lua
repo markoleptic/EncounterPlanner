@@ -61,10 +61,9 @@ local function HandleDeleteAssigneeRowClicked(abilityEntry)
 				end
 			end
 		end
-		local bossName =
-			bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
-		if bossName then
-			InterfaceUpdater.UpdateAllAssignments(true, bossName)
+		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+		if bossDungeonEncounterID then
+			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		end
 	end
 end
@@ -73,46 +72,46 @@ end
 ---@param collapsed boolean
 local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 	AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
-	local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
-	if bossName then
-		InterfaceUpdater.UpdateAllAssignments(true, bossName)
+	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+	if bossDungeonEncounterID then
+		InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 	end
 end
 
 ---@param abilityEntry EPAbilityEntry
 local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
 	local key = tonumber(abilityEntry:GetKey())
-	local boss = bossUtilities.GetBossFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+	local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
 	if key and boss then
-		local bossName = boss.name
+		local bossDungeonEncounterID = boss.dungeonEncounterID
 		local atLeastOneSelected = false
-		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossName]) do
+		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]) do
 			if currentAbilityID ~= key and currentSelected then
 				atLeastOneSelected = true
 				break
 			end
 		end
 		if atLeastOneSelected then
-			AddOn.db.profile.activeBossAbilities[bossName][key] = false
-			InterfaceUpdater.UpdateBoss(bossName, true)
+			AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID][key] = false
+			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 		end
 	end
 end
 
 -- Clears and repopulates the boss ability container based on the boss name.
----@param bossName string The name of the boss
+---@param bossDungeonEncounterID integer
 ---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
-function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
-	local boss = bossUtilities.GetBoss(bossName)
+function InterfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
+	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
 	local timeline = Private.mainFrame.timeline
 	if boss and timeline then
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossDropdown = Private.mainFrame.bossSelectDropdown
 		if bossAbilityContainer and bossDropdown then
-			if AddOn.db.profile.activeBossAbilities[bossName] == nil then
-				AddOn.db.profile.activeBossAbilities[bossName] = {}
+			if AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID] == nil then
+				AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID] = {}
 			end
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
 			bossDropdown:SetValue(boss.dungeonEncounterID)
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}
@@ -156,13 +155,13 @@ function InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelec
 end
 
 -- Sets the boss abilities for the timeline and rerenders it.
----@param bossName string The name of the boss
-function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
-	local boss = bossUtilities.GetBoss(bossName)
+---@param bossDungeonEncounterID integer
+function InterfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
+	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
 	local timeline = Private.mainFrame.timeline
 	if boss and timeline then
-		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossName)
-		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossName]
+		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)
+		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
 		timeline:SetBossAbilities(
 			boss.abilities,
 			boss.sortedAbilityIDs,
@@ -176,11 +175,11 @@ function InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
 end
 
 -- Updates the list of boss abilities and the boss ability timeline.
----@param bossName string The name of the boss
+---@param bossDungeonEncounterID integer
 ---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
-function InterfaceUpdater.UpdateBoss(bossName, updateBossAbilitySelectDropdown)
-	InterfaceUpdater.UpdateBossAbilityList(bossName, updateBossAbilitySelectDropdown)
-	InterfaceUpdater.UpdateTimelineBossAbilities(bossName)
+function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
+	InterfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
+	InterfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
 end
 
 -- Clears and repopulates the list of assignments and spells.
@@ -302,14 +301,14 @@ end
 -- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 -- dropdown.
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
----@param bossName string The boss to pass to the assignment sort function
+---@param bossDungeonEncounterID integer
 ---@param firstUpdate boolean|nil
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossName, firstUpdate)
+function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate)
 	local sortedTimelineAssignments = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.preferences.assignmentSortType,
-		bossName
+		bossDungeonEncounterID
 	)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
@@ -328,23 +327,17 @@ function InterfaceUpdater.UpdateFromNote(noteName)
 		Private.assignmentEditor:Release()
 	end
 	if Private.mainFrame then
-		local note = AddOn.db.profile.plans[noteName]
-		local bossName = note.bossName
-		if not bossName then
-			bossName = utilities.SearchStringTableForBossName(note.content)
-				or bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
+		local plan = AddOn.db.profile.plans[noteName] --[[@as Plan]]
+		local bossDungeonEncounterID = plan.dungeonEncounterID
+		if bossDungeonEncounterID then
+			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		end
-
-		if bossName then
-			InterfaceUpdater.UpdateBoss(bossName, true)
-			InterfaceUpdater.UpdateAllAssignments(true, bossName)
-		end
-
 		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
 		if renameNoteLineEdit then
 			renameNoteLineEdit:SetText(noteName)
 		end
-		Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
+		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
 		Private.mainFrame:DoLayout()
 	end
 end

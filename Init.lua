@@ -499,7 +499,7 @@ end
 
 local defaults = {
 	---@class DefaultProfile
-	---@field activeBossAbilities table<string, table<integer, boolean>>
+	---@field activeBossAbilities table<integer, table<integer, boolean>>
 	---@field assignmentSortType AssignmentSortType
 	---@field plans table<string, Plan>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>

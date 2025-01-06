@@ -387,10 +387,10 @@ end
 -- Repopulates assignments for the note based on the note content. Returns a boss name if one was found using spellIDs
 -- in the text.
 ---@param note Plan Plan to repopulate
----@return string|nil
+---@return integer|nil
 function Private:ParseNote(note)
 	wipe(note.assignments)
-	local bossName = nil
+	local bossDungeonEncounterID = nil
 
 	for _, line in pairs(note.content) do
 		local time, options = ParseTime(line)
@@ -399,8 +399,8 @@ function Private:ParseNote(note)
 			local spellIDNumber = nil
 			if spellID then
 				spellIDNumber = tonumber(spellID)
-				if not bossName and spellIDNumber then
-					bossName = bossUtilities.GetBossNameFromSpellID(spellIDNumber)
+				if not bossDungeonEncounterID and spellIDNumber then
+					bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(spellIDNumber)
 				end
 			else
 				generalText = line:match(postOptionsPreDashNoSpellRegex)
@@ -410,7 +410,7 @@ function Private:ParseNote(note)
 		end
 	end
 
-	return bossName
+	return bossDungeonEncounterID
 end
 
 ---@param assignment Assignment
@@ -513,9 +513,9 @@ end
 ---@param note Plan
 ---@return string|nil
 function Private:ExportNote(note)
-	local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(Private.mainFrame.bossSelectDropdown:GetValue())
-	if bossName then
-		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossName)
+	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+	if bossDungeonEncounterID then
+		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossDungeonEncounterID)
 		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
@@ -576,11 +576,11 @@ end
 -- Clears the current assignments and repopulates it. Updates the roster.
 ---@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
 -- an empty note will be created
----@param currentBossName string
+---@param currentBossDungeonEncounterID integer
 ---@param parseMRTNote boolean? If true, the MRT shared note will be parsed, otherwise the existing note in the database
 -- will be parsed.
----@return string|nil
-function Private:Note(epNoteName, currentBossName, parseMRTNote)
+---@return integer|nil
+function Private:Note(epNoteName, currentBossDungeonEncounterID, parseMRTNote)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
 	if parseMRTNote then
@@ -603,9 +603,9 @@ function Private:Note(epNoteName, currentBossName, parseMRTNote)
 		end
 	end
 
-	local bossName = self:ParseNote(note)
-	note.bossName = bossName or currentBossName
-	local boss = bossUtilities.GetBoss(note.bossName)
+	local bossDungeonEncounterID = self:ParseNote(note)
+	note.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
+	local boss = bossUtilities.GetBoss(note.dungeonEncounterID)
 	if boss then
 		note.dungeonEncounterID = boss.dungeonEncounterID
 		note.instanceID = boss.instanceID
@@ -642,5 +642,5 @@ function Private:Note(epNoteName, currentBossName, parseMRTNote)
 			end
 		end
 	end
-	return bossName
+	return bossDungeonEncounterID
 end

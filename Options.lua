@@ -478,12 +478,10 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				if key ~= AddOn.db.profile.preferences.assignmentSortType then
 					AddOn.db.profile.preferences.assignmentSortType = key
-					if Private.mainFrame.bossSelectDropdown then
-						local bossName = bossUtilities.GetBossNameFromDungeonEncounterID(
-							Private.mainFrame.bossSelectDropdown:GetValue()
-						)
-						if bossName then
-							interfaceUpdater.UpdateAllAssignments(false, bossName)
+					if Private.mainFrame and Private.mainFrame.bossSelectDropdown then
+						local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+						if bossDungeonEncounterID then
+							interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 						end
 					end
 				end
@@ -501,7 +499,7 @@ function Private:CreateOptionsMenu()
 			set = function(key)
 				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
 					AddOn.db.profile.preferences.showSpellCooldownDuration = key
-					if Private.mainFrame.timeline then
+					if Private.mainFrame and Private.mainFrame.timeline then
 						Private.mainFrame.timeline:UpdateTimeline()
 					end
 				end

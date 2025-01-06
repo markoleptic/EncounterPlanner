@@ -11,22 +11,9 @@ local pairs = pairs
 local sort = sort
 local tinsert = tinsert
 
----@param bossName string
----@return Boss|nil
-function BossUtilities.GetBoss(bossName)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.name == bossName then
-				return boss
-			end
-		end
-	end
-	return nil
-end
-
 ---@param dungeonEncounterID integer
 ---@return string|nil
-function BossUtilities.GetBossNameFromDungeonEncounterID(dungeonEncounterID)
+function BossUtilities.GetBossName(dungeonEncounterID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.dungeonEncounterID == dungeonEncounterID then
@@ -39,7 +26,7 @@ end
 
 ---@param dungeonEncounterID integer
 ---@return Boss|nil
-function BossUtilities.GetBossFromDungeonEncounterID(dungeonEncounterID)
+function BossUtilities.GetBoss(dungeonEncounterID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.dungeonEncounterID == dungeonEncounterID then
@@ -50,12 +37,12 @@ function BossUtilities.GetBossFromDungeonEncounterID(dungeonEncounterID)
 	return nil
 end
 
----@param bossName string
+---@param spellID integer
 ---@return integer|nil
-function BossUtilities.GetBossDungeonEncounterID(bossName)
+function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.name == bossName then
+			if boss.abilities[spellID] then
 				return boss.dungeonEncounterID
 			end
 		end
@@ -63,52 +50,17 @@ function BossUtilities.GetBossDungeonEncounterID(bossName)
 	return nil
 end
 
----@param bossName string
----@return integer|nil
-function BossUtilities.GetBossInstanceID(bossName)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.name == bossName then
-				return boss.instanceID
-			end
-		end
-	end
-	return nil
-end
-
----@param spellID integer
----@return string|nil
-function BossUtilities.GetBossNameFromSpellID(spellID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.abilities[spellID] then
-				return boss.name
-			end
-		end
-	end
-	return nil
-end
-
----@param spellID integer
----@return Boss|nil
-function BossUtilities.GetBossFromSpellID(spellID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.abilities[spellID] then
-				return boss
-			end
-		end
-	end
-	return nil
-end
-
+---@param dungeonEncounterID integer
 ---@param spellID number
 ---@return BossAbility|nil
-function BossUtilities.FindBossAbility(spellID)
+function BossUtilities.FindBossAbility(dungeonEncounterID, spellID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.abilities[spellID] then
-				return boss.abilities[spellID]
+			if boss.dungeonEncounterID == dungeonEncounterID then
+				if boss.abilities[spellID] then
+					return boss.abilities[spellID]
+				end
+				break
 			end
 		end
 	end
@@ -144,35 +96,37 @@ function BossUtilities.GetRelativeBossAbilityStartTime(ability, spellCount)
 end
 
 -- Returns the phase start time from boss pull to the specified phase number and occurrence.
----@param bossName string The boss
+---@param bossDungeonEncounterID integer
 ---@param bossPhaseTable table<integer, integer> A table of boss phases in the order in which they occur
 ---@param phaseNumber integer The boss phase number
 ---@param phaseCount integer? The current phase repeat instance (i.e. 2nd time occurring = 2)
 ---@return number -- Cumulative start time for a given boss phase and count/occurrence
-function BossUtilities.GetCumulativePhaseStartTime(bossName, bossPhaseTable, phaseNumber, phaseCount)
+function BossUtilities.GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseNumber, phaseCount)
 	if not phaseCount then
 		phaseCount = 1
 	end
 	local cumulativePhaseStartTime = 0
 	local phaseNumberOccurrences = 0
-	for _, currentPhaseNumber in ipairs(bossPhaseTable) do
-		if currentPhaseNumber == phaseNumber then
-			phaseNumberOccurrences = phaseNumberOccurrences + 1
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		for _, currentPhaseNumber in ipairs(bossPhaseTable) do
+			if currentPhaseNumber == phaseNumber then
+				phaseNumberOccurrences = phaseNumberOccurrences + 1
+			end
+			if phaseNumberOccurrences == phaseCount then
+				break
+			end
+			cumulativePhaseStartTime = cumulativePhaseStartTime + boss.phases[currentPhaseNumber].duration
 		end
-		if phaseNumberOccurrences == phaseCount then
-			break
-		end
-		cumulativePhaseStartTime = cumulativePhaseStartTime
-			+ BossUtilities.GetBoss(bossName).phases[currentPhaseNumber].duration
 	end
 	return cumulativePhaseStartTime
 end
 
 -- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
----@param bossName string The boss
+---@param bossDungeonEncounterID integer
 ---@return table<integer, integer> -- Ordered boss phase table
-function BossUtilities.CreateBossPhaseTable(bossName)
-	local boss = BossUtilities.GetBoss(bossName)
+function BossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 	local bossPhaseOrder = {}
 	if boss then
 		local totalPhaseOccurrences = 0
@@ -195,14 +149,14 @@ function BossUtilities.CreateBossPhaseTable(bossName)
 end
 
 -- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
----@param bossName string The boss
+---@param bossDungeonEncounterID integer
 ---@return table<integer, table<integer, number>> -- spellID, spell occurrence, time
-function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossName)
-	local boss = BossUtilities.GetBoss(bossName)
+function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 	local spellCount = {}
 	if boss then
 		local cumulativePhaseStartTime = 0
-		for _, bossPhaseIndex in ipairs(BossUtilities.CreateBossPhaseTable(bossName)) do
+		for _, bossPhaseIndex in ipairs(BossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
@@ -280,7 +234,7 @@ do -- Generate a list of abilities for each boss sorted by their first cast time
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			local earliestCastTimes = {}
-			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(boss.name)
+			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
 			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
 				local earliestCastTime = hugeNumber
 				for _, castTime in pairs(spellOccurrenceNumbers) do
