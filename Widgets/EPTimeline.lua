@@ -96,16 +96,16 @@ local horizontalCursorAssignmentFrameOffsetWhenClicked = 0
 local horizontalCursorPositionWhenAssignmentFrameClicked = 0
 local thumbPadding = { x = 2, y = 2 }
 local timelineLinePadding = { x = 25, y = 25 }
-local thumbOffsetWhenThumbClicked = 0
-local scrollBarWidthWhenThumbClicked = 0
-local thumbWidthWhenThumbClicked = 0
+local thumbOffsetWhenThumbClicked = 0.0
+local scrollBarWidthWhenThumbClicked = 0.0
+local thumbWidthWhenThumbClicked = 0.0
 local thumbIsDragging = false
-local timelineFrameOffsetWhenDragStarted = 0
+local timelineFrameOffsetWhenDragStarted = 0.0
 local timelineFrameIsDragging = false
-local totalTimelineDuration = 0
+local totalTimelineDuration = 0.0
 
 local throttleInterval = 0.015 -- Minimum time between executions, in seconds
-local lastExecutionTime = 0
+local lastExecutionTime = 0.0
 
 local function ResetLocalVariables()
 	assignmentIsDragging = false
@@ -115,14 +115,14 @@ local function ResetLocalVariables()
 	horizontalCursorPositionWhenAssignmentFrameClicked = 0
 	thumbPadding = { x = 2, y = 2 }
 	timelineLinePadding = { x = 25, y = 25 }
-	thumbOffsetWhenThumbClicked = 0
-	scrollBarWidthWhenThumbClicked = 0
-	thumbWidthWhenThumbClicked = 0
+	thumbOffsetWhenThumbClicked = 0.0
+	scrollBarWidthWhenThumbClicked = 0.0
+	thumbWidthWhenThumbClicked = 0.0
 	thumbIsDragging = false
 	timelineFrameOffsetWhenDragStarted = 0
 	timelineFrameIsDragging = false
-	totalTimelineDuration = 0
-	lastExecutionTime = 0
+	totalTimelineDuration = 0.0
+	lastExecutionTime = 0.0
 end
 
 local function errorhandler(err)
@@ -2627,6 +2627,11 @@ local function SetPreferences(self, preferences)
 	self.preferences = preferences
 end
 
+---@return number
+local function GetTotalTimelineDuration()
+	return totalTimelineDuration
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -2686,6 +2691,7 @@ local function Constructor()
 		UpdateHeightFromBossAbilities = UpdateHeightFromBossAbilities,
 		UpdateHeightFromAssignments = UpdateHeightFromAssignments,
 		UpdateAssignmentsAndTickMarks = UpdateAssignmentsAndTickMarks,
+		GetTotalTimelineDuration = GetTotalTimelineDuration,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

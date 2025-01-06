@@ -28,6 +28,7 @@ local pairs = pairs
 local sub = string.sub
 local tinsert = tinsert
 local tonumber = tonumber
+local tostring = tostring
 local tremove = tremove
 local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 local unpack = unpack
@@ -39,9 +40,7 @@ local assignmentMetaTables = {
 }
 local dropdownContainerLabelSpacing = 4
 local dropdownContainerSpacing = { 0, 4 }
-local noteContainerSpacing = { 0, 4 }
 local topContainerDropdownWidth = 150
-local topContainerHeight = 36
 local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
 local classDropdownItems = {}
@@ -309,30 +308,43 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		local spellInfo = GetSpellInfo(value)
 		if spellInfo then
 			assignment.spellInfo = spellInfo
-			updatePreviewText = true
 		end
+		updatePreviewText = true
 	elseif dataType == "AssigneeType" then
 		if value ~= "Individual" then
 			assignment.assigneeNameOrRole = value
-			updatePreviewText = true
 		end
+		updatePreviewText = true
 	elseif dataType == "Assignee" then
 		assignment.assigneeNameOrRole = value
 		updatePreviewText = true
 	elseif dataType == "Time" then
-		local timeValue = tonumber(value)
-		if timeValue then
-			if timeValue < 0 then
-				assignmentEditor.timeEditBox:SetText(assignment.time)
-			elseif
-				getmetatable(assignment) == Private.classes.CombatLogEventAssignment
-				or getmetatable(assignment) == Private.classes.PhasedAssignment
-				or getmetatable(assignment) == Private.classes.TimedAssignment
-			then
-				timeValue = utilities.Round(timeValue, 1)
-				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = timeValue
+		local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
+		local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
+		local newTime = assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time
+		if timeMinutes and timeSeconds then
+			local roundedMinutes = utilities.Round(timeMinutes, 0)
+			local roundedSeconds = utilities.Round(timeSeconds, 1)
+			local timeValue = roundedMinutes * 60 + roundedSeconds
+			local maxTime = Private.mainFrame.timeline.GetTotalTimelineDuration()
+			if timeValue < 0 or timeValue > maxTime then
+				newTime = max(min(timeValue, maxTime), 0)
+			else
+				newTime = timeValue
 			end
 		end
+		if
+			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
+			or getmetatable(assignment) == Private.classes.PhasedAssignment
+			or getmetatable(assignment) == Private.classes.TimedAssignment
+		then
+			newTime = utilities.Round(newTime, 1)
+			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = newTime
+		end
+		local minutes = floor(newTime / 60)
+		local seconds = utilities.Round(newTime % 60, 1)
+		assignmentEditor.timeMinuteLineEdit:SetText(tostring(minutes))
+		assignmentEditor.timeSecondLineEdit:SetText(tostring(seconds))
 	elseif dataType == "OptionalText" then
 		assignment.text = value
 		updatePreviewText = true
@@ -342,10 +354,10 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	end
 
 	if updateFields then
-		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
 		assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 	elseif updatePreviewText then
-		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
 		assignmentEditor.previewLabel:SetText(previewText)
 	end
 
@@ -576,7 +588,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		if not Private.assignmentEditor then
 			Private.assignmentEditor = CreateAssignmentEditor()
 		end
-		local previewText = Private:CreateNotePreviewText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
 		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 		local timeline = Private.mainFrame.timeline
 		if timeline then
