@@ -494,7 +494,7 @@ local function SetupReminders(notes, preferences, startTime)
 	end
 
 	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
-	print("Timers active:", #timers, "combatLogEventReminders", #combatLogEventReminders)
+	-- print("Timers active:", #timers, "combatLogEventReminders", #combatLogEventReminders)
 end
 
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
@@ -517,7 +517,7 @@ end
 ---@param addon string AddOn name maybe?
 ---@param ... any args
 local function HandleBigWigsEvent(event, addon, ...)
-	print(event, addon, ...)
+	-- print(event, addon, ...)
 end
 
 ---@param encounterID integer
