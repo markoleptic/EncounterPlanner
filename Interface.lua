@@ -974,7 +974,9 @@ function Private:CreateInterface()
 			)
 			if messageBox then
 				messageBox:SetCallback("Accepted", function()
-					HandleDeleteCurrentNoteButtonClicked()
+					if Private.mainFrame then
+						HandleDeleteCurrentNoteButtonClicked()
+					end
 				end)
 			end
 		elseif sub(value, 1, 4) == "From" then
@@ -985,7 +987,9 @@ function Private:CreateInterface()
 				)
 				if messageBox then
 					messageBox:SetCallback("Accepted", function()
-						ImportPlan(value)
+						if Private.mainFrame then
+							ImportPlan(value)
+						end
 					end)
 				end
 			else

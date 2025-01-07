@@ -208,7 +208,9 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 					)
 					if messageBox then
 						messageBox:SetCallback("Accepted", function()
-							HandleDeleteAssigneeRowClicked(widget)
+							if Private.mainFrame then
+								HandleDeleteAssigneeRowClicked(widget)
+							end
 						end)
 					end
 				end)
@@ -245,7 +247,9 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 							)
 							if messageBox then
 								messageBox:SetCallback("Accepted", function()
-									HandleDeleteAssigneeRowClicked(widget)
+									if Private.mainFrame then
+										HandleDeleteAssigneeRowClicked(widget)
+									end
 								end)
 							end
 						end)
@@ -347,20 +351,18 @@ end
 ---@return EPMessageBox|nil
 function InterfaceUpdater.CreateMessageBox(title, text)
 	if not Private.messageBox then
-		if Private.mainFrame then
-			local messageBox = AceGUI:Create("EPMessageBox")
-			messageBox.frame:SetParent(UIParent)
-			messageBox.frame:SetFrameLevel(110)
-			messageBox:SetTitle(title)
-			messageBox:SetText(text)
-			messageBox:SetCallback("OnRelease", function()
-				Private.messageBox = nil
-			end)
-			messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-			messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
-			Private.messageBox = messageBox
-			return messageBox
-		end
+		local messageBox = AceGUI:Create("EPMessageBox")
+		messageBox.frame:SetParent(UIParent)
+		messageBox.frame:SetFrameLevel(110)
+		messageBox:SetTitle(title)
+		messageBox:SetText(text)
+		messageBox:SetCallback("OnRelease", function()
+			Private.messageBox = nil
+		end)
+		messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
+		Private.messageBox = messageBox
+		return messageBox
 	end
 	return nil
 end
