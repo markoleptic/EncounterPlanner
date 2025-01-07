@@ -401,6 +401,12 @@ function Private.classes.Plan:New(o, name)
 	return instance
 end
 
+---@param o any
+---@return EncounterPlannerDbRosterEntry
+function Private.classes.EncounterPlannerDbRosterEntry:New(o)
+	return CreateNewInstance(self, o)
+end
+
 ---@alias RaidGroupRole
 ---| "role:damager"
 ---| "role:healer"

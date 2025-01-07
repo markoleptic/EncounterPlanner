@@ -848,7 +848,7 @@ end
 
 -- Creates a table where keys are character names and the values are tables with class and role fields. Dependent on the
 -- group the player is in.
----@return table<string, {class:string, role:string, classColoredName: string}>
+---@return EncounterPlannerDbRosterEntry
 function Utilities.GetDataFromGroup()
 	local groupData = {}
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
@@ -893,7 +893,7 @@ end
 
 -- Updates class, class colored name, and role from the group if they do not exist.
 ---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
----@param unitData {class:string, role:string, classColoredName: string}
+---@param unitData EncounterPlannerDbRosterEntry
 local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 	if not rosterEntry.class or rosterEntry.class ~= "" then
 		local className = unitData.class
@@ -930,7 +930,7 @@ function Utilities.ImportGroupIntoRoster(roster)
 		if unit then
 			local unitName, _ = UnitName(unit)
 			if unitName then
-				roster[unitName] = {}
+				roster[unitName] = Private.classes.EncounterPlannerDbRosterEntry:New({})
 			end
 		end
 	end
@@ -964,9 +964,9 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 				and not nameOrRole:find("{everyone}")
 			then
 				if not roster[nameOrRole] then
-					roster[nameOrRole] = {}
+					roster[nameOrRole] = Private.classes.EncounterPlannerDbRosterEntry:New({})
 				end
-				if not roster[nameOrRole].role or roster[nameOrRole].role == "" then
+				if roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
 						roster[nameOrRole].role = determinedRoles[nameOrRole]
 					end
