@@ -35,8 +35,33 @@ local configForDeflate = {
 	[9] = { level = 9 },
 }
 
+---@class SerializedPlan
+---@field [1] string ID
+---@field [2] string name
+---@field [3] string bossName
+---@field [4] integer dungeonEncounterID
+---@field [5] integer instanceID
+---@field [6] table<integer, SerializedAssignment> assignments
+---@field [7] table<string, SerializedRosterEntry> roster
+
+---@class SerializedAssignment
+---@field [1] string assigneeNameOrRole
+---@field [2] number spellInfo.spellID
+---@field [3] string text
+---@field [4] string targetName
+---@field [5] number time
+---@field [6] CombatLogEventType|nil combatLogEventType
+---@field [7] integer|nil combatLogEventSpellID
+---@field [8] integer|nil spellCount
+
+---@class SerializedRosterEntry
+---@field [1] string name
+---@field [2] string class
+---@field [3] RaidGroupRole role
+---@field [4] string classColoredName
+
 ---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
----@return table
+---@return SerializedAssignment
 local function SerializeAssignment(assignment)
 	local required =
 		{ assignment.assigneeNameOrRole, assignment.spellInfo.spellID, assignment.text, assignment.targetName }
@@ -51,7 +76,7 @@ local function SerializeAssignment(assignment)
 	return required
 end
 
----@param data table
+---@param data SerializedAssignment
 ---@return CombatLogEventAssignment|TimedAssignment
 local function DeserializeAssignment(data)
 	local assignment = {
@@ -72,48 +97,68 @@ local function DeserializeAssignment(data)
 	end
 end
 
+---@param name string
+---@param rosterEntry EncounterPlannerDbRosterEntry
+---@return SerializedRosterEntry
+local function SerializeRosterEntry(name, rosterEntry)
+	local serializedRosterEntry = {
+		name or "",
+		rosterEntry.class or "",
+		rosterEntry.role or "",
+		rosterEntry.classColoredName or "",
+	} --[[@as SerializedRosterEntry]]
+	return serializedRosterEntry
+end
+
+---@param serializedRosterEntry SerializedRosterEntry
+---@return string, EncounterPlannerDbRosterEntry
+local function DeserializeRosterEntry(serializedRosterEntry)
+	local rosterEntry = Private.classes.EncounterPlannerDbRosterEntry:New({})
+	rosterEntry.class = serializedRosterEntry[2]
+	rosterEntry.role = serializedRosterEntry[3]
+	rosterEntry.classColoredName = serializedRosterEntry[4]
+	return serializedRosterEntry[1], rosterEntry
+end
+
 ---@param plan Plan
----@return table<integer|string|table>
+---@return SerializedPlan
 local function SerializePlan(plan)
-	local required = {
+	local serializedPlan = {
+		plan.ID,
 		plan.name,
 		plan.bossName,
 		plan.dungeonEncounterID,
 		plan.instanceID,
 		{},
 		{},
-	}
-	local assignments = required[5]
+	} --[[@as SerializedPlan]]
+	local assignments = serializedPlan[6]
 	for _, assignment in ipairs(plan.assignments) do
 		assignments[#assignments + 1] = SerializeAssignment(assignment)
 	end
-	local roster = required[6]
+	local roster = serializedPlan[7]
 	for name, rosterInfo in pairs(plan.roster) do
-		roster[#roster + 1] = { name, rosterInfo.class or "", rosterInfo.role or "", rosterInfo.classColoredName or "" }
+		roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
 	end
-	return required
+	return serializedPlan
 end
 
----@param data table
+---@param serializedPlan SerializedPlan
 ---@return Plan
-local function DeserializePlan(data)
-	local plan = {
-		name = data[1],
-		bossName = data[2],
-		dungeonEncounterID = data[3],
-		instanceID = data[4],
-	}
-	plan.assignments = {}
-	for _, assignment in ipairs(data[5]) do
-		plan.assignments[#plan.assignments + 1] = DeserializeAssignment(assignment)
+local function DeserializePlan(serializedPlan)
+	local ID = serializedPlan[1]
+	local name = serializedPlan[2]
+	local plan = Private.classes.Plan:New({}, name, ID)
+	plan.bossName = serializedPlan[3]
+	plan.dungeonEncounterID = serializedPlan[4]
+	plan.instanceID = serializedPlan[5]
+	for _, serializedAssignment in ipairs(serializedPlan[6]) do
+		plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
 	end
-	plan.roster = {}
-	for _, entry in ipairs(data[6]) do
-		plan.roster[entry[1]] = { class = entry[2], role = entry[3], classColoredName = entry[4] }
+	for _, serializedRosterEntry in ipairs(serializedPlan[7]) do
+		local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
+		plan.roster[rosterEntryName] = rosterEntry
 	end
-	plan.content = {}
-	plan.collapsed = {}
-	plan.remindersEnabled = true
 	return plan
 end
 
@@ -157,6 +202,41 @@ local function StringToTable(inString, fromChat)
 	return deserialized
 end
 
+---@param plan Plan
+local function ImportPlan(plan)
+	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local foundExistingPlan = false
+	for _, existingPlan in pairs(plans) do
+		if existingPlan.ID == plan then
+			foundExistingPlan = true
+			existingPlan = plan
+			break
+		end
+	end
+	if not foundExistingPlan then
+		if plans[plan.name] then
+			local uniquePlanName = utilities.CreateUniqueNoteName(plans, plan.bossName, plan.name)
+			plans[uniquePlanName] = plan
+		else
+			plans[plan.name] = plan
+		end
+	end
+	if Private.mainFrame then
+		interfaceUpdater.UpdateFromNote(plan.name)
+		AddOn.db.profile.lastOpenNote = plan.name
+		local noteDropdown = Private.mainFrame.noteDropdown
+		if noteDropdown then
+			noteDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle")
+			noteDropdown:SetValue(plan.name)
+		end
+		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
+		if renameNoteLineEdit then
+			renameNoteLineEdit:SetText(plan.name)
+		end
+		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[plan.name].remindersEnabled)
+	end
+end
+
 ---@param prefix string
 ---@param message string
 ---@param distribution string
@@ -175,21 +255,38 @@ function AddOn:OnCommReceived(prefix, message, distribution, sender)
 		local package = StringToTable(message, false)
 		if type(package == "table") then
 			local plan = DeserializePlan(package --[[@as table]])
-			local plans = AddOn.db.profile.plans
-			plans[package.name] = plan -- TODO: Consider asking about overriding
-			interfaceUpdater.UpdateFromNote(package.name)
-			local noteDropdown = Private.mainFrame.noteDropdown
-			if noteDropdown then
-				noteDropdown:AddItem(package.name, package.name, "EPDropdownItemToggle")
-				noteDropdown:SetValue(package.name)
+			local foundTrustedCharacter = false
+			for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
+				if fullName == trustedCharacter then
+					foundTrustedCharacter = true
+					break
+				end
 			end
-			local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-			if renameNoteLineEdit then
-				renameNoteLineEdit:SetText(package.name)
+			if foundTrustedCharacter then
+				ImportPlan(plan)
+			else
+				local messageContent = format(
+					'%s has sent you the plan "%s". Do you wish to accept the plan? Trusting this character will '
+						.. "suppress this warning in the future.",
+					fullName,
+					plan.name
+				)
+				local messageBox = interfaceUpdater.CreateMessageBox("Plan Received", messageContent)
+				if messageBox then
+					messageBox:SetAcceptButtonText("Accept and Trust")
+					messageBox:SetRejectButtonText("Reject")
+					local rejectButton = messageBox.buttonContainer.children[2]
+					messageBox:AddButton("Accept without Trusting", rejectButton)
+					messageBox:SetCallback("Accept without Trusting" .. "Clicked", function()
+						ImportPlan(plan)
+					end)
+					messageBox:SetCallback("Accepted", function()
+						local trustedCharacters = AddOn.db.profile.trustedCharacters
+						trustedCharacters[#trustedCharacters + 1] = fullName
+						ImportPlan(plan)
+					end)
+				end
 			end
-			Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[package.name].remindersEnabled)
-		elseif type(package) == "string" then
-			print(format("%s: ", AddOnName, package))
 		end
 	end
 end

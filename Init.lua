@@ -7,10 +7,12 @@ local Private = select(2, ...)
 local LibStub = LibStub
 local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local concat = table.concat
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
 local pairs = pairs
 local setmetatable = setmetatable
+local random = math.random
 local type = type
 
 ---@alias CombatLogEventType
@@ -37,6 +39,81 @@ local type = type
 ---| "First Appearance"
 ---| "Role > Alphabetical"
 ---| "Role > First Appearance"
+
+local byteToBase64 = {
+	[0] = "a",
+	"b",
+	"c",
+	"d",
+	"e",
+	"f",
+	"g",
+	"h",
+	"i",
+	"j",
+	"k",
+	"l",
+	"m",
+	"n",
+	"o",
+	"p",
+	"q",
+	"r",
+	"s",
+	"t",
+	"u",
+	"v",
+	"w",
+	"x",
+	"y",
+	"z",
+	"A",
+	"B",
+	"C",
+	"D",
+	"E",
+	"F",
+	"G",
+	"H",
+	"I",
+	"J",
+	"K",
+	"L",
+	"M",
+	"N",
+	"O",
+	"P",
+	"Q",
+	"R",
+	"S",
+	"T",
+	"U",
+	"V",
+	"W",
+	"X",
+	"Y",
+	"Z",
+	"0",
+	"1",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	"7",
+	"8",
+	"9",
+	"(",
+	")",
+}
+
+local function GenerateUniqueID()
+	local s = {}
+	for i = 1, 16 do
+		s[#s + 1] = byteToBase64[random(0, 63)]
+	end
+	return concat(s)
+end
 
 local assignmentIDCounter = 0
 
@@ -205,12 +282,17 @@ Private.classes.BossAbilityInstance = {
 }
 
 ---@class EncounterPlannerDbRosterEntry
----@field class string|nil
----@field classColoredName string|nil
----@field role RaidGroupRole|nil
-Private.classes.EncounterPlannerDbRosterEntry = {}
+---@field class string
+---@field classColoredName string
+---@field role RaidGroupRole
+Private.classes.EncounterPlannerDbRosterEntry = {
+	class = "",
+	role = "",
+	classColoredName = "",
+}
 
 ---@class Plan
+---@field ID string
 ---@field name string
 ---@field bossName string
 ---@field dungeonEncounterID integer
@@ -221,6 +303,7 @@ Private.classes.EncounterPlannerDbRosterEntry = {}
 ---@field collapsed table<string, boolean>
 ---@field remindersEnabled boolean
 Private.classes.Plan = {
+	ID = "",
 	name = "",
 	bossName = "",
 	dungeonEncounterID = 0,
@@ -394,10 +477,14 @@ end
 
 ---@param o any
 ---@param name string
+---@param existingID string|nil
 ---@return Plan
-function Private.classes.Plan:New(o, name)
+function Private.classes.Plan:New(o, name, existingID)
 	local instance = CreateNewInstance(self, o)
 	instance.name = name
+	if not existingID then
+		instance.ID = GenerateUniqueID()
+	end
 	return instance
 end
 
@@ -451,6 +538,14 @@ end
 ---@field editAssignment MouseButtonKeyBinding
 ---@field newAssignment MouseButtonKeyBinding
 ---@field duplicateAssignment MouseButtonKeyBinding
+
+---@class Preferences
+---@field keyBindings KeyBindings
+---@field assignmentSortType AssignmentSortType
+---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
+---@field zoomCenteredOnCursor boolean
+---@field reminder ReminderPreferences
+---@field showSpellCooldownDuration boolean
 
 ---@class ReminderTextToSpeechPreferences
 ---@field enableAtAdvanceNotice boolean
@@ -506,23 +601,19 @@ end
 local defaults = {
 	---@class DefaultProfile
 	---@field activeBossAbilities table<integer, table<integer, boolean>>
-	---@field assignmentSortType AssignmentSortType
 	---@field plans table<string, Plan>
 	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
 	---@field lastOpenNote string
 	---@field recentSpellAssignments table<string, DropdownItemData>
+	---@field trustedCharacters table<integer, string>
+	---@field preferences Preferences
 	profile = {
 		activeBossAbilities = {},
 		plans = {},
 		sharedRoster = {},
 		lastOpenNote = "",
 		recentSpellAssignments = {},
-		---@class Preferences
-		---@field keyBindings KeyBindings
-		---@field assignmentSortType AssignmentSortType
-		---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
-		---@field zoomCenteredOnCursor boolean
-		---@field reminder ReminderPreferences
+		trustedCharacters = {},
 		preferences = {
 			keyBindings = {
 				pan = "RightButton",

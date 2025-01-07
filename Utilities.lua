@@ -67,9 +67,10 @@ end
 
 ---@param notes table<string, Plan>
 ---@param bossName string
+---@param existingName string|nil
 ---@return string
-function Utilities.CreateUniqueNoteName(notes, bossName)
-	local newNoteName = bossName
+function Utilities.CreateUniqueNoteName(notes, bossName, existingName)
+	local newNoteName = existingName or bossName
 	if notes then
 		local num = 2
 		if notes[newNoteName] then
