@@ -903,7 +903,7 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 				else
 					warningString = format(
 						'No spell cast times found for boss %s with spell ID "%d" with spell count %d.',
-						bossUtilities.GetBoss(bossDungeonEncounterID),
+						bossUtilities.GetBossName(bossDungeonEncounterID),
 						assignment.combatLogEventSpellID,
 						assignment.spellCount
 					)
@@ -911,12 +911,13 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 			else
 				warningString = format(
 					'No spell cast times found for boss %s with spell ID "%d".',
-					bossUtilities.GetBoss(bossDungeonEncounterID),
+					bossUtilities.GetBossName(bossDungeonEncounterID),
 					assignment.combatLogEventSpellID
 				)
 			end
 		else
-			warningString = format("No spell cast times for boss: %s.", bossUtilities.GetBoss(bossDungeonEncounterID))
+			warningString =
+				format("No spell cast times for boss: %s.", bossUtilities.GetBossName(bossDungeonEncounterID))
 		end
 	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
