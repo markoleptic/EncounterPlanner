@@ -1330,7 +1330,8 @@ end
 ---@param order number the relative order of the assignee of the assignment
 ---@param showCooldown boolean
 ---@param cooldownDuration number|nil
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration)
+---@param texture number|nil
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration, texture)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -1357,7 +1358,11 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 	assignment:Show()
 
 	if spellID == 0 or spellID == nil then
-		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		if texture then
+			assignment.spellTexture:SetTexture(texture)
+		else
+			assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		end
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignment.spellTexture:SetTexture(iconID)
@@ -1406,8 +1411,11 @@ local function UpdateAssignments(self)
 		end
 		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
 		local startTime, duration = timelineAssignment.startTime, timelineAssignment.spellCooldownDuration
-
-		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
+		local texture = nil
+		if spellID == 0 and assignment.text ~= "" then
+			texture = 1500878
+		end
+		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration, texture)
 
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
