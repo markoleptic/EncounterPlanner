@@ -608,6 +608,8 @@ local defaults = {
 	---@field lastOpenNote string
 	---@field recentSpellAssignments table<string, DropdownItemData>
 	---@field trustedCharacters table<integer, string>
+	---@field windowSize {x: number, y: number}|nil
+	---@field minimizeFramePosition {x: number, y: number}|nil
 	---@field preferences Preferences
 	profile = {
 		activeBossAbilities = {},

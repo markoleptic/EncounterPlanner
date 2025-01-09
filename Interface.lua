@@ -872,6 +872,12 @@ function Private:CreateInterface()
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
 	Private.mainFrame.content.spacing = { x = 0, y = 15 }
+	if AddOn.db.profile.minimizeFramePosition then
+		Private.mainFrame:SetMinimizeFramePosition(
+			AddOn.db.profile.minimizeFramePosition.x,
+			AddOn.db.profile.minimizeFramePosition.y
+		)
+	end
 	Private.mainFrame:SetCallback("CloseButtonClicked", function()
 		local width, height = Private.mainFrame.frame:GetSize()
 		AddOn.db.profile.windowSize = { x = width, y = height }
@@ -907,6 +913,9 @@ function Private:CreateInterface()
 		interfaceUpdater.UpdateAllAssignments(false, currentBossDungeonEncounterID)
 		Private.mainFrame.timeline:SetMaxAssignmentHeight()
 		Private.mainFrame:DoLayout()
+	end)
+	Private.mainFrame:SetCallback("MinimizeFramePointChanged", function(_, _, x, y)
+		AddOn.db.profile.minimizeFramePosition = { x = x, y = y }
 	end)
 
 	Private.menuButtonContainer = AceGUI:Create("EPContainer")

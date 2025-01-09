@@ -218,6 +218,16 @@ local function SetPadding(self, top, right, bottom, left)
 	)
 end
 
+---@param self EPMainFrame
+---@param x number
+---@param y number
+local function SetMinimizeFramePosition(self, x, y)
+	if type(x) == "number" and type(y) == "number" then
+		self.minimizeFrame:ClearAllPoints()
+		self.minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -279,15 +289,6 @@ local function Constructor()
 	if fPath then
 		minimizeFrameText:SetFont(fPath, h)
 	end
-	minimizeFrame:SetScript("OnMouseDown", function()
-		minimizeFrame:StartMoving()
-	end)
-	minimizeFrame:SetScript("OnMouseUp", function()
-		minimizeFrame:StopMovingOrSizing()
-		local x, y = minimizeFrame:GetLeft(), minimizeFrame:GetTop()
-		minimizeFrame:ClearAllPoints()
-		minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
-	end)
 	minimizeFrame:Hide()
 
 	windowBar:SetScript("OnMouseDown", function()
@@ -313,6 +314,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		SetPadding = SetPadding,
+		SetMinimizeFramePosition = SetMinimizeFramePosition,
 		frame = frame,
 		type = Type,
 		content = contentFrame,
@@ -345,6 +347,18 @@ local function Constructor()
 				widget:DoLayout()
 			end
 		end
+	end)
+
+	minimizeFrame:SetScript("OnMouseDown", function()
+		minimizeFrame:StartMoving()
+	end)
+	minimizeFrame:SetScript("OnMouseUp", function()
+		minimizeFrame:StopMovingOrSizing()
+		local x, y = minimizeFrame:GetLeft(), minimizeFrame:GetTop()
+		minimizeFrame:ClearAllPoints()
+		local newX, newY = x, -(UIParent:GetHeight() - y)
+		minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+		widget:Fire("MinimizeFramePointChanged", newX, newY)
 	end)
 
 	local registered = AceGUI:RegisterAsContainer(widget)
