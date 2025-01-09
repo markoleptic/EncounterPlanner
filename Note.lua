@@ -395,13 +395,15 @@ end
 
 -- Repopulates assignments for the note based on the note content. Returns a boss name if one was found using spellIDs
 -- in the text.
----@param note Plan Plan to repopulate
+---@param plan Plan Plan to repopulate
+---@param text table<integer, string> content
 ---@return integer|nil
-function Private:ParseNote(note)
-	wipe(note.assignments)
+function Private:ParseNote(plan, text)
+	wipe(plan.assignments)
 	local bossDungeonEncounterID = nil
+	local otherContent = {}
 
-	for _, line in pairs(note.content) do
+	for _, line in pairs(text) do
 		local time, options = ParseTime(line)
 		if time and options then
 			local spellID, generalText = line:match(postOptionsPreDashRegex)
@@ -415,9 +417,15 @@ function Private:ParseNote(note)
 				generalText = line:match(postOptionsPreDashNoSpellRegex)
 			end
 			local inputs = CreateAssignmentsFromLine(line)
-			self:ProcessOptions(inputs, note.assignments, time, options)
+			self:ProcessOptions(inputs, plan.assignments, time, options)
+		else
+			if line:gsub("%s", ""):len() ~= 0 then
+				tinsert(otherContent, line)
+			end
 		end
 	end
+
+	plan.content = otherContent
 
 	return bossDungeonEncounterID
 end
@@ -513,17 +521,6 @@ function Private:ExportNote(note)
 		end)
 
 		local stringTable = {}
-
-		local lastNoteContentIndex = nil
-		for index, line in ipairs(note.content) do
-			local time, options = ParseTime(line)
-			if time and options then
-				lastNoteContentIndex = index
-			else
-				tinsert(stringTable, line)
-			end
-		end
-
 		local inStringTable = {}
 		for _, timelineAssignment in ipairs(timelineAssignments) do
 			local assignment = timelineAssignment.assignment
@@ -548,15 +545,14 @@ function Private:ExportNote(note)
 			end
 		end
 
-		if lastNoteContentIndex then
-			for index = lastNoteContentIndex + 1, #note.content do
-				tinsert(stringTable, note.content[index])
-			end
+		for _, line in pairs(note.content) do
+			tinsert(stringTable, line)
 		end
 
 		if #stringTable == 0 then
 			return nil
 		end
+
 		return concat(stringTable, "\n")
 	end
 	return nil
@@ -566,33 +562,17 @@ end
 ---@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
 -- an empty note will be created
 ---@param currentBossDungeonEncounterID integer
----@param parseMRTNote boolean? If true, the MRT shared note will be parsed, otherwise the existing note in the database
--- will be parsed.
+---@param content string
 ---@return integer|nil
-function Private:Note(epNoteName, currentBossDungeonEncounterID, parseMRTNote)
+function Private:Note(epNoteName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
-	if parseMRTNote then
-		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
-		if not loadingOrLoaded and not loaded then
-			print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
-			return nil
-		end
-	end
-
 	if not plans[epNoteName] then
-		plans[epNoteName] = Private.classes.Plan:New(nil, epNoteName)
+		plans[epNoteName] = Private.classes.Plan:New({}, epNoteName)
 	end
 	local note = plans[epNoteName]
 
-	if parseMRTNote then
-		if VMRT and VMRT.Note then
-			local sharedMRTNote = VMRT.Note.Text1 or ""
-			note.content = utilities.SplitStringIntoTable(sharedMRTNote)
-		end
-	end
-
-	local bossDungeonEncounterID = self:ParseNote(note)
+	local bossDungeonEncounterID = self:ParseNote(note, utilities.SplitStringIntoTable(content))
 	note.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
 	local boss = bossUtilities.GetBoss(note.dungeonEncounterID)
 	if boss then

@@ -1,5 +1,4 @@
----@module "NerubarPalace"
----@module "Options"
+local AddOnName = ...
 
 ---@class Private
 local Private = select(2, ...) --[[@as Private]]
@@ -23,6 +22,7 @@ local format = format
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local pairs = pairs
 local sub = string.sub
@@ -440,21 +440,18 @@ end
 
 local function HandleImportNoteFromString(importType)
 	local text = Private.importEditBox:GetText()
-	local textTable = utilities.SplitStringIntoTable(text)
 	Private.importEditBox:Release()
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
 	local notes = AddOn.db.profile.plans
 
 	if importType == "FromStringOverwrite" then
-		notes[lastOpenNote].content = textTable
-		bossDungeonEncounterID = Private:Note(lastOpenNote, bossDungeonEncounterID) or bossDungeonEncounterID
+		bossDungeonEncounterID = Private:Note(lastOpenNote, bossDungeonEncounterID, text) or bossDungeonEncounterID
 	elseif importType == "FromStringNew" then
 		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 		local newNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
 		notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
-		notes[newNoteName].content = textTable
-		bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID) or bossDungeonEncounterID
+		bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID, text) or bossDungeonEncounterID
 		AddOn.db.profile.lastOpenNote = newNoteName
 		local noteDropdown = Private.mainFrame.noteDropdown
 		if noteDropdown then
@@ -764,30 +761,39 @@ local function ImportPlan(importType)
 			if Private.assignmentEditor then
 				Private.assignmentEditor:Release()
 			end
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-			if importType == "FromMRTOverwrite" then
-				bossDungeonEncounterID = Private:Note(AddOn.db.profile.lastOpenNote, bossDungeonEncounterID, true)
-					or bossDungeonEncounterID
-			elseif importType == "FromMRTNew" then
-				local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-				local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans, bossName --[[@as string]])
-				bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID, true)
-					or bossDungeonEncounterID
-				AddOn.db.profile.lastOpenNote = newNoteName
-				local noteDropdown = Private.mainFrame.noteDropdown
-				if noteDropdown then
-					noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-					noteDropdown:SetValue(newNoteName)
-				end
-				local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-				if renameNoteLineEdit then
-					renameNoteLineEdit:SetText(newNoteName)
-				end
-				local remindersEnabled = AddOn.db.profile.plans[newNoteName].remindersEnabled
-				Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
+
+			local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
+			if not loadingOrLoaded and not loaded then
+				print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
 			end
-			interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-			interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID or "")
+			if VMRT and VMRT.Note and VMRT.Note.Text1 then
+				local text = VMRT.Note.Text1
+				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+				if importType == "FromMRTOverwrite" then
+					bossDungeonEncounterID = Private:Note(AddOn.db.profile.lastOpenNote, bossDungeonEncounterID, text)
+						or bossDungeonEncounterID
+				elseif importType == "FromMRTNew" then
+					local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
+					local newNoteName =
+						utilities.CreateUniqueNoteName(AddOn.db.profile.plans, bossName --[[@as string]])
+					bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID, text)
+						or bossDungeonEncounterID
+					AddOn.db.profile.lastOpenNote = newNoteName
+					local noteDropdown = Private.mainFrame.noteDropdown
+					if noteDropdown then
+						noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+						noteDropdown:SetValue(newNoteName)
+					end
+					local renameNoteLineEdit = Private.mainFrame.noteLineEdit
+					if renameNoteLineEdit then
+						renameNoteLineEdit:SetText(newNoteName)
+					end
+					local remindersEnabled = AddOn.db.profile.plans[newNoteName].remindersEnabled
+					Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
+					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+				end
+			end
 		elseif importType == "FromStringOverwrite" or importType == "FromStringNew" then
 			CreateImportEditBox(importType)
 		end
@@ -843,7 +849,15 @@ function Private:CreateInterface()
 		bossDungeonEncounterID = notes[lastOpenNote].dungeonEncounterID
 	else
 		local defaultNoteName = "SharedMRTNote"
-		bossDungeonEncounterID = Private:Note(defaultNoteName, bossDungeonEncounterID, true) or bossDungeonEncounterID
+		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
+		if not loadingOrLoaded and not loaded then
+			print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
+		end
+		if VMRT and VMRT.Note and VMRT.Note.Text1 then
+			local text = VMRT.Note.Text1
+			bossDungeonEncounterID = Private:Note(defaultNoteName, bossDungeonEncounterID, text)
+				or bossDungeonEncounterID
+		end
 		if not notes[defaultNoteName] then -- MRT not loaded
 			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
