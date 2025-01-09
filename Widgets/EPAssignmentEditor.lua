@@ -86,9 +86,6 @@ local assignmentTriggers = {
 ---@field assigneeTypeContainer EPContainer
 ---@field assigneeTypeDropdown EPDropdown
 ---@field assigneeTypeLabel EPLabel
----@field assigneeContainer EPContainer
----@field assigneeDropdown EPDropdown
----@field assigneeLabel EPLabel
 ---@field timeContainer EPContainer
 ---@field timeMinuteLineEdit EPLineEdit
 ---@field timeSecondLineEdit EPLineEdit
@@ -156,11 +153,6 @@ end
 
 ---@param self EPAssignmentEditor
 local function HandleAssigneeTypeDropdownValueChanged(self, value)
-	if value ~= "Individual" then
-		SetEnabled(self.assigneeContainer.children, false)
-	else
-		SetEnabled(self.assigneeContainer.children, true)
-	end
 	self:Fire("DataChanged", "AssigneeType", value)
 end
 
@@ -173,16 +165,6 @@ local function SetAssignmentType(self, assignmentType)
 		SetEnabled(self.combatLogEventContainer.children, false)
 	elseif assignmentType == "PhasedAssignment" then
 		SetEnabled(self.combatLogEventContainer.children, false)
-	end
-end
-
----@param self EPAssignmentEditor
----@param assigneeType AssigneeType
-local function SetAssigneeType(self, assigneeType)
-	if assigneeType == "Individual" then
-		SetEnabled(self.assigneeContainer.children, true)
-	else
-		SetEnabled(self.assigneeContainer.children, false)
 	end
 end
 
@@ -264,22 +246,6 @@ local function OnAcquire(self)
 		HandleAssigneeTypeDropdownValueChanged(self, value)
 	end)
 	self.assigneeTypeContainer:AddChildren(self.assigneeTypeLabel, self.assigneeTypeDropdown)
-
-	self.assigneeContainer = AceGUI:Create("EPContainer")
-	self.assigneeContainer:SetLayout("EPVerticalLayout")
-	self.assigneeContainer:SetSpacing(unpack(containerSpacing))
-	self.assigneeContainer:SetFullWidth(true)
-	self.assigneeContainer:SetPadding(indentWidth, 0, 0, 0)
-	self.assigneeLabel = AceGUI:Create("EPLabel")
-	self.assigneeLabel:SetText("Person to Assign:")
-	self.assigneeLabel:SetFullWidth(true)
-	self.assigneeLabel:SetFrameHeightFromText()
-	self.assigneeDropdown = AceGUI:Create("EPDropdown")
-	self.assigneeDropdown:SetFullWidth(true)
-	self.assigneeDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		self:Fire("DataChanged", "Assignee", value)
-	end)
-	self.assigneeContainer:AddChildren(self.assigneeLabel, self.assigneeDropdown)
 
 	self.spellAssignmentContainer = AceGUI:Create("EPContainer")
 	self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
@@ -432,7 +398,6 @@ local function OnAcquire(self)
 		self.assignmentTypeContainer,
 		self.combatLogEventContainer,
 		self.assigneeTypeContainer,
-		self.assigneeContainer,
 		self.spellAssignmentContainer,
 		self.timeContainer,
 		self.optionalTextContainer,
@@ -464,7 +429,7 @@ local function OnAcquire(self)
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
-		self:Release()
+		self:Fire("CloseButtonClicked")
 	end)
 end
 
@@ -495,9 +460,6 @@ local function OnRelease(self)
 	self.assigneeTypeContainer = nil
 	self.assigneeTypeDropdown = nil
 	self.assigneeTypeLabel = nil
-	self.assigneeContainer = nil
-	self.assigneeDropdown = nil
-	self.assigneeLabel = nil
 	self.timeContainer = nil
 	self.timeMinuteLineEdit = nil
 	self.timeSecondLineEdit = nil
@@ -540,42 +502,7 @@ end
 local function PopulateFields(self, assignment, previewText, metaTables)
 	self:SetAssignmentID(assignment.uniqueID)
 	local assigneeNameOrRole = assignment.assigneeNameOrRole
-	if assigneeNameOrRole == "{everyone}" then
-		self:SetAssigneeType("Everyone")
-		self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-		self.assigneeDropdown:SetValue("")
-	else
-		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
-		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
-		if classMatch then
-			self:SetAssigneeType("Class")
-			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			self.assigneeDropdown:SetValue("")
-		elseif roleMatch then
-			self:SetAssigneeType("Role")
-			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			self.assigneeDropdown:SetValue("")
-		elseif groupMatch then
-			self:SetAssigneeType("GroupNumber")
-			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			self.assigneeDropdown:SetValue("")
-		elseif specMatch then
-			self:SetAssigneeType("Spec")
-			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			self.assigneeDropdown:SetValue("")
-		elseif typeMatch then
-			self:SetAssigneeType("Type")
-			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
-			self.assigneeDropdown:SetValue("")
-		else
-			self:SetAssigneeType("Individual")
-			self.assigneeTypeDropdown:SetValue("Individual")
-			self.assigneeDropdown:SetValue(assigneeNameOrRole)
-		end
-	end
+	self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
 
 	self.previewLabel:SetText(previewText)
 
@@ -688,7 +615,6 @@ local function Constructor()
 		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
-		SetAssigneeType = SetAssigneeType,
 		SetAssignmentID = SetAssignmentID,
 		GetAssignmentID = GetAssignmentID,
 		PopulateFields = PopulateFields,

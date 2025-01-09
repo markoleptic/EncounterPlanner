@@ -530,6 +530,7 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 		{
 			text = "Individual",
 			itemValue = "Individual",
+			dropdownItemMenuData = {},
 		},
 	} --[[@as table<integer, DropdownItemData>]]
 
@@ -547,11 +548,33 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 	return assignmentTypes
 end
 
+---@param roster table<string, EncounterPlannerDbRosterEntry>
+---@return table<integer, DropdownItemData>
+function Utilities.CreateAssigneeDropdownItems(roster)
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+	if roster then
+		for normalName, rosterTable in pairs(roster) do
+			tinsert(dropdownItems, {
+				itemValue = normalName,
+				text = rosterTable.classColoredName ~= "" and rosterTable.classColoredName or normalName,
+			})
+		end
+	end
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
+	return dropdownItems
+end
+
 -- Creates dropdown data with all assignments types including individual roster members.
 ---@param roster table<string, EncounterPlannerDbRosterEntry> Roster to character names from
+---@param assignmentTypeDropdownItems? table<integer, DropdownItemData>
+---@param assigneeDropdownItems? table<integer, DropdownItemData>
 ---@return table<integer, DropdownItemData>
-function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster)
-	local assignmentTypes = Utilities.CreateAssignmentTypeDropdownItems()
+function Utilities.CreateAssignmentTypeWithRosterDropdownItems(
+	roster,
+	assignmentTypeDropdownItems,
+	assigneeDropdownItems
+)
+	local assignmentTypes = assignmentTypeDropdownItems or Utilities.CreateAssignmentTypeDropdownItems()
 
 	local individualIndex = nil
 	for index, assignmentType in ipairs(assignmentTypes) do
@@ -561,36 +584,11 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster)
 		end
 	end
 	if individualIndex and roster then
-		if not assignmentTypes[individualIndex].dropdownItemMenuData then
-			assignmentTypes[individualIndex].dropdownItemMenuData = {}
-		end
-		for normalName, rosterTable in pairs(roster) do
-			local memberDropdownData = {
-				itemValue = normalName,
-				text = rosterTable.classColoredName or normalName,
-			}
-			tinsert(assignmentTypes[individualIndex].dropdownItemMenuData, memberDropdownData)
-		end
-
+		assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
+			or Utilities.CreateAssigneeDropdownItems(roster)
 		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
 	return assignmentTypes
-end
-
----@param roster table<string, EncounterPlannerDbRosterEntry>
----@return table<integer, DropdownItemData>
-function Utilities.CreateAssigneeDropdownItems(roster)
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	if roster then
-		for normalName, rosterTable in pairs(roster) do
-			tinsert(dropdownItems, {
-				itemValue = normalName,
-				text = rosterTable.classColoredName or normalName,
-			})
-		end
-	end
-	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return dropdownItems
 end
 
 -- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
@@ -835,8 +833,8 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 		elseif typeMatch then
 			legibleString = typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
 		elseif roster and roster[assigneeNameOrRole] then
-			if roster[assigneeNameOrRole].classColoredName then
-				legibleString = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
+			if roster[assigneeNameOrRole].classColoredName ~= "" then
+				legibleString = roster[assigneeNameOrRole].classColoredName
 			end
 		end
 	end
@@ -1012,13 +1010,11 @@ function Utilities.GetDataFromGroup()
 				groupData[unitName].class = classFileName
 				groupData[unitName].role = role
 				local colorMixin = GetClassColor(classFileName)
-				if colorMixin then
-					local classColoredName = colorMixin:WrapTextInColorCode(unitName)
-					groupData[unitName].classColoredName = classColoredName
-					if unitServer then -- nil if on same server
-						local unitNameAndServer = unitName .. "-" .. unitServer
-						groupData[unitNameAndServer] = groupData[unitName]
-					end
+				local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+				groupData[unitName].classColoredName = classColoredName
+				if unitServer then -- nil if on same server
+					local unitNameAndServer = unitName .. "-" .. unitServer
+					groupData[unitNameAndServer] = groupData[unitName]
 				end
 			end
 		end
@@ -1029,8 +1025,7 @@ end
 ---@param unitName string Character name for the roster entry
 ---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
 local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
-	local hasValidClass = rosterEntry.class and rosterEntry.class ~= ""
-	if hasValidClass then
+	if rosterEntry.class ~= "" then
 		local className = rosterEntry.class:match("class:%s*(%a+)")
 		if className then
 			className = className:upper()
@@ -1046,7 +1041,7 @@ end
 ---@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
 ---@param unitData EncounterPlannerDbRosterEntry
 local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
-	if not rosterEntry.class or rosterEntry.class ~= "" then
+	if rosterEntry.class == "" then
 		local className = unitData.class
 		local actualClassName
 		if className == "DEATHKNIGHT" then
@@ -1059,11 +1054,11 @@ local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 		rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
 	end
 
-	if not rosterEntry.classColoredName or rosterEntry.classColoredName == "" then
+	if rosterEntry.classColoredName == "" then
 		rosterEntry.classColoredName = unitData.classColoredName
 	end
 
-	if not rosterEntry.role or rosterEntry.role == "" then
+	if rosterEntry.role == "" then
 		if unitData.role == "DAMAGER" then
 			rosterEntry.role = "role:damager"
 		elseif unitData.role == "HEALER" then
@@ -1245,10 +1240,10 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 			end
 		end
 		local targetRosterEntry = roster[assignment.targetName]
-		if targetRosterEntry and targetRosterEntry.classColoredName and targetRosterEntry.classColoredName ~= "" then
+		if targetRosterEntry and targetRosterEntry.classColoredName ~= "" then
 			reminderText = reminderText .. " " .. targetRosterEntry.classColoredName
 		else
-			reminderText = reminderText .. " " .. (assignment.targetName or "")
+			reminderText = reminderText .. " " .. assignment.targetName
 		end
 		-- TODO: Consider highlighting frame
 	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then

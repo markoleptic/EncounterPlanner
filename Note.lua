@@ -467,7 +467,7 @@ local function CreateAssignmentExportString(assignment, roster)
 
 	if roster[assignment.assigneeNameOrRole] then
 		local classColoredName = roster[assignment.assigneeNameOrRole].classColoredName
-		if classColoredName then
+		if classColoredName ~= "" then
 			assignmentString = classColoredName:gsub("|", "||")
 		end
 	else
@@ -488,7 +488,7 @@ local function CreateAssignmentExportString(assignment, roster)
 		end
 	end
 	if assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if roster[assignment.targetName] and roster[assignment.targetName].classColoredName then
+		if roster[assignment.targetName] and roster[assignment.targetName].classColoredName ~= "" then
 			local classColoredName = roster[assignment.targetName].classColoredName
 			assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
 		else
@@ -585,20 +585,20 @@ function Private:Note(epNoteName, currentBossDungeonEncounterID, content)
 	for name, sharedRosterEntry in pairs(AddOn.db.profile.sharedRoster) do
 		local noteRosterEntry = note.roster[name]
 		if noteRosterEntry then
-			if not noteRosterEntry.class or noteRosterEntry.class == "" then
-				if sharedRosterEntry.class and sharedRosterEntry.class ~= "" then
+			if noteRosterEntry.class == "" then
+				if sharedRosterEntry.class ~= "" then
 					noteRosterEntry.class = sharedRosterEntry.class
-					if sharedRosterEntry.classColoredName then
+					if sharedRosterEntry.classColoredName ~= "" then
 						noteRosterEntry.classColoredName = sharedRosterEntry.classColoredName
 					end
 				end
 			end
-			if not noteRosterEntry.role or noteRosterEntry.role == "" then
+			if noteRosterEntry.role == "" then
 				if sharedRosterEntry.role and sharedRosterEntry.role ~= "" then
 					noteRosterEntry.role = sharedRosterEntry.role
 				end
 			end
-			if not noteRosterEntry.classColoredName or noteRosterEntry.classColoredName == "" then
+			if noteRosterEntry.classColoredName == "" then
 				if noteRosterEntry.class then
 					local className = noteRosterEntry.class:match("class:%s*(%a+)")
 					if className then

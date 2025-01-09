@@ -104,6 +104,17 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+
+	if Private.assignmentEditor then
+		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
+		local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
+			GetCurrentRoster(),
+			assignmentTypeDropdownItems,
+			assigneeDropdownItems
+		)
+		Private.assignmentEditor.assigneeTypeDropdown:Clear()
+		Private.assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+	end
 end
 
 ---@param rosterTab EPRosterEditorTab
@@ -163,13 +174,13 @@ local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 				toRoster[name] = Private.DeepCopy(dbEntry)
 			elseif toRoster[name] then
 				if dbEntry.class then
-					if not toRoster[name].class or toRoster[name].class == "" then
+					if toRoster[name].class == "" then
 						toRoster[name].class = dbEntry.class
-						toRoster[name].classColoredName = nil
+						toRoster[name].classColoredName = ""
 					end
 				end
 				if dbEntry.role then
-					if not toRoster[name].role or toRoster[name].role == "" then
+					if toRoster[name].role == "" then
 						toRoster[name].role = dbEntry.role
 					end
 				end
@@ -220,11 +231,6 @@ local function HandleAssignmentEditorDeleteButtonClicked()
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 end
 
-local function HandleAssignmentEditorOkayButtonClicked()
-	Private.assignmentEditor:Release()
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-end
-
 ---@param assignmentEditor EPAssignmentEditor
 ---@param dataType string
 ---@param value string
@@ -241,6 +247,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 
 	local updateFields = false
 	local updatePreviewText = false
+	local updateAssignments = false
 
 	if dataType == "AssignmentType" then
 		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
@@ -311,13 +318,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		end
 		updatePreviewText = true
 	elseif dataType == "AssigneeType" then
-		if value ~= "Individual" then
-			assignment.assigneeNameOrRole = value
-		end
-		updatePreviewText = true
-	elseif dataType == "Assignee" then
 		assignment.assigneeNameOrRole = value
 		updatePreviewText = true
+		updateAssignments = true
 	elseif dataType == "Time" then
 		local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
 		local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
@@ -382,6 +385,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			timeline:ClearSelectedBossAbilities()
 		end
 	end
+	if updateAssignments then
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	end
 end
 
 ---@return EPAssignmentEditor
@@ -411,11 +417,18 @@ local function CreateAssignmentEditor()
 	end)
 	assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
 	assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
-	assignmentEditor:SetCallback("OkayButtonClicked", HandleAssignmentEditorOkayButtonClicked)
+	assignmentEditor:SetCallback("CloseButtonClicked", function()
+		Private.assignmentEditor:Release()
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	end)
 	assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
-	assignmentEditor.assigneeTypeDropdown:AddItems(assignmentTypeDropdownItems, "EPDropdownItemToggle")
 	local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
-	assignmentEditor.assigneeDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+	local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
+		GetCurrentRoster(),
+		assignmentTypeDropdownItems,
+		assigneeDropdownItems
+	)
+	assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
 	assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 	assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments ~= 0)
 	assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
