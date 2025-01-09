@@ -845,7 +845,8 @@ function Private:CreateInterface()
 		local defaultNoteName = "SharedMRTNote"
 		bossDungeonEncounterID = Private:Note(defaultNoteName, bossDungeonEncounterID, true) or bossDungeonEncounterID
 		if not notes[defaultNoteName] then -- MRT not loaded
-			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossDungeonEncounterID)
+			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
+			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
 			notes[defaultNoteName] = Private.classes.Plan:New(nil, defaultNoteName)
 			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
 			notes[defaultNoteName].instanceID = 2657
