@@ -310,6 +310,18 @@ local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID)
 		if text then
 			text = text:gsub("^%s*", ""):gsub("$^%s*", "") -- remove beginning/trailing whitespace
 		end
+		local specMatch = nameOrGroup:match("spec:%s*(%a+)")
+		local typeMatch = nameOrGroup:match("type:%s*(%a+)")
+		if specMatch then
+			for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
+				if name:lower() == specMatch:lower() then
+					nameOrGroup = "spec:" .. tostring(specID)
+					break
+				end
+			end
+		elseif typeMatch then
+			nameOrGroup = "type:" .. typeMatch:lower()
+		end
 		local assignment = Private.classes.Assignment:New({
 			assigneeNameOrRole = nameOrGroup or "",
 			text = text,
@@ -488,6 +500,22 @@ local function CreateAssignmentExportString(assignment, roster)
 		local classColoredName = roster[assignment.assigneeNameOrRole].classColoredName
 		if classColoredName then
 			assignmentString = classColoredName:gsub("|", "||")
+		end
+	else
+		local specMatch = assignmentString:match("spec:%s*(%d+)")
+		local typeMatch = assignmentString:match("type:%s*(%a+)")
+		if specMatch then
+			local specIDMatch = tonumber(specMatch)
+			if specIDMatch then
+				for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
+					if specIDMatch == specID then
+						assignmentString = "spec:" .. name
+						break
+					end
+				end
+			end
+		elseif typeMatch then
+			assignmentString = "type:" .. typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
 		end
 	end
 	if assignment.targetName ~= nil and assignment.targetName ~= "" then

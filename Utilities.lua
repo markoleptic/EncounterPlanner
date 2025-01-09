@@ -18,6 +18,9 @@ local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
+local GetSpecialization = GetSpecialization
+local GetSpecializationInfo = GetSpecializationInfo
+local GetSpecializationInfoByID = GetSpecializationInfoByID
 local hugeNumber = math.huge
 local ipairs = ipairs
 local IsInRaid = IsInRaid
@@ -30,6 +33,7 @@ local setmetatable = setmetatable
 local sort = table.sort
 local tinsert = table.insert
 local tonumber = tonumber
+local tostring = tostring
 local type = type
 local UnitClass = UnitClass
 local UnitName = UnitName
@@ -38,11 +42,128 @@ local wipe = table.wipe
 local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 
+local specIDToType = {
+	-- Mage
+	[62] = "ranged", -- Arcane
+	[63] = "ranged", -- Fire
+	[64] = "ranged", -- Frost
+	-- Paladin
+	[65] = "melee", -- Holy
+	[66] = "melee", -- Protection
+	[70] = "melee", -- Retribution
+	-- Warrior
+	[71] = "melee", -- Arms
+	[72] = "melee", -- Fury
+	[73] = "melee", -- Protection
+	-- Druid
+	[102] = "ranged", -- Balance
+	[103] = "melee", -- Feral
+	[104] = "melee", -- Guardian
+	[105] = "ranged", -- Restoration
+	-- Death Knight
+	[250] = "melee", -- Blood
+	[251] = "melee", -- Frost
+	[252] = "melee", -- Unholy
+	-- Hunter
+	[253] = "ranged", -- Beast Mastery
+	[254] = "ranged", -- Marksmanship
+	[255] = "melee", -- Survival
+	-- Priest
+	[256] = "ranged", -- Discipline
+	[257] = "ranged", -- Holy
+	[258] = "ranged", -- Shadow
+	-- Rogue
+	[259] = "melee", -- Assassination
+	[260] = "melee", -- Outlaw
+	[261] = "melee", -- Subtlety
+	-- Shaman
+	[262] = "ranged", -- Elemental
+	[263] = "melee", -- Enhancement
+	[264] = "ranged", -- Restoration
+	-- Warlock
+	[265] = "ranged", -- Affliction
+	[266] = "ranged", -- Demonology
+	[267] = "ranged", -- Destruction
+	-- Monk
+	[268] = "melee", -- Brewmaster
+	[270] = "melee", -- Mistweaver
+	[269] = "melee", -- Windwalker
+	-- Demon Hunter
+	[577] = "melee", -- Havoc
+	[581] = "melee", -- Vengeance
+	-- Evoker
+	[1467] = "ranged", -- Devastation
+	[1468] = "ranged", -- Preservation
+	[1473] = "ranged", -- Augmentation
+}
+
 ---@type table<integer, table<integer, table<integer, number>>>
 local absoluteSpellCastStartTables = {}
 for _, boss in pairs(Private.raidInstances["Nerub'ar Palace"].bosses) do
 	absoluteSpellCastStartTables[boss.dungeonEncounterID] =
 		bossUtilities.CreateAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
+end
+
+local specIDToName = {
+	-- Mage
+	[62] = "Arcane",
+	[63] = "Fire",
+	[64] = "Frost",
+	-- Paladin
+	[65] = "Holy",
+	[66] = "Protection",
+	[70] = "Retribution",
+	-- Warrior
+	[71] = "Arms",
+	[72] = "Fury",
+	[73] = "Protection",
+	-- Druid
+	[102] = "Balance",
+	[103] = "Feral",
+	[104] = "Guardian",
+	[105] = "Restoration",
+	-- Death Knight
+	[250] = "Blood",
+	[251] = "Frost",
+	[252] = "Unholy",
+	-- Hunter
+	[253] = "Beast Mastery",
+	[254] = "Marksmanship",
+	[255] = "Survival",
+	-- Priest
+	[256] = "Discipline",
+	[257] = "Holy",
+	[258] = "Shadow",
+	-- Rogue
+	[259] = "Assassination",
+	[260] = "Outlaw",
+	[261] = "Subtlety",
+	-- Shaman
+	[262] = "Elemental",
+	[263] = "Enhancement",
+	[264] = "Restoration",
+	-- Warlock
+	[265] = "Affliction",
+	[266] = "Demonology",
+	[267] = "Destruction",
+	-- Monk
+	[268] = "Brewmaster",
+	[270] = "Mistweaver",
+	[269] = "Windwalker",
+	-- Demon Hunter
+	[577] = "Havoc",
+	[581] = "Vengeance",
+	-- Evoker
+	[1467] = "Devastation",
+	[1468] = "Preservation",
+	[1473] = "Augmentation",
+}
+
+local specIDToIconAndName = {}
+
+for specID, _ in pairs(specIDToName) do
+	local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
+	specIDToIconAndName[specID] = format("|T%s:16|t %s", icon, name)
 end
 
 ---@param value number
@@ -94,6 +215,11 @@ function Utilities.FindAssignmentByUniqueID(assignments, ID)
 			return assignment
 		end
 	end
+end
+
+---@return table<integer, string>
+function Utilities.GetSpecIDToNameTable()
+	return specIDToName
 end
 
 ---@param time number
@@ -333,6 +459,19 @@ function Utilities.CreateSpellAssignmentDropdownItems()
 	return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
 end
 
+---@return DropdownItemData
+local function CreateSpecDropdownItems()
+	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+	for specID, iconAndName in pairs(specIDToIconAndName) do
+		tinsert(dropdownItems, {
+			itemValue = "spec:" .. tostring(specID),
+			text = iconAndName,
+		})
+	end
+	Utilities.SortDropdownDataByItemValue(dropdownItems)
+	return { itemValue = "Spec", text = "Spec", dropdownItemMenuData = dropdownItems }
+end
+
 ---@return table<integer, DropdownItemData>
 function Utilities.CreateClassDropdownItemData()
 	local dropdownData = {}
@@ -361,31 +500,33 @@ end
 function Utilities.CreateAssignmentTypeDropdownItems()
 	local assignmentTypes = {
 		{
-			text = "Group",
-			itemValue = "Group",
+			text = "Group Number",
+			itemValue = "Group Number",
 			dropdownItemMenuData = {
-				{ text = "Everyone", itemValue = "{everyone}" },
-				{
-					text = "Role",
-					itemValue = "Role",
-					dropdownItemMenuData = {
-						{ text = "Damager", itemValue = "role:damager" },
-						{ text = "Healer", itemValue = "role:healer" },
-						{ text = "Tank", itemValue = "role:tank" },
-					},
-				},
-				{
-					text = "Group Number",
-					itemValue = "Group Number",
-					dropdownItemMenuData = {
-						{ text = "1", itemValue = "group:1" },
-						{ text = "2", itemValue = "group:2" },
-						{ text = "3", itemValue = "group:3" },
-						{ text = "4", itemValue = "group:4" },
-					},
-				},
+				{ text = "1", itemValue = "group:1" },
+				{ text = "2", itemValue = "group:2" },
+				{ text = "3", itemValue = "group:3" },
+				{ text = "4", itemValue = "group:4" },
 			},
 		},
+		{
+			text = "Role",
+			itemValue = "Role",
+			dropdownItemMenuData = {
+				{ text = "Damager", itemValue = "role:damager" },
+				{ text = "Healer", itemValue = "role:healer" },
+				{ text = "Tank", itemValue = "role:tank" },
+			},
+		},
+		{
+			text = "Type",
+			itemValue = "Type",
+			dropdownItemMenuData = {
+				{ text = "Melee", itemValue = "type:melee" },
+				{ text = "Ranged", itemValue = "type:ranged" },
+			},
+		},
+		{ text = "Everyone", itemValue = "{everyone}" },
 		{
 			text = "Individual",
 			itemValue = "Individual",
@@ -399,8 +540,10 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 	}
 
 	tinsert(assignmentTypes, classAssignmentTypes)
+	tinsert(assignmentTypes, CreateSpecDropdownItems())
 
 	Utilities.SortDropdownDataByItemValue(assignmentTypes)
+
 	return assignmentTypes
 end
 
@@ -671,8 +814,9 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
 		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
 		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
+		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
 		if classMatch then
-			classMatch = classMatch:match("^(.*):") or classMatch
 			local prettyClassName = Private.prettyClassNames[classMatch]
 			if prettyClassName then
 				legibleString = prettyClassName
@@ -680,11 +824,16 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 				legibleString = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
 			end
 		elseif roleMatch then
-			roleMatch = roleMatch:match("^(.*):") or roleMatch
 			legibleString = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
 		elseif groupMatch then
-			groupMatch = groupMatch:match("^(.*):") or groupMatch
 			legibleString = "Group " .. groupMatch
+		elseif specMatch then
+			local specIDMatch = tonumber(specMatch)
+			if specIDMatch then
+				legibleString = specIDToIconAndName[specIDMatch]
+			end
+		elseif typeMatch then
+			legibleString = typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
 		elseif roster and roster[assigneeNameOrRole] then
 			if roster[assigneeNameOrRole].classColoredName then
 				legibleString = roster[assigneeNameOrRole].classColoredName or assigneeNameOrRole
@@ -701,13 +850,13 @@ function Utilities.SortDropdownDataByItemValue(data)
 	sort(data, function(a, b)
 		local itemValueA = a.itemValue
 		local itemValueB = b.itemValue
-		if type(itemValueA) == "number" then
+		if type(itemValueA) == "number" or itemValueA:find("spec:") then
 			local spellName = a.text:match("|T.-|t%s(.+)")
 			if spellName then
 				itemValueA = spellName
 			end
 		end
-		if type(itemValueB) == "number" then
+		if type(itemValueB) == "number" or itemValueB:find("spec:") then
 			local spellName = b.text:match("|T.-|t%s(.+)")
 			if spellName then
 				itemValueB = spellName
@@ -962,6 +1111,8 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 				not nameOrRole:find("class:")
 				and not nameOrRole:find("group:")
 				and not nameOrRole:find("role:")
+				and not nameOrRole:find("spec:")
+				and not nameOrRole:find("type:")
 				and not nameOrRole:find("{everyone}")
 			then
 				if not roster[nameOrRole] then
@@ -1028,30 +1179,40 @@ function Utilities.FilterSelf(timelineAssignments)
 	local filtered = {}
 	local unitName = select(1, UnitName("player"))
 	local unitClass = select(2, UnitClass("player"))
-	local unitRace = select(2, UnitRace("player"))
-	local spec = GetSpecialization()
-	local role = nil
-	if spec then
-		role = select(5, GetSpecializationInfo(spec))
-	end
-	local groupNumber = GetGroupNumber()
+	local specID, spec, _, _, role = GetSpecializationInfo(GetSpecialization())
+	local classType = specIDToType[specID]
 	for _, timelineAssignment in ipairs(timelineAssignments) do
 		local nameOrRole = timelineAssignment.assigneeNameOrRole or timelineAssignment.assignment.assigneeNameOrRole
 		if nameOrRole:find("class:") then
-			local className = nameOrRole:match("class:%s*(%a+)")
-			if className then
-				if className:upper() == unitClass then
+			local classMatch = nameOrRole:match("class:%s*(%a+)")
+			if classMatch then
+				if classMatch:upper() == unitClass then
 					tinsert(filtered, timelineAssignment)
 				end
 			end
 		elseif nameOrRole:find("group:") then
-			if nameOrRole:find(tostring(groupNumber)) then
+			if nameOrRole:find(tostring(GetGroupNumber())) then
 				tinsert(filtered, timelineAssignment)
 			end
 		elseif nameOrRole:find("role:") then
-			local roleName = nameOrRole:match("class:%s*(%a+)")
-			if roleName then
-				if roleName:upper() == role then
+			local roleMatch = nameOrRole:match("role:%s*(%a+)")
+			if roleMatch then
+				if roleMatch:upper() == role then
+					tinsert(filtered, timelineAssignment)
+				end
+			end
+		elseif nameOrRole:find("type:") then
+			local typeMatch = nameOrRole:match("type:%s*(%a+)")
+			if typeMatch then
+				if typeMatch:lower() == classType then
+					tinsert(filtered, timelineAssignment)
+				end
+			end
+		elseif nameOrRole:find("spec:") then
+			local specMatch = nameOrRole:match("spec:%s*(%d+)")
+			if specMatch then
+				local foundSpecID = tonumber(specMatch)
+				if foundSpecID and foundSpecID == specID then
 					tinsert(filtered, timelineAssignment)
 				end
 			end

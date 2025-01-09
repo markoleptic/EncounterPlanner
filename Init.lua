@@ -33,6 +33,8 @@ local type = type
 ---| "Tanks"
 ---| "Class"
 ---| "Individual"
+---| "Spec"
+---| "Type"
 
 ---@alias AssignmentSortType
 ---| "Alphabetical"

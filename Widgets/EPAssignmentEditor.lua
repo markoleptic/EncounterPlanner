@@ -548,6 +548,8 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
 		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
 		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
+		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
 		if classMatch then
 			self:SetAssigneeType("Class")
 			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
@@ -558,6 +560,14 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 			self.assigneeDropdown:SetValue("")
 		elseif groupMatch then
 			self:SetAssigneeType("GroupNumber")
+			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			self.assigneeDropdown:SetValue("")
+		elseif specMatch then
+			self:SetAssigneeType("Spec")
+			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+			self.assigneeDropdown:SetValue("")
+		elseif typeMatch then
+			self:SetAssigneeType("Type")
 			self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
 			self.assigneeDropdown:SetValue("")
 		else
