@@ -460,7 +460,7 @@ local function CreateTimeAndOptionsExportString(assignment)
 end
 
 ---@param assignment Assignment
----@param roster EncounterPlannerDbRosterEntry
+---@param roster RosterEntry
 ---@return string
 local function CreateAssignmentExportString(assignment, roster)
 	local assignmentString = assignment.assigneeNameOrRole

@@ -24,7 +24,7 @@ local tostring = tostring
 local tremove = tremove
 local type = type
 
----@return table<string, EncounterPlannerDbRosterEntry>
+---@return table<string, RosterEntry>
 local function GetCurrentRoster()
 	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].roster
 end

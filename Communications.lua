@@ -99,7 +99,7 @@ local function DeserializeAssignment(data)
 end
 
 ---@param name string
----@param rosterEntry EncounterPlannerDbRosterEntry
+---@param rosterEntry RosterEntry
 ---@return SerializedRosterEntry
 local function SerializeRosterEntry(name, rosterEntry)
 	local serializedRosterEntry = {
@@ -112,9 +112,9 @@ local function SerializeRosterEntry(name, rosterEntry)
 end
 
 ---@param serializedRosterEntry SerializedRosterEntry
----@return string, EncounterPlannerDbRosterEntry
+---@return string, RosterEntry
 local function DeserializeRosterEntry(serializedRosterEntry)
-	local rosterEntry = Private.classes.EncounterPlannerDbRosterEntry:New({})
+	local rosterEntry = Private.classes.RosterEntry:New({})
 	rosterEntry.class = serializedRosterEntry[2]
 	rosterEntry.role = serializedRosterEntry[3]
 	rosterEntry.classColoredName = serializedRosterEntry[4]

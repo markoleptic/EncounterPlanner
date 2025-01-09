@@ -548,7 +548,7 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 	return assignmentTypes
 end
 
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@return table<integer, DropdownItemData>
 function Utilities.CreateAssigneeDropdownItems(roster)
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
@@ -565,7 +565,7 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 end
 
 -- Creates dropdown data with all assignments types including individual roster members.
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster to character names from
+---@param roster table<string, RosterEntry> Roster to character names from
 ---@param assignmentTypeDropdownItems? table<integer, DropdownItemData>
 ---@param assigneeDropdownItems? table<integer, DropdownItemData>
 ---@return table<integer, DropdownItemData>
@@ -670,7 +670,7 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 end
 
 -- Creates a Timeline Assignment comparator function.
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
+---@param roster table<string, RosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
 ---@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
 local function CompareAssignments(roster, assignmentSortType)
@@ -740,7 +740,7 @@ end
 -- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
 -- Sorts assignments based on the assignmentSortType.
 ---@param assignments table<integer, Assignment> Assignments to sort
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster associated with the assignments
+---@param roster table<string, RosterEntry> Roster associated with the assignments
 ---@param assignmentSortType AssignmentSortType Sort method
 ---@param bossDungeonEncounterID integer Used to get boss timers to set the proper timeline assignment start time for combat log assignments
 ---@return table<integer, TimelineAssignment>
@@ -802,7 +802,7 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 end
 
 ---@param assigneeNameOrRole string
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
+---@param roster table<string, RosterEntry> Roster for the assignments
 ---@return string
 function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
 	local legibleString = assigneeNameOrRole
@@ -950,7 +950,7 @@ end
 
 -- Creates a sorted table used to populate the assignment list.
 ---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}> Sorted assignment list
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster for the assignments
+---@param roster table<string, RosterEntry> Roster for the assignments
 ---@return table<integer, {assigneeNameOrRole:string, text:string, spells:table<integer, integer>}>
 function Utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 	local visited = {}
@@ -997,7 +997,7 @@ end
 
 -- Creates a table where keys are character names and the values are tables with class and role fields. Dependent on the
 -- group the player is in.
----@return EncounterPlannerDbRosterEntry
+---@return RosterEntry
 function Utilities.GetDataFromGroup()
 	local groupData = {}
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
@@ -1023,7 +1023,7 @@ function Utilities.GetDataFromGroup()
 end
 
 ---@param unitName string Character name for the roster entry
----@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
+---@param rosterEntry RosterEntry Roster entry to update
 local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
 	if rosterEntry.class ~= "" then
 		local className = rosterEntry.class:match("class:%s*(%a+)")
@@ -1038,8 +1038,8 @@ local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
 end
 
 -- Updates class, class colored name, and role from the group if they do not exist.
----@param rosterEntry EncounterPlannerDbRosterEntry Roster entry to update
----@param unitData EncounterPlannerDbRosterEntry
+---@param rosterEntry RosterEntry Roster entry to update
+---@param unitData RosterEntry
 local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 	if rosterEntry.class == "" then
 		local className = unitData.class
@@ -1070,20 +1070,20 @@ local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 end
 
 -- Imports all characters in the group if they do not already exist.
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+---@param roster table<string, RosterEntry> Roster to update
 function Utilities.ImportGroupIntoRoster(roster)
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
 		if unit then
 			local unitName, _ = UnitName(unit)
 			if unitName then
-				roster[unitName] = Private.classes.EncounterPlannerDbRosterEntry:New({})
+				roster[unitName] = Private.classes.RosterEntry:New({})
 			end
 		end
 	end
 end
 
 -- Updates class, class colored name, and role from the current raid or party group.
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+---@param roster table<string, RosterEntry> Roster to update
 function Utilities.UpdateRosterDataFromGroup(roster)
 	local groupData = Utilities.GetDataFromGroup()
 	for unitName, data in pairs(groupData) do
@@ -1096,7 +1096,7 @@ end
 -- Adds assignees from assignments not already present in roster, updates estimated roles if one was found and the entry
 -- does not already have one.
 ---@param assignments table<integer, Assignment> Assignments to add assignees from
----@param roster table<string, EncounterPlannerDbRosterEntry> Roster to update
+---@param roster table<string, RosterEntry> Roster to update
 function Utilities.UpdateRosterFromAssignments(assignments, roster)
 	local determinedRoles = Utilities.DetermineRolesFromAssignments(assignments)
 	local visited = {}
@@ -1112,7 +1112,7 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 				and not nameOrRole:find("{everyone}")
 			then
 				if not roster[nameOrRole] then
-					roster[nameOrRole] = Private.classes.EncounterPlannerDbRosterEntry:New({})
+					roster[nameOrRole] = Private.classes.RosterEntry:New({})
 				end
 				if roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
@@ -1222,7 +1222,7 @@ function Utilities.FilterSelf(timelineAssignments)
 end
 
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@return string
 function Utilities.CreateReminderProgressBarText(assignment, roster)
 	local reminderText = ""

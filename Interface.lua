@@ -58,7 +58,7 @@ local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
 local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
 
----@return table<string, EncounterPlannerDbRosterEntry>
+---@return table<string, RosterEntry>
 local function GetCurrentRoster()
 	local lastOpenNote = AddOn.db.profile.lastOpenNote
 	local note = AddOn.db.profile.plans[lastOpenNote]

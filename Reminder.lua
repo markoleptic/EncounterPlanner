@@ -42,7 +42,7 @@ local combatLogEventMap = {
 ---@class CombatLogEventAssignmentData
 ---@field preferences ReminderPreferences
 ---@field assignment CombatLogEventAssignment
----@field roster table<string, EncounterPlannerDbRosterEntry>
+---@field roster table<string, RosterEntry>
 
 ---@type table<integer, FunctionContainer>
 local timers = {}
@@ -237,7 +237,7 @@ end
 
 -- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@param duration number
 ---@param progressBarPreferences ProgressBarPreferences
 local function AddProgressBar(assignment, roster, duration, progressBarPreferences)
@@ -257,7 +257,7 @@ end
 
 -- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@param duration number|nil
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, roster, duration, messagePreferences)
@@ -283,7 +283,7 @@ end
 -- time before the assignment, but can also be sooner if towards the start of the encounter. Creates timers for actions
 -- that occur at assignment time.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@param reminderPreferences ReminderPreferences
 ---@param reminderText string
 ---@param duration number
@@ -338,7 +338,7 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 end
 
 ---@param timelineAssignment TimelineAssignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@param reminderPreferences ReminderPreferences
 local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
 	local assignment = timelineAssignment.assignment
@@ -359,7 +359,7 @@ end
 
 -- Sets up reminders to simulate a boss encounter using static timings.
 ---@param timelineAssignments table<integer, TimelineAssignment>
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 function Private:SimulateBoss(timelineAssignments, roster)
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 
@@ -410,7 +410,7 @@ function Private:IsSimulatingBoss()
 end
 
 ---@param assignment TimedAssignment|CombatLogEventAssignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
+---@param roster table<string, RosterEntry>
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateTimer(assignment, roster, reminderPreferences, elapsed)

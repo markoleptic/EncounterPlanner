@@ -325,7 +325,7 @@ end
 
 ---@class RosterWidgetMapping
 ---@field name string
----@field dbEntry EncounterPlannerDbRosterEntry
+---@field dbEntry RosterEntry
 ---@field widgetEntry EPRosterEntry
 
 ---@alias EPRosterEditorTab
@@ -621,8 +621,8 @@ local function SetClassDropdownData(self, dropdownData)
 end
 
 ---@param self EPRosterEditor
----@param currentRoster table<string, EncounterPlannerDbRosterEntry>
----@param sharedRoster table<string, EncounterPlannerDbRosterEntry>
+---@param currentRoster table<string, RosterEntry>
+---@param sharedRoster table<string, RosterEntry>
 local function SetRosters(self, currentRoster, sharedRoster)
 	if self.currentRosterWidgetMap then
 		wipe(self.currentRosterWidgetMap)

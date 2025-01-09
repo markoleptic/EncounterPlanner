@@ -283,11 +283,11 @@ Private.classes.BossAbilityInstance = {
 	repeatCastIndex = nil,
 }
 
----@class EncounterPlannerDbRosterEntry
+---@class RosterEntry
 ---@field class string
 ---@field classColoredName string
 ---@field role RaidGroupRole
-Private.classes.EncounterPlannerDbRosterEntry = {
+Private.classes.RosterEntry = {
 	class = "",
 	role = "",
 	classColoredName = "",
@@ -301,7 +301,7 @@ Private.classes.EncounterPlannerDbRosterEntry = {
 ---@field instanceID integer
 ---@field content table<integer, string>
 ---@field assignments table<integer, Assignment>
----@field roster table<string, EncounterPlannerDbRosterEntry>
+---@field roster table<string, RosterEntry>
 ---@field collapsed table<string, boolean>
 ---@field remindersEnabled boolean
 Private.classes.Plan = {
@@ -491,8 +491,8 @@ function Private.classes.Plan:New(o, name, existingID)
 end
 
 ---@param o any
----@return EncounterPlannerDbRosterEntry
-function Private.classes.EncounterPlannerDbRosterEntry:New(o)
+---@return RosterEntry
+function Private.classes.RosterEntry:New(o)
 	return CreateNewInstance(self, o)
 end
 
@@ -604,7 +604,7 @@ local defaults = {
 	---@class DefaultProfile
 	---@field activeBossAbilities table<integer, table<integer, boolean>>
 	---@field plans table<string, Plan>
-	---@field sharedRoster table<string, EncounterPlannerDbRosterEntry>
+	---@field sharedRoster table<string, RosterEntry>
 	---@field lastOpenNote string
 	---@field recentSpellAssignments table<string, DropdownItemData>
 	---@field trustedCharacters table<integer, string>
