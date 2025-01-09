@@ -297,38 +297,37 @@ local function CreateAssignmentsFromLine(line)
 			spellInfo = GetSpellInfo(id)
 			return rest
 		end)
-		local nameOrGroup = strWithoutSpell:match(assigneeGroupRegex) or strWithoutSpell:match(nameRegex)
-		if nameOrGroup then
-			nameOrGroup = nameOrGroup:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
-		end
 		local text = str:match(textRegex)
 		if text then
 			text = text:gsub("{everyone}", "") -- duplicate everyone
-		end
-		if text then
 			text = text:gsub("^%s*", ""):gsub("$^%s*", "") -- remove beginning/trailing whitespace
+			strWithoutSpell = strWithoutSpell:gsub(textRegex, "")
 		end
-		local specMatch = nameOrGroup:match("spec:%s*(%a+)")
-		local typeMatch = nameOrGroup:match("type:%s*(%a+)")
-		if specMatch then
-			for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
-				if name:lower() == specMatch:lower() then
-					nameOrGroup = "spec:" .. tostring(specID)
-					break
+		local nameOrGroup = strWithoutSpell:match(assigneeGroupRegex) or strWithoutSpell:match(nameRegex)
+		if nameOrGroup then
+			for _, entry in pairs(strsplittable(",", nameOrGroup)) do
+				entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
+				local specMatch = entry:match("spec:%s*(%a+)")
+				local typeMatch = entry:match("type:%s*(%a+)")
+				if specMatch then
+					for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
+						if name:lower() == specMatch:lower() then
+							entry = "spec:" .. tostring(specID)
+							break
+						end
+					end
+				elseif typeMatch then
+					entry = "type:" .. typeMatch:lower()
 				end
+				local assignment = Private.classes.Assignment:New({
+					assigneeNameOrRole = entry or "",
+					text = text,
+					spellInfo = spellInfo,
+					targetName = targetName,
+				})
+				tinsert(assignments, assignment)
 			end
-		elseif typeMatch then
-			nameOrGroup = "type:" .. typeMatch:lower()
 		end
-		local assignment = Private.classes.Assignment:New({
-			assigneeNameOrRole = nameOrGroup or "",
-			text = text,
-			spellInfo = spellInfo,
-			targetName = targetName,
-			-- generalText = generalText,
-			-- generalTextSpellID = generalTextSpellID,
-		})
-		tinsert(assignments, assignment)
 	end
 	return assignments
 end
