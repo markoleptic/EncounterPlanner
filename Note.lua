@@ -283,10 +283,8 @@ end
 
 -- Parses a line of text in the note and creates assignment(s).
 ---@param line string
----@param generalText string|nil
----@param generalTextSpellID number|nil
 ---@return table<integer, Assignment>
-local function CreateAssignmentsFromLine(line, generalText, generalTextSpellID)
+local function CreateAssignmentsFromLine(line)
 	local assignments = {}
 	for str in (line .. "  "):gmatch(postDashRegex) do
 		local targetName = str:match(targetNameRegex)
@@ -417,48 +415,12 @@ function Private:ParseNote(note)
 			else
 				generalText = line:match(postOptionsPreDashNoSpellRegex)
 			end
-			local inputs = CreateAssignmentsFromLine(line, generalText, spellIDNumber)
+			local inputs = CreateAssignmentsFromLine(line)
 			self:ProcessOptions(inputs, note.assignments, time, options)
 		end
 	end
 
 	return bossDungeonEncounterID
-end
-
----@param assignment Assignment
----@param roster table<string, EncounterPlannerDbRosterEntry>
----@return string
-function Private:CreateNotePreviewText(assignment, roster)
-	local previewText = ""
-
-	local rosterEntry = roster[assignment.assigneeNameOrRole]
-	if rosterEntry and rosterEntry.classColoredName and rosterEntry.classColoredName ~= "" then
-		previewText = rosterEntry.classColoredName or ""
-	else
-		previewText = assignment.assigneeNameOrRole
-	end
-
-	if assignment.targetName ~= nil and assignment.targetName ~= "" then
-		local targetRosterEntry = roster[assignment.targetName]
-		if targetRosterEntry and targetRosterEntry.classColoredName and targetRosterEntry.classColoredName ~= "" then
-			previewText = previewText .. string.format(" @%s", targetRosterEntry.classColoredName)
-		else
-			previewText = previewText .. string.format(" @%s", assignment.targetName)
-		end
-	end
-
-	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
-		previewText = previewText .. string.format(" {spell:%d}", assignment.spellInfo.spellID)
-	end
-
-	if assignment.text ~= nil and assignment.text ~= "" then
-		previewText = previewText .. string.format(" %s", assignment.text)
-	end
-
-	previewText =
-		previewText:gsub(spellIconRegex, GSubIcon):gsub(raidIconRegex, "|T%1:16|t"):gsub(ertIconRegex, genericIcons)
-
-	return previewText
 end
 
 ---@param assignment CombatLogEventAssignment|TimedAssignment
