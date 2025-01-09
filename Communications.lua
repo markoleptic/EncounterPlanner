@@ -43,6 +43,7 @@ local configForDeflate = {
 ---@field [5] integer instanceID
 ---@field [6] table<integer, SerializedAssignment> assignments
 ---@field [7] table<string, SerializedRosterEntry> roster
+---@field [8] table<integer, string> content
 
 ---@class SerializedAssignment
 ---@field [1] string assigneeNameOrRole
@@ -131,6 +132,7 @@ local function SerializePlan(plan)
 		plan.instanceID,
 		{},
 		{},
+		{},
 	} --[[@as SerializedPlan]]
 	local assignments = serializedPlan[6]
 	for _, assignment in ipairs(plan.assignments) do
@@ -140,6 +142,7 @@ local function SerializePlan(plan)
 	for name, rosterInfo in pairs(plan.roster) do
 		roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
 	end
+	serializedPlan[8] = plan.content
 	return serializedPlan
 end
 
@@ -159,6 +162,7 @@ local function DeserializePlan(serializedPlan)
 		local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
 		plan.roster[rosterEntryName] = rosterEntry
 	end
+	plan.content = serializedPlan[8]
 	return plan
 end
 
