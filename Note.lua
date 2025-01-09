@@ -114,7 +114,7 @@ local classList = {}
 for i = 1, 13 do
 	local className, _, classID = GetClassInfo(i)
 	local classNameWithoutSpaces = className:gsub(" ", "")
-	local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":16|t"
+	local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
 	genericIcons[format("{%s}", className)] = classIcon
 	genericIcons[format("{%d}", classID)] = classIcon
 	if classNameWithoutSpaces == "DeathKnight" then
@@ -278,7 +278,7 @@ end
 ---@return string
 local function GSubIcon(spellID)
 	local spellTexture = GetSpellTexture(spellID)
-	return "|T" .. (spellTexture or "Interface\\Icons\\INV_MISC_QUESTIONMARK") .. ":16|t"
+	return "|T" .. (spellTexture or "Interface\\Icons\\INV_MISC_QUESTIONMARK") .. ":0|t"
 end
 
 -- Parses a line of text in the note and creates assignment(s).

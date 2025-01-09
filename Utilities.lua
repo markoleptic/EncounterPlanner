@@ -1003,7 +1003,7 @@ end
 ---@return string
 function Utilities.SubSpellIconTextWithSpellIcon(spellID, size)
 	local spellTexture = GetSpellTexture(spellID)
-	return format("|T%s:%|t", (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]), size or 0)
+	return format("|T%s:%d|t", (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]), size or 0)
 end
 
 ---@return integer

@@ -1118,13 +1118,13 @@ function Private:CreateInterface()
 	for raidInstanceName, raidInstance in pairs(Private.raidInstances) do
 		EJ_SelectInstance(raidInstance.journalInstanceID)
 		local _, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
-		local instanceIconText = format("|T%s:0|t %s", buttonImage2, raidInstanceName)
+		local instanceIconText = format("|T%s:16|t %s", buttonImage2, raidInstanceName)
 		local instanceDropdownData =
 			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
 		for _, boss in ipairs(raidInstance.bosses) do
 			EJ_SelectEncounter(boss.journalEncounterID)
 			local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
-			local iconText = format("|T%s:0|t %s", iconImage, boss.name)
+			local iconText = format("|T%s:16|t %s", iconImage, boss.name)
 			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
 		end
 		tinsert(bossDropdownData, instanceDropdownData)
