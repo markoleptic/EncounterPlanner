@@ -1,7 +1,10 @@
-local AddOnName = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = Namespace
+
+---@class Constants
+local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
@@ -316,6 +319,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		if spellInfo then
 			assignment.spellInfo = spellInfo
 		end
+		updateAssignments = true
 		updatePreviewText = true
 	elseif dataType == "AssigneeType" then
 		assignment.assigneeNameOrRole = value
@@ -350,6 +354,13 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		assignmentEditor.timeSecondLineEdit:SetText(tostring(seconds))
 	elseif dataType == "OptionalText" then
 		assignment.text = value
+		if assignment.text:len() > 0 and assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+			assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+			updateAssignments = true
+		elseif assignment.text:len() == 0 and assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
+			assignment.spellInfo.spellID = constants.kInvalidAssignmentSpellID
+			updateAssignments = true
+		end
 		updatePreviewText = true
 	elseif dataType == "Target" then
 		assignment.targetName = value

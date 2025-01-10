@@ -1,12 +1,9 @@
----@module "NerubarPalace"
----@module "Options"
----@module "Interface"
-
---@type string
-local AddOnName = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = Namespace
+
+local constants = Private.constants
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
@@ -46,6 +43,13 @@ function AddOn:OnInitialize()
 		for _, note in pairs(profile.plans) do
 			-- Convert tables from DB into classes
 			utilities.SetAssignmentMetaTables(note.assignments)
+			for _, assignment in ipairs(note.assignments) do
+				if assignment.spellInfo.spellID == 0 then
+					if assignment.text:len() > 0 then
+						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+					end
+				end
+			end
 		end
 		local clearTable = false
 		if profile.activeBossAbilities then -- TODO: Temp remove

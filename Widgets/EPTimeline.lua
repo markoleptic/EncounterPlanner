@@ -1,5 +1,10 @@
-local Private = select(2, ...)
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local spellDB = Private.spellDB
+local constants = Private.constants
 
 local Type = "EPTimeline"
 local Version = 1
@@ -137,12 +142,15 @@ end
 
 -- Searches the Spells.lua table for the matching spellID. Also considers "spec" a match
 ---@param spellID integer
----@return number|nil -- Duration in seconds or nil
+---@return integer|nil -- Duration in seconds or nil
 local function FindCooldownDurationFromSpellDB(spellID)
 	for _, spells in pairs(spellDB.classes) do
 		for _, spell in pairs(spells) do
 			if spell.spellID == spellID or spell.spec == spellID then
-				return spell.duration
+				if type(spell.duration) == "number" then
+					---@diagnostic disable-next-line: return-type-mismatch
+					return spell.duration
+				end
 			end
 		end
 	end
@@ -1330,8 +1338,7 @@ end
 ---@param order number the relative order of the assignee of the assignment
 ---@param showCooldown boolean
 ---@param cooldownDuration number|nil
----@param texture number|nil
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration, texture)
+local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -1357,12 +1364,10 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignment:Show()
 
-	if spellID == 0 or spellID == nil then
-		if texture then
-			assignment.spellTexture:SetTexture(texture)
-		else
-			assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
-		end
+	if spellID == constants.kInvalidAssignmentSpellID then
+		assignment.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+	elseif spellID == constants.kTextAssignmentSpellID then
+		assignment.spellTexture:SetTexture(constants.kTextAssignmentTexture)
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignment.spellTexture:SetTexture(iconID)
@@ -1411,11 +1416,8 @@ local function UpdateAssignments(self)
 		end
 		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
 		local startTime, duration = timelineAssignment.startTime, timelineAssignment.spellCooldownDuration
-		local texture = nil
-		if spellID == 0 and assignment.text ~= "" then
-			texture = 1500878
-		end
-		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration, texture)
+
+		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
 
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
@@ -2225,7 +2227,7 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	for _, timelineAssignment in ipairs(self.timelineAssignments) do
 		local spellID = timelineAssignment.assignment.spellInfo.spellID
 		local duration = 0
-		if timelineAssignment.assignment.spellInfo.spellID > 0 then
+		if timelineAssignment.assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			local chargeInfo = GetSpellCharges(spellID)
 			if chargeInfo then
 				duration = chargeInfo.cooldownDuration

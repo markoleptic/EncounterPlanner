@@ -1,7 +1,7 @@
-local AddOnName = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = Namespace
 
 ---@class Utilities
 local utilities = Private.utilities

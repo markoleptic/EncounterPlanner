@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Constants
+local constants = Namespace.constants
+
 local Type = "EPAbilityEntry"
 local Version = 1
 
@@ -128,6 +133,14 @@ local function SetNullAbility(self, key)
 end
 
 ---@param self EPAbilityEntry
+---@param key string|table|nil
+local function SetGeneralAbility(self, key)
+	self.label:SetText("General", padding.x * 2)
+	self.label:SetIcon(constants.kTextAssignmentTexture, padding.x, padding.y, 0)
+	self.key = key
+end
+
+---@param self EPAbilityEntry
 ---@param str string
 ---@param key string|table|nil
 local function SetText(self, str, key)
@@ -221,6 +234,7 @@ local function Constructor()
 		SetEnabled = SetEnabled,
 		SetCheckedTexture = SetCheckedTexture,
 		SetAbility = SetAbility,
+		SetGeneralAbility = SetGeneralAbility,
 		SetNullAbility = SetNullAbility,
 		SetLeftIndent = SetLeftIndent,
 		SetCollapsible = SetCollapsible,

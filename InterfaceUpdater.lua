@@ -1,5 +1,10 @@
+local AddOnName, Namespace = ...
+
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = Namespace
+
+---@class Constants
+local constants = Private.constants
 
 ---@class InterfaceUpdater
 local InterfaceUpdater = Private.interfaceUpdater
@@ -225,8 +230,10 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 					for _, spellID in ipairs(textTable.spells) do
 						local spellEntry = AceGUI:Create("EPAbilityEntry")
 						local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
-						if spellID == 0 then
+						if spellID == constants.kInvalidAssignmentSpellID then
 							spellEntry:SetNullAbility(key)
+						elseif spellID == constants.kTextAssignmentSpellID then
+							spellEntry:SetGeneralAbility(key)
 						else
 							spellEntry:SetAbility(spellID, key)
 						end

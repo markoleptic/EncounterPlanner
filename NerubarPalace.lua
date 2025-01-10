@@ -1,5 +1,7 @@
+local AddOnName, Namespace = ...
+
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = Namespace
 
 Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 	name = "Nerub'ar Palace",

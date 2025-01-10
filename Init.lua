@@ -1,8 +1,7 @@
----@type string
-local AddOnName = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
-local Private = select(2, ...)
+local Private = Namespace
 
 local LibStub = LibStub
 local AceAddon = LibStub("AceAddon-3.0")

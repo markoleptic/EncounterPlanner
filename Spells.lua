@@ -1,8 +1,7 @@
----@type string
-local AddOnName = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
-local Private = select(2, ...)
+local Private = Namespace
 
 -- Credit to Treebonker and OmniCD for this entire data structure
 Private.spellDB = {

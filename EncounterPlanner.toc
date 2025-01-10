@@ -9,6 +9,7 @@
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT, DevTool
 
 embeds.xml
+Constants.lua
 Spells.lua
 Init.lua
 Libs\Cbor.lua
