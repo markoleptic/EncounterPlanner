@@ -450,8 +450,10 @@ local function CreateSpellCountEntry(combatLogEventType, spellID, spellCount)
 	if not combatLogEventReminders[combatLogEventType][spellID] then
 		combatLogEventReminders[combatLogEventType][spellID] = {}
 	end
-	if not combatLogEventReminders[combatLogEventType][spellID][spellCount] then
-		combatLogEventReminders[combatLogEventType][spellID][spellCount] = {}
+	for i = 1, spellCount do
+		if not combatLogEventReminders[combatLogEventType][spellID][i] then
+			combatLogEventReminders[combatLogEventType][spellID][i] = {}
+		end
 	end
 end
 
@@ -507,8 +509,10 @@ local function HandleCombatLogEventUnfiltered()
 		local spellCount = spellCounts[subEvent][spellID] + 1
 		spellCounts[subEvent][spellID] = spellCount
 		local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
-		for _, reminder in ipairs(reminders) do
-			CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+		if reminders then
+			for _, reminder in ipairs(reminders) do
+				CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+			end
 		end
 		-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
 	end
