@@ -19,6 +19,7 @@
 	<Script file="EPDropdown.lua"/>
 	<Script file="EPAbilityEntry.lua"/>
     <Script file="EPCheckBox.lua"/>
+    <Script file="EPPhaseLengthEditor.lua"/>
 	<Script file="EPAssignmentEditor.lua"/>
     <Script file="EPTimelineSection.lua"/>
 	<Script file="EPTimeline.lua"/>

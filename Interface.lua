@@ -19,14 +19,17 @@ local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 
+local abs = math.abs
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 local EJ_SelectEncounter = EJ_SelectEncounter
 local format = format
+local floor = math.floor
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
+local min, max = math.min, math.max
 local pairs = pairs
 local sub = string.sub
 local tinsert = tinsert
@@ -519,10 +522,96 @@ local function CreateImportEditBox(importType)
 	Private.importEditBox:HighlightTextAndFocus()
 end
 
+local function CreatePhaseLengthEditor()
+	if not Private.phaseLengthEditor then
+		local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
+		phaseLengthEditor:SetCallback("OnRelease", function()
+			Private.phaseLengthEditor = nil
+		end)
+		phaseLengthEditor:SetCallback("CloseButtonClicked", function()
+			Private.phaseLengthEditor:Release()
+		end)
+		phaseLengthEditor:SetCallback("DataChanged", function(_, _, phaseName, minLineEdit, secLineEdit)
+			local boss = GetCurrentBoss()
+			if boss then
+				local previousDuration
+				local totalBossDurationWithoutCurrent = 0.0
+				for index, phase in ipairs(boss.phases) do
+					if phaseName == index or phase.name == phaseName then
+						previousDuration = phase.duration
+					else
+						totalBossDurationWithoutCurrent = totalBossDurationWithoutCurrent + phase.duration
+					end
+				end
+
+				local timeMinutes = tonumber(minLineEdit:GetText())
+				local timeSeconds = tonumber(secLineEdit:GetText())
+				local newDuration = previousDuration
+				if timeMinutes and timeSeconds then
+					local roundedMinutes = utilities.Round(timeMinutes, 0)
+					local roundedSeconds = utilities.Round(timeSeconds, 1)
+					local timeValue = roundedMinutes * 60 + roundedSeconds
+					if abs(timeValue - previousDuration) < 0.01 then
+						return
+					end
+					local maxTime = 1200 - totalBossDurationWithoutCurrent
+					if timeValue < 1.0 or timeValue > maxTime then
+						newDuration = max(min(timeValue, maxTime), 0)
+					else
+						newDuration = timeValue
+					end
+				end
+
+				local minutes = floor(newDuration / 60)
+				local seconds = utilities.Round(newDuration % 60, 1)
+				minLineEdit:SetText(tostring(minutes))
+				secLineEdit:SetText(tostring(seconds))
+
+				for index, phase in ipairs(boss.phases) do
+					if
+						phaseName == index
+						or phase.name == phaseName
+						or phaseName == "Intermission" and phase.name == "Int"
+					then
+						phase.duration = newDuration
+						break
+					end
+				end
+			end
+			bossUtilities.GenerateBossTables()
+			interfaceUpdater.UpdateBoss(GetCurrentBossDungeonEncounterID(), true)
+			interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+		end)
+		local boss = GetCurrentBoss()
+		if boss then
+			local data = {}
+			for index, phase in ipairs(boss.phases) do
+				local phaseName = phase.name or index
+				if type(phaseName) == "string" and phaseName == "Int" then
+					phaseName = "Intermission"
+				elseif type(phaseName) == "number" then
+					phaseName = "P" .. phaseName
+				end
+				tinsert(data, { name = phaseName, defaultDuration = phase.defaultDuration, duration = phase.duration })
+			end
+			phaseLengthEditor:AddEntries(data)
+		end
+		phaseLengthEditor.frame:SetParent(UIParent)
+		phaseLengthEditor.frame:SetFrameLevel(50)
+		phaseLengthEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		phaseLengthEditor:Resize()
+		phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
+		Private.phaseLengthEditor = phaseLengthEditor
+	end
+end
+
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
+	end
+	if Private.phaseLengthEditor then
+		Private.phaseLengthEditor:Release()
 	end
 	local bossDungeonEncounterID = tonumber(value)
 	if bossDungeonEncounterID then
@@ -1070,6 +1159,7 @@ function Private:CreateInterface()
 			return
 		end
 		if value == "Edit Phase Timings" then
+			CreatePhaseLengthEditor()
 		end
 		bossMenuButton:SetValue("Boss")
 		bossMenuButton:SetText("Boss")

@@ -78,6 +78,9 @@
 ---@alias EPMessageBoxType
 ---|"EPMessageBox"
 
+---@alias EPPhaseLengthEditorType
+---|"EPPhaseLengthEditor"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -98,6 +101,7 @@
 ---| EPReminderMessageType
 ---| EPColorPickerType
 ---| EPMessageBoxType
+---| EPPhaseLengthEditor
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -213,6 +217,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPMessageBoxType
 ---@return EPMessageBox
+function AceGUI:Create(type) end
+
+---@param type EPPhaseLengthEditorType
+---@return EPPhaseLengthEditor
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
