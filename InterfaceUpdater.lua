@@ -197,7 +197,8 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 		if assignmentContainer then
 			assignmentContainer:ReleaseChildren()
 			local children = {}
-			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, GetCurrentRoster())
+			local roster = GetCurrentRoster()
+			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 			for _, textTable in ipairs(map) do
 				local assigneeNameOrRole = textTable.assigneeNameOrRole
 				local coloredAssigneeNameOrRole = textTable.text
@@ -206,6 +207,7 @@ function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUp
 				assigneeEntry:SetFullWidth(true)
 				assigneeEntry:SetHeight(30)
 				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+				assigneeEntry:SetRole(roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or nil)
 				assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
 					local messageBox = InterfaceUpdater.CreateMessageBox(
 						"Delete Assignments Confirmation",
