@@ -615,7 +615,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		if timeline then
 			timeline:ClearSelectedAssignments()
 			timeline:ClearSelectedBossAbilities()
-			timeline:SelectAssignment(uniqueID)
+			timeline:SelectAssignment(uniqueID, true)
 			if
 				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 				and assignment--[[@as CombatLogEventAssignment]].spellCount
