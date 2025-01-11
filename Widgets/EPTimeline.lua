@@ -795,7 +795,10 @@ local function DrawEventTriggerBossAbility(
 		if bossAbilityTrigger and bossAbilityTrigger.phases[bossPhaseIndex] then
 			local cumulativeTriggerTime = bossPhaseStartTime
 			for triggerCastIndex, triggerCastTime in ipairs(bossAbilityTrigger.phases[bossPhaseIndex].castTimes) do
-				local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime + bossAbilityTrigger.castTime
+				local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime
+				if eventTrigger.combatLogEventType == "SCC" then
+					cumulativeCastTime = cumulativeCastTime + bossAbilityTrigger.castTime
+				end
 				for _, castTime in ipairs(eventTrigger.castTimes) do
 					local castStart = cumulativeCastTime + castTime
 					local castEnd = castStart + bossAbility.castTime
@@ -871,7 +874,10 @@ local function DrawEventTriggerBossAbility(
 						end
 					end
 				end
-				cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime + bossAbilityTrigger.castTime
+				cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
+				if eventTrigger.combatLogEventType == "SCC" then
+					cumulativeTriggerTime = cumulativeTriggerTime + bossAbilityTrigger.castTime
+				end
 			end
 		end
 	end

@@ -193,9 +193,10 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 								for triggerCastIndex, triggerCastTime in
 									ipairs(bossAbilityTrigger.phases[bossPhaseIndex].castTimes)
 								do
-									local cumulativeCastTime = cumulativeTriggerTime
-										+ triggerCastTime
-										+ bossAbilityTrigger.castTime
+									local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime
+									if eventTrigger.combatLogEventType == "SCC" then
+										cumulativeCastTime = cumulativeCastTime + bossAbilityTrigger.castTime
+									end
 									for _, castTime in ipairs(eventTrigger.castTimes) do
 										local castStart = cumulativeCastTime + castTime
 										tinsert(spellCount[bossAbilitySpellID], castStart)
@@ -217,9 +218,10 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 											end
 										end
 									end
-									cumulativeTriggerTime = cumulativeTriggerTime
-										+ triggerCastTime
-										+ bossAbilityTrigger.castTime
+									cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
+									if eventTrigger.combatLogEventType == "SCC" then
+										cumulativeTriggerTime = cumulativeTriggerTime + bossAbilityTrigger.castTime
+									end
 								end
 							end
 						end
