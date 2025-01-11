@@ -824,7 +824,7 @@ local function DrawEventTriggerBossAbility(
 							castTime = castStart,
 							relativeCastTime = castTime,
 							triggerSpellID = triggerSpellID,
-							triggerCastIndex = triggerCastIndex,
+							spellCount = triggerCastIndex,
 						}
 					)
 					frameLevel = frameLevel + 1
@@ -832,10 +832,10 @@ local function DrawEventTriggerBossAbility(
 					bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 					cumulativeCastTime = cumulativeCastTime + castTime
 				end
-				if eventTrigger.repeatInterval and eventTrigger.repeatInterval.triggerCastIndex == triggerCastIndex then
+				if eventTrigger.repeatCriteria and eventTrigger.repeatCriteria.spellCount == triggerCastIndex then
 					local repeatInstance = 1
 					while cumulativeCastTime < bossPhaseEndTime do
-						for repeatCastIndex, castTime in ipairs(eventTrigger.repeatInterval.castTimes) do
+						for repeatCastIndex, castTime in ipairs(eventTrigger.repeatCriteria.castTimes) do
 							local castStart = cumulativeCastTime + castTime
 							local castEnd = castStart + bossAbility.castTime
 							local effectEnd = castEnd + bossAbility.duration
@@ -850,6 +850,7 @@ local function DrawEventTriggerBossAbility(
 									horizontalOffset,
 									offset,
 									width,
+									bossAbilityBarHeight,
 									color,
 									frameLevel,
 									{
@@ -860,7 +861,7 @@ local function DrawEventTriggerBossAbility(
 										castTime = castStart,
 										relativeCastTime = castTime,
 										triggerSpellID = triggerSpellID,
-										triggerCastIndex = triggerCastIndex,
+										spellCount = triggerCastIndex,
 										repeatInstance = repeatInstance,
 										repeatCastIndex = repeatCastIndex,
 									}

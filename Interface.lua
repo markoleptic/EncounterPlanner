@@ -308,11 +308,11 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			end
 		end
 	elseif dataType == "PhaseNumber" then
-		if
-			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
-			or getmetatable(assignment) == Private.classes.PhasedAssignment
-		then
-			assignment--[[@as CombatLogEventAssignment|PhasedAssignment]].phase = tonumber(value)
+		if getmetatable(assignment) == Private.classes.PhasedAssignment then
+			local phase = tonumber(value, 10)
+			if phase then
+				assignment--[[@as PhasedAssignment]].phase = phase
+			end
 		end
 	elseif dataType == "SpellAssignment" then
 		local spellInfo = GetSpellInfo(value)
@@ -680,7 +680,6 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 			local combatLogEventAssignment = Private.classes.CombatLogEventAssignment:New(assignment)
 			combatLogEventAssignment.combatLogEventType = "SCS"
 			combatLogEventAssignment.time = utilities.Round(relativeAssignmentStartTime, 1)
-			combatLogEventAssignment.phase = abilityInstance.phase
 			combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
 			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.spellID
 			tinsert(GetCurrentAssignments(), combatLogEventAssignment)

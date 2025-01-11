@@ -203,15 +203,14 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 										cumulativeCastTime = cumulativeCastTime + castTime
 									end
 									if
-										eventTrigger.repeatInterval
-										and eventTrigger.repeatInterval.triggerCastIndex == triggerCastIndex
+										eventTrigger.repeatCriteria
+										and eventTrigger.repeatCriteria.spellCount == triggerCastIndex
 									then
 										while cumulativeCastTime < phaseEndTime do
-											for _, castTime in ipairs(eventTrigger.repeatInterval.castTimes) do
+											for _, castTime in ipairs(eventTrigger.repeatCriteria.castTimes) do
 												local castStart = cumulativeCastTime + castTime
 												local castEnd = castStart + bossAbility.castTime
-												local effectEnd = castEnd + bossAbility.duration
-												if effectEnd < phaseEndTime then
+												if castEnd + bossAbility.duration < phaseEndTime then
 													tinsert(spellCount[bossAbilitySpellID], castStart)
 												end
 												cumulativeCastTime = cumulativeCastTime + castTime

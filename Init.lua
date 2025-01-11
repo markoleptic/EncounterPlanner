@@ -8,9 +8,8 @@ local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local concat = table.concat
 local CreateFrame = CreateFrame
-local getmetatable = getmetatable
+local getmetatable, setmetatable = getmetatable, setmetatable
 local pairs = pairs
-local setmetatable = setmetatable
 local random = math.random
 local type = type
 
@@ -40,6 +39,9 @@ local type = type
 ---| "First Appearance"
 ---| "Role > Alphabetical"
 ---| "Role > First Appearance"
+
+---@alias SpellIDIndex
+---| integer
 
 local byteToBase64 = {
 	[0] = "a",
@@ -111,7 +113,7 @@ local byteToBase64 = {
 local function GenerateUniqueID()
 	local s = {}
 	for i = 1, 16 do
-		s[#s + 1] = byteToBase64[random(0, 63)]
+		s[i] = byteToBase64[random(0, 63)]
 	end
 	return concat(s)
 end
@@ -120,12 +122,13 @@ local assignmentIDCounter = 0
 
 Private.classes = {}
 
+-- Abstract base class for assignments.
 ---@class Assignment
----@field uniqueID integer
----@field assigneeNameOrRole string Who to assign the assignment to
----@field text string The originally parsed portion of the assignment containing a {text}{/text} block
----@field spellInfo SpellInfo The spell info for the assignment
----@field targetName string|nil The target's name if the assignment has a '@'
+---@field uniqueID integer Incremented each time a new assignment is created used to distinguish in-memory assignments.
+---@field assigneeNameOrRole string Who to assign the assignment to, AssigneeType.
+---@field text string Text to display for the assignment. If empty, the spell name is used.
+---@field spellInfo SpellInfo The spell info for the assignment.
+---@field targetName string|nil The target's name if the assignment has a '@'.
 Private.classes.Assignment = {
 	uniqueID = 0,
 	assigneeNameOrRole = "",
@@ -136,52 +139,51 @@ Private.classes.Assignment = {
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
----@field combatLogEventType CombatLogEventType The type of combat log even the assignment is triggered by
----@field combatLogEventSpellID integer The spell for the event
----@field phase number|nil The phase the combat log event must occur in (Currently not used)
----@field spellCount integer The number of times the combat log event must have occurred
----@field time number The time from the combat log event to trigger the assignment
+---@field combatLogEventType CombatLogEventType The type of combat log even the assignment is triggered by.
+---@field combatLogEventSpellID integer The spell for the event.
+---@field spellCount integer The number of times the combat log event must occur before the assignment is triggered.
+---@field time number The time from the combat log event to trigger the assignment.
 Private.classes.CombatLogEventAssignment = setmetatable({
 	combatLogEventType = "SCS",
 	combatLogEventSpellID = 0,
-	phase = 1,
 	spellCount = 1,
-	time = 0,
+	time = 0.0,
 }, { __index = Private.classes.Assignment })
 Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEventAssignment
 
 -- An assignment based on time from the boss being pulled.
 ---@class TimedAssignment : Assignment
----@field time number The length of time from the beginning of the fight to when this assignment is triggered
+---@field time number The length of time from the beginning of the fight to when this assignment is triggered.
 Private.classes.TimedAssignment = setmetatable({
-	time = 0,
+	time = 0.0,
 }, { __index = Private.classes.Assignment })
 Private.classes.TimedAssignment.__index = Private.classes.TimedAssignment
 
 -- An assignment dependent only upon a boss phase. Currently half-implemented.
 ---@class PhasedAssignment : Assignment
----@field phase integer The boss phase this assignment is triggered by
----@field time number The time from the start of the phase to trigger the assignment
+---@field phase integer The boss phase this assignment is triggered by.
+---@field time number The time from the start of the phase to trigger the assignment.
 Private.classes.PhasedAssignment = setmetatable({
 	phase = 1,
-	time = 0,
+	time = 0.0,
 }, { __index = Private.classes.Assignment })
 Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 
 -- Wrapper around an assignment with additional info about where to draw the assignment on the timeline.
 ---@class TimelineAssignment
----@field assignment Assignment The assignment
----@field startTime number Time used to place the assignment on the timeline
+---@field assignment Assignment The assignment.
+---@field startTime number Time used to place the assignment on the timeline.
 ---@field order number The row of the assignment in the timeline.
 ---@field spellCooldownDuration number Cached cooldown duration of the spell associated with the assignment.
 Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
+-- A raid or dungeon with a specific instanceID.
 ---@class RaidInstance
----@field name string The name of the raid.
----@field journalInstanceID number The journal instance ID of the raid. All bosses share the same JournalInstanceID.
----@field instanceID number The instance ID for the zone the boss is located in. All bosses share the same instanceID.
----@field bosses table<integer, Boss>
+---@field name string The name of the raid or dungeon.
+---@field journalInstanceID number The journal instance ID of the raid or dungeon. All bosses share the same JournalInstanceID.
+---@field instanceID number The instance ID for the zone. All bosses share the same instanceID.
+---@field bosses table<integer, Boss> List of bosses for the instance.
 Private.classes.RaidInstance = {
 	name = "",
 	journalInstanceID = 0,
@@ -189,84 +191,102 @@ Private.classes.RaidInstance = {
 	bosses = {},
 }
 
+-- A raid or dungeon boss containing abilities, phases, etc.
 ---@class Boss
----@field name string Name of the boss
----@field bossID table<integer,integer> ID of the boss or bosses
----@field journalEncounterID integer Journal encounter ID of the boss encounter
----@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter
+---@field name string Name of the boss.
+---@field bossID table<integer,integer> ID of the boss or bosses.
+---@field journalEncounterID integer Journal encounter ID of the boss encounter.
+---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter.
 ---@field instanceID number The instance ID for the zone the boss is located in.
----@field abilities table<integer, BossAbility> A list of abilities
----@field phases table<integer, BossPhase> A list of phases
----@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance
+---@field phases table<integer, BossPhase> A list of phases and their durations.
+---@field abilities table<SpellIDIndex, BossAbility> A list of abilities.
+---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
 Private.classes.Boss = {
 	name = "",
 	bossID = {},
 	journalEncounterID = 0,
 	dungeonEncounterID = 0,
 	instanceID = 0,
-	abilities = {},
 	phases = {},
+	abilities = {},
 	sortedAbilityIDs = {},
 }
 
----@class BossAbility
----@field phases table<number, BossAbilityPhase> Describes at which times in which phases the ability occurs in
----@field eventTriggers table<integer, EventTrigger>|nil Events the ability triggers in response to
----@field duration number Usually how long the ability effect lasts
----@field castTime number The actual cast time of the ability
-Private.classes.BossAbility = {
-	phases = {},
-	eventTriggers = nil,
-	duration = 0,
-	castTime = 0,
-}
-
+-- A stage/phase in a boss encounter.
 ---@class BossPhase
----@field duration number The duration of the boss phase
----@field defaultDuration number The default duration of the boss phase
----@field count number The number of times the boss phase occurs
----@field defaultCount number The default number of times the boss phase occurs
----@field repeatAfter number|nil Which phase this phase repeats after
----@field name string|nil Optional nickname for phase
+---@field duration number The duration of the boss phase.
+---@field defaultDuration number The default duration of the boss phase.
+---@field count number The number of times the boss phase occurs.
+---@field defaultCount number The default number of times the boss phase occurs.
+---@field repeatAfter number|nil Which phase this phase repeats after.
+---@field name string|nil Optional nickname for phase used to display on the timeline.
 Private.classes.BossPhase = {
 	duration = 0,
 	defaultDuration = 0,
 	count = 0,
 	defaultCount = 0,
 	repeatAfter = nil,
+	name = nil,
 }
 
+-- A spell that a boss casts including when the spell is cast.
+---@class BossAbility
+---@field phases table<number, BossAbilityPhase> Describes at which times in which phases the ability occurs in.
+---@field eventTriggers table<SpellIDIndex, EventTrigger>|nil Other boss abilities that trigger the ability.
+---@field duration number Usually how long the ability effect lasts.
+---@field castTime number The actual cast time of the ability.
+Private.classes.BossAbility = {
+	phases = {},
+	eventTriggers = nil,
+	duration = 0.0,
+	castTime = 0.0,
+}
+
+-- A phase in which a boss ability is triggered/cast at least once. May also repeat.
 ---@class BossAbilityPhase
----@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
----@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time
----@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
----@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
+---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
+---@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time.
+---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
+---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 	repeatInterval = nil,
+	signifiesPhaseStart = nil,
+	signifiesPhaseEnd = nil,
 }
 
+-- Defines a boss ability that triggers another boss ability. May also repeat.
 ---@class EventTrigger
----@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger
----@field castTimes table<number> An ordered list of cast times, where the actual cast time is the running sum
----@field repeatInterval {triggerCastIndex: number, castTimes: table<number>}|nil Describes criteria for repeating casts
+---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger.
+---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
+---@field repeatCriteria EventTriggerRepeatCriteria|nil Describes criteria for the ability to repeat.
 Private.classes.EventTrigger = {
 	combatLogEventType = "SCS",
 	castTimes = {},
-	repeatInterval = nil,
+	repeatCriteria = nil,
 }
 
+-- A set of cast times to repeat until the phase ends. The triggering boss ability must be defined in the phase to trigger the repeat.
+---@class EventTriggerRepeatCriteria
+---@field spellCount integer The number of times the other ability must have been cast before the ability begins repeating.
+---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
+Private.classes.EventTriggerRepeatCriteria = {
+	spellCount = 0,
+	castTimes = {},
+}
+
+-- Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@class BossAbilityInstance
----@field spellID number
+---@field spellID integer The SpellID of the boss ability.
 ---@field spellOccurrence integer The number of times the spell has already been cast prior to this instance (+1).
----@field phase number
----@field castTime number|nil The cast time from the start of the encounter
----@field relativeCastTime number|nil The cast time from the trigger cast time, if applicable
----@field combatLogEventType CombatLogEventType|nil
----@field triggerSpellID number|nil
----@field triggerCastIndex number|nil
----@field repeatInstance number|nil
----@field repeatCastIndex number|nil
+---@field phase number The phase the ability instance is cast in.
+---@field castTime number|nil The cast time from the start of the encounter.
+---@field relativeCastTime number|nil If defined, the cast time from the trigger cast time.
+---@field combatLogEventType CombatLogEventType|nil If defined, the combat log event type that acts as a trigger.
+---@field triggerSpellID number|nil If defined, the spellID of the boss ability that triggers the event trigger.
+---@field spellCount number|nil If defined, the spell count of the boss ability that triggers the event trigger.
+---@field repeatInstance number|nil If defined, the number of times the set of repeat criteria cast times has been completed.
+---@field repeatCastIndex number|nil If defined, the index of the cast time in the repeat criteria.
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
 Private.classes.BossAbilityInstance = {
@@ -277,11 +297,14 @@ Private.classes.BossAbilityInstance = {
 	relativeCastTime = nil,
 	combatLogEventType = nil,
 	triggerSpellID = nil,
-	triggerCastIndex = nil,
+	spellCount = nil,
 	repeatInstance = nil,
 	repeatCastIndex = nil,
+	signifiesPhaseStart = nil,
+	signifiesPhaseEnd = nil,
 }
 
+-- An entry in a roster, only used in gui.
 ---@class RosterEntry
 ---@field class string
 ---@field classColoredName string
@@ -292,17 +315,18 @@ Private.classes.RosterEntry = {
 	classColoredName = "",
 }
 
+-- A plan for a boss encounter.
 ---@class Plan
----@field ID string
----@field name string
----@field bossName string
----@field dungeonEncounterID integer
----@field instanceID integer
----@field content table<integer, string>
----@field assignments table<integer, Assignment>
----@field roster table<string, RosterEntry>
----@field collapsed table<string, boolean>
----@field remindersEnabled boolean
+---@field ID string Uniquely generated ID used when updating assignments received from other characters.
+---@field name string Name of the plan.
+---@field bossName string The name of the boss the plan is associated with.
+---@field dungeonEncounterID integer Dungeon encounter ID for the boss the plan is associated with.
+---@field instanceID integer Instance ID for the boss the plan is associated with.
+---@field content table<integer, string> Miscellaneous text that other addons or WeakAuras can use for the encounter.
+---@field assignments table<integer, Assignment> Assignments for the plan.
+---@field roster table<string, RosterEntry> Roster for the plan.
+---@field collapsed table<string, boolean> Which assignees are collapsed in the assignment timeline.
+---@field remindersEnabled boolean Whether reminders are enabled for the plan.
 Private.classes.Plan = {
 	ID = "",
 	name = "",
@@ -368,6 +392,7 @@ local function RemoveInvalidFields(classTable, o)
 	end
 end
 
+-- Creates a new instance of a table, copying fields that don't exist in the destination table.
 ---@generic T : table
 ---@param classTable T
 ---@param o table|nil
@@ -383,6 +408,7 @@ local function CreateNewInstance(classTable, o)
 	return o
 end
 
+---@param o any
 ---@return Assignment
 function Private.classes.Assignment:New(o)
 	local instance = CreateNewInstance(self, o)
@@ -391,6 +417,8 @@ function Private.classes.Assignment:New(o)
 	return instance
 end
 
+---@param o any
+---@param removeInvalidFields boolean|nil
 ---@return CombatLogEventAssignment
 function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
@@ -401,6 +429,8 @@ function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
 	return instance
 end
 
+---@param o any
+---@param removeInvalidFields boolean|nil
 ---@return TimedAssignment
 function Private.classes.TimedAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
@@ -411,6 +441,8 @@ function Private.classes.TimedAssignment:New(o, removeInvalidFields)
 	return instance
 end
 
+---@param o any
+---@param removeInvalidFields boolean|nil
 ---@return PhasedAssignment
 function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
 	o = o or Private.classes.Assignment:New(o)
@@ -421,6 +453,9 @@ function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
 	return instance
 end
 
+-- Copies an assignment with a new uniqueID.
+---@param assignmentToCopy Assignment
+---@return Assignment
 function Private.DuplicateAssignment(assignmentToCopy)
 	local newAssignment = Private.classes.Assignment:New()
 	local newId = newAssignment.uniqueID
@@ -446,31 +481,37 @@ function Private.classes.TimelineAssignment:New(assignment)
 	return timelineAssignment
 end
 
+---@param o any
 ---@return RaidInstance
 function Private.classes.RaidInstance:New(o)
 	return CreateNewInstance(self, o)
 end
 
+---@param o any
 ---@return Boss
 function Private.classes.Boss:New(o)
 	return CreateNewInstance(self, o)
 end
 
+---@param o any
 ---@return BossAbility
 function Private.classes.BossAbility:New(o)
 	return CreateNewInstance(self, o)
 end
 
+---@param o any
 ---@return BossAbilityPhase
 function Private.classes.BossAbilityPhase:New(o)
 	return CreateNewInstance(self, o)
 end
 
+---@param o any
 ---@return EventTrigger
 function Private.classes.EventTrigger:New(o)
 	return CreateNewInstance(self, o)
 end
 
+---@param o any
 ---@return BossPhase
 function Private.classes.BossPhase:New(o)
 	return CreateNewInstance(self, o)
@@ -601,15 +642,15 @@ end
 
 local defaults = {
 	---@class DefaultProfile
-	---@field activeBossAbilities table<integer, table<integer, boolean>>
-	---@field plans table<string, Plan>
-	---@field sharedRoster table<string, RosterEntry>
-	---@field lastOpenNote string
-	---@field recentSpellAssignments table<string, DropdownItemData>
-	---@field trustedCharacters table<integer, string>
-	---@field windowSize {x: number, y: number}|nil
-	---@field minimizeFramePosition {x: number, y: number}|nil
-	---@field preferences Preferences
+	---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
+	---@field plans table<string, Plan> All plans.
+	---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
+	---@field lastOpenNote string The last open plan.
+	---@field recentSpellAssignments table<string, DropdownItemData> Recently assigned spells (up to 10).
+	---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
+	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
+	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
+	---@field preferences Preferences Settings.
 	profile = {
 		activeBossAbilities = {},
 		plans = {},
@@ -695,13 +736,14 @@ local defaults = {
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
+
 Private.raidInstances = {} --[[@as table<string, RaidInstance>]]
 Private.interfaceUpdater = {}
 Private.bossUtilities = {}
 Private.utilities = {}
+Private.prettyClassNames = {} --[[@as table<string, string>]] -- A map of class names to class pascal case colored class names
+
 Private.mainFrame = nil --[[@as EPMainFrame]]
--- A map of class names to class pascal case colored class names with spaces if needed
-Private.prettyClassNames = {} --[[@as table<string, string>]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
 Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
@@ -713,6 +755,7 @@ Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
 Private.messageBox = nil --[[@as EPMessageBox]]
+Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 
 LSM:Register(
 	"font",
@@ -721,6 +764,6 @@ LSM:Register(
 	bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU)
 )
 
+-- Public facing API.
 ---@class EncounterPlanner
 EncounterPlanner = {}
-EncounterPlanner.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")

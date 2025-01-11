@@ -353,7 +353,7 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 		elseif option:sub(1, 1) == "p" then
 			local _, phase = option:match(phaseNumberRegex)
 			if phase and phase ~= "" then
-				local phaseNumber = tonumber(phase)
+				local phaseNumber = tonumber(phase, 10)
 				if phaseNumber then
 					for _, assignment in pairs(assignments) do
 						local phasedAssignment = self.classes.PhasedAssignment:New(assignment)
@@ -374,7 +374,6 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 						local combatLogEventAssignment = self.classes.CombatLogEventAssignment:New(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
-						combatLogEventAssignment.phase = nil
 						combatLogEventAssignment.spellCount = spellCount
 						combatLogEventAssignment.combatLogEventSpellID = spellID
 						tinsert(derivedAssignments, combatLogEventAssignment)

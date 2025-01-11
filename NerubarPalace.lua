@@ -525,8 +525,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 						[442432] = Private.classes.EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
-							repeatInterval = {
-								triggerCastIndex = 3,
+							repeatCriteria = {
+								spellCount = 3,
 								castTimes = { 20.0 },
 							},
 						}),
@@ -544,8 +544,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 						[442432] = Private.classes.EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 30.0, 30.0, 30.0, 30.0 },
-							repeatInterval = {
-								triggerCastIndex = 3,
+							repeatCriteria = {
+								spellCount = 3,
 								castTimes = { 30.0 },
 							},
 						}),
@@ -572,8 +572,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 						[442432] = Private.classes.EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 16.0, 50.0, 50.0 },
-							repeatInterval = {
-								triggerCastIndex = 3,
+							repeatCriteria = {
+								spellCount = 3,
 								castTimes = { 50.0 },
 							},
 						}),

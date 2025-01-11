@@ -1,10 +1,15 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPLabel"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
-local tooltip = EncounterPlanner.tooltip
+local tooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
 local unpack = unpack
