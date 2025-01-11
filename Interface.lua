@@ -681,13 +681,13 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 			combatLogEventAssignment.combatLogEventType = "SCS"
 			combatLogEventAssignment.time = utilities.Round(relativeAssignmentStartTime, 1)
 			combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
-			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.spellID
+			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
 			tinsert(GetCurrentAssignments(), combatLogEventAssignment)
 			-- end
 			-- elseif abilityInstance.repeatInstance then
 		else
 			local timedAssignment = Private.classes.TimedAssignment:New(assignment)
-			timedAssignment.time = abilityInstance.castTime
+			timedAssignment.time = abilityInstance.castStart
 			tinsert(GetCurrentAssignments(), timedAssignment)
 		end
 		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())

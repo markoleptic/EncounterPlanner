@@ -164,11 +164,11 @@ end
 function InterfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
 	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
 	local timeline = Private.mainFrame.timeline
-	if boss and timeline then
-		local bossPhaseTable = bossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)
+	local bossPhaseTable = bossUtilities.GetBossPhaseTable(bossDungeonEncounterID)
+	if boss and timeline and bossPhaseTable then
 		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
 		timeline:SetBossAbilities(
-			boss.abilities,
+			boss.abilityInstances,
 			boss.sortedAbilityIDs,
 			boss.phases,
 			bossPhaseTable,

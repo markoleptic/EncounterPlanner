@@ -201,6 +201,7 @@ Private.classes.RaidInstance = {
 ---@field phases table<integer, BossPhase> A list of phases and their durations.
 ---@field abilities table<SpellIDIndex, BossAbility> A list of abilities.
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
+---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 Private.classes.Boss = {
 	name = "",
 	bossID = {},
@@ -210,6 +211,7 @@ Private.classes.Boss = {
 	phases = {},
 	abilities = {},
 	sortedAbilityIDs = {},
+	abilityInstances = {},
 }
 
 -- A stage/phase in a boss encounter.
@@ -277,10 +279,19 @@ Private.classes.EventTriggerRepeatCriteria = {
 
 -- Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@class BossAbilityInstance
----@field spellID integer The SpellID of the boss ability.
+---@field bossAbilitySpellID integer The SpellID of the boss ability.
+---@field bossAbilityInstanceIndex integer The occurrence number of this instance out of all boss ability instances.
+---@field bossAbilityOrderIndex integer The index of the ability in the boss's sortedAbilityIDs.
+---@field bossPhaseOrderIndex integer The index of boss phase in the boss phase order (not the boss phase).
+---@field bossPhaseDuration number The duration of the boss phase.
+---@field bossPhaseName string|nil If defined, the name of the start of the phase.
+---@field nextBossPhaseName string|nil If defined, the name of the start of the next phase.
 ---@field spellOccurrence integer The number of times the spell has already been cast prior to this instance (+1).
----@field phase number The phase the ability instance is cast in.
----@field castTime number|nil The cast time from the start of the encounter.
+---@field bossPhaseIndex integer The phase the ability instance is cast in.
+---@field castStart number The cast time from the start of the encounter.
+---@field castEnd number The cast start plus the cast time.
+---@field effectEnd number The cast end plus the ability duration.
+---@field frameLevel integer Frame level to use for the ability instance on the timeline.
 ---@field relativeCastTime number|nil If defined, the cast time from the trigger cast time.
 ---@field combatLogEventType CombatLogEventType|nil If defined, the combat log event type that acts as a trigger.
 ---@field triggerSpellID number|nil If defined, the spellID of the boss ability that triggers the event trigger.
@@ -289,11 +300,21 @@ Private.classes.EventTriggerRepeatCriteria = {
 ---@field repeatCastIndex number|nil If defined, the index of the cast time in the repeat criteria.
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
+---@field overlaps {heightMultiplier:number, offset:number}|nil A height and offset multiplier to use if perfectly overlapping with another cast of the same ability.
 Private.classes.BossAbilityInstance = {
-	spellID = 0,
-	spellOccurrence = 1,
-	phase = 1,
-	castTime = nil,
+	bossAbilitySpellID = 0,
+	bossAbilityInstanceIndex = 0,
+	bossAbilityOrderIndex = 0,
+	bossPhaseIndex = 0,
+	bossPhaseOrderIndex = 0,
+	bossPhaseDuration = 0.0,
+	bossPhaseName = nil,
+	nextBossPhaseName = nil,
+	spellOccurrence = 0,
+	castStart = 0.0,
+	castEnd = 0.0,
+	effectEnd = 0.0,
+	frameLevel = 0,
 	relativeCastTime = nil,
 	combatLogEventType = nil,
 	triggerSpellID = nil,
@@ -302,6 +323,7 @@ Private.classes.BossAbilityInstance = {
 	repeatCastIndex = nil,
 	signifiesPhaseStart = nil,
 	signifiesPhaseEnd = nil,
+	overlaps = nil,
 }
 
 -- An entry in a roster, only used in gui.

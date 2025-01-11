@@ -13,6 +13,11 @@ local pairs = pairs
 local sort = sort
 local tinsert = tinsert
 
+---@type table<integer, table<integer, table<integer, number>>>
+local absoluteSpellCastStartTables = {}
+---@type table<integer, table<integer, integer>>
+local bossPhaseTables = {}
+
 ---@param dungeonEncounterID integer
 ---@return string|nil
 function BossUtilities.GetBossName(dungeonEncounterID)
@@ -124,41 +129,68 @@ function BossUtilities.GetCumulativePhaseStartTime(bossDungeonEncounterID, bossP
 	return cumulativePhaseStartTime
 end
 
--- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
+-- Returns a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 ---@param bossDungeonEncounterID integer
----@return table<integer, integer> -- Ordered boss phase table
-function BossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
-	local bossPhaseOrder = {}
-	if boss then
-		local totalPhaseOccurrences = 0
-		local totalTimelineDuration = 0
-		for _, phase in pairs(boss.phases) do
-			totalTimelineDuration = totalTimelineDuration + (phase.duration * phase.count)
-			totalPhaseOccurrences = totalPhaseOccurrences + phase.count
-		end
-		local currentPhase = 1
-		while #bossPhaseOrder < totalPhaseOccurrences and currentPhase ~= nil do
-			tinsert(bossPhaseOrder, currentPhase)
-			if boss.phases[currentPhase].repeatAfter == nil and boss.phases[currentPhase + 1] then
-				currentPhase = currentPhase + 1
-			else
-				currentPhase = boss.phases[currentPhase].repeatAfter
-			end
-		end
-	end
-	return bossPhaseOrder
+---@return table<integer, integer>|nil -- Ordered boss phase table
+function BossUtilities.GetBossPhaseTable(bossDungeonEncounterID)
+	return bossPhaseTables[bossDungeonEncounterID]
 end
 
--- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
+-- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 ---@param bossDungeonEncounterID integer
----@return table<integer, table<integer, number>> -- spellID, spell occurrence, time
-function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+---@return table<integer, table<integer, number>>|nil
+function BossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	return absoluteSpellCastStartTables[bossDungeonEncounterID]
+end
+
+---@param bossDungeonEncounterID integer
+---@return table<integer, BossAbilityInstance>|nil
+function BossUtilities.GetBossAbilityInstances(bossDungeonEncounterID)
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
-	local spellCount = {}
 	if boss then
+		return boss.abilityInstances
+	end
+	return nil
+end
+
+do
+	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
+	---@param bossDungeonEncounterID integer
+	---@return table<integer, integer> -- Ordered boss phase table
+	local function CreateBossPhaseTable(bossDungeonEncounterID)
+		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+		local bossPhaseOrder = {}
+		if boss then
+			local totalPhaseOccurrences = 0
+			local totalTimelineDuration = 0
+			for _, phase in pairs(boss.phases) do
+				totalTimelineDuration = totalTimelineDuration + (phase.duration * phase.count)
+				totalPhaseOccurrences = totalPhaseOccurrences + phase.count
+			end
+			local currentPhase = 1
+			while #bossPhaseOrder < totalPhaseOccurrences and currentPhase ~= nil do
+				tinsert(bossPhaseOrder, currentPhase)
+				if boss.phases[currentPhase].repeatAfter == nil and boss.phases[currentPhase + 1] then
+					currentPhase = currentPhase + 1
+				else
+					currentPhase = boss.phases[currentPhase].repeatAfter
+				end
+			end
+		end
+		return bossPhaseOrder
+	end
+
+	-- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
+	---@param boss Boss
+	---@return table<integer, table<integer, number>> -- spellID, spell occurrence, time
+	local function CreateAbsoluteSpellCastTimeTable(boss)
+		local spellCount = {}
+
+		local bossPhaseTable = CreateBossPhaseTable(boss.dungeonEncounterID)
+		bossPhaseTables[boss.dungeonEncounterID] = bossPhaseTable
+
 		local cumulativePhaseStartTime = 0
-		for _, bossPhaseIndex in ipairs(BossUtilities.CreateBossPhaseTable(bossDungeonEncounterID)) do
+		for _, bossPhaseIndex in ipairs(bossPhaseTable) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
@@ -229,15 +261,266 @@ function BossUtilities.CreateAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 				cumulativePhaseStartTime = cumulativePhaseStartTime + bossPhase.duration
 			end
 		end
-	end
-	return spellCount
-end
 
-do -- Generate a list of abilities for each boss sorted by their first cast time
+		return spellCount
+	end
+
+	-- Creates instances for all abilities of a boss.
+	---@param boss Boss
+	---@return table<integer, BossAbilityInstance>
+	local function CreateBossAbilityInstances(boss)
+		local spellCount = {}
+		local returnTable = {}
+
+		local cumulativePhaseStartTime = 0
+		local bossAbilityInstanceIndex = 1
+		local bossPhaseOrder = BossUtilities.GetBossPhaseTable(boss.dungeonEncounterID)
+		if not bossPhaseOrder then
+			return returnTable
+		end
+		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(bossPhaseOrder) do
+			local bossPhase = boss.phases[bossPhaseIndex]
+			if bossPhase then
+				local bossPhaseName = bossPhase.name
+				local nextBossPhaseName
+				local nextBossPhaseIndex = bossPhaseOrder[bossPhaseOrderIndex + 1]
+				if nextBossPhaseIndex then
+					local nextBossPhase = boss.phases[nextBossPhaseIndex]
+					if nextBossPhase then
+						nextBossPhaseName = nextBossPhase.name
+					end
+				end
+				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
+
+				for bossAbilityOrderIndex, bossAbilitySpellID in ipairs(boss.sortedAbilityIDs) do
+					if not spellCount[bossAbilitySpellID] then
+						spellCount[bossAbilitySpellID] = {}
+					end
+					local bossAbility = boss.abilities[bossAbilitySpellID]
+					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
+					if bossAbilityPhase then
+						local cumulativePhaseCastTime = cumulativePhaseStartTime
+
+						local frameLevel = 1
+						local overlaps = {}
+
+						local consecutivePerfectOverlaps = 0
+						for castIndex, castTime in ipairs(bossAbilityPhase.castTimes) do
+							if castIndex > 1 and castTime == 0.0 then
+								consecutivePerfectOverlaps = consecutivePerfectOverlaps + 1
+								local currentOffset = consecutivePerfectOverlaps
+								local heightMultiplier = 1.0 / (consecutivePerfectOverlaps + 1)
+								for i = castIndex, castIndex - consecutivePerfectOverlaps, -1 do
+									overlaps[i] = {
+										heightMultiplier = heightMultiplier,
+										offset = currentOffset * heightMultiplier,
+									}
+									currentOffset = currentOffset - 1
+								end
+							else
+								consecutivePerfectOverlaps = 0
+							end
+						end
+
+						for castIndex, castTime in ipairs(bossAbilityPhase.castTimes) do
+							local castStart = cumulativePhaseCastTime + castTime
+							local castEnd = castStart + bossAbility.castTime
+							local effectEnd = castEnd + bossAbility.duration
+
+							tinsert(spellCount[bossAbilitySpellID], castStart)
+							tinsert(returnTable, {
+								bossAbilitySpellID = bossAbilitySpellID,
+								bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+								bossAbilityOrderIndex = bossAbilityOrderIndex,
+								bossPhaseIndex = bossPhaseIndex,
+								bossPhaseOrderIndex = bossPhaseOrderIndex,
+								bossPhaseDuration = bossPhase.duration,
+								bossPhaseName = bossPhaseName,
+								nextBossPhaseName = nextBossPhaseName,
+								spellOccurrence = #spellCount[bossAbilitySpellID],
+								castStart = castStart,
+								castEnd = castEnd,
+								effectEnd = effectEnd,
+								frameLevel = frameLevel,
+								relativeCastTime = nil,
+								combatLogEventType = nil,
+								triggerSpellID = nil,
+								spellCount = nil,
+								repeatInstance = nil,
+								repeatCastIndex = nil,
+								signifiesPhaseStart = bossAbilityPhase.signifiesPhaseStart
+									and bossPhaseName
+									and castIndex == 1,
+								signifiesPhaseEnd = bossAbilityPhase.signifiesPhaseEnd
+									and nextBossPhaseName
+									and castIndex == #bossAbilityPhase.castTimes,
+								overlaps = overlaps[castIndex],
+							} --[[@as BossAbilityInstance]])
+
+							frameLevel = frameLevel + 1
+							bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+
+							if bossAbilityPhase.repeatInterval then
+								local repeatInterval = bossAbilityPhase.repeatInterval
+								local nextRepeatStart = castStart + repeatInterval
+								local repeatInstance = 1
+								while nextRepeatStart < phaseEndTime do
+									local repeatEnd = nextRepeatStart + bossAbility.castTime
+									local repeatEffectEnd = repeatEnd + bossAbility.duration
+
+									tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
+									tinsert(returnTable, {
+										bossAbilitySpellID = bossAbilitySpellID,
+										bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+										bossAbilityOrderIndex = bossAbilityOrderIndex,
+										bossPhaseIndex = bossPhaseIndex,
+										bossPhaseOrderIndex = bossPhaseOrderIndex,
+										bossPhaseDuration = bossPhase.duration,
+										bossPhaseName = bossPhaseName,
+										nextBossPhaseName = nextBossPhaseName,
+										spellOccurrence = #spellCount[bossAbilitySpellID],
+										castStart = nextRepeatStart,
+										castEnd = repeatEnd,
+										effectEnd = repeatEffectEnd,
+										frameLevel = frameLevel,
+										relativeCastTime = nil,
+										combatLogEventType = nil,
+										triggerSpellID = nil,
+										spellCount = nil,
+										repeatInstance = repeatInstance,
+										repeatCastIndex = nil,
+										signifiesPhaseStart = nil,
+										signifiesPhaseEnd = nil,
+										overlaps = nil,
+									} --[[@as BossAbilityInstance]])
+
+									frameLevel = frameLevel + 1
+									bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+									nextRepeatStart = nextRepeatStart + repeatInterval
+									repeatInstance = repeatInstance + 1
+								end
+							end
+							cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
+						end
+					end
+
+					if bossAbility.eventTriggers then
+						local frameLevel = 1
+						for triggerSpellID, eventTrigger in pairs(bossAbility.eventTriggers) do
+							local bossAbilityTrigger = boss.abilities[triggerSpellID]
+							if bossAbilityTrigger and bossAbilityTrigger.phases[bossPhaseIndex] then
+								local cumulativeTriggerTime = cumulativePhaseStartTime
+								for triggerCastIndex, triggerCastTime in
+									ipairs(bossAbilityTrigger.phases[bossPhaseIndex].castTimes)
+								do
+									local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime
+									if eventTrigger.combatLogEventType == "SCC" then
+										cumulativeCastTime = cumulativeCastTime + bossAbilityTrigger.castTime
+									end
+									for _, castTime in ipairs(eventTrigger.castTimes) do
+										local castStart = cumulativeCastTime + castTime
+										local castEnd = castStart + bossAbility.castTime
+										local effectEnd = castEnd + bossAbility.duration
+
+										tinsert(spellCount[bossAbilitySpellID], castStart)
+										tinsert(returnTable, {
+											bossAbilitySpellID = bossAbilitySpellID,
+											bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+											bossAbilityOrderIndex = bossAbilityOrderIndex,
+											bossPhaseIndex = bossPhaseIndex,
+											bossPhaseOrderIndex = bossPhaseOrderIndex,
+											bossPhaseDuration = bossPhase.duration,
+											bossPhaseName = bossPhaseName,
+											nextBossPhaseName = nextBossPhaseName,
+											spellOccurrence = #spellCount[bossAbilitySpellID],
+											castStart = castStart,
+											castEnd = castEnd,
+											effectEnd = effectEnd,
+											frameLevel = frameLevel,
+											relativeCastTime = castTime,
+											combatLogEventType = eventTrigger.combatLogEventType,
+											triggerSpellID = triggerSpellID,
+											spellCount = triggerCastIndex,
+											repeatInstance = nil,
+											repeatCastIndex = nil,
+											signifiesPhaseStart = nil,
+											signifiesPhaseEnd = nil,
+											overlaps = nil,
+										} --[[@as BossAbilityInstance]])
+
+										frameLevel = frameLevel + 1
+										bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+										cumulativeCastTime = cumulativeCastTime + castTime
+									end
+									if
+										eventTrigger.repeatCriteria
+										and eventTrigger.repeatCriteria.spellCount == triggerCastIndex
+									then
+										local repeatInstance = 1
+										while cumulativeCastTime < phaseEndTime do
+											for repeatCastIndex, castTime in
+												ipairs(eventTrigger.repeatCriteria.castTimes)
+											do
+												local castStart = cumulativeCastTime + castTime
+												local castEnd = castStart + bossAbility.castTime
+												local effectEnd = castEnd + bossAbility.duration
+												if effectEnd < phaseEndTime then
+													tinsert(spellCount[bossAbilitySpellID], castStart)
+													tinsert(returnTable, {
+														bossAbilitySpellID = bossAbilitySpellID,
+														bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+														bossAbilityOrderIndex = bossAbilityOrderIndex,
+														bossPhaseIndex = bossPhaseIndex,
+														bossPhaseOrderIndex = bossPhaseOrderIndex,
+														bossPhaseDuration = bossPhase.duration,
+														bossPhaseName = bossPhaseName,
+														nextBossPhaseName = nextBossPhaseName,
+														spellOccurrence = #spellCount[bossAbilitySpellID],
+														castStart = castStart,
+														castEnd = castEnd,
+														effectEnd = effectEnd,
+														frameLevel = frameLevel,
+														relativeCastTime = castTime,
+														combatLogEventType = eventTrigger.combatLogEventType,
+														triggerSpellID = triggerSpellID,
+														spellCount = triggerCastIndex,
+														repeatInstance = nil,
+														repeatCastIndex = repeatCastIndex,
+														signifiesPhaseStart = nil,
+														signifiesPhaseEnd = nil,
+														overlaps = nil,
+													} --[[@as BossAbilityInstance]])
+
+													frameLevel = frameLevel + 1
+													bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+													repeatInstance = repeatInstance + 1
+												end
+												cumulativeCastTime = cumulativeCastTime + castTime
+											end
+										end
+									end
+									cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
+									if eventTrigger.combatLogEventType == "SCC" then
+										cumulativeTriggerTime = cumulativeTriggerTime + bossAbilityTrigger.castTime
+									end
+								end
+							end
+						end
+					end
+				end
+				cumulativePhaseStartTime = cumulativePhaseStartTime + bossPhase.duration
+			end
+		end
+		return returnTable
+	end
+
+	-- Generate a list of abilities for each boss sorted by their first cast time.
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
+			local spellCount = CreateAbsoluteSpellCastTimeTable(boss)
+			absoluteSpellCastStartTables[boss.dungeonEncounterID] = spellCount
+
 			local earliestCastTimes = {}
-			local spellCount = BossUtilities.CreateAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
 			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
 				local earliestCastTime = hugeNumber
 				for _, castTime in pairs(spellOccurrenceNumbers) do
@@ -252,6 +535,7 @@ do -- Generate a list of abilities for each boss sorted by their first cast time
 			for _, entry in ipairs(earliestCastTimes) do
 				tinsert(boss.sortedAbilityIDs, entry.spellID)
 			end
+			boss.abilityInstances = CreateBossAbilityInstances(boss)
 		end
 	end
 end
