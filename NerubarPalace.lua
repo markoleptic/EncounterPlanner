@@ -64,7 +64,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 					phases = {
 						[2] = Private.classes.BossAbilityPhase:New({
 							castTimes = { 60.8 },
-							repeatInterval = 7,
+							repeatInterval = 7.0,
 						}),
 					},
 					duration = 3.0,
@@ -73,7 +73,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				[445052] = Private.classes.BossAbility:New({ -- Chittering Swarm
 					phases = {
 						[2] = Private.classes.BossAbilityPhase:New({
-							castTimes = { 6 },
+							castTimes = { 6.0 },
 						}),
 					},
 					duration = 0.0,
@@ -82,11 +82,11 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				[441425] = Private.classes.BossAbility:New({ -- Phase Transition
 					phases = {
 						[1] = Private.classes.BossAbilityPhase:New({
-							castTimes = { 90 },
+							castTimes = { 90.0 },
 							signifiesPhaseEnd = true,
 						}),
 						[2] = Private.classes.BossAbilityPhase:New({
-							castTimes = { 80 },
+							castTimes = { 80.0 },
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -96,16 +96,16 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 90,
-					defaultDuration = 90,
+					duration = 90.0,
+					defaultDuration = 90.0,
 					count = 3,
 					defaultCount = 3,
 					repeatAfter = 2,
 					name = "P1",
 				}),
 				[2] = Private.classes.BossPhase:New({
-					duration = 80,
-					defaultDuration = 80,
+					duration = 80.0,
+					defaultDuration = 80.0,
 					count = 3,
 					defaultCount = 3,
 					repeatAfter = 1,
@@ -200,8 +200,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 300,
-					defaultDuration = 300,
+					duration = 300.0,
+					defaultDuration = 300.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
@@ -315,8 +315,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 481,
-					defaultDuration = 481,
+					duration = 481.0,
+					defaultDuration = 481.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
@@ -584,8 +584,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 600,
-					defaultDuration = 600,
+					duration = 600.0,
+					defaultDuration = 600.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
@@ -665,8 +665,8 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 385,
-					defaultDuration = 385,
+					duration = 385.0,
+					defaultDuration = 385.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
@@ -881,36 +881,36 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({ -- Stage 1: Clash of Rivals
-					duration = 127,
-					defaultDuration = 127,
+					duration = 127.0,
+					defaultDuration = 127.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 				}),
 				[2] = Private.classes.BossPhase:New({ -- Intermission: Void Ascension
-					duration = 45,
-					defaultDuration = 45,
+					duration = 45.0,
+					defaultDuration = 45.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 				}),
 				[3] = Private.classes.BossPhase:New({ -- Stage 2: Grasp of the Void
-					duration = 131,
-					defaultDuration = 131,
+					duration = 131.0,
+					defaultDuration = 131.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 				}),
 				[4] = Private.classes.BossPhase:New({ -- Intermission: Raging Fury
-					duration = 45,
-					defaultDuration = 45,
+					duration = 45.0,
+					defaultDuration = 45.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 				}),
 				[5] = Private.classes.BossPhase:New({ -- Stage 3: Unleashed Rage
-					duration = 252,
-					defaultDuration = 252,
+					duration = 252.0,
+					defaultDuration = 252.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
@@ -1020,7 +1020,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				[449986] = Private.classes.BossAbility:New({ -- Aphotic Communion
 					phases = {
 						[4] = Private.classes.BossAbilityPhase:New({
-							castTimes = { 0 },
+							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 						}),
 					},
@@ -1057,7 +1057,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				[447207] = Private.classes.BossAbility:New({ -- Predation
 					phases = {
 						[2] = Private.classes.BossAbilityPhase:New({
-							castTimes = { 0 },
+							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
@@ -1068,31 +1068,31 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			phases = {
 				[1] = Private.classes.BossPhase:New({
-					duration = 150,
-					defaultDuration = 150,
+					duration = 150.0,
+					defaultDuration = 150.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 				}),
 				[2] = Private.classes.BossPhase:New({
-					duration = 40,
-					defaultDuration = 40,
+					duration = 40.0,
+					defaultDuration = 40.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 					name = "Int",
 				}),
 				[3] = Private.classes.BossPhase:New({
-					duration = 126,
-					defaultDuration = 126,
+					duration = 126.0,
+					defaultDuration = 126.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
 					name = "P2",
 				}),
 				[4] = Private.classes.BossPhase:New({
-					duration = 240,
-					defaultDuration = 240,
+					duration = 240.0,
+					defaultDuration = 240.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = nil,
