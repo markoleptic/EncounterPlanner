@@ -47,7 +47,7 @@ local assignmentMetaTables = {
 }
 local dropdownContainerLabelSpacing = 4
 local dropdownContainerSpacing = { 0, 4 }
-local topContainerDropdownWidth = 150
+local topContainerDropdownWidth = 200
 local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
 local classDropdownItems = {}
@@ -737,9 +737,12 @@ end
 
 ---@param lineEdit EPLineEdit
 ---@param value string
-local function HandleNoteTextChanged(lineEdit, _, value)
+local function HandleNoteTextSubmitted(lineEdit, _, value)
 	local currentNoteName = AddOn.db.profile.lastOpenNote
-	if value == currentNoteName then
+	if value:gsub("%s", "") == "" then
+		lineEdit:SetText(currentNoteName)
+		return
+	elseif value == currentNoteName then
 		return
 	elseif AddOn.db.profile.plans[value] then
 		lineEdit:SetText(currentNoteName)
@@ -1316,10 +1319,10 @@ function Private:CreateInterface()
 	local bossContainer = AceGUI:Create("EPContainer")
 	bossContainer:SetLayout("EPVerticalLayout")
 	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
-	bossContainer:SetWidth(topContainerDropdownWidth)
 	bossContainer:SetFullHeight(true)
 
 	local bossDropdown = AceGUI:Create("EPDropdown")
+	bossDropdown:SetWidth(topContainerDropdownWidth)
 	local bossDropdownData = {}
 	for raidInstanceName, raidInstance in pairs(Private.raidInstances) do
 		EJ_SelectInstance(raidInstance.journalInstanceID)
@@ -1341,6 +1344,7 @@ function Private:CreateInterface()
 	end)
 
 	local bossAbilitySelectDropdown = AceGUI:Create("EPDropdown")
+	bossAbilitySelectDropdown:SetWidth(topContainerDropdownWidth)
 	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(dropdown, _, value, selected)
 		HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
 	end)
@@ -1364,6 +1368,7 @@ function Private:CreateInterface()
 
 	local noteDropdown = AceGUI:Create("EPDropdown")
 	noteDropdown:SetWidth(topContainerDropdownWidth)
+	noteDropdown:SetAutoItemWidth(false)
 	local noteDropdownData = {}
 	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
 	for noteName, _ in pairs(AddOn.db.profile.plans) do
@@ -1378,8 +1383,9 @@ function Private:CreateInterface()
 
 	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
 	renameNoteLineEdit:SetWidth(topContainerDropdownWidth)
-	renameNoteLineEdit:SetCallback("OnTextChanged", HandleNoteTextChanged)
+	renameNoteLineEdit:SetCallback("OnTextSubmitted", HandleNoteTextSubmitted)
 	renameNoteLineEdit:SetFullHeight(true)
+	renameNoteLineEdit:SetMaxLetters(32)
 
 	local renameNoteLabel = AceGUI:Create("EPLabel")
 	renameNoteLabel:SetText("Rename Current Plan:", dropdownContainerLabelSpacing)
@@ -1399,6 +1405,7 @@ function Private:CreateInterface()
 
 	local simulateButton = AceGUI:Create("EPButton")
 	simulateButton:SetText("Simulate")
+	simulateButton:SetWidthFromText()
 	simulateButton:SetCallback("Clicked", function()
 		if Private:IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
@@ -1414,15 +1421,12 @@ function Private:CreateInterface()
 	end)
 
 	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
-	planReminderEnableCheckBox:SetText("Reminders Enabled for Plan")
+	planReminderEnableCheckBox:SetText("Enable Reminders for Current Plan")
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled = value
 	end)
 	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
-	simulateButton:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
-	simulateContainer:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
-	simulateContainer:AddChildren(simulateButton, planReminderEnableCheckBox)
 
 	local sendButton = AceGUI:Create("EPButton")
 	sendButton:SetText("Send Plan to Group")
@@ -1434,10 +1438,13 @@ function Private:CreateInterface()
 		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
 	)
 
+	sendButton:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
+	simulateContainer:AddChildren(sendButton, planReminderEnableCheckBox)
+
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossContainer, simulateContainer, sendButton, outerNoteContainer)
+	topContainer:AddChildren(bossContainer, simulateContainer, simulateButton, outerNoteContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)

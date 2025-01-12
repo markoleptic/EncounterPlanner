@@ -36,6 +36,8 @@ local checkBackdrop = {
 
 ---@param self EPCheckBox
 local function OnAcquire(self)
+	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+
 	self.button = AceGUI:Create("EPButton")
 	self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])

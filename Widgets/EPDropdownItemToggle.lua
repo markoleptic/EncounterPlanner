@@ -257,7 +257,9 @@ do
 	local function UpdateCheckVisibility(self)
 		if self.selected and not self.neverShowItemsAsSelected then
 			self.check:Show()
+			self.text:SetPoint("RIGHT", self.check, "LEFT", -textOffsetX / 2, 0)
 		else
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textOffsetX, 0)
 			self.check:Hide()
 		end
 	end

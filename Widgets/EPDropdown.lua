@@ -847,7 +847,9 @@ do
 	local function SetButtonVisibility(self, visible)
 		if visible then
 			self.button:Show()
+			self.text:SetPoint("RIGHT", self.button, "LEFT", -textOffsetX / 2, 0)
 		else
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textOffsetX, 0)
 			self.button:Hide()
 		end
 	end
