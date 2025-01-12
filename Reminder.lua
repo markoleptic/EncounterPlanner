@@ -12,6 +12,9 @@ local utilities = Private.utilities
 local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
+local LCG = LibStub("LibCustomGlow-1.0")
+local LGF = LibStub("LibGetFrame-1.0")
+
 local UIParent = UIParent
 local floor = math.floor
 local getmetatable = getmetatable
@@ -160,6 +163,7 @@ end
 local function CreateReminderContainer(preferences, spacing)
 	local container = AceGUI:Create("EPContainer")
 	container:SetLayout("EPProgressBarLayout")
+	container.frame:SetParent(UIParent)
 	container.frame:SetFrameStrata("MEDIUM")
 	container.frame:SetFrameLevel(100)
 	container:SetSpacing(0, spacing or 0)

@@ -38,6 +38,7 @@ local tostring = tostring
 local tremove = tremove
 local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 local unpack = unpack
+local wipe = wipe
 
 local assignmentMetaTables = {
 	CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
@@ -492,8 +493,7 @@ local function HandleImportNoteFromString(importType)
 	end
 
 	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
-	interfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, true)
-	interfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
+	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 end
 
@@ -550,6 +550,13 @@ local function CreatePhaseLengthEditor()
 		phaseLengthEditor:SetCallback("CloseButtonClicked", function()
 			Private.phaseLengthEditor:Release()
 		end)
+		phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
+			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+			wipe(customPhaseDurations)
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+			interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+		end)
 		phaseLengthEditor:SetCallback("DataChanged", function(_, _, phaseName, minLineEdit, secLineEdit)
 			local boss = GetCurrentBoss()
 			if boss then
@@ -564,15 +571,17 @@ local function CreatePhaseLengthEditor()
 					end
 				end
 
+				local formatAndReturn = false
+				local newDuration = previousDuration
 				local timeMinutes = tonumber(minLineEdit:GetText())
 				local timeSeconds = tonumber(secLineEdit:GetText())
-				local newDuration = previousDuration
+
 				if timeMinutes and timeSeconds then
 					local roundedMinutes = utilities.Round(timeMinutes, 0)
 					local roundedSeconds = utilities.Round(timeSeconds, 1)
 					newDuration = roundedMinutes * 60 + roundedSeconds
 					if abs(newDuration - previousDuration) < 0.01 then
-						return
+						formatAndReturn = true
 					end
 					local maxTime = 1200 - totalBossDurationWithoutCurrent
 					if newDuration < 1.0 or newDuration > maxTime then
@@ -582,12 +591,24 @@ local function CreatePhaseLengthEditor()
 
 				local minutes = floor(newDuration / 60)
 				local seconds = utilities.Round(newDuration % 60, 1)
-				minLineEdit:SetText(tostring(minutes))
-				secLineEdit:SetText(tostring(seconds))
 
+				local formattedSeconds = format("%02d", seconds)
+				local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
+				if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
+					formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
+				end
+
+				minLineEdit:SetText(format("%d", minutes))
+				secLineEdit:SetText(formattedSeconds)
+
+				if formatAndReturn then
+					return
+				end
+
+				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
 				local cumulativePhaseTime = 0.0
 				if boss.treatAsSinglePhase then
-					for _, phase in ipairs(boss.phases) do
+					for phaseIndex, phase in ipairs(boss.phases) do
 						if cumulativePhaseTime + phase.defaultDuration <= newDuration then
 							cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
 							phase.duration = phase.defaultDuration
@@ -597,21 +618,24 @@ local function CreatePhaseLengthEditor()
 						else
 							phase.duration = 0.0
 						end
+						customPhaseDurations[phaseIndex] = phase.duration
 					end
 				else
-					for index, phase in ipairs(boss.phases) do
-						if phaseName == longPhaseNames[index] then
+					for phaseIndex, phase in ipairs(boss.phases) do
+						if phaseName == longPhaseNames[phaseIndex] then
 							phase.duration = newDuration
+							customPhaseDurations[phaseIndex] = phase.duration
 							break
 						end
 					end
 				end
 
-				bossUtilities.GenerateBossTables()
-				interfaceUpdater.UpdateBoss(GetCurrentBossDungeonEncounterID(), true)
-				interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+				interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+				interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
 		end)
+
 		local boss = GetCurrentBoss()
 		if boss then
 			local phaseData = {}
@@ -629,23 +653,24 @@ local function CreatePhaseLengthEditor()
 				})
 			else
 				local longPhaseNames = GetLongPhaseNames(boss)
-				for index, phase in ipairs(boss.phases) do
+				for phaseIndex, phase in ipairs(boss.phases) do
 					tinsert(phaseData, {
-						name = longPhaseNames[index],
+						name = longPhaseNames[phaseIndex],
 						defaultDuration = phase.defaultDuration,
 						fixedDuration = phase.fixedDuration,
 						duration = phase.duration,
 					})
 				end
 			end
-
 			phaseLengthEditor:AddEntries(phaseData)
 		end
+
 		phaseLengthEditor.frame:SetParent(UIParent)
 		phaseLengthEditor.frame:SetFrameLevel(50)
 		phaseLengthEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		phaseLengthEditor:Resize()
 		phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
+
 		Private.phaseLengthEditor = phaseLengthEditor
 	end
 end
@@ -665,6 +690,8 @@ local function HandleBossDropdownValueChanged(value)
 			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].bossName = boss.name
 			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].dungeonEncounterID = boss.dungeonEncounterID
 			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].instanceID = boss.instanceID
+			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+			wipe(customPhaseDurations)
 			interfaceUpdater.UpdateBoss(boss.dungeonEncounterID, true)
 		end
 	end
@@ -914,11 +941,14 @@ end
 ---@param importType string
 local function ImportPlan(importType)
 	if not Private.importEditBox then
-		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
-			if Private.assignmentEditor then
-				Private.assignmentEditor:Release()
-			end
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+		if Private.phaseLengthEditor then
+			Private.phaseLengthEditor:Release()
+		end
 
+		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
 			local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 			if not loadingOrLoaded and not loaded then
 				print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))

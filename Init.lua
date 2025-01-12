@@ -352,6 +352,7 @@ Private.classes.RosterEntry = {
 ---@field assignments table<integer, Assignment> Assignments for the plan.
 ---@field roster table<string, RosterEntry> Roster for the plan.
 ---@field collapsed table<string, boolean> Which assignees are collapsed in the assignment timeline.
+---@field customPhaseDurations table<integer, number> Overridden boss phase durations.
 ---@field remindersEnabled boolean Whether reminders are enabled for the plan.
 Private.classes.Plan = {
 	ID = "",
@@ -363,6 +364,7 @@ Private.classes.Plan = {
 	assignments = {},
 	roster = {},
 	collapsed = {},
+	customPhaseDurations = {},
 	remindersEnabled = true,
 }
 

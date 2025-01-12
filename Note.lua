@@ -571,8 +571,14 @@ function Private:Note(epNoteName, currentBossDungeonEncounterID, content)
 
 	local bossDungeonEncounterID = self:ParseNote(note, utilities.SplitStringIntoTable(content))
 	note.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
+
+	if note.dungeonEncounterID ~= currentBossDungeonEncounterID then
+		wipe(note.customPhaseDurations)
+	end
+
 	local boss = bossUtilities.GetBoss(note.dungeonEncounterID)
 	if boss then
+		note.bossName = boss.name
 		note.dungeonEncounterID = boss.dungeonEncounterID
 		note.instanceID = boss.instanceID
 	end

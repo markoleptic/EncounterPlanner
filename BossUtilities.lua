@@ -153,6 +153,16 @@ function BossUtilities.GetBossAbilityInstances(bossDungeonEncounterID)
 	return nil
 end
 
+---@param bossDungeonEncounterID integer
+function BossUtilities.ResetBossPhaseTimings(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		for _, phase in ipairs(boss.phases) do
+			phase.duration = phase.defaultDuration
+		end
+	end
+end
+
 do
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 	---@param bossDungeonEncounterID integer
@@ -182,8 +192,7 @@ do
 
 	-- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 	---@param boss Boss
-	---@return table<integer, table<integer, number>> -- spellID, spell occurrence, time
-	local function CreateAbsoluteSpellCastTimeTable(boss)
+	local function GenerateAbsoluteSpellCastTimeTable(boss)
 		local spellCount = {}
 
 		local bossPhaseTable = CreateBossPhaseTable(boss.dungeonEncounterID)
@@ -262,21 +271,20 @@ do
 			end
 		end
 
-		return spellCount
+		absoluteSpellCastStartTables[boss.dungeonEncounterID] = spellCount
 	end
 
 	-- Creates instances for all abilities of a boss.
 	---@param boss Boss
-	---@return table<integer, BossAbilityInstance>
-	local function CreateBossAbilityInstances(boss)
+	local function GenerateBossAbilityInstances(boss)
 		local spellCount = {}
-		local returnTable = {}
+		local abilityInstances = {}
 
 		local cumulativePhaseStartTime = 0
 		local bossAbilityInstanceIndex = 1
 		local bossPhaseOrder = BossUtilities.GetBossPhaseTable(boss.dungeonEncounterID)
 		if not bossPhaseOrder then
-			return returnTable
+			return
 		end
 		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(bossPhaseOrder) do
 			local bossPhase = boss.phases[bossPhaseIndex]
@@ -350,7 +358,7 @@ do
 								end
 
 								tinsert(spellCount[bossAbilitySpellID], castStart)
-								tinsert(returnTable, {
+								tinsert(abilityInstances, {
 									bossAbilitySpellID = bossAbilitySpellID,
 									bossAbilityInstanceIndex = bossAbilityInstanceIndex,
 									bossAbilityOrderIndex = bossAbilityOrderIndex,
@@ -391,7 +399,7 @@ do
 										local repeatEffectEnd = repeatEnd + bossAbility.duration
 
 										tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
-										tinsert(returnTable, {
+										tinsert(abilityInstances, {
 											bossAbilitySpellID = bossAbilitySpellID,
 											bossAbilityInstanceIndex = bossAbilityInstanceIndex,
 											bossAbilityOrderIndex = bossAbilityOrderIndex,
@@ -446,7 +454,7 @@ do
 										local effectEnd = castEnd + bossAbility.duration
 
 										tinsert(spellCount[bossAbilitySpellID], castStart)
-										tinsert(returnTable, {
+										tinsert(abilityInstances, {
 											bossAbilitySpellID = bossAbilitySpellID,
 											bossAbilityInstanceIndex = bossAbilityInstanceIndex,
 											bossAbilityOrderIndex = bossAbilityOrderIndex,
@@ -489,7 +497,7 @@ do
 												local effectEnd = castEnd + bossAbility.duration
 												if effectEnd < phaseEndTime then
 													tinsert(spellCount[bossAbilitySpellID], castStart)
-													tinsert(returnTable, {
+													tinsert(abilityInstances, {
 														bossAbilitySpellID = bossAbilitySpellID,
 														bossAbilityInstanceIndex = bossAbilityInstanceIndex,
 														bossAbilityOrderIndex = bossAbilityOrderIndex,
@@ -534,35 +542,42 @@ do
 				cumulativePhaseStartTime = cumulativePhaseStartTime + bossPhase.duration
 			end
 		end
-		return returnTable
+		boss.abilityInstances = abilityInstances
 	end
 
-	-- Generate a list of abilities for each boss sorted by their first cast time.
-	function BossUtilities.GenerateBossTables()
-		for _, raidInstance in pairs(Private.raidInstances) do
-			for _, boss in ipairs(raidInstance.bosses) do
-				local spellCount = CreateAbsoluteSpellCastTimeTable(boss)
-				absoluteSpellCastStartTables[boss.dungeonEncounterID] = spellCount
-
-				local earliestCastTimes = {}
-				for spellID, spellOccurrenceNumbers in pairs(spellCount) do
-					local earliestCastTime = hugeNumber
-					for _, castTime in pairs(spellOccurrenceNumbers) do
-						earliestCastTime = min(earliestCastTime, castTime)
-					end
-					tinsert(earliestCastTimes, { spellID = spellID, earliestCastTime = earliestCastTime })
+	---@param boss Boss
+	local function GenerateSortedBossAbilities(boss)
+		local earliestCastTimes = {}
+		local spellCount = BossUtilities.GetAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
+		if spellCount then
+			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
+				local earliestCastTime = hugeNumber
+				for _, castTime in pairs(spellOccurrenceNumbers) do
+					earliestCastTime = min(earliestCastTime, castTime)
 				end
-				sort(earliestCastTimes, function(a, b)
-					return a.earliestCastTime < b.earliestCastTime
-				end)
-				boss.sortedAbilityIDs = {}
-				for _, entry in ipairs(earliestCastTimes) do
-					tinsert(boss.sortedAbilityIDs, entry.spellID)
-				end
-				boss.abilityInstances = CreateBossAbilityInstances(boss)
+				tinsert(earliestCastTimes, { spellID = spellID, earliestCastTime = earliestCastTime })
+			end
+			sort(earliestCastTimes, function(a, b)
+				return a.earliestCastTime < b.earliestCastTime
+			end)
+			boss.sortedAbilityIDs = {}
+			for _, entry in ipairs(earliestCastTimes) do
+				tinsert(boss.sortedAbilityIDs, entry.spellID)
 			end
 		end
 	end
 
-	BossUtilities.GenerateBossTables()
+	-- Creates spell cast time, sorted abilities, and ability instances tables for a boss.
+	---@param boss Boss
+	function BossUtilities.GenerateBossTables(boss)
+		GenerateAbsoluteSpellCastTimeTable(boss)
+		GenerateSortedBossAbilities(boss)
+		GenerateBossAbilityInstances(boss)
+	end
+
+	for _, raidInstance in pairs(Private.raidInstances) do
+		for _, boss in ipairs(raidInstance.bosses) do
+			BossUtilities.GenerateBossTables(boss)
+		end
+	end
 end

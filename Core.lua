@@ -41,6 +41,7 @@ function AddOn:OnInitialize()
 	local profile = self.db.profile --[[@as DefaultProfile]]
 	if profile then
 		for _, note in pairs(profile.plans) do
+			note = Private.classes.Plan:New(note, note.name, note.ID)
 			-- Convert tables from DB into classes
 			utilities.SetAssignmentMetaTables(note.assignments)
 			for _, assignment in ipairs(note.assignments) do

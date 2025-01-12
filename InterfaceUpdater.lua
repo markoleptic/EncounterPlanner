@@ -39,84 +39,41 @@ local function GetCurrentAssignments()
 	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].assignments
 end
 
----@param abilityEntry EPAbilityEntry
-local function HandleDeleteAssigneeRowClicked(abilityEntry)
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
+do
+	local lastBossDungeonEncounterID = 0
 
-	local key = abilityEntry:GetKey()
-	if key then
-		local assignments = GetCurrentAssignments()
-		if type(key) == "string" then
-			for i = #assignments, 1, -1 do
-				if assignments[i].assigneeNameOrRole == key then
-					tremove(assignments, i)
+	---@param abilityEntry EPAbilityEntry
+	local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
+		local key = tonumber(abilityEntry:GetKey())
+		local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
+		if key and boss then
+			local bossDungeonEncounterID = boss.dungeonEncounterID
+			local atLeastOneSelected = false
+			for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]) do
+				if currentAbilityID ~= key and currentSelected then
+					atLeastOneSelected = true
+					break
 				end
 			end
-		elseif type(key) == "table" then
-			local assigneeNameOrRole = key.assigneeNameOrRole
-			local spellID = key.spellID
-			for i = #assignments, 1, -1 do
-				if
-					assignments[i].assigneeNameOrRole == assigneeNameOrRole
-					and assignments[i].spellInfo.spellID == spellID
-				then
-					tremove(assignments, i)
-				end
+			if atLeastOneSelected then
+				AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID][key] = false
+				InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 			end
 		end
-		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
-		if bossDungeonEncounterID then
-			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-		end
 	end
-end
 
----@param abilityEntry EPAbilityEntry
----@param collapsed boolean
-local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
-	AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
-	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
-	if bossDungeonEncounterID then
-		InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-	end
-end
-
----@param abilityEntry EPAbilityEntry
-local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
-	local key = tonumber(abilityEntry:GetKey())
-	local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
-	if key and boss then
-		local bossDungeonEncounterID = boss.dungeonEncounterID
-		local atLeastOneSelected = false
-		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]) do
-			if currentAbilityID ~= key and currentSelected then
-				atLeastOneSelected = true
-				break
-			end
-		end
-		if atLeastOneSelected then
-			AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID][key] = false
-			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-		end
-	end
-end
-
--- Clears and repopulates the boss ability container based on the boss name.
----@param bossDungeonEncounterID integer
----@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
-function InterfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
-	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
-	local timeline = Private.mainFrame.timeline
-	if boss and timeline then
+	-- Clears and repopulates the boss ability container based on the boss name.
+	---@param boss Boss
+	---@param timeline EPTimeline
+	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
+	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossDropdown = Private.mainFrame.bossSelectDropdown
 		if bossAbilityContainer and bossDropdown then
-			if AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID] == nil then
-				AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID] = {}
+			if AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] == nil then
+				AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] = {}
 			end
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			bossDropdown:SetValue(boss.dungeonEncounterID)
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}
@@ -155,125 +112,187 @@ function InterfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, updateBo
 				end
 			end
 		end
-		Private.mainFrame:DoLayout()
+	end
+
+	-- Sets the boss abilities for the timeline and rerenders it.
+	---@param boss Boss
+	---@param timeline EPTimeline
+	local function UpdateTimelineBossAbilities(boss, timeline)
+		local bossPhaseTable = bossUtilities.GetBossPhaseTable(boss.dungeonEncounterID)
+		if bossPhaseTable then
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
+			timeline:SetBossAbilities(
+				boss.abilityInstances,
+				boss.sortedAbilityIDs,
+				boss.phases,
+				bossPhaseTable,
+				activeBossAbilities
+			)
+			timeline:UpdateTimeline()
+			Private.mainFrame:DoLayout()
+		end
+	end
+
+	-- Updates the list of boss abilities and the boss ability timeline.
+	---@param bossDungeonEncounterID integer
+	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
+	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
+		if lastBossDungeonEncounterID ~= 0 then
+			bossUtilities.ResetBossPhaseTimings(lastBossDungeonEncounterID)
+		end
+		lastBossDungeonEncounterID = bossDungeonEncounterID
+		local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
+		if boss then
+			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+			for phaseIndex, phaseDuration in pairs(customPhaseDurations) do
+				if boss.phases[phaseIndex] then
+					boss.phases[phaseIndex].duration = phaseDuration
+				end
+			end
+			bossUtilities.GenerateBossTables(boss)
+			local timeline = Private.mainFrame.timeline
+			if timeline then
+				UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
+				UpdateTimelineBossAbilities(boss, timeline)
+			end
+		end
 	end
 end
 
--- Sets the boss abilities for the timeline and rerenders it.
----@param bossDungeonEncounterID integer
-function InterfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
-	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
-	local timeline = Private.mainFrame.timeline
-	local bossPhaseTable = bossUtilities.GetBossPhaseTable(bossDungeonEncounterID)
-	if boss and timeline and bossPhaseTable then
-		local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
-		timeline:SetBossAbilities(
-			boss.abilityInstances,
-			boss.sortedAbilityIDs,
-			boss.phases,
-			bossPhaseTable,
-			activeBossAbilities
-		)
-		timeline:UpdateTimeline()
-		Private.mainFrame:DoLayout()
-	end
-end
+do
+	---@param abilityEntry EPAbilityEntry
+	local function HandleDeleteAssigneeRowClicked(abilityEntry)
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
 
--- Updates the list of boss abilities and the boss ability timeline.
----@param bossDungeonEncounterID integer
----@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
-function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
-	InterfaceUpdater.UpdateBossAbilityList(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
-	InterfaceUpdater.UpdateTimelineBossAbilities(bossDungeonEncounterID)
-end
-
--- Clears and repopulates the list of assignments and spells.
----@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
----@param firstUpdate boolean|nil
-function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
-	local timeline = Private.mainFrame.timeline
-	if timeline then
-		local assignmentContainer = timeline:GetAssignmentContainer()
-		if assignmentContainer then
-			assignmentContainer:ReleaseChildren()
-			local children = {}
-			local roster = GetCurrentRoster()
-			local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
-			for _, textTable in ipairs(map) do
-				local assigneeNameOrRole = textTable.assigneeNameOrRole
-				local coloredAssigneeNameOrRole = textTable.text
-				local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-				assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
-				assigneeEntry:SetFullWidth(true)
-				assigneeEntry:SetHeight(30)
-				assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-				assigneeEntry:SetRole(roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or nil)
-				assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
-					local messageBox = InterfaceUpdater.CreateMessageBox(
-						"Delete Assignments Confirmation",
-						format("Are you sure you want to delete all assignments for %s?", coloredAssigneeNameOrRole)
-					)
-					if messageBox then
-						messageBox:SetCallback("Accepted", function()
-							if Private.mainFrame then
-								HandleDeleteAssigneeRowClicked(widget)
-							end
-						end)
+		local key = abilityEntry:GetKey()
+		if key then
+			local assignments = GetCurrentAssignments()
+			if type(key) == "string" then
+				for i = #assignments, 1, -1 do
+					if assignments[i].assigneeNameOrRole == key then
+						tremove(assignments, i)
 					end
-				end)
-				assigneeEntry.label.text:SetJustifyH("LEFT")
-				assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
-				assigneeEntry:SetCollapsible(true)
-				assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
-				tinsert(children, assigneeEntry)
-				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[assigneeNameOrRole]
-				assigneeEntry:SetCollapsed(collapsed)
-				if not collapsed then
-					for _, spellID in ipairs(textTable.spells) do
-						local spellEntry = AceGUI:Create("EPAbilityEntry")
-						local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
-						if spellID == constants.kInvalidAssignmentSpellID then
-							spellEntry:SetNullAbility(key)
-						elseif spellID == constants.kTextAssignmentSpellID then
-							spellEntry:SetGeneralAbility(key)
-						else
-							spellEntry:SetAbility(spellID, key)
-						end
-						spellEntry:SetFullWidth(true)
-						spellEntry:SetLeftIndent(15 - 2)
-						spellEntry:SetHeight(30)
-						spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-						spellEntry:SetCallback("OnValueChanged", function(widget, _)
-							local spellEntryKey = widget:GetKey()
-							local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
-							local messageBox = InterfaceUpdater.CreateMessageBox(
-								"Delete Assignments Confirmation",
-								format(
-									"Are you sure you want to delete all %s assignments for %s?",
-									spellName,
-									coloredAssigneeNameOrRole
-								)
-							)
-							if messageBox then
-								messageBox:SetCallback("Accepted", function()
-									if Private.mainFrame then
-										HandleDeleteAssigneeRowClicked(widget)
-									end
-								end)
-							end
-						end)
-						spellEntry.label.text:SetJustifyH("LEFT")
-						spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
-						tinsert(children, spellEntry)
+				end
+			elseif type(key) == "table" then
+				local assigneeNameOrRole = key.assigneeNameOrRole
+				local spellID = key.spellID
+				for i = #assignments, 1, -1 do
+					if
+						assignments[i].assigneeNameOrRole == assigneeNameOrRole
+						and assignments[i].spellInfo.spellID == spellID
+					then
+						tremove(assignments, i)
 					end
 				end
 			end
-			if #children > 0 then
-				assignmentContainer:AddChildren(unpack(children))
+			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+			if bossDungeonEncounterID then
+				InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 			end
 		end
-		if not firstUpdate then
-			Private.mainFrame:DoLayout()
+	end
+
+	---@param abilityEntry EPAbilityEntry
+	---@param collapsed boolean
+	local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
+		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+		if bossDungeonEncounterID then
+			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+		end
+	end
+
+	-- Clears and repopulates the list of assignments and spells.
+	---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+	---@param firstUpdate boolean|nil
+	function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			local assignmentContainer = timeline:GetAssignmentContainer()
+			if assignmentContainer then
+				assignmentContainer:ReleaseChildren()
+				local children = {}
+				local roster = GetCurrentRoster()
+				local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
+				for _, textTable in ipairs(map) do
+					local assigneeNameOrRole = textTable.assigneeNameOrRole
+					local coloredAssigneeNameOrRole = textTable.text
+					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
+					assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
+					assigneeEntry:SetFullWidth(true)
+					assigneeEntry:SetHeight(30)
+					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+					assigneeEntry:SetRole(roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or nil)
+					assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
+						local messageBox = InterfaceUpdater.CreateMessageBox(
+							"Delete Assignments Confirmation",
+							format("Are you sure you want to delete all assignments for %s?", coloredAssigneeNameOrRole)
+						)
+						if messageBox then
+							messageBox:SetCallback("Accepted", function()
+								if Private.mainFrame then
+									HandleDeleteAssigneeRowClicked(widget)
+								end
+							end)
+						end
+					end)
+					assigneeEntry.label.text:SetJustifyH("LEFT")
+					assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
+					assigneeEntry:SetCollapsible(true)
+					assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
+					tinsert(children, assigneeEntry)
+					local collapsed =
+						AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[assigneeNameOrRole]
+					assigneeEntry:SetCollapsed(collapsed)
+					if not collapsed then
+						for _, spellID in ipairs(textTable.spells) do
+							local spellEntry = AceGUI:Create("EPAbilityEntry")
+							local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
+							if spellID == constants.kInvalidAssignmentSpellID then
+								spellEntry:SetNullAbility(key)
+							elseif spellID == constants.kTextAssignmentSpellID then
+								spellEntry:SetGeneralAbility(key)
+							else
+								spellEntry:SetAbility(spellID, key)
+							end
+							spellEntry:SetFullWidth(true)
+							spellEntry:SetLeftIndent(15 - 2)
+							spellEntry:SetHeight(30)
+							spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+							spellEntry:SetCallback("OnValueChanged", function(widget, _)
+								local spellEntryKey = widget:GetKey()
+								local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
+								local messageBox = InterfaceUpdater.CreateMessageBox(
+									"Delete Assignments Confirmation",
+									format(
+										"Are you sure you want to delete all %s assignments for %s?",
+										spellName,
+										coloredAssigneeNameOrRole
+									)
+								)
+								if messageBox then
+									messageBox:SetCallback("Accepted", function()
+										if Private.mainFrame then
+											HandleDeleteAssigneeRowClicked(widget)
+										end
+									end)
+								end
+							end)
+							spellEntry.label.text:SetJustifyH("LEFT")
+							spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
+							tinsert(children, spellEntry)
+						end
+					end
+				end
+				if #children > 0 then
+					assignmentContainer:AddChildren(unpack(children))
+				end
+			end
+			if not firstUpdate then
+				Private.mainFrame:DoLayout()
+			end
 		end
 	end
 end

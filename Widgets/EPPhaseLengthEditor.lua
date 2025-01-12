@@ -4,16 +4,20 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
+local floor = math.floor
+local format = format
 local ipairs = ipairs
 local Round = Round
 local tinsert = tinsert
+local tostring = tostring
 local unpack = unpack
 
-local defaultFrameWidth = 450
-local defaultFrameHeight = 450
-local minFrameWidth = 450
+local defaultFrameWidth = 400
+local defaultFrameHeight = 400
+local minFrameWidth = 400
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
+local otherPadding = { x = 10, y = 10 }
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
@@ -34,13 +38,42 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
+---@param self EPPhaseLengthEditor
+local function ResetToDefault(self)
+	for i = 2, #self.activeContainer.children do
+		local child = self.activeContainer.children[i]
+		if child.type == "EPContainer" then
+			local containerChildren = child.children
+			if #containerChildren == 3 then
+				local defaultContainer = containerChildren[2]
+				local currentContainer = containerChildren[3]
+				local defaultLabel = defaultContainer.children[1]
+				local currentMinuteLineEdit = currentContainer.children[1]
+				local currentSecondLineEdit = currentContainer.children[3]
+				local text = defaultLabel:GetText()
+				local minutes, seconds, decimal = text:match("^(%d+):(%d+)[%.]?(%d*)")
+				if minutes and seconds then
+					currentMinuteLineEdit:SetText(tostring(minutes))
+					local formattedSeconds = format("%02d", seconds)
+					if decimal and decimal ~= "0" and decimal ~= "" then
+						formattedSeconds = formattedSeconds .. "." .. decimal
+						currentSecondLineEdit:SetText(formattedSeconds)
+					else
+						currentSecondLineEdit:SetText(tostring(seconds))
+					end
+				end
+			end
+		end
+	end
+end
+
 ---@class EPPhaseLengthEditor : AceGUIWidget
 ---@field frame Frame|table
 ---@field type string
 ---@field windowBar table|Frame
 ---@field closeButton EPButton
----@field children table<integer, AceGUIWidget>
 ---@field activeContainer EPContainer
+---@field resetAllButton EPButton
 
 ---@param self EPPhaseLengthEditor
 local function OnAcquire(self)
@@ -76,29 +109,39 @@ local function OnAcquire(self)
 
 	local labelContainer = AceGUI:Create("EPContainer")
 	labelContainer:SetLayout("EPHorizontalLayout")
-	labelContainer:SetSpacing(0, 0)
+	labelContainer:SetSpacing(16, 0)
 	labelContainer:SetFullWidth(true)
 
 	local phaseNameLabel = AceGUI:Create("EPLabel")
 	phaseNameLabel:SetText("Phase")
-	phaseNameLabel:SetHorizontalTextAlignment("CENTER")
-	phaseNameLabel:SetRelativeWidth(0.2)
+	phaseNameLabel:SetRelativeWidth(0.3)
 	phaseNameLabel.text:SetTextColor(unpack(headingColor))
 
 	local defaultDurationLabel = AceGUI:Create("EPLabel")
 	defaultDurationLabel:SetText("Default Duration")
 	defaultDurationLabel:SetHorizontalTextAlignment("CENTER")
-	defaultDurationLabel:SetRelativeWidth(0.4)
+	defaultDurationLabel:SetRelativeWidth(0.3)
 	defaultDurationLabel.text:SetTextColor(unpack(headingColor))
 
 	local durationLabel = AceGUI:Create("EPLabel")
-	durationLabel:SetText("Duration")
+	durationLabel:SetText("Custom Duration")
 	durationLabel:SetHorizontalTextAlignment("CENTER")
 	durationLabel:SetRelativeWidth(0.4)
 	durationLabel.text:SetTextColor(unpack(headingColor))
 
+	self.resetAllButton = AceGUI:Create("EPButton")
+	self.resetAllButton.frame:SetParent(self.frame)
+	self.resetAllButton.frame:SetPoint("BOTTOM", 0, contentFramePadding.y)
+	self.resetAllButton:SetText("Reset All to Default")
+	self.resetAllButton:SetWidthFromText()
+	self.resetAllButton:SetCallback("Clicked", function()
+		ResetToDefault(self)
+		self:Fire("ResetAllButtonClicked")
+	end)
+
 	labelContainer:AddChildren(phaseNameLabel, defaultDurationLabel, durationLabel)
-	self.activeContainer:AddChild(labelContainer)
+	self.activeContainer:AddChildren(labelContainer)
+
 	self.frame:Show()
 end
 
@@ -110,6 +153,9 @@ local function OnRelease(self)
 	self.activeContainer.frame:EnableMouse(false)
 	self.activeContainer:Release()
 	self.activeContainer = nil
+
+	self.resetAllButton:Release()
+	self.resetAllButton = nil
 end
 
 ---@param self EPPhaseLengthEditor
@@ -119,39 +165,40 @@ local function AddEntries(self, entries)
 	for _, phase in ipairs(entries) do
 		local container = AceGUI:Create("EPContainer")
 		container:SetLayout("EPHorizontalLayout")
-		container:SetSpacing(8, 0)
+		container:SetSpacing(16, 0)
 		container:SetFullWidth(true)
 
 		local label = AceGUI:Create("EPLabel")
 		label:SetText(phase.name)
-		label:SetHorizontalTextAlignment("CENTER")
-		label:SetRelativeWidth(0.2)
+		label:SetRelativeWidth(0.3)
 
 		local defaultContainer = AceGUI:Create("EPContainer")
 		defaultContainer:SetLayout("EPHorizontalLayout")
 		defaultContainer:SetSpacing(0, 0)
-		defaultContainer:SetRelativeWidth(0.4)
+		defaultContainer:SetRelativeWidth(0.3)
 
 		local defaultMinutes = floor(phase.defaultDuration / 60)
 		local defaultSeconds = Round((phase.defaultDuration % 60) * 10) / 10
+		local defaultSecondsString = tostring(defaultSeconds)
+		local defaultSecondsDecimalMatch = defaultSecondsString:match("^%d+%.(%d+)")
 
-		local defaultDurationMinuteLabel = AceGUI:Create("EPLineEdit")
-		defaultDurationMinuteLabel:SetText(tostring(defaultMinutes))
-		defaultDurationMinuteLabel:SetEnabled(false)
-		defaultDurationMinuteLabel:SetRelativeWidth(0.475)
-
-		local defaultSeparatorLabel = AceGUI:Create("EPLabel")
-		defaultSeparatorLabel:SetText(":")
-		defaultSeparatorLabel:SetHorizontalTextAlignment("CENTER")
-		defaultSeparatorLabel:SetRelativeWidth(0.05)
-
-		local defaultDurationSecondLabel = AceGUI:Create("EPLineEdit")
-		defaultDurationSecondLabel:SetText(tostring(defaultSeconds))
-		defaultDurationSecondLabel:SetEnabled(false)
-		defaultDurationSecondLabel:SetRelativeWidth(0.475)
+		local defaultLabel = AceGUI:Create("EPLabel")
+		local defaultText = format("%d:%02d", defaultMinutes, defaultSeconds)
+		if defaultSecondsDecimalMatch then
+			defaultText = defaultText .. "." .. defaultSecondsDecimalMatch
+		end
+		defaultLabel:SetText(defaultText)
+		defaultLabel:SetHorizontalTextAlignment("CENTER")
+		defaultLabel:SetFullWidth(true)
 
 		local minutes = floor(phase.duration / 60)
 		local seconds = Round((phase.duration % 60) * 10) / 10
+
+		local formattedSeconds = format("%02d", seconds)
+		local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
+		if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
+			formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
+		end
 
 		local currentContainer = AceGUI:Create("EPContainer")
 		currentContainer:SetLayout("EPHorizontalLayout")
@@ -161,7 +208,7 @@ local function AddEntries(self, entries)
 		local minuteLineEdit = AceGUI:Create("EPLineEdit")
 		local secondLineEdit = AceGUI:Create("EPLineEdit")
 
-		minuteLineEdit:SetText(tostring(minutes))
+		minuteLineEdit:SetText(format("%d", minutes))
 		minuteLineEdit:SetRelativeWidth(0.475)
 		minuteLineEdit:SetEnabled(not phase.fixedDuration)
 		minuteLineEdit:SetCallback("OnTextSubmitted", function(widget, ...)
@@ -173,14 +220,14 @@ local function AddEntries(self, entries)
 		separatorLabel:SetHorizontalTextAlignment("CENTER")
 		separatorLabel:SetRelativeWidth(0.05)
 
-		secondLineEdit:SetText(tostring(seconds))
+		secondLineEdit:SetText(formattedSeconds)
 		secondLineEdit:SetRelativeWidth(0.475)
 		secondLineEdit:SetEnabled(not phase.fixedDuration)
 		secondLineEdit:SetCallback("OnTextSubmitted", function(widget, _, text)
 			self:Fire("DataChanged", phase.name, minuteLineEdit, widget)
 		end)
 
-		defaultContainer:AddChildren(defaultDurationMinuteLabel, defaultSeparatorLabel, defaultDurationSecondLabel)
+		defaultContainer:AddChildren(defaultLabel)
 		currentContainer:AddChildren(minuteLineEdit, separatorLabel, secondLineEdit)
 		container:AddChildren(label, defaultContainer, currentContainer)
 		tinsert(containers, container)
@@ -190,7 +237,12 @@ end
 
 ---@param self EPPhaseLengthEditor
 local function Resize(self)
-	local height = contentFramePadding.y * 2 + self.activeContainer.frame:GetHeight() + self.windowBar:GetHeight()
+	local height = contentFramePadding.y
+		+ self.windowBar:GetHeight()
+		+ self.activeContainer.frame:GetHeight()
+		+ otherPadding.y
+		+ self.resetAllButton.frame:GetHeight()
+		+ contentFramePadding.y
 	self.frame:SetSize(minFrameWidth, height)
 	self.activeContainer:DoLayout()
 end
