@@ -329,7 +329,7 @@ do
 							local castEnd = castStart + bossAbility.castTime
 							local effectEnd = castEnd + bossAbility.duration
 
-							if castStart < phaseEndTime then
+							if castStart <= phaseEndTime then
 								if bossAbilityPhase.signifiesPhaseStart and castIndex == 1 then
 									castEnd = min(castEnd, phaseEndTime)
 									if castEnd + bossAbility.duration >= phaseEndTime then
@@ -341,6 +341,9 @@ do
 									if castEnd < phaseEndTime and bossAbility.duration > 0.0 then
 										effectEnd = phaseEndTime
 									else
+										if castTime == bossPhase.defaultDuration then
+											castStart = phaseEndTime
+										end
 										castEnd = phaseEndTime
 										effectEnd = castEnd
 									end

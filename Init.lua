@@ -202,6 +202,7 @@ Private.classes.RaidInstance = {
 ---@field abilities table<SpellIDIndex, BossAbility> A list of abilities.
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
+---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.
 Private.classes.Boss = {
 	name = "",
 	bossID = {},
@@ -212,6 +213,7 @@ Private.classes.Boss = {
 	abilities = {},
 	sortedAbilityIDs = {},
 	abilityInstances = {},
+	treatAsSinglePhase = nil,
 }
 
 -- A stage/phase in a boss encounter.
@@ -221,14 +223,16 @@ Private.classes.Boss = {
 ---@field count number The number of times the boss phase occurs.
 ---@field defaultCount number The default number of times the boss phase occurs.
 ---@field repeatAfter number|nil Which phase this phase repeats after.
----@field name string|nil Optional nickname for phase used to display on the timeline.
+---@field name string|nil If specified, the phase will be displayed on the timeline under this name. Otherwise hidden.
+---@field fixedDuration boolean|nil If specified, the duration is not editable.
 Private.classes.BossPhase = {
-	duration = 0,
-	defaultDuration = 0,
-	count = 0,
-	defaultCount = 0,
+	duration = 0.0,
+	defaultDuration = 0.0,
+	count = 1,
+	defaultCount = 1,
 	repeatAfter = nil,
 	name = nil,
+	fixedDuration = nil,
 }
 
 -- A spell that a boss casts including when the spell is cast.

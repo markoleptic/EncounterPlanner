@@ -9,14 +9,15 @@ local Round = Round
 local tinsert = tinsert
 local unpack = unpack
 
-local defaultFrameWidth = 800
-local defaultFrameHeight = 800
-local minFrameHeight = 400
+local defaultFrameWidth = 450
+local defaultFrameHeight = 450
+local minFrameWidth = 450
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local headingColor = { 1, 0.82, 0, 1 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -82,16 +83,19 @@ local function OnAcquire(self)
 	phaseNameLabel:SetText("Phase")
 	phaseNameLabel:SetHorizontalTextAlignment("CENTER")
 	phaseNameLabel:SetRelativeWidth(0.2)
+	phaseNameLabel.text:SetTextColor(unpack(headingColor))
 
 	local defaultDurationLabel = AceGUI:Create("EPLabel")
 	defaultDurationLabel:SetText("Default Duration")
 	defaultDurationLabel:SetHorizontalTextAlignment("CENTER")
 	defaultDurationLabel:SetRelativeWidth(0.4)
+	defaultDurationLabel.text:SetTextColor(unpack(headingColor))
 
 	local durationLabel = AceGUI:Create("EPLabel")
 	durationLabel:SetText("Duration")
 	durationLabel:SetHorizontalTextAlignment("CENTER")
 	durationLabel:SetRelativeWidth(0.4)
+	durationLabel.text:SetTextColor(unpack(headingColor))
 
 	labelContainer:AddChildren(phaseNameLabel, defaultDurationLabel, durationLabel)
 	self.activeContainer:AddChild(labelContainer)
@@ -109,7 +113,7 @@ local function OnRelease(self)
 end
 
 ---@param self EPPhaseLengthEditor
----@param entries table<integer, {name:string, defaultDuration: number, duration:number}>>
+---@param entries table<integer, {name:string, defaultDuration: number, fixedDuration: boolean|nil, duration:number}>>
 local function AddEntries(self, entries)
 	local containers = {}
 	for _, phase in ipairs(entries) do
@@ -159,6 +163,7 @@ local function AddEntries(self, entries)
 
 		minuteLineEdit:SetText(tostring(minutes))
 		minuteLineEdit:SetRelativeWidth(0.475)
+		minuteLineEdit:SetEnabled(not phase.fixedDuration)
 		minuteLineEdit:SetCallback("OnTextSubmitted", function(widget, ...)
 			self:Fire("DataChanged", phase.name, widget, secondLineEdit)
 		end)
@@ -170,6 +175,7 @@ local function AddEntries(self, entries)
 
 		secondLineEdit:SetText(tostring(seconds))
 		secondLineEdit:SetRelativeWidth(0.475)
+		secondLineEdit:SetEnabled(not phase.fixedDuration)
 		secondLineEdit:SetCallback("OnTextSubmitted", function(widget, _, text)
 			self:Fire("DataChanged", phase.name, minuteLineEdit, widget)
 		end)
@@ -185,7 +191,7 @@ end
 ---@param self EPPhaseLengthEditor
 local function Resize(self)
 	local height = contentFramePadding.y * 2 + self.activeContainer.frame:GetHeight() + self.windowBar:GetHeight()
-	self.frame:SetSize(minFrameHeight, height)
+	self.frame:SetSize(minFrameWidth, height)
 	self.activeContainer:DoLayout()
 end
 

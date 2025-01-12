@@ -522,6 +522,25 @@ local function CreateImportEditBox(importType)
 	Private.importEditBox:HighlightTextAndFocus()
 end
 
+---@param boss Boss
+---@return table<integer, string>
+local function GetLongPhaseNames(boss)
+	local longPhaseNames = {}
+	for index, phase in ipairs(boss.phases) do
+		local bossPhaseName = phase.name or index
+		if type(bossPhaseName) == "string" then
+			local intMatch = bossPhaseName:match("^Int(%d+)")
+			if intMatch then
+				bossPhaseName = "Intermission " .. intMatch
+			end
+		elseif type(bossPhaseName) == "number" then
+			bossPhaseName = "Phase " .. bossPhaseName
+		end
+		tinsert(longPhaseNames, bossPhaseName)
+	end
+	return longPhaseNames
+end
+
 local function CreatePhaseLengthEditor()
 	if not Private.phaseLengthEditor then
 		local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
@@ -536,8 +555,9 @@ local function CreatePhaseLengthEditor()
 			if boss then
 				local previousDuration
 				local totalBossDurationWithoutCurrent = 0.0
+				local longPhaseNames = GetLongPhaseNames(boss)
 				for index, phase in ipairs(boss.phases) do
-					if phaseName == index or phase.name == phaseName then
+					if phaseName == longPhaseNames[index] then
 						previousDuration = phase.duration
 					else
 						totalBossDurationWithoutCurrent = totalBossDurationWithoutCurrent + phase.duration
@@ -550,15 +570,13 @@ local function CreatePhaseLengthEditor()
 				if timeMinutes and timeSeconds then
 					local roundedMinutes = utilities.Round(timeMinutes, 0)
 					local roundedSeconds = utilities.Round(timeSeconds, 1)
-					local timeValue = roundedMinutes * 60 + roundedSeconds
-					if abs(timeValue - previousDuration) < 0.01 then
+					newDuration = roundedMinutes * 60 + roundedSeconds
+					if abs(newDuration - previousDuration) < 0.01 then
 						return
 					end
 					local maxTime = 1200 - totalBossDurationWithoutCurrent
-					if timeValue < 1.0 or timeValue > maxTime then
-						newDuration = max(min(timeValue, maxTime), 0)
-					else
-						newDuration = timeValue
+					if newDuration < 1.0 or newDuration > maxTime then
+						newDuration = max(min(newDuration, maxTime), 1.0)
 					end
 				end
 
@@ -567,34 +585,61 @@ local function CreatePhaseLengthEditor()
 				minLineEdit:SetText(tostring(minutes))
 				secLineEdit:SetText(tostring(seconds))
 
-				for index, phase in ipairs(boss.phases) do
-					if
-						phaseName == index
-						or phase.name == phaseName
-						or phaseName == "Intermission" and phase.name == "Int"
-					then
-						phase.duration = newDuration
-						break
+				local cumulativePhaseTime = 0.0
+				if boss.treatAsSinglePhase then
+					for _, phase in ipairs(boss.phases) do
+						if cumulativePhaseTime + phase.defaultDuration <= newDuration then
+							cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
+							phase.duration = phase.defaultDuration
+						elseif cumulativePhaseTime < newDuration then
+							phase.duration = newDuration - cumulativePhaseTime
+							cumulativePhaseTime = cumulativePhaseTime + phase.duration
+						else
+							phase.duration = 0.0
+						end
+					end
+				else
+					for index, phase in ipairs(boss.phases) do
+						if phaseName == longPhaseNames[index] then
+							phase.duration = newDuration
+							break
+						end
 					end
 				end
+
+				bossUtilities.GenerateBossTables()
+				interfaceUpdater.UpdateBoss(GetCurrentBossDungeonEncounterID(), true)
+				interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 			end
-			bossUtilities.GenerateBossTables()
-			interfaceUpdater.UpdateBoss(GetCurrentBossDungeonEncounterID(), true)
-			interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 		end)
 		local boss = GetCurrentBoss()
 		if boss then
-			local data = {}
-			for index, phase in ipairs(boss.phases) do
-				local phaseName = phase.name or index
-				if type(phaseName) == "string" and phaseName == "Int" then
-					phaseName = "Intermission"
-				elseif type(phaseName) == "number" then
-					phaseName = "P" .. phaseName
+			local phaseData = {}
+			if boss.treatAsSinglePhase then
+				local totalTime, defaultTotalTime = 0.0, 0.0
+				for _, phase in ipairs(boss.phases) do
+					totalTime = totalTime + phase.duration
+					defaultTotalTime = defaultTotalTime + phase.defaultDuration
 				end
-				tinsert(data, { name = phaseName, defaultDuration = phase.defaultDuration, duration = phase.duration })
+				tinsert(phaseData, {
+					name = "P1",
+					defaultDuration = defaultTotalTime,
+					fixedDuration = boss.phases[1].fixedDuration,
+					duration = totalTime,
+				})
+			else
+				local longPhaseNames = GetLongPhaseNames(boss)
+				for index, phase in ipairs(boss.phases) do
+					tinsert(phaseData, {
+						name = longPhaseNames[index],
+						defaultDuration = phase.defaultDuration,
+						fixedDuration = phase.fixedDuration,
+						duration = phase.duration,
+					})
+				end
 			end
-			phaseLengthEditor:AddEntries(data)
+
+			phaseLengthEditor:AddEntries(phaseData)
 		end
 		phaseLengthEditor.frame:SetParent(UIParent)
 		phaseLengthEditor.frame:SetFrameLevel(50)
@@ -949,6 +994,9 @@ local function CleanUp()
 	end
 	if Private.menuButtonContainer then
 		Private.menuButtonContainer:Release()
+	end
+	if Private.phaseLengthEditor then
+		Private.phaseLengthEditor:Release()
 	end
 end
 
