@@ -114,7 +114,7 @@ end
 ---@param self EPCheckBox
 local function SetFrameWidthFromText(self)
 	self.label:SetFrameWidthFromText()
-	self:SetWidth(self.checkBackground:GetWidth() + spacingBetweenCheckAndLabel + self.label.frame:GetWidth())
+	self:SetWidth(self.frame:GetHeight() + spacingBetweenCheckAndLabel + self.label.frame:GetWidth())
 end
 
 ---@param self EPCheckBox
