@@ -339,7 +339,9 @@ end
 ---@field childPullout EPDropdownPullout
 ---@field selected boolean
 ---@field neverShowItemsAsSelected boolean
+---@field multiselect boolean|nil
 ---@field open boolean
+
 do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
@@ -371,8 +373,10 @@ do
 	local function HandleChildPulloutOpen(childPullout)
 		local self = childPullout:GetUserDataTable().obj --[[@as EPDropdownItemMenu]]
 		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
-		for _, pulloutItem in ipairs(childPullout.items) do
-			pulloutItem:SetIsSelected(pulloutItem:GetValue() == value)
+		if not self.multiselect then
+			for _, pulloutItem in ipairs(childPullout.items) do
+				pulloutItem:SetIsSelected(pulloutItem:GetValue() == value)
+			end
 		end
 		self.open = true
 		self:Fire("OnOpened")
@@ -407,7 +411,7 @@ do
 		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
 		self:SetChildValue(value)
 		self:Fire("OnValueChanged", selected, value)
-		if self.open then
+		if self.open and not self.multiselect then
 			self.parentPullout:Close()
 		end
 	end
@@ -418,18 +422,15 @@ do
 	local function HandleItemValueChanged(dropdownItem, event, selected)
 		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
 		self:SetChildValue(dropdownItem:GetValue())
-		if selected then
-			self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
-			if self.neverShowItemsAsSelected == true then
-				dropdownItem:SetIsSelected(false)
-			end
+
+		self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
+		if self.neverShowItemsAsSelected == true then
+			dropdownItem:SetIsSelected(false)
 		else
-			if self.neverShowItemsAsSelected == true then
-				self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
-			end
-			dropdownItem:SetIsSelected(true)
+			dropdownItem:SetIsSelected(dropdownItem.selected)
 		end
-		if self.open then
+
+		if self.open and not self.multiselect then
 			self.parentPullout:Close()
 		end
 	end
@@ -590,6 +591,18 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
+	---@param multi any
+	local function SetMultiselect(self, multi)
+		self.multiselect = multi
+	end
+
+	---@param self EPDropdownItemMenu
+	---@return unknown
+	local function GetMultiselect(self)
+		return self.multiselect
+	end
+
+	---@param self EPDropdownItemMenu
 	---@param value any
 	local function SetNeverShowItemsAsSelected(self, value)
 		self.neverShowItemsAsSelected = value
@@ -600,6 +613,7 @@ do
 		EPItemBase.OnAcquire(self)
 		self.open = false
 		self.selected = false
+		self.multiselect = false
 		self.neverShowItemsAsSelected = false
 		self:SetValue(nil)
 		self:SetChildValue(nil)
@@ -619,6 +633,18 @@ do
 		self.neverShowItemsAsSelected = false
 	end
 
+	---@param self EPDropdownItemMenu
+	local function Clear(self)
+		if self.childPullout then
+			self.childPullout:Release()
+		end
+		self.childPullout = nil
+		self:SetChildValue(nil)
+		self.open = false
+		self.selected = false
+		self.neverShowItemsAsSelected = false
+	end
+
 	local function Constructor()
 		---@class EPDropdownItemMenu
 		local widget = EPItemBase.Create(widgetType)
@@ -632,11 +658,14 @@ do
 		widget.GetIsSelected = GetIsSelected
 		widget.SetValue = SetValue
 		widget.GetValue = GetValue
+		widget.SetMultiselect = SetMultiselect
+		widget.GetMultiselect = GetMultiselect
 		widget.SetChildValue = SetChildValue
 		widget.GetChildValue = GetChildValue
 		widget.SetMenuItems = SetMenuItems
 		widget.AddMenuItems = AddMenuItems
 		widget.CloseMenu = CloseMenu
+		widget.Clear = Clear
 		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
 		AceGUI:RegisterAsWidget(widget)
 		return widget

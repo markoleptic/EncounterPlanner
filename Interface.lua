@@ -703,10 +703,11 @@ local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, sele
 			end
 		end
 		if atLeastOneSelected then
+			print(boss.dungeonEncounterID, value, selected)
 			AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID][value] = selected
 			interfaceUpdater.UpdateBoss(boss.dungeonEncounterID, false)
 		else
-			dropdown:SetItemIsSelected(value, true)
+			dropdown:SetItemIsSelected(value, true, true)
 			AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID][value] = true
 		end
 	end
@@ -1217,6 +1218,7 @@ function Private:CreateInterface()
 	bossMenuButton:SetButtonVisibility(false)
 	bossMenuButton:SetAutoItemWidth(true)
 	bossMenuButton:SetShowHighlight(true)
+	bossMenuButton:SetMultiselect(true)
 	bossMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
 	bossMenuButton:SetWidth(bossMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
 	bossMenuButton:SetHeight(menuButtonHeight)
@@ -1225,17 +1227,30 @@ function Private:CreateInterface()
 		{
 			itemValue = "Edit Phase Timings",
 			text = "Edit Phase Timings",
+			selectable = false,
 		},
-	}, "EPDropdownItemToggle", true)
-	bossMenuButton:SetCallback("OnValueChanged", function(_, _, value)
+		{
+			itemValue = "Filter Spells",
+			text = "Filter Spells",
+			dropdownItemMenuData = {
+				{
+					itemValue = "",
+					text = "",
+				},
+			},
+		},
+	}, "EPDropdownItemToggle")
+	bossMenuButton:SetCallback("OnValueChanged", function(dropdown, _, value, selected)
 		if value == "Boss" then
 			return
 		end
 		if value == "Edit Phase Timings" then
 			CreatePhaseLengthEditor()
+			bossMenuButton:SetValue("Boss")
+			bossMenuButton:SetText("Boss")
+		else
+			HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
 		end
-		bossMenuButton:SetValue("Boss")
-		bossMenuButton:SetText("Boss")
 	end)
 
 	local rosterMenuButton = AceGUI:Create("EPDropdown")
@@ -1343,14 +1358,6 @@ function Private:CreateInterface()
 		HandleBossDropdownValueChanged(value)
 	end)
 
-	local bossAbilitySelectDropdown = AceGUI:Create("EPDropdown")
-	bossAbilitySelectDropdown:SetWidth(topContainerDropdownWidth)
-	bossAbilitySelectDropdown:SetCallback("OnValueChanged", function(dropdown, _, value, selected)
-		HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
-	end)
-	bossAbilitySelectDropdown:SetMultiselect(true)
-	bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-
 	local outerNoteContainer = AceGUI:Create("EPContainer")
 	outerNoteContainer:SetLayout("EPVerticalLayout")
 	outerNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
@@ -1393,7 +1400,7 @@ function Private:CreateInterface()
 	renameNoteLabel:SetFullHeight(true)
 	noteLabel:SetWidth(renameNoteLabel.frame:GetWidth())
 
-	bossContainer:AddChildren(bossDropdown, bossAbilitySelectDropdown)
+	bossContainer:AddChildren(bossDropdown)
 	noteContainer:AddChildren(noteLabel, noteDropdown)
 	renameNoteContainer:AddChildren(renameNoteLabel, renameNoteLineEdit)
 	outerNoteContainer:AddChildren(noteContainer, renameNoteContainer)
@@ -1513,7 +1520,7 @@ function Private:CreateInterface()
 	)
 
 	Private.mainFrame.bossSelectDropdown = bossDropdown
-	Private.mainFrame.bossAbilitySelectDropdown = bossAbilitySelectDropdown
+	Private.mainFrame.bossMenuButton = bossMenuButton
 	Private.mainFrame.noteDropdown = noteDropdown
 	Private.mainFrame.noteLineEdit = renameNoteLineEdit
 	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox

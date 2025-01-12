@@ -103,12 +103,14 @@ do
 			end
 
 			if updateBossAbilitySelectDropdown then
-				local bossAbilitySelectDropdown = Private.mainFrame.bossAbilitySelectDropdown
+				local bossAbilitySelectDropdown = Private.mainFrame.bossMenuButton
 				if bossAbilitySelectDropdown then
-					bossAbilitySelectDropdown:Clear()
-					bossAbilitySelectDropdown:AddItems(bossAbilitySelectItems, "EPDropdownItemToggle")
-					bossAbilitySelectDropdown:SetText("Active Boss Abilities")
-					bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities)
+					bossAbilitySelectDropdown:ClearExistingDropdownItemMenu("Filter Spells")
+					bossAbilitySelectDropdown:AddItemsToExistingDropdownItemMenu(
+						"Filter Spells",
+						bossAbilitySelectItems
+					)
+					bossAbilitySelectDropdown:SetSelectedItems(activeBossAbilities, "Filter Spells")
 				end
 			end
 		end
