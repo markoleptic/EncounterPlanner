@@ -243,6 +243,9 @@ function AceGUI:Release(widget) end
 ---@param widget AceGUIWidget|EPWidgetType
 function AceGUI:SetFocus(widget) end
 
+---@param parent AceGUIWidget|EPWidgetType
+function AceGUIWidget:SetParent(parent) end
+
 ---@param widget AceGUIWidget|EPWidgetType
 ---@param beforeWidget? AceGUIWidget|EPWidgetType
 function AceGUIContainer:AddChild(widget, beforeWidget) end

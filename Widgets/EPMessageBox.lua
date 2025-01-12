@@ -138,7 +138,7 @@ end
 
 ---@param self EPMessageBox
 ---@param text string
----@param beforeWidget AceGUIWidget|EPWidgetType|nil
+---@param beforeWidget AceGUIWidget|nil
 local function AddButton(self, text, beforeWidget)
 	local button = AceGUI:Create("EPButton")
 	button:SetText(text)

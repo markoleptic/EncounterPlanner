@@ -1,3 +1,4 @@
+---@diagnostic disable: invisible
 local Type = "EPContainer"
 local Version = 1
 
@@ -96,8 +97,8 @@ end
 
 -- Inserts a variable number of widgets before beforeWidget.
 ---@param self EPContainer
----@param beforeWidget AceGUIWidget|EPWidgetType
----@param ... AceGUIWidget|EPWidgetType
+---@param beforeWidget AceGUIWidget
+---@param ... AceGUIWidget
 local function InsertChildren(self, beforeWidget, ...)
 	if not beforeWidget then
 		return
@@ -123,15 +124,17 @@ local function InsertChildren(self, beforeWidget, ...)
 end
 
 ---@param self EPContainer
----@param child AceGUIWidgetType|EPWidgetType|table
+---@param child AceGUIWidget
 local function AddChildNoDoLayout(self, child)
-	tinsert(self.children, child)
-	child:SetParent(self)
-	child.frame:Show()
+	if child then
+		tinsert(self.children, child)
+		child:SetParent(self)
+		child.frame:Show()
+	end
 end
 
 ---@param self EPContainer
----@param child AceGUIWidgetType|EPWidgetType|table
+---@param child AceGUIWidget
 local function RemoveChildNoDoLayout(self, child)
 	for i = #self.children, 1, -1 do
 		if self.children[i] == child then
