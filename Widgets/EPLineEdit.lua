@@ -72,6 +72,11 @@ local function OnAcquire(self)
 	self:SetEnabled(true)
 	self:SetText()
 	self:SetMaxLetters(256)
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
+	if fPath then
+		self:SetFont(fPath, defaultFontSize, "")
+	end
+	self:SetTextInsets(unpack(textInsets))
 end
 
 ---@param self EPLineEdit
@@ -139,6 +144,20 @@ local function HighlightText(self, from, to)
 	self.editBox:HighlightText(from, to)
 end
 
+---@param self EPLineEdit
+local function SetFont(self, ...)
+	self.editBox:SetFont(...)
+end
+
+---@param self EPLineEdit
+---@param left number
+---@param right number
+---@param top number
+---@param bottom number
+local function SetTextInsets(self, left, right, top, bottom)
+	self.editBox:SetTextInsets(left, right, top, bottom)
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -179,6 +198,8 @@ local function Constructor()
 		SetFocus = SetFocus,
 		HighlightText = HighlightText,
 		SetReadOnly = SetReadOnly,
+		SetFont = SetFont,
+		SetTextInsets = SetTextInsets,
 		frame = frame,
 		type = Type,
 		editBox = editBox,

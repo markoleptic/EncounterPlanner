@@ -299,6 +299,12 @@ do
 		self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 	end
 
+	local function Sort(self)
+		sort(self.items, function(a, b)
+			return a:GetUserDataTable().value < b:GetUserDataTable().value
+		end)
+	end
+
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -353,6 +359,7 @@ do
 			SetScroll = SetScroll,
 			FixScroll = FixScroll,
 			SetAutoWidth = SetAutoWidth,
+			Sort = Sort,
 			scrollIndicator = scrollIndicator,
 			scrollIndicatorFrame = scrollIndicatorFrame,
 			frame = frame,
@@ -389,6 +396,7 @@ do
 	---@field button Button
 	---@field enabled boolean
 	---@field pullout EPDropdownPullout
+	---@field lineEdit EPLineEdit|nil
 	---@field value any|nil
 	---@field open boolean|nil
 	---@field hasClose boolean|nil
@@ -400,6 +408,7 @@ do
 	---@field showHighlight boolean
 	---@field itemTextFontSize number
 	---@field itemHorizontalPadding number
+	---@field textHorizontalPadding number
 
 	local Type = "EPDropdown"
 	local Version = 1
@@ -547,6 +556,7 @@ do
 		self.showHighlight = false
 		self.itemHorizontalPadding = defaultHorizontalItemPadding
 		self.dropdownItemHeight = defaultDropdownItemHeight
+		self.textHorizontalPadding = defaultHorizontalItemPadding
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
 		self.pullout:SetCallback("OnClose", HandlePulloutClose)
@@ -568,9 +578,15 @@ do
 
 	---@param self EPDropdown
 	local function OnRelease(self)
+		if self.lineEdit then
+			self.lineEdit:Release()
+		end
+
+		self.lineEdit = nil
 		if self.open then
 			self.pullout:Close()
 		end
+
 		AceGUI:Release(self.pullout)
 		self.pullout = nil
 
@@ -946,8 +962,47 @@ do
 
 	---@param self EPDropdown
 	---@param size integer
+	local function SetTextHorizontalPadding(self, size)
+		self.textHorizontalPadding = size
+		self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.textHorizontalPadding, 0)
+	end
+
+	---@param self EPDropdown
+	---@param size integer
 	local function SetItemHorizontalPadding(self, size)
 		self.itemHorizontalPadding = size
+	end
+
+	-- Sorts the immediate children of the pullout.
+	---@param self EPDropdown
+	local function Sort(self)
+		self.pullout:Sort()
+	end
+
+	---@param self EPDropdown
+	---@param use boolean
+	local function SetUseLineEditForDoubleClick(self, use)
+		if not self.lineEdit and use then
+			self.lineEdit = AceGUI:Create("EPLineEdit")
+			local font, size, flags = self.text:GetFont()
+			if font then
+				self.lineEdit:SetFont(font, size, flags)
+			end
+			self.lineEdit:SetTextInsets(self.textHorizontalPadding, self.textHorizontalPadding, 0, 0)
+			self.lineEdit.frame:SetParent(self.buttonCover)
+			self.lineEdit.frame:SetPoint("TOPLEFT")
+			self.lineEdit.frame:SetPoint("BOTTOMRIGHT")
+			self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, text)
+				self:Fire("OnLineEditTextSubmitted", text)
+				AceGUI:ClearFocus()
+				self.lineEdit.frame:Hide()
+			end)
+			self.lineEdit.frame:Hide()
+		elseif self.lineEdit and not use then
+			self.lineEdit:Release()
+			self.lineEdit = nil
+		end
 	end
 
 	local function Constructor()
@@ -1056,9 +1111,12 @@ do
 			Open = Open,
 			Close = Close,
 			Clear = Clear,
+			Sort = Sort,
 			SetTextFontSize = SetTextFontSize,
 			SetItemTextFontSize = SetItemTextFontSize,
+			SetTextHorizontalPadding = SetTextHorizontalPadding,
 			SetItemHorizontalPadding = SetItemHorizontalPadding,
+			SetUseLineEditForDoubleClick = SetUseLineEditForDoubleClick,
 			frame = frame,
 			type = Type,
 			count = count,
@@ -1076,6 +1134,14 @@ do
 		end)
 		buttonCover:SetScript("OnLeave", function()
 			HandleButtonLeave(widget)
+		end)
+		buttonCover:SetScript("OnDoubleClick", function()
+			if widget.lineEdit then
+				widget:Close()
+				widget.lineEdit:SetText(widget.text:GetText())
+				widget.lineEdit.frame:Show()
+				widget.lineEdit:SetFocus()
+			end
 		end)
 		buttonCover:SetScript("OnClick", function()
 			if #widget.pullout.items == 0 then
