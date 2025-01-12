@@ -47,13 +47,17 @@ local assignmentMetaTables = {
 }
 local dropdownContainerLabelSpacing = 4
 local dropdownContainerSpacing = { 0, 4 }
+local mainFrameSpacing = { 0, 20 }
+local mainFramePadding = { 10, 10, 10, 10 }
 local topContainerDropdownWidth = 200
 local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
 local classDropdownItems = {}
 local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
-local menuButtonHorizontalPadding = 16
+local menuButtonHorizontalPadding = 8
+local topContainerWidgetFontSize = 14
+local topContainerWidgetHeight = 26
 local preferencesMenuButtonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -483,11 +487,8 @@ local function HandleImportNoteFromString(importType)
 		local noteDropdown = Private.mainFrame.noteDropdown
 		if noteDropdown then
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+			noteDropdown:Sort()
 			noteDropdown:SetValue(newNoteName)
-		end
-		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(newNoteName)
 		end
 	end
 
@@ -703,7 +704,6 @@ local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, sele
 			end
 		end
 		if atLeastOneSelected then
-			print(boss.dungeonEncounterID, value, selected)
 			AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID][value] = selected
 			interfaceUpdater.UpdateBoss(boss.dungeonEncounterID, false)
 		else
@@ -727,11 +727,6 @@ local function HandleNoteDropdownValueChanged(_, _, value)
 
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-
-	local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-	if renameNoteLineEdit then
-		renameNoteLineEdit:SetText(value)
-	end
 	Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
 	Private.mainFrame:DoLayout()
 end
@@ -756,6 +751,7 @@ local function HandleNoteTextSubmitted(lineEdit, _, value)
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		noteDropdown:EditItemText(currentNoteName, value, value)
+		noteDropdown:Sort()
 	end
 end
 
@@ -875,11 +871,8 @@ local function HandleCreateNewNoteButtonClicked()
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+		noteDropdown:Sort()
 		noteDropdown:SetValue(newNoteName)
-	end
-	local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-	if renameNoteLineEdit then
-		renameNoteLineEdit:SetText(newNoteName)
 	end
 	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[newNoteName].remindersEnabled)
 end
@@ -914,6 +907,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 			AddOn.db.profile.plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+			noteDropdown:Sort()
 			local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
 			if boss then
 				local newNote = AddOn.db.profile.plans[newNoteName]
@@ -924,10 +918,6 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		end
 		local newLastOpenNote = AddOn.db.profile.lastOpenNote
 		noteDropdown:SetValue(newLastOpenNote)
-		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(newLastOpenNote)
-		end
 		local remindersEnabled = AddOn.db.profile.plans[newLastOpenNote].remindersEnabled
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
@@ -965,11 +955,8 @@ local function ImportPlan(importType)
 					local noteDropdown = Private.mainFrame.noteDropdown
 					if noteDropdown then
 						noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
+						noteDropdown:Sort()
 						noteDropdown:SetValue(newNoteName)
-					end
-					local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-					if renameNoteLineEdit then
-						renameNoteLineEdit:SetText(newNoteName)
 					end
 					local remindersEnabled = AddOn.db.profile.plans[newNoteName].remindersEnabled
 					Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
@@ -1057,7 +1044,8 @@ function Private:CreateInterface()
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
 	Private.mainFrame:SetLayout("EPVerticalLayout")
-	Private.mainFrame.content.spacing = { x = 0, y = 15 }
+	Private.mainFrame:SetSpacing(unpack(mainFrameSpacing))
+	Private.mainFrame:SetPadding(unpack(mainFramePadding))
 	if AddOn.db.profile.minimizeFramePosition then
 		Private.mainFrame:SetMinimizeFramePosition(
 			AddOn.db.profile.minimizeFramePosition.x,
@@ -1123,8 +1111,8 @@ function Private:CreateInterface()
 	planMenuButton:SetButtonVisibility(false)
 	planMenuButton:SetAutoItemWidth(true)
 	planMenuButton:SetShowHighlight(true)
-	planMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	planMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
+	planMenuButton:SetWidth(planMenuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
 	planMenuButton:SetHeight(menuButtonHeight)
 	planMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	planMenuButton:AddItems({
@@ -1219,8 +1207,8 @@ function Private:CreateInterface()
 	bossMenuButton:SetAutoItemWidth(true)
 	bossMenuButton:SetShowHighlight(true)
 	bossMenuButton:SetMultiselect(true)
-	bossMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	bossMenuButton:SetWidth(bossMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	bossMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
+	bossMenuButton:SetWidth(bossMenuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
 	bossMenuButton:SetHeight(menuButtonHeight)
 	bossMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	bossMenuButton:AddItems({
@@ -1261,8 +1249,8 @@ function Private:CreateInterface()
 	rosterMenuButton:SetButtonVisibility(false)
 	rosterMenuButton:SetAutoItemWidth(true)
 	rosterMenuButton:SetShowHighlight(true)
-	rosterMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	rosterMenuButton:SetWidth(rosterMenuButton.text:GetStringWidth() + menuButtonHorizontalPadding)
+	rosterMenuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
+	rosterMenuButton:SetWidth(rosterMenuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
 	rosterMenuButton:SetHeight(menuButtonHeight)
 	rosterMenuButton:SetDropdownItemHeight(menuButtonHeight)
 	rosterMenuButton:AddItems({
@@ -1287,7 +1275,7 @@ function Private:CreateInterface()
 	preferencesMenuButton:SetFontSize(menuButtonFontSize)
 	preferencesMenuButton:SetHeight(menuButtonHeight)
 	preferencesMenuButton:SetWidth(
-		preferencesMenuButton.button:GetFontString():GetStringWidth() + menuButtonHorizontalPadding
+		preferencesMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
 	)
 	preferencesMenuButton:SetBackdrop(
 		preferencesMenuButtonBackdrop,
@@ -1315,7 +1303,7 @@ function Private:CreateInterface()
 				autoOpenNextEntered = true
 				buttonToClose = frame
 			end)
-			child:SetCallback("OnClosed", function(frame, _)
+			child:SetCallback("OnClosed", function()
 				autoOpenNextEntered = false
 				buttonToClose = nil
 			end)
@@ -1331,13 +1319,14 @@ function Private:CreateInterface()
 		rosterMenuButton:Close()
 	end)
 
-	local bossContainer = AceGUI:Create("EPContainer")
-	bossContainer:SetLayout("EPVerticalLayout")
-	bossContainer:SetSpacing(unpack(dropdownContainerSpacing))
-	bossContainer:SetFullHeight(true)
-
 	local bossDropdown = AceGUI:Create("EPDropdown")
 	bossDropdown:SetWidth(topContainerDropdownWidth)
+	bossDropdown:SetTextFontSize(topContainerWidgetFontSize)
+	bossDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
+	bossDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
+	bossDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	bossDropdown:SetHeight(topContainerWidgetHeight)
+	bossDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	local bossDropdownData = {}
 	for raidInstanceName, raidInstance in pairs(Private.raidInstances) do
 		EJ_SelectInstance(raidInstance.journalInstanceID)
@@ -1358,62 +1347,56 @@ function Private:CreateInterface()
 		HandleBossDropdownValueChanged(value)
 	end)
 
-	local outerNoteContainer = AceGUI:Create("EPContainer")
-	outerNoteContainer:SetLayout("EPVerticalLayout")
-	outerNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
-	outerNoteContainer:SetFullHeight(true)
-	outerNoteContainer:SetSelfAlignment("topRight")
-
 	local noteContainer = AceGUI:Create("EPContainer")
 	noteContainer:SetLayout("EPHorizontalLayout")
-	noteContainer:SetFullWidth(true)
 	noteContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local noteLabel = AceGUI:Create("EPLabel")
 	noteLabel:SetText("Current Plan:", dropdownContainerLabelSpacing)
 	noteLabel:SetFullHeight(true)
+	noteLabel:SetFrameWidthFromText()
 
 	local noteDropdown = AceGUI:Create("EPDropdown")
 	noteDropdown:SetWidth(topContainerDropdownWidth)
 	noteDropdown:SetAutoItemWidth(false)
+	noteDropdown:SetTextFontSize(topContainerWidgetFontSize)
+	noteDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
+	noteDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
+	noteDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	noteDropdown:SetHeight(topContainerWidgetHeight)
+	noteDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
+	noteDropdown:SetUseLineEditForDoubleClick(true)
+	noteDropdown:SetCallback("OnLineEditTextSubmitted", HandleNoteTextSubmitted)
 	local noteDropdownData = {}
 	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
 	for noteName, _ in pairs(AddOn.db.profile.plans) do
 		tinsert(noteDropdownData, { itemValue = noteName, text = noteName })
 	end
 	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
-	noteDropdown:SetFullHeight(true)
+	noteDropdown:Sort()
 
-	local renameNoteContainer = AceGUI:Create("EPContainer")
-	renameNoteContainer:SetLayout("EPHorizontalLayout")
-	renameNoteContainer:SetSpacing(unpack(dropdownContainerSpacing))
-
-	local renameNoteLineEdit = AceGUI:Create("EPLineEdit")
-	renameNoteLineEdit:SetWidth(topContainerDropdownWidth)
-	renameNoteLineEdit:SetCallback("OnTextSubmitted", HandleNoteTextSubmitted)
-	renameNoteLineEdit:SetFullHeight(true)
-	renameNoteLineEdit:SetMaxLetters(32)
-
-	local renameNoteLabel = AceGUI:Create("EPLabel")
-	renameNoteLabel:SetText("Rename Current Plan:", dropdownContainerLabelSpacing)
-	renameNoteLabel:SetFrameWidthFromText()
-	renameNoteLabel:SetFullHeight(true)
-	noteLabel:SetWidth(renameNoteLabel.frame:GetWidth())
-
-	bossContainer:AddChildren(bossDropdown)
 	noteContainer:AddChildren(noteLabel, noteDropdown)
-	renameNoteContainer:AddChildren(renameNoteLabel, renameNoteLineEdit)
-	outerNoteContainer:AddChildren(noteContainer, renameNoteContainer)
 
-	local simulateContainer = AceGUI:Create("EPContainer")
-	simulateContainer:SetLayout("EPVerticalLayout")
-	simulateContainer:SetFullHeight(true)
-	simulateContainer:SetSpacing(unpack(dropdownContainerSpacing))
+	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
+	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
+	reminderAndSendPlanButtonContainer:SetFullHeight(true)
+	reminderAndSendPlanButtonContainer:SetSelfAlignment("topRight")
 
-	local simulateButton = AceGUI:Create("EPButton")
-	simulateButton:SetText("Simulate")
-	simulateButton:SetWidthFromText()
-	simulateButton:SetCallback("Clicked", function()
+	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
+	planReminderEnableCheckBox:SetText("Enable Reminders for Plan")
+	planReminderEnableCheckBox:SetHeight(topContainerWidgetHeight)
+	planReminderEnableCheckBox:SetFrameWidthFromText()
+	planReminderEnableCheckBox:SetFullHeight(true)
+	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled = value
+	end)
+	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
+
+	local simulateReminderButton = AceGUI:Create("EPButton")
+	simulateReminderButton:SetText("Simulate Reminders")
+	simulateReminderButton:SetWidthFromText()
+	simulateReminderButton:SetFullHeight(true)
+	simulateReminderButton:SetCallback("Clicked", function()
 		if Private:IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
 		else
@@ -1427,31 +1410,23 @@ function Private:CreateInterface()
 		end
 	end)
 
-	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
-	planReminderEnableCheckBox:SetText("Enable Reminders for Current Plan")
-	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled = value
-	end)
-	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
-	planReminderEnableCheckBox:SetFrameWidthFromText()
-
-	local sendButton = AceGUI:Create("EPButton")
-	sendButton:SetText("Send Plan to Group")
-	sendButton:SetWidthFromText()
-	sendButton:SetCallback("Clicked", function()
+	local sendPlanButton = AceGUI:Create("EPButton")
+	sendPlanButton:SetText("Send Plan to Group")
+	sendPlanButton:SetWidthFromText()
+	sendPlanButton:SetFullHeight(true)
+	sendPlanButton:SetCallback("Clicked", function()
 		Private:SendPlanToGroup(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote])
 	end)
-	sendButton:SetEnabled(
+	sendPlanButton:SetEnabled(
 		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
 	)
 
-	sendButton:SetWidth(planReminderEnableCheckBox.frame:GetWidth())
-	simulateContainer:AddChildren(sendButton, planReminderEnableCheckBox)
+	reminderAndSendPlanButtonContainer:AddChildren(planReminderEnableCheckBox, simulateReminderButton, sendPlanButton)
 
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossContainer, simulateContainer, simulateButton, outerNoteContainer)
+	topContainer:AddChildren(bossDropdown, noteContainer, reminderAndSendPlanButtonContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
@@ -1501,14 +1476,19 @@ function Private:CreateInterface()
 		return newAssignment.uniqueID
 	end)
 	timeline:SetCallback("ResizeBoundsCalculated", function(_, _, minHeight, maxHeight)
+		local topContainerSpacing = topContainer.content.spacing
 		local heightDiff = Private.mainFrame.frame:GetHeight() - timeline.frame:GetHeight()
-		local minWidth = 0
-		for _, child in pairs(topContainer.children) do
+		local minWidth, maxWidth = 0.0, nil
+		for _, child in ipairs(topContainer.children) do
 			if child.type ~= "EPSpacer" then
-				minWidth = minWidth + child.frame:GetWidth() + 10
+				minWidth = minWidth + child.frame:GetWidth() + topContainerSpacing.x
 			end
 		end
-		Private.mainFrame.frame:SetResizeBounds(minWidth + 20 - 10, minHeight + heightDiff, nil, maxHeight + heightDiff)
+		local padding = Private.mainFrame:GetPadding()
+		minWidth = minWidth + padding.left + padding.right - topContainerSpacing.x
+		minHeight = minHeight + heightDiff
+		maxHeight = maxHeight + heightDiff
+		Private.mainFrame.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
 	end)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
@@ -1522,16 +1502,13 @@ function Private:CreateInterface()
 	Private.mainFrame.bossSelectDropdown = bossDropdown
 	Private.mainFrame.bossMenuButton = bossMenuButton
 	Private.mainFrame.noteDropdown = noteDropdown
-	Private.mainFrame.noteLineEdit = renameNoteLineEdit
 	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
 	Private.mainFrame.timeline = timeline
-	Private.mainFrame.sendPlanButton = sendButton
+	Private.mainFrame.sendPlanButton = sendPlanButton
 
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
-	-- Set default values
 	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
-	renameNoteLineEdit:SetText(AddOn.db.profile.lastOpenNote)
 
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())

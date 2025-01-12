@@ -367,10 +367,6 @@ function InterfaceUpdater.UpdateFromNote(noteName)
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		end
-		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(noteName)
-		end
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
 		Private.mainFrame:DoLayout()
 	end

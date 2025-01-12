@@ -47,7 +47,6 @@ local lastExecutionTime = 0
 ---@field bossSelectDropdown EPDropdown
 ---@field bossMenuButton EPDropdown
 ---@field noteDropdown EPDropdown
----@field noteLineEdit EPLineEdit
 ---@field timeline EPTimeline
 ---@field planReminderEnableCheckBox EPCheckBox
 ---@field sendPlanButton EPButton
@@ -179,7 +178,6 @@ local function OnRelease(self)
 	self.bossSelectDropdown = nil
 	self.bossMenuButton = nil
 	self.noteDropdown = nil
-	self.noteLineEdit = nil
 	self.timeline = nil
 	self.planReminderEnableCheckBox = nil
 	self.sendPlanButton = nil
@@ -219,6 +217,13 @@ local function SetPadding(self, top, right, bottom, left)
 end
 
 ---@param self EPMainFrame
+---@param horizontal number
+---@param vertical number
+local function SetSpacing(self, horizontal, vertical)
+	self.content.spacing = { x = horizontal, y = vertical }
+end
+
+---@param self EPMainFrame
 ---@param x number
 ---@param y number
 local function SetMinimizeFramePosition(self, x, y)
@@ -226,6 +231,11 @@ local function SetMinimizeFramePosition(self, x, y)
 		self.minimizeFrame:ClearAllPoints()
 		self.minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
 	end
+end
+
+---@return {left:number, top:number, right:number, bottom:number}
+local function GetPadding()
+	return padding
 end
 
 local function Constructor()
@@ -314,7 +324,9 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		SetPadding = SetPadding,
+		SetSpacing = SetSpacing,
 		SetMinimizeFramePosition = SetMinimizeFramePosition,
+		GetPadding = GetPadding,
 		frame = frame,
 		type = Type,
 		content = contentFrame,

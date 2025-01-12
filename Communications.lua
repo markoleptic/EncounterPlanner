@@ -230,11 +230,8 @@ local function ImportPlan(plan)
 		local noteDropdown = Private.mainFrame.noteDropdown
 		if noteDropdown then
 			noteDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle")
+			noteDropdown:Sort()
 			noteDropdown:SetValue(plan.name)
-		end
-		local renameNoteLineEdit = Private.mainFrame.noteLineEdit
-		if renameNoteLineEdit then
-			renameNoteLineEdit:SetText(plan.name)
 		end
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[plan.name].remindersEnabled)
 	end
