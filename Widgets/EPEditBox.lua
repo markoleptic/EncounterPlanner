@@ -225,7 +225,6 @@ local function Constructor()
 		windowBar = windowBar,
 		windowBarText = windowBarText,
 	}
-	frame.obj = widget
 
 	editBox:SetScript("OnEscapePressed", function()
 		widget:Release()

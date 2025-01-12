@@ -42,7 +42,6 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 	}
-	frame.obj = widget
 
 	return AceGUI:RegisterAsWidget(widget)
 end

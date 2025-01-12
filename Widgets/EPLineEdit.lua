@@ -6,6 +6,8 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local ClearCursor = ClearCursor
 local CreateFrame = CreateFrame
+local GetCursorInfo = GetCursorInfo
+local GetMacroInfo = GetMacroInfo
 local GetSpellInfo = C_Spell.GetSpellInfo
 local tostring = tostring
 local unpack = unpack
@@ -33,32 +35,8 @@ local backdrop = {
 ---@field enabled boolean
 ---@field readOnly boolean
 ---@field lastText string
----@field obj any
 
-local function HandleEditBoxEnter(frame)
-	frame.obj:Fire("OnEnter")
-end
-
-local function HandleEditBoxLeave(frame)
-	frame.obj:Fire("OnLeave")
-end
-
-local function HandleFrameShow(frame)
-	frame.obj.editBox:SetFocus()
-	frame:SetScript("OnShow", nil)
-end
-
-local function HandleEditBoxEscapePressed(frame)
-	AceGUI:ClearFocus()
-end
-
-local function HandleEditBoxEnterPressed(frame)
-	ClearCursor()
-	AceGUI:ClearFocus()
-end
-
-local function HandleEditBoxReceiveDrag(frame)
-	local self = frame.obj
+local function HandleEditBoxReceiveDrag(self)
 	local type, id, info = GetCursorInfo()
 	local name
 	if type == "item" then
@@ -79,23 +57,12 @@ local function HandleEditBoxReceiveDrag(frame)
 	end
 end
 
-local function HandleEditBoxTextChanged(frame)
-	local self = frame.obj
+local function HandleEditBoxTextChanged(self, frame)
 	local value = frame:GetText()
 	if tostring(value) ~= tostring(self.lastText) then
 		self:Fire("OnTextChanged", value)
 		self.lastText = value
 	end
-end
-
-local function HandleEditBoxFocusGained(frame)
-	AceGUI:SetFocus(frame.obj)
-end
-
-local function HandleEditBoxFocusLost(frame)
-	local self = frame.obj
-	local value = frame:GetText()
-	self:Fire("OnTextSubmitted", value)
 end
 
 ---@param self EPLineEdit
@@ -160,7 +127,10 @@ end
 local function SetFocus(self)
 	self.editBox:SetFocus()
 	if not self.frame:IsShown() then
-		self.frame:SetScript("OnShow", HandleFrameShow)
+		self.frame:SetScript("OnShow", function(frame, ...)
+			self.editBox:SetFocus()
+			frame:SetScript("OnShow", nil)
+		end)
 	end
 end
 
@@ -180,15 +150,14 @@ local function Constructor()
 	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
 	editBox:SetAutoFocus(false)
 
-	editBox:SetScript("OnEnter", HandleEditBoxEnter)
-	editBox:SetScript("OnLeave", HandleEditBoxLeave)
-	editBox:SetScript("OnEscapePressed", HandleEditBoxEscapePressed)
-	editBox:SetScript("OnEnterPressed", HandleEditBoxEnterPressed)
-	editBox:SetScript("OnTextChanged", HandleEditBoxTextChanged)
-	editBox:SetScript("OnReceiveDrag", HandleEditBoxReceiveDrag)
-	editBox:SetScript("OnMouseDown", HandleEditBoxReceiveDrag)
-	editBox:SetScript("OnEditFocusGained", HandleEditBoxFocusGained)
-	editBox:SetScript("OnEditFocusLost", HandleEditBoxFocusLost)
+	editBox:SetScript("OnEscapePressed", function(f, ...)
+		AceGUI:ClearFocus()
+	end)
+	editBox:SetScript("OnEnterPressed", function()
+		ClearCursor()
+		AceGUI:ClearFocus()
+	end)
+
 	editBox:SetMaxLetters(256)
 	editBox:SetPoint("TOPLEFT")
 	editBox:SetPoint("BOTTOMRIGHT")
@@ -215,8 +184,28 @@ local function Constructor()
 		editBox = editBox,
 	}
 
-	frame.obj = widget
-	editBox.obj = widget
+	editBox:SetScript("OnEnter", function(f, ...)
+		widget:Fire("OnEnter")
+	end)
+	editBox:SetScript("OnLeave", function(f, ...)
+		widget:Fire("OnLeave")
+	end)
+	editBox:SetScript("OnEditFocusGained", function()
+		AceGUI:SetFocus(widget)
+	end)
+	editBox:SetScript("OnEditFocusLost", function(f, ...)
+		local value = f:GetText()
+		widget:Fire("OnTextSubmitted", value)
+	end)
+	editBox:SetScript("OnTextChanged", function(f, ...)
+		HandleEditBoxTextChanged(widget, f)
+	end)
+	editBox:SetScript("OnReceiveDrag", function()
+		HandleEditBoxReceiveDrag(widget)
+	end)
+	editBox:SetScript("OnMouseDown", function()
+		HandleEditBoxReceiveDrag(widget)
+	end)
 
 	return AceGUI:RegisterAsWidget(widget)
 end

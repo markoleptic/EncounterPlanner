@@ -221,7 +221,6 @@ local function Constructor()
 		windowBarText = windowBarText,
 		text = text,
 	}
-	frame.obj = widget
 
 	return AceGUI:RegisterAsWidget(widget)
 end
