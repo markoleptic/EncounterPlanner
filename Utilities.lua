@@ -1282,3 +1282,22 @@ function Utilities.IsValidRegionName(regionName)
 	end
 	return false
 end
+
+-- Formats the minutes to an integer, and formats the seconds to be 2 digits left padded with 0s, including a decimal
+-- only if necessary.
+---@param time number
+---@return string minutes formatted minutes string
+---@return string seconds formatted seconds string
+function Utilities.FormatTime(time)
+	local minutes = floor(time / 60)
+	local seconds = Utilities.Round(time % 60, 1)
+
+	local formattedMinutes = format("%d", minutes)
+	local formattedSeconds = format("%02d", seconds)
+	local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
+	if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
+		formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
+	end
+
+	return formattedMinutes, formattedSeconds
+end

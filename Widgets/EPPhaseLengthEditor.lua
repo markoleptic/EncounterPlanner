@@ -4,10 +4,8 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
-local floor = math.floor
 local format = format
 local ipairs = ipairs
-local Round = Round
 local tinsert = tinsert
 local tostring = tostring
 local unpack = unpack
@@ -74,6 +72,7 @@ end
 ---@field closeButton EPButton
 ---@field activeContainer EPContainer
 ---@field resetAllButton EPButton
+---@field FormatTime fun(number): string,string
 
 ---@param self EPPhaseLengthEditor
 local function OnAcquire(self)
@@ -156,6 +155,8 @@ local function OnRelease(self)
 
 	self.resetAllButton:Release()
 	self.resetAllButton = nil
+
+	self.FormatTime = nil
 end
 
 ---@param self EPPhaseLengthEditor
@@ -177,28 +178,15 @@ local function AddEntries(self, entries)
 		defaultContainer:SetSpacing(0, 0)
 		defaultContainer:SetRelativeWidth(0.3)
 
-		local defaultMinutes = floor(phase.defaultDuration / 60)
-		local defaultSeconds = Round((phase.defaultDuration % 60) * 10) / 10
-		local defaultSecondsString = tostring(defaultSeconds)
-		local defaultSecondsDecimalMatch = defaultSecondsString:match("^%d+%.(%d+)")
+		local defaultMinutes, defaultSeconds = self.FormatTime(phase.defaultDuration)
+		local defaultText = format("%s:%s", defaultMinutes, defaultSeconds)
 
 		local defaultLabel = AceGUI:Create("EPLabel")
-		local defaultText = format("%d:%02d", defaultMinutes, defaultSeconds)
-		if defaultSecondsDecimalMatch then
-			defaultText = defaultText .. "." .. defaultSecondsDecimalMatch
-		end
 		defaultLabel:SetText(defaultText)
 		defaultLabel:SetHorizontalTextAlignment("CENTER")
 		defaultLabel:SetFullWidth(true)
 
-		local minutes = floor(phase.duration / 60)
-		local seconds = Round((phase.duration % 60) * 10) / 10
-
-		local formattedSeconds = format("%02d", seconds)
-		local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
-		if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
-			formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
-		end
+		local minutes, seconds = self.FormatTime(phase.duration)
 
 		local currentContainer = AceGUI:Create("EPContainer")
 		currentContainer:SetLayout("EPHorizontalLayout")
@@ -208,7 +196,7 @@ local function AddEntries(self, entries)
 		local minuteLineEdit = AceGUI:Create("EPLineEdit")
 		local secondLineEdit = AceGUI:Create("EPLineEdit")
 
-		minuteLineEdit:SetText(format("%d", minutes))
+		minuteLineEdit:SetText(minutes)
 		minuteLineEdit:SetRelativeWidth(0.475)
 		minuteLineEdit:SetEnabled(not phase.fixedDuration)
 		minuteLineEdit:SetCallback("OnTextSubmitted", function(widget, ...)
@@ -220,7 +208,7 @@ local function AddEntries(self, entries)
 		separatorLabel:SetHorizontalTextAlignment("CENTER")
 		separatorLabel:SetRelativeWidth(0.05)
 
-		secondLineEdit:SetText(formattedSeconds)
+		secondLineEdit:SetText(seconds)
 		secondLineEdit:SetRelativeWidth(0.475)
 		secondLineEdit:SetEnabled(not phase.fixedDuration)
 		secondLineEdit:SetCallback("OnTextSubmitted", function(widget, _, text)

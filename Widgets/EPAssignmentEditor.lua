@@ -6,7 +6,6 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
-local Round = Round
 local tremove = tremove
 local unpack = unpack
 
@@ -102,6 +101,7 @@ local assignmentTriggers = {
 ---@field windowBar Frame|table
 ---@field obj any
 ---@field assignmentID integer|nil
+---@field FormatTime fun(number): string,string
 
 local function SetEnabled(children, enable)
 	for _, child in ipairs(children) do
@@ -441,6 +441,7 @@ local function OnRelease(self)
 	if self.deleteButton then
 		self.deleteButton:Release()
 	end
+	self.FormatTime = nil
 	self.deleteButton = nil
 	self.closeButton = nil
 	self.timeMinuteLineEdit = nil
@@ -524,24 +525,21 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 		self.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
 		self.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
 		self.combatLogEventSpellCountLineEdit:SetText(assignment.spellCount)
-		local minutes = floor(assignment.time / 60)
-		local seconds = Round((assignment.time % 60) * 10) / 10
+		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
 	elseif getmetatable(assignment) == metaTables.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
 		self:SetAssignmentType("TimedAssignment")
 		self.assignmentTypeDropdown:SetValue("Absolute Time")
-		local minutes = floor(assignment.time / 60)
-		local seconds = assignment.time % 60
+		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
 	elseif getmetatable(assignment) == metaTables.TimedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
 		self:SetAssignmentType("PhasedAssignment")
 		self.assignmentTypeDropdown:SetValue("Boss Phase")
-		local minutes = floor(assignment.time / 60)
-		local seconds = assignment.time % 60
+		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
 	end

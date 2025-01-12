@@ -352,10 +352,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			newTime = utilities.Round(newTime, 1)
 			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = newTime
 		end
-		local minutes = floor(newTime / 60)
-		local seconds = utilities.Round(newTime % 60, 1)
-		assignmentEditor.timeMinuteLineEdit:SetText(tostring(minutes))
-		assignmentEditor.timeSecondLineEdit:SetText(tostring(seconds))
+		local minutes, seconds = utilities.FormatTime(newTime)
+		assignmentEditor.timeMinuteLineEdit:SetText(minutes)
+		assignmentEditor.timeSecondLineEdit:SetText(seconds)
 	elseif dataType == "OptionalText" then
 		assignment.text = value
 		if assignment.text:len() > 0 and assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
@@ -408,7 +407,7 @@ end
 ---@return EPAssignmentEditor
 local function CreateAssignmentEditor()
 	local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
-	assignmentEditor.obj = Private.mainFrame
+	assignmentEditor.FormatTime = utilities.FormatTime
 	assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 	assignmentEditor.frame:SetFrameLevel(10)
 	assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
@@ -544,6 +543,7 @@ end
 local function CreatePhaseLengthEditor()
 	if not Private.phaseLengthEditor then
 		local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
+		phaseLengthEditor.FormatTime = utilities.FormatTime
 		phaseLengthEditor:SetCallback("OnRelease", function()
 			Private.phaseLengthEditor = nil
 		end)
@@ -589,17 +589,9 @@ local function CreatePhaseLengthEditor()
 					end
 				end
 
-				local minutes = floor(newDuration / 60)
-				local seconds = utilities.Round(newDuration % 60, 1)
-
-				local formattedSeconds = format("%02d", seconds)
-				local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
-				if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
-					formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
-				end
-
-				minLineEdit:SetText(format("%d", minutes))
-				secLineEdit:SetText(formattedSeconds)
+				local minutes, seconds = utilities.FormatTime(newDuration)
+				minLineEdit:SetText(minutes)
+				secLineEdit:SetText(seconds)
 
 				if formatAndReturn then
 					return
