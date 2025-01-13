@@ -163,6 +163,20 @@ function BossUtilities.ResetBossPhaseTimings(bossDungeonEncounterID)
 	end
 end
 
+---@param bossDungeonEncounterID integer
+---@param spellID integer
+---@param count integer
+---@return boolean
+function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
+	local spellCount = absoluteSpellCastStartTables[bossDungeonEncounterID]
+	if spellCount then
+		if spellCount[spellID] then
+			return count >= 1 and count <= #spellCount[spellID]
+		end
+	end
+	return false
+end
+
 do
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 	---@param bossDungeonEncounterID integer

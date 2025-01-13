@@ -316,8 +316,12 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			local spellCount = tonumber(value)
 			if spellCount then
-				assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+				if bossUtilities.IsValidSpellCount(GetCurrentBossDungeonEncounterID(), spellID, spellCount) then
+					assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+				end
 			end
+			updateFields = true
 		end
 	elseif dataType == "PhaseNumber" then
 		if getmetatable(assignment) == Private.classes.PhasedAssignment then
@@ -395,6 +399,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			end
 		end
 		timeline:UpdateTimeline()
+		timeline:ClearSelectedBossAbilities()
 		if
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 			and assignment--[[@as CombatLogEventAssignment]].spellCount
@@ -403,8 +408,6 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
 				assignment--[[@as CombatLogEventAssignment]].spellCount
 			)
-		else
-			timeline:ClearSelectedBossAbilities()
 		end
 	end
 	if updateAssignments then
