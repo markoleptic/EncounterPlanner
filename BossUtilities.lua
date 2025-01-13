@@ -211,18 +211,32 @@ do
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					if bossAbilityPhase then
 						local cumulativePhaseCastTime = cumulativePhaseStartTime
-						for _, castTime in ipairs(bossAbilityPhase.castTimes) do
+						for castIndex, castTime in ipairs(bossAbilityPhase.castTimes) do
 							local castStart = cumulativePhaseCastTime + castTime
-							tinsert(spellCount[bossAbilitySpellID], castStart)
-							if bossAbilityPhase.repeatInterval then
-								local repeatInterval = bossAbilityPhase.repeatInterval
-								local nextRepeatStart = castStart + repeatInterval
-								while nextRepeatStart < phaseEndTime do
-									tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
-									nextRepeatStart = nextRepeatStart + repeatInterval
+
+							if castStart <= phaseEndTime then
+								local castEnd = castStart + bossAbility.castTime
+								if bossAbilityPhase.signifiesPhaseEnd and castIndex == #bossAbilityPhase.castTimes then
+									if not (castEnd < phaseEndTime and bossAbility.duration > 0.0) then
+										if castTime == bossPhase.defaultDuration then
+											castStart = phaseEndTime
+										end
+									end
 								end
+
+								tinsert(spellCount[bossAbilitySpellID], castStart)
+
+								if bossAbilityPhase.repeatInterval then
+									local repeatInterval = bossAbilityPhase.repeatInterval
+									local nextRepeatStart = castStart + repeatInterval
+									while nextRepeatStart < phaseEndTime do
+										tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
+										nextRepeatStart = nextRepeatStart + repeatInterval
+									end
+								end
+
+								cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
 							end
-							cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
 						end
 					end
 
