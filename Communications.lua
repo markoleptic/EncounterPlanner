@@ -304,7 +304,7 @@ function Private:SendPlanToGroup(plan)
 	end
 	local export = TableToString(SerializePlan(plan), false)
 	local function callback(callbackArg, sent, total)
-		print(sent, total)
+		--print(sent, total)
 	end
 	AddOn:SendCommMessage("EPDistributePlan", export, inGroup, nil, "BULK", callback)
 end
