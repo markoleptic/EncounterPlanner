@@ -82,8 +82,7 @@ end
 ---@class EPTimelineSection : AceGUIWidget
 ---@field type string
 ---@field frame table|Frame
----@field listFrame table|ScrollFrame
----@field listScrollFrame table|Frame
+---@field listScrollFrame table|ScrollFrame
 ---@field scrollFrame table|ScrollFrame
 ---@field timelineFrame table|Frame
 ---@field verticalPositionLine Texture
@@ -115,12 +114,15 @@ local function OnAcquire(self)
 	self.listScrollFrame:SetWidth(listFrameWidth)
 	self.listScrollFrame:Show()
 
-	self.listFrame:ClearAllPoints()
-	self.listFrame:SetParent(self.listScrollFrame)
-	self.listScrollFrame:SetScrollChild(self.listFrame)
-	self.listFrame:SetPoint("TOPLEFT")
-	self.listFrame:SetWidth(listFrameWidth)
-	self.listFrame:Show()
+	self.listContainer = AceGUI:Create("EPContainer")
+	self.listContainer.frame:SetParent(self.listScrollFrame)
+	self.listContainer.frame:SetPoint("TOPLEFT")
+	self.listContainer.frame:EnableMouse(true)
+	self.listContainer:SetLayout("EPVerticalLayout")
+	self.listContainer:SetWidth(listFrameWidth)
+	self:SetListPadding(defaultListPadding)
+
+	self.listScrollFrame:SetScrollChild(self.listContainer.frame --[[@as Frame]])
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.frame)
@@ -161,13 +163,6 @@ local function OnAcquire(self)
 		HandleVerticalThumbMouseUp(self)
 	end)
 
-	self.listContainer = AceGUI:Create("EPContainer")
-	self.listContainer.frame:SetParent(self.listFrame)
-	self.listContainer.frame:SetPoint("TOPLEFT")
-	self.listContainer:SetLayout("EPVerticalLayout")
-	self.listContainer:SetWidth(listFrameWidth)
-	self:SetListPadding(defaultListPadding)
-
 	self.frame:Show()
 end
 
@@ -184,10 +179,6 @@ local function OnRelease(self)
 	self.scrollFrame:Hide()
 	self.scrollFrame:SetHorizontalScroll(0)
 	self.scrollFrame:SetVerticalScroll(0)
-
-	self.listFrame:ClearAllPoints()
-	self.listFrame:SetParent(UIParent)
-	self.listFrame:Hide()
 
 	self.timelineFrame:ClearAllPoints()
 	self.timelineFrame:SetParent(UIParent)
@@ -249,7 +240,7 @@ end
 ---@param height number
 local function SetTimelineFrameHeight(self, height)
 	self.timelineFrame:SetHeight(height)
-	self.listFrame:SetHeight(height)
+	self.listContainer:SetHeight(height)
 end
 
 ---@param self EPTimelineSection
@@ -313,13 +304,6 @@ local function Constructor()
 	local listScrollFrame = CreateFrame("ScrollFrame", Type .. "ListScrollFrame" .. count, frame)
 	listScrollFrame:SetPoint("TOPLEFT")
 	listScrollFrame:SetWidth(listFrameWidth)
-
-	local listFrame = CreateFrame("Frame", Type .. "ListFrame" .. count, listScrollFrame)
-	listFrame:SetPoint("TOPLEFT")
-	listFrame:SetWidth(listFrameWidth)
-	listFrame:EnableMouse(true)
-
-	listScrollFrame:SetScrollChild(listFrame)
 	listScrollFrame:EnableMouseWheel(true)
 
 	local timelineFrame = CreateFrame("Frame", Type .. "TimelineFrame" .. count, scrollFrame)
@@ -364,7 +348,6 @@ local function Constructor()
 		scrollFrame = scrollFrame,
 		type = Type,
 		timelineFrame = timelineFrame,
-		listFrame = listFrame,
 		listScrollFrame = listScrollFrame,
 		verticalPositionLine = verticalPositionLine,
 		scrollBar = verticalScrollBar,
