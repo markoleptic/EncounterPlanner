@@ -184,7 +184,7 @@ local function Constructor()
 
 	local text = frame:CreateFontString(nil, "OVERLAY")
 	text:SetWordWrap(true)
-	text:SetSpacing(framePadding / 2)
+	text:SetSpacing(4)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		text:SetFont(fPath, defaultFontSize)
