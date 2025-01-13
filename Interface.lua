@@ -265,8 +265,12 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
 				local combatLogEventSpellID, spellCount, minTime = nil, nil, nil
 				if getmetatable(assignment) == Private.classes.TimedAssignment then
-					combatLogEventSpellID, spellCount, minTime =
-						utilities.FindNearestCombatLogEvent(assignment.time, GetCurrentBossDungeonEncounterID(), value)
+					combatLogEventSpellID, spellCount, minTime = utilities.FindNearestCombatLogEvent(
+						assignment.time,
+						GetCurrentBossDungeonEncounterID(),
+						value,
+						true
+					)
 				end
 				assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
 				if combatLogEventSpellID and spellCount and minTime then
@@ -803,9 +807,9 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 end
 
 ---@param abilityInstance BossAbilityInstance
----@param assigneeIndex integer
+---@param assigneesAndSpellIndex integer
 ---@param relativeAssignmentStartTime number
-local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, relativeAssignmentStartTime)
+local function HandleCreateNewAssignment(_, _, abilityInstance, assigneesAndSpellIndex, relativeAssignmentStartTime)
 	local sorted = utilities.SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
@@ -814,7 +818,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 	)
 	local sortedAssigneesAndSpells =
 		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed)
-	local nameAndSpell = sortedAssigneesAndSpells[assigneeIndex]
+	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
 	if nameAndSpell then
 		local assignment = Private.classes.Assignment:New()
 		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
@@ -843,6 +847,37 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneeIndex, r
 			timedAssignment.time = abilityInstance.castStart
 			tinsert(GetCurrentAssignments(), timedAssignment)
 		end
+		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+	end
+end
+
+---@param assigneesAndSpellIndex integer
+---@param time number
+local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time)
+	local sorted = utilities.SortAssignments(
+		GetCurrentAssignments(),
+		GetCurrentRoster(),
+		AddOn.db.profile.preferences.assignmentSortType,
+		GetCurrentBossDungeonEncounterID()
+	)
+	local sortedAssigneesAndSpells =
+		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed)
+	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
+	if nameAndSpell then
+		local assignment = Private.classes.Assignment:New()
+		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
+		if nameAndSpell.spellID then
+			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
+			if spellInfo then
+				assignment.spellInfo = spellInfo
+			else
+				assignment.spellInfo.spellID = nameAndSpell.spellID
+			end
+		end
+		local timedAssignment = Private.classes.TimedAssignment:New(assignment)
+		timedAssignment.time = utilities.Round(time, 1)
+		tinsert(GetCurrentAssignments(), timedAssignment)
 		interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
@@ -1466,6 +1501,7 @@ function Private:CreateInterface()
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
+	timeline:SetCallback("CreateNewTimedAssignment", HandleCreateNewTimedAssignment)
 	timeline:SetCallback("DuplicateAssignment", function(_, _, timelineAssignment)
 		local newAssignment = Private.DuplicateAssignment(timelineAssignment.assignment)
 		tinsert(GetCurrentAssignments(), newAssignment)

@@ -317,30 +317,70 @@ end
 ---@param absoluteTime number The time from the beginning of the boss encounter
 ---@param bossDungeonEncounterID integer
 ---@param combatLogEventType CombatLogEventType Type of combat log event for more accurate findings
+---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
 ---@return integer|nil, integer|nil, number|nil -- combat log event Spell ID, spell count, leftover time offset
-function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterID, combatLogEventType)
+function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterID, combatLogEventType, allowBefore)
 	local minTime = hugeNumber
 	local combatLogEventSpellIDForMinTime = nil
 	local spellCountForMinTime = nil
 	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable then
-		for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
-			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
-			for spellCount, time in pairs(spellCountAndTime) do
-				local adjustedTime = time
-				if ability then
-					if combatLogEventType == "SAR" then
-						adjustedTime = adjustedTime + ability.duration + ability.castTime
-					elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
-						adjustedTime = adjustedTime + ability.castTime
+		if allowBefore then
+			local minTimeBefore = hugeNumber
+			local combatLogEventSpellIDForMinTimeBefore = nil
+			local spellCountForMinTimeBefore = nil
+			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
+				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+				for spellCount, time in pairs(spellCountAndTime) do
+					local adjustedTime = time
+					if ability then
+						if combatLogEventType == "SAR" then
+							adjustedTime = adjustedTime + ability.duration + ability.castTime
+						elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+							adjustedTime = adjustedTime + ability.castTime
+						end
+					end
+					if adjustedTime <= absoluteTime then
+						local difference = absoluteTime - adjustedTime
+						if difference < minTime then
+							minTime = difference
+							combatLogEventSpellIDForMinTime = combatLogEventSpellID
+							spellCountForMinTime = spellCount
+						end
+					else
+						local difference = adjustedTime - absoluteTime
+						if difference < minTimeBefore then
+							minTimeBefore = difference
+							combatLogEventSpellIDForMinTimeBefore = combatLogEventSpellID
+							spellCountForMinTimeBefore = spellCount
+						end
 					end
 				end
-				if adjustedTime < absoluteTime then
-					local difference = absoluteTime - adjustedTime
-					if difference < minTime then
-						minTime = difference
-						combatLogEventSpellIDForMinTime = combatLogEventSpellID
-						spellCountForMinTime = spellCount
+			end
+			if not combatLogEventSpellIDForMinTime and not spellCountForMinTime then
+				minTime = minTimeBefore
+				combatLogEventSpellIDForMinTime = combatLogEventSpellIDForMinTimeBefore
+				spellCountForMinTime = spellCountForMinTimeBefore
+			end
+		else
+			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
+				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+				for spellCount, time in pairs(spellCountAndTime) do
+					local adjustedTime = time
+					if ability then
+						if combatLogEventType == "SAR" then
+							adjustedTime = adjustedTime + ability.duration + ability.castTime
+						elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+							adjustedTime = adjustedTime + ability.castTime
+						end
+					end
+					if adjustedTime <= absoluteTime then
+						local difference = absoluteTime - adjustedTime
+						if difference < minTime then
+							minTime = difference
+							combatLogEventSpellIDForMinTime = combatLogEventSpellID
+							spellCountForMinTime = spellCount
+						end
 					end
 				end
 			end
@@ -909,6 +949,7 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 					bossUtilities.GetBossName(bossDungeonEncounterID),
 					assignment.combatLogEventSpellID
 				)
+				DevTool:AddData(assignment)
 			end
 		else
 			warningString =
@@ -1260,8 +1301,14 @@ end
 function Utilities.SetAssignmentMetaTables(assignments)
 	for _, assignment in pairs(assignments) do
 		assignment = Private.classes.Assignment:New(assignment)
-		---@diagnostic disable-next-line: undefined-field
-		if assignment.combatLogEventType then
+		if
+			---@diagnostic disable-next-line: undefined-field
+			assignment.combatLogEventType
+			---@diagnostic disable-next-line: undefined-field
+			and assignment.combatLogEventSpellID
+			---@diagnostic disable-next-line: undefined-field
+			and assignment.combatLogEventSpellID > 0
+		then
 			assignment = Private.classes.CombatLogEventAssignment:New(assignment)
 			---@diagnostic disable-next-line: undefined-field
 		elseif assignment.phase then

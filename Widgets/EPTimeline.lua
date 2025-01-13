@@ -999,6 +999,16 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 	currentX = currentX / UIParent:GetEffectiveScale()
 	currentY = currentY / UIParent:GetEffectiveScale()
 
+	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+	local timelineWidth = timelineFrame:GetWidth()
+	local padding = timelineLinePadding.x
+	local newTimeOffset = currentX - timelineFrame:GetLeft()
+	local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
+
+	if time < 0.0 or time > totalTimelineDuration then
+		return
+	end
+
 	local nearestBarIndex = nil
 	local minDistance = hugeNumber
 	for index, bar in ipairs(self.bossAbilityFrames) do
@@ -1014,26 +1024,21 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 		end
 	end
 
-	if nearestBarIndex then
-		local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
-		local totalAssignmentHeight = 0
-		local assigneeIndex = nil
-		for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
-				totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
-				if totalAssignmentHeight >= relativeDistanceFromTop then
-					assigneeIndex = index
-					break
-				end
+	local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
+	local totalAssignmentHeight = 0
+	local assigneeIndex = nil
+	for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
+		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
+			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
+			if totalAssignmentHeight >= relativeDistanceFromTop then
+				assigneeIndex = index
+				break
 			end
 		end
-		if assigneeIndex then
-			local timelineFrame = self.bossAbilityTimeline.timelineFrame
-			local timelineWidth = timelineFrame:GetWidth()
-			local padding = timelineLinePadding.x
-			local newTimeOffset = currentX - timelineFrame:GetLeft()
-			local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
-			time = min(max(0, time), totalTimelineDuration)
+	end
+
+	if assigneeIndex then
+		if nearestBarIndex then
 			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castStart
 			self:Fire(
 				"CreateNewAssignment",
@@ -1041,6 +1046,8 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 				assigneeIndex,
 				relativeAssignmentStartTime
 			)
+		else
+			self:Fire("CreateNewTimedAssignment", assigneeIndex, time)
 		end
 	end
 end
