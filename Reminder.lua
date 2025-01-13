@@ -29,6 +29,7 @@ local PlaySoundFile = PlaySoundFile
 local SpeakText = C_VoiceChat.SpeakText
 local tinsert = tinsert
 local type = type
+local UnitGUID = UnitGUID
 local unpack = unpack
 local wipe = wipe
 
@@ -56,6 +57,13 @@ local combatLogEventReminders = {} -- Table of active reminders for responding t
 ---@type table<FullCombatLogEventType, table<integer, integer>>
 local spellCounts = {} -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events.
 
+local cancelTimerIfCasted = {}
+local hideWidgetIfCasted = {}
+local phaseRepeats = {}
+local currentEstimatedPhaseNumber = 1
+local currentEstimatedPhaseCount = 1
+local phaseStartSpells, phaseEndSpells, phaseLimitedSpells = {}, {}, {}
+
 local operationQueue = {} -- Queue holding pending message or progress bar operations.
 local isLocked = false -- Operation Queue lock state.
 local lastExecutionTime = 0
@@ -63,7 +71,6 @@ local updateFrameTickRate = 0.04
 local updateFrame = CreateFrame("Frame")
 
 local function ResetLocalVariables()
-	wipe(operationQueue)
 	updateFrame:SetScript("OnUpdate", nil)
 	for _, timer in pairs(timers) do
 		if timer.Cancel then
@@ -71,6 +78,13 @@ local function ResetLocalVariables()
 		end
 	end
 	wipe(timers)
+	wipe(operationQueue)
+	wipe(cancelTimerIfCasted)
+	wipe(hideWidgetIfCasted)
+	wipe(phaseRepeats)
+	wipe(phaseStartSpells)
+	wipe(phaseEndSpells)
+	wipe(phaseLimitedSpells)
 	if Private.messageContainer then
 		Private.messageContainer:Release()
 	end
@@ -79,6 +93,8 @@ local function ResetLocalVariables()
 	end
 	lastExecutionTime = 0
 	isLocked = false
+	currentEstimatedPhaseNumber = 1
+	currentEstimatedPhaseCount = 1
 	wipe(combatLogEventReminders)
 	wipe(spellCounts)
 end
@@ -253,11 +269,18 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 		local progressBar = CreateProgressBar(progressBarPreferences, text, duration, icon > 0 and icon or nil)
 		progressBar:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
+				hideWidgetIfCasted[assignment.spellInfo.spellID] = nil
 				Private.progressBarContainer:RemoveChildNoDoLayout(progressBar)
 			end)
 		end)
 		Private.progressBarContainer:AddChildNoDoLayout(progressBar)
 		progressBar:Start()
+		if assignment.spellInfo.spellID > 1 then
+			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
+				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
+			end
+			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], progressBar)
+		end
 	end)
 end
 
@@ -273,6 +296,7 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 		local message = CreateMessage(messagePreferences, text, duration, icon > 0 and icon or nil)
 		message:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
+				hideWidgetIfCasted[assignment.spellInfo.spellID] = nil
 				Private.messageContainer:RemoveChildNoDoLayout(message)
 			end)
 		end)
@@ -281,6 +305,12 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 			message:Start(true)
 		else
 			message:Start(false)
+		end
+		if assignment.spellInfo.spellID > 1 then
+			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
+				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
+			end
+			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], message)
 		end
 	end)
 end
@@ -339,80 +369,15 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 			for _, func in ipairs(deferredFunctions) do
 				func()
 			end
+			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
 		end)
-	end
-end
-
----@param timelineAssignment TimelineAssignment
----@param roster table<string, RosterEntry>
----@param reminderPreferences ReminderPreferences
-local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
-	local assignment = timelineAssignment.assignment
-	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
-	local duration = reminderPreferences.advanceNotice
-	local startTime = timelineAssignment.startTime - duration
-	if startTime < 0 then
-		duration = max(0.1, timelineAssignment.startTime)
-	end
-	if startTime < 0.1 then
-		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
-	else
-		timers[#timers + 1] = NewTimer(startTime, function()
-			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
-		end)
-	end
-end
-
--- Sets up reminders to simulate a boss encounter using static timings.
----@param timelineAssignments table<integer, TimelineAssignment>
----@param roster table<string, RosterEntry>
-function Private:SimulateBoss(timelineAssignments, roster)
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
-
-	local ttsPreferences = reminderPreferences.textToSpeech
-	local soundPreferences = reminderPreferences.sound
-	if
-		not reminderPreferences.messages.enabled
-		and not reminderPreferences.progressBars.enabled
-		and not soundPreferences.enableAtAdvanceNotice
-		and not soundPreferences.enableAtTime
-		and not ttsPreferences.enableAtAdvanceNotice
-		and not ttsPreferences.enableAtTime
-	then
-		return
-	end
-
-	if not Private.messageContainer then
-		CreateMessageContainer(reminderPreferences.messages)
-	end
-	if not Private.progressBarContainer then
-		CreateProgressBarContainer(reminderPreferences.progressBars)
-	end
-
-	local filtered
-	if reminderPreferences.onlyShowMe then
-		filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
-	end
-	for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
-		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences)
+		if assignment.spellInfo.spellID > 1 then
+			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
+				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
+			end
+			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
 		end
 	end
-
-	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
-end
-
--- Clears all timers and reminder widgets.
-function Private:StopSimulatingBoss()
-	ResetLocalVariables()
-end
-
--- Returns true if SimulateBoss has been called without calling StopSimulatingBoss afterwards.
----@return boolean
-function Private:IsSimulatingBoss()
-	return #timers > 0
 end
 
 ---@param assignment TimedAssignment|CombatLogEventAssignment
@@ -432,8 +397,15 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 	else
 		timers[#timers + 1] = NewTimer(startTime, function()
+			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
 			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 		end)
+		if assignment.spellInfo.spellID > 1 then
+			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
+				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
+			end
+			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
+		end
 	end
 end
 
@@ -505,20 +477,64 @@ local function SetupReminders(notes, preferences, startTime)
 	-- print("Timers active:", #timers, "combatLogEventReminders", #combatLogEventReminders)
 end
 
+---@param oldPhaseNumber integer
+---@param newPhaseNumber integer
+local function RemoveRemindersFromPhase(oldPhaseNumber, newPhaseNumber) end
+
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
-	local _, subEvent, _, _, _, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
-	if spellCounts[subEvent] and spellID and spellCounts[subEvent][spellID] then
-		local spellCount = spellCounts[subEvent][spellID] + 1
-		spellCounts[subEvent][spellID] = spellCount
-		local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
-		if reminders then
-			for _, reminder in ipairs(reminders) do
-				CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+	local _, subEvent, _, sourceGUID, _, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
+	if spellID then
+		if spellCounts[subEvent] and spellCounts[subEvent][spellID] then
+			local spellCount = spellCounts[subEvent][spellID] + 1
+			spellCounts[subEvent][spellID] = spellCount
+			local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
+			if reminders then
+				for _, reminder in ipairs(reminders) do
+					CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+				end
+			end
+			-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
+		end
+		local maybeNewPhaseNumber = phaseStartSpells[spellID]
+		if maybeNewPhaseNumber and (subEvent == combatLogEventMap["SCS"] or subEvent == combatLogEventMap["SAA"]) then
+			local previousPhaseNumber = currentEstimatedPhaseNumber
+			currentEstimatedPhaseNumber = maybeNewPhaseNumber
+			RemoveRemindersFromPhase(previousPhaseNumber, currentEstimatedPhaseNumber)
+		else
+			maybeNewPhaseNumber = phaseEndSpells[spellID]
+			if
+				maybeNewPhaseNumber and (subEvent == combatLogEventMap["SCC"] or subEvent == combatLogEventMap["SAR"])
+			then
+				local previousPhaseNumber = currentEstimatedPhaseNumber
+				currentEstimatedPhaseNumber = maybeNewPhaseNumber
+				RemoveRemindersFromPhase(previousPhaseNumber, currentEstimatedPhaseNumber)
+			else
+				maybeNewPhaseNumber = phaseLimitedSpells[spellID]
+				if maybeNewPhaseNumber and maybeNewPhaseNumber > currentEstimatedPhaseNumber then
+					local previousPhaseNumber = currentEstimatedPhaseNumber
+					currentEstimatedPhaseNumber = maybeNewPhaseNumber
+					RemoveRemindersFromPhase(previousPhaseNumber, currentEstimatedPhaseNumber)
+				end
 			end
 		end
-		-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
+		if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" and UnitGUID("player") == sourceGUID then
+			if type(cancelTimerIfCasted[spellID]) == "table" then
+				for _, timer in ipairs(cancelTimerIfCasted[spellID]) do
+					timer:Cancel()
+				end
+				cancelTimerIfCasted[spellID] = nil
+			end
+			if type(hideWidgetIfCasted[spellID]) == "table" then
+				for _, widget in ipairs(hideWidgetIfCasted[spellID]) do
+					if widget.parent and widget.parent.RemoveChildNoDoLayout then
+						widget.parent:RemoveChildNoDoLayout(widget)
+					end
+				end
+				hideWidgetIfCasted[spellID] = nil
+			end
+		end
 	end
 end
 
@@ -558,8 +574,30 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			end
 		end
 		if #activeNotes > 0 then
-			SetupReminders(activeNotes, reminderPreferences, startTime)
-			Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+			local boss = bossUtilities.GetBoss(encounterID)
+			if boss then
+				for phaseNumber, phase in ipairs(boss.phases) do
+					if phase.count > 1 then
+						phaseRepeats[phaseNumber] = true
+					end
+				end
+				for spellID, ability in pairs(boss.abilities) do
+					if #ability.phases == 1 then
+						phaseLimitedSpells[spellID] = next(ability.phases)
+					end
+
+					for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
+						if bossAbilityPhase.signifiesPhaseStart then
+							phaseStartSpells[spellID] = phaseNumber
+						end
+						if bossAbilityPhase.signifiesPhaseEnd then
+							phaseEndSpells[spellID] = phaseNumber
+						end
+					end
+				end
+				SetupReminders(activeNotes, reminderPreferences, startTime)
+				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+			end
 		end
 	end
 end
@@ -594,13 +632,97 @@ function Private:UnregisterReminderEvents()
 
 	if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
 		BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage")
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin")
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe")
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable")
+		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossEngage")
+		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWin")
+		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWipe")
+		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossDisable")
 	end
 
 	Private:UnregisterEvent("ENCOUNTER_START")
 	Private:UnregisterEvent("ENCOUNTER_END")
 	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end
+
+---@param timelineAssignment TimelineAssignment
+---@param roster table<string, RosterEntry>
+---@param reminderPreferences ReminderPreferences
+---@param elapsed number
+local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, elapsed)
+	local assignment = timelineAssignment.assignment
+	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
+	local duration = reminderPreferences.advanceNotice
+	local startTime = timelineAssignment.startTime - duration - elapsed
+
+	if startTime < 0 then
+		duration = max(0.1, timelineAssignment.startTime - elapsed)
+	end
+
+	if startTime < 0.1 then
+		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+	else
+		timers[#timers + 1] = NewTimer(startTime, function()
+			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
+			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
+		end)
+		if assignment.spellInfo.spellID > 1 then
+			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
+				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
+			end
+			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
+		end
+	end
+end
+
+-- Sets up reminders to simulate a boss encounter using static timings.
+---@param timelineAssignments table<integer, TimelineAssignment>
+---@param roster table<string, RosterEntry>
+function Private:SimulateBoss(timelineAssignments, roster)
+	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
+
+	local ttsPreferences = reminderPreferences.textToSpeech
+	local soundPreferences = reminderPreferences.sound
+	if
+		not reminderPreferences.messages.enabled
+		and not reminderPreferences.progressBars.enabled
+		and not soundPreferences.enableAtAdvanceNotice
+		and not soundPreferences.enableAtTime
+		and not ttsPreferences.enableAtAdvanceNotice
+		and not ttsPreferences.enableAtTime
+	then
+		return
+	end
+
+	if not Private.messageContainer then
+		CreateMessageContainer(reminderPreferences.messages)
+	end
+	if not Private.progressBarContainer then
+		CreateProgressBarContainer(reminderPreferences.progressBars)
+	end
+
+	local filtered
+	if reminderPreferences.onlyShowMe then
+		filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
+	end
+	for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
+		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
+			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
+		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
+			CreateTimer(timelineAssignment.assignment --[[@as TimedAssignment]], roster, reminderPreferences, 0.0)
+		end
+	end
+
+	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+	Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+end
+
+-- Clears all timers and reminder widgets.
+function Private:StopSimulatingBoss()
+	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	ResetLocalVariables()
+end
+
+-- Returns true if SimulateBoss has been called without calling StopSimulatingBoss afterwards.
+---@return boolean
+function Private:IsSimulatingBoss()
+	return #timers > 0
 end

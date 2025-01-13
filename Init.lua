@@ -199,7 +199,7 @@ Private.classes.RaidInstance = {
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter.
 ---@field instanceID number The instance ID for the zone the boss is located in.
 ---@field phases table<integer, BossPhase> A list of phases and their durations.
----@field abilities table<SpellIDIndex, BossAbility> A list of abilities.
+---@field abilities table<SpellIDIndex, BossAbility> A list of abilities where the keys are spell IDs.
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.

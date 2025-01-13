@@ -989,6 +989,9 @@ local function HandleExportButtonClicked()
 end
 
 local function CleanUp()
+	if Private:IsSimulatingBoss() then
+		Private:StopSimulatingBoss()
+	end
 	Private.mainFrame = nil
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
@@ -1399,7 +1402,9 @@ function Private:CreateInterface()
 	simulateReminderButton:SetCallback("Clicked", function()
 		if Private:IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
+			simulateReminderButton:SetText("Simulate Reminders")
 		else
+			simulateReminderButton:SetText("Stop Simulating")
 			local sortedTimelineAssignments = utilities.SortAssignments(
 				GetCurrentAssignments(),
 				GetCurrentRoster(),
