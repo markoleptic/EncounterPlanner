@@ -33,10 +33,12 @@ local checkBackdrop = {
 ---@field enabled boolean
 ---@field checked boolean
 ---@field checkBackground Frame|BackdropTemplate|table
+---@field autoCheckSize boolean
 
 ---@param self EPCheckBox
 local function OnAcquire(self)
 	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.autoCheckSize = true
 
 	self.button = AceGUI:Create("EPButton")
 	self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
@@ -112,19 +114,29 @@ local function IsChecked(self)
 end
 
 ---@param self EPCheckBox
+---@param size number
+local function SetCheckSize(self, size)
+	if type(size) == "number" then
+		self.autoCheckSize = false
+		self.checkBackground:SetSize(size, size)
+	end
+end
+
+---@param self EPCheckBox
 local function SetFrameWidthFromText(self)
 	self.label:SetFrameWidthFromText()
-	self:SetWidth(self.frame:GetHeight() + spacingBetweenCheckAndLabel + self.label.frame:GetWidth())
+	self:SetWidth(
+		(self.autoCheckSize and self.frame:GetHeight() or self.checkBackground:GetWidth())
+			+ spacingBetweenCheckAndLabel
+			+ self.label.frame:GetWidth()
+	)
 end
 
 ---@param self EPCheckBox
 local function OnHeightSet(self, height)
-	if height > 0 then
-		local checkBackgroundHeight = self.checkBackground:GetHeight()
-		if height == checkBackgroundHeight then
-			if self.checkBackground:GetWidth() ~= checkBackgroundHeight then
-				self.checkBackground:SetWidth(checkBackgroundHeight)
-			end
+	if height > 0 and self.autoCheckSize then
+		if self.checkBackground:GetWidth() ~= height then
+			self.checkBackground:SetSize(height, height)
 		end
 	end
 end
@@ -139,9 +151,8 @@ local function Constructor()
 	checkBackground:SetBackdrop(checkBackdrop)
 	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
 	checkBackground:SetBackdropBorderColor(unpack(checkBackdropBorderColor))
-	checkBackground:SetPoint("TOPLEFT")
-	checkBackground:SetPoint("BOTTOMLEFT")
-	checkBackground:SetWidth(defaultFrameHeight)
+	checkBackground:SetPoint("LEFT")
+	checkBackground:SetSize(defaultFrameHeight, defaultFrameHeight)
 
 	---@class EPCheckBox
 	local widget = {
@@ -153,6 +164,7 @@ local function Constructor()
 		SetChecked = SetChecked,
 		IsChecked = IsChecked,
 		SetFrameWidthFromText = SetFrameWidthFromText,
+		SetCheckSize = SetCheckSize,
 		frame = frame,
 		type = Type,
 		checkBackground = checkBackground,
