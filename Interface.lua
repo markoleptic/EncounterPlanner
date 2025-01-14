@@ -281,7 +281,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				updateFields = true
 			end
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
-		elseif value == "Absolute Time" then
+		elseif value == "Fixed Time" then
 			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
 				local convertedTime = nil
 				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
@@ -411,7 +411,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		end
 	end
 	if updateAssignments then
+		timeline:ClearSelectedAssignments()
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		timeline:SelectAssignment(assignment.uniqueID)
 	end
 end
 
@@ -472,6 +474,7 @@ local function CreateAssignmentEditor()
 		end
 	end
 	assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+	assignmentEditor:SetWidth(240)
 	assignmentEditor:DoLayout()
 	return assignmentEditor
 end
