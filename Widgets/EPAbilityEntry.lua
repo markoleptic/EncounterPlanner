@@ -55,13 +55,15 @@ local roleTextures = {
 
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
-	self.roleTexture:SetPoint("LEFT")
+	self.frame:Show()
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
-	self.label.frame:SetPoint("LEFT", self.roleTexture, "RIGHT", padding.x, 0)
+	self.label.frame:SetPoint("LEFT")
 	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
 	self.label:SetHeight(frameHeight)
+
+	self.roleTexture:SetPoint("RIGHT", self.label.frame, "LEFT", -padding.x, 0)
 
 	local checkSpacing = checkBackdrop.edgeSize
 	local checkSize = frameHeight - 2 * checkSpacing
@@ -84,7 +86,6 @@ local function OnAcquire(self)
 	self:SetCollapsible(false)
 	self:SetCollapsed(false)
 	self:SetRole(nil)
-	self.frame:Show()
 end
 
 ---@param self EPAbilityEntry
@@ -178,10 +179,15 @@ end
 ---@param self EPAbilityEntry
 ---@param role RaidGroupRole|nil
 local function SetRole(self, role)
+	local left = 0.0
 	if role == "role:tank" or role == "role:healer" or role == "role:damager" then
-		self.roleTexture:SetPoint("LEFT")
-		self.label.frame:SetPoint("LEFT", self.roleTexture, "RIGHT", padding.x, 0)
 		self.roleTexture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
+		self.roleTexture:Show()
+		if self.collapseButton:IsShown() then
+			left = self.collapseButton:GetWidth() + self.roleTexture:GetWidth() + 2 * padding.x
+		else
+			left = self.roleTexture:GetWidth() + padding.x
+		end
 		if role == "role:tank" then
 			self.roleTexture:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
 		elseif role == "role:healer" then
@@ -189,40 +195,39 @@ local function SetRole(self, role)
 		elseif role == "role:damager" then
 			self.roleTexture:SetTexCoord(20 / 64, 39 / 64, 22 / 64, 41 / 64)
 		end
-		self.roleTexture:Show()
 	else
-		self.label.frame:SetPoint("LEFT")
+		if self.collapseButton:IsShown() then
+			left = self.collapseButton:GetWidth() + padding.x
+		end
 		self.roleTexture:Hide()
 	end
+	self.label.frame:SetPoint("LEFT", left, 0)
 end
 
 ---@param self EPAbilityEntry
 ---@param collapsible boolean
 local function SetCollapsible(self, collapsible)
+	local left = 0.0
 	if collapsible then
-		if self.roleTexture:IsShown() then
-			self.roleTexture:SetPoint("LEFT", padding.x + (frameHeight - 2 * padding.y), 0)
-			self.label.frame:SetPoint("LEFT", self.roleTexture, "RIGHT", padding.x, 0)
-		else
-			self.label.frame:SetPoint("LEFT", padding.x + (frameHeight - 2 * padding.y), 0)
-		end
-		self.collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+		self.collapseButton:Show()
 		self.collapseButton:SetScript("OnClick", function()
 			self:SetCollapsed(not self.collapsed)
 			self:Fire("CollapseButtonToggled", self.collapsed)
 		end)
-		self.collapseButton:Show()
-	else
+		local collapseButtonWidth = self.collapseButton:GetWidth()
 		if self.roleTexture:IsShown() then
-			self.roleTexture:SetPoint("LEFT")
-			self.label.frame:SetPoint("LEFT", self.roleTexture, "RIGHT", padding.x, 0)
+			left = collapseButtonWidth + self.roleTexture:GetWidth() + 2 * padding.x
 		else
-			self.label.frame:SetPoint("LEFT")
+			left = collapseButtonWidth + padding.x
 		end
-		self.collapseButton:SetSize(0, frameHeight - 2 * padding.y)
-		self.collapseButton:SetScript("OnClick", nil)
+	else
 		self.collapseButton:Hide()
+		self.collapseButton:SetScript("OnClick", nil)
+		if self.roleTexture:IsShown() then
+			left = self.roleTexture:GetWidth() + padding.x
+		end
 	end
+	self.label.frame:SetPoint("LEFT", left, 0)
 end
 
 ---@param self EPAbilityEntry
@@ -252,7 +257,7 @@ local function Constructor()
 
 	local button = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
 	button:SetPoint("LEFT", frame, "LEFT", padding.x, 0)
-	button:SetSize(0, frameHeight - 2 * padding.y)
+	button:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
 	button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
