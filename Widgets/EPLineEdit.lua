@@ -109,7 +109,7 @@ end
 local function SetText(self, text)
 	self.lastText = text or ""
 	self.editBox:SetText(text or "")
-	self.editBox:SetCursorPosition(0)
+	self.editBox:SetCursorPosition(self.editBox:GetText():len())
 end
 
 ---@param self EPLineEdit
