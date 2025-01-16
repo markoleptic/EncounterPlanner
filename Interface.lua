@@ -207,6 +207,9 @@ end
 
 ---@param openToTab string
 local function CreateRosterEditor(openToTab)
+	if Private.IsSimulatingBoss() then
+		return
+	end
 	if not Private.rosterEditor then
 		Private.rosterEditor = AceGUI:Create("EPRosterEditor")
 		Private.rosterEditor:SetCallback("OnRelease", function()
@@ -771,6 +774,9 @@ end
 
 ---@param uniqueID integer
 local function HandleTimelineAssignmentClicked(_, _, uniqueID)
+	if Private.IsSimulatingBoss() then
+		return
+	end
 	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
 	if assignment then
 		if not Private.assignmentEditor then
@@ -1037,7 +1043,7 @@ local function HandleExportButtonClicked()
 end
 
 local function CleanUp()
-	if Private:IsSimulatingBoss() then
+	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
 	Private.mainFrame = nil
@@ -1448,10 +1454,22 @@ function Private:CreateInterface()
 	simulateReminderButton:SetWidthFromText()
 	simulateReminderButton:SetFullHeight(true)
 	simulateReminderButton:SetCallback("Clicked", function()
-		if Private:IsSimulatingBoss() then
+		if Private.IsSimulatingBoss() then
 			Private:StopSimulatingBoss()
 			simulateReminderButton:SetText("Simulate Reminders")
 		else
+			if Private.assignmentEditor then
+				Private.assignmentEditor:Release()
+			end
+			if Private.rosterEditor then
+				Private.rosterEditor:Release()
+			end
+			if Private.optionsMenu then
+				Private.optionsMenu:Release()
+			end
+			if Private.phaseLengthEditor then
+				Private.phaseLengthEditor:Release()
+			end
 			simulateReminderButton:SetText("Stop Simulating")
 			local sortedTimelineAssignments = utilities.SortAssignments(
 				GetCurrentAssignments(),

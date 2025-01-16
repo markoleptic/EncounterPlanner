@@ -840,6 +840,6 @@ end
 
 -- Returns true if SimulateBoss has been called without calling StopSimulatingBoss afterwards.
 ---@return boolean
-function Private:IsSimulatingBoss()
+function Private.IsSimulatingBoss()
 	return isSimulating
 end
