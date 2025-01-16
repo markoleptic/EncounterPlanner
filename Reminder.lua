@@ -549,20 +549,25 @@ local function HandleCombatLogEventUnfiltered()
 				end
 			end
 		end
-		if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" and UnitGUID("player") == sourceGUID then
-			if type(cancelTimerIfCasted[spellID]) == "table" then
-				for _, timer in ipairs(cancelTimerIfCasted[spellID]) do
-					timer:Cancel()
-				end
-				cancelTimerIfCasted[spellID] = nil
-			end
-			if type(hideWidgetIfCasted[spellID]) == "table" then
-				for _, widget in ipairs(hideWidgetIfCasted[spellID]) do
-					if widget.parent and widget.parent.RemoveChildNoDoLayout then
-						widget.parent:RemoveChildNoDoLayout(widget)
+		if hideIfAlreadyCasted then
+			if
+				subEvent == "SPELL_CAST_START"
+				or subEvent == "SPELL_CAST_SUCCESS" and UnitGUID("player") == sourceGUID
+			then
+				if type(cancelTimerIfCasted[spellID]) == "table" then
+					for _, timer in ipairs(cancelTimerIfCasted[spellID]) do
+						timer:Cancel()
 					end
+					cancelTimerIfCasted[spellID] = nil
 				end
-				hideWidgetIfCasted[spellID] = nil
+				if type(hideWidgetIfCasted[spellID]) == "table" then
+					for _, widget in ipairs(hideWidgetIfCasted[spellID]) do
+						if widget.parent and widget.parent.RemoveChildNoDoLayout then
+							widget.parent:RemoveChildNoDoLayout(widget)
+						end
+					end
+					hideWidgetIfCasted[spellID] = nil
+				end
 			end
 		end
 	end
