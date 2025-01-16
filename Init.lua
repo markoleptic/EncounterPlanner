@@ -678,7 +678,7 @@ local defaults = {
 	---@field plans table<string, Plan> All plans.
 	---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
 	---@field lastOpenNote string The last open plan.
-	---@field recentSpellAssignments table<string, DropdownItemData> Recently assigned spells (up to 10).
+	---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
 	---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
 	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
