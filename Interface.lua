@@ -1454,7 +1454,7 @@ function Private:CreateInterface()
 				AddOn.db.profile.preferences.assignmentSortType,
 				GetCurrentBossDungeonEncounterID()
 			)
-			Private:SimulateBoss(sortedTimelineAssignments, GetCurrentRoster())
+			Private:SimulateBoss(GetCurrentBossDungeonEncounterID(), sortedTimelineAssignments, GetCurrentRoster())
 		end
 	end)
 

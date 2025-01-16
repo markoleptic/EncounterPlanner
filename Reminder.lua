@@ -50,7 +50,7 @@ local combatLogEventMap = {
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
----@type table<integer, FunctionContainer>
+---@type table<integer, table<integer, FunctionContainer>>
 local timers = {}
 ---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
 local combatLogEventReminders = {} -- Table of active reminders for responding to combat log events
@@ -59,10 +59,11 @@ local spellCounts = {} -- Acts as filter for combat log events. Increments spell
 
 local cancelTimerIfCasted = {}
 local hideWidgetIfCasted = {}
-local phaseRepeats = {}
+local hideWidgetIfPhased = {}
+local orderedBossPhaseTable = {}
 local currentEstimatedPhaseNumber = 1
-local currentEstimatedPhaseCount = 1
 local phaseStartSpells, phaseEndSpells, phaseLimitedSpells = {}, {}, {}
+local hideIfAlreadyCasted = false
 
 local operationQueue = {} -- Queue holding pending message or progress bar operations.
 local isLocked = false -- Operation Queue lock state.
@@ -72,16 +73,18 @@ local updateFrame = CreateFrame("Frame")
 
 local function ResetLocalVariables()
 	updateFrame:SetScript("OnUpdate", nil)
-	for _, timer in pairs(timers) do
-		if timer.Cancel then
-			timer:Cancel()
+	for _, indexedTimers in pairs(timers) do
+		for _, timer in pairs(indexedTimers) do
+			if timer.Cancel then
+				timer:Cancel()
+			end
 		end
 	end
 	wipe(timers)
 	wipe(operationQueue)
 	wipe(cancelTimerIfCasted)
 	wipe(hideWidgetIfCasted)
-	wipe(phaseRepeats)
+	wipe(orderedBossPhaseTable)
 	wipe(phaseStartSpells)
 	wipe(phaseEndSpells)
 	wipe(phaseLimitedSpells)
@@ -93,8 +96,8 @@ local function ResetLocalVariables()
 	end
 	lastExecutionTime = 0
 	isLocked = false
+	hideIfAlreadyCasted = false
 	currentEstimatedPhaseNumber = 1
-	currentEstimatedPhaseCount = 1
 	wipe(combatLogEventReminders)
 	wipe(spellCounts)
 end
@@ -281,6 +284,13 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 			end
 			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], progressBar)
 		end
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			if not hideWidgetIfPhased[assignment.bossPhaseOrderIndex] then
+				hideWidgetIfPhased[assignment.bossPhaseOrderIndex] = {}
+			end
+			local hideWidgetTable = hideWidgetIfPhased[assignment.bossPhaseOrderIndex]
+			hideWidgetTable[#hideWidgetTable + 1] = progressBar
+		end
 	end)
 end
 
@@ -311,6 +321,13 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
 			end
 			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], message)
+		end
+		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			if not hideWidgetIfPhased[assignment.bossPhaseOrderIndex] then
+				hideWidgetIfPhased[assignment.bossPhaseOrderIndex] = {}
+			end
+			local hideWidgetTable = hideWidgetIfPhased[assignment.bossPhaseOrderIndex]
+			hideWidgetTable[#hideWidgetTable + 1] = message
 		end
 	end)
 end
@@ -365,17 +382,23 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 	end
 
 	if #deferredFunctions > 0 then
-		timers[#timers + 1] = NewTimer(duration, function()
+		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex or 0
+		if not timers[bossPhaseOrderIndex] then
+			timers[bossPhaseOrderIndex] = {}
+		end
+		local phaseTimers = timers[bossPhaseOrderIndex]
+		local timer = NewTimer(duration, function()
 			for _, func in ipairs(deferredFunctions) do
 				func()
 			end
 			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
 		end)
-		if assignment.spellInfo.spellID > 1 then
+		phaseTimers[#phaseTimers + 1] = timer
+		if hideIfAlreadyCasted and assignment.spellInfo.spellID > 1 then
 			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
 				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
 			end
-			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
+			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timer)
 		end
 	end
 end
@@ -396,15 +419,22 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 	if startTime < 0.1 then
 		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 	else
-		timers[#timers + 1] = NewTimer(startTime, function()
+		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex or 0
+		print(bossPhaseOrderIndex)
+		if not timers[bossPhaseOrderIndex] then
+			timers[bossPhaseOrderIndex] = {}
+		end
+		local phaseTimers = timers[bossPhaseOrderIndex]
+		local timer = NewTimer(startTime, function()
 			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
 			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 		end)
-		if assignment.spellInfo.spellID > 1 then
+		phaseTimers[#phaseTimers + 1] = timer
+		if hideIfAlreadyCasted and assignment.spellInfo.spellID > 1 then
 			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
 				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
 			end
-			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
+			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timer)
 		end
 	end
 end
@@ -576,10 +606,11 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 		if #activeNotes > 0 then
 			local boss = bossUtilities.GetBoss(encounterID)
 			if boss then
-				for phaseNumber, phase in ipairs(boss.phases) do
-					if phase.count > 1 then
-						phaseRepeats[phaseNumber] = true
-					end
+				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+				bossUtilities.GenerateBossTables(boss)
+				local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+				if bossPhaseTable then
+					orderedBossPhaseTable = bossPhaseTable
 				end
 				for spellID, ability in pairs(boss.abilities) do
 					if #ability.phases == 1 then
@@ -656,9 +687,10 @@ local function CreateSimulationTimer(timelineAssignment, roster, reminderPrefere
 end
 
 -- Sets up reminders to simulate a boss encounter using static timings.
+---@param bossDungeonEncounterID integer
 ---@param timelineAssignments table<integer, TimelineAssignment>
 ---@param roster table<string, RosterEntry>
-function Private:SimulateBoss(timelineAssignments, roster)
+function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 
 	local ttsPreferences = reminderPreferences.textToSpeech
@@ -679,6 +711,30 @@ function Private:SimulateBoss(timelineAssignments, roster)
 	end
 	if not Private.progressBarContainer then
 		CreateProgressBarContainer(reminderPreferences.progressBars)
+	end
+
+	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+		bossUtilities.GenerateBossTables(boss)
+		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+		if bossPhaseTable then
+			orderedBossPhaseTable = bossPhaseTable
+		end
+		for spellID, ability in pairs(boss.abilities) do
+			if #ability.phases == 1 then
+				phaseLimitedSpells[spellID] = next(ability.phases)
+			end
+
+			for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
+				if bossAbilityPhase.signifiesPhaseStart then
+					phaseStartSpells[spellID] = phaseNumber
+				end
+				if bossAbilityPhase.signifiesPhaseEnd then
+					phaseEndSpells[spellID] = phaseNumber
+				end
+			end
+		end
 	end
 
 	local filtered
