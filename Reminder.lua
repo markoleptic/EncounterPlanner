@@ -648,29 +648,11 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, elapsed)
-	local assignment = timelineAssignment.assignment
-	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
-	local duration = reminderPreferences.advanceNotice
-	local startTime = timelineAssignment.startTime - duration - elapsed
-
-	if startTime < 0 then
-		duration = max(0.1, timelineAssignment.startTime - elapsed)
-	end
-
-	if startTime < 0.1 then
-		ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
-	else
-		timers[#timers + 1] = NewTimer(startTime, function()
-			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
-			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
-		end)
-		if assignment.spellInfo.spellID > 1 then
-			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
-				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
-			end
-			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timers[#timers])
-		end
-	end
+	local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+	local oldTime = assignment.time
+	assignment.time = timelineAssignment.startTime
+	CreateTimer(assignment, roster, reminderPreferences, elapsed)
+	assignment.time = oldTime
 end
 
 -- Sets up reminders to simulate a boss encounter using static timings.
@@ -704,11 +686,7 @@ function Private:SimulateBoss(timelineAssignments, roster)
 		filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
 	end
 	for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
-		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-			CreateTimer(timelineAssignment.assignment --[[@as TimedAssignment]], roster, reminderPreferences, 0.0)
-		end
+		CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
 	end
 
 	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
