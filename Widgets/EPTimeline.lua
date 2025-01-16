@@ -919,21 +919,12 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 	horizontalCursorAssignmentFrameOffsetWhenClicked = horizontalCursorPositionWhenAssignmentFrameClicked
 		- frame:GetLeft()
 
-	if isValidEdit then
-		assignmentIsDragging = true
-		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-		frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-		frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
-		frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
-		frame.timelineAssignment = FindTimelineAssignment(self.timelineAssignments, frame.uniqueAssignmentID)
-		assignmentFrameBeingDragged = frame
-		frame:SetScript("OnUpdate", function(f, delta)
-			HandleAssignmentUpdate(self, f, delta)
-		end)
-	else
-		assignmentIsDragging = true
+	self:ClearSelectedAssignments()
+	assignmentIsDragging = true
+	local timelineAssignment, index = FindTimelineAssignment(self.timelineAssignments, frame.uniqueAssignmentID)
+
+	if isValidDuplicate then
 		assignmentBeingDuplicated = true
-		local timelineAssignment, index = FindTimelineAssignment(self.timelineAssignments, frame.uniqueAssignmentID)
 		if timelineAssignment and index then
 			local spellID = timelineAssignment.assignment.spellInfo.spellID
 			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
@@ -977,18 +968,18 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			end
 			fakeAssignmentFrame:SetFrameLevel(frame:GetFrameLevel() - 1)
 			fakeAssignmentFrame:Show()
-
-			frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-			frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-			frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
-			frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
-			frame.timelineAssignment = timelineAssignment
-			assignmentFrameBeingDragged = frame
-			frame:SetScript("OnUpdate", function(f, delta)
-				HandleAssignmentUpdate(self, f, delta)
-			end)
 		end
 	end
+
+	frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+	frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
+	frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
+	frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
+	frame.timelineAssignment = timelineAssignment
+	assignmentFrameBeingDragged = frame
+	frame:SetScript("OnUpdate", function(f, delta)
+		HandleAssignmentUpdate(self, f, delta)
+	end)
 end
 
 ---@param self EPTimeline
