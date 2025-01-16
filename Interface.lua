@@ -406,14 +406,15 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		then
 			timeline:SelectBossAbility(
 				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-				assignment--[[@as CombatLogEventAssignment]].spellCount
+				assignment--[[@as CombatLogEventAssignment]].spellCount,
+				true
 			)
 		end
 	end
 	if updateAssignments then
 		timeline:ClearSelectedAssignments()
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-		timeline:SelectAssignment(assignment.uniqueID)
+		timeline:SelectAssignment(assignment.uniqueID, true)
 	end
 end
 
@@ -785,7 +786,8 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			then
 				timeline:SelectBossAbility(
 					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-					assignment--[[@as CombatLogEventAssignment]].spellCount
+					assignment--[[@as CombatLogEventAssignment]].spellCount,
+					true
 				)
 			end
 		end

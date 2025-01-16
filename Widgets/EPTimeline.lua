@@ -238,6 +238,34 @@ local function FindTimelineAssignment(timelineAssignments, uniqueID)
 	return nil, nil
 end
 
+---@param assignmentFrames table<integer, AssignmentFrame>
+---@param uniqueID integer
+---@return AssignmentFrame|nil
+local function FindAssignmentFrame(assignmentFrames, uniqueID)
+	for _, frame in ipairs(assignmentFrames) do
+		if frame.uniqueAssignmentID == uniqueID then
+			return frame
+		end
+	end
+	return nil
+end
+
+---@param bossAbilityFrames table<integer, BossAbilityFrame>
+---@param spellID integer
+---@param spellOccurrence integer
+---@return BossAbilityFrame|nil
+local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellOccurrence)
+	for _, frame in ipairs(bossAbilityFrames) do
+		if
+			frame.abilityInstance.bossAbilitySpellID == spellID
+			and frame.abilityInstance.spellOccurrence == spellOccurrence
+		then
+			return frame
+		end
+	end
+	return nil
+end
+
 -- Updates the time of the current time label and hides time labels that overlap with it.
 ---@param self EPTimeline
 local function UpdateTimeLabels(self)
@@ -1990,7 +2018,7 @@ local function SetBossAbilities(self, bossAbilityInstances, abilityOrder, phases
 	self.bossPhaseOrder = phaseOrder
 	self.bossAbilityVisibility = bossAbilityVisibility
 
-	totalTimelineDuration = 0
+	totalTimelineDuration = 0.0
 	for _, phaseData in pairs(self.bossPhases) do
 		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
 	end
@@ -2028,7 +2056,7 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 
 	for _, timelineAssignment in ipairs(self.timelineAssignments) do
 		local spellID = timelineAssignment.assignment.spellInfo.spellID
-		local duration = 0
+		local duration = 0.0
 		if timelineAssignment.assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			local chargeInfo = GetSpellCharges(spellID)
 			if chargeInfo then
@@ -2313,20 +2341,18 @@ end
 ---@param assignmentID integer
 ---@param selectedByClicking boolean|nil
 local function SelectAssignment(self, assignmentID, selectedByClicking)
-	for _, assignmentFrame in pairs(self.assignmentFrames) do
-		if assignmentFrame.uniqueAssignmentID == assignmentID then
-			assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-			if selectedByClicking then
-				assignmentFrame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-				assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
-				assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
-				assignmentFrame.selectedByClicking = true
-			elseif not assignmentFrame.selectedByClicking then
-				assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-				assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
-				assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
-			end
-			break
+	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
+	if frame then
+		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+		if selectedByClicking then
+			frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
+			frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
+			frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
+			frame.selectedByClicking = true
+		elseif not frame.selectedByClicking then
+			frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+			frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+			frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 		end
 	end
 end
@@ -2335,16 +2361,14 @@ end
 ---@param assignmentID integer
 ---@param onlyClearIfNotSelectedByClicking boolean|nil
 local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelectedByClicking)
-	for _, assignmentFrame in pairs(self.assignmentFrames) do
-		if assignmentFrame.uniqueAssignmentID == assignmentID then
-			if not onlyClearIfNotSelectedByClicking or not assignmentFrame.selectedByClicking then
-				assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-				assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-				assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
-				assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
-				assignmentFrame.selectedByClicking = nil
-			end
-			break
+	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
+	if frame then
+		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
+			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+			frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+			frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
+			frame.selectedByClicking = nil
 		end
 	end
 end
@@ -2354,18 +2378,13 @@ end
 ---@param spellOccurrence integer
 ---@param selectedByClicking boolean|nil
 local function SelectBossAbility(self, spellID, spellOccurrence, selectedByClicking)
-	for _, frame in pairs(self.bossAbilityFrames) do
-		if
-			frame.abilityInstance.bossAbilitySpellID == spellID
-			and frame.abilityInstance.spellOccurrence == spellOccurrence
-		then
-			frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-			if selectedByClicking then
-				local y = select(5, frame:GetPointByName("TOPLEFT"))
-				self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
-			end
-			frame.selectedByClicking = selectedByClicking
-			break
+	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellOccurrence)
+	if frame then
+		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+		if selectedByClicking then
+			local y = select(5, frame:GetPointByName("TOPLEFT"))
+			self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
+			frame.selectedByClicking = true
 		end
 	end
 end
@@ -2375,34 +2394,29 @@ end
 ---@param spellOccurrence integer
 ---@param onlyClearIfNotSelectedByClicking boolean|nil
 local function ClearSelectedBossAbility(self, spellID, spellOccurrence, onlyClearIfNotSelectedByClicking)
-	for _, frame in pairs(self.bossAbilityFrames) do
-		if
-			frame.abilityInstance.bossAbilitySpellID == spellID
-			and frame.abilityInstance.spellOccurrence == spellOccurrence
-		then
-			if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
-				frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-				frame.selectedByClicking = nil
-			end
-			break
+	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellOccurrence)
+	if frame then
+		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
+			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			frame.selectedByClicking = nil
 		end
 	end
 end
 
 ---@param self EPTimeline
 local function ClearSelectedAssignments(self)
-	for _, assignmentFrame in pairs(self.assignmentFrames) do
-		assignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		assignmentFrame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		assignmentFrame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
-		assignmentFrame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
-		assignmentFrame.selectedByClicking = nil
+	for _, frame in ipairs(self.assignmentFrames) do
+		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+		frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+		frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
+		frame.selectedByClicking = nil
 	end
 end
 
 ---@param self EPTimeline
 local function ClearSelectedBossAbilities(self)
-	for _, frame in pairs(self.bossAbilityFrames) do
+	for _, frame in ipairs(self.bossAbilityFrames) do
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.selectedByClicking = nil
 	end
