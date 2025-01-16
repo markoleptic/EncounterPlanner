@@ -1550,11 +1550,9 @@ end
 ---@return number
 local function CalculateRequiredBarHeight(self)
 	local totalBarHeight = 0
-	local abilityCount = 0
 	for _, visible in pairs(self.bossAbilityVisibility) do
 		if visible == true then
 			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
-			abilityCount = abilityCount + 1
 		end
 	end
 	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then

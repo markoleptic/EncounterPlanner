@@ -705,6 +705,9 @@ end
 ---@param value number|string
 ---@param selected boolean
 local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
+	if value == "Filter Spells" or type(value) ~= "number" then
+		return
+	end
 	local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
 	if boss then
 		local atLeastOneSelected = false
