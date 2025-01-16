@@ -210,6 +210,7 @@ end
 ---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
 ---@field running boolean
 ---@field paused number|nil
+---@field parent EPContainer
 
 ---@param self EPReminderMessage
 local function OnAcquire(self)

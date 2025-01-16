@@ -217,6 +217,7 @@ end
 ---@field gap number
 ---@field iconPosition "LEFT"|"RIGHT"
 ---@field iconTexture string|integer|nil
+---@field parent EPContainer
 
 ---@param self EPProgressBar
 local function OnAcquire(self)
