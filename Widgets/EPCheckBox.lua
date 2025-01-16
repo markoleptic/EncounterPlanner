@@ -133,6 +133,12 @@ local function SetFrameWidthFromText(self)
 end
 
 ---@param self EPCheckBox
+local function SetFrameHeightFromText(self)
+	self.label:SetFrameHeightFromText()
+	self:SetHeight(self.label.frame:GetHeight())
+end
+
+---@param self EPCheckBox
 local function OnHeightSet(self, height)
 	if height > 0 and self.autoCheckSize then
 		if self.checkBackground:GetWidth() ~= height then
@@ -164,6 +170,7 @@ local function Constructor()
 		SetChecked = SetChecked,
 		IsChecked = IsChecked,
 		SetFrameWidthFromText = SetFrameWidthFromText,
+		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetCheckSize = SetCheckSize,
 		frame = frame,
 		type = Type,
