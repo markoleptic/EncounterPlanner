@@ -910,12 +910,12 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			local spellID = timelineAssignment.assignment.spellInfo.spellID
 			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
 			local spellIDTable = orderTable[spellID]
-			for currentIndex, assignmentFrameIndex in ipairs(spellIDTable) do
+			for spellIDTablePositionIndex, assignmentFrameIndex in ipairs(spellIDTable) do
 				if assignmentFrameIndex == index then
-					local newIndex = #self.assignmentFrames
+					local newIndex = #self.assignmentFrames + 1
 					self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
 					self.assignmentFrames[newIndex] = self.fakeAssignmentFrame
-					tinsert(spellIDTable, currentIndex, newIndex)
+					tinsert(spellIDTable, spellIDTablePositionIndex, newIndex)
 					break
 				end
 			end
