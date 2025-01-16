@@ -3,11 +3,14 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
----@class Utilities
-local utilities = Private.utilities
+---@class Constants
+local constants = Private.constants
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+
+---@class Utilities
+local utilities = Private.utilities
 
 local AddOn = Private.addOn
 local concat = table.concat
@@ -492,7 +495,7 @@ local function CreateAssignmentExportString(assignment, roster)
 			assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
 		end
 	end
-	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 		local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
 		assignmentString = assignmentString .. spellString
 	end

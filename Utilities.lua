@@ -3,6 +3,9 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+---@class Constants
+local constants = Private.constants
+
 ---@class Utilities
 local Utilities = Private.utilities
 
@@ -1267,7 +1270,7 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 	if assignment.text ~= nil and assignment.text ~= "" then
 		reminderText = assignment.text
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
 				reminderText = assignment.spellInfo.name
 			else
@@ -1284,7 +1287,7 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 			reminderText = reminderText .. " " .. assignment.targetName
 		end
 		-- TODO: Consider highlighting frame
-	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID ~= 0 then
+	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 		if assignment.spellInfo.name then
 			reminderText = assignment.spellInfo.name
 		else
