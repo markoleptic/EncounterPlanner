@@ -362,7 +362,8 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Edit Assignment",
 			type = "dropdown",
-			description = "Opens the assignment editor when this key is pressed when hovering over an assignment spell icon.",
+			description = "Opens the assignment editor when this key is pressed when hovering over an assignment spell "
+				.. "icon.",
 			category = "Assignment",
 			values = MouseButtonKeyBindingValues,
 			get = function()
@@ -383,7 +384,8 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Duplicate Assignment",
 			type = "dropdown",
-			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
+			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging"
+				.. ", and releasing this key.",
 			category = "Assignment",
 			values = MouseButtonKeyBindingValues,
 			get = function()
@@ -490,7 +492,8 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Show Spell Cooldown Duration",
 			type = "checkBox",
-			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.",
+			description = "Creates a new assignment based on the assignment being hovered over after holding, dragging"
+				.. ", and releasing this key.",
 			category = "Assignment",
 			get = function()
 				return AddOn.db.profile.preferences.showSpellCooldownDuration
@@ -584,13 +587,27 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Hide or Cancel if Spell on Cooldown",
 			type = "checkBox",
-			description = "If an assignment is a spell and it already on cooldown, the assignment will not be shown. If the spell is cast during its countdown, it will be cancelled.",
+			description = "If an assignment is a spell and it already on cooldown, the reminder will not be shown. If "
+				.. "the spell is cast during the reminder countdown, it will be cancelled.",
 			enabled = enableReminderOption,
 			get = function()
 				return reminderPreferences.cancelIfAlreadyCasted
 			end,
 			set = function(key)
 				reminderPreferences.cancelIfAlreadyCasted = key
+			end,
+		},
+		{
+			label = "Hide or Cancel on Phase Change",
+			type = "checkBox",
+			description = "Reminders associated with combat log events in a certain phase will be cancelled or hidden "
+				.. "when the phase transitions.",
+			enabled = enableReminderOption,
+			get = function()
+				return reminderPreferences.removeDueToPhaseChange
+			end,
+			set = function(key)
+				reminderPreferences.removeDueToPhaseChange = key
 			end,
 		},
 		{
@@ -687,7 +704,8 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Anchor Point",
 			type = "dropdown",
-			description = 'Anchor point of the Message frame, or the "spot" on the Message frame that will be placed relative to another frame.',
+			description = 'Anchor point of the Message frame, or the "spot" on the Message frame that will be placed '
+				.. "relative to another frame.",
 			category = "Messages",
 			values = anchorPointValues,
 			updateIndices = { 0, 1, 2, 3 },
@@ -939,7 +957,8 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Anchor Point",
 			type = "dropdown",
-			description = 'Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.',
+			description = 'Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will '
+				.. " be placed relative to another frame.",
 			category = "Progress Bars",
 			values = anchorPointValues,
 			updateIndices = { 0, 1, 2, 3 },
@@ -948,13 +967,16 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local progressBars = reminderPreferences.progressBars
-				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
-					ApplyPoint(
-						Private.progressBarAnchor.frame,
-						key,
-						progressBars.relativeTo,
-						progressBars.relativePoint
-					)
+				local point, relativeTo, relativePoint, x, y = ApplyPoint(
+					Private.progressBarAnchor.frame,
+					key,
+					progressBars.relativeTo,
+					progressBars.relativePoint
+				)
+				progressBars.point = point
+				progressBars.relativeTo = relativeTo
+				progressBars.relativePoint = relativePoint
+				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -971,8 +993,12 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local progressBars = reminderPreferences.progressBars
-				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+				local point, relativeTo, relativePoint, x, y =
 					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, key, progressBars.relativePoint)
+				progressBars.point = point
+				progressBars.relativeTo = relativeTo
+				progressBars.relativePoint = relativePoint
+				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
@@ -990,8 +1016,12 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				local progressBars = reminderPreferences.progressBars
-				progressBars.point, progressBars.relativeTo, progressBars.relativePoint, progressBars.x, progressBars.y =
+				local point, relativeTo, relativePoint, x, y =
 					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, progressBars.relativeTo, key)
+				progressBars.point = point
+				progressBars.relativeTo = relativeTo
+				progressBars.relativePoint = relativePoint
+				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
 				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true

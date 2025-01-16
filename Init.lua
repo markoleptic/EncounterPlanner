@@ -665,6 +665,7 @@ end
 ---@class ReminderPreferences
 ---@field enabled boolean
 ---@field onlyShowMe boolean
+---@field removeDueToPhaseChange boolean
 ---@field cancelIfAlreadyCasted boolean
 ---@field advanceNotice number
 ---@field progressBars ProgressBarPreferences
@@ -710,6 +711,7 @@ local defaults = {
 				enabled = true,
 				onlyShowMe = true,
 				cancelIfAlreadyCasted = true,
+				removeDueToPhaseChange = true,
 				advanceNotice = 10.0,
 				messages = {
 					enabled = true,
