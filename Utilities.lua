@@ -233,7 +233,7 @@ function Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
-			local adjustedTime = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount] + time
+			local adjustedTime = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart + time
 			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
@@ -267,7 +267,7 @@ function Utilities.ConvertAbsoluteTimeToCombatLogEventTime(
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
-			local adjustedTime = absoluteTime - absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
+			local adjustedTime = absoluteTime - absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart
 			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
@@ -299,7 +299,7 @@ function Utilities.GetMinimumCombatLogEventTime(
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
-			local time = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
+			local time = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart
 			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
@@ -332,7 +332,7 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
 				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 				for spellCount, time in pairs(spellCountAndTime) do
-					local adjustedTime = time
+					local adjustedTime = time.castStart
 					if ability then
 						if combatLogEventType == "SAR" then
 							adjustedTime = adjustedTime + ability.duration + ability.castTime
@@ -366,7 +366,7 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
 				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 				for spellCount, time in pairs(spellCountAndTime) do
-					local adjustedTime = time
+					local adjustedTime = time.castStart
 					if ability then
 						if combatLogEventType == "SAR" then
 							adjustedTime = adjustedTime + ability.duration + ability.castTime
@@ -920,9 +920,9 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 		assignment = assignment --[[@as CombatLogEventAssignment]]
 		local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		if absoluteSpellCastStartTable then
-			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID] --[[@ as table<integer, number>]]
+			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
 			if spellIDSpellCastStartTable then
-				local spellCastStart = spellIDSpellCastStartTable[assignment.spellCount]--[[@ as number]]
+				local spellCastStart = spellIDSpellCastStartTable[assignment.spellCount].castStart
 				if spellCastStart then
 					local startTime = spellCastStart + assignment.time
 					local ability =
@@ -962,7 +962,7 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 		if bossDungeonEncounterID then
 			local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
 			if boss then
-				local bossPhaseTable = bossUtilities.GetBossPhaseTable(bossDungeonEncounterID)
+				local bossPhaseTable = bossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
 				local phase = boss.phases[assignment.phase]
 				if bossPhaseTable and phase then
 					for phaseCount = 1, #phase.count do

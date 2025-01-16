@@ -13,10 +13,13 @@ local pairs = pairs
 local sort = sort
 local tinsert = tinsert
 
----@type table<integer, table<integer, table<integer, number>>>
+-- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
+---@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>
 local absoluteSpellCastStartTables = {}
+
+-- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
 ---@type table<integer, table<integer, integer>>
-local bossPhaseTables = {}
+local orderedBossPhases = {}
 
 ---@param dungeonEncounterID integer
 ---@return string|nil
@@ -131,14 +134,14 @@ end
 
 -- Returns a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 ---@param bossDungeonEncounterID integer
----@return table<integer, integer>|nil -- Ordered boss phase table
-function BossUtilities.GetBossPhaseTable(bossDungeonEncounterID)
-	return bossPhaseTables[bossDungeonEncounterID]
+---@return table<integer, integer>|nil -- [bossPhaseOrderIndex, bossPhaseIndex]
+function BossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
+	return orderedBossPhases[bossDungeonEncounterID]
 end
 
 -- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 ---@param bossDungeonEncounterID integer
----@return table<integer, table<integer, number>>|nil
+---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
 function BossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	return absoluteSpellCastStartTables[bossDungeonEncounterID]
 end
@@ -181,9 +184,9 @@ do
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 	---@param bossDungeonEncounterID integer
 	---@return table<integer, integer> -- Ordered boss phase table
-	local function CreateBossPhaseTable(bossDungeonEncounterID)
+	local function CreateOrderedBossPhaseTable(bossDungeonEncounterID)
 		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
-		local bossPhaseOrder = {}
+		local orderedBossPhaseTable = {}
 		if boss then
 			local totalPhaseOccurrences = 0
 			local totalTimelineDuration = 0
@@ -192,8 +195,8 @@ do
 				totalPhaseOccurrences = totalPhaseOccurrences + phase.count
 			end
 			local currentPhase = 1
-			while #bossPhaseOrder < totalPhaseOccurrences and currentPhase ~= nil do
-				tinsert(bossPhaseOrder, currentPhase)
+			while #orderedBossPhaseTable < totalPhaseOccurrences and currentPhase ~= nil do
+				tinsert(orderedBossPhaseTable, currentPhase)
 				if boss.phases[currentPhase].repeatAfter == nil and boss.phases[currentPhase + 1] then
 					currentPhase = currentPhase + 1
 				else
@@ -201,19 +204,20 @@ do
 				end
 			end
 		end
-		return bossPhaseOrder
+		return orderedBossPhaseTable
 	end
 
 	-- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 	---@param boss Boss
 	local function GenerateAbsoluteSpellCastTimeTable(boss)
+		---@type table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
 		local spellCount = {}
 
-		local bossPhaseTable = CreateBossPhaseTable(boss.dungeonEncounterID)
-		bossPhaseTables[boss.dungeonEncounterID] = bossPhaseTable
+		local orderedBossPhaseTable = CreateOrderedBossPhaseTable(boss.dungeonEncounterID)
+		orderedBossPhases[boss.dungeonEncounterID] = orderedBossPhaseTable
 
 		local cumulativePhaseStartTime = 0
-		for _, bossPhaseIndex in ipairs(bossPhaseTable) do
+		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(orderedBossPhaseTable) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
@@ -238,13 +242,19 @@ do
 									end
 								end
 
-								tinsert(spellCount[bossAbilitySpellID], castStart)
+								tinsert(
+									spellCount[bossAbilitySpellID],
+									{ castStart = castStart, bossPhaseOrderIndex = bossPhaseOrderIndex }
+								)
 
 								if bossAbilityPhase.repeatInterval then
 									local repeatInterval = bossAbilityPhase.repeatInterval
 									local nextRepeatStart = castStart + repeatInterval
 									while nextRepeatStart < phaseEndTime do
-										tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
+										tinsert(
+											spellCount[bossAbilitySpellID],
+											{ castStart = nextRepeatStart, bossPhaseOrderIndex = bossPhaseOrderIndex }
+										)
 										nextRepeatStart = nextRepeatStart + repeatInterval
 									end
 								end
@@ -268,7 +278,10 @@ do
 									end
 									for _, castTime in ipairs(eventTrigger.castTimes) do
 										local castStart = cumulativeCastTime + castTime
-										tinsert(spellCount[bossAbilitySpellID], castStart)
+										tinsert(
+											spellCount[bossAbilitySpellID],
+											{ castStart = castStart, bossPhaseOrderIndex = bossPhaseOrderIndex }
+										)
 										cumulativeCastTime = cumulativeCastTime + castTime
 									end
 									if
@@ -280,7 +293,10 @@ do
 												local castStart = cumulativeCastTime + castTime
 												local castEnd = castStart + bossAbility.castTime
 												if castEnd + bossAbility.duration < phaseEndTime then
-													tinsert(spellCount[bossAbilitySpellID], castStart)
+													tinsert(spellCount[bossAbilitySpellID], {
+														castStart = castStart,
+														bossPhaseOrderIndex = bossPhaseOrderIndex,
+													})
 												end
 												cumulativeCastTime = cumulativeCastTime + castTime
 											end
@@ -310,16 +326,16 @@ do
 
 		local cumulativePhaseStartTime = 0
 		local bossAbilityInstanceIndex = 1
-		local bossPhaseOrder = BossUtilities.GetBossPhaseTable(boss.dungeonEncounterID)
-		if not bossPhaseOrder then
+		local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+		if not orderedBossPhaseTable then
 			return
 		end
-		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(bossPhaseOrder) do
+		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(orderedBossPhaseTable) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
 				local bossPhaseName = bossPhase.name
 				local nextBossPhaseName
-				local nextBossPhaseIndex = bossPhaseOrder[bossPhaseOrderIndex + 1]
+				local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
 				if nextBossPhaseIndex then
 					local nextBossPhase = boss.phases[nextBossPhaseIndex]
 					if nextBossPhase then
@@ -580,8 +596,8 @@ do
 		if spellCount then
 			for spellID, spellOccurrenceNumbers in pairs(spellCount) do
 				local earliestCastTime = hugeNumber
-				for _, castTime in pairs(spellOccurrenceNumbers) do
-					earliestCastTime = min(earliestCastTime, castTime)
+				for _, castTimeTable in pairs(spellOccurrenceNumbers) do
+					earliestCastTime = min(earliestCastTime, castTimeTable.castStart)
 				end
 				tinsert(earliestCastTimes, { spellID = spellID, earliestCastTime = earliestCastTime })
 			end

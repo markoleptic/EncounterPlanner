@@ -143,11 +143,15 @@ Private.classes.Assignment = {
 ---@field combatLogEventSpellID integer The spell for the event.
 ---@field spellCount integer The number of times the combat log event must occur before the assignment is triggered.
 ---@field time number The time from the combat log event to trigger the assignment.
+---@field phase integer The boss phase that the combatLogEventSpellID and spellCount are located in.
+---@field bossPhaseOrderIndex integer The index into the ordered boss phase table.
 Private.classes.CombatLogEventAssignment = setmetatable({
 	combatLogEventType = "SCS",
 	combatLogEventSpellID = 0,
 	spellCount = 1,
 	time = 0.0,
+	phase = 0,
+	bossPhaseOrderIndex = 0,
 }, { __index = Private.classes.Assignment })
 Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEventAssignment
 

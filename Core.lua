@@ -42,12 +42,24 @@ function AddOn:OnInitialize()
 	if profile then
 		for _, note in pairs(profile.plans) do
 			note = Private.classes.Plan:New(note, note.name, note.ID)
+			local absoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(note.dungeonEncounterID)
+			local orderedBossPhaseTable = bossUtilities.GetOrderedBossPhases(note.dungeonEncounterID)
 			-- Convert tables from DB into classes
 			utilities.SetAssignmentMetaTables(note.assignments)
 			for _, assignment in ipairs(note.assignments) do
 				if assignment.spellInfo.spellID == 0 then
 					if assignment.text:len() > 0 then
 						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+					end
+				end
+				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+					assignment = assignment --[[@as CombatLogEventAssignment]]
+					if absoluteSpellCastTimeTable and orderedBossPhaseTable then
+						if assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
+							assignment.bossPhaseOrderIndex =
+								absoluteSpellCastTimeTable[assignment.combatLogEventSpellID][assignment.spellCount].bossPhaseOrderIndex
+							assignment.phase = orderedBossPhaseTable[assignment.bossPhaseOrderIndex]
+						end
 					end
 				end
 			end

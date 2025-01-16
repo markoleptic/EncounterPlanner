@@ -120,7 +120,7 @@ do
 	---@param boss Boss
 	---@param timeline EPTimeline
 	local function UpdateTimelineBossAbilities(boss, timeline)
-		local bossPhaseTable = bossUtilities.GetBossPhaseTable(boss.dungeonEncounterID)
+		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
 		if bossPhaseTable then
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			timeline:SetBossAbilities(

@@ -53,6 +53,8 @@ local configForDeflate = {
 ---@field [6] CombatLogEventType|nil combatLogEventType
 ---@field [7] integer|nil combatLogEventSpellID
 ---@field [8] integer|nil spellCount
+---@field [9] integer|nil phase
+---@field [10] integer|nil bossPhaseOrderIndex
 
 ---@class SerializedRosterEntry
 ---@field [1] string name
@@ -72,6 +74,8 @@ local function SerializeAssignment(assignment)
 		required[6] = assignment.combatLogEventType
 		required[7] = assignment.combatLogEventSpellID
 		required[8] = assignment.spellCount
+		required[9] = assignment.phase
+		required[10] = assignment.bossPhaseOrderIndex
 	end
 	return required
 end
@@ -87,10 +91,12 @@ local function DeserializeAssignment(data)
 		targetName = data[4],
 		time = data[5],
 	}
-	if data[8] then
+	if data[10] then
 		assignment.combatLogEventType = data[6]
 		assignment.combatLogEventSpellID = data[7]
 		assignment.spellCount = data[8]
+		assignment.phase = data[9]
+		assignment.bossPhaseOrderIndex = data[10]
 		return Private.classes.CombatLogEventAssignment:New(assignment)
 	else
 		return Private.classes.TimedAssignment:New(assignment)

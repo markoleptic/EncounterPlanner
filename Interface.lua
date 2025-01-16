@@ -845,6 +845,8 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneesAndSpel
 			combatLogEventAssignment.time = utilities.Round(relativeAssignmentStartTime, 1)
 			combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
 			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+			combatLogEventAssignment.bossPhaseOrderIndex = abilityInstance.bossPhaseOrderIndex
+			combatLogEventAssignment.phase = abilityInstance.bossPhaseIndex
 			tinsert(GetCurrentAssignments(), combatLogEventAssignment)
 			-- end
 			-- elseif abilityInstance.repeatInstance then
