@@ -19,6 +19,7 @@ local cos, sin = math.cos, math.sin
 local CreateFrame = CreateFrame
 local format = string.format
 local GetCursorPosition = GetCursorPosition
+local GetTime = GetTime
 local geterrorhandler = geterrorhandler
 local GetSpellBaseCooldown = GetSpellBaseCooldown
 local GetSpellCharges = C_Spell.GetSpellCharges
@@ -109,6 +110,8 @@ local timelineFrameOffsetWhenDragStarted = 0.0
 local timelineFrameIsDragging = false
 local totalTimelineDuration = 0.0
 local selectedAssignmentIDsFromBossAbilityFrameEnter = {}
+local isSimulating = false
+local simulationStartTime = 0.0
 
 local throttleInterval = 0.015 -- Minimum time between executions, in seconds
 local lastExecutionTime = 0.0
@@ -130,6 +133,8 @@ local function ResetLocalVariables()
 	totalTimelineDuration = 0.0
 	lastExecutionTime = 0.0
 	selectedAssignmentIDsFromBossAbilityFrameEnter = {}
+	isSimulating = false
+	simulationStartTime = 0.0
 end
 
 local function errorhandler(err)
@@ -793,7 +798,7 @@ end
 ---@param frame AssignmentFrame
 ---@param elapsed number
 local function HandleAssignmentUpdate(self, frame, elapsed)
-	if not assignmentIsDragging then
+	if isSimulating or not assignmentIsDragging then
 		return
 	end
 
@@ -908,6 +913,10 @@ end
 ---@param frame AssignmentFrame
 ---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
 local function HandleAssignmentMouseDown(self, frame, mouseButton)
+	if isSimulating then
+		return
+	end
+
 	local isValidEdit = IsValidKeyCombination(self.preferences.keyBindings.editAssignment, mouseButton)
 	local isValidDuplicate = IsValidKeyCombination(self.preferences.keyBindings.duplicateAssignment, mouseButton)
 
@@ -986,6 +995,10 @@ end
 ---@param frame AssignmentFrame
 ---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
 local function HandleAssignmentMouseUp(self, frame, mouseButton)
+	if isSimulating then
+		return
+	end
+
 	if assignmentIsDragging then
 		if StopMovingAssignment(self, frame) then
 			UpdateTimeLabels(self)
@@ -1005,6 +1018,10 @@ end
 ---@param self EPTimeline
 ---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
 local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
+	if isSimulating then
+		return
+	end
+
 	if assignmentIsDragging and assignmentFrameBeingDragged then
 		StopMovingAssignment(self, assignmentFrameBeingDragged)
 		return
@@ -1445,7 +1462,7 @@ end
 ---@param self EPTimeline
 ---@param frame Frame
 local function HandleTimelineFrameEnter(self, frame)
-	if timelineFrameIsDragging == true then
+	if isSimulating or timelineFrameIsDragging then
 		return
 	end
 	local assignmentFrame = self.assignmentTimeline.frame
@@ -1462,7 +1479,7 @@ end
 ---@param self EPTimeline
 ---@param frame Frame
 local function HandleTimelineFrameLeave(self, frame)
-	if timelineFrameIsDragging then
+	if isSimulating or timelineFrameIsDragging then
 		return
 	end
 	frame:SetScript("OnUpdate", nil)
@@ -1476,6 +1493,9 @@ end
 ---@param button string
 local function HandleTimelineFrameDragStart(self, frame, button)
 	if not IsValidKeyCombination(self.preferences.keyBindings.pan, button) then
+		return
+	end
+	if isSimulating then
 		return
 	end
 
@@ -1520,6 +1540,10 @@ end
 ---@param frame Frame
 ---@param scrollFrame ScrollFrame
 local function HandleTimelineFrameDragStop(self, frame, scrollFrame)
+	if isSimulating then
+		return
+	end
+
 	timelineFrameIsDragging = false
 	frame:SetScript("OnUpdate", nil)
 
@@ -2480,6 +2504,54 @@ local function GetTotalTimelineDuration()
 	return totalTimelineDuration
 end
 
+---@param self EPTimeline
+---@param simulating boolean
+local function SetIsSimulating(self, simulating)
+	isSimulating = simulating
+	if simulating then
+		simulationStartTime = GetTime()
+		self.assignmentTimeline.timelineFrame:SetScript("OnEnter", nil)
+		self.bossAbilityTimeline.timelineFrame:SetScript("OnEnter", nil)
+		self.assignmentTimeline.timelineFrame:SetScript("OnLeave", nil)
+		self.bossAbilityTimeline.timelineFrame:SetScript("OnLeave", nil)
+		local assignmentFrame = self.assignmentTimeline.frame
+		local bossAbilityFrame = self.bossAbilityTimeline.frame
+		local bossAbilityTimelineFrame = self.bossAbilityTimeline.timelineFrame
+		local assignmentLine = self.assignmentTimeline.verticalPositionLine
+		local bossAbilityLine = self.bossAbilityTimeline.verticalPositionLine
+		bossAbilityTimelineFrame:SetScript("OnUpdate", function()
+			local timelineFrameWidth = bossAbilityTimelineFrame:GetWidth()
+			local horizontalOffset = ConvertTimeToTimelineOffset(GetTime() - simulationStartTime, timelineFrameWidth)
+			horizontalOffset = bossAbilityTimelineFrame:GetLeft() - bossAbilityFrame:GetLeft() + horizontalOffset
+
+			bossAbilityLine:SetPoint("TOP", bossAbilityFrame, "TOPLEFT", horizontalOffset, 0)
+			bossAbilityLine:SetPoint("BOTTOM", bossAbilityFrame, "BOTTOMLEFT", horizontalOffset, 0)
+			bossAbilityLine:Show()
+
+			assignmentLine:SetPoint("TOP", assignmentFrame, "TOPLEFT", horizontalOffset, 0)
+			assignmentLine:SetPoint("BOTTOM", assignmentFrame, "BOTTOMLEFT", horizontalOffset, 0)
+			assignmentLine:Show()
+
+			UpdateTimeLabels(self)
+		end)
+	else
+		simulationStartTime = 0.0
+		self.bossAbilityTimeline.timelineFrame:SetScript("OnUpdate", nil)
+		self.assignmentTimeline.timelineFrame:SetScript("OnEnter", function(frame)
+			HandleTimelineFrameEnter(self, frame)
+		end)
+		self.bossAbilityTimeline.timelineFrame:SetScript("OnEnter", function(frame)
+			HandleTimelineFrameEnter(self, frame)
+		end)
+		self.assignmentTimeline.timelineFrame:SetScript("OnLeave", function(frame)
+			HandleTimelineFrameLeave(self, frame)
+		end)
+		self.bossAbilityTimeline.timelineFrame:SetScript("OnLeave", function(frame)
+			HandleTimelineFrameLeave(self, frame)
+		end)
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -2540,6 +2612,7 @@ local function Constructor()
 		UpdateHeightFromAssignments = UpdateHeightFromAssignments,
 		UpdateAssignmentsAndTickMarks = UpdateAssignmentsAndTickMarks,
 		GetTotalTimelineDuration = GetTotalTimelineDuration,
+		SetIsSimulating = SetIsSimulating,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

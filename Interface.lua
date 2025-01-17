@@ -1454,7 +1454,9 @@ function Private:CreateInterface()
 	simulateReminderButton:SetWidthFromText()
 	simulateReminderButton:SetFullHeight(true)
 	simulateReminderButton:SetCallback("Clicked", function()
-		if Private.IsSimulatingBoss() then
+		local wasSimulatingBoss = Private.IsSimulatingBoss()
+
+		if wasSimulatingBoss then
 			Private:StopSimulatingBoss()
 			simulateReminderButton:SetText("Simulate Reminders")
 		else
@@ -1479,6 +1481,15 @@ function Private:CreateInterface()
 			)
 			Private:SimulateBoss(GetCurrentBossDungeonEncounterID(), sortedTimelineAssignments, GetCurrentRoster())
 		end
+		local isSimulatingBoss = not wasSimulatingBoss
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			timeline:SetIsSimulating(isSimulatingBoss)
+			local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
+			addAssigneeDropdown:SetEnabled(not isSimulatingBoss)
+		end
+		Private.mainFrame.bossSelectDropdown:SetEnabled(not isSimulatingBoss)
+		Private.mainFrame.noteDropdown:SetEnabled(not isSimulatingBoss)
 	end)
 
 	local sendPlanButton = AceGUI:Create("EPButton")
