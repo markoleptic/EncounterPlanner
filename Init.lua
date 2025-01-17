@@ -6,6 +6,7 @@ local Private = Namespace
 local LibStub = LibStub
 local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local CallbackHandler = LibStub("CallbackHandler-1.0")
 local concat = table.concat
 local CreateFrame = CreateFrame
 local getmetatable, setmetatable = getmetatable, setmetatable
@@ -767,9 +768,17 @@ local defaults = {
 	},
 }
 
+---@param name string
+---@param func function
+function Private:RegisterCallback(name, func) end
+
+---@param name string
+function Private:UnregisterCallback(name) end
+
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
+Private.callbackHandler = CallbackHandler:New(Private)
 
 Private.raidInstances = {} --[[@as table<string, RaidInstance>]]
 Private.interfaceUpdater = {}

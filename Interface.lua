@@ -1043,6 +1043,7 @@ local function HandleExportButtonClicked()
 end
 
 local function CleanUp()
+	Private:UnregisterCallback("SimulationCompleted")
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
@@ -1491,6 +1492,19 @@ function Private:CreateInterface()
 		Private.mainFrame.bossSelectDropdown:SetEnabled(not isSimulatingBoss)
 		Private.mainFrame.noteDropdown:SetEnabled(not isSimulatingBoss)
 	end)
+
+	local function HandleSimulationCompleted()
+		simulateReminderButton:SetText("Simulate Reminders")
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			timeline:SetIsSimulating(false)
+			local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
+			addAssigneeDropdown:SetEnabled(true)
+		end
+		Private.mainFrame.bossSelectDropdown:SetEnabled(true)
+		Private.mainFrame.noteDropdown:SetEnabled(true)
+	end
+	Private:RegisterCallback("SimulationCompleted", HandleSimulationCompleted)
 
 	local sendPlanButton = AceGUI:Create("EPButton")
 	sendPlanButton:SetText("Send Plan to Group")

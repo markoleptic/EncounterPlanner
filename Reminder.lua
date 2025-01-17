@@ -51,6 +51,9 @@ local combatLogEventMap = {
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
+---@type FunctionContainer|nil
+local simulationTimer = nil
+
 ---@type table<integer, table<integer, FunctionContainer>> -- Ordered boss phases index -> [timers] \
 local timers = {} -- All timers are stored here. Ordered boss phases index -> [timers]
 
@@ -93,6 +96,10 @@ local function ResetLocalVariables()
 			end
 		end
 	end
+	if simulationTimer then
+		simulationTimer:Cancel()
+	end
+	simulationTimer = nil
 	wipe(timers)
 	wipe(operationQueue)
 	wipe(cancelTimerIfCasted)
@@ -768,6 +775,11 @@ local function CreateSimulationTimer(timelineAssignment, roster, reminderPrefere
 	assignment.time = oldTime
 end
 
+local function HandleSimulationCompleted()
+	Private:StopSimulatingBoss()
+	Private.callbackHandler:Fire("SimulationCompleted")
+end
+
 -- Sets up reminders to simulate a boss encounter using static timings.
 ---@param bossDungeonEncounterID integer
 ---@param timelineAssignments table<integer, TimelineAssignment>
@@ -818,18 +830,23 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 				end
 			end
 		end
-	end
 
-	local filtered
-	if reminderPreferences.onlyShowMe then
-		filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
-	end
-	for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
-		CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
-	end
+		local totalDuration = 0.0
+		for _, phaseData in pairs(boss.phases) do
+			totalDuration = totalDuration + (phaseData.duration * phaseData.count)
+		end
 
-	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
-	Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+		local filtered
+		if reminderPreferences.onlyShowMe then
+			filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
+		end
+		for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
+			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
+		end
+		simulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
+		updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+		Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+	end
 end
 
 -- Clears all timers and reminder widgets.
