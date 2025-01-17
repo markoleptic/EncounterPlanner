@@ -665,7 +665,7 @@ function Private:CreateOptionsMenu()
 		{
 			label = "Message Visibility",
 			type = "radioButtonGroup",
-			description = "When to show the Messages for assignments.",
+			description = "When to show Messages only at expiration or show them for the duration of the countdown.",
 			category = "Messages",
 			values = {
 				{ itemValue = "expirationOnly", text = "Expiration Only" },
