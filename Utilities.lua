@@ -321,7 +321,9 @@ end
 ---@param bossDungeonEncounterID integer
 ---@param combatLogEventType CombatLogEventType Type of combat log event for more accurate findings
 ---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
----@return integer|nil, integer|nil, number|nil -- combat log event Spell ID, spell count, leftover time offset
+---@return integer|nil -- combat log event Spell ID
+---@return integer|nil -- spell count
+---@return number|nil -- leftover time offset
 function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterID, combatLogEventType, allowBefore)
 	local minTime = hugeNumber
 	local combatLogEventSpellIDForMinTime = nil
@@ -393,6 +395,74 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 		return combatLogEventSpellIDForMinTime, spellCountForMinTime, minTime
 	end
 	return nil
+end
+
+---@alias AssignmentConversionMethod
+---| 1 # Convert combat log event assignments to timed assignments
+---| 2 # Replace combat log event spells with those of the new boss, matching the closest timing
+
+---@param assignments table<integer, Assignment|CombatLogEventAssignment>
+---@param oldBoss Boss
+---@param newBoss Boss
+---@param conversionMethod AssignmentConversionMethod
+function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, conversionMethod)
+	if conversionMethod == 1 then
+		for _, assignment in ipairs(assignments) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local convertedTime = Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					oldBoss.dungeonEncounterID,
+					assignment.combatLogEventSpellID,
+					assignment.spellCount,
+					assignment.combatLogEventType
+				)
+				if convertedTime then
+					assignment = Private.classes.TimedAssignment:New(assignment, true)
+					assignment.time = Utilities.Round(convertedTime, 1)
+				end
+			end
+		end
+	elseif conversionMethod == 2 then
+		for _, assignment in ipairs(assignments) do
+			if
+				getmetatable(assignment --[[@as CombatLogEventAssignment]]) == Private.classes.CombatLogEventAssignment
+			then
+				local absoluteTime = Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					oldBoss.dungeonEncounterID,
+					assignment.combatLogEventSpellID,
+					assignment.spellCount,
+					assignment.combatLogEventType
+				)
+				if absoluteTime then
+					local newCombatLogEventSpellID, newSpellCount, newTime = Utilities.FindNearestCombatLogEvent(
+						absoluteTime,
+						newBoss.dungeonEncounterID,
+						assignment.combatLogEventType,
+						true
+					)
+					if newCombatLogEventSpellID and newSpellCount and newTime then
+						local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(newBoss.dungeonEncounterID)
+						local bossPhaseTable = bossUtilities.GetOrderedBossPhases(newBoss.dungeonEncounterID)
+						if castTimeTable and bossPhaseTable then
+							if
+								castTimeTable[newCombatLogEventSpellID]
+								and castTimeTable[newCombatLogEventSpellID][newSpellCount]
+							then
+								local orderedBossPhaseIndex =
+									castTimeTable[newCombatLogEventSpellID][newSpellCount].bossPhaseOrderIndex
+								assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+								assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+							end
+						end
+						assignment.time = Utilities.Round(newTime, 1)
+						assignment.combatLogEventSpellID = newCombatLogEventSpellID
+						assignment.spellCount = newSpellCount
+					end
+				end
+			end
+		end
+	end
 end
 
 function Utilities.CreatePrettyClassNames()

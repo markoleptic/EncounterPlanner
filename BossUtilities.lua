@@ -180,6 +180,18 @@ function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
 	return false
 end
 
+---@param bossDungeonEncounterID integer
+---@param plan Plan
+function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		plan.bossName = boss.name
+		plan.dungeonEncounterID = boss.dungeonEncounterID
+		plan.instanceID = boss.instanceID
+		wipe(plan.customPhaseDurations)
+	end
+end
+
 do
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 	---@param bossDungeonEncounterID integer

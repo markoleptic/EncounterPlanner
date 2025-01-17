@@ -275,13 +275,29 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 						true
 					)
 				end
-				assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
-				if combatLogEventSpellID and spellCount and minTime then
-					assignment.time = utilities.Round(minTime, 1)
-					assignment.combatLogEventSpellID = combatLogEventSpellID
-					assignment.spellCount = spellCount
+				local boss = GetCurrentBoss()
+				if boss then
+					assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
+					if combatLogEventSpellID and spellCount and minTime then
+						local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
+						local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+						if castTimeTable and bossPhaseTable then
+							if
+								castTimeTable[combatLogEventSpellID]
+								and castTimeTable[combatLogEventSpellID][spellCount]
+							then
+								local orderedBossPhaseIndex =
+									castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
+								assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+								assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+							end
+						end
+						assignment.time = utilities.Round(minTime, 1)
+						assignment.combatLogEventSpellID = combatLogEventSpellID
+						assignment.spellCount = spellCount
+					end
+					updateFields = true
 				end
-				updateFields = true
 			end
 			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
 		elseif value == "Fixed Time" then
@@ -684,22 +700,73 @@ end
 
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.phaseLengthEditor then
-		Private.phaseLengthEditor:Release()
+	if Private.messageBox then
+		return
 	end
 	local bossDungeonEncounterID = tonumber(value)
 	if bossDungeonEncounterID then
-		local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
-		if boss then
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].bossName = boss.name
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].dungeonEncounterID = boss.dungeonEncounterID
-			AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].instanceID = boss.instanceID
-			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
-			wipe(customPhaseDurations)
-			interfaceUpdater.UpdateBoss(boss.dungeonEncounterID, true)
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote] --[[@as Plan]]
+		local containsCombatLogEventAssignment = false
+		for _, assignment in ipairs(plan.assignments) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				containsCombatLogEventAssignment = true
+				break
+			end
+		end
+		if containsCombatLogEventAssignment then
+			local messageBox = interfaceUpdater.CreateMessageBox(
+				"Changing Boss with Combat Log Event Assignments",
+				"The current note includes combat log event assignments tied to this boss's spells. Choose an option:\n\n"
+					.. "1. Convert all assignments to timed assignments for the new boss\n"
+					.. "2. Replace spells with those of the new boss, matching the closest timing\n"
+					.. "3. Cancel\n\n"
+					.. "Note: Replacing spells may not be reversible and could result in changes if you revert to the "
+					.. "original boss."
+			)
+			if messageBox then
+				local currentBoss = bossUtilities.GetBoss(plan.dungeonEncounterID)
+				local newBoss = bossUtilities.GetBoss(bossDungeonEncounterID)
+				local currentAssignments = plan.assignments
+				if currentBoss and newBoss then
+					messageBox:SetAcceptButtonText("Convert to Timed Assignments")
+					messageBox:SetRejectButtonText("Cancel")
+					local rejectButton = messageBox.buttonContainer.children[2]
+					messageBox:AddButton("Replace Spells", rejectButton)
+					messageBox:SetCallback("Replace Spells" .. "Clicked", function()
+						if Private.assignmentEditor then
+							Private.assignmentEditor:Release()
+						end
+						if Private.phaseLengthEditor then
+							Private.phaseLengthEditor:Release()
+						end
+						utilities.ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 2)
+						bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
+						interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+						interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+					end)
+					messageBox:SetCallback("Accepted", function()
+						if Private.assignmentEditor then
+							Private.assignmentEditor:Release()
+						end
+						if Private.phaseLengthEditor then
+							Private.phaseLengthEditor:Release()
+						end
+						utilities.ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 1)
+						bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
+						interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+						interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+					end)
+				end
+			end
+		else
+			if Private.assignmentEditor then
+				Private.assignmentEditor:Release()
+			end
+			if Private.phaseLengthEditor then
+				Private.phaseLengthEditor:Release()
+			end
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
+			interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 		end
 	end
 end
@@ -907,20 +974,14 @@ local function HandleCreateNewNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local notes = AddOn.db.profile.plans
-	local bossName = bossUtilities.GetBossName(GetCurrentBossDungeonEncounterID())
+	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+	local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 	local newNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
 
 	notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 	AddOn.db.profile.lastOpenNote = newNoteName
-
-	local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
-	if boss then
-		notes[newNoteName].bossName = boss.name
-		notes[newNoteName].dungeonEncounterID = boss.dungeonEncounterID
-		notes[newNoteName].instanceID = boss.instanceID
-	end
-
-	interfaceUpdater.UpdateAllAssignments(true, notes[newNoteName].dungeonEncounterID)
+	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, notes[newNoteName])
+	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
@@ -936,43 +997,39 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		Private.assignmentEditor:Release()
 	end
 	local beforeRemovalCount = 0
-	for _, _ in pairs(AddOn.db.profile.plans) do
+	local plans = AddOn.db.profile.plans
+	for _, _ in pairs(plans) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
 	local noteDropdown = Private.mainFrame.noteDropdown
 	if noteDropdown then
 		local lastOpenNote = AddOn.db.profile.lastOpenNote
 		if lastOpenNote then
-			AddOn.db.profile.plans[lastOpenNote] = nil
+			plans[lastOpenNote] = nil
 			noteDropdown:RemoveItem(lastOpenNote)
 		end
 		if beforeRemovalCount > 1 then
-			for name, _ in pairs(AddOn.db.profile.plans) do
+			for name, _ in pairs(plans) do
 				AddOn.db.profile.lastOpenNote = name
-				local bossDungeonEncounterID = AddOn.db.profile.plans[name].dungeonEncounterID
+				local bossDungeonEncounterID = plans[name].dungeonEncounterID
 				if bossDungeonEncounterID then
 					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 				end
 				break
 			end
 		else
-			local bossName = bossUtilities.GetBossName(GetCurrentBossDungeonEncounterID())
-			local newNoteName = utilities.CreateUniqueNoteName(AddOn.db.profile.plans, bossName --[[@as string]])
-			AddOn.db.profile.plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
+			local newNoteName = utilities.CreateUniqueNoteName(plans, bossName --[[@as string]])
+			plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
 			AddOn.db.profile.lastOpenNote = newNoteName
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newNoteName])
 			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
 			noteDropdown:Sort()
-			local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
-			if boss then
-				local newNote = AddOn.db.profile.plans[newNoteName]
-				newNote.bossName = boss.name
-				newNote.dungeonEncounterID = boss.dungeonEncounterID
-				newNote.instanceID = boss.instanceID
-			end
 		end
 		local newLastOpenNote = AddOn.db.profile.lastOpenNote
 		noteDropdown:SetValue(newLastOpenNote)
-		local remindersEnabled = AddOn.db.profile.plans[newLastOpenNote].remindersEnabled
+		local remindersEnabled = plans[newLastOpenNote].remindersEnabled
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	end
@@ -1093,9 +1150,7 @@ function Private:CreateInterface()
 			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
 			notes[defaultNoteName] = Private.classes.Plan:New(nil, defaultNoteName)
-			notes[defaultNoteName].bossName = "Ulgrax the Devourer"
-			notes[defaultNoteName].instanceID = 2657
-			notes[defaultNoteName].dungeonEncounterID = 2902
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, notes[defaultNoteName])
 		end
 		AddOn.db.profile.lastOpenNote = defaultNoteName
 	end
