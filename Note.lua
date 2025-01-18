@@ -326,6 +326,11 @@ local function CreateAssignmentsFromLine(line)
 					spellInfo = spellInfo,
 					targetName = targetName,
 				})
+				if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+					if assignment.text:len() > 0 then
+						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+					end
+				end
 				tinsert(assignments, assignment)
 			end
 		end
