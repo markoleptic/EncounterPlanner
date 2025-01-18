@@ -19,8 +19,8 @@ local defaultFrameWidth = 200
 local defaultFontHeight = 14
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
-local defaultIconPadding = { x = 2, y = 2 }
-local defaultTextPadding = { x = 0, y = 2 }
+local defaultIconPadding = { left = 2, top = 2, right = 2, bottom = 2 }
+local defaultTextPadding = { left = 0, right = 2 }
 
 ---@param epLabel EPLabel
 local function HandleIconEnter(epLabel)
@@ -40,16 +40,17 @@ end
 
 ---@param self EPLabel
 local function UpdateIconAndTextAnchors(self)
+	local textPadding = self.horizontalTextPadding
 	if self.showIcon then
-		self.icon:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.iconPadding.x, -self.iconPadding.y)
-		self.icon:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.iconPadding.x, self.iconPadding.y)
-		self.icon:SetWidth(self.frame:GetHeight() - 2 * self.iconPadding.y)
+		self.icon:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.iconPadding.left, -self.iconPadding.top)
+		self.icon:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.iconPadding.left, self.iconPadding.bottom)
+		self.icon:SetWidth(self.frame:GetHeight() - self.iconPadding.top - self.iconPadding.bottom)
 		self.icon:Show()
-		self.text:SetPoint("LEFT", self.icon, "RIGHT", self.horizontalTextPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
+		self.text:SetPoint("LEFT", self.icon, "RIGHT", textPadding.left, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textPadding.right, 0)
 	else
-		self.text:SetPoint("LEFT", self.frame, "LEFT", self.horizontalTextPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.horizontalTextPadding, 0)
+		self.text:SetPoint("LEFT", self.frame, "LEFT", textPadding.left, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textPadding.right, 0)
 		self.icon:Hide()
 	end
 end
@@ -63,8 +64,8 @@ end
 ---@field spellID number|nil
 ---@field enabled boolean
 ---@field showIcon boolean
----@field horizontalTextPadding number
----@field iconPadding table{x: number, y: number}
+---@field horizontalTextPadding {left: number, right:number}
+---@field iconPadding {left:number, top:number, right:number, bottom:number}
 
 ---@param self EPLabel
 ---@param enabled boolean
@@ -79,7 +80,7 @@ end
 
 ---@param self EPLabel
 local function OnAcquire(self)
-	self.horizontalTextPadding = defaultTextPadding.x
+	self.horizontalTextPadding = defaultTextPadding
 	self.iconPadding = defaultIconPadding
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
@@ -100,12 +101,16 @@ end
 
 ---@param self EPLabel
 ---@param iconID number|string|nil
----@param paddingX number|nil
----@param paddingY number|nil
----@param spellID number|nil
-local function SetIcon(self, iconID, paddingX, paddingY, spellID)
-	self.iconPadding.x = paddingX or self.iconPadding.x
-	self.iconPadding.y = paddingY or self.iconPadding.y
+---@param paddingXOrLeft number?
+---@param paddingYOrTop number?
+---@param spellID number?
+---@param paddingRight number?
+---@param paddingBottom number?
+local function SetIcon(self, iconID, paddingXOrLeft, paddingYOrTop, spellID, paddingRight, paddingBottom)
+	self.iconPadding.left = paddingXOrLeft or self.iconPadding.left
+	self.iconPadding.right = paddingRight or paddingXOrLeft or self.iconPadding.right
+	self.iconPadding.top = paddingYOrTop or self.iconPadding.top
+	self.iconPadding.bottom = paddingBottom or paddingYOrTop or self.iconPadding.bottom
 	self.icon:SetTexture(iconID)
 	self.spellID = spellID
 	if iconID then
@@ -121,7 +126,17 @@ end
 ---@param paddingX number|nil
 local function SetText(self, text, paddingX)
 	self.text:SetText(text or "")
-	self.horizontalTextPadding = paddingX or self.horizontalTextPadding
+	self.horizontalTextPadding.left = paddingX or self.horizontalTextPadding.left
+	self.horizontalTextPadding.right = paddingX or self.horizontalTextPadding.right
+	UpdateIconAndTextAnchors(self)
+end
+
+---@param self EPLabel
+---@param left number|nil
+---@param right number|nil
+local function SetHorizontalTextPadding(self, left, right)
+	self.horizontalTextPadding.left = left or self.horizontalTextPadding.left
+	self.horizontalTextPadding.right = right or self.horizontalTextPadding.right
 	UpdateIconAndTextAnchors(self)
 end
 
@@ -149,7 +164,7 @@ end
 ---@param self EPLabel
 ---@param paddingY number|nil
 local function SetFrameHeightFromText(self, paddingY)
-	paddingY = paddingY or defaultTextPadding.y
+	paddingY = paddingY or 2
 	self.frame:SetHeight(self.text:GetLineHeight() + paddingY * 2)
 end
 
@@ -169,8 +184,8 @@ local function Constructor()
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
-	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.x, -defaultIconPadding.y)
-	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", defaultIconPadding.x, defaultIconPadding.y)
+	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.left, -defaultIconPadding.top)
+	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", defaultIconPadding.left, defaultIconPadding.bottom)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -193,6 +208,7 @@ local function Constructor()
 		GetText = GetText,
 		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetFrameWidthFromText = SetFrameWidthFromText,
+		SetHorizontalTextPadding = SetHorizontalTextPadding,
 		frame = frame,
 		type = Type,
 		icon = icon,

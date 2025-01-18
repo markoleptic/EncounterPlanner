@@ -54,28 +54,25 @@ local function OnAcquire(self)
 	self.frame:Show()
 	self.frame:SetSize(frameWidth, frameHeight)
 
-	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT", padding.x, 0)
-	self.collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	local buttonSize = frameHeight - 2 * padding.y
 
-	self.checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT")
+	self.collapseButton:SetSize(buttonSize, buttonSize)
+
+	self.checkBackground:SetSize(buttonSize, buttonSize)
 	self.checkBackground:SetPoint("RIGHT", -padding.x, 0)
 	self.checkBackground:Show()
 
-	self.swapBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	self.swapBackground:SetSize(buttonSize, buttonSize)
 	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x / 2, 0)
 	self.swapBackground:Hide()
-
-	self.roleTexture:SetSize(16, 16)
-	self.roleTexture:Hide()
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
 	self.label.frame:SetPoint("LEFT")
-	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
+	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT")
 	self.label:SetHorizontalTextAlignment("LEFT")
 	self.label:SetHeight(frameHeight)
-
-	self.roleTexture:SetPoint("RIGHT", self.label.frame, "LEFT", -padding.x, 0)
 
 	local checkSpacing = checkBackdrop.edgeSize
 	local checkSize = frameHeight - 2 * checkSpacing
@@ -97,11 +94,12 @@ local function OnAcquire(self)
 	self:SetEnabled(true)
 	self:SetCollapsible(false)
 	self:SetCollapsed(false)
-	self:SetRole(nil)
+	self:SetRoleOrSpec(nil)
 end
 
 ---@param self EPAbilityEntry
 local function OnRelease(self)
+	self.label.icon:SetTexCoord(0, 1, 0, 1)
 	self.label:Release()
 	self.label = nil
 
@@ -184,7 +182,7 @@ end
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
 local function SetGeneralAbility(self, key)
-	self.label:SetText("General", padding.x * 2)
+	self.label:SetText("Text", padding.x * 2)
 	self.label:SetIcon(constants.kTextAssignmentTexture, padding.x, padding.y, 0)
 	self.key = key
 end
@@ -193,7 +191,7 @@ end
 ---@param str string
 ---@param key string|table|nil
 local function SetText(self, str, key)
-	self.label:SetText(str, padding.x * 2)
+	self.label:SetText(str, 0)
 	self.label:SetIcon(nil)
 	self.key = key
 end
@@ -217,57 +215,44 @@ local function GetText(self)
 end
 
 ---@param self EPAbilityEntry
----@param role RaidGroupRole|nil
-local function SetRole(self, role)
-	local left = 0.0
+---@param role RaidGroupRole|integer|nil
+local function SetRoleOrSpec(self, role)
 	if role == "role:tank" or role == "role:healer" or role == "role:damager" then
-		self.roleTexture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
-		self.roleTexture:Show()
-		if self.collapseButton:IsShown() then
-			left = self.collapseButton:GetWidth() + self.roleTexture:GetWidth() + 2 * padding.x
-		else
-			left = self.roleTexture:GetWidth() + padding.x
-		end
+		self.label:SetHorizontalTextPadding(padding.x, 0)
+		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", 0, 7, nil, nil, 7)
 		if role == "role:tank" then
-			self.roleTexture:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
+			self.label.icon:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
 		elseif role == "role:healer" then
-			self.roleTexture:SetTexCoord(20 / 64, 39 / 64, 1 / 64, 20 / 64)
+			self.label.icon:SetTexCoord(20 / 64, 39 / 64, 1 / 64, 20 / 64)
 		elseif role == "role:damager" then
-			self.roleTexture:SetTexCoord(20 / 64, 39 / 64, 22 / 64, 41 / 64)
+			self.label.icon:SetTexCoord(20 / 64, 39 / 64, 22 / 64, 41 / 64)
 		end
-	else
 		if self.collapseButton:IsShown() then
-			left = self.collapseButton:GetWidth() + padding.x
+			self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth())
+		else
+			self.label.frame:SetPoint("LEFT")
 		end
-		self.roleTexture:Hide()
+	elseif type(role) == "number" then
+		self.label:SetHorizontalTextPadding(padding.x, 0)
+		self.label:SetIcon(role, 0, 7, nil, nil, 7)
 	end
-	self.label.frame:SetPoint("LEFT", left, 0)
 end
 
 ---@param self EPAbilityEntry
 ---@param collapsible boolean
 local function SetCollapsible(self, collapsible)
-	local left = 0.0
 	if collapsible then
 		self.collapseButton:Show()
 		self.collapseButton:SetScript("OnClick", function()
 			self:SetCollapsed(not self.collapsed)
 			self:Fire("CollapseButtonToggled", self.collapsed)
 		end)
-		local collapseButtonWidth = self.collapseButton:GetWidth()
-		if self.roleTexture:IsShown() then
-			left = collapseButtonWidth + self.roleTexture:GetWidth() + 2 * padding.x
-		else
-			left = collapseButtonWidth + padding.x
-		end
+		self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth(), 0)
 	else
 		self.collapseButton:Hide()
 		self.collapseButton:SetScript("OnClick", nil)
-		if self.roleTexture:IsShown() then
-			left = self.roleTexture:GetWidth() + padding.x
-		end
+		self.label.frame:SetPoint("LEFT")
 	end
-	self.label.frame:SetPoint("LEFT", left, 0)
 end
 
 ---@param self EPAbilityEntry
@@ -298,7 +283,7 @@ end
 local function ShowSwapIcon(self, show)
 	if show and not self.swap then
 		self.swapBackground:Show()
-		self.label.frame:SetPoint("RIGHT", self.swapBackground, "LEFT", -padding.x, 0)
+		self.label.frame:SetPoint("RIGHT", self.swapBackground, "LEFT")
 
 		local checkSpacing = checkBackdrop.edgeSize
 		local checkSize = frameHeight - 2 * checkSpacing
@@ -340,7 +325,7 @@ local function ShowSwapIcon(self, show)
 			self:Fire("AssigneeSwapped", value)
 		end)
 	else
-		self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
+		self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT")
 		self.swapBackground:Hide()
 		if self.swap then
 			self.swap:Release()
@@ -383,10 +368,6 @@ local function Constructor()
 	swapBackground:SetPoint("RIGHT", checkBackground, "LEFT", -padding.x / 2, 0)
 	swapBackground:Hide()
 
-	local roleTexture = frame:CreateTexture(nil, "OVERLAY")
-	roleTexture:SetSize(16, 16)
-	roleTexture:Hide()
-
 	---@class EPAbilityEntry
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -402,7 +383,7 @@ local function Constructor()
 		SetText = SetText,
 		GetText = GetText,
 		GetKey = GetKey,
-		SetRole = SetRole,
+		SetRoleOrSpec = SetRoleOrSpec,
 		SetCheckedTextureColor = SetCheckedTextureColor,
 		ShowSwapIcon = ShowSwapIcon,
 		SetAssigneeDropdownItems = SetAssigneeDropdownItems,
@@ -412,7 +393,6 @@ local function Constructor()
 		checkBackground = checkBackground,
 		swapBackground = swapBackground,
 		collapseButton = collapseButton,
-		roleTexture = roleTexture,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

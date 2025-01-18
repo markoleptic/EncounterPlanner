@@ -19,6 +19,7 @@ local AddOn = Private.addOn
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
+local GetSpecializationInfoByID = GetSpecializationInfoByID
 local GetSpellInfo = C_Spell.GetSpellInfo
 local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
@@ -264,12 +265,25 @@ do
 					local coloredAssigneeNameOrRole = textTable.text
 					local assigneeCollapsed = collapsed[assigneeNameOrRole]
 
+					local specIconID = nil
+					local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
+					if specMatch then
+						local specIDMatch = tonumber(specMatch)
+						if specIDMatch then
+							local _, _, _, icon, _ = GetSpecializationInfoByID(specIDMatch)
+							specIconID = icon
+							coloredAssigneeNameOrRole = coloredAssigneeNameOrRole:gsub("|T[^:]+:16|t ", "")
+						end
+					end
+
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
 					assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
 					assigneeEntry:SetFullWidth(true)
 					assigneeEntry:SetHeight(30)
 					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-					assigneeEntry:SetRole(roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or nil)
+					assigneeEntry:SetRoleOrSpec(
+						roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or specIconID or nil
+					)
 					assigneeEntry:SetCollapsible(true)
 					assigneeEntry:ShowSwapIcon(true)
 					assigneeEntry:SetCollapsed(assigneeCollapsed)
