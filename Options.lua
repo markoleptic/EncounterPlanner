@@ -170,13 +170,33 @@ local function ApplyPoint(frame, point, regionName, relativePoint)
 	return point, relativeTo, relativePoint, x, y
 end
 
+---@return Preferences
+local function GetPreferences()
+	return AddOn.db.profile.preferences
+end
+
+---@return ReminderPreferences
+local function GetReminderPreferences()
+	return AddOn.db.profile.preferences.reminder
+end
+
+---@return ProgressBarPreferences
+local function GetProgressBarPreferences()
+	return AddOn.db.profile.preferences.reminder.progressBars
+end
+
+---@return MessagePreferences
+local function GetMessagePreferences()
+	return AddOn.db.profile.preferences.reminder.messages
+end
+
 ---@return EPProgressBar
 local function CreateProgressBarAnchor()
 	local progressBarAnchor = AceGUI:Create("EPProgressBar")
 	progressBarAnchor.frame:SetParent(UIParent)
 
 	do
-		local preferences = AddOn.db.profile.preferences.reminder.progressBars --[[@as ProgressBarPreferences]]
+		local preferences = GetProgressBarPreferences()
 		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
 		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
 		progressBarAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
@@ -201,7 +221,7 @@ local function CreateProgressBarAnchor()
 		Private.progressBarAnchor = nil
 	end)
 	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, regionName, relativePoint)
-		local preferences = AddOn.db.profile.preferences.reminder.progressBars --[[@as ProgressBarPreferences]]
+		local preferences = GetProgressBarPreferences()
 		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
 			ApplyPoint(Private.progressBarAnchor.frame, point, regionName, relativePoint)
 		if Private.optionsMenu then
@@ -222,7 +242,7 @@ local function CreateMessageAnchor()
 	messageAnchor.frame:SetParent(UIParent)
 
 	do
-		local preferences = AddOn.db.profile.preferences.reminder.messages --[[@as MessagePreferences]]
+		local preferences = GetMessagePreferences()
 		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
 		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
 		messageAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
@@ -237,7 +257,7 @@ local function CreateMessageAnchor()
 		Private.messageAnchor = nil
 	end)
 	messageAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
-		local preferences = AddOn.db.profile.preferences.reminder.messages --[[@as MessagePreferences]]
+		local preferences = GetMessagePreferences()
 		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
 			ApplyPoint(Private.messageAnchor.frame, point, relativeFrame, relativePoint)
 		if Private.optionsMenu then
@@ -277,17 +297,17 @@ function Private:CreateOptionsMenu()
 			category = "Timeline",
 			values = MouseButtonKeyBindingValues,
 			get = function()
-				return AddOn.db.profile.preferences.keyBindings.pan
+				return GetPreferences().keyBindings.pan
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.pan = key
+				GetPreferences().keyBindings.pan = key
 			end,
 			validate = function(key)
 				if
-					AddOn.db.profile.preferences.keyBindings.editAssignment == key
-					or AddOn.db.profile.preferences.keyBindings.newAssignment == key
+					GetPreferences().keyBindings.editAssignment == key
+					or GetPreferences().keyBindings.newAssignment == key
 				then
-					return false, AddOn.db.profile.preferences.keyBindings.pan
+					return false, GetPreferences().keyBindings.pan
 				end
 				return true
 			end,
@@ -304,14 +324,14 @@ function Private:CreateOptionsMenu()
 				{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
 			},
 			get = function()
-				return AddOn.db.profile.preferences.keyBindings.scroll
+				return GetPreferences().keyBindings.scroll
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.scroll = key
+				GetPreferences().keyBindings.scroll = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.preferences.keyBindings.zoom == key then
-					return false, AddOn.db.profile.preferences.keyBindings.scroll
+				if GetPreferences().keyBindings.zoom == key then
+					return false, GetPreferences().keyBindings.scroll
 				end
 				return true
 			end,
@@ -328,14 +348,14 @@ function Private:CreateOptionsMenu()
 				{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
 			},
 			get = function()
-				return AddOn.db.profile.preferences.keyBindings.zoom
+				return GetPreferences().keyBindings.zoom
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.zoom = key
+				GetPreferences().keyBindings.zoom = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.preferences.keyBindings.scroll == key then
-					return false, AddOn.db.profile.preferences.keyBindings.zoom
+				if GetPreferences().keyBindings.scroll == key then
+					return false, GetPreferences().keyBindings.zoom
 				end
 				return true
 			end,
@@ -347,14 +367,14 @@ function Private:CreateOptionsMenu()
 			category = "Assignment",
 			values = MouseButtonKeyBindingValues,
 			get = function(_)
-				return AddOn.db.profile.preferences.keyBindings.newAssignment
+				return GetPreferences().keyBindings.newAssignment
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.newAssignment = key
+				GetPreferences().keyBindings.newAssignment = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.preferences.keyBindings.pan == key then
-					return false, AddOn.db.profile.preferences.keyBindings.newAssignment
+				if GetPreferences().keyBindings.pan == key then
+					return false, GetPreferences().keyBindings.newAssignment
 				end
 				return true
 			end,
@@ -367,16 +387,16 @@ function Private:CreateOptionsMenu()
 			category = "Assignment",
 			values = MouseButtonKeyBindingValues,
 			get = function()
-				return AddOn.db.profile.preferences.keyBindings.editAssignment
+				return GetPreferences().keyBindings.editAssignment
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.editAssignment = key
+				GetPreferences().keyBindings.editAssignment = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.preferences.keyBindings.pan == key then
-					return false, AddOn.db.profile.preferences.keyBindings.editAssignment
-				elseif AddOn.db.profile.preferences.keyBindings.duplicateAssignment == key then
-					return false, AddOn.db.profile.preferences.keyBindings.editAssignment
+				if GetPreferences().keyBindings.pan == key then
+					return false, GetPreferences().keyBindings.editAssignment
+				elseif GetPreferences().keyBindings.duplicateAssignment == key then
+					return false, GetPreferences().keyBindings.editAssignment
 				end
 				return true
 			end,
@@ -389,14 +409,14 @@ function Private:CreateOptionsMenu()
 			category = "Assignment",
 			values = MouseButtonKeyBindingValues,
 			get = function()
-				return AddOn.db.profile.preferences.keyBindings.duplicateAssignment
+				return GetPreferences().keyBindings.duplicateAssignment
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.keyBindings.duplicateAssignment = key
+				GetPreferences().keyBindings.duplicateAssignment = key
 			end,
 			validate = function(key)
-				if AddOn.db.profile.preferences.keyBindings.editAssignment == key then
-					return false, AddOn.db.profile.preferences.keyBindings.duplicateAssignment
+				if GetPreferences().keyBindings.editAssignment == key then
+					return false, GetPreferences().keyBindings.duplicateAssignment
 				end
 				return true
 			end,
@@ -410,10 +430,10 @@ function Private:CreateOptionsMenu()
 			description = "The assignment timeline will attempt to expand or shrink to show this many rows.",
 			values = rowValues,
 			get = function()
-				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow)
+				return tostring(GetPreferences().timelineRows.numberOfAssignmentsToShow)
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.timelineRows.numberOfAssignmentsToShow = tonumber(key)
+				GetPreferences().timelineRows.numberOfAssignmentsToShow = tonumber(key) --[[@as integer]]
 				local timeline = Private.mainFrame.timeline
 				if timeline then
 					timeline:UpdateHeightFromAssignments()
@@ -427,10 +447,10 @@ function Private:CreateOptionsMenu()
 			description = "The boss ability timeline will attempt to expand or shrink to show this many rows.",
 			values = rowValues,
 			get = function()
-				return tostring(AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow)
+				return tostring(GetPreferences().timelineRows.numberOfBossAbilitiesToShow)
 			end,
 			set = function(key)
-				AddOn.db.profile.preferences.timelineRows.numberOfBossAbilitiesToShow = tonumber(key)
+				GetPreferences().timelineRows.numberOfBossAbilitiesToShow = tonumber(key) --[[@as integer]]
 				local timeline = Private.mainFrame.timeline
 				if timeline then
 					timeline:UpdateHeightFromBossAbilities()
@@ -448,7 +468,7 @@ function Private:CreateOptionsMenu()
 				{ itemValue = "Middle of timeline", text = "Middle of timeline" },
 			},
 			get = function()
-				if AddOn.db.profile.preferences.zoomCenteredOnCursor == true then
+				if GetPreferences().zoomCenteredOnCursor == true then
 					return "At cursor"
 				else
 					return "Middle of timeline"
@@ -456,9 +476,9 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				if key == "At cursor" then
-					AddOn.db.profile.preferences.zoomCenteredOnCursor = true
+					GetPreferences().zoomCenteredOnCursor = true
 				else
-					AddOn.db.profile.preferences.zoomCenteredOnCursor = false
+					GetPreferences().zoomCenteredOnCursor = false
 				end
 			end,
 		},
@@ -474,11 +494,11 @@ function Private:CreateOptionsMenu()
 				{ itemValue = "Role > First Appearance", text = "Role > First Appearance" },
 			},
 			get = function()
-				return AddOn.db.profile.preferences.assignmentSortType
+				return GetPreferences().assignmentSortType
 			end,
 			set = function(key)
-				if key ~= AddOn.db.profile.preferences.assignmentSortType then
-					AddOn.db.profile.preferences.assignmentSortType = key
+				if key ~= GetPreferences().assignmentSortType then
+					GetPreferences().assignmentSortType = key
 					if Private.mainFrame and Private.mainFrame.bossSelectDropdown then
 						local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 						if bossDungeonEncounterID then
@@ -486,7 +506,7 @@ function Private:CreateOptionsMenu()
 						end
 					end
 				end
-				AddOn.db.profile.preferences.assignmentSortType = key
+				GetPreferences().assignmentSortType = key
 			end,
 		},
 		{
@@ -496,16 +516,16 @@ function Private:CreateOptionsMenu()
 				.. ", and releasing this key.",
 			category = "Assignment",
 			get = function()
-				return AddOn.db.profile.preferences.showSpellCooldownDuration
+				return GetPreferences().showSpellCooldownDuration
 			end,
 			set = function(key)
-				if key ~= AddOn.db.profile.preferences.showSpellCooldownDuration then
-					AddOn.db.profile.preferences.showSpellCooldownDuration = key
+				if key ~= GetPreferences().showSpellCooldownDuration then
+					GetPreferences().showSpellCooldownDuration = key
 					if Private.mainFrame and Private.mainFrame.timeline then
 						Private.mainFrame.timeline:UpdateTimeline()
 					end
 				end
-				AddOn.db.profile.preferences.showSpellCooldownDuration = key
+				GetPreferences().showSpellCooldownDuration = key
 			end,
 		},
 	}
@@ -539,10 +559,8 @@ function Private:CreateOptionsMenu()
 		tinsert(voices, { itemValue = ttsVoiceTable.voiceID, text = ttsVoiceTable.name })
 	end
 
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
-
 	local enableReminderOption = function()
-		return reminderPreferences.enabled == true
+		return GetReminderPreferences().enabled == true
 	end
 
 	local reminderOptions = {
@@ -551,10 +569,10 @@ function Private:CreateOptionsMenu()
 			type = "checkBox",
 			description = "Whether to enable reminders for assignments.",
 			get = function()
-				return reminderPreferences.enabled
+				return GetReminderPreferences().enabled
 			end,
 			set = function(key)
-				if key ~= reminderPreferences.enabled then
+				if key ~= GetReminderPreferences().enabled then
 					if key == true then
 						Private:RegisterReminderEvents()
 					else
@@ -569,7 +587,7 @@ function Private:CreateOptionsMenu()
 						end
 					end
 				end
-				reminderPreferences.enabled = key
+				GetReminderPreferences().enabled = key
 			end,
 		},
 		{
@@ -578,10 +596,10 @@ function Private:CreateOptionsMenu()
 			description = "Whether to only show assignment reminders that are relevant to you.",
 			enabled = enableReminderOption,
 			get = function()
-				return reminderPreferences.onlyShowMe
+				return GetReminderPreferences().onlyShowMe
 			end,
 			set = function(key)
-				reminderPreferences.onlyShowMe = key
+				GetReminderPreferences().onlyShowMe = key
 			end,
 		},
 		{
@@ -591,10 +609,10 @@ function Private:CreateOptionsMenu()
 				.. "the spell is cast during the reminder countdown, it will be cancelled.",
 			enabled = enableReminderOption,
 			get = function()
-				return reminderPreferences.cancelIfAlreadyCasted
+				return GetReminderPreferences().cancelIfAlreadyCasted
 			end,
 			set = function(key)
-				reminderPreferences.cancelIfAlreadyCasted = key
+				GetReminderPreferences().cancelIfAlreadyCasted = key
 			end,
 		},
 		{
@@ -604,10 +622,10 @@ function Private:CreateOptionsMenu()
 				.. "when the phase transitions.",
 			enabled = enableReminderOption,
 			get = function()
-				return reminderPreferences.removeDueToPhaseChange
+				return GetReminderPreferences().removeDueToPhaseChange
 			end,
 			set = function(key)
-				reminderPreferences.removeDueToPhaseChange = key
+				GetReminderPreferences().removeDueToPhaseChange = key
 			end,
 		},
 		{
@@ -617,12 +635,12 @@ function Private:CreateOptionsMenu()
 			category = nil,
 			values = nil,
 			get = function()
-				return tostring(reminderPreferences.advanceNotice)
+				return tostring(GetReminderPreferences().advanceNotice)
 			end,
 			set = function(key)
 				local value = tonumber(key)
 				if value then
-					reminderPreferences.advanceNotice = value
+					GetReminderPreferences().advanceNotice = value
 				end
 			end,
 			enabled = enableReminderOption,
@@ -633,28 +651,28 @@ function Private:CreateOptionsMenu()
 			description = "Whether to show Messages for assignments.",
 			category = "Messages",
 			get = function()
-				return reminderPreferences.messages.enabled
+				return GetMessagePreferences().enabled
 			end,
 			set = function(key)
-				if key ~= reminderPreferences.messages.enabled and key == false then
+				if key ~= GetMessagePreferences().enabled and key == false then
 					if Private.messageAnchor.frame:IsShown() then
 						Private.messageAnchor:Pause()
 						Private.messageAnchor.frame:Hide()
 					end
 				end
-				reminderPreferences.messages.enabled = key
+				GetMessagePreferences().enabled = key
 			end,
 			enabled = enableReminderOption,
 			buttonText = "Toggle Message Anchor",
 			buttonEnabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 			buttonCallback = function()
 				if Private.messageAnchor.frame:IsShown() then
 					Private.messageAnchor:Pause()
 					Private.messageAnchor.frame:Hide()
 				else
-					if not reminderPreferences.messages.showOnlyAtExpiration then
+					if not GetMessagePreferences().showOnlyAtExpiration then
 						Private.messageAnchor:SetDuration(previewDuration)
 						Private.messageAnchor:Start(true)
 					end
@@ -672,7 +690,7 @@ function Private:CreateOptionsMenu()
 				{ itemValue = "fullCountdown", text = "With Countdown" },
 			},
 			get = function()
-				if reminderPreferences.messages.showOnlyAtExpiration then
+				if GetMessagePreferences().showOnlyAtExpiration then
 					return "expirationOnly"
 				else
 					return "fullCountdown"
@@ -680,25 +698,25 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				if key == "expirationOnly" then
-					if reminderPreferences.messages.showOnlyAtExpiration ~= true then
+					if GetMessagePreferences().showOnlyAtExpiration ~= true then
 						if Private.messageAnchor.frame:IsShown() then
 							Private.messageAnchor:Pause()
 						end
 						Private.messageAnchor:SetDuration(0)
 					end
-					reminderPreferences.messages.showOnlyAtExpiration = true
+					GetMessagePreferences().showOnlyAtExpiration = true
 				else -- if key == "fullCountdown" then
-					if reminderPreferences.messages.showOnlyAtExpiration ~= false then
+					if GetMessagePreferences().showOnlyAtExpiration ~= false then
 						Private.messageAnchor:SetDuration(previewDuration)
 						if Private.messageAnchor.frame:IsShown() then
 							Private.messageAnchor:Start(true)
 						end
 					end
-					reminderPreferences.messages.showOnlyAtExpiration = false
+					GetMessagePreferences().showOnlyAtExpiration = false
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -710,15 +728,15 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { 0, 1, 2, 3 },
 			get = function()
-				return reminderPreferences.messages.point
+				return GetMessagePreferences().point
 			end,
 			set = function(key)
-				local messages = reminderPreferences.messages
+				local messages = GetMessagePreferences()
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
 					ApplyPoint(Private.messageAnchor.frame, key, messages.relativeTo, messages.relativePoint)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -728,15 +746,15 @@ function Private:CreateOptionsMenu()
 			category = "Messages",
 			updateIndices = { -1, 0, 1, 2 },
 			get = function()
-				return reminderPreferences.messages.relativeTo
+				return GetMessagePreferences().relativeTo
 			end,
 			set = function(key)
-				local messages = reminderPreferences.messages
+				local messages = GetMessagePreferences()
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
 					ApplyPoint(Private.messageAnchor.frame, messages.point, key, messages.relativePoint)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -747,15 +765,15 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { -2, -1, 0, 1 },
 			get = function()
-				return reminderPreferences.messages.relativePoint
+				return GetMessagePreferences().relativePoint
 			end,
 			set = function(key)
-				local messages = reminderPreferences.messages
+				local messages = GetMessagePreferences()
 				messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
 					ApplyPoint(Private.messageAnchor.frame, messages.point, messages.relativeTo, key)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -770,22 +788,22 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { -3, -2, -1, 0 },
 			get = function()
-				return reminderPreferences.messages.x, reminderPreferences.messages.y
+				return GetMessagePreferences().x, GetMessagePreferences().y
 			end,
 			set = function(key, key2)
 				local x = tonumber(key)
 				local y = tonumber(key2)
 				if x and y then
-					reminderPreferences.messages.x = x
-					reminderPreferences.messages.y = y
-					local messages = reminderPreferences.messages
+					GetMessagePreferences().x = x
+					GetMessagePreferences().y = y
+					local messages = GetMessagePreferences()
 					local regionName = utilities.IsValidRegionName(messages.relativeTo) and messages.relativeTo
 						or "UIParent"
 					Private.messageAnchor.frame:SetPoint(messages.point, regionName, messages.relativePoint, x, y)
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 			validate = function(key, key2)
 				local x = tonumber(key)
@@ -793,7 +811,7 @@ function Private:CreateOptionsMenu()
 				if x and y then
 					return true
 				end
-				return false, reminderPreferences.messages.x, reminderPreferences.messages.y
+				return false, GetMessagePreferences().x, GetMessagePreferences().y
 			end,
 		},
 		{
@@ -807,18 +825,18 @@ function Private:CreateOptionsMenu()
 			category = "Messages",
 			values = fonts,
 			get = function()
-				return reminderPreferences.messages.font
+				return GetMessagePreferences().font
 			end,
 			set = function(key)
-				reminderPreferences.messages.font = key
+				GetMessagePreferences().font = key
 				Private.messageAnchor:SetFont(
-					reminderPreferences.messages.font,
-					reminderPreferences.messages.fontSize,
-					reminderPreferences.messages.fontOutline
+					GetMessagePreferences().font,
+					GetMessagePreferences().fontSize,
+					GetMessagePreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -827,18 +845,18 @@ function Private:CreateOptionsMenu()
 			description = "Font size to use for Message text (8 - 48).",
 			category = "Messages",
 			get = function()
-				return reminderPreferences.messages.fontSize
+				return GetMessagePreferences().fontSize
 			end,
 			set = function(key)
-				reminderPreferences.messages.fontSize = key
+				GetMessagePreferences().fontSize = key
 				Private.messageAnchor:SetFont(
-					reminderPreferences.messages.font,
-					reminderPreferences.messages.fontSize,
-					reminderPreferences.messages.fontOutline
+					GetMessagePreferences().font,
+					GetMessagePreferences().fontSize,
+					GetMessagePreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -849,7 +867,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				else
-					return false, reminderPreferences.messages.fontSize
+					return false, GetMessagePreferences().fontSize
 				end
 			end,
 		},
@@ -860,18 +878,18 @@ function Private:CreateOptionsMenu()
 			category = "Messages",
 			values = fontOutlineValues,
 			get = function()
-				return reminderPreferences.messages.fontOutline
+				return GetMessagePreferences().fontOutline
 			end,
 			set = function(key)
-				reminderPreferences.messages.fontOutline = key
+				GetMessagePreferences().fontOutline = key
 				Private.messageAnchor:SetFont(
-					reminderPreferences.messages.font,
-					reminderPreferences.messages.fontSize,
-					reminderPreferences.messages.fontOutline
+					GetMessagePreferences().font,
+					GetMessagePreferences().fontSize,
+					GetMessagePreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -880,14 +898,14 @@ function Private:CreateOptionsMenu()
 			description = "Text color to use for Message text.",
 			category = "Messages",
 			get = function()
-				return unpack(reminderPreferences.messages.textColor)
+				return unpack(GetMessagePreferences().textColor)
 			end,
 			set = function(r, g, b, a)
-				reminderPreferences.messages.textColor = { r, g, b, a }
+				GetMessagePreferences().textColor = { r, g, b, a }
 				Private.messageAnchor:SetTextColor(r, g, b, a)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 		},
 		{
@@ -896,17 +914,17 @@ function Private:CreateOptionsMenu()
 			description = "Transparency of Messages (0.0 - 1.0).",
 			category = "Messages",
 			get = function()
-				return reminderPreferences.messages.alpha
+				return GetMessagePreferences().alpha
 			end,
 			set = function(key)
 				local value = tonumber(key)
 				if value then
-					reminderPreferences.messages.alpha = value
+					GetMessagePreferences().alpha = value
 					Private.messageAnchor:SetAlpha(value)
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.messages.enabled == true
+				return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -917,7 +935,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				else
-					return false, reminderPreferences.messages.alpha
+					return false, GetMessagePreferences().alpha
 				end
 			end,
 		},
@@ -927,21 +945,21 @@ function Private:CreateOptionsMenu()
 			description = "Whether to show Progress Bars for assignments.",
 			category = "Progress Bars",
 			get = function()
-				return reminderPreferences.progressBars.enabled
+				return GetProgressBarPreferences().enabled
 			end,
 			set = function(key)
-				if key ~= reminderPreferences.progressBars.enabled and key == false then
+				if key ~= GetProgressBarPreferences().enabled and key == false then
 					if Private.progressBarAnchor.frame:IsShown() then
 						Private.progressBarAnchor:Pause()
 						Private.progressBarAnchor.frame:Hide()
 					end
 				end
-				reminderPreferences.progressBars.enabled = key
+				GetProgressBarPreferences().enabled = key
 			end,
 			enabled = enableReminderOption,
 			buttonText = "Toggle Progress Bar Anchor",
 			buttonEnabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			buttonCallback = function()
 				if Private.progressBarAnchor.frame:IsShown() then
@@ -963,10 +981,10 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { 0, 1, 2, 3 },
 			get = function()
-				return reminderPreferences.progressBars.point
+				return GetProgressBarPreferences().point
 			end,
 			set = function(key)
-				local progressBars = reminderPreferences.progressBars
+				local progressBars = GetProgressBarPreferences()
 				local point, relativeTo, relativePoint, x, y = ApplyPoint(
 					Private.progressBarAnchor.frame,
 					key,
@@ -979,7 +997,7 @@ function Private:CreateOptionsMenu()
 				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -989,10 +1007,10 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			updateIndices = { -1, 0, 1, 2 },
 			get = function()
-				return reminderPreferences.progressBars.relativeTo
+				return GetProgressBarPreferences().relativeTo
 			end,
 			set = function(key)
-				local progressBars = reminderPreferences.progressBars
+				local progressBars = GetProgressBarPreferences()
 				local point, relativeTo, relativePoint, x, y =
 					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, key, progressBars.relativePoint)
 				progressBars.point = point
@@ -1001,7 +1019,7 @@ function Private:CreateOptionsMenu()
 				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1012,10 +1030,10 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { -2, -1, 0, 1 },
 			get = function()
-				return reminderPreferences.progressBars.relativePoint
+				return GetProgressBarPreferences().relativePoint
 			end,
 			set = function(key)
-				local progressBars = reminderPreferences.progressBars
+				local progressBars = GetProgressBarPreferences()
 				local point, relativeTo, relativePoint, x, y =
 					ApplyPoint(Private.progressBarAnchor.frame, progressBars.point, progressBars.relativeTo, key)
 				progressBars.point = point
@@ -1024,7 +1042,7 @@ function Private:CreateOptionsMenu()
 				progressBars.x, progressBars.y = x, y
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1039,15 +1057,15 @@ function Private:CreateOptionsMenu()
 			values = anchorPointValues,
 			updateIndices = { -3, -2, -1, 0 },
 			get = function()
-				return reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
+				return GetProgressBarPreferences().x, GetProgressBarPreferences().y
 			end,
 			set = function(key, key2)
 				local x = tonumber(key)
 				local y = tonumber(key2)
 				if x and y then
-					reminderPreferences.progressBars.x = x
-					reminderPreferences.progressBars.y = y
-					local progressBars = reminderPreferences.progressBars
+					GetProgressBarPreferences().x = x
+					GetProgressBarPreferences().y = y
+					local progressBars = GetProgressBarPreferences()
 					local regionName = utilities.IsValidRegionName(progressBars.relativeTo) and progressBars.relativeTo
 						or "UIParent"
 					Private.progressBarAnchor.frame:SetPoint(
@@ -1060,7 +1078,7 @@ function Private:CreateOptionsMenu()
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			validate = function(key, key2)
 				local x = tonumber(key)
@@ -1068,7 +1086,7 @@ function Private:CreateOptionsMenu()
 				if x and y then
 					return true
 				end
-				return false, reminderPreferences.progressBars.x, reminderPreferences.progressBars.y
+				return false, GetProgressBarPreferences().x, GetProgressBarPreferences().y
 			end,
 		},
 		{
@@ -1082,18 +1100,18 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = fonts,
 			get = function()
-				return reminderPreferences.progressBars.font
+				return GetProgressBarPreferences().font
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.font = key
+				GetProgressBarPreferences().font = key
 				Private.progressBarAnchor:SetFont(
-					reminderPreferences.progressBars.font,
-					reminderPreferences.progressBars.fontSize,
-					reminderPreferences.progressBars.fontOutline
+					GetProgressBarPreferences().font,
+					GetProgressBarPreferences().fontSize,
+					GetProgressBarPreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1102,18 +1120,18 @@ function Private:CreateOptionsMenu()
 			description = "Font size to use for Progress Bar text.",
 			category = "Progress Bars",
 			get = function()
-				return reminderPreferences.progressBars.fontSize
+				return GetProgressBarPreferences().fontSize
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.fontSize = key
+				GetProgressBarPreferences().fontSize = key
 				Private.progressBarAnchor:SetFont(
-					reminderPreferences.progressBars.font,
-					reminderPreferences.progressBars.fontSize,
-					reminderPreferences.progressBars.fontOutline
+					GetProgressBarPreferences().font,
+					GetProgressBarPreferences().fontSize,
+					GetProgressBarPreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -1124,7 +1142,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				else
-					return false, reminderPreferences.progressBars.fontSize
+					return false, GetProgressBarPreferences().fontSize
 				end
 			end,
 		},
@@ -1135,18 +1153,18 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = fontOutlineValues,
 			get = function()
-				return reminderPreferences.progressBars.fontOutline
+				return GetProgressBarPreferences().fontOutline
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.fontOutline = key
+				GetProgressBarPreferences().fontOutline = key
 				Private.progressBarAnchor:SetFont(
-					reminderPreferences.progressBars.font,
-					reminderPreferences.progressBars.fontSize,
-					reminderPreferences.progressBars.fontOutline
+					GetProgressBarPreferences().font,
+					GetProgressBarPreferences().fontSize,
+					GetProgressBarPreferences().fontOutline
 				)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1156,14 +1174,14 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = textAlignmentValues,
 			get = function()
-				return reminderPreferences.progressBars.textAlignment
+				return GetProgressBarPreferences().textAlignment
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.textAlignment = key
-				Private.progressBarAnchor:SetHorizontalTextAlignment(reminderPreferences.progressBars.textAlignment)
+				GetProgressBarPreferences().textAlignment = key
+				Private.progressBarAnchor:SetHorizontalTextAlignment(GetProgressBarPreferences().textAlignment)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1173,14 +1191,14 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = textAlignmentValues,
 			get = function()
-				return reminderPreferences.progressBars.durationAlignment
+				return GetProgressBarPreferences().durationAlignment
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.durationAlignment = key
-				Private.progressBarAnchor:SetDurationTextAlignment(reminderPreferences.progressBars.durationAlignment)
+				GetProgressBarPreferences().durationAlignment = key
+				Private.progressBarAnchor:SetDurationTextAlignment(GetProgressBarPreferences().durationAlignment)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1194,14 +1212,14 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = statusBarTextures,
 			get = function()
-				return reminderPreferences.progressBars.texture
+				return GetProgressBarPreferences().texture
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.texture = key
-				Private.progressBarAnchor:SetTexture(reminderPreferences.progressBars.texture)
+				GetProgressBarPreferences().texture = key
+				Private.progressBarAnchor:SetTexture(GetProgressBarPreferences().texture)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1210,14 +1228,14 @@ function Private:CreateOptionsMenu()
 			description = "The width of Progress Bars.",
 			category = "Progress Bars",
 			get = function()
-				return reminderPreferences.progressBars.width
+				return GetProgressBarPreferences().width
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.width = key
-				Private.progressBarAnchor:SetProgressBarWidth(reminderPreferences.progressBars.width)
+				GetProgressBarPreferences().width = key
+				Private.progressBarAnchor:SetProgressBarWidth(GetProgressBarPreferences().width)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -1228,7 +1246,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				else
-					return false, reminderPreferences.progressBars.width
+					return false, GetProgressBarPreferences().width
 				end
 			end,
 		},
@@ -1239,7 +1257,7 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = { { itemValue = "fill", text = "Fill" }, { itemValue = "drain", text = "Drain" } },
 			get = function()
-				if reminderPreferences.progressBars.fill == true then
+				if GetProgressBarPreferences().fill == true then
 					return "fill"
 				else
 					return "drain"
@@ -1247,14 +1265,14 @@ function Private:CreateOptionsMenu()
 			end,
 			set = function(key)
 				if key == "fill" then
-					reminderPreferences.progressBars.fill = true
+					GetProgressBarPreferences().fill = true
 				else
-					reminderPreferences.progressBars.fill = false
+					GetProgressBarPreferences().fill = false
 				end
-				Private.progressBarAnchor:SetFill(reminderPreferences.progressBars.fill)
+				Private.progressBarAnchor:SetFill(GetProgressBarPreferences().fill)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1264,14 +1282,14 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			values = { { itemValue = "LEFT", text = "Left" }, { itemValue = "RIGHT", text = "Right" } },
 			get = function()
-				return reminderPreferences.progressBars.iconPosition
+				return GetProgressBarPreferences().iconPosition
 			end,
 			set = function(key)
-				reminderPreferences.progressBars.iconPosition = key
-				Private.progressBarAnchor:SetIconPosition(reminderPreferences.progressBars.iconPosition)
+				GetProgressBarPreferences().iconPosition = key
+				Private.progressBarAnchor:SetIconPosition(GetProgressBarPreferences().iconPosition)
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1280,17 +1298,17 @@ function Private:CreateOptionsMenu()
 			description = "Transparency of Progress Bars (0.0 - 1.0).",
 			category = "Progress Bars",
 			get = function()
-				return reminderPreferences.progressBars.alpha
+				return GetProgressBarPreferences().alpha
 			end,
 			set = function(key)
 				local value = tonumber(key)
 				if value then
-					reminderPreferences.progressBars.alpha = value
+					GetProgressBarPreferences().alpha = value
 					Private.progressBarAnchor:SetAlpha(value)
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -1301,7 +1319,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				end
-				return false, reminderPreferences.progressBars.alpha
+				return false, GetProgressBarPreferences().alpha
 			end,
 		},
 		{
@@ -1315,24 +1333,24 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			get = {
 				function()
-					return unpack(reminderPreferences.progressBars.color)
+					return unpack(GetProgressBarPreferences().color)
 				end,
 				function()
-					return unpack(reminderPreferences.progressBars.backgroundColor)
+					return unpack(GetProgressBarPreferences().backgroundColor)
 				end,
 			},
 			set = {
 				function(r, g, b, a)
-					reminderPreferences.progressBars.color = { r, g, b, a }
+					GetProgressBarPreferences().color = { r, g, b, a }
 					Private.progressBarAnchor:SetColor(r, g, b, a)
 				end,
 				function(r, g, b, a)
-					reminderPreferences.progressBars.backgroundColor = { r, g, b, a }
+					GetProgressBarPreferences().backgroundColor = { r, g, b, a }
 					Private.progressBarAnchor:SetBackgroundColor(r, g, b, a)
 				end,
 			},
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1346,24 +1364,24 @@ function Private:CreateOptionsMenu()
 			category = "Progress Bars",
 			get = {
 				function()
-					return reminderPreferences.progressBars.showBorder
+					return GetProgressBarPreferences().showBorder
 				end,
 				function()
-					return reminderPreferences.progressBars.showIconBorder
+					return GetProgressBarPreferences().showIconBorder
 				end,
 			},
 			set = {
 				function(key)
-					reminderPreferences.progressBars.showBorder = key
-					Private.progressBarAnchor:SetShowBorder(reminderPreferences.progressBars.showBorder)
+					GetProgressBarPreferences().showBorder = key
+					Private.progressBarAnchor:SetShowBorder(GetProgressBarPreferences().showBorder)
 				end,
 				function(key)
-					reminderPreferences.progressBars.showIconBorder = key
-					Private.progressBarAnchor:SetShowIconBorder(reminderPreferences.progressBars.showIconBorder)
+					GetProgressBarPreferences().showIconBorder = key
+					Private.progressBarAnchor:SetShowIconBorder(GetProgressBarPreferences().showIconBorder)
 				end,
 			},
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 		},
 		{
@@ -1372,16 +1390,16 @@ function Private:CreateOptionsMenu()
 			description = "Spacing between Progress Bars (-1 - 100).",
 			category = "Progress Bars",
 			get = function()
-				return reminderPreferences.progressBars.spacing
+				return GetProgressBarPreferences().spacing
 			end,
 			set = function(key)
 				local value = tonumber(key)
 				if value then
-					reminderPreferences.progressBars.spacing = value
+					GetProgressBarPreferences().spacing = value
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true and reminderPreferences.progressBars.enabled == true
+				return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 			end,
 			validate = function(key)
 				local value = tonumber(key)
@@ -1392,7 +1410,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				end
-				return false, reminderPreferences.progressBars.spacing
+				return false, GetProgressBarPreferences().spacing
 			end,
 		},
 		{
@@ -1402,10 +1420,10 @@ function Private:CreateOptionsMenu()
 			category = "Text to Speech",
 			values = nil,
 			get = function()
-				return reminderPreferences.textToSpeech.enableAtAdvanceNotice
+				return GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
 			end,
 			set = function(key)
-				reminderPreferences.textToSpeech.enableAtAdvanceNotice = key
+				GetReminderPreferences().textToSpeech.enableAtAdvanceNotice = key
 			end,
 			enabled = enableReminderOption,
 		},
@@ -1415,10 +1433,10 @@ function Private:CreateOptionsMenu()
 			description = "Whether to play text to speech sound at assignment time (i.e. Spell in x seconds).",
 			category = "Text to Speech",
 			get = function()
-				return reminderPreferences.textToSpeech.enableAtTime
+				return GetReminderPreferences().textToSpeech.enableAtTime
 			end,
 			set = function(key)
-				reminderPreferences.textToSpeech.enableAtTime = key
+				GetReminderPreferences().textToSpeech.enableAtTime = key
 			end,
 			enabled = enableReminderOption,
 		},
@@ -1429,16 +1447,16 @@ function Private:CreateOptionsMenu()
 			category = "Text to Speech",
 			values = voices,
 			get = function()
-				return reminderPreferences.textToSpeech.voiceID
+				return GetReminderPreferences().textToSpeech.voiceID
 			end,
 			set = function(key)
-				reminderPreferences.textToSpeech.voiceID = key
+				GetReminderPreferences().textToSpeech.voiceID = key
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true
+				return GetReminderPreferences().enabled == true
 					and (
-						reminderPreferences.textToSpeech.enableAtTime
-						or reminderPreferences.textToSpeech.enableAtAdvanceNotice
+						GetReminderPreferences().textToSpeech.enableAtTime
+						or GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
 					)
 			end,
 		},
@@ -1448,19 +1466,19 @@ function Private:CreateOptionsMenu()
 			description = "The volume to use for Text to Speech",
 			category = "Text to Speech",
 			get = function()
-				return tostring(reminderPreferences.textToSpeech.volume)
+				return tostring(GetReminderPreferences().textToSpeech.volume)
 			end,
 			set = function(key)
 				local value = tonumber(key)
 				if value then
-					reminderPreferences.textToSpeech.volume = value
+					GetReminderPreferences().textToSpeech.volume = value
 				end
 			end,
 			enabled = function()
-				return reminderPreferences.enabled == true
+				return GetReminderPreferences().enabled == true
 					and (
-						reminderPreferences.textToSpeech.enableAtTime
-						or reminderPreferences.textToSpeech.enableAtAdvanceNotice
+						GetReminderPreferences().textToSpeech.enableAtTime
+						or GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
 					)
 			end,
 			validate = function(key)
@@ -1472,7 +1490,7 @@ function Private:CreateOptionsMenu()
 						return true
 					end
 				else
-					return false, reminderPreferences.messages.fontSize
+					return false, GetMessagePreferences().fontSize
 				end
 			end,
 		},
@@ -1488,25 +1506,25 @@ function Private:CreateOptionsMenu()
 			values = sounds,
 			get = {
 				function()
-					return reminderPreferences.sound.enableAtAdvanceNotice
+					return GetReminderPreferences().sound.enableAtAdvanceNotice
 				end,
 				function()
-					return reminderPreferences.sound.advanceNoticeSound
+					return GetReminderPreferences().sound.advanceNoticeSound
 				end,
 			},
 			set = {
 				function(key)
-					reminderPreferences.sound.enableAtAdvanceNotice = key
+					GetReminderPreferences().sound.enableAtAdvanceNotice = key
 				end,
 				function(key)
-					reminderPreferences.sound.advanceNoticeSound = key
+					GetReminderPreferences().sound.advanceNoticeSound = key
 				end,
 			},
 			enabled = {
 				enableReminderOption,
 				function()
-					return reminderPreferences.enabled == true
-						and reminderPreferences.sound.enableAtAdvanceNotice == true
+					return GetReminderPreferences().enabled == true
+						and GetReminderPreferences().sound.enableAtAdvanceNotice == true
 				end,
 			},
 		},
@@ -1519,24 +1537,25 @@ function Private:CreateOptionsMenu()
 			values = sounds,
 			get = {
 				function()
-					return reminderPreferences.sound.enableAtTime
+					return GetReminderPreferences().sound.enableAtTime
 				end,
 				function()
-					return reminderPreferences.sound.atSound
+					return GetReminderPreferences().sound.atSound
 				end,
 			},
 			set = {
 				function(key)
-					reminderPreferences.sound.enableAtTime = key
+					GetReminderPreferences().sound.enableAtTime = key
 				end,
 				function(key)
-					reminderPreferences.sound.atSound = key
+					GetReminderPreferences().sound.atSound = key
 				end,
 			},
 			enabled = {
 				enableReminderOption,
 				function()
-					return reminderPreferences.enabled == true and reminderPreferences.sound.enableAtTime == true
+					return GetReminderPreferences().enabled == true
+						and GetReminderPreferences().sound.enableAtTime == true
 				end,
 			},
 		},
