@@ -194,6 +194,7 @@ do
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h, self.maxHeight))
+		self:FixScroll()
 	end
 
 	---@param self EPDropdownPullout
@@ -331,7 +332,7 @@ do
 		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
 
 		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
-		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+		self:SetScroll(newVerticalScroll)
 		self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 	end
 
