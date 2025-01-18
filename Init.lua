@@ -557,7 +557,9 @@ end
 function Private.classes.Plan:New(o, name, existingID)
 	local instance = CreateNewInstance(self, o)
 	instance.name = name
-	if not existingID then
+	if existingID then
+		instance.ID = existingID
+	else
 		instance.ID = GenerateUniqueID()
 	end
 	return instance
