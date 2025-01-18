@@ -29,6 +29,7 @@ local enabledTextColor = { 1, 1, 1, 1 }
 local defaultDropdownWidth = 200
 local defaultPulloutWidth = 200
 local defaultMaxItems = 13
+local rightArrow = "|TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t"
 
 local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -65,6 +66,39 @@ local function FixStrata(strata, parent, ...)
 		i = i + 1
 		child = select(i, ...)
 	end
+end
+
+---@param levelsToInclude table<integer|string>
+---@param textLevels table<string>
+---@return string
+local function CreateCombinedLevelString(levelsToInclude, textLevels)
+	local combinedLevelString = ""
+	if #levelsToInclude == 0 then
+		for _, textLevel in ipairs(textLevels) do
+			if combinedLevelString:len() == 0 then
+				combinedLevelString = textLevel
+			else
+				combinedLevelString = combinedLevelString .. rightArrow .. textLevel
+			end
+		end
+	else
+		for _, levelToInclude in ipairs(levelsToInclude) do
+			if levelToInclude == "n" then
+				if combinedLevelString:len() == 0 then
+					combinedLevelString = textLevels[#textLevels]
+				else
+					combinedLevelString = combinedLevelString .. rightArrow .. textLevels[#textLevels]
+				end
+			elseif textLevels[levelToInclude] then
+				if combinedLevelString:len() == 0 then
+					combinedLevelString = textLevels[levelToInclude]
+				else
+					combinedLevelString = combinedLevelString .. rightArrow .. textLevels[levelToInclude]
+				end
+			end
+		end
+	end
+	return combinedLevelString
 end
 
 ---@class DropdownItemData
@@ -413,6 +447,8 @@ do
 	---@field itemHorizontalPadding number
 	---@field textHorizontalPadding number
 	---@field maxItems integer
+	---@field showPathText boolean
+	---@field levelsToInclude table<integer|string>
 
 	local Type = "EPDropdown"
 	local Version = 1
@@ -523,12 +559,17 @@ do
 	---@param _ string
 	---@param selected boolean
 	---@param value any
-	local function HandleMenuItemValueChanged(dropdownItem, _, selected, value)
+	---@param text string
+	local function HandleMenuItemValueChanged(dropdownItem, _, selected, value, text)
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
 			self:Fire("OnValueChanged", value, selected)
 		else
 			self:SetValue(value)
+			if self.showPathText then
+				--print(dropdownItem:GetText())
+				self:SetText(text)
+			end
 			self:Fire("OnValueChanged", value)
 			if self.open then
 				self.pullout:Close()
@@ -584,6 +625,7 @@ do
 		self:SetButtonVisibility(true)
 		self:SetEnabled(true)
 		self:SetMaxVisibleItems(defaultMaxItems)
+		self:SetShowPathText(false)
 	end
 
 	---@param self EPDropdown
@@ -641,6 +683,20 @@ do
 	end
 
 	---@param self EPDropdown
+	local function SetTextFromValue(self)
+		local textLevels = {}
+		local item, itemText = self:FindItemAndText(self.value)
+		while item do
+			tinsert(textLevels, 1, itemText)
+			item = item:GetUserDataTable().parentItemMenu
+			if item then
+				itemText = item:GetText()
+			end
+		end
+		self:SetText(CreateCombinedLevelString(self.levelsToInclude, textLevels))
+	end
+
+	---@param self EPDropdown
 	---@param center boolean
 	local function SetTextCentered(self, center)
 		if center then
@@ -653,15 +709,25 @@ do
 	---@param self EPDropdown
 	---@param value any
 	local function SetValue(self, value)
+		local textLevels = {}
 		local item, text = self:FindItemAndText(value)
 		while item do -- Follow chain of parents up to dropdown
 			local menuItemParent = item:GetUserDataTable().parentItemMenu
+			if self.showPathText then
+				tinsert(textLevels, 1, text)
+				if menuItemParent then
+					text = menuItemParent:GetText()
+				end
+			end
 			if not menuItemParent then
 				break
 			end
 			menuItemParent:SetChildValue(value)
 			menuItemParent:SetIsSelectedBasedOnChildValue()
 			item = menuItemParent
+		end
+		if self.showPathText then
+			text = CreateCombinedLevelString(self.levelsToInclude, textLevels)
 		end
 		if not text then
 			text = ""
@@ -756,6 +822,7 @@ do
 		if itemType == "EPDropdownItemMenu" then
 			local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
 			dropdownMenuItem:GetUserDataTable().obj = self
+			dropdownMenuItem:GetUserDataTable().level = 1
 			dropdownMenuItem:SetValue(itemValue)
 			dropdownMenuItem:SetText(text)
 			dropdownMenuItem:SetFontSize(self.itemTextFontSize)
@@ -772,6 +839,7 @@ do
 		elseif itemType == "EPDropdownItemToggle" then
 			local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
 			dropdownItemToggle:GetUserDataTable().obj = self
+			dropdownItemToggle:GetUserDataTable().level = 1
 			dropdownItemToggle:SetValue(itemValue)
 			dropdownItemToggle:SetText(text)
 			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
@@ -998,6 +1066,14 @@ do
 	end
 
 	---@param self EPDropdown
+	---@param show boolean
+	---@param levelsToInclude table<integer|string>?
+	local function SetShowPathText(self, show, levelsToInclude)
+		self.showPathText = show
+		self.levelsToInclude = levelsToInclude or {}
+	end
+
+	---@param self EPDropdown
 	---@param use boolean
 	local function SetUseLineEditForDoubleClick(self, use)
 		if not self.lineEdit and use then
@@ -1135,6 +1211,8 @@ do
 			SetItemHorizontalPadding = SetItemHorizontalPadding,
 			SetUseLineEditForDoubleClick = SetUseLineEditForDoubleClick,
 			SetMaxVisibleItems = SetMaxVisibleItems,
+			SetShowPathText = SetShowPathText,
+			SetTextFromValue = SetTextFromValue,
 			frame = frame,
 			type = Type,
 			count = count,

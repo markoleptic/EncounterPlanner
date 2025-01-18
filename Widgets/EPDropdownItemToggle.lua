@@ -18,6 +18,7 @@ local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
+local rightArrow = "|TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t"
 
 local function FixLevels(parent, ...)
 	local i = 1
@@ -408,10 +409,53 @@ do
 	---@param event string
 	---@param selected boolean
 	---@param value any
-	local function HandleMenuItemValueChanged(dropdownItem, event, selected, value)
+	---@param textLevels table<string>
+	local function HandleMenuItemValueChanged(dropdownItem, event, selected, value, textLevels)
 		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
 		self:SetChildValue(value)
-		self:Fire("OnValueChanged", selected, value)
+
+		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
+			local parent = self:GetUserDataTable().obj --[[@as EPDropdown]]
+			if parent.showPathText then
+				tinsert(textLevels, 1, self:GetText())
+				local combinedLevelString = ""
+				local levelsToInclude = parent.levelsToInclude
+				if #levelsToInclude == 0 then
+					for _, textLevel in ipairs(textLevels) do
+						if combinedLevelString:len() == 0 then
+							combinedLevelString = textLevel
+						else
+							combinedLevelString = combinedLevelString .. rightArrow .. textLevel
+						end
+					end
+				else
+					for _, levelToInclude in ipairs(levelsToInclude) do
+						if levelToInclude == "n" then
+							if combinedLevelString:len() == 0 then
+								combinedLevelString = textLevels[#textLevels]
+							else
+								combinedLevelString = combinedLevelString .. rightArrow .. textLevels[#textLevels]
+							end
+						elseif textLevels[levelToInclude] then
+							if combinedLevelString:len() == 0 then
+								combinedLevelString = textLevels[levelToInclude]
+							else
+								combinedLevelString = combinedLevelString .. rightArrow .. textLevels[levelToInclude]
+							end
+						end
+					end
+				end
+				self:Fire("OnValueChanged", selected, value, combinedLevelString)
+			else
+				self:Fire("OnValueChanged", selected, value)
+			end
+		elseif not self.neverShowItemsAsSelected then
+			tinsert(textLevels, 1, self:GetText())
+			self:Fire("OnValueChanged", selected, value, textLevels)
+		else
+			self:Fire("OnValueChanged", selected, value)
+		end
+
 		if self.open and not self.multiselect then
 			self.parentPullout:Close()
 		end
@@ -423,8 +467,19 @@ do
 	local function HandleItemValueChanged(dropdownItem, event, selected)
 		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
 		self:SetChildValue(dropdownItem:GetValue())
-
-		self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
+		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
+			local combinedLevelString = self:GetText() .. rightArrow .. dropdownItem:GetText()
+			self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue(), combinedLevelString)
+		elseif not self.neverShowItemsAsSelected then
+			self:Fire(
+				"OnValueChanged",
+				dropdownItem.selected,
+				dropdownItem:GetValue(),
+				{ self:GetText(), dropdownItem:GetText() }
+			)
+		else
+			self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
+		end
 		if self.neverShowItemsAsSelected == true then
 			dropdownItem:SetIsSelected(false)
 		else
@@ -451,6 +506,7 @@ do
 				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
+				dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 				self.childPullout:AddItem(dropdownMenuItem)
@@ -464,6 +520,7 @@ do
 				dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
+				dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 				self.childPullout:AddItem(dropdownItemToggle)
@@ -491,6 +548,7 @@ do
 				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
 				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
 				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
+				dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
 				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
 				self.childPullout:AddItem(dropdownMenuItem)
@@ -512,6 +570,7 @@ do
 					dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
 					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
+					dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 					if currentIndex then
