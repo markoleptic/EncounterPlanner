@@ -188,13 +188,21 @@ end
 function Utilities.CreateUniqueNoteName(notes, bossName, existingName)
 	local newNoteName = existingName or bossName
 	if notes then
-		local num = 2
+		local baseName, suffix = newNoteName:match("^(.-)%s*(%d*)$")
+		baseName = baseName or ""
+		local num = tonumber(suffix) or 1
+
 		if notes[newNoteName] then
-			newNoteName = newNoteName .. " " .. num
+			num = suffix ~= "" and (num + 1) or 2
+			newNoteName = baseName .. " " .. num
 		end
-		local newNoteNameLength = newNoteName:len()
+
 		while notes[newNoteName] do
-			newNoteName = newNoteName:sub(1, newNoteNameLength) .. num
+			if #baseName > 0 then
+				newNoteName = baseName .. " " .. num
+			else
+				newNoteName = tostring(num)
+			end
 			num = num + 1
 		end
 	end
