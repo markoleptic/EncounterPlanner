@@ -158,6 +158,7 @@ local function AddButton(self, text, beforeWidget)
 	local currentContentWidth = self.frame:GetWidth() - 2 * framePadding
 	if self.buttonContainer.frame:GetWidth() > currentContentWidth then
 		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * framePadding)
+		self.text:SetWidth(self.frame:GetWidth() - 2 * framePadding)
 	end
 end
 
@@ -172,6 +173,7 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
+	frame:EnableMouse(true)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
