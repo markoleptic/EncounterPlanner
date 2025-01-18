@@ -1235,6 +1235,11 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 			visited[nameOrRole] = true
 		end
 	end
+	for nameOrRole, _ in pairs(roster) do
+		if not visited[nameOrRole] then
+			UpdateRosterEntryClassColoredName(nameOrRole, roster[nameOrRole])
+		end
+	end
 end
 
 -- Splits a string into table using new lines as separators.
