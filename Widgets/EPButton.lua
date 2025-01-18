@@ -74,6 +74,15 @@ local function SetEnabled(self, enabled)
 	else
 		fontString:SetTextColor(unpack(disabledTextColor))
 	end
+	if not enabled then
+		if self.fadeOutGroup:IsPlaying() then
+			self.fadeOutGroup:Stop()
+		end
+		if self.fadeInGroup:IsPlaying() then
+			self.fadeInGroup:Stop()
+		end
+		self.background:Hide()
+	end
 end
 
 ---@param self EPButton
@@ -280,6 +289,8 @@ local function Constructor()
 		icon = icon,
 		background = background,
 		toggleIndicator = toggleIndicator,
+		fadeInGroup = fadeInGroup,
+		fadeOutGroup = fadeOutGroup,
 	}
 
 	button:SetScript("OnEnter", function()
@@ -292,13 +303,13 @@ local function Constructor()
 		end
 	end)
 	button:SetScript("OnLeave", function()
-		if widget.enabled then
-			if fadeInGroup:IsPlaying() then
-				fadeInGroup:Stop()
-			end
-			fadeOutGroup:Play()
-			widget:Fire("OnLeave")
+		if fadeInGroup:IsPlaying() then
+			fadeInGroup:Stop()
 		end
+		if widget.enabled then
+			fadeOutGroup:Play()
+		end
+		widget:Fire("OnLeave")
 	end)
 	button:SetScript("OnClick", function()
 		if widget.enabled then
