@@ -18,7 +18,7 @@ local textOffsetX = 4
 local defaultHorizontalItemPadding = 4
 local fontSize = 14
 local defaultDropdownItemHeight = 24
-local minimumPulloutWidth = 40
+local minimumPulloutWidth = 60
 local pulloutBackdropColor = { 0.1, 0.1, 0.1, 1 }
 local pulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local dropdownBackdropColor = { 0.1, 0.1, 0.1, 1 }
@@ -81,6 +81,7 @@ do
 	---@field type string
 	---@field count integer
 	---@field maxHeight number
+	---@field maxItems integer
 	---@field items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
 	---@field dropdownItemHeight number
 	---@field autoWidth boolean
@@ -102,6 +103,8 @@ do
 		self.scrollIndicatorFrame:Hide()
 		self.frame:ClearAllPoints()
 		self.frame:Hide()
+		self.maxHeight = defaultMaxItems * defaultDropdownItemHeight
+		self.maxItems = defaultMaxItems
 	end
 
 	---@param item EPDropdownItemToggle|EPDropdownItemMenu
@@ -229,12 +232,13 @@ do
 	end
 
 	---@param self EPDropdownPullout
-	---@param height number
-	local function SetMaxHeight(self, height)
-		self.maxHeight = height or (defaultMaxItems * self.dropdownItemHeight)
-		if self.frame:GetHeight() > height then
-			self.frame:SetHeight(height)
-		elseif (self.itemFrame:GetHeight()) < height then
+	---@param maxVisibleItems integer
+	local function SetMaxVisibleItems(self, maxVisibleItems)
+		self.maxItems = maxVisibleItems
+		self.maxHeight = maxVisibleItems * self.dropdownItemHeight
+		if self.frame:GetHeight() > self.maxHeight then
+			self.frame:SetHeight(self.maxHeight)
+		elseif (self.itemFrame:GetHeight()) < self.maxHeight then
 			self.frame:SetHeight(self.itemFrame:GetHeight())
 		end
 	end
@@ -248,14 +252,12 @@ do
 	---@param self EPDropdownPullout
 	---@param height number
 	local function SetItemHeight(self, height)
-		if self.maxHeight == defaultMaxItems * self.dropdownItemHeight then
-			self.maxHeight = defaultMaxItems * height
-		end
 		self.dropdownItemHeight = height
+		self.maxHeight = self.maxItems * height
 		for _, item in ipairs(self.items) do
-			item:SetHeight(self.dropdownItemHeight)
+			item:SetHeight(height)
 		end
-		local h = #self.items * self.dropdownItemHeight
+		local h = #self.items * height
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h, self.maxHeight))
 	end
@@ -354,7 +356,7 @@ do
 			Open = Open,
 			Close = Close,
 			Clear = Clear,
-			SetMaxHeight = SetMaxHeight,
+			SetMaxVisibleItems = SetMaxVisibleItems,
 			SetItemHeight = SetItemHeight,
 			SetScroll = SetScroll,
 			FixScroll = FixScroll,
@@ -369,6 +371,7 @@ do
 			count = count,
 			maxHeight = defaultMaxItems * defaultDropdownItemHeight,
 			items = {},
+			maxItems = defaultMaxItems,
 		}
 
 		scrollFrame:SetScript("OnMouseWheel", function(_, delta)
@@ -409,6 +412,7 @@ do
 	---@field itemTextFontSize number
 	---@field itemHorizontalPadding number
 	---@field textHorizontalPadding number
+	---@field maxItems integer
 
 	local Type = "EPDropdown"
 	local Version = 1
@@ -553,7 +557,13 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
-		self.showHighlight = false
+		self.frame:SetBackdrop(dropdownBackdrop)
+		self.frame:SetBackdropColor(unpack(dropdownBackdropColor))
+		self.frame:SetBackdropBorderColor(unpack(dropdownBackdropBorderColor))
+		self.frame:Show()
+		self.text:Show()
+		self.buttonCover:Show()
+		self.button:Show()
 		self.itemHorizontalPadding = defaultHorizontalItemPadding
 		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.textHorizontalPadding = defaultHorizontalItemPadding
@@ -573,7 +583,7 @@ do
 		self:SetPulloutWidth(nil)
 		self:SetButtonVisibility(true)
 		self:SetEnabled(true)
-		self.frame:Show()
+		self:SetMaxVisibleItems(defaultMaxItems)
 	end
 
 	---@param self EPDropdown
@@ -981,6 +991,13 @@ do
 	end
 
 	---@param self EPDropdown
+	---@param maxVisibleItems integer
+	local function SetMaxVisibleItems(self, maxVisibleItems)
+		self.maxItems = maxVisibleItems
+		self.pullout:SetMaxVisibleItems(maxVisibleItems)
+	end
+
+	---@param self EPDropdown
 	---@param use boolean
 	local function SetUseLineEditForDoubleClick(self, use)
 		if not self.lineEdit and use then
@@ -1117,6 +1134,7 @@ do
 			SetTextHorizontalPadding = SetTextHorizontalPadding,
 			SetItemHorizontalPadding = SetItemHorizontalPadding,
 			SetUseLineEditForDoubleClick = SetUseLineEditForDoubleClick,
+			SetMaxVisibleItems = SetMaxVisibleItems,
 			frame = frame,
 			type = Type,
 			count = count,

@@ -390,9 +390,9 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
-	---@param autoWidth boolean
-	---@param height number
-	local function CreateChildPullout(self, autoWidth, height)
+	---@param dropdownParent EPDropdown
+	local function CreateChildPullout(self, dropdownParent)
+		local autoWidth, height = dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight
 		local childPullout = AceGUI:Create("EPDropdownPullout")
 		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		childPullout:GetUserDataTable().obj = self
@@ -400,6 +400,7 @@ do
 		childPullout:SetCallback("OnClose", HandleChildPulloutClose)
 		childPullout:SetItemHeight(height)
 		childPullout:SetAutoWidth(autoWidth)
+		childPullout:SetMaxVisibleItems(dropdownParent.maxItems)
 		return childPullout
 	end
 
@@ -439,8 +440,7 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
 	local function SetMenuItems(self, dropdownItemData, dropdownParent)
-		self.childPullout =
-			CreateChildPullout(self, dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight)
+		self.childPullout = CreateChildPullout(self, dropdownParent)
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
@@ -478,8 +478,7 @@ do
 	---@param index integer?
 	local function AddMenuItems(self, dropdownItemData, dropdownParent, index)
 		if not self.childPullout then
-			self.childPullout =
-				CreateChildPullout(self, dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight)
+			self.childPullout = CreateChildPullout(self, dropdownParent)
 		end
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
