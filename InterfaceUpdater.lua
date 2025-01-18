@@ -191,7 +191,7 @@ do
 			end
 			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 			if bossDungeonEncounterID then
-				InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
 		end
 	end
@@ -202,7 +202,47 @@ do
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
 		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 		if bossDungeonEncounterID then
-			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+		end
+	end
+
+	---@param abilityEntry EPAbilityEntry
+	local function HandleSwapButtonClicked(abilityEntry)
+		local assigneeDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
+		abilityEntry:SetAssigneeDropdownItems(assigneeDropdownItems)
+	end
+
+	---@param abilityEntry EPAbilityEntry
+	local function HandleSwapAssignee(abilityEntry, _, newAssigneeNameOrRole)
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+
+		local key = abilityEntry:GetKey()
+		if key then
+			local assignments = GetCurrentAssignments()
+			if type(key) == "string" then
+				for _, assignment in ipairs(assignments) do
+					if assignment.assigneeNameOrRole == key then
+						assignment.assigneeNameOrRole = newAssigneeNameOrRole
+					end
+				end
+			elseif type(key) == "table" then
+				local assigneeNameOrRole = key.assigneeNameOrRole
+				local spellID = key.spellID
+				for _, assignment in ipairs(assignments) do
+					if
+						assignment.assigneeNameOrRole == assigneeNameOrRole
+						and assignment.spellInfo.spellID == spellID
+					then
+						assignment.assigneeNameOrRole = newAssigneeNameOrRole
+					end
+				end
+			end
+			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+			if bossDungeonEncounterID then
+				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+			end
 		end
 	end
 
@@ -218,15 +258,24 @@ do
 				local children = {}
 				local roster = GetCurrentRoster()
 				local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
+				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
 				for _, textTable in ipairs(map) do
 					local assigneeNameOrRole = textTable.assigneeNameOrRole
 					local coloredAssigneeNameOrRole = textTable.text
+					local assigneeCollapsed = collapsed[assigneeNameOrRole]
+
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
 					assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
 					assigneeEntry:SetFullWidth(true)
 					assigneeEntry:SetHeight(30)
 					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 					assigneeEntry:SetRole(roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or nil)
+					assigneeEntry:SetCollapsible(true)
+					assigneeEntry:ShowSwapIcon(true)
+					assigneeEntry:SetCollapsed(assigneeCollapsed)
+					assigneeEntry:SetCallback("SwapButtonClicked", HandleSwapButtonClicked)
+					assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
+					assigneeEntry:SetCallback("AssigneeSwapped", HandleSwapAssignee)
 					assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
 						local messageBox = InterfaceUpdater.CreateMessageBox(
 							"Delete Assignments Confirmation",
@@ -240,15 +289,9 @@ do
 							end)
 						end
 					end)
-					assigneeEntry.label.text:SetJustifyH("LEFT")
-					assigneeEntry.label.text:SetPoint("RIGHT", assigneeEntry.label.frame, "RIGHT", -2, 0)
-					assigneeEntry:SetCollapsible(true)
-					assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 					tinsert(children, assigneeEntry)
-					local collapsed =
-						AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[assigneeNameOrRole]
-					assigneeEntry:SetCollapsed(collapsed)
-					if not collapsed then
+
+					if not assigneeCollapsed then
 						for _, spellID in ipairs(textTable.spells) do
 							local spellEntry = AceGUI:Create("EPAbilityEntry")
 							local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
@@ -282,8 +325,6 @@ do
 									end)
 								end
 							end)
-							spellEntry.label.text:SetJustifyH("LEFT")
-							spellEntry.label.text:SetPoint("RIGHT", spellEntry.label.frame, "RIGHT", -2, 0)
 							tinsert(children, spellEntry)
 						end
 					end

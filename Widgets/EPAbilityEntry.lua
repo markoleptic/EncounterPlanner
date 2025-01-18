@@ -27,18 +27,12 @@ local listItemBackdrop = {
 	tileSize = 16,
 	edgeSize = 1,
 }
-
 local checkBackdrop = {
 	bgFile = nil,
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = false,
 	tileSize = nil,
 	edgeSize = 1,
-}
-local roleTextures = {
-	["role:tank"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:0:19:22:41|t",
-	["role:healer"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:1:20|t",
-	["role:damager"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:22:41|t",
 }
 
 ---@class EPAbilityEntry : AceGUIWidget
@@ -47,6 +41,8 @@ local roleTextures = {
 ---@field count number
 ---@field label EPLabel
 ---@field check EPButton
+---@field swap EPButton|nil
+---@field dropdown EPDropdown
 ---@field checkBackground table|BackdropTemplate|Frame
 ---@field collapseButton Button|table
 ---@field enabled boolean
@@ -56,11 +52,27 @@ local roleTextures = {
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.frame:Show()
+	self.frame:SetSize(frameWidth, frameHeight)
+
+	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT", padding.x, 0)
+	self.collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+
+	self.checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	self.checkBackground:SetPoint("RIGHT", -padding.x, 0)
+	self.checkBackground:Show()
+
+	self.swapBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x / 2, 0)
+	self.swapBackground:Hide()
+
+	self.roleTexture:SetSize(16, 16)
+	self.roleTexture:Hide()
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame --[[@as Frame]])
 	self.label.frame:SetPoint("LEFT")
 	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
+	self.label:SetHorizontalTextAlignment("LEFT")
 	self.label:SetHeight(frameHeight)
 
 	self.roleTexture:SetPoint("RIGHT", self.label.frame, "LEFT", -padding.x, 0)
@@ -92,9 +104,30 @@ end
 local function OnRelease(self)
 	self.label:Release()
 	self.label = nil
+
 	self.check:Release()
 	self.check = nil
+
+	if self.swap then
+		self.swap:Release()
+	end
+	self.swap = nil
+
+	if self.dropdown then
+		self.dropdown:Release()
+	end
+	self.dropdown = nil
+
 	self.key = nil
+
+	self.frame:ClearAllPoints()
+	self.frame:Hide()
+	self.collapseButton:ClearAllPoints()
+	self.collapseButton:Hide()
+	self.checkBackground:ClearAllPoints()
+	self.checkBackground:Hide()
+	self.swapBackground:ClearAllPoints()
+	self.swapBackground:Hide()
 end
 
 ---@param self EPAbilityEntry
@@ -102,6 +135,13 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	self.label:SetEnabled(enabled)
+	self.check:SetEnabled(enabled)
+	if self.swap then
+		self.swap:SetEnabled(enabled)
+	end
+	if self.dropdown then
+		self.dropdown:SetEnabled(enabled)
+	end
 end
 
 ---@param self EPAbilityEntry
@@ -245,6 +285,70 @@ local function SetCollapsed(self, collapsed)
 	end
 end
 
+---@param self EPAbilityEntry
+---@param items DropdownItemData
+local function SetAssigneeDropdownItems(self, items)
+	self.dropdown:AddItems(items, "EPDropdownItemToggle", true)
+	self.dropdown.frame:Show()
+	self.dropdown:Open()
+end
+
+---@param self EPAbilityEntry
+---@param show boolean
+local function ShowSwapIcon(self, show)
+	if show and not self.swap then
+		self.swapBackground:Show()
+		self.label.frame:SetPoint("RIGHT", self.swapBackground, "LEFT", -padding.x, 0)
+
+		local checkSpacing = checkBackdrop.edgeSize
+		local checkSize = frameHeight - 2 * checkSpacing
+
+		self.swap = AceGUI:Create("EPButton")
+		self.swap:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-swap-32]])
+		self.swap.frame:SetParent(self.swapBackground --[[@as Frame]])
+		self.swap.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
+		self.swap.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
+		self.swap:SetWidth(checkSize)
+		self.swap:SetHeight(checkSize)
+		self.swap:SetBackdropColor(unpack(checkBackdropColor))
+		self.swap:SetCallback("Clicked", function()
+			if self.enabled then
+				if self.dropdown.frame:IsShown() then
+					self.dropdown:Close()
+					self.dropdown:Clear()
+				else
+					self:Fire("SwapButtonClicked")
+				end
+			end
+		end)
+
+		self.dropdown = AceGUI:Create("EPDropdown")
+		self.dropdown.frame:SetParent(self.swap.frame --[[@as Frame]])
+		self.dropdown.frame:SetPoint("BOTTOMLEFT", self.swapBackground --[[@as Frame]], "BOTTOMLEFT", 0, -1)
+		self.dropdown.frame:SetWidth(1)
+		self.dropdown.frame:ClearBackdrop()
+		self.dropdown.text:Hide()
+		self.dropdown.buttonCover:Hide()
+		self.dropdown.button:Hide()
+		self.dropdown.text:Hide()
+		self.dropdown.frame:Hide()
+		self.dropdown:SetMaxVisibleItems(8)
+		self.dropdown:SetCallback("OnClosed", function()
+			self.dropdown.frame:Hide()
+		end)
+		self.dropdown:SetCallback("OnValueChanged", function(_, _, value)
+			self:Fire("AssigneeSwapped", value)
+		end)
+	else
+		self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x, 0)
+		self.swapBackground:Hide()
+		if self.swap then
+			self.swap:Release()
+			self.swap = nil
+		end
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -255,14 +359,14 @@ local function Constructor()
 	frame:SetSize(frameWidth, frameHeight)
 	frame:EnableMouse(true)
 
-	local button = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
-	button:SetPoint("LEFT", frame, "LEFT", padding.x, 0)
-	button:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
-	button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	button:RegisterForClicks("LeftButtonUp")
-	button:Hide()
+	local collapseButton = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
+	collapseButton:SetPoint("LEFT", frame, "LEFT", padding.x, 0)
+	collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	collapseButton:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	collapseButton:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	collapseButton:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	collapseButton:RegisterForClicks("LeftButtonUp")
+	collapseButton:Hide()
 
 	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
 	checkBackground:SetBackdrop(checkBackdrop)
@@ -270,6 +374,14 @@ local function Constructor()
 	checkBackground:SetBackdropBorderColor(unpack(backdropBorderColor))
 	checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
 	checkBackground:SetPoint("RIGHT", -padding.x, 0)
+
+	local swapBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
+	swapBackground:SetBackdrop(checkBackdrop)
+	swapBackground:SetBackdropColor(unpack(checkBackdropColor))
+	swapBackground:SetBackdropBorderColor(unpack(backdropBorderColor))
+	swapBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	swapBackground:SetPoint("RIGHT", checkBackground, "LEFT", -padding.x / 2, 0)
+	swapBackground:Hide()
 
 	local roleTexture = frame:CreateTexture(nil, "OVERLAY")
 	roleTexture:SetSize(16, 16)
@@ -292,11 +404,14 @@ local function Constructor()
 		GetKey = GetKey,
 		SetRole = SetRole,
 		SetCheckedTextureColor = SetCheckedTextureColor,
+		ShowSwapIcon = ShowSwapIcon,
+		SetAssigneeDropdownItems = SetAssigneeDropdownItems,
 		frame = frame,
 		type = Type,
 		count = count,
 		checkBackground = checkBackground,
-		collapseButton = button,
+		swapBackground = swapBackground,
+		collapseButton = collapseButton,
 		roleTexture = roleTexture,
 	}
 
