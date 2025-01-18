@@ -163,6 +163,7 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 			1
 		)
 	end
+	self.spellAssignmentDropdown:SetTextFromValue()
 	self:Fire("DataChanged", "SpellAssignment", value)
 end
 
@@ -333,7 +334,7 @@ local function OnAcquire(self)
 		self.assigneeTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleAssigneeTypeDropdownValueChanged(self, value)
 		end)
-
+		self.assigneeTypeDropdown:SetShowPathText(true, { 1, 2 })
 		self.assigneeTypeContainer:AddChildren(self.assigneeTypeLabel, self.assigneeTypeDropdown)
 	end
 
@@ -363,7 +364,7 @@ local function OnAcquire(self)
 		end)
 		self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
-
+		self.spellAssignmentDropdown:SetShowPathText(true, { 2, "n" })
 		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)
 	end
 
