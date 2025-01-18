@@ -405,6 +405,93 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 	return nil
 end
 
+---@param relativeTime number Time relative to the combat log event.
+---@param bossDungeonEncounterID integer
+---@param currentCombatLogEventType CombatLogEventType Type of combat log event.
+---@param currentCombatLogEventSpellID integer
+---@param currentSpellCount integer
+---@param newCombatLogEventSpellID integer
+---@param allowBefore boolean? If specified, spell will be chosen before the time if none can be found without doing so.
+---@return integer|nil -- spell count
+---@return number|nil -- leftover time offset
+function Utilities.FindNearestSpellCount(
+	relativeTime,
+	bossDungeonEncounterID,
+	currentCombatLogEventType,
+	currentCombatLogEventSpellID,
+	currentSpellCount,
+	newCombatLogEventSpellID,
+	allowBefore
+)
+	local absoluteTime = Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+		relativeTime,
+		bossDungeonEncounterID,
+		currentCombatLogEventSpellID,
+		currentSpellCount,
+		currentCombatLogEventType
+	)
+	local minTime = hugeNumber
+	local spellCountForMinTime = nil
+	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	if absoluteSpellCastStartTable and absoluteSpellCastStartTable[newCombatLogEventSpellID] then
+		local spellCountAndTime = absoluteSpellCastStartTable[newCombatLogEventSpellID]
+		local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, newCombatLogEventSpellID)
+		if allowBefore then
+			local minTimeBefore = hugeNumber
+			local spellCountForMinTimeBefore = nil
+			for spellCount, time in pairs(spellCountAndTime) do
+				local adjustedTime = time.castStart
+				if ability then
+					if currentCombatLogEventType == "SAR" then
+						adjustedTime = adjustedTime + ability.duration + ability.castTime
+					elseif currentCombatLogEventType == "SCC" or currentCombatLogEventType == "SAA" then
+						adjustedTime = adjustedTime + ability.castTime
+					end
+				end
+				if adjustedTime <= absoluteTime then
+					local difference = absoluteTime - adjustedTime
+					if difference < minTime then
+						minTime = difference
+						spellCountForMinTime = spellCount
+					end
+				else
+					local difference = adjustedTime - absoluteTime
+					if difference < minTimeBefore then
+						minTimeBefore = difference
+						spellCountForMinTimeBefore = spellCount
+					end
+				end
+			end
+			if not spellCountForMinTime then
+				minTime = minTimeBefore
+				spellCountForMinTime = spellCountForMinTimeBefore
+			end
+		else
+			for spellCount, time in pairs(spellCountAndTime) do
+				local adjustedTime = time.castStart
+				if ability then
+					if currentCombatLogEventType == "SAR" then
+						adjustedTime = adjustedTime + ability.duration + ability.castTime
+					elseif currentCombatLogEventType == "SCC" or currentCombatLogEventType == "SAA" then
+						adjustedTime = adjustedTime + ability.castTime
+					end
+				end
+				if adjustedTime <= absoluteTime then
+					local difference = absoluteTime - adjustedTime
+					if difference < minTime then
+						minTime = difference
+						spellCountForMinTime = spellCount
+					end
+				end
+			end
+		end
+	end
+	if spellCountForMinTime then
+		return spellCountForMinTime, minTime
+	end
+	return nil
+end
+
 ---@alias AssignmentConversionMethod
 ---| 1 # Convert combat log event assignments to timed assignments
 ---| 2 # Replace combat log event spells with those of the new boss, matching the closest timing

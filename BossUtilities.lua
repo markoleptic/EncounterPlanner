@@ -173,8 +173,9 @@ end
 function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
 	local spellCount = absoluteSpellCastStartTables[bossDungeonEncounterID]
 	if spellCount then
-		if spellCount[spellID] then
-			return count >= 1 and count <= #spellCount[spellID]
+		local spellCountBySpellID = spellCount[spellID]
+		if spellCountBySpellID then
+			return spellCountBySpellID[count] ~= nil
 		end
 	end
 	return false

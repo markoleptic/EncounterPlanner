@@ -328,8 +328,31 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			local spellID = tonumber(value)
 			if spellID then
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
+				if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
+					assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+					print("is valid spell count")
+				else
+					print("not valid spell count")
+					local newSpellCount, newMinTime = utilities.FindNearestSpellCount(
+						assignment.time,
+						bossDungeonEncounterID,
+						assignment.combatLogEventType,
+						assignment.combatLogEventSpellID,
+						spellCount,
+						spellID,
+						true
+					)
+					if newSpellCount and newMinTime then
+						assignment--[[@as CombatLogEventAssignment]].time = newMinTime
+						assignment--[[@as CombatLogEventAssignment]].spellCount = newSpellCount
+						assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+					end
+				end
 			end
+			updateFields = true
 		end
 	elseif dataType == "CombatLogEventSpellCount" then
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
