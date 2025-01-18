@@ -408,6 +408,10 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDu
 	if updateAddAssigneeDropdown then
 		InterfaceUpdater.UpdateAddAssigneeDropdown()
 	end
+	local timeline = Private.mainFrame.timeline
+	if timeline then -- Sometimes items in this container are invisible for unknown reasons..
+		timeline.assignmentTimeline.listContainer:DoLayout()
+	end
 end
 
 ---@param noteName string
