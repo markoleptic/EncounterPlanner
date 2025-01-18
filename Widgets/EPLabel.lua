@@ -170,10 +170,11 @@ end
 
 ---@param self EPLabel
 local function SetFrameWidthFromText(self)
+	local paddingWidth = self.horizontalTextPadding.left + self.horizontalTextPadding.right
 	if self.showIcon then
-		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + self.horizontalTextPadding * 2)
+		self.frame:SetWidth(self.frame:GetHeight() + self.text:GetStringWidth() + paddingWidth)
 	else
-		self.frame:SetWidth(self.text:GetStringWidth() + self.horizontalTextPadding * 2)
+		self.frame:SetWidth(self.text:GetStringWidth() + paddingWidth)
 	end
 end
 
