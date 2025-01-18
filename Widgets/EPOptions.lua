@@ -12,6 +12,8 @@ local UIParent = UIParent
 local tooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
+local geterrorhandler = geterrorhandler
+local GetMouseFoci = GetMouseFoci
 local ipairs = ipairs
 local min = math.min
 local pairs = pairs
@@ -21,7 +23,17 @@ local unpack = unpack
 local IsMouseButtonDown = IsMouseButtonDown
 local ResetCursor = ResetCursor
 local SetCursor = SetCursor
-local GetMouseFoci = GetMouseFoci
+local xpcall = xpcall
+
+local function errorhandler(err)
+	return geterrorhandler()(err)
+end
+
+local function SafeCall(func, ...)
+	if func then
+		return xpcall(func, errorhandler, ...)
+	end
+end
 
 local frameWidth = 500
 local frameHeight = 500
@@ -391,7 +403,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	doubleLineEditContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
 
 	local labelX = AceGUI:Create("EPLabel")
-	labelX:SetText(option.labels[1] .. ":")
+	labelX:SetText(option.labels[1] .. ":", 0)
 	labelX:SetRelativeWidth(0.05)
 	labelX:SetFullHeight(true)
 
@@ -399,7 +411,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	lineEditX:SetRelativeWidth(0.45)
 
 	local labelY = AceGUI:Create("EPLabel")
-	labelY:SetText(option.labels[2] .. ":")
+	labelY:SetText(option.labels[2] .. ":", 0)
 	labelY:SetRelativeWidth(0.05)
 	labelY:SetFullHeight(true)
 
@@ -674,6 +686,40 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
+local function CreateCenteredButton(self, option)
+	local container = AceGUI:Create("EPContainer")
+	container:SetFullWidth(true)
+	container:SetLayout("EPVerticalLayout")
+	container:SetAlignment("center")
+	container:SetSelfAlignment("center")
+
+	local button = AceGUI:Create("EPButton")
+	button:SetText(option.label)
+	button:SetWidthFromText()
+
+	if option.enabled then
+		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
+	end
+	button:SetCallback("Clicked", function()
+		if option.buttonCallback then
+			option.buttonCallback()
+		end
+		RefreshEnabledStates(self.refreshMap)
+	end)
+
+	button:SetCallback("OnEnter", function()
+		ShowTooltip(button.frame, option.label, option.description)
+	end)
+	button:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+
+	container:AddChild(button)
+	return container
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
 ---@param index integer
 ---@return EPContainer
 local function CreateOptionWidget(self, option, index)
@@ -702,9 +748,11 @@ local function CreateOptionWidget(self, option, index)
 		addWidget = false
 	elseif option.type == "checkBoxWithDropdown" then
 		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, index))
+	elseif option.type == "centeredButton" then
+		tinsert(containerChildren, CreateCenteredButton(self, option))
 	else
 		label = AceGUI:Create("EPLabel")
-		label:SetText(option.label .. ":")
+		label:SetText(option.label .. ":", 0)
 		label:SetFontSize(optionLabelFontSize)
 		label:SetFrameWidthFromText()
 		label:SetFullHeight(true)
@@ -794,7 +842,7 @@ local function CreateUncategorizedOptionWidgets(self, tab)
 	local maxLabelWidth = 0
 
 	for index, option in ipairs(self.optionTabs[tab]) do
-		if not option.category then
+		if not option.category and not option.uncategorizedBottom then
 			if option.type == "horizontalLine" then
 				local line = AceGUI:Create("EPSpacer")
 				line.frame:SetBackdrop(lineBackdrop)
@@ -853,7 +901,7 @@ local function PopulateActiveTab(self, tab)
 	local categories = self.tabCategories[tab]
 	for categoryIndex, category in ipairs(categories) do
 		local categoryLabel = AceGUI:Create("EPLabel")
-		categoryLabel:SetText(category)
+		categoryLabel:SetText(category, 0)
 		categoryLabel:SetFontSize(categoryFontSize)
 		categoryLabel:SetFullWidth(true)
 		categoryLabel:SetFrameHeightFromText()
@@ -905,6 +953,16 @@ local function PopulateActiveTab(self, tab)
 		end
 	end
 
+	for index, option in ipairs(self.optionTabs[tab]) do
+		if option.uncategorizedBottom and not option.category then
+			local categorySpacer = AceGUI:Create("EPSpacer")
+			categorySpacer:SetHeight(spacingBetweenCategories)
+			tinsert(activeContainerChildren, categorySpacer)
+			local container = CreateOptionWidget(self, option, index)
+			tinsert(activeContainerChildren, container)
+		end
+	end
+
 	self.activeContainer:AddChildren(unpack(activeContainerChildren))
 	RefreshEnabledStates(self.refreshMap)
 	self:Resize()
@@ -923,6 +981,7 @@ end
 ---| "doubleColorPicker"
 ---| "doubleCheckBox"
 ---| "checkBoxWithDropdown"
+---| "centeredButton"
 
 ---@class EPSettingOption
 ---@field label string
@@ -941,6 +1000,7 @@ end
 ---@field buttonText? string
 ---@field buttonEnabled? fun(): boolean
 ---@field buttonCallback? fun()
+---@field uncategorizedBottom? boolean
 
 ---@class EPOptions : AceGUIWidget
 ---@field type string
@@ -1083,11 +1143,6 @@ local function UpdateVerticalScroll(self)
 end
 
 ---@param self EPOptions
-local function OnHeightSet(self, height) end
-
-local function OnWidthSet(self, width) end
-
----@param self EPOptions
 ---@param tabName string
 ---@param categories table<integer, string>?
 ---@param options table<integer, EPSettingOption>
@@ -1109,7 +1164,10 @@ local function AddOptionTab(self, tabName, options, categories)
 				end
 			end
 			button:Toggle()
-			PopulateActiveTab(self, button.button:GetText())
+			local success, err = SafeCall(PopulateActiveTab, self, button.button:GetText())
+			if not success then
+				print("Error opening options widget:", err)
+			end
 		end
 	end)
 	SetButtonWidths(self.tabTitleContainer)
@@ -1253,8 +1311,6 @@ local function Constructor()
 		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		OnHeightSet = OnHeightSet,
-		OnWidthSet = OnWidthSet,
 		AddOptionTab = AddOptionTab,
 		SetCurrentTab = SetCurrentTab,
 		UpdateVerticalScroll = UpdateVerticalScroll,

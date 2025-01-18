@@ -1559,6 +1559,19 @@ function Private:CreateOptionsMenu()
 				end,
 			},
 		},
+		{
+			label = "Clear Trusted Characters",
+			category = "Other",
+			type = "centeredButton",
+			description = "Clears all saved trusted characters. You will see a warning each time a new character sends "
+				.. "a plan to you.",
+			enabled = function()
+				return #AddOn.db.profile.trustedCharacters > 0
+			end,
+			buttonCallback = function()
+				wipe(AddOn.db.profile.trustedCharacters)
+			end,
+		},
 	}
 
 	Private.messageAnchor = CreateMessageAnchor()
@@ -1568,7 +1581,11 @@ function Private:CreateOptionsMenu()
 	Private.progressBarAnchor.frame:Hide()
 
 	optionsMenu:AddOptionTab("Keybindings", keyBindingOptions, { "Assignment", "Timeline" })
-	optionsMenu:AddOptionTab("Reminder", reminderOptions, { "Messages", "Progress Bars", "Text to Speech", "Sound" })
+	optionsMenu:AddOptionTab(
+		"Reminder",
+		reminderOptions,
+		{ "Messages", "Progress Bars", "Text to Speech", "Sound", "Other" }
+	)
 	optionsMenu:AddOptionTab("View", viewOptions, { "Assignment" })
 	optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	optionsMenu:SetCurrentTab("Keybindings")
