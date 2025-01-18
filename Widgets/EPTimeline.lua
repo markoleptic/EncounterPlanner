@@ -984,6 +984,7 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 	frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
 	frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
 	frame.spellTexture:SetWidth(assignmentTextureSize.y - 4)
+	frame.selected = true
 	frame.timelineAssignment = timelineAssignment
 	assignmentFrameBeingDragged = frame
 	frame:SetScript("OnUpdate", function(f, delta)
@@ -1218,14 +1219,8 @@ end
 -- Updates the rendering of assignments on the timeline.
 ---@param self EPTimeline
 local function UpdateAssignments(self)
-	for _, frame in pairs(self.assignmentFrames) do
-		frame:Hide()
-		frame:SetWidth(assignmentTextureSize.x)
-		frame.invalidTexture:Hide()
-		frame.cooldownBackground:SetWidth(0)
-		frame.cooldownBackground:Hide()
-		frame.cooldownWidth = 0
-	end
+	-- Clears/resets assignment frames
+	local selected, selectedByClicking = self:GetSelectedAssignments(true)
 
 	wipe(self.orderedWithSpellIDAssignmentFrameIndices)
 	local orderedFrameIndices = {}
@@ -1274,6 +1269,14 @@ local function UpdateAssignments(self)
 			assignmentFrame.cooldownBackground:SetPoint("LEFT", timelineFrame, left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
+	end
+
+	for _, uniqueAssignmentID in ipairs(selected) do
+		self:SelectAssignment(uniqueAssignmentID, true)
+	end
+
+	for _, uniqueAssignmentID in ipairs(selectedByClicking) do
+		self:SelectAssignment(uniqueAssignmentID)
 	end
 end
 
@@ -1692,6 +1695,7 @@ end
 ---@field timelineAssignment TimelineAssignment|nil
 ---@field spellID integer
 ---@field selectedByClicking boolean|nil
+---@field selected boolean|nil
 
 ---@class BossAbilityFrame : Frame
 ---@field assignmentFrame table|Frame
@@ -2367,7 +2371,41 @@ local function SelectAssignment(self, assignmentID, selectedByClicking)
 			frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
 			frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 		end
+		frame.selected = true
 	end
+end
+
+---@param self EPTimeline
+---@param clear boolean If true, assignment frames are reset
+---@return table<integer>
+---@return table<integer>
+local function GetSelectedAssignments(self, clear)
+	local selected, selectedByClicking = {}, {}
+	for _, frame in ipairs(self.assignmentFrames) do
+		if frame.selected then
+			if frame.selectedByClicking then
+				selected[#selected + 1] = frame.uniqueAssignmentID
+			else
+				selectedByClicking[#selectedByClicking + 1] = frame.uniqueAssignmentID
+			end
+		end
+		if clear then
+			frame:Hide()
+			frame:SetWidth(assignmentTextureSize.x)
+			frame.invalidTexture:Hide()
+			frame.cooldownBackground:SetWidth(0)
+			frame.cooldownBackground:Hide()
+			frame.cooldownWidth = 0
+			frame.uniqueAssignmentID = 0
+			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
+			frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
+			frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
+			frame.selectedByClicking = nil
+			frame.selected = nil
+		end
+	end
+	return selected, selectedByClicking
 end
 
 ---@param self EPTimeline
@@ -2382,6 +2420,7 @@ local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelecte
 			frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
 			frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 			frame.selectedByClicking = nil
+			frame.selected = nil
 		end
 	end
 end
@@ -2424,6 +2463,7 @@ local function ClearSelectedAssignments(self)
 		frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
 		frame.spellTexture:SetWidth(assignmentTextureSize.y - 2)
 		frame.selectedByClicking = nil
+		frame.selected = nil
 	end
 end
 
@@ -2613,6 +2653,7 @@ local function Constructor()
 		UpdateAssignmentsAndTickMarks = UpdateAssignmentsAndTickMarks,
 		GetTotalTimelineDuration = GetTotalTimelineDuration,
 		SetIsSimulating = SetIsSimulating,
+		GetSelectedAssignments = GetSelectedAssignments,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

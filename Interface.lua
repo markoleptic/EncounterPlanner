@@ -333,9 +333,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 				if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
 					assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
 					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
-					print("is valid spell count")
 				else
-					print("not valid spell count")
 					local newSpellCount, newMinTime = utilities.FindNearestSpellCount(
 						assignment.time,
 						bossDungeonEncounterID,
@@ -454,9 +452,7 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		end
 	end
 	if updateAssignments then
-		timeline:ClearSelectedAssignments()
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-		timeline:SelectAssignment(assignment.uniqueID, true)
 	end
 end
 
