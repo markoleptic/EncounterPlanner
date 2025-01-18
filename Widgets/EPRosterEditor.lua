@@ -47,6 +47,74 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 
+local classRoles = {
+	["class:DeathKnight"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = true,
+	},
+	["class:DemonHunter"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = true,
+	},
+	["class:Druid"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = true,
+	},
+	["class:Evoker"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = false,
+	},
+	["class:Hunter"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = false,
+	},
+	["class:Mage"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = false,
+	},
+	["class:Monk"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = true,
+	},
+	["class:Paladin"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = true,
+	},
+	["class:Priest"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = false,
+	},
+	["class:Rogue"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = false,
+	},
+	["class:Shaman"] = {
+		["role:damager"] = true,
+		["role:healer"] = true,
+		["role:tank"] = false,
+	},
+	["class:Warlock"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = false,
+	},
+	["class:Warrior"] = {
+		["role:damager"] = true,
+		["role:healer"] = false,
+		["role:tank"] = true,
+	},
+}
+
 ---@param container EPContainer
 local function SetButtonWidths(container)
 	local maxWidth = 0
@@ -153,6 +221,20 @@ local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 		for _, rosterWidgetMapping in ipairs(rosterWidgetMap) do
 			if rosterWidgetMapping.widgetEntry == rosterEntry then
 				rosterWidgetMapping.dbEntry.class = newClass
+				if classRoles[newClass] then
+					rosterEntry:PopulateRoleDropdown(classRoles[newClass])
+					local hasHealerRole = classRoles[newClass]["role:healer"]
+					local hasTankRole = classRoles[newClass]["role:tank"]
+					local roleValid = classRoles[newClass][rosterWidgetMapping.dbEntry.role]
+					if (not hasHealerRole and not hasTankRole) or not roleValid then
+						rosterWidgetMapping.dbEntry.role = "role:damager"
+					end
+					rosterEntry:SetData(
+						rosterWidgetMapping.name,
+						rosterWidgetMapping.dbEntry.class,
+						rosterWidgetMapping.dbEntry.role
+					)
+				end
 				break
 			end
 		end
@@ -217,6 +299,9 @@ local function CreateRosterEntry(self, rosterWidgetMapping)
 	newRosterEntry:PopulateClassDropdown(self.classDropdownData)
 	if rosterWidgetMapping then
 		rosterWidgetMapping.widgetEntry = newRosterEntry
+		if classRoles[rosterWidgetMapping.dbEntry.class] then
+			newRosterEntry:PopulateRoleDropdown(classRoles[rosterWidgetMapping.dbEntry.class])
+		end
 		newRosterEntry:SetData(
 			rosterWidgetMapping.name,
 			rosterWidgetMapping.dbEntry.class,
@@ -259,6 +344,9 @@ end
 local function EditRosterEntry(self, rosterWidgetMapping, index)
 	local rosterEntry = self.activeContainer.children[index]
 	if rosterEntry then
+		if classRoles[rosterWidgetMapping.dbEntry.class] then
+			rosterEntry:PopulateRoleDropdown(classRoles[rosterWidgetMapping.dbEntry.class])
+		end
 		rosterEntry:SetData(
 			rosterWidgetMapping.name,
 			rosterWidgetMapping.dbEntry.class,

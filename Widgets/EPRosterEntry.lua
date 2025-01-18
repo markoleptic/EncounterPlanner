@@ -13,7 +13,7 @@ local contentFramePadding = { x = 4, y = 4 }
 ---@field content table|Frame
 ---@field nameLineEdit EPLineEdit
 ---@field classDropdown EPDropdown
----@field groupDropdown EPDropdown
+---@field roleDropdown EPDropdown
 ---@field deleteButton EPButton
 ---@field type string
 
@@ -36,16 +36,12 @@ local function OnAcquire(self)
 		self:Fire("ClassChanged", value)
 	end)
 	self.classDropdown:SetDropdownItemHeight(20)
-	self.groupDropdown = AceGUI:Create("EPDropdown")
-	self.groupDropdown:SetCallback("OnValueChanged", function(_, _, value)
+	self.roleDropdown = AceGUI:Create("EPDropdown")
+	self.roleDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("RoleChanged", value)
 	end)
-	self.groupDropdown:SetDropdownItemHeight(20)
-	self.groupDropdown:AddItems({
-		{ itemValue = "role:tank", text = "Tank" },
-		{ itemValue = "role:healer", text = "Healer" },
-		{ itemValue = "role:damager", text = "Damager" },
-	}, "EPDropdownItemToggle")
+	self.roleDropdown:SetDropdownItemHeight(20)
+
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.deleteButton:SetIconPadding(0, 0)
@@ -55,14 +51,14 @@ local function OnAcquire(self)
 		self:Fire("DeleteButtonClicked")
 	end)
 
-	self:AddChildren(self.nameLineEdit, self.classDropdown, self.groupDropdown, self.deleteButton)
+	self:AddChildren(self.nameLineEdit, self.classDropdown, self.roleDropdown, self.deleteButton)
 end
 
 ---@param self EPRosterEntry
 local function OnRelease(self)
 	self.nameLineEdit = nil
 	self.classDropdown = nil
-	self.groupDropdown = nil
+	self.roleDropdown = nil
 	self.deleteButton = nil
 end
 
@@ -82,10 +78,30 @@ local function PopulateClassDropdown(self, dropdownItemData)
 end
 
 ---@param self EPRosterEntry
-local function SetData(self, name, class, group)
+---@param roles table<RaidGroupRole, boolean>
+local function PopulateRoleDropdown(self, roles)
+	self.roleDropdown:Clear()
+	local items = {}
+	if roles["role:tank"] then
+		items[#items + 1] = { itemValue = "role:tank", text = "Tank" }
+	end
+	if roles["role:healer"] then
+		items[#items + 1] = { itemValue = "role:healer", text = "Healer" }
+	end
+	if roles["role:damager"] then
+		items[#items + 1] = { itemValue = "role:damager", text = "Damager" }
+	end
+	self.roleDropdown:AddItems(items, "EPDropdownItemToggle")
+end
+
+---@param self EPRosterEntry
+---@param name string
+---@param class string
+---@param role RaidGroupRole
+local function SetData(self, name, class, role)
 	self.nameLineEdit:SetText(name)
 	self.classDropdown:SetValue(class)
-	self.groupDropdown:SetValue(group)
+	self.roleDropdown:SetValue(role)
 end
 
 local function Constructor()
@@ -106,6 +122,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		PopulateClassDropdown = PopulateClassDropdown,
+		PopulateRoleDropdown = PopulateRoleDropdown,
 		SetData = SetData,
 		frame = frame,
 		content = content,
