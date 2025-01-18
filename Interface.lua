@@ -453,6 +453,9 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	end
 	if updateAssignments then
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		if timeline then
+			timeline:ScrollAssignmentIntoView(assignment.uniqueID)
+		end
 	end
 end
 

@@ -2476,6 +2476,16 @@ local function ClearSelectedBossAbilities(self)
 end
 
 ---@param self EPTimeline
+---@param assignmentID integer
+local function ScrollAssignmentIntoView(self, assignmentID)
+	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
+	if frame then
+		local y = select(5, frame:GetPointByName("TOPLEFT"))
+		self.assignmentTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
+	end
+end
+
+---@param self EPTimeline
 ---@param allow boolean
 local function SetAllowHeightResizing(self, allow)
 	local previousAllowHeightResizing = self.allowHeightResizing
@@ -2654,6 +2664,7 @@ local function Constructor()
 		GetTotalTimelineDuration = GetTotalTimelineDuration,
 		SetIsSimulating = SetIsSimulating,
 		GetSelectedAssignments = GetSelectedAssignments,
+		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,
