@@ -148,7 +148,6 @@ local function OnAcquire(self)
 	self.scrollBar:SetParent(self.frame)
 	self.scrollBar:SetWidth(scrollBarWidth)
 	self.scrollBar:SetPoint("TOPRIGHT")
-	self.scrollBar:SetPoint("BOTTOMRIGHT")
 	self.scrollBar:Show()
 
 	self.thumb:ClearAllPoints()
@@ -213,6 +212,7 @@ end
 local function OnHeightSet(self, height)
 	self.scrollFrame:SetHeight(height)
 	self.listScrollFrame:SetHeight(height)
+	self.scrollBar:SetHeight(height)
 	local heightDifference = self.timelineFrame:GetHeight() - height
 	if heightDifference > 0 then
 		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
