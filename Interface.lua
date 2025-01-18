@@ -1100,7 +1100,7 @@ local function HandleExportButtonClicked()
 end
 
 local function CleanUp()
-	Private:UnregisterCallback("SimulationCompleted")
+	Private.callbackTarget.UnregisterCallback(Private, "SimulationCompleted")
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
@@ -1559,7 +1559,7 @@ function Private:CreateInterface()
 		Private.mainFrame.bossSelectDropdown:SetEnabled(true)
 		Private.mainFrame.noteDropdown:SetEnabled(true)
 	end
-	Private:RegisterCallback("SimulationCompleted", HandleSimulationCompleted)
+	Private.callbackTarget.RegisterCallback(self, "SimulationCompleted", HandleSimulationCompleted)
 
 	local sendPlanButton = AceGUI:Create("EPButton")
 	sendPlanButton:SetText("Send Plan to Group")

@@ -768,17 +768,20 @@ local defaults = {
 	},
 }
 
----@param name string
----@param func function
-function Private:RegisterCallback(name, func) end
+local callbackTarget = {}
 
 ---@param name string
-function Private:UnregisterCallback(name) end
+---@param func function
+function callbackTarget.RegisterCallback(target, name, func) end
+
+---@param name string
+function callbackTarget.UnregisterCallback(target, name) end
 
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
-Private.callbackHandler = CallbackHandler:New(Private)
+Private.callbackTarget = callbackTarget
+Private.callbackHandler = CallbackHandler:New(Private.callbackTarget)
 
 Private.raidInstances = {} --[[@as table<string, RaidInstance>]]
 Private.interfaceUpdater = {}
