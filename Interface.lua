@@ -23,7 +23,6 @@ local abs = math.abs
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 local EJ_SelectEncounter = EJ_SelectEncounter
 local format = format
-local floor = math.floor
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
@@ -34,7 +33,6 @@ local pairs = pairs
 local sub = string.sub
 local tinsert = tinsert
 local tonumber = tonumber
-local tostring = tostring
 local tremove = tremove
 local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 local unpack = unpack
@@ -58,6 +56,7 @@ local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
 local topContainerWidgetFontSize = 14
 local topContainerWidgetHeight = 26
+local assignmentEditorWidth = 240
 local preferencesMenuButtonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -516,7 +515,7 @@ local function CreateAssignmentEditor()
 		end
 	end
 	assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
-	assignmentEditor:SetWidth(240)
+	assignmentEditor:SetWidth(assignmentEditorWidth)
 	assignmentEditor:DoLayout()
 	return assignmentEditor
 end

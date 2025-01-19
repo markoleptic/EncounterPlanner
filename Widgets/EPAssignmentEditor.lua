@@ -604,6 +604,9 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 	elseif getmetatable(assignment) == metaTables.TimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
 		self:SetAssignmentType("TimedAssignment")
+		self.assignmentTypeDropdown:SetValue(nil)
+		self.combatLogEventSpellIDDropdown:SetValue(nil)
+		self.combatLogEventSpellCountLineEdit:SetText()
 		self.assignmentTypeDropdown:SetValue("Fixed Time")
 		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
@@ -611,6 +614,9 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 	elseif getmetatable(assignment) == metaTables.TimedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
 		self:SetAssignmentType("PhasedAssignment")
+		self.assignmentTypeDropdown:SetValue(nil)
+		self.combatLogEventSpellIDDropdown:SetValue(nil)
+		self.combatLogEventSpellCountLineEdit:SetText()
 		self.assignmentTypeDropdown:SetValue("Boss Phase")
 		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
