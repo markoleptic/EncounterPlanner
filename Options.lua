@@ -1856,12 +1856,8 @@ do
 	end
 end
 
-function OptionsModule:CreateOptions()
-	ACR:RegisterOptionsTable(AddOnName, self:GetOptions())
-	ACD:SetDefaultSize(AddOnName, 700, 500)
-	ACD:AddToBlizOptions(AddOnName)
-end
-
+-- Creates and shows the options menu. The message anchor and progress bar anchor are released when the options menu is
+-- released.
 function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
 	optionsMenu.frame:SetParent(UIParent)
@@ -1898,10 +1894,6 @@ function Private:CreateOptionsMenu()
 end
 
 function OptionsModule:OnInitialize()
-	self:CreateOptions()
-end
-
-function OptionsModule:GetOptions()
 	local options = {
 		name = AddOnName,
 		type = "group",
@@ -1920,7 +1912,9 @@ function OptionsModule:GetOptions()
 			},
 		},
 	}
-	return options
+	ACR:RegisterOptionsTable(AddOnName, options)
+	ACD:SetDefaultSize(AddOnName, 700, 500)
+	ACD:AddToBlizOptions(AddOnName)
 end
 
 function OptionsModule:OpenOptions()
