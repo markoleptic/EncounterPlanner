@@ -681,7 +681,7 @@ local defaults = {
 	---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
 	---@field plans table<string, Plan> All plans.
 	---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
-	---@field lastOpenNote string The last open plan.
+	---@field lastOpenPlan string The last open plan.
 	---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
 	---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
 	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
@@ -691,7 +691,7 @@ local defaults = {
 		activeBossAbilities = {},
 		plans = {},
 		sharedRoster = {},
-		lastOpenNote = "",
+		lastOpenPlan = "",
 		recentSpellAssignments = {},
 		trustedCharacters = {},
 		preferences = {

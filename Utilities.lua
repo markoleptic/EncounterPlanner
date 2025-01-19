@@ -181,32 +181,32 @@ function Utilities.Clamp(value, minValue, maxValue)
 	return min(maxValue, max(minValue, value))
 end
 
----@param notes table<string, Plan>
+---@param plans table<string, Plan>
 ---@param bossName string
 ---@param existingName string|nil
 ---@return string
-function Utilities.CreateUniqueNoteName(notes, bossName, existingName)
-	local newNoteName = existingName or bossName
-	if notes then
-		local baseName, suffix = newNoteName:match("^(.-)%s*(%d*)$")
+function Utilities.CreateUniquePlanName(plans, bossName, existingName)
+	local newPlanName = existingName or bossName
+	if plans then
+		local baseName, suffix = newPlanName:match("^(.-)%s*(%d*)$")
 		baseName = baseName or ""
 		local num = tonumber(suffix) or 1
 
-		if notes[newNoteName] then
+		if plans[newPlanName] then
 			num = suffix ~= "" and (num + 1) or 2
-			newNoteName = baseName .. " " .. num
+			newPlanName = baseName .. " " .. num
 		end
 
-		while notes[newNoteName] do
+		while plans[newPlanName] do
 			if #baseName > 0 then
-				newNoteName = baseName .. " " .. num
+				newPlanName = baseName .. " " .. num
 			else
-				newNoteName = tostring(num)
+				newPlanName = tostring(num)
 			end
 			num = num + 1
 		end
 	end
-	return newNoteName
+	return newPlanName
 end
 
 ---@param assignments table<integer, Assignment>

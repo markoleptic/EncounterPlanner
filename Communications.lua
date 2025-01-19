@@ -224,27 +224,27 @@ local function ImportPlan(plan)
 		existingPlan = nil
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			plan.name = utilities.CreateUniqueNoteName(plans, plan.bossName, plan.name)
+			plan.name = utilities.CreateUniquePlanName(plans, plan.bossName, plan.name)
 		end
 		plans[plan.name] = plan
 	end
 
 	if Private.mainFrame then
-		local noteDropdown = Private.mainFrame.noteDropdown
-		if noteDropdown then
-			local item, text = noteDropdown:FindItemAndText(plan.name)
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			local item, text = planDropdown:FindItemAndText(plan.name)
 			if not item then
-				noteDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle") -- Only add if unique
-				noteDropdown:Sort()
+				planDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle") -- Only add if unique
+				planDropdown:Sort()
 			end
 			if text and text == existingPlanName then
-				noteDropdown:RemoveItem(text) -- Remove existing plan name from dropdown
+				planDropdown:RemoveItem(text) -- Remove existing plan name from dropdown
 			end
-			local currentPlanName = noteDropdown:GetValue()
+			local currentPlanName = planDropdown:GetValue()
 			if currentPlanName == existingPlanName or currentPlanName == plan.name then
-				AddOn.db.profile.lastOpenNote = plan.name
-				noteDropdown:SetValue(plan.name)
-				interfaceUpdater.UpdateFromNote(plan.name) -- Only update if current plan is the imported plan
+				AddOn.db.profile.lastOpenPlan = plan.name
+				planDropdown:SetValue(plan.name)
+				interfaceUpdater.UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
 			end
 		end
 	end

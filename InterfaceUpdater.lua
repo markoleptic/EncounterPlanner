@@ -32,12 +32,12 @@ local type = type
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].roster
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].roster
 end
 
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].assignments
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].assignments
 end
 
 do
@@ -146,7 +146,7 @@ do
 		lastBossDungeonEncounterID = bossDungeonEncounterID
 		local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
 		if boss then
-			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
 			for phaseIndex, phaseDuration in pairs(customPhaseDurations) do
 				if boss.phases[phaseIndex] then
 					boss.phases[phaseIndex].duration = phaseDuration
@@ -200,7 +200,7 @@ do
 	---@param abilityEntry EPAbilityEntry
 	---@param collapsed boolean
 	local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed[abilityEntry:GetKey()] = collapsed
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] = collapsed
 		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
@@ -259,7 +259,7 @@ do
 				local children = {}
 				local roster = GetCurrentRoster()
 				local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
-				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 				for _, textTable in ipairs(map) do
 					local assigneeNameOrRole = textTable.assigneeNameOrRole
 					local coloredAssigneeNameOrRole = textTable.text
@@ -361,7 +361,7 @@ end
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	local timeline = Private.mainFrame.timeline
 	if timeline then
-		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		if not sortedWithSpellID then
 			sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 		end
@@ -401,7 +401,7 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDu
 	)
 	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	)
 	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
 	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
@@ -414,13 +414,13 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDu
 	end
 end
 
----@param noteName string
-function InterfaceUpdater.UpdateFromNote(noteName)
+---@param planName string
+function InterfaceUpdater.UpdateFromPlan(planName)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
 	if Private.mainFrame then
-		local plan = AddOn.db.profile.plans[noteName] --[[@as Plan]]
+		local plan = AddOn.db.profile.plans[planName] --[[@as Plan]]
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)

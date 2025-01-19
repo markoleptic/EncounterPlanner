@@ -487,10 +487,10 @@ end
 
 -- Populates the combatLogEventReminders table with CombatLogEventAssignments, creates timers for timed assignments, and
 -- sets the script that updates the operation queue.
----@param notes table<string, Plan>
+---@param plans table<string, Plan>
 ---@param preferences ReminderPreferences
 ---@param startTime number
-local function SetupReminders(notes, preferences, startTime)
+local function SetupReminders(plans, preferences, startTime)
 	if not Private.messageContainer then
 		CreateMessageContainer(preferences.messages)
 	end
@@ -498,9 +498,9 @@ local function SetupReminders(notes, preferences, startTime)
 		CreateProgressBarContainer(preferences.progressBars)
 	end
 
-	for _, note in pairs(notes) do
-		local roster = note.roster
-		local assignments = note.assignments
+	for _, plan in pairs(plans) do
+		local roster = plan.roster
+		local assignments = plan.assignments
 		local filteredAssignments = nil
 		if preferences.onlyShowMe then
 			filteredAssignments = utilities.FilterSelf(assignments) --[[@as table<integer, Assignment>]]
@@ -685,14 +685,14 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 	end
 	if difficultyID == 16 then -- Mythic raid
 		local startTime = GetTime()
-		local notes = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-		local activeNotes = {}
-		for _, note in pairs(notes) do
-			if note.dungeonEncounterID == encounterID and note.remindersEnabled then
-				tinsert(activeNotes, note)
+		local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+		local activePlans = {}
+		for _, plan in pairs(plans) do
+			if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
+				tinsert(activePlans, plan)
 			end
 		end
-		if #activeNotes > 0 then
+		if #activePlans > 0 then
 			local boss = bossUtilities.GetBoss(encounterID)
 			if boss then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
@@ -715,7 +715,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 						end
 					end
 				end
-				SetupReminders(activeNotes, reminderPreferences, startTime)
+				SetupReminders(activePlans, reminderPreferences, startTime)
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 			end
 		end

@@ -70,16 +70,16 @@ local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.plans[lastOpenNote]
-	return note.roster
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	local plan = AddOn.db.profile.plans[lastOpenPlan]
+	return plan.roster
 end
 
 ---@return table<integer, Assignment>
 local function GetCurrentAssignments()
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local note = AddOn.db.profile.plans[lastOpenNote]
-	return note.assignments
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	local plan = AddOn.db.profile.plans[lastOpenPlan]
+	return plan.assignments
 end
 
 ---@return Boss|nil
@@ -95,13 +95,13 @@ end
 ---@param currentRosterMap table<integer, RosterWidgetMapping>
 ---@param sharedRosterMap table<integer, RosterWidgetMapping>
 local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	if lastOpenNote then
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	if lastOpenPlan then
 		local tempRoster = {}
 		for _, rosterWidgetMapping in ipairs(currentRosterMap) do
 			tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
 		end
-		AddOn.db.profile.plans[lastOpenNote].roster = tempRoster
+		AddOn.db.profile.plans[lastOpenPlan].roster = tempRoster
 	end
 
 	local tempRoster = {}
@@ -524,26 +524,26 @@ local function HandleImportNoteFromString(importType)
 	local text = Private.importEditBox:GetText()
 	Private.importEditBox:Release()
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
-	local notes = AddOn.db.profile.plans
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	local plans = AddOn.db.profile.plans
 
 	if importType == "FromStringOverwrite" then
-		bossDungeonEncounterID = Private:Note(lastOpenNote, bossDungeonEncounterID, text) or bossDungeonEncounterID
+		bossDungeonEncounterID = Private:Note(lastOpenPlan, bossDungeonEncounterID, text) or bossDungeonEncounterID
 	elseif importType == "FromStringNew" then
 		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-		local newNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
-		notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
-		bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID, text) or bossDungeonEncounterID
-		AddOn.db.profile.lastOpenNote = newNoteName
-		local noteDropdown = Private.mainFrame.noteDropdown
-		if noteDropdown then
-			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-			noteDropdown:Sort()
-			noteDropdown:SetValue(newNoteName)
+		local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
+		plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
+		bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text) or bossDungeonEncounterID
+		AddOn.db.profile.lastOpenPlan = newPlanName
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
+			planDropdown:Sort()
+			planDropdown:SetValue(newPlanName)
 		end
 	end
 
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[AddOn.db.profile.lastOpenNote].remindersEnabled)
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[AddOn.db.profile.lastOpenPlan].remindersEnabled)
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 end
@@ -559,9 +559,9 @@ local function CreateImportEditBox(importType)
 	Private.importEditBox:SetTitle("Import Text")
 	local buttonText
 	if importType == "FromStringOverwrite" then
-		buttonText = "Overwrite " .. AddOn.db.profile.lastOpenNote
+		buttonText = "Overwrite " .. AddOn.db.profile.lastOpenPlan
 	else
-		buttonText = "Import As New EP note"
+		buttonText = "Import As New Plan"
 	end
 	Private.importEditBox:ShowOkayButton(true, buttonText)
 	Private.importEditBox:SetCallback("OnRelease", function()
@@ -603,7 +603,7 @@ local function CreatePhaseLengthEditor()
 			Private.phaseLengthEditor:Release()
 		end)
 		phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
-			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
 			wipe(customPhaseDurations)
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
@@ -649,7 +649,7 @@ local function CreatePhaseLengthEditor()
 					return
 				end
 
-				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].customPhaseDurations
+				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
 				local cumulativePhaseTime = 0.0
 				if boss.treatAsSinglePhase then
 					for phaseIndex, phase in ipairs(boss.phases) do
@@ -726,7 +726,7 @@ local function HandleBossDropdownValueChanged(value)
 	end
 	local bossDungeonEncounterID = tonumber(value)
 	if bossDungeonEncounterID then
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote] --[[@as Plan]]
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
 		local containsCombatLogEventAssignment = false
 		for _, assignment in ipairs(plan.assignments) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
@@ -737,7 +737,7 @@ local function HandleBossDropdownValueChanged(value)
 		if containsCombatLogEventAssignment then
 			local messageBox = interfaceUpdater.CreateMessageBox(
 				"Changing Boss with Combat Log Event Assignments",
-				"The current note includes combat log event assignments tied to this boss's spells. Choose an option:\n\n"
+				"The current plan includes combat log event assignments tied to this boss's spells. Choose an option:\n\n"
 					.. "1. Convert all assignments to timed assignments for the new boss\n"
 					.. "2. Replace spells with those of the new boss, matching the closest timing\n"
 					.. "3. Cancel\n\n"
@@ -819,44 +819,44 @@ local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, sele
 end
 
 ---@param value string
-local function HandleNoteDropdownValueChanged(_, _, value)
+local function HandlePlanDropdownValueChanged(_, _, value)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	AddOn.db.profile.lastOpenNote = value
-	local note = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote] --[[@as Plan]]
-	local bossDungeonEncounterID = note.dungeonEncounterID
+	AddOn.db.profile.lastOpenPlan = value
+	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
+	local bossDungeonEncounterID = plan.dungeonEncounterID
 	if not bossDungeonEncounterID then
 		bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	end
 
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(note.remindersEnabled)
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
 	Private.mainFrame:DoLayout()
 end
 
 ---@param lineEdit EPLineEdit
 ---@param value string
-local function HandleNoteTextSubmitted(lineEdit, _, value)
-	local currentNoteName = AddOn.db.profile.lastOpenNote
+local function HandlePlanTextSubmitted(lineEdit, _, value)
+	local currentPlanName = AddOn.db.profile.lastOpenPlan
 	if value:gsub("%s", "") == "" then
-		lineEdit:SetText(currentNoteName)
+		lineEdit:SetText(currentPlanName)
 		return
-	elseif value == currentNoteName then
+	elseif value == currentPlanName then
 		return
 	elseif AddOn.db.profile.plans[value] then
-		lineEdit:SetText(currentNoteName)
+		lineEdit:SetText(currentPlanName)
 		return
 	end
-	AddOn.db.profile.plans[value] = AddOn.db.profile.plans[currentNoteName]
-	AddOn.db.profile.plans[currentNoteName] = nil
+	AddOn.db.profile.plans[value] = AddOn.db.profile.plans[currentPlanName]
+	AddOn.db.profile.plans[currentPlanName] = nil
 	AddOn.db.profile.plans[value].name = value
-	AddOn.db.profile.lastOpenNote = value
-	local noteDropdown = Private.mainFrame.noteDropdown
-	if noteDropdown then
-		noteDropdown:EditItemText(currentNoteName, value, value)
-		noteDropdown:Sort()
+	AddOn.db.profile.lastOpenPlan = value
+	local planDropdown = Private.mainFrame.planDropdown
+	if planDropdown then
+		planDropdown:EditItemText(currentPlanName, value, value)
+		planDropdown:Sort()
 	end
 end
 
@@ -922,7 +922,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneesAndSpel
 		GetCurrentBossDungeonEncounterID()
 	)
 	local sortedAssigneesAndSpells =
-		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed)
+		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed)
 	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
 	if nameAndSpell then
 		local assignment = Private.classes.Assignment:New()
@@ -969,7 +969,7 @@ local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time
 		GetCurrentBossDungeonEncounterID()
 	)
 	local sortedAssigneesAndSpells =
-		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed)
+		utilities.SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed)
 	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
 	if nameAndSpell then
 		local assignment = Private.classes.Assignment:New()
@@ -994,23 +994,23 @@ local function HandleCreateNewNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
-	local notes = AddOn.db.profile.plans
+	local plans = AddOn.db.profile.plans
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-	local newNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
+	local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
 
-	notes[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
-	AddOn.db.profile.lastOpenNote = newNoteName
-	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, notes[newNoteName])
+	plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
+	AddOn.db.profile.lastOpenPlan = newPlanName
+	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 
-	local noteDropdown = Private.mainFrame.noteDropdown
-	if noteDropdown then
-		noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-		noteDropdown:Sort()
-		noteDropdown:SetValue(newNoteName)
+	local planDropdown = Private.mainFrame.planDropdown
+	if planDropdown then
+		planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
+		planDropdown:Sort()
+		planDropdown:SetValue(newPlanName)
 	end
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(notes[newNoteName].remindersEnabled)
+	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[newPlanName].remindersEnabled)
 end
 
 local function HandleDeleteCurrentNoteButtonClicked()
@@ -1022,16 +1022,16 @@ local function HandleDeleteCurrentNoteButtonClicked()
 	for _, _ in pairs(plans) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
-	local noteDropdown = Private.mainFrame.noteDropdown
-	if noteDropdown then
-		local lastOpenNote = AddOn.db.profile.lastOpenNote
-		if lastOpenNote then
-			plans[lastOpenNote] = nil
-			noteDropdown:RemoveItem(lastOpenNote)
+	local planDropdown = Private.mainFrame.planDropdown
+	if planDropdown then
+		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+		if lastOpenPlan then
+			plans[lastOpenPlan] = nil
+			planDropdown:RemoveItem(lastOpenPlan)
 		end
 		if beforeRemovalCount > 1 then
 			for name, _ in pairs(plans) do
-				AddOn.db.profile.lastOpenNote = name
+				AddOn.db.profile.lastOpenPlan = name
 				local bossDungeonEncounterID = plans[name].dungeonEncounterID
 				if bossDungeonEncounterID then
 					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
@@ -1041,16 +1041,16 @@ local function HandleDeleteCurrentNoteButtonClicked()
 		else
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-			local newNoteName = utilities.CreateUniqueNoteName(plans, bossName --[[@as string]])
-			plans[newNoteName] = Private.classes.Plan:New(nil, newNoteName)
-			AddOn.db.profile.lastOpenNote = newNoteName
-			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newNoteName])
-			noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-			noteDropdown:Sort()
+			local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
+			plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
+			AddOn.db.profile.lastOpenPlan = newPlanName
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
+			planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
+			planDropdown:Sort()
 		end
-		local newLastOpenNote = AddOn.db.profile.lastOpenNote
-		noteDropdown:SetValue(newLastOpenNote)
-		local remindersEnabled = plans[newLastOpenNote].remindersEnabled
+		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
+		planDropdown:SetValue(newLastOpenPlan)
+		local remindersEnabled = plans[newLastOpenPlan].remindersEnabled
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	end
@@ -1075,22 +1075,22 @@ local function ImportPlan(importType)
 				local text = VMRT.Note.Text1
 				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 				if importType == "FromMRTOverwrite" then
-					bossDungeonEncounterID = Private:Note(AddOn.db.profile.lastOpenNote, bossDungeonEncounterID, text)
+					bossDungeonEncounterID = Private:Note(AddOn.db.profile.lastOpenPlan, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
 				elseif importType == "FromMRTNew" then
 					local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-					local newNoteName =
-						utilities.CreateUniqueNoteName(AddOn.db.profile.plans, bossName --[[@as string]])
-					bossDungeonEncounterID = Private:Note(newNoteName, bossDungeonEncounterID, text)
+					local newPlanName =
+						utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName --[[@as string]])
+					bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
-					AddOn.db.profile.lastOpenNote = newNoteName
-					local noteDropdown = Private.mainFrame.noteDropdown
-					if noteDropdown then
-						noteDropdown:AddItem(newNoteName, newNoteName, "EPDropdownItemToggle")
-						noteDropdown:Sort()
-						noteDropdown:SetValue(newNoteName)
+					AddOn.db.profile.lastOpenPlan = newPlanName
+					local planDropdown = Private.mainFrame.planDropdown
+					if planDropdown then
+						planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
+						planDropdown:Sort()
+						planDropdown:SetValue(newPlanName)
 					end
-					local remindersEnabled = AddOn.db.profile.plans[newNoteName].remindersEnabled
+					local remindersEnabled = AddOn.db.profile.plans[newPlanName].remindersEnabled
 					Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
 					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
@@ -1113,7 +1113,7 @@ local function HandleExportButtonClicked()
 			Private.exportEditBox = nil
 		end)
 	end
-	local text = Private:ExportNote(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote])
+	local text = Private:ExportPlan(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan])
 	if text then
 		Private.exportEditBox:SetText(text)
 		Private.exportEditBox:HighlightTextAndFocus()
@@ -1151,29 +1151,29 @@ end
 
 function Private:CreateInterface()
 	local bossDungeonEncounterID = 2902
-	local notes = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-	local lastOpenNote = AddOn.db.profile.lastOpenNote
+	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 
-	if lastOpenNote and lastOpenNote ~= "" then
-		bossDungeonEncounterID = notes[lastOpenNote].dungeonEncounterID
+	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
+		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
-		local defaultNoteName = "SharedMRTNote"
+		local defaultPlanName = "Default"
 		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 		if not loadingOrLoaded and not loaded then
 			print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
 		end
 		if VMRT and VMRT.Note and VMRT.Note.Text1 then
 			local text = VMRT.Note.Text1
-			bossDungeonEncounterID = Private:Note(defaultNoteName, bossDungeonEncounterID, text)
+			bossDungeonEncounterID = Private:Note(defaultPlanName, bossDungeonEncounterID, text)
 				or bossDungeonEncounterID
 		end
-		if not notes[defaultNoteName] then -- MRT not loaded
+		if not plans[defaultPlanName] then -- MRT not loaded
 			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-			defaultNoteName = utilities.CreateUniqueNoteName(notes, bossName --[[@as string]])
-			notes[defaultNoteName] = Private.classes.Plan:New(nil, defaultNoteName)
-			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, notes[defaultNoteName])
+			defaultPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
+			plans[defaultPlanName] = Private.classes.Plan:New(nil, defaultPlanName)
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
 		end
-		AddOn.db.profile.lastOpenNote = defaultNoteName
+		AddOn.db.profile.lastOpenPlan = defaultPlanName
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -1200,7 +1200,7 @@ function Private:CreateInterface()
 			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossDungeonEncounterID
 		)
-		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = true
 		end
@@ -1214,7 +1214,7 @@ function Private:CreateInterface()
 			AddOn.db.profile.preferences.assignmentSortType,
 			currentBossDungeonEncounterID
 		)
-		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 			collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
 		end
@@ -1262,16 +1262,16 @@ function Private:CreateInterface()
 					itemValue = "From MRT",
 					text = "From MRT",
 					dropdownItemMenuData = {
-						{ itemValue = "FromMRTOverwrite", text = "Overwrite current EP note" },
-						{ itemValue = "FromMRTNew", text = "Create new EP note" },
+						{ itemValue = "FromMRTOverwrite", text = "Overwrite Current Plan" },
+						{ itemValue = "FromMRTNew", text = "Create New Plan" },
 					},
 				},
 				{
 					itemValue = "From String",
 					text = "From String",
 					dropdownItemMenuData = {
-						{ itemValue = "FromStringOverwrite", text = "Overwrite current EP note" },
-						{ itemValue = "FromStringNew", text = "Create new EP note" },
+						{ itemValue = "FromStringOverwrite", text = "Overwrite Current Plan" },
+						{ itemValue = "FromStringNew", text = "Create New Plan" },
 					},
 				},
 			},
@@ -1302,7 +1302,7 @@ function Private:CreateInterface()
 		elseif value == "Delete Current Plan" then
 			local messageBox = interfaceUpdater.CreateMessageBox(
 				"Delete Plan Confirmation",
-				format('Are you sure you want to delete the plan "%s"?', AddOn.db.profile.lastOpenNote)
+				format('Are you sure you want to delete the plan "%s"?', AddOn.db.profile.lastOpenPlan)
 			)
 			if messageBox then
 				messageBox:SetCallback("Accepted", function()
@@ -1315,7 +1315,7 @@ function Private:CreateInterface()
 			if string.find(value, "Overwrite") then
 				local messageBox = interfaceUpdater.CreateMessageBox(
 					"Overwrite Plan Confirmation",
-					format('Are you sure you want to overwrite the plan "%s"?', AddOn.db.profile.lastOpenNote)
+					format('Are you sure you want to overwrite the plan "%s"?', AddOn.db.profile.lastOpenPlan)
 				)
 				if messageBox then
 					messageBox:SetCallback("Accepted", function()
@@ -1481,35 +1481,35 @@ function Private:CreateInterface()
 		HandleBossDropdownValueChanged(value)
 	end)
 
-	local noteContainer = AceGUI:Create("EPContainer")
-	noteContainer:SetLayout("EPHorizontalLayout")
-	noteContainer:SetSpacing(unpack(dropdownContainerSpacing))
+	local planContainer = AceGUI:Create("EPContainer")
+	planContainer:SetLayout("EPHorizontalLayout")
+	planContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
-	local noteLabel = AceGUI:Create("EPLabel")
-	noteLabel:SetText("Current Plan:", dropdownContainerLabelSpacing)
-	noteLabel:SetFullHeight(true)
-	noteLabel:SetFrameWidthFromText()
+	local planLabel = AceGUI:Create("EPLabel")
+	planLabel:SetText("Current Plan:", dropdownContainerLabelSpacing)
+	planLabel:SetFullHeight(true)
+	planLabel:SetFrameWidthFromText()
 
-	local noteDropdown = AceGUI:Create("EPDropdown")
-	noteDropdown:SetWidth(topContainerDropdownWidth)
-	noteDropdown:SetAutoItemWidth(false)
-	noteDropdown:SetTextFontSize(topContainerWidgetFontSize)
-	noteDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
-	noteDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
-	noteDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	noteDropdown:SetHeight(topContainerWidgetHeight)
-	noteDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
-	noteDropdown:SetUseLineEditForDoubleClick(true)
-	noteDropdown:SetCallback("OnLineEditTextSubmitted", HandleNoteTextSubmitted)
-	local noteDropdownData = {}
-	noteDropdown:SetCallback("OnValueChanged", HandleNoteDropdownValueChanged)
-	for noteName, _ in pairs(AddOn.db.profile.plans) do
-		tinsert(noteDropdownData, { itemValue = noteName, text = noteName })
+	local planDropdown = AceGUI:Create("EPDropdown")
+	planDropdown:SetWidth(topContainerDropdownWidth)
+	planDropdown:SetAutoItemWidth(false)
+	planDropdown:SetTextFontSize(topContainerWidgetFontSize)
+	planDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
+	planDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
+	planDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
+	planDropdown:SetHeight(topContainerWidgetHeight)
+	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
+	planDropdown:SetUseLineEditForDoubleClick(true)
+	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanTextSubmitted)
+	local planDropdownData = {}
+	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
+	for planName, _ in pairs(AddOn.db.profile.plans) do
+		tinsert(planDropdownData, { itemValue = planName, text = planName })
 	end
-	noteDropdown:AddItems(noteDropdownData, "EPDropdownItemToggle")
-	noteDropdown:Sort()
+	planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
+	planDropdown:Sort()
 
-	noteContainer:AddChildren(noteLabel, noteDropdown)
+	planContainer:AddChildren(planLabel, planDropdown)
 
 	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
 	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
@@ -1522,9 +1522,9 @@ function Private:CreateInterface()
 	planReminderEnableCheckBox:SetFrameWidthFromText()
 	planReminderEnableCheckBox:SetFullHeight(true)
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled = value
+		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].remindersEnabled = value
 	end)
-	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].remindersEnabled)
+	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].remindersEnabled)
 
 	local simulateReminderButton = AceGUI:Create("EPButton")
 	simulateReminderButton:SetText("Simulate Reminders")
@@ -1566,7 +1566,7 @@ function Private:CreateInterface()
 			addAssigneeDropdown:SetEnabled(not isSimulatingBoss)
 		end
 		Private.mainFrame.bossSelectDropdown:SetEnabled(not isSimulatingBoss)
-		Private.mainFrame.noteDropdown:SetEnabled(not isSimulatingBoss)
+		Private.mainFrame.planDropdown:SetEnabled(not isSimulatingBoss)
 	end)
 
 	local function HandleSimulationCompleted()
@@ -1578,7 +1578,7 @@ function Private:CreateInterface()
 			addAssigneeDropdown:SetEnabled(true)
 		end
 		Private.mainFrame.bossSelectDropdown:SetEnabled(true)
-		Private.mainFrame.noteDropdown:SetEnabled(true)
+		Private.mainFrame.planDropdown:SetEnabled(true)
 	end
 	Private.callbackTarget.RegisterCallback(self, "SimulationCompleted", HandleSimulationCompleted)
 
@@ -1587,7 +1587,7 @@ function Private:CreateInterface()
 	sendPlanButton:SetWidthFromText()
 	sendPlanButton:SetFullHeight(true)
 	sendPlanButton:SetCallback("Clicked", function()
-		Private:SendPlanToGroup(AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote])
+		Private:SendPlanToGroup(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan])
 	end)
 	sendPlanButton:SetEnabled(
 		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
@@ -1598,7 +1598,7 @@ function Private:CreateInterface()
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetFullWidth(true)
-	topContainer:AddChildren(bossDropdown, noteContainer, reminderAndSendPlanButtonContainer)
+	topContainer:AddChildren(bossDropdown, planContainer, reminderAndSendPlanButtonContainer)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
@@ -1637,7 +1637,7 @@ function Private:CreateInterface()
 	timeline:SetCallback("DuplicateAssignment", function(_, _, timelineAssignment)
 		local newAssignment = Private.DuplicateAssignment(timelineAssignment.assignment)
 		tinsert(GetCurrentAssignments(), newAssignment)
-		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenNote].collapsed
+		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		local sortedTimelineAssignments = utilities.SortAssignments(
 			GetCurrentAssignments(),
 			GetCurrentRoster(),
@@ -1674,14 +1674,14 @@ function Private:CreateInterface()
 
 	Private.mainFrame.bossSelectDropdown = bossDropdown
 	Private.mainFrame.bossMenuButton = bossMenuButton
-	Private.mainFrame.noteDropdown = noteDropdown
+	Private.mainFrame.planDropdown = planDropdown
 	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
 	Private.mainFrame.timeline = timeline
 	Private.mainFrame.sendPlanButton = sendPlanButton
 
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
-	noteDropdown:SetValue(AddOn.db.profile.lastOpenNote)
+	planDropdown:SetValue(AddOn.db.profile.lastOpenPlan)
 
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())

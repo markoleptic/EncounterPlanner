@@ -526,12 +526,12 @@ local function CreateAssignmentExportString(assignment, roster)
 	return assignmentString
 end
 
----@param note Plan
+---@param plan Plan
 ---@return string|nil
-function Private:ExportNote(note)
+function Private:ExportPlan(plan)
 	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 	if bossDungeonEncounterID then
-		local timelineAssignments = utilities.CreateTimelineAssignments(note.assignments, bossDungeonEncounterID)
+		local timelineAssignments = utilities.CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
 		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
@@ -546,10 +546,10 @@ function Private:ExportNote(note)
 			local timeAndOptionsString, assignmentString = "", ""
 			if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
 				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
-				assignmentString = CreateAssignmentExportString(assignment, note.roster)
+				assignmentString = CreateAssignmentExportString(assignment, plan.roster)
 			elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
 				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
-				assignmentString = CreateAssignmentExportString(assignment, note.roster)
+				assignmentString = CreateAssignmentExportString(assignment, plan.roster)
 			elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
 				-- Not yet supported
 			end
@@ -564,7 +564,7 @@ function Private:ExportNote(note)
 			end
 		end
 
-		for _, line in pairs(note.content) do
+		for _, line in pairs(plan.content) do
 			tinsert(stringTable, line)
 		end
 
@@ -578,58 +578,58 @@ function Private:ExportNote(note)
 end
 
 -- Clears the current assignments and repopulates it. Updates the roster.
----@param epNoteName string the name of the existing note in the database to parse/save the note. If it does not exist,
--- an empty note will be created
+---@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
+-- an empty plan will be created
 ---@param currentBossDungeonEncounterID integer
 ---@param content string
 ---@return integer|nil
-function Private:Note(epNoteName, currentBossDungeonEncounterID, content)
+function Private:Note(planName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
-	if not plans[epNoteName] then
-		plans[epNoteName] = Private.classes.Plan:New({}, epNoteName)
+	if not plans[planName] then
+		plans[planName] = Private.classes.Plan:New({}, planName)
 	end
-	local note = plans[epNoteName]
+	local plan = plans[planName]
 
-	local bossDungeonEncounterID = self:ParseNote(note, utilities.SplitStringIntoTable(content))
-	note.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
+	local bossDungeonEncounterID = self:ParseNote(plan, utilities.SplitStringIntoTable(content))
+	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
 
-	if note.dungeonEncounterID ~= currentBossDungeonEncounterID then
-		wipe(note.customPhaseDurations)
+	if plan.dungeonEncounterID ~= currentBossDungeonEncounterID then
+		wipe(plan.customPhaseDurations)
 	end
 
-	local boss = bossUtilities.GetBoss(note.dungeonEncounterID)
+	local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
 	if boss then
-		note.bossName = boss.name
-		note.dungeonEncounterID = boss.dungeonEncounterID
-		note.instanceID = boss.instanceID
+		plan.bossName = boss.name
+		plan.dungeonEncounterID = boss.dungeonEncounterID
+		plan.instanceID = boss.instanceID
 	end
 
-	utilities.UpdateRosterFromAssignments(note.assignments, note.roster)
-	utilities.UpdateRosterDataFromGroup(note.roster)
+	utilities.UpdateRosterFromAssignments(plan.assignments, plan.roster)
+	utilities.UpdateRosterDataFromGroup(plan.roster)
 	for name, sharedRosterEntry in pairs(AddOn.db.profile.sharedRoster) do
-		local noteRosterEntry = note.roster[name]
-		if noteRosterEntry then
-			if noteRosterEntry.class == "" then
+		local planRosterEntry = plan.roster[name]
+		if planRosterEntry then
+			if planRosterEntry.class == "" then
 				if sharedRosterEntry.class ~= "" then
-					noteRosterEntry.class = sharedRosterEntry.class
+					planRosterEntry.class = sharedRosterEntry.class
 					if sharedRosterEntry.classColoredName ~= "" then
-						noteRosterEntry.classColoredName = sharedRosterEntry.classColoredName
+						planRosterEntry.classColoredName = sharedRosterEntry.classColoredName
 					end
 				end
 			end
-			if noteRosterEntry.role == "" then
+			if planRosterEntry.role == "" then
 				if sharedRosterEntry.role and sharedRosterEntry.role ~= "" then
-					noteRosterEntry.role = sharedRosterEntry.role
+					planRosterEntry.role = sharedRosterEntry.role
 				end
 			end
-			if noteRosterEntry.classColoredName == "" then
-				if noteRosterEntry.class then
-					local className = noteRosterEntry.class:match("class:%s*(%a+)")
+			if planRosterEntry.classColoredName == "" then
+				if planRosterEntry.class then
+					local className = planRosterEntry.class:match("class:%s*(%a+)")
 					if className then
 						className = className:upper()
 						if Private.spellDB.classes[className] then
-							noteRosterEntry.classColoredName = sharedRosterEntry.classColoredName
+							planRosterEntry.classColoredName = sharedRosterEntry.classColoredName
 						end
 					end
 				end
