@@ -214,32 +214,39 @@ end
 ---@param plan Plan
 local function ImportPlan(plan)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-	local foundExistingPlan = false
-	for _, existingPlan in pairs(plans) do
-		if existingPlan.ID == plan then
-			foundExistingPlan = true
-			existingPlan = plan
-			break
+	local existingPlanName, existingPlan = interfaceUpdater.FindMatchingPlan(plan.ID)
+
+	if existingPlanName and existingPlan then -- Replace matching plan with imported plan
+		plans[plan.name] = plan
+		if existingPlanName ~= plan.name then
+			plans[existingPlanName] = nil
 		end
-	end
-	if not foundExistingPlan then
+		existingPlan = nil
+	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			local uniquePlanName = utilities.CreateUniqueNoteName(plans, plan.bossName, plan.name)
-			plans[uniquePlanName] = plan
-		else
-			plans[plan.name] = plan
+			plan.name = utilities.CreateUniqueNoteName(plans, plan.bossName, plan.name)
 		end
+		plans[plan.name] = plan
 	end
+
 	if Private.mainFrame then
-		interfaceUpdater.UpdateFromNote(plan.name)
-		AddOn.db.profile.lastOpenNote = plan.name
 		local noteDropdown = Private.mainFrame.noteDropdown
 		if noteDropdown then
-			noteDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle")
-			noteDropdown:Sort()
-			noteDropdown:SetValue(plan.name)
+			local item, text = noteDropdown:FindItemAndText(plan.name)
+			if not item then
+				noteDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle") -- Only add if unique
+				noteDropdown:Sort()
+			end
+			if text and text == existingPlanName then
+				noteDropdown:RemoveItem(text) -- Remove existing plan name from dropdown
+			end
+			local currentPlanName = noteDropdown:GetValue()
+			if currentPlanName == existingPlanName or currentPlanName == plan.name then
+				AddOn.db.profile.lastOpenNote = plan.name
+				noteDropdown:SetValue(plan.name)
+				interfaceUpdater.UpdateFromNote(plan.name) -- Only update if current plan is the imported plan
+			end
 		end
-		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[plan.name].remindersEnabled)
 	end
 end
 

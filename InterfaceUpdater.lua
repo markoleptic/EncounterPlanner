@@ -451,3 +451,15 @@ function InterfaceUpdater.CreateMessageBox(title, text)
 	end
 	return nil
 end
+
+---@param planID string
+---@return string|nil
+---@return Plan|nil
+function InterfaceUpdater.FindMatchingPlan(planID)
+	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	for planName, plan in pairs(plans) do
+		if plan.ID == planID then
+			return planName, plan
+		end
+	end
+end
