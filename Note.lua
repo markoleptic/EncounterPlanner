@@ -577,12 +577,12 @@ function Private:ExportPlan(plan)
 	return nil
 end
 
--- Clears the current assignments and repopulates it. Updates the roster.
+-- Clears the current assignments and repopulates it from a string of assignments. Updates the roster.
 ---@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
--- an empty plan will be created
----@param currentBossDungeonEncounterID integer
----@param content string
----@return integer|nil
+-- an empty plan will be created.
+---@param currentBossDungeonEncounterID integer The current boss dungeon encounter ID to use as a fallback.
+---@param content string A string containing assignments.
+---@return integer|nil -- Boss dungeon encounter ID for the plan.
 function Private:Note(planName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
