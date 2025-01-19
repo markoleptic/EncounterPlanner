@@ -18,7 +18,7 @@ local subHeight = 18
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
-local rightArrow = "|TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t"
+local rightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t "
 
 local function FixLevels(parent, ...)
 	local i = 1

@@ -29,7 +29,7 @@ local enabledTextColor = { 1, 1, 1, 1 }
 local defaultDropdownWidth = 200
 local defaultPulloutWidth = 200
 local defaultMaxItems = 13
-local rightArrow = "|TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t"
+local rightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t "
 
 local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
