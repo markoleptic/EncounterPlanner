@@ -31,23 +31,19 @@ local function HandleGroupRosterUpdate()
 	end
 end
 
--- Addon is first loaded
-function AddOn:OnInitialize()
-	self.db = AceDB:New(AddOnName .. "DB", self.defaults --[[,true]])
-	self.db.RegisterCallback(self, "OnProfileChanged", AddOn.Refresh)
-	self.db.RegisterCallback(self, "OnProfileCopied", AddOn.Refresh)
-	self.db.RegisterCallback(self, "OnProfileReset", AddOn.Refresh)
-
-	local profile = self.db.profile --[[@as DefaultProfile]]
+---@param profile DefaultProfile
+local function UpdateProfile(profile)
 	if profile then
-		for _, note in pairs(profile.plans) do
-			note = Private.classes.Plan:New(note, note.name, note.ID)
-			local absoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(note.dungeonEncounterID)
-			local orderedBossPhaseTable = bossUtilities.GetOrderedBossPhases(note.dungeonEncounterID)
+		for _, plan in pairs(profile.plans) do
 			-- Convert tables from DB into classes
-			utilities.SetAssignmentMetaTables(note.assignments)
-			for _, assignment in ipairs(note.assignments) do
-				if assignment.spellInfo.spellID == 0 then
+			utilities.SetAssignmentMetaTables(plan.assignments)
+
+			plan = Private.classes.Plan:New(plan, plan.name, plan.ID)
+			local absoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(plan.dungeonEncounterID)
+			local orderedBossPhaseTable = bossUtilities.GetOrderedBossPhases(plan.dungeonEncounterID)
+
+			for _, assignment in ipairs(plan.assignments) do
+				if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
 					if assignment.text:len() > 0 then
 						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
 					end
@@ -55,27 +51,33 @@ function AddOn:OnInitialize()
 				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 					assignment = assignment --[[@as CombatLogEventAssignment]]
 					if absoluteSpellCastTimeTable and orderedBossPhaseTable then
-						if assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
-							assignment.bossPhaseOrderIndex =
-								absoluteSpellCastTimeTable[assignment.combatLogEventSpellID][assignment.spellCount].bossPhaseOrderIndex
-							assignment.phase = orderedBossPhaseTable[assignment.bossPhaseOrderIndex]
+						local spellIDSpellCastStartTable = absoluteSpellCastTimeTable[assignment.combatLogEventSpellID]
+						if spellIDSpellCastStartTable then
+							if not spellIDSpellCastStartTable[assignment.spellCount] then
+								assignment.spellCount = 1
+							end
+							if assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
+								local orderIndex = spellIDSpellCastStartTable[assignment.spellCount].bossPhaseOrderIndex
+								assignment.bossPhaseOrderIndex = orderIndex
+								assignment.phase = orderedBossPhaseTable[orderIndex]
+							end
 						end
 					end
 				end
 			end
 		end
-		local clearTable = false
-		if profile.activeBossAbilities then -- TODO: Temp remove
-			for str, _ in pairs(profile.activeBossAbilities) do
-				if type(str) == "string" then
-					clearTable = true
-				end
-			end
-		end
-		if clearTable then
-			profile.activeBossAbilities = {}
-		end
 	end
+end
+
+-- Addon is first loaded
+function AddOn:OnInitialize()
+	self.db = AceDB:New(AddOnName .. "DB", self.defaults, true)
+	self.db.RegisterCallback(self, "OnProfileChanged", AddOn.Refresh)
+	self.db.RegisterCallback(self, "OnProfileCopied", AddOn.Refresh)
+	self.db.RegisterCallback(self, "OnProfileReset", AddOn.Refresh)
+	self.db.RegisterCallback(self, "OnProfileDeleted", AddOn.Refresh)
+
+	UpdateProfile(self.db.profile)
 
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
@@ -94,8 +96,10 @@ function AddOn:OnDisable()
 	Private:UnregisterAllEvents()
 end
 
+---@param db AceDBObject-3.0
+---@param newProfile string|nil
 function AddOn:Refresh(db, newProfile)
-	-- TODO: Refresh gui with new profile data
+	UpdateProfile(db.profile)
 end
 
 ---@param input string|nil
@@ -109,7 +113,9 @@ function AddOn:SlashCommand(input)
 		end
 	elseif input then
 		local trimmed = input:trim():lower()
-		if trimmed == "close" then
+		if trimmed == "options" then
+			Private:CreateOptionsMenu()
+		elseif trimmed == "close" then
 			if Private.mainFrame then
 				Private.mainFrame:Release()
 			end
