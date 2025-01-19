@@ -244,6 +244,8 @@ do
 		if self.autoWidth then
 			self.frame:SetWidth(maxItemWidth)
 			self.itemFrame:SetWidth(maxItemWidth)
+		else
+			self.itemFrame:SetWidth(self.frame:GetWidth())
 		end
 
 		FixStrata("TOOLTIP", self.frame, self.frame:GetChildren())
@@ -583,8 +585,15 @@ do
 	---@param selected boolean
 	local function HandleItemValueChanged(dropdownItem, _, selected)
 		local self = dropdownItem:GetUserDataTable().obj
-		if self.multiselect and not dropdownItem.neverShowItemsAsSelected then
-			self:Fire("OnValueChanged", dropdownItem:GetValue(), selected)
+		if self.multiselect then
+			if dropdownItem.neverShowItemsAsSelected then
+				self:Fire("OnValueChanged", dropdownItem:GetValue())
+				if self.open then
+					self.pullout:Close()
+				end
+			else
+				self:Fire("OnValueChanged", dropdownItem:GetValue(), selected)
+			end
 		else
 			if selected then
 				local newValue = dropdownItem:GetValue()
