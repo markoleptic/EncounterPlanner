@@ -627,6 +627,7 @@ do
 		self:SetEnabled(true)
 		self:SetMaxVisibleItems(defaultMaxItems)
 		self:SetShowPathText(false)
+		self:SetShowHighlight(false)
 	end
 
 	---@param self EPDropdown
