@@ -432,6 +432,20 @@ function Private:ParseNote(plan, text)
 
 	plan.content = otherContent
 
+	if not bossDungeonEncounterID then
+		for _, assignment in ipairs(plan.assignments) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local maybeID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(
+					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+				)
+				if maybeID then
+					bossDungeonEncounterID = maybeID
+					break
+				end
+			end
+		end
+	end
+
 	return bossDungeonEncounterID
 end
 
