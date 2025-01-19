@@ -535,15 +535,9 @@ local function HandleImportNoteFromString(importType)
 		plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
 		bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text) or bossDungeonEncounterID
 		AddOn.db.profile.lastOpenPlan = newPlanName
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
-			planDropdown:Sort()
-			planDropdown:SetValue(newPlanName)
-		end
+		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 	end
 
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[AddOn.db.profile.lastOpenPlan].remindersEnabled)
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 end
@@ -826,9 +820,6 @@ local function HandlePlanDropdownValueChanged(_, _, value)
 	AddOn.db.profile.lastOpenPlan = value
 	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
 	local bossDungeonEncounterID = plan.dungeonEncounterID
-	if not bossDungeonEncounterID then
-		bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-	end
 
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
@@ -1003,14 +994,7 @@ local function HandleCreateNewNoteButtonClicked()
 	AddOn.db.profile.lastOpenPlan = newPlanName
 	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-
-	local planDropdown = Private.mainFrame.planDropdown
-	if planDropdown then
-		planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
-		planDropdown:Sort()
-		planDropdown:SetValue(newPlanName)
-	end
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plans[newPlanName].remindersEnabled)
+	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 end
 
 local function HandleDeleteCurrentNoteButtonClicked()
@@ -1039,19 +1023,15 @@ local function HandleDeleteCurrentNoteButtonClicked()
 				break
 			end
 		else
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-			local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
-			plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
+			local newPlanName = "Default"
+			plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
 			AddOn.db.profile.lastOpenPlan = newPlanName
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
-			planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
-			planDropdown:Sort()
+			interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 		end
 		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
-		planDropdown:SetValue(newLastOpenPlan)
-		local remindersEnabled = plans[newLastOpenPlan].remindersEnabled
-		Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
+		interfaceUpdater.AddPlanToDropdown(newLastOpenPlan, true)
 		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	end
 end
@@ -1084,14 +1064,7 @@ local function ImportPlan(importType)
 					bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
 					AddOn.db.profile.lastOpenPlan = newPlanName
-					local planDropdown = Private.mainFrame.planDropdown
-					if planDropdown then
-						planDropdown:AddItem(newPlanName, newPlanName, "EPDropdownItemToggle")
-						planDropdown:Sort()
-						planDropdown:SetValue(newPlanName)
-					end
-					local remindersEnabled = AddOn.db.profile.plans[newPlanName].remindersEnabled
-					Private.mainFrame.planReminderEnableCheckBox:SetChecked(remindersEnabled)
+					interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
@@ -1168,8 +1141,6 @@ function Private:CreateInterface()
 				or bossDungeonEncounterID
 		end
 		if not plans[defaultPlanName] then -- MRT not loaded
-			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-			defaultPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
 			plans[defaultPlanName] = Private.classes.Plan:New(nil, defaultPlanName)
 			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
 		end
@@ -1501,14 +1472,7 @@ function Private:CreateInterface()
 	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanTextSubmitted)
-	local planDropdownData = {}
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
-	for planName, _ in pairs(AddOn.db.profile.plans) do
-		tinsert(planDropdownData, { itemValue = planName, text = planName })
-	end
-	planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
-	planDropdown:Sort()
-
 	planContainer:AddChildren(planLabel, planDropdown)
 
 	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
@@ -1524,7 +1488,6 @@ function Private:CreateInterface()
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].remindersEnabled = value
 	end)
-	planReminderEnableCheckBox:SetChecked(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].remindersEnabled)
 
 	local simulateReminderButton = AceGUI:Create("EPButton")
 	simulateReminderButton:SetText("Simulate Reminders")
@@ -1681,8 +1644,7 @@ function Private:CreateInterface()
 
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
-	planDropdown:SetValue(AddOn.db.profile.lastOpenPlan)
-
+	interfaceUpdater.UpdatePlanDropdown()
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())

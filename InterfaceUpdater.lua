@@ -431,6 +431,53 @@ function InterfaceUpdater.UpdateFromPlan(planName)
 	end
 end
 
+-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
+function InterfaceUpdater.UpdatePlanDropdown()
+	if Private.mainFrame then
+		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			planDropdown:Clear()
+			local planDropdownData = {}
+			for planName, _ in pairs(AddOn.db.profile.plans) do
+				tinsert(planDropdownData, { itemValue = planName, text = planName })
+			end
+			planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
+			planDropdown:Sort()
+			planDropdown:SetValue(lastOpenPlan)
+		end
+		local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
+		if planReminderEnableCheckBox then
+			local enabled = AddOn.db.profile.plans[lastOpenPlan].remindersEnabled
+			planReminderEnableCheckBox:SetChecked(enabled)
+		end
+	end
+end
+
+-- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
+---@param planName string
+---@param select boolean
+function InterfaceUpdater.AddPlanToDropdown(planName, select)
+	if Private.mainFrame then
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			local item, _ = planDropdown:FindItemAndText(planName)
+			if not item then
+				planDropdown:AddItem(planName, planName, "EPDropdownItemToggle")
+				planDropdown:Sort()
+			end
+			if select then
+				planDropdown:SetValue(planName)
+				local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
+				if planReminderEnableCheckBox then
+					local enabled = AddOn.db.profile.plans[planName].remindersEnabled
+					planReminderEnableCheckBox:SetChecked(enabled)
+				end
+			end
+		end
+	end
+end
+
 ---@param title string
 ---@param text string
 ---@return EPMessageBox|nil
