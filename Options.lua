@@ -1758,7 +1758,10 @@ do
 				end,
 				set = function(value)
 					if type(value) == "string" then
-						SetProfile(value)
+						value = value:gsub("%s+", "")
+						if value:len() > 0 then
+							SetProfile(value)
+						end
 					end
 				end,
 				updateIndices = { -1, 0, 1, 2 },

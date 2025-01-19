@@ -738,6 +738,7 @@ local function CreateDropdownBesideButton(self, option, index)
 		dropdown:AddItems(option.values(), "EPDropdownItemToggle")
 		if option.updateIndices then
 			UpdateUpdateIndices(self.updateIndices, option, index, function()
+				dropdown:Clear()
 				dropdown:AddItems(option.values(), "EPDropdownItemToggle")
 			end)
 		end
