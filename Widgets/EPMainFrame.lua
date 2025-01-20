@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPMainFrame"
 local Version = 1
 
@@ -264,7 +267,7 @@ local function Constructor()
 	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("Encounter Planner")
+	windowBarText:SetText(L["Encounter Planner"])
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -294,7 +297,7 @@ local function Constructor()
 	minimizeFrame:EnableMouse(true)
 	minimizeFrame:SetClampedToScreen(true)
 	local minimizeFrameText = minimizeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	minimizeFrameText:SetText("Encounter Planner")
+	minimizeFrameText:SetText(L["Encounter Planner"])
 	minimizeFrameText:SetPoint("CENTER", minimizeFrame, "CENTER")
 	if fPath then
 		minimizeFrameText:SetFont(fPath, h)

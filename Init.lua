@@ -350,7 +350,6 @@ Private.classes.RosterEntry = {
 ---@class Plan
 ---@field ID string Uniquely generated ID used when updating assignments received from other characters.
 ---@field name string Name of the plan.
----@field bossName string The name of the boss the plan is associated with.
 ---@field dungeonEncounterID integer Dungeon encounter ID for the boss the plan is associated with.
 ---@field instanceID integer Instance ID for the boss the plan is associated with.
 ---@field content table<integer, string> Miscellaneous text that other addons or WeakAuras can use for the encounter.
@@ -362,7 +361,6 @@ Private.classes.RosterEntry = {
 Private.classes.Plan = {
 	ID = "",
 	name = "",
-	bossName = "",
 	dungeonEncounterID = 0,
 	instanceID = 0,
 	content = {},
@@ -780,6 +778,7 @@ function callbackTarget.RegisterCallback(target, name, func) end
 function callbackTarget.UnregisterCallback(target, name) end
 
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
+Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
 Private.addOn.defaults = defaults
 ---@type AceDBObject-3.0
 Private.addOn.db = nil
@@ -787,7 +786,7 @@ Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as Options
 Private.callbackTarget = callbackTarget
 Private.callbackHandler = CallbackHandler:New(Private.callbackTarget)
 
-Private.raidInstances = {} --[[@as table<string, RaidInstance>]]
+Private.raidInstances = {} --[[@as table<integer, RaidInstance>]]
 Private.interfaceUpdater = {}
 Private.bossUtilities = {}
 Private.utilities = {}

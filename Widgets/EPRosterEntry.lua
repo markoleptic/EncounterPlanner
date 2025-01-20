@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPRosterEntry"
 local Version = 1
 
@@ -83,13 +86,13 @@ local function PopulateRoleDropdown(self, roles)
 	self.roleDropdown:Clear()
 	local items = {}
 	if roles["role:tank"] then
-		items[#items + 1] = { itemValue = "role:tank", text = "Tank" }
+		items[#items + 1] = { itemValue = "role:tank", text = L["Tank"] }
 	end
 	if roles["role:healer"] then
-		items[#items + 1] = { itemValue = "role:healer", text = "Healer" }
+		items[#items + 1] = { itemValue = "role:healer", text = L["Healer"] }
 	end
 	if roles["role:damager"] then
-		items[#items + 1] = { itemValue = "role:damager", text = "Damager" }
+		items[#items + 1] = { itemValue = "role:damager", text = L["Damager"] }
 	end
 	self.roleDropdown:AddItems(items, "EPDropdownItemToggle")
 end

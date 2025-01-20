@@ -12,10 +12,13 @@ local Utilities = Private.utilities
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
+local L = Private.L
 local ceil = math.ceil
 local floor = math.floor
 local format = string.format
+local GetClassInfo = GetClassInfo
 local GetClassColor = C_ClassColor.GetClassColor
+local GetItemNameByID = C_Item.GetItemNameByID
 local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetNumGroupMembers = GetNumGroupMembers
@@ -43,6 +46,18 @@ local wipe = table.wipe
 
 local lineMatchRegex = "([^\r\n]+)"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
+local kNumberOfClasses = 13
+
+local specIDToTypeL = {
+	["ranged"] = L["Ranged"],
+	["melee"] = L["Melee"],
+}
+
+local roleL = {
+	["damager"] = L["Damager"],
+	["healer"] = L["Healer"],
+	["tank"] = L["Tank"],
+}
 
 local specIDToType = {
 	-- Mage
@@ -159,6 +174,7 @@ local specIDToIconAndName = {}
 for specID, _ in pairs(specIDToName) do
 	local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
 	specIDToIconAndName[specID] = format("|T%s:16|t %s", icon, name)
+	specIDToName[specID] = name
 end
 
 ---@param value number
@@ -577,23 +593,11 @@ function Utilities.CreatePrettyClassNames()
 			rawset(tbl, key, value)
 		end,
 	})
-	for className, _ in pairs(Private.spellDB.classes) do
-		local colorMixin = GetClassColor(className)
-		local pascalCaseClassName
-		if className == "DEATHKNIGHT" then
-			pascalCaseClassName = "Death Knight"
-		elseif className == "DEMONHUNTER" then
-			pascalCaseClassName = "Demon Hunter"
-		else
-			pascalCaseClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		local prettyClassName = colorMixin:WrapTextInColorCode(pascalCaseClassName)
-		if className == "DEATHKNIGHT" then
-			Private.prettyClassNames["Death Knight"] = prettyClassName
-		elseif className == "DEMONHUNTER" then
-			Private.prettyClassNames["Demon Hunter"] = prettyClassName
-		end
-		Private.prettyClassNames[className] = prettyClassName
+	for i = 1, kNumberOfClasses do
+		local className, classFile, _ = GetClassInfo(i)
+		local colorMixin = GetClassColor(classFile)
+		local prettyClassName = colorMixin:WrapTextInColorCode(className)
+		Private.prettyClassNames[classFile] = prettyClassName
 	end
 end
 
@@ -618,7 +622,8 @@ local function CreateSpellDropdownItems()
 				spellTypeIndexMap[spell["type"]] = spellTypeIndex
 				spellTypeIndex = spellTypeIndex + 1
 			end
-			local iconText = format("|T%s:16|t %s", spell["icon"], spell["name"])
+			local name = GetSpellName(spell["spellID"])
+			local iconText = format("|T%s:16|t %s", spell["icon"], name)
 			local spellID = spell["commonSpellID"] or spell["spellID"]
 			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
 				itemValue = spellID,
@@ -628,35 +633,37 @@ local function CreateSpellDropdownItems()
 		tinsert(dropdownItems, classDropdownData)
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Class", text = "Class", dropdownItemMenuData = dropdownItems }
+	return { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 end
 
 ---@return DropdownItemData
 local function CreateRacialDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
-		local iconText = format("|T%s:16|t %s", racialInfo["icon"], racialInfo["name"])
+		local name = GetSpellName(racialInfo["spellID"])
+		local iconText = format("|T%s:16|t %s", racialInfo["icon"], name)
 		tinsert(dropdownItems, {
 			itemValue = racialInfo["spellID"],
 			text = iconText,
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Racial", text = "Racial", dropdownItemMenuData = dropdownItems }
+	return { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
 end
 
 ---@return DropdownItemData
 local function CreateTrinketDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
-		local iconText = format("|T%s:16|t %s", trinketInfo["icon"], trinketInfo["name"])
+		local name = GetSpellName(trinketInfo["spellID"])
+		local iconText = format("|T%s:16|t %s", trinketInfo["icon"], name)
 		tinsert(dropdownItems, {
 			itemValue = trinketInfo["spellID"],
 			text = iconText,
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Trinket", text = "Trinket", dropdownItemMenuData = dropdownItems }
+	return { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
 end
 
 ---@return DropdownItemData
@@ -674,7 +681,7 @@ local function CreateSpecDropdownItems()
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Spec", text = "Spec", dropdownItemMenuData = dropdownItems }
+	return { itemValue = "Spec", text = L["Spec"], dropdownItemMenuData = dropdownItems }
 end
 
 ---@return table<integer, DropdownItemData>
@@ -705,22 +712,22 @@ end
 function Utilities.CreateAssignmentTypeDropdownItems()
 	local assignmentTypes = {
 		{
-			text = "Group Number",
+			text = L["Group Number"],
 			itemValue = "Group Number",
 			dropdownItemMenuData = {
-				{ text = "1", itemValue = "group:1" },
-				{ text = "2", itemValue = "group:2" },
-				{ text = "3", itemValue = "group:3" },
-				{ text = "4", itemValue = "group:4" },
+				{ text = L["1"], itemValue = "group:1" },
+				{ text = L["2"], itemValue = "group:2" },
+				{ text = L["3"], itemValue = "group:3" },
+				{ text = L["4"], itemValue = "group:4" },
 			},
 		},
 		{
-			text = "Role",
+			text = L["Role"],
 			itemValue = "Role",
 			dropdownItemMenuData = {
-				{ text = "Damager", itemValue = "role:damager" },
-				{ text = "Healer", itemValue = "role:healer" },
-				{ text = "Tank", itemValue = "role:tank" },
+				{ text = L["Damager"], itemValue = "role:damager" },
+				{ text = L["Healer"], itemValue = "role:healer" },
+				{ text = L["Tank"], itemValue = "role:tank" },
 			},
 		},
 		{
@@ -731,16 +738,16 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 				{ text = "Ranged", itemValue = "type:ranged" },
 			},
 		},
-		{ text = "Everyone", itemValue = "{everyone}" },
+		{ text = L["Everyone"], itemValue = "{everyone}" },
 		{
-			text = "Individual",
+			text = L["Individual"],
 			itemValue = "Individual",
 			dropdownItemMenuData = {},
 		},
 	} --[[@as table<integer, DropdownItemData>]]
 
 	local classAssignmentTypes = {
-		text = "Class",
+		text = L["Class"],
 		itemValue = "Class",
 		dropdownItemMenuData = Utilities.CreateClassDropdownItemData(),
 	}
@@ -817,7 +824,7 @@ function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID
 	end
 	if allSucceeded == false then
 		local alreadyPrinted = {}
-		local combinedString = format("%s: The following assignments failed to update:", AddOnName)
+		local combinedString = format("%s: %s:", AddOnName, L["The following assignments failed to update"])
 		for _, warningString in pairs(warningStrings) do
 			if not alreadyPrinted[warningString] then
 				combinedString = combinedString .. "\n" .. warningString
@@ -1012,7 +1019,7 @@ end
 function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
 	local legibleString = assigneeNameOrRole
 	if assigneeNameOrRole == "{everyone}" then
-		return "Everyone"
+		return L["Everyone"]
 	else
 		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
 		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
@@ -1027,16 +1034,16 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 				legibleString = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
 			end
 		elseif roleMatch then
-			legibleString = roleMatch:sub(1, 1):upper() .. roleMatch:sub(2):lower()
+			legibleString = roleL[roleMatch:lower()]
 		elseif groupMatch then
-			legibleString = "Group " .. groupMatch
+			legibleString = L["Group"] .. " " .. groupMatch
 		elseif specMatch then
 			local specIDMatch = tonumber(specMatch)
 			if specIDMatch then
 				legibleString = specIDToIconAndName[specIDMatch]
 			end
 		elseif typeMatch then
-			legibleString = typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
+			legibleString = specIDToTypeL[typeMatch:lower()]
 		elseif roster and roster[assigneeNameOrRole] then
 			if roster[assigneeNameOrRole].classColoredName ~= "" then
 				legibleString = roster[assigneeNameOrRole].classColoredName
@@ -1105,23 +1112,31 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 					timelineAssignment.startTime = startTime
 				else
 					warningString = format(
-						'No spell cast times found for boss %s with spell ID "%d" with spell count %d.',
+						'%s %s %s "%d" %s %d.',
+						L["No spell cast times found for boss"],
 						bossUtilities.GetBossName(bossDungeonEncounterID),
+						L["with spell ID"],
 						assignment.combatLogEventSpellID,
+						L["with spell count"],
 						assignment.spellCount
 					)
 				end
 			else
 				warningString = format(
-					'No spell cast times found for boss %s with spell ID "%d".',
+					'%s %s %s "%d".',
+					L["No spell cast times found for boss"],
 					bossUtilities.GetBossName(bossDungeonEncounterID),
+					L["with spell ID"],
 					assignment.combatLogEventSpellID
 				)
 				DevTool:AddData(assignment)
 			end
 		else
-			warningString =
-				format("No spell cast times for boss: %s.", bossUtilities.GetBossName(bossDungeonEncounterID))
+			warningString = format(
+				"%s: %s.",
+				L["No spell cast times found for boss"],
+				bossUtilities.GetBossName(bossDungeonEncounterID)
+			)
 		end
 	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
 		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time

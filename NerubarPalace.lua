@@ -3,13 +3,11 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
-Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
-	name = "Nerub'ar Palace",
+Private.raidInstances[2657] = Private.classes.RaidInstance:New({
 	journalInstanceID = 1273,
 	instanceID = 2657,
 	bosses = {
-		Private.classes.Boss:New({
-			name = "Ulgrax the Devourer",
+		Private.classes.Boss:New({ -- Ulgrax the Devourer
 			bossID = 215657,
 			journalEncounterID = 2607,
 			dungeonEncounterID = 2902,
@@ -114,8 +112,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "The Bloodbound Horror",
+		Private.classes.Boss:New({ -- The Bloodbound Horror
 			bossID = 214502,
 			journalEncounterID = 2611,
 			dungeonEncounterID = 2917,
@@ -206,8 +203,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "Sikran, Captain of the Sureki",
+		Private.classes.Boss:New({ -- Sikran, Captain of the Sureki
 			bossID = 214503,
 			journalEncounterID = 2599,
 			dungeonEncounterID = 2898,
@@ -318,8 +314,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "Rasha'nan",
+		Private.classes.Boss:New({ -- Rasha'nan
 			bossID = 214504,
 			journalEncounterID = 2609,
 			dungeonEncounterID = 2918,
@@ -486,8 +481,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 			},
 			treatAsSinglePhase = true,
 		}),
-		Private.classes.Boss:New({
-			name = "Broodtwister Ovi'nax",
+		Private.classes.Boss:New({ -- Broodtwister Ovi'nax
 			bossID = 214506,
 			journalEncounterID = 2612,
 			dungeonEncounterID = 2919,
@@ -567,8 +561,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "Nexus-Princess Ky'veza",
+		Private.classes.Boss:New({ -- Nexus-Princess Ky'veza
 			bossID = 217748,
 			journalEncounterID = 2601,
 			dungeonEncounterID = 2920,
@@ -645,8 +638,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "The Silken Court",
+		Private.classes.Boss:New({ -- The Silken Court
 			bossID = { 217489, 217491 },
 			journalEncounterID = 2608,
 			dungeonEncounterID = 2921,
@@ -879,8 +871,7 @@ Private.raidInstances["Nerub'ar Palace"] = Private.classes.RaidInstance:New({
 				}),
 			},
 		}),
-		Private.classes.Boss:New({
-			name = "Queen Ansurek",
+		Private.classes.Boss:New({ -- Queen Ansurek
 			bossID = 218370,
 			journalEncounterID = 2602,
 			dungeonEncounterID = 2922,

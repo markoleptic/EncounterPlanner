@@ -1,4 +1,5 @@
 local _, Namespace = ...
+local L = Namespace.L
 
 ---@class Private
 local Private = Namespace
@@ -41,7 +42,7 @@ local minScrollFrameHeight = 400
 local maxScrollFrameHeight = 600
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
-local title = "Preferences"
+local title = L["Preferences"]
 local categoryFontSize = 18
 local optionLabelFontSize = 14
 local spacingBetweenOptions = 10
@@ -771,7 +772,7 @@ local function CreateDropdownBesideButton(self, option, index)
 				messageBox = AceGUI:Create("EPMessageBox")
 				messageBox.frame:SetParent(UIParent)
 				messageBox.frame:SetFrameLevel(110)
-				messageBox:SetTitle("Confirmation")
+				messageBox:SetTitle(L["Confirmation"])
 				if type(option.confirmText) == "string" then
 					messageBox:SetText(option.confirmText --[[@as string]])
 				else
@@ -942,7 +943,7 @@ local function CreateOptionWidget(self, option, index)
 						messageBox = AceGUI:Create("EPMessageBox")
 						messageBox.frame:SetParent(UIParent)
 						messageBox.frame:SetFrameLevel(110)
-						messageBox:SetTitle("Confirmation")
+						messageBox:SetTitle(L["Confirmation"])
 						if type(option.confirmText) == "string" then
 							messageBox:SetText(option.confirmText --[[@as string]])
 						else

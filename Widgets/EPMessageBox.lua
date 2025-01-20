@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPMessageBox"
 local Version = 1
 
@@ -67,7 +70,7 @@ local function OnAcquire(self)
 	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
 
 	local acceptButton = AceGUI:Create("EPButton")
-	acceptButton:SetText("Okay")
+	acceptButton:SetText(L["Okay"])
 	acceptButton:SetWidthFromText()
 	acceptButton:SetHeight(defaultButtonHeight)
 	acceptButton:SetCallback("Clicked", function()
@@ -76,7 +79,7 @@ local function OnAcquire(self)
 	end)
 
 	local rejectButton = AceGUI:Create("EPButton")
-	rejectButton:SetText("Cancel")
+	rejectButton:SetText(L["Cancel"])
 	rejectButton:SetWidthFromText()
 	rejectButton:SetHeight(defaultButtonHeight)
 	rejectButton:SetCallback("Clicked", function()

@@ -6,6 +6,9 @@ local Private = Namespace
 ---@class BossUtilities
 local BossUtilities = Private.bossUtilities
 
+local EJ_SelectInstance = EJ_SelectInstance
+local EJ_SelectEncounter = EJ_SelectEncounter
+local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 local hugeNumber = math.huge
 local ipairs = ipairs
 local min = math.min
@@ -27,6 +30,12 @@ function BossUtilities.GetBossName(dungeonEncounterID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
 			if boss.dungeonEncounterID == dungeonEncounterID then
+				if boss.name:len() == 0 then
+					EJ_SelectInstance(raidInstance.journalInstanceID)
+					EJ_SelectEncounter(boss.journalEncounterID)
+					local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+					boss.name = bossName
+				end
 				return boss.name
 			end
 		end
@@ -186,7 +195,6 @@ end
 function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 	if boss then
-		plan.bossName = boss.name
 		plan.dungeonEncounterID = boss.dungeonEncounterID
 		plan.instanceID = boss.instanceID
 		wipe(plan.customPhaseDurations)

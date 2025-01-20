@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPReminderMessage"
 local Version = 1
 
@@ -406,7 +409,7 @@ end
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
-		self:SetText("Cast spell or something")
+		self:SetText(L["Cast spell or something"])
 		self.frame:SetBackdropColor(unpack(anchorModeBackdropColor))
 		self.frame:SetMovable(true)
 		self.frame:SetScript("OnMouseDown", function(_, button)

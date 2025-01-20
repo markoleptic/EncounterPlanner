@@ -600,7 +600,6 @@ function Private:Note(planName, currentBossDungeonEncounterID, content)
 
 	local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
 	if boss then
-		plan.bossName = boss.name
 		plan.dungeonEncounterID = boss.dungeonEncounterID
 		plan.instanceID = boss.instanceID
 	end

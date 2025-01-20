@@ -7,8 +7,10 @@
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT, DevTool
+## X-Localizations: enUS
 
-embeds.xml
+Embeds.xml
+Locales\Locales.xml
 Constants.lua
 Spells.lua
 Init.lua

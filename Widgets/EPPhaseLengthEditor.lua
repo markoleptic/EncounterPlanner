@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPPhaseLengthEditor"
 local Version = 1
 
@@ -112,18 +115,18 @@ local function OnAcquire(self)
 	labelContainer:SetFullWidth(true)
 
 	local phaseNameLabel = AceGUI:Create("EPLabel")
-	phaseNameLabel:SetText("Phase")
+	phaseNameLabel:SetText(L["Phase"])
 	phaseNameLabel:SetRelativeWidth(0.3)
 	phaseNameLabel.text:SetTextColor(unpack(headingColor))
 
 	local defaultDurationLabel = AceGUI:Create("EPLabel")
-	defaultDurationLabel:SetText("Default Duration")
+	defaultDurationLabel:SetText(L["Default Duration"])
 	defaultDurationLabel:SetHorizontalTextAlignment("CENTER")
 	defaultDurationLabel:SetRelativeWidth(0.3)
 	defaultDurationLabel.text:SetTextColor(unpack(headingColor))
 
 	local durationLabel = AceGUI:Create("EPLabel")
-	durationLabel:SetText("Custom Duration")
+	durationLabel:SetText(L["Custom Duration"])
 	durationLabel:SetHorizontalTextAlignment("CENTER")
 	durationLabel:SetRelativeWidth(0.4)
 	durationLabel.text:SetTextColor(unpack(headingColor))
@@ -131,7 +134,7 @@ local function OnAcquire(self)
 	self.resetAllButton = AceGUI:Create("EPButton")
 	self.resetAllButton.frame:SetParent(self.frame)
 	self.resetAllButton.frame:SetPoint("BOTTOM", 0, contentFramePadding.y)
-	self.resetAllButton:SetText("Reset All to Default")
+	self.resetAllButton:SetText(L["Reset All to Default"])
 	self.resetAllButton:SetWidthFromText()
 	self.resetAllButton:SetCallback("Clicked", function()
 		ResetToDefault(self)
@@ -255,7 +258,7 @@ local function Constructor()
 	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("Phase Timing Editor")
+	windowBarText:SetText(L["Phase Timing Editor"])
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")

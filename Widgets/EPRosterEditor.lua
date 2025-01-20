@@ -1,3 +1,6 @@
+local _, Namespace = ...
+local L = Namespace.L
+
 local Type = "EPRosterEditor"
 local Version = 1
 
@@ -178,9 +181,9 @@ end
 ---@param newName string
 local function HandleRosterEntryNameChanged(self, rosterEntry, newName)
 	local rosterWidgetMap = nil
-	if self.activeTab == "Current Plan Roster" then
+	if self.activeTab == L["Current Plan Roster"] then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "Shared Roster" then
+	elseif self.activeTab == L["Shared Roster"] then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -211,9 +214,9 @@ end
 ---@param newClass string
 local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 	local rosterWidgetMap = nil
-	if self.activeTab == "Current Plan Roster" then
+	if self.activeTab == L["Current Plan Roster"] then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "Shared Roster" then
+	elseif self.activeTab == L["Shared Roster"] then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -246,9 +249,9 @@ end
 ---@param newRole string
 local function HandleRosterEntryRoleChanged(self, rosterEntry, newRole)
 	local rosterWidgetMap = nil
-	if self.activeTab == "Shared Roster" then
+	if self.activeTab == L["Shared Roster"] then
 		rosterWidgetMap = self.sharedRosterWidgetMap
-	elseif self.activeTab == "Current Plan Roster" then
+	elseif self.activeTab == L["Current Plan Roster"] then
 		rosterWidgetMap = self.currentRosterWidgetMap
 	end
 
@@ -266,9 +269,9 @@ end
 ---@param rosterEntry EPRosterEntry
 local function HandleRosterEntryDeleted(self, rosterEntry)
 	local rosterWidgetMap = nil
-	if self.activeTab == "Current Plan Roster" then
+	if self.activeTab == L["Current Plan Roster"] then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif self.activeTab == "Shared Roster" then
+	elseif self.activeTab == L["Shared Roster"] then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 
@@ -308,13 +311,13 @@ local function CreateRosterEntry(self, rosterWidgetMapping)
 			rosterWidgetMapping.dbEntry.role
 		)
 	else
-		if self.activeTab == "Current Plan Roster" then
+		if self.activeTab == L["Current Plan Roster"] then
 			tinsert(self.currentRosterWidgetMap, {
 				name = "",
 				dbEntry = { class = "", role = "", classColoredName = "" },
 				widgetEntry = newRosterEntry,
 			})
-		elseif self.activeTab == "Shared Roster" then
+		elseif self.activeTab == L["Shared Roster"] then
 			tinsert(self.sharedRosterWidgetMap, {
 				name = "",
 				dbEntry = { class = "", role = "", classColoredName = "" },
@@ -364,9 +367,9 @@ local function PopulateActiveTab(self, tab)
 	end
 
 	local rosterWidgetMap = nil
-	if tab == "Current Plan Roster" then
+	if tab == L["Current Plan Roster"] then
 		rosterWidgetMap = self.currentRosterWidgetMap
-	elseif tab == "Shared Roster" then
+	elseif tab == L["Shared Roster"] then
 		rosterWidgetMap = self.sharedRosterWidgetMap
 	end
 	if rosterWidgetMap then
@@ -393,15 +396,15 @@ local function PopulateActiveTab(self, tab)
 		end
 	end
 
-	if tab == "Current Plan Roster" and #self.buttonContainer.children >= 2 then
-		self.buttonContainer.children[1]:SetText("Update from Shared Roster")
+	if tab == L["Current Plan Roster"] and #self.buttonContainer.children >= 2 then
+		self.buttonContainer.children[1]:SetText(L["Update from Shared Roster"])
 		self.buttonContainer.children[1]:SetWidthFromText()
-		self.buttonContainer.children[2]:SetText("Fill from Shared Roster")
+		self.buttonContainer.children[2]:SetText(L["Fill from Shared Roster"])
 		self.buttonContainer.children[2]:SetWidthFromText()
-	elseif tab == "Shared Roster" and #self.buttonContainer.children >= 2 then
-		self.buttonContainer.children[1]:SetText("Update from Current Plan Roster")
+	elseif tab == L["Shared Roster"] and #self.buttonContainer.children >= 2 then
+		self.buttonContainer.children[1]:SetText(L["Update from Current Plan Roster"])
 		self.buttonContainer.children[1]:SetWidthFromText()
-		self.buttonContainer.children[2]:SetText("Fill from Current Plan Roster")
+		self.buttonContainer.children[2]:SetText(L["Fill from Current Plan Roster"])
 		self.buttonContainer.children[2]:SetWidthFromText()
 	end
 
@@ -466,7 +469,7 @@ local function OnAcquire(self)
 
 	local currentRosterTab = AceGUI:Create("EPButton")
 	currentRosterTab:SetIsToggleable(true)
-	currentRosterTab:SetText("Current Plan Roster")
+	currentRosterTab:SetText(L["Current Plan Roster"])
 	currentRosterTab:SetWidthFromText()
 	currentRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
@@ -482,7 +485,7 @@ local function OnAcquire(self)
 
 	local sharedRosterTab = AceGUI:Create("EPButton")
 	sharedRosterTab:SetIsToggleable(true)
-	sharedRosterTab:SetText("Shared Roster")
+	sharedRosterTab:SetText(L["Shared Roster"])
 	sharedRosterTab:SetWidthFromText()
 	sharedRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
@@ -527,19 +530,19 @@ local function OnAcquire(self)
 	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, contentFramePadding.y)
 
 	local updateRosterButton = AceGUI:Create("EPButton")
-	updateRosterButton:SetText("Update from Shared Roster")
+	updateRosterButton:SetText(L["Update from Shared Roster"])
 	updateRosterButton:SetWidthFromText()
 	updateRosterButton:SetCallback("Clicked", function()
 		self:Fire("UpdateRosterButtonClicked", self.activeTab)
 	end)
 	local fillRosterButton = AceGUI:Create("EPButton")
-	fillRosterButton:SetText("Fill from Shared Roster")
+	fillRosterButton:SetText(L["Fill from Shared Roster"])
 	fillRosterButton:SetWidthFromText()
 	fillRosterButton:SetCallback("Clicked", function()
 		self:Fire("FillRosterButtonClicked", self.activeTab)
 	end)
 	local importCurrentGroupButton = AceGUI:Create("EPButton")
-	importCurrentGroupButton:SetText("Import Current Party/Raid Group")
+	importCurrentGroupButton:SetText(L["Import Current Party/Raid Group"])
 	importCurrentGroupButton:SetWidthFromText()
 	importCurrentGroupButton:SetCallback("Clicked", function()
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
@@ -761,7 +764,7 @@ local function Constructor()
 	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("Roster Editor")
+	windowBarText:SetText(L["Roster Editor"])
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")

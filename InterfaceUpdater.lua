@@ -16,6 +16,7 @@ local bossUtilities = Private.bossUtilities
 local utilities = Private.utilities
 
 local AddOn = Private.addOn
+local L = Private.L
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
@@ -292,8 +293,13 @@ do
 					assigneeEntry:SetCallback("AssigneeSwapped", HandleSwapAssignee)
 					assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
 						local messageBox = InterfaceUpdater.CreateMessageBox(
-							"Delete Assignments Confirmation",
-							format("Are you sure you want to delete all assignments for %s?", coloredAssigneeNameOrRole)
+							L["Delete Assignments Confirmation"],
+							format(
+								"%s %s %s?",
+								L["Are you sure you want to delete all"],
+								L["assignments for"],
+								coloredAssigneeNameOrRole
+							)
 						)
 						if messageBox then
 							messageBox:SetCallback("Accepted", function()
@@ -324,10 +330,12 @@ do
 								local spellEntryKey = widget:GetKey()
 								local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
 								local messageBox = InterfaceUpdater.CreateMessageBox(
-									"Delete Assignments Confirmation",
+									L["Delete Assignments Confirmation"],
 									format(
-										"Are you sure you want to delete all %s assignments for %s?",
+										"%s %s %s %s?",
+										L["Are you sure you want to delete all"],
 										spellName,
+										L["assignments for"],
 										coloredAssigneeNameOrRole
 									)
 								)
@@ -378,7 +386,7 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 	local addAssigneeDropdown = Private.mainFrame.timeline:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
-		addAssigneeDropdown:SetText("Add Assignee")
+		addAssigneeDropdown:SetText(L["Add Assignee"])
 		addAssigneeDropdown:AddItems(
 			utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 			"EPDropdownItemToggle",

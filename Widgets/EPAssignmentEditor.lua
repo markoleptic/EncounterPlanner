@@ -5,6 +5,7 @@ local Private = Namespace
 
 ---@class Constants
 local constants = Private.constants
+local L = Private.L
 
 local Type = "EPAssignmentEditor"
 local Version = 1
@@ -30,7 +31,7 @@ local buttonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 }
 local labelWidgetSpacing = { 2, 2 }
 local containerContainerSpacing = { 0, 4 }
 local closeButtonIconPadding = { 2, 2 }
-local title = "Assignment Editor"
+local title = L["Assignment Editor"]
 local spacingBetweenOptions = 8
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -65,7 +66,7 @@ local lineBackdrop = {
 
 local assignmentTriggers = {
 	{
-		text = "Combat Log Event",
+		text = L["Combat Log Event"],
 		itemValue = "Combat Log Event",
 		dropdownItemMenuData = {
 			{ text = "SPELL_CAST_SUCCESS", itemValue = "SCC" },
@@ -74,7 +75,7 @@ local assignmentTriggers = {
 			{ text = "SPELL_AURA_REMOVED", itemValue = "SAR" },
 		},
 	},
-	{ text = "Fixed Time", itemValue = "Fixed Time" },
+	{ text = L["Fixed Time"], itemValue = "Fixed Time" },
 }
 
 ---@class EPAssignmentEditor : AceGUIContainer
@@ -210,7 +211,7 @@ local function OnAcquire(self)
 		self.assignmentTypeContainer:SetFullWidth(true)
 
 		self.assignmentTypeLabel = AceGUI:Create("EPLabel")
-		self.assignmentTypeLabel:SetText("Trigger:", 0)
+		self.assignmentTypeLabel:SetText(L["Trigger:"], 0)
 		self.assignmentTypeLabel:SetFrameHeightFromText()
 		self.assignmentTypeLabel:SetFullWidth(true)
 
@@ -238,7 +239,7 @@ local function OnAcquire(self)
 		leftContainer:SetFullWidth(true)
 
 		self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
-		self.combatLogEventSpellIDLabel:SetText("Spell:", 0)
+		self.combatLogEventSpellIDLabel:SetText(L["Spell:"], 0)
 		self.combatLogEventSpellIDLabel:SetFullHeight(true)
 		self.combatLogEventSpellIDLabel:SetFrameWidthFromText()
 		maxLabelWidth = max(maxLabelWidth, self.combatLogEventSpellIDLabel.frame:GetWidth())
@@ -255,7 +256,7 @@ local function OnAcquire(self)
 		rightContainer:SetFullWidth(true)
 
 		self.combatLogEventSpellCountLabel = AceGUI:Create("EPLabel")
-		self.combatLogEventSpellCountLabel:SetText("Count:", 0)
+		self.combatLogEventSpellCountLabel:SetText(L["Count:"], 0)
 		self.combatLogEventSpellCountLabel:SetFullHeight(true)
 		self.combatLogEventSpellCountLabel:SetFrameWidthFromText()
 		maxLabelWidth = max(maxLabelWidth, self.combatLogEventSpellCountLabel.frame:GetWidth())
@@ -287,7 +288,7 @@ local function OnAcquire(self)
 		self.timeContainer:SetFullWidth(true)
 
 		self.timeLabel = AceGUI:Create("EPLabel")
-		self.timeLabel:SetText("Time:", 0)
+		self.timeLabel:SetText(L["Time:"], 0)
 		self.timeLabel:SetFrameHeightFromText()
 		self.timeLabel:SetFullWidth(true)
 
@@ -325,7 +326,7 @@ local function OnAcquire(self)
 		self.assigneeTypeContainer:SetFullWidth(true)
 
 		self.assigneeTypeLabel = AceGUI:Create("EPLabel")
-		self.assigneeTypeLabel:SetText("Type:", 0)
+		self.assigneeTypeLabel:SetText(L["Type:"], 0)
 		self.assigneeTypeLabel:SetFrameHeightFromText()
 		self.assigneeTypeLabel:SetFullWidth(true)
 
@@ -345,7 +346,7 @@ local function OnAcquire(self)
 		self.spellAssignmentContainer:SetFullWidth(true)
 
 		self.enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableSpellAssignmentCheckBox:SetText("Spell:")
+		self.enableSpellAssignmentCheckBox:SetText(L["Spell:"])
 		self.enableSpellAssignmentCheckBox:SetFullWidth(true)
 		self.enableSpellAssignmentCheckBox:SetFrameHeightFromText()
 		self.enableSpellAssignmentCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
@@ -362,7 +363,7 @@ local function OnAcquire(self)
 		self.spellAssignmentDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleSpellAssignmentDropdownValueChanged(self, value)
 		end)
-		self.spellAssignmentDropdown:AddItem("Recent", "Recent", "EPDropdownItemMenu", {}, true)
+		self.spellAssignmentDropdown:AddItem("Recent", L["Recent"], "EPDropdownItemMenu", {}, true)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
 		self.spellAssignmentDropdown:SetShowPathText(true, { 2, "n" })
 		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)
@@ -376,7 +377,7 @@ local function OnAcquire(self)
 		self.targetContainer:SetPadding(indentWidth, 0, 0, 0)
 
 		self.enableTargetCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableTargetCheckBox:SetText("Targeted?")
+		self.enableTargetCheckBox:SetText(L["Targeted?"])
 		self.enableTargetCheckBox:SetFullWidth(true)
 		self.enableTargetCheckBox:SetFrameHeightFromText()
 		self.enableTargetCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
@@ -410,7 +411,7 @@ local function OnAcquire(self)
 		self.optionalTextContainer:SetFullWidth(true)
 
 		self.optionalTextLabel = AceGUI:Create("EPLabel")
-		self.optionalTextLabel:SetText("Text:", 0)
+		self.optionalTextLabel:SetText(L["Text:"], 0)
 		self.optionalTextLabel:SetFrameHeightFromText()
 		self.optionalTextLabel:SetFullWidth(true)
 
@@ -430,7 +431,7 @@ local function OnAcquire(self)
 		self.previewContainer:SetFullWidth(true)
 
 		local previewLabelLabel = AceGUI:Create("EPLabel")
-		previewLabelLabel:SetText("Preview:", 0)
+		previewLabelLabel:SetText(L["Preview:"], 0)
 		previewLabelLabel:SetFullWidth(true)
 		previewLabelLabel:SetFrameHeightFromText()
 
@@ -483,7 +484,7 @@ local function OnAcquire(self)
 	local edgeSize = frameBackdrop.edgeSize
 
 	self.deleteButton = AceGUI:Create("EPButton")
-	self.deleteButton:SetText("Delete Assignment")
+	self.deleteButton:SetText(L["Delete Assignment"])
 	self.deleteButton:SetWidthFromText()
 	self.deleteButton:SetBackdropColor(unpack(backdropColor))
 	self.deleteButton:SetCallback("Clicked", function()

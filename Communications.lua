@@ -13,6 +13,7 @@ local bossUtilities = Private.bossUtilities
 local interfaceUpdater = Private.interfaceUpdater
 
 local AddOn = Private.addOn
+local L = Private.L
 local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
 local LibStub = LibStub
@@ -37,12 +38,11 @@ local configForDeflate = {
 ---@class SerializedPlan
 ---@field [1] string ID
 ---@field [2] string name
----@field [3] string bossName
----@field [4] integer dungeonEncounterID
----@field [5] integer instanceID
----@field [6] table<integer, SerializedAssignment> assignments
----@field [7] table<string, SerializedRosterEntry> roster
----@field [8] table<integer, string> content
+---@field [3] integer dungeonEncounterID
+---@field [4] integer instanceID
+---@field [5] table<integer, SerializedAssignment> assignments
+---@field [6] table<string, SerializedRosterEntry> roster
+---@field [7] table<integer, string> content
 
 ---@class SerializedAssignment
 ---@field [1] string assigneeNameOrRole
@@ -132,22 +132,21 @@ local function SerializePlan(plan)
 	local serializedPlan = {
 		plan.ID,
 		plan.name,
-		plan.bossName,
 		plan.dungeonEncounterID,
 		plan.instanceID,
 		{},
 		{},
 		{},
 	} --[[@as SerializedPlan]]
-	local assignments = serializedPlan[6]
+	local assignments = serializedPlan[5]
 	for _, assignment in ipairs(plan.assignments) do
 		assignments[#assignments + 1] = SerializeAssignment(assignment)
 	end
-	local roster = serializedPlan[7]
+	local roster = serializedPlan[6]
 	for name, rosterInfo in pairs(plan.roster) do
 		roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
 	end
-	serializedPlan[8] = plan.content
+	serializedPlan[7] = plan.content
 	return serializedPlan
 end
 
@@ -157,17 +156,16 @@ local function DeserializePlan(serializedPlan)
 	local ID = serializedPlan[1]
 	local name = serializedPlan[2]
 	local plan = Private.classes.Plan:New({}, name, ID)
-	plan.bossName = serializedPlan[3]
-	plan.dungeonEncounterID = serializedPlan[4]
-	plan.instanceID = serializedPlan[5]
-	for _, serializedAssignment in ipairs(serializedPlan[6]) do
+	plan.dungeonEncounterID = serializedPlan[3]
+	plan.instanceID = serializedPlan[4]
+	for _, serializedAssignment in ipairs(serializedPlan[5]) do
 		plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
 	end
-	for _, serializedRosterEntry in ipairs(serializedPlan[7]) do
+	for _, serializedRosterEntry in ipairs(serializedPlan[6]) do
 		local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
 		plan.roster[rosterEntryName] = rosterEntry
 	end
-	plan.content = serializedPlan[8]
+	plan.content = serializedPlan[7]
 	return plan
 end
 
@@ -198,12 +196,12 @@ local function StringToTable(inString, fromChat)
 		decoded = LibDeflate:DecodeForWoWAddonChannel(inString)
 	end
 	if not decoded then
-		return "Error decoding."
+		return L["Error decoding"]
 	end
 
 	local decompressed = LibDeflate:DecompressZlib(decoded)
 	if not decompressed then
-		return "Error decompressing."
+		return L["Error decompressing"]
 	end
 
 	---@diagnostic disable-next-line: undefined-field
@@ -224,7 +222,7 @@ local function ImportPlan(plan)
 		existingPlan = nil
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			plan.name = utilities.CreateUniquePlanName(plans, plan.bossName, plan.name)
+			plan.name = utilities.CreateUniquePlanName(plans, L["Imported"], plan.name)
 		end
 		plans[plan.name] = plan
 	end
@@ -279,18 +277,19 @@ function AddOn:OnCommReceived(prefix, message, distribution, sender)
 				ImportPlan(plan)
 			else
 				local messageContent = format(
-					'%s has sent you the plan "%s". Do you wish to accept the plan? Trusting this character will '
-						.. "suppress this warning in the future.",
+					'%s %s "%s". %s',
 					fullName,
-					plan.name
+					L["has sent you the plan"],
+					plan.name,
+					L["Do you wish to accept the plan? Trusting this character will suppress this warning in the future."]
 				)
-				local messageBox = interfaceUpdater.CreateMessageBox("Plan Received", messageContent)
+				local messageBox = interfaceUpdater.CreateMessageBox(L["Plan Received"], messageContent)
 				if messageBox then
-					messageBox:SetAcceptButtonText("Accept and Trust")
-					messageBox:SetRejectButtonText("Reject")
+					messageBox:SetAcceptButtonText(L["Accept and Trust"])
+					messageBox:SetRejectButtonText(L["Reject"])
 					local rejectButton = messageBox.buttonContainer.children[2]
-					messageBox:AddButton("Accept without Trusting", rejectButton)
-					messageBox:SetCallback("Accept without Trusting" .. "Clicked", function()
+					messageBox:AddButton(L["Accept without Trusting"], rejectButton)
+					messageBox:SetCallback(L["Accept without Trusting"] .. "Clicked", function()
 						ImportPlan(plan)
 					end)
 					messageBox:SetCallback("Accepted", function()

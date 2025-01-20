@@ -2,7 +2,7 @@ local _, Namespace = ...
 
 ---@class Constants
 local constants = Namespace.constants
-
+local L = Namespace.L
 local Type = "EPAbilityEntry"
 local Version = 1
 
@@ -174,7 +174,7 @@ end
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
 local function SetNullAbility(self, key)
-	self.label:SetText("Unknown", padding.x * 2)
+	self.label:SetText(L["Unknown"], padding.x * 2)
 	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", padding.x, padding.y, 0)
 	self.key = key
 end
@@ -182,7 +182,7 @@ end
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
 local function SetGeneralAbility(self, key)
-	self.label:SetText("Text", padding.x * 2)
+	self.label:SetText(L["Text"], padding.x * 2)
 	self.label:SetIcon(constants.kTextAssignmentTexture, padding.x, padding.y, 0)
 	self.key = key
 end

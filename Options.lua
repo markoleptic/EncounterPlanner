@@ -16,7 +16,7 @@ local bossUtilities = Private.bossUtilities
 local interfaceUpdater = Private.interfaceUpdater
 
 local AddOn = Private.addOn
-
+local L = Private.L
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -34,18 +34,18 @@ local unpack = unpack
 local previewDuration = 15.0
 
 local MouseButtonKeyBindingValues = {
-	{ itemValue = "LeftButton", text = "Left Click" },
-	{ itemValue = "Alt-LeftButton", text = "Alt + Left Click" },
-	{ itemValue = "Ctrl-LeftButton", text = "Ctrl + Left Click" },
-	{ itemValue = "Shift-LeftButton", text = "Shift + Left Click" },
-	{ itemValue = "MiddleButton", text = "Middle Mouse Button" },
-	{ itemValue = "Alt-MiddleButton", text = "Alt + Middle Mouse Button" },
-	{ itemValue = "Ctrl-MiddleButton", text = "Ctrl + Middle Mouse Button" },
-	{ itemValue = "Shift-MiddleButton", text = "Shift + Middle Mouse Button" },
-	{ itemValue = "RightButton", text = "Right Click" },
-	{ itemValue = "Alt-RightButton", text = "Alt + Right Click" },
-	{ itemValue = "Ctrl-RightButton", text = "Ctrl + Right Click" },
-	{ itemValue = "Shift-RightButton", text = "Shift + Right Click" },
+	{ itemValue = "LeftButton", text = L["Left Click"] },
+	{ itemValue = "Alt-LeftButton", text = L["Alt + Left Click"] },
+	{ itemValue = "Ctrl-LeftButton", text = L["Ctrl + Left Click"] },
+	{ itemValue = "Shift-LeftButton", text = L["Shift + Left Click"] },
+	{ itemValue = "MiddleButton", text = L["Middle Mouse Button"] },
+	{ itemValue = "Alt-MiddleButton", text = L["Alt + Middle Mouse Button"] },
+	{ itemValue = "Ctrl-MiddleButton", text = L["Ctrl + Middle Mouse Button"] },
+	{ itemValue = "Shift-MiddleButton", text = L["Shift + Middle Mouse Button"] },
+	{ itemValue = "RightButton", text = L["Right Click"] },
+	{ itemValue = "Alt-RightButton", text = L["Alt + Right Click"] },
+	{ itemValue = "Ctrl-RightButton", text = L["Ctrl + Right Click"] },
+	{ itemValue = "Shift-RightButton", text = L["Shift + Right Click"] },
 }
 
 local rowValues = {
@@ -64,28 +64,28 @@ local rowValues = {
 }
 
 local textAlignmentValues = {
-	{ itemValue = "LEFT", text = "Left" },
-	{ itemValue = "CENTER", text = "Center" },
-	{ itemValue = "RIGHT", text = "Right" },
+	{ itemValue = "LEFT", text = L["Left"] },
+	{ itemValue = "CENTER", text = L["Center"] },
+	{ itemValue = "RIGHT", text = L["Right"] },
 }
 
 local anchorPointValues = {
-	{ itemValue = "TOPLEFT", text = "Top Left" },
-	{ itemValue = "TOP", text = "Top" },
-	{ itemValue = "TOPRIGHT", text = "Top Right" },
-	{ itemValue = "RIGHT", text = "Right" },
-	{ itemValue = "BOTTOMRIGHT", text = "Bottom Right" },
-	{ itemValue = "BOTTOM", text = "Bottom" },
-	{ itemValue = "LEFT", text = "Left" },
-	{ itemValue = "BOTTOMLEFT", text = "Bottom Left" },
-	{ itemValue = "CENTER", text = "Center" },
+	{ itemValue = "TOPLEFT", text = L["Top Left"] },
+	{ itemValue = "TOP", text = L["Top"] },
+	{ itemValue = "TOPRIGHT", text = L["Top Right"] },
+	{ itemValue = "RIGHT", text = L["Right"] },
+	{ itemValue = "BOTTOMRIGHT", text = L["Bottom Right"] },
+	{ itemValue = "BOTTOM", text = L["Bottom"] },
+	{ itemValue = "LEFT", text = L["Left"] },
+	{ itemValue = "BOTTOMLEFT", text = L["Bottom Left"] },
+	{ itemValue = "CENTER", text = L["Center"] },
 }
 
 local fontOutlineValues = {
-	{ itemValue = "", text = "None" },
-	{ itemValue = "MONOCHROME", text = "Monochrome" },
-	{ itemValue = "OUTLINE", text = "Outline" },
-	{ itemValue = "THICKOUTLINE", text = "Thick Outline" },
+	{ itemValue = "", text = L["None"] },
+	{ itemValue = "MONOCHROME", text = L["Monochrome"] },
+	{ itemValue = "OUTLINE", text = L["Outline"] },
+	{ itemValue = "THICKOUTLINE", text = L["Thick Outline"] },
 }
 
 ---@param left number
@@ -249,7 +249,7 @@ local function CreateProgressBarAnchor()
 		progressBarAnchor:SetDurationTextAlignment(preferences.durationAlignment)
 		progressBarAnchor:SetTexture(preferences.texture)
 		progressBarAnchor:SetIconPosition(preferences.iconPosition)
-		progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], "Progress Bar Text")
+		progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], L["Progress Bar Text"])
 		progressBarAnchor:SetColor(unpack(preferences.color))
 		progressBarAnchor:SetBackgroundColor(unpack(preferences.backgroundColor))
 		progressBarAnchor:SetProgressBarWidth(preferences.width)
@@ -351,10 +351,10 @@ do
 	local function CreateKeyBindingOptions()
 		return {
 			{
-				label = "Pan",
+				label = L["Pan"],
 				type = "dropdown",
-				description = "Pans the timeline to the left and right when holding this key.",
-				category = "Timeline",
+				description = L["Pans the timeline to the left and right when holding this key."],
+				category = L["Timeline"],
 				values = MouseButtonKeyBindingValues,
 				get = function()
 					return GetPreferences().keyBindings.pan
@@ -375,15 +375,15 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Scroll",
+				label = L["Scroll"],
 				type = "dropdown",
-				description = "Scrolls the timeline up and down.",
-				category = "Timeline",
+				description = L["Scrolls the timeline up and down."],
+				category = L["Timeline"],
 				values = {
-					{ itemValue = "MouseScroll", text = "Mouse Scroll" },
-					{ itemValue = "Alt-MouseScroll", text = "Alt + Mouse Scroll" },
-					{ itemValue = "Ctrl-MouseScroll", text = "Ctrl + Mouse Scroll" },
-					{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
+					{ itemValue = "MouseScroll", text = L["Mouse Scroll"] },
+					{ itemValue = "Alt-MouseScroll", text = L["Alt + Mouse Scroll"] },
+					{ itemValue = "Ctrl-MouseScroll", text = L["Ctrl + Mouse Scroll"] },
+					{ itemValue = "Shift-MouseScroll", text = L["Shift + Mouse Scroll"] },
 				},
 				get = function()
 					return GetPreferences().keyBindings.scroll
@@ -401,15 +401,15 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Zoom",
+				label = L["Zoom"],
 				type = "dropdown",
-				description = "Zooms in horizontally on the timeline.",
-				category = "Timeline",
+				description = L["Zooms in horizontally on the timeline."],
+				category = L["Timeline"],
 				values = {
-					{ itemValue = "MouseScroll", text = "Mouse Scroll" },
-					{ itemValue = "Alt-MouseScroll", text = "Alt + Mouse Scroll" },
-					{ itemValue = "Ctrl-MouseScroll", text = "Ctrl + Mouse Scroll" },
-					{ itemValue = "Shift-MouseScroll", text = "Shift + Mouse Scroll" },
+					{ itemValue = "MouseScroll", text = L["Mouse Scroll"] },
+					{ itemValue = "Alt-MouseScroll", text = L["Alt + Mouse Scroll"] },
+					{ itemValue = "Ctrl-MouseScroll", text = L["Ctrl + Mouse Scroll"] },
+					{ itemValue = "Shift-MouseScroll", text = L["Shift + Mouse Scroll"] },
 				},
 				get = function()
 					return GetPreferences().keyBindings.zoom
@@ -427,10 +427,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Add Assignment",
+				label = L["Add Assignment"],
 				type = "dropdown",
-				description = "Creates a new assignment when this key is pressed when hovering over the timeline.",
-				category = "Assignment",
+				description = L["Creates a new assignment when this key is pressed when hovering over the timeline."],
+				category = L["Assignment"],
 				values = MouseButtonKeyBindingValues,
 				get = function()
 					return GetPreferences().keyBindings.newAssignment
@@ -448,11 +448,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Edit Assignment",
+				label = L["Edit Assignment"],
 				type = "dropdown",
-				description = "Opens the assignment editor when this key is pressed when hovering over an assignment "
-					.. "spell icon.",
-				category = "Assignment",
+				description = L["Opens the assignment editor when this key is pressed when hovering over an assignment spell icon."],
+				category = L["Assignment"],
 				values = MouseButtonKeyBindingValues,
 				get = function()
 					return GetPreferences().keyBindings.editAssignment
@@ -472,11 +471,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Duplicate Assignment",
+				label = L["Duplicate Assignment"],
 				type = "dropdown",
-				description = "Creates a new assignment based on the assignment being hovered over after holding, "
-					.. "dragging, and releasing this key.",
-				category = "Assignment",
+				description = L["Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key."],
+				category = L["Assignment"],
 				values = MouseButtonKeyBindingValues,
 				get = function()
 					return GetPreferences().keyBindings.duplicateAssignment
@@ -502,9 +500,9 @@ do
 		end
 		return {
 			{
-				label = "Enable Reminders",
+				label = L["Enable Reminders"],
 				type = "checkBox",
-				description = "Whether to enable reminders for assignments.",
+				description = L["Whether to enable reminders for assignments."],
 				get = function()
 					return GetReminderPreferences().enabled
 				end,
@@ -530,9 +528,9 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Only Show Reminders For Me",
+				label = L["Only Show Reminders For Me"],
 				type = "checkBox",
-				description = "Whether to only show assignment reminders that are relevant to you.",
+				description = L["Whether to only show assignment reminders that are relevant to you."],
 				enabled = enableReminderOption,
 				get = function()
 					return GetReminderPreferences().onlyShowMe
@@ -544,10 +542,9 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Hide or Cancel if Spell on Cooldown",
+				label = L["Hide or Cancel if Spell on Cooldown"],
 				type = "checkBox",
-				description = "If an assignment is a spell and it already on cooldown, the reminder will not be shown. If "
-					.. "the spell is cast during the reminder countdown, it will be cancelled.",
+				description = L["If an assignment is a spell and it already on cooldown, the reminder will not be shown. If the spell is cast during the reminder countdown, it will be cancelled."],
 				enabled = enableReminderOption,
 				get = function()
 					return GetReminderPreferences().cancelIfAlreadyCasted
@@ -559,10 +556,9 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Hide or Cancel on Phase Change",
+				label = L["Hide or Cancel on Phase Change"],
 				type = "checkBox",
-				description = "Reminders associated with combat log events in a certain phase will be cancelled or hidden "
-					.. "when the phase transitions.",
+				description = L["Reminders associated with combat log events in a certain phase will be cancelled or hidden when the phase transitions."],
 				enabled = enableReminderOption,
 				get = function()
 					return GetReminderPreferences().removeDueToPhaseChange
@@ -574,9 +570,9 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Reminder Advance Notice",
+				label = L["Reminder Advance Notice"],
 				type = "lineEdit",
-				description = "How far ahead of assignment time to begin showing reminders.",
+				description = L["How far ahead of assignment time to begin showing reminders."],
 				category = nil,
 				values = nil,
 				get = function()
@@ -591,10 +587,10 @@ do
 				enabled = enableReminderOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Enable Messages",
+				label = L["Enable Messages"],
 				type = "checkBoxBesideButton",
-				description = "Whether to show Messages for assignments.",
-				category = "Messages",
+				description = L["Whether to show Messages for assignments."],
+				category = L["Messages"],
 				get = function()
 					return GetMessagePreferences().enabled
 				end,
@@ -610,7 +606,7 @@ do
 					end
 				end,
 				enabled = enableReminderOption,
-				buttonText = "Toggle Message Anchor",
+				buttonText = L["Toggle Message Anchor"],
 				buttonEnabled = function()
 					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
 				end,
@@ -628,13 +624,13 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Message Visibility",
+				label = L["Message Visibility"],
 				type = "radioButtonGroup",
-				description = "When to show Messages only at expiration or show them for the duration of the countdown.",
-				category = "Messages",
+				description = L["When to show Messages only at expiration or show them for the duration of the countdown."],
+				category = L["Messages"],
 				values = {
-					{ itemValue = "expirationOnly", text = "Expiration Only" },
-					{ itemValue = "fullCountdown", text = "With Countdown" },
+					{ itemValue = "expirationOnly", text = L["Expiration Only"] },
+					{ itemValue = "fullCountdown", text = L["With Countdown"] },
 				},
 				get = function()
 					if GetMessagePreferences().showOnlyAtExpiration then
@@ -667,11 +663,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Anchor Point",
+				label = L["Anchor Point"],
 				type = "dropdown",
-				description = 'Anchor point of the Message frame, or the "spot" on the Message frame that will be placed '
-					.. "relative to another frame.",
-				category = "Messages",
+				description = L['Anchor point of the Message frame, or the "spot" on the Message frame that will be placed relative to another frame.'],
+				category = L["Messages"],
 				values = anchorPointValues,
 				updateIndices = { 0, 1, 2, 3 },
 				get = function()
@@ -689,10 +684,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Anchor Frame",
+				label = L["Anchor Frame"],
 				type = "frameChooser",
-				description = "The frame that the Message frame is anchored to. Defaults to UIParent (screen).",
-				category = "Messages",
+				description = L["The frame that the Message frame is anchored to. Defaults to UIParent (screen)."],
+				category = L["Messages"],
 				updateIndices = { -1, 0, 1, 2 },
 				get = function()
 					return GetMessagePreferences().relativeTo
@@ -709,10 +704,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Relative Anchor Point",
+				label = L["Relative Anchor Point"],
 				type = "dropdown",
-				description = "The anchor point on the frame that the Message frame is anchored to.",
-				category = "Messages",
+				description = L["The anchor point on the frame that the Message frame is anchored to."],
+				category = L["Messages"],
 				values = anchorPointValues,
 				updateIndices = { -2, -1, 0, 1 },
 				get = function()
@@ -730,14 +725,14 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Position",
-				labels = { "X", "Y" },
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
 				type = "doubleLineEdit",
 				descriptions = {
-					"The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
-					"The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+					L["The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
 				},
-				category = "Messages",
+				category = L["Messages"],
 				values = anchorPointValues,
 				updateIndices = { -3, -2, -1, 0 },
 				get = function()
@@ -774,13 +769,13 @@ do
 				end,
 				set = function() end,
 				type = "horizontalLine",
-				category = "Messages",
+				category = L["Messages"],
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font",
+				label = L["Font"],
 				type = "dropdown",
-				description = "Font to use for Message text.",
-				category = "Messages",
+				description = L["Font to use for Message text."],
+				category = L["Messages"],
 				values = fonts,
 				get = function()
 					return GetMessagePreferences().font
@@ -800,10 +795,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font Size",
+				label = L["Font Size"],
 				type = "lineEdit",
-				description = "Font size to use for Message text (8 - 48).",
-				category = "Messages",
+				description = L["Font size to use for Message text (8 - 48)."],
+				category = L["Messages"],
 				get = function()
 					return GetMessagePreferences().fontSize
 				end,
@@ -834,10 +829,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font Outline",
+				label = L["Font Outline"],
 				type = "dropdown",
-				description = "Font outline to use for Message text.",
-				category = "Messages",
+				description = L["Font outline to use for Message text."],
+				category = L["Messages"],
 				values = fontOutlineValues,
 				get = function()
 					return GetMessagePreferences().fontOutline
@@ -857,10 +852,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Text Color",
+				label = L["Text Color"],
 				type = "colorPicker",
-				description = "Text color to use for Message text.",
-				category = "Messages",
+				description = L["Text color to use for Message text."],
+				category = L["Messages"],
 				get = function()
 					local r, g, b, a = unpack(GetMessagePreferences().textColor)
 					return r, g, b, a
@@ -876,10 +871,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Alpha",
+				label = L["Alpha"],
 				type = "lineEdit",
-				description = "Transparency of Messages (0.0 - 1.0).",
-				category = "Messages",
+				description = L["Transparency of Messages (0.0 - 1.0)."],
+				category = L["Messages"],
 				get = function()
 					return GetMessagePreferences().alpha
 				end,
@@ -907,10 +902,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Enable Progress Bars",
+				label = L["Enable Progress Bars"],
 				type = "checkBoxBesideButton",
-				description = "Whether to show Progress Bars for assignments.",
-				category = "Progress Bars",
+				description = L["Whether to show Progress Bars for assignments."],
+				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().enabled
 				end,
@@ -926,7 +921,7 @@ do
 					end
 				end,
 				enabled = enableReminderOption,
-				buttonText = "Toggle Progress Bar Anchor",
+				buttonText = L["Toggle Progress Bar Anchor"],
 				buttonEnabled = function()
 					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
 				end,
@@ -942,11 +937,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Anchor Point",
+				label = L["Anchor Point"],
 				type = "dropdown",
-				description = 'Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will '
-					.. " be placed relative to another frame.",
-				category = "Progress Bars",
+				description = L['Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.'],
+				category = L["Progress Bars"],
 				values = anchorPointValues,
 				updateIndices = { 0, 1, 2, 3 },
 				get = function()
@@ -972,10 +966,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Anchor Frame",
+				label = L["Anchor Frame"],
 				type = "frameChooser",
-				description = "The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen).",
-				category = "Progress Bars",
+				description = L["The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen)."],
+				category = L["Progress Bars"],
 				updateIndices = { -1, 0, 1, 2 },
 				get = function()
 					return GetProgressBarPreferences().relativeTo
@@ -1000,10 +994,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Relative Anchor Point",
+				label = L["Relative Anchor Point"],
 				type = "dropdown",
-				description = "The anchor point on the frame that the Progress Bars frame is anchored to.",
-				category = "Progress Bars",
+				description = L["The anchor point on the frame that the Progress Bars frame is anchored to."],
+				category = L["Progress Bars"],
 				values = anchorPointValues,
 				updateIndices = { -2, -1, 0, 1 },
 				get = function()
@@ -1029,14 +1023,14 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Position",
-				labels = { "X", "Y" },
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
 				type = "doubleLineEdit",
 				descriptions = {
-					"The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
-					"The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point.",
+					L["The horizontal offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
 				},
-				category = "Progress Bars",
+				category = L["Progress Bars"],
 				values = anchorPointValues,
 				updateIndices = { -3, -2, -1, 0 },
 				get = function()
@@ -1080,13 +1074,13 @@ do
 				end,
 				set = function() end,
 				type = "horizontalLine",
-				category = "Progress Bars",
+				category = L["Progress Bars"],
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font",
+				label = L["Font"],
 				type = "dropdown",
-				description = "Font to use for Progress Bar text.",
-				category = "Progress Bars",
+				description = L["Font to use for Progress Bar text."],
+				category = L["Progress Bars"],
 				values = fonts,
 				get = function()
 					return GetProgressBarPreferences().font
@@ -1106,10 +1100,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font Size",
+				label = L["Font Size"],
 				type = "lineEdit",
-				description = "Font size to use for Progress Bar text.",
-				category = "Progress Bars",
+				description = L["Font size to use for Progress Bar text."],
+				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().fontSize
 				end,
@@ -1140,10 +1134,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Font Outline",
+				label = L["Font Outline"],
 				type = "dropdown",
-				description = "Font outline to use for Progress Bar text.",
-				category = "Progress Bars",
+				description = L["Font outline to use for Progress Bar text."],
+				category = L["Progress Bars"],
 				values = fontOutlineValues,
 				get = function()
 					return GetProgressBarPreferences().fontOutline
@@ -1163,10 +1157,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Text Alignment",
+				label = L["Text Alignment"],
 				type = "radioButtonGroup",
-				description = "Alignment of Progress Bar text.",
-				category = "Progress Bars",
+				description = L["Alignment of Progress Bar text."],
+				category = L["Progress Bars"],
 				values = textAlignmentValues,
 				get = function()
 					return GetProgressBarPreferences().textAlignment
@@ -1182,10 +1176,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Duration Alignment",
+				label = L["Duration Alignment"],
 				type = "radioButtonGroup",
-				description = "Alignment of Progress Bar duration text.",
-				category = "Progress Bars",
+				description = L["Alignment of Progress Bar duration text."],
+				category = L["Progress Bars"],
 				values = textAlignmentValues,
 				get = function()
 					return GetProgressBarPreferences().durationAlignment
@@ -1209,13 +1203,13 @@ do
 				end,
 				set = function() end,
 				type = "horizontalLine",
-				category = "Progress Bars",
+				category = L["Progress Bars"],
 			} --[[@as EPSettingOption]],
 			{
-				label = "Bar Texture",
+				label = L["Bar Texture"],
 				type = "dropdown",
-				description = "The texture to use for the Progress Bar foreground and background.",
-				category = "Progress Bars",
+				description = L["The texture to use for the Progress Bar foreground and background."],
+				category = L["Progress Bars"],
 				values = statusBarTextures,
 				get = function()
 					return GetProgressBarPreferences().texture
@@ -1231,10 +1225,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Bar Width",
+				label = L["Bar Width"],
 				type = "lineEdit",
-				description = "The width of Progress Bars.",
-				category = "Progress Bars",
+				description = L["The width of Progress Bars."],
+				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().width
 				end,
@@ -1261,11 +1255,11 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Bar Progress Type",
+				label = L["Bar Progress Type"],
 				type = "radioButtonGroup",
-				description = "Whether to fill or drain Progress Bars.",
-				category = "Progress Bars",
-				values = { { itemValue = "fill", text = "Fill" }, { itemValue = "drain", text = "Drain" } },
+				description = L["Whether to fill or drain Progress Bars."],
+				category = L["Progress Bars"],
+				values = { { itemValue = "fill", text = L["Fill"] }, { itemValue = "drain", text = L["Drain"] } },
 				get = function()
 					if GetProgressBarPreferences().fill == true then
 						return "fill"
@@ -1286,11 +1280,11 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Icon Position",
+				label = L["Icon Position"],
 				type = "radioButtonGroup",
-				description = "Which side to place the icon for Progress Bars.",
-				category = "Progress Bars",
-				values = { { itemValue = "LEFT", text = "Left" }, { itemValue = "RIGHT", text = "Right" } },
+				description = L["Which side to place the icon for Progress Bars."],
+				category = L["Progress Bars"],
+				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
 				get = function()
 					return GetProgressBarPreferences().iconPosition
 				end,
@@ -1305,10 +1299,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Alpha",
+				label = L["Alpha"],
 				type = "lineEdit",
-				description = "Transparency of Progress Bars (0.0 - 1.0).",
-				category = "Progress Bars",
+				description = L["Transparency of Progress Bars (0.0 - 1.0)."],
+				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().alpha
 				end,
@@ -1335,14 +1329,14 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Color",
-				labels = { "Foreground", "Background" },
+				label = L["Color"],
+				labels = { L["Foreground"], L["Background"] },
 				type = "doubleColorPicker",
 				descriptions = {
-					"Foreground color for Progress Bars.",
-					"Background color for Progress Bars.",
+					L["Foreground color for Progress Bars."],
+					L["Background color for Progress Bars."],
 				},
-				category = "Progress Bars",
+				category = L["Progress Bars"],
 				get = {
 					function()
 						return unpack(GetProgressBarPreferences().color)
@@ -1366,14 +1360,14 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Border",
-				labels = { "Show Border", "Show Icon Border" },
+				label = L["Border"],
+				labels = { L["Show Border"], L["Show Icon Border"] },
 				type = "doubleCheckBox",
 				descriptions = {
-					"Whether to show a 1px border around Progress Bars.",
-					"Whether to show a 1px border around Progress Bar icons.",
+					L["Whether to show a 1px border around Progress Bars."],
+					L["Whether to show a 1px border around Progress Bar icons."],
 				},
-				category = "Progress Bars",
+				category = L["Progress Bars"],
 				get = {
 					function()
 						return GetProgressBarPreferences().showBorder
@@ -1397,10 +1391,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Spacing",
+				label = L["Spacing"],
 				type = "lineEdit",
-				description = "Spacing between Progress Bars (-1 - 100).",
-				category = "Progress Bars",
+				description = L["Spacing between Progress Bars (-1 - 100)."],
+				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().spacing
 				end,
@@ -1426,10 +1420,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Play Text to Speech at Advance Notice",
+				label = L["Play Text to Speech at Advance Notice"],
 				type = "checkBox",
-				description = "Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds).",
-				category = "Text to Speech",
+				description = L["Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds)."],
+				category = L["Text to Speech"],
 				values = nil,
 				get = function()
 					return GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
@@ -1442,10 +1436,10 @@ do
 				enabled = enableReminderOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Play Text to Speech at Assignment Time",
+				label = L["Play Text to Speech at Assignment Time"],
 				type = "checkBox",
-				description = "Whether to play text to speech sound at assignment time (i.e. Spell in x seconds).",
-				category = "Text to Speech",
+				description = L["Whether to play text to speech sound at assignment time (i.e. Spell in x seconds)."],
+				category = L["Text to Speech"],
 				get = function()
 					return GetReminderPreferences().textToSpeech.enableAtTime
 				end,
@@ -1457,10 +1451,10 @@ do
 				enabled = enableReminderOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Text to Speech Voice",
+				label = L["Text to Speech Voice"],
 				type = "dropdown",
-				description = "The voice to use for Text to Speech",
-				category = "Text to Speech",
+				description = L["The voice to use for Text to Speech"],
+				category = L["Text to Speech"],
 				values = voices,
 				get = function()
 					return GetReminderPreferences().textToSpeech.voiceID
@@ -1479,10 +1473,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Text to Speech Volume",
+				label = L["Text to Speech Volume"],
 				type = "lineEdit",
-				description = "The volume to use for Text to Speech",
-				category = "Text to Speech",
+				description = L["The volume to use for Text to Speech"],
+				category = L["Text to Speech"],
 				get = function()
 					return tostring(GetReminderPreferences().textToSpeech.volume)
 				end,
@@ -1513,14 +1507,14 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Play Sound at Advance Notice",
-				labels = { "Play Sound at Advance Notice", "Sound to Play at Advance Notice" },
+				label = L["Play Sound at Advance Notice"],
+				labels = { L["Play Sound at Advance Notice"], L["Sound to Play at Advance Notice"] },
 				type = "checkBoxWithDropdown",
 				descriptions = {
-					"Whether to play a sound at advance notice time.",
-					"The sound to play at advance notice time.",
+					L["Whether to play a sound at advance notice time."],
+					L["The sound to play at advance notice time."],
 				},
-				category = "Sound",
+				category = L["Sound"],
 				values = sounds,
 				get = {
 					function()
@@ -1547,14 +1541,14 @@ do
 				},
 			} --[[@as EPSettingOption]],
 			{
-				label = "Play Sound at Assignment Time",
-				labels = { "Play Sound at Assignment Time", "Sound to Play at Assignment Time" },
+				label = L["Play Sound at Assignment Time"],
+				labels = { L["Play Sound at Assignment Time"], L["Sound to Play at Assignment Time"] },
 				type = "checkBoxWithDropdown",
 				descriptions = {
-					"Whether to play a sound at assignment time.",
-					"The sound to play at assignment time.",
+					L["Whether to play a sound at assignment time."],
+					L["The sound to play at assignment time."],
 				},
-				category = "Sound",
+				category = L["Sound"],
 				values = sounds,
 				get = {
 					function()
@@ -1581,15 +1575,14 @@ do
 				},
 			} --[[@as EPSettingOption]],
 			{
-				label = "Clear Trusted Characters",
-				category = "Other",
+				label = L["Clear Trusted Characters"],
+				category = L["Other"],
 				type = "centeredButton",
 				get = function()
 					return ""
 				end,
 				set = function() end,
-				description = "Clears all saved trusted characters. You will see a warning each time a new character sends "
-					.. "a plan to you.",
+				description = L["Clears all saved trusted characters. You will see a warning each time a new character sends a plan to you."],
 				enabled = function()
 					return #AddOn.db.profile.trustedCharacters > 0
 				end,
@@ -1604,9 +1597,9 @@ do
 	local function CreateViewOptions()
 		return {
 			{
-				label = "Preferred Number of Assignments to Show",
+				label = L["Preferred Number of Assignments to Show"],
 				type = "dropdown",
-				description = "The assignment timeline will attempt to expand or shrink to show this many rows.",
+				description = L["The assignment timeline will attempt to expand or shrink to show this many rows."],
 				values = rowValues,
 				get = function()
 					return tostring(GetPreferences().timelineRows.numberOfAssignmentsToShow)
@@ -1624,9 +1617,9 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Preferred Number of Boss Abilities to Show",
+				label = L["Preferred Number of Boss Abilities to Show"],
 				type = "dropdown",
-				description = "The boss ability timeline will attempt to expand or shrink to show this many rows.",
+				description = L["The boss ability timeline will attempt to expand or shrink to show this many rows."],
 				values = rowValues,
 				get = function()
 					return tostring(GetPreferences().timelineRows.numberOfBossAbilitiesToShow)
@@ -1644,13 +1637,13 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Timeline Zoom Center",
+				label = L["Timeline Zoom Center"],
 				type = "radioButtonGroup",
-				description = "Where to center the zoom when zooming in on the timeline.",
-				category = "Assignment",
+				description = L["Where to center the zoom when zooming in on the timeline."],
+				category = L["Assignment"],
 				values = {
-					{ itemValue = "At cursor", text = "At cursor" },
-					{ itemValue = "Middle of timeline", text = "Middle of timeline" },
+					{ itemValue = "At cursor", text = L["At cursor"] },
+					{ itemValue = "Middle of timeline", text = L["Middle of timeline"] },
 				},
 				get = function()
 					if GetPreferences().zoomCenteredOnCursor == true then
@@ -1668,15 +1661,15 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Assignment Sort Priority",
+				label = L["Assignment Sort Priority"],
 				type = "dropdown",
-				description = "Sorts the rows of the assignment timeline.",
-				category = "Assignment",
+				description = L["Sorts the rows of the assignment timeline."],
+				category = L["Assignment"],
 				values = {
-					{ itemValue = "Alphabetical", text = "Alphabetical" },
-					{ itemValue = "First Appearance", text = "First Appearance" },
-					{ itemValue = "Role > Alphabetical", text = "Role > Alphabetical" },
-					{ itemValue = "Role > First Appearance", text = "Role > First Appearance" },
+					{ itemValue = "Alphabetical", text = L["Alphabetical"] },
+					{ itemValue = "First Appearance", text = L["First Appearance"] },
+					{ itemValue = "Role > Alphabetical", text = L["Role > Alphabetical"] },
+					{ itemValue = "Role > First Appearance", text = L["Role > First Appearance"] },
 				},
 				get = function()
 					return GetPreferences().assignmentSortType
@@ -1697,11 +1690,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = "Show Spell Cooldown Duration",
+				label = L["Show Spell Cooldown Duration"],
 				type = "checkBox",
-				description = "Creates a new assignment based on the assignment being hovered over after holding, "
-					.. "dragging, and releasing this key.",
-				category = "Assignment",
+				description = L["Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key."],
+				category = L["Assignment"],
 				get = function()
 					return GetPreferences().showSpellCooldownDuration
 				end,
@@ -1724,10 +1716,10 @@ do
 	local function CreateProfileOptions()
 		return {
 			{
-				label = "Current Profile",
+				label = L["Current Profile"],
 				type = "dropdownBesideButton",
-				category = "Profile",
-				description = "Select the currently active profile.",
+				category = L["Profile"],
+				description = L["Select the currently active profile."],
 				values = function()
 					return GetProfiles(false)
 				end,
@@ -1739,20 +1731,20 @@ do
 						SetProfile(value)
 					end
 				end,
-				buttonText = "Reset Profile",
-				buttonDescription = "Reset the current profile to default.",
+				buttonText = L["Reset Profile"],
+				buttonDescription = L["Reset the current profile to default."],
 				buttonCallback = ResetProfile,
 				confirm = true,
 				confirmText = function()
-					return format("Are you sure you want to reset %s?", GetCurrentProfile())
+					return format("%s %s?", L["Are you sure you want to reset"], GetCurrentProfile())
 				end,
 				updateIndices = { 0, 1, 2, 3 },
 			} --[[@as EPSettingOption]],
 			{
-				label = "New",
+				label = L["New"],
 				type = "lineEdit",
-				category = "Profile",
-				description = "Create a new empty profile.",
+				category = L["Profile"],
+				description = L["Create a new empty profile."],
 				get = function()
 					return ""
 				end,
@@ -1767,10 +1759,10 @@ do
 				updateIndices = { -1, 0, 1, 2 },
 			} --[[@as EPSettingOption]],
 			{
-				label = "Copy From",
+				label = L["Copy From"],
 				type = "dropdown",
-				category = "Profile",
-				description = "Copy the settings from an existing profile into the currently active profile.",
+				category = L["Profile"],
+				description = L["Copy the settings from an existing profile into the currently active profile."],
 				values = function()
 					return GetProfiles(true)
 				end,
@@ -1788,10 +1780,10 @@ do
 				updateIndices = { -2, -1, 0, 1 },
 			} --[[@as EPSettingOption]],
 			{
-				label = "Delete a Profile",
+				label = L["Delete a Profile"],
 				type = "dropdown",
-				category = "Profile",
-				description = "Delete a profile from the database.",
+				category = L["Profile"],
+				description = L["Delete a profile from the database."],
 				values = function()
 					return GetProfiles(true)
 				end,
@@ -1808,7 +1800,7 @@ do
 				end,
 				confirm = true,
 				confirmText = function(arg)
-					return format("Are you sure you want to delete %s?", arg)
+					return format("%s %s?", L["Are you sure you want to delete"], arg)
 				end,
 				updateIndices = { -3, -2, -1, 0 },
 			} --[[@as EPSettingOption]],
@@ -1846,11 +1838,11 @@ do
 			profileOptions = CreateProfileOptions()
 		end
 
-		local keyBindingsTab = { "Keybindings", keyBindingOptions, { "Assignment", "Timeline" } }
-		local reminderTabs = { "Messages", "Progress Bars", "Text to Speech", "Sound", "Other" }
-		local reminderTab = { "Reminder", reminderOptions, reminderTabs }
-		local viewTab = { "View", viewOptions, { "Assignment" } }
-		local profileTab = { "Profile", profileOptions, { "Profile" } }
+		local keyBindingsTab = { L["Keybindings"], keyBindingOptions, { L["Assignment"], L["Timeline"] } }
+		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"], L["Other"] }
+		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
+		local viewTab = { L["View"], viewOptions, { L["Assignment"] } }
+		local profileTab = { L["Profile"], profileOptions, { L["Profile"] } }
 
 		return keyBindingsTab, reminderTab, viewTab, profileTab
 	end
@@ -1887,7 +1879,7 @@ function Private:CreateOptionsMenu()
 	optionsMenu:AddOptionTab(unpack(viewTab))
 	optionsMenu:AddOptionTab(unpack(profileTab))
 	optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-	optionsMenu:SetCurrentTab("Keybindings")
+	optionsMenu:SetCurrentTab(L["Keybindings"])
 	optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 	Private.optionsMenu = optionsMenu
@@ -1900,7 +1892,7 @@ function OptionsModule:OnInitialize()
 		width = "full",
 		args = {
 			[""] = {
-				name = "Open Preferences",
+				name = L["Open Preferences"],
 				type = "execute",
 				width = "full",
 				order = 0,

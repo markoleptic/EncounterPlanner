@@ -16,6 +16,7 @@ local bossUtilities = Private.bossUtilities
 local interfaceUpdater = Private.interfaceUpdater
 
 local AddOn = Private.addOn
+local L = Private.L
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 
@@ -550,12 +551,12 @@ local function CreateImportEditBox(importType)
 	Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 	Private.importEditBox.frame:SetFrameLevel(30)
 	Private.importEditBox.frame:SetPoint("CENTER")
-	Private.importEditBox:SetTitle("Import Text")
+	Private.importEditBox:SetTitle(L["Import Text"])
 	local buttonText
 	if importType == "FromStringOverwrite" then
-		buttonText = "Overwrite " .. AddOn.db.profile.lastOpenPlan
+		buttonText = L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan
 	else
-		buttonText = "Import As New Plan"
+		buttonText = L["Import As New Plan"]
 	end
 	Private.importEditBox:ShowOkayButton(true, buttonText)
 	Private.importEditBox:SetCallback("OnRelease", function()
@@ -576,10 +577,10 @@ local function GetLongPhaseNames(boss)
 		if type(bossPhaseName) == "string" then
 			local intMatch = bossPhaseName:match("^Int(%d+)")
 			if intMatch then
-				bossPhaseName = "Intermission " .. intMatch
+				bossPhaseName = L["Intermission"] .. " " .. intMatch
 			end
 		elseif type(bossPhaseName) == "number" then
-			bossPhaseName = "Phase " .. bossPhaseName
+			bossPhaseName = L["Phase"] .. " " .. bossPhaseName
 		end
 		tinsert(longPhaseNames, bossPhaseName)
 	end
@@ -730,24 +731,27 @@ local function HandleBossDropdownValueChanged(value)
 		end
 		if containsCombatLogEventAssignment then
 			local messageBox = interfaceUpdater.CreateMessageBox(
-				"Changing Boss with Combat Log Event Assignments",
-				"The current plan includes combat log event assignments tied to this boss's spells. Choose an option:\n\n"
-					.. "1. Convert all assignments to timed assignments for the new boss\n"
-					.. "2. Replace spells with those of the new boss, matching the closest timing\n"
-					.. "3. Cancel\n\n"
-					.. "Note: Replacing spells may not be reversible and could result in changes if you revert to the "
-					.. "original boss."
+				L["Changing Boss with Combat Log Event Assignments"],
+				L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"]
+					.. "\n\n"
+					.. L["1. Convert all assignments to timed assignments for the new boss"]
+					.. "\n"
+					.. L["2. Replace spells with those of the new boss, matching the closest timing"]
+					.. "\n"
+					.. L["3. Cancel"]
+					.. "\n\n"
+					.. L["Note: Replacing spells may not be reversible and could result in changes if you revert to the original boss."]
 			)
 			if messageBox then
 				local currentBoss = bossUtilities.GetBoss(plan.dungeonEncounterID)
 				local newBoss = bossUtilities.GetBoss(bossDungeonEncounterID)
 				local currentAssignments = plan.assignments
 				if currentBoss and newBoss then
-					messageBox:SetAcceptButtonText("Convert to Timed Assignments")
-					messageBox:SetRejectButtonText("Cancel")
+					messageBox:SetAcceptButtonText(L["Convert to Timed Assignments"])
+					messageBox:SetRejectButtonText(L["Cancel"])
 					local rejectButton = messageBox.buttonContainer.children[2]
-					messageBox:AddButton("Replace Spells", rejectButton)
-					messageBox:SetCallback("Replace Spells" .. "Clicked", function()
+					messageBox:AddButton(L["Replace Spells"], rejectButton)
+					messageBox:SetCallback(L["Replace Spells"] .. "Clicked", function()
 						if Private.assignmentEditor then
 							Private.assignmentEditor:Release()
 						end
@@ -790,7 +794,7 @@ end
 ---@param value number|string
 ---@param selected boolean
 local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
-	if value == "Filter Spells" or type(value) ~= "number" then
+	if value == L["Filter Spells"] or type(value) ~= "number" then
 		return
 	end
 	local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
@@ -889,7 +893,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 
 	for _, assignment in pairs(GetCurrentAssignments()) do
 		if assignment.assigneeNameOrRole == value then
-			dropdown:SetText("Add Assignee")
+			dropdown:SetText(L["Add Assignee"])
 			return
 		end
 	end
@@ -899,7 +903,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	tinsert(GetCurrentAssignments(), assignment)
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-	dropdown:SetText("Add Assignee")
+	dropdown:SetText(L["Add Assignee"])
 end
 
 ---@param abilityInstance BossAbilityInstance
@@ -1023,7 +1027,7 @@ local function HandleDeleteCurrentNoteButtonClicked()
 				break
 			end
 		else
-			local newPlanName = "Default"
+			local newPlanName = L["Default"]
 			plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
 			AddOn.db.profile.lastOpenPlan = newPlanName
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -1049,7 +1053,7 @@ local function ImportPlan(importType)
 		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
 			local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 			if not loadingOrLoaded and not loaded then
-				print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
+				print(format("%s: %s", AddOnName, L["No note was loaded due to MRT not being installed."]))
 			end
 			if VMRT and VMRT.Note and VMRT.Note.Text1 then
 				local text = VMRT.Note.Text1
@@ -1081,7 +1085,7 @@ local function HandleExportButtonClicked()
 		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.exportEditBox.frame:SetFrameLevel(12)
 		Private.exportEditBox.frame:SetPoint("CENTER")
-		Private.exportEditBox:SetTitle("Export")
+		Private.exportEditBox:SetTitle(L["Export"])
 		Private.exportEditBox:SetCallback("OnRelease", function()
 			Private.exportEditBox = nil
 		end)
@@ -1130,10 +1134,10 @@ function Private:CreateInterface()
 	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
 		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
-		local defaultPlanName = "Default"
+		local defaultPlanName = L["Default"]
 		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 		if not loadingOrLoaded and not loaded then
-			print(format("%s: No note was loaded due to MRT not being installed.", AddOnName))
+			print(format("%s: %s", L["No note was loaded due to MRT not being installed."]))
 		end
 		if VMRT and VMRT.Note and VMRT.Note.Text1 then
 			local text = VMRT.Note.Text1
@@ -1211,7 +1215,7 @@ function Private:CreateInterface()
 	local planMenuButton = AceGUI:Create("EPDropdown")
 	planMenuButton:SetTextFontSize(menuButtonFontSize)
 	planMenuButton:SetItemTextFontSize(menuButtonFontSize)
-	planMenuButton:SetText("Plan")
+	planMenuButton:SetText(L["Plan"])
 	planMenuButton:SetTextCentered(true)
 	planMenuButton:SetButtonVisibility(false)
 	planMenuButton:SetAutoItemWidth(true)
@@ -1223,7 +1227,10 @@ function Private:CreateInterface()
 	planMenuButton:AddItems({
 		{
 			itemValue = "New Plan",
-			text = utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], "New Plan"),
+			text = utilities.AddIconBeforeText(
+				[[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]],
+				L["New Plan"]
+			),
 		},
 		{
 			itemValue = "Import",
@@ -1231,18 +1238,18 @@ function Private:CreateInterface()
 			dropdownItemMenuData = {
 				{
 					itemValue = "From MRT",
-					text = "From MRT",
+					text = L["From"] .. "MRT",
 					dropdownItemMenuData = {
-						{ itemValue = "FromMRTOverwrite", text = "Overwrite Current Plan" },
-						{ itemValue = "FromMRTNew", text = "Create New Plan" },
+						{ itemValue = "FromMRTOverwrite", text = L["Overwrite Current Plan"] },
+						{ itemValue = "FromMRTNew", text = L["Create New Plan"] },
 					},
 				},
 				{
 					itemValue = "From String",
-					text = "From String",
+					text = L["From String"],
 					dropdownItemMenuData = {
-						{ itemValue = "FromStringOverwrite", text = "Overwrite Current Plan" },
-						{ itemValue = "FromStringNew", text = "Create New Plan" },
+						{ itemValue = "FromStringOverwrite", text = L["Overwrite Current Plan"] },
+						{ itemValue = "FromStringNew", text = L["Create New Plan"] },
 					},
 				},
 			},
@@ -1251,14 +1258,14 @@ function Private:CreateInterface()
 			itemValue = "Export Current Plan",
 			text = utilities.AddIconBeforeText(
 				[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
-				"Export Current Plan"
+				L["Export Current Plan"]
 			),
 		},
 		{
 			itemValue = "Delete Current Plan",
 			text = utilities.AddIconBeforeText(
 				[[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
-				"Delete Current Plan"
+				L["Delete Current Plan"]
 			),
 		},
 	}, "EPDropdownItemToggle", true)
@@ -1272,8 +1279,8 @@ function Private:CreateInterface()
 			HandleExportButtonClicked()
 		elseif value == "Delete Current Plan" then
 			local messageBox = interfaceUpdater.CreateMessageBox(
-				"Delete Plan Confirmation",
-				format('Are you sure you want to delete the plan "%s"?', AddOn.db.profile.lastOpenPlan)
+				L["Delete Plan Confirmation"],
+				format('%s "%s"?', L["Are you sure you want to delete the plan"], AddOn.db.profile.lastOpenPlan)
 			)
 			if messageBox then
 				messageBox:SetCallback("Accepted", function()
@@ -1285,8 +1292,8 @@ function Private:CreateInterface()
 		elseif sub(value, 1, 4) == "From" then
 			if string.find(value, "Overwrite") then
 				local messageBox = interfaceUpdater.CreateMessageBox(
-					"Overwrite Plan Confirmation",
-					format('Are you sure you want to overwrite the plan "%s"?', AddOn.db.profile.lastOpenPlan)
+					L["Delete Plan Confirmation"],
+					format('%s "%s"?', L["Are you sure you want to overwrite the plan"], AddOn.db.profile.lastOpenPlan)
 				)
 				if messageBox then
 					messageBox:SetCallback("Accepted", function()
@@ -1300,13 +1307,13 @@ function Private:CreateInterface()
 			end
 		end
 		planMenuButton:SetValue("Plan")
-		planMenuButton:SetText("Plan")
+		planMenuButton:SetText(L["Plan"])
 	end)
 
 	local bossMenuButton = AceGUI:Create("EPDropdown")
 	bossMenuButton:SetTextFontSize(menuButtonFontSize)
 	bossMenuButton:SetItemTextFontSize(menuButtonFontSize)
-	bossMenuButton:SetText("Boss")
+	bossMenuButton:SetText(L["Boss"])
 	bossMenuButton:SetTextCentered(true)
 	bossMenuButton:SetButtonVisibility(false)
 	bossMenuButton:SetAutoItemWidth(true)
@@ -1319,12 +1326,12 @@ function Private:CreateInterface()
 	bossMenuButton:AddItems({
 		{
 			itemValue = "Edit Phase Timings",
-			text = "Edit Phase Timings",
+			text = L["Edit Phase Timings"],
 			selectable = false,
 		},
 		{
 			itemValue = "Filter Spells",
-			text = "Filter Spells",
+			text = L["Filter Spells"],
 			dropdownItemMenuData = {
 				{
 					itemValue = "",
@@ -1349,7 +1356,7 @@ function Private:CreateInterface()
 	local rosterMenuButton = AceGUI:Create("EPDropdown")
 	rosterMenuButton:SetTextFontSize(menuButtonFontSize)
 	rosterMenuButton:SetItemTextFontSize(menuButtonFontSize)
-	rosterMenuButton:SetText("Roster")
+	rosterMenuButton:SetText(L["Roster"])
 	rosterMenuButton:SetTextCentered(true)
 	rosterMenuButton:SetButtonVisibility(false)
 	rosterMenuButton:SetAutoItemWidth(true)
@@ -1372,11 +1379,11 @@ function Private:CreateInterface()
 			CreateRosterEditor("Shared Roster")
 		end
 		rosterMenuButton:SetValue("Roster")
-		rosterMenuButton:SetText("Roster")
+		rosterMenuButton:SetText(L["Roster"])
 	end)
 
 	local preferencesMenuButton = AceGUI:Create("EPButton")
-	preferencesMenuButton:SetText("Preferences")
+	preferencesMenuButton:SetText(L["Preferences"])
 	preferencesMenuButton:SetFontSize(menuButtonFontSize)
 	preferencesMenuButton:SetHeight(menuButtonHeight)
 	preferencesMenuButton:SetWidth(
@@ -1433,16 +1440,16 @@ function Private:CreateInterface()
 	bossDropdown:SetHeight(topContainerWidgetHeight)
 	bossDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	local bossDropdownData = {}
-	for raidInstanceName, raidInstance in pairs(Private.raidInstances) do
+	for _, raidInstance in pairs(Private.raidInstances) do
 		EJ_SelectInstance(raidInstance.journalInstanceID)
-		local _, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
-		local instanceIconText = format("|T%s:16|t %s", buttonImage2, raidInstanceName)
+		local instanceName, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
+		local instanceIconText = format("|T%s:16|t %s", buttonImage2, instanceName)
 		local instanceDropdownData =
 			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
 		for _, boss in ipairs(raidInstance.bosses) do
 			EJ_SelectEncounter(boss.journalEncounterID)
-			local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
-			local iconText = format("|T%s:16|t %s", iconImage, boss.name)
+			local _, bossName, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+			local iconText = format("|T%s:16|t %s", iconImage, bossName)
 			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
 		end
 		tinsert(bossDropdownData, instanceDropdownData)
@@ -1457,7 +1464,7 @@ function Private:CreateInterface()
 	planContainer:SetSpacing(unpack(dropdownContainerSpacing))
 
 	local planLabel = AceGUI:Create("EPLabel")
-	planLabel:SetText("Current Plan:", dropdownContainerLabelSpacing)
+	planLabel:SetText(L["Current Plan:"], dropdownContainerLabelSpacing)
 	planLabel:SetFullHeight(true)
 	planLabel:SetFrameWidthFromText()
 
@@ -1481,7 +1488,7 @@ function Private:CreateInterface()
 	reminderAndSendPlanButtonContainer:SetSelfAlignment("topRight")
 
 	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
-	planReminderEnableCheckBox:SetText("Enable Reminders for Plan")
+	planReminderEnableCheckBox:SetText(L["Enable Reminders for Plan"])
 	planReminderEnableCheckBox:SetHeight(topContainerWidgetHeight)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
 	planReminderEnableCheckBox:SetFullHeight(true)
@@ -1490,7 +1497,7 @@ function Private:CreateInterface()
 	end)
 
 	local simulateReminderButton = AceGUI:Create("EPButton")
-	simulateReminderButton:SetText("Simulate Reminders")
+	simulateReminderButton:SetText(L["Simulate Reminders"])
 	simulateReminderButton:SetWidthFromText()
 	simulateReminderButton:SetFullHeight(true)
 	simulateReminderButton:SetCallback("Clicked", function()
@@ -1498,7 +1505,7 @@ function Private:CreateInterface()
 
 		if wasSimulatingBoss then
 			Private:StopSimulatingBoss()
-			simulateReminderButton:SetText("Simulate Reminders")
+			simulateReminderButton:SetText(L["Simulate Reminders"])
 		else
 			if Private.assignmentEditor then
 				Private.assignmentEditor:Release()
@@ -1512,7 +1519,7 @@ function Private:CreateInterface()
 			if Private.phaseLengthEditor then
 				Private.phaseLengthEditor:Release()
 			end
-			simulateReminderButton:SetText("Stop Simulating")
+			simulateReminderButton:SetText(L["Stop Simulating"])
 			local sortedTimelineAssignments = utilities.SortAssignments(
 				GetCurrentAssignments(),
 				GetCurrentRoster(),
@@ -1533,7 +1540,7 @@ function Private:CreateInterface()
 	end)
 
 	local function HandleSimulationCompleted()
-		simulateReminderButton:SetText("Simulate Reminders")
+		simulateReminderButton:SetText(L["Simulate Reminders"])
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			timeline:SetIsSimulating(false)
@@ -1546,7 +1553,7 @@ function Private:CreateInterface()
 	Private.callbackTarget.RegisterCallback(self, "SimulationCompleted", HandleSimulationCompleted)
 
 	local sendPlanButton = AceGUI:Create("EPButton")
-	sendPlanButton:SetText("Send Plan to Group")
+	sendPlanButton:SetText(L["Send Plan to Group"])
 	sendPlanButton:SetWidthFromText()
 	sendPlanButton:SetFullHeight(true)
 	sendPlanButton:SetCallback("Clicked", function()
@@ -1628,7 +1635,7 @@ function Private:CreateInterface()
 	end)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
-	addAssigneeDropdown:SetText("Add Assignee")
+	addAssigneeDropdown:SetText(L["Add Assignee"])
 	addAssigneeDropdown:AddItems(
 		utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 		"EPDropdownItemToggle",
