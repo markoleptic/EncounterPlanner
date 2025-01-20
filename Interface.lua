@@ -1044,34 +1044,32 @@ local function HandleDeleteCurrentNoteButtonClicked()
 	for _, _ in pairs(plans) do
 		beforeRemovalCount = beforeRemovalCount + 1
 	end
-	local planDropdown = Private.mainFrame.planDropdown
-	if planDropdown then
-		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-		if lastOpenPlan then
-			plans[lastOpenPlan] = nil
-			planDropdown:RemoveItem(lastOpenPlan)
-		end
-		if beforeRemovalCount > 1 then
-			for name, _ in pairs(plans) do
-				AddOn.db.profile.lastOpenPlan = name
-				local bossDungeonEncounterID = plans[name].dungeonEncounterID
-				if bossDungeonEncounterID then
-					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-				end
-				break
-			end
-		else
-			local newPlanName = L["Default"]
-			plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
-			AddOn.db.profile.lastOpenPlan = newPlanName
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
-			interfaceUpdater.AddPlanToDropdown(newPlanName, true)
-		end
-		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
-		interfaceUpdater.AddPlanToDropdown(newLastOpenPlan, true)
-		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+
+	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	if lastOpenPlan then
+		plans[lastOpenPlan] = nil
+		interfaceUpdater.RemovePlanFromDropdown(lastOpenPlan)
 	end
+	if beforeRemovalCount > 1 then
+		for name, _ in pairs(plans) do
+			AddOn.db.profile.lastOpenPlan = name
+			local bossDungeonEncounterID = plans[name].dungeonEncounterID
+			if bossDungeonEncounterID then
+				interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+			end
+			break
+		end
+	else
+		local newPlanName = L["Default"]
+		plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
+		AddOn.db.profile.lastOpenPlan = newPlanName
+		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
+		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
+	end
+	local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
+	interfaceUpdater.AddPlanToDropdown(newLastOpenPlan, true)
+	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 end
 
 ---@param importType string
@@ -1527,7 +1525,10 @@ function Private:CreateInterface()
 	planReminderEnableCheckBox:SetFrameWidthFromText()
 	planReminderEnableCheckBox:SetFullHeight(true)
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", function(_, _, value)
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].remindersEnabled = value
+		local planName = AddOn.db.profile.lastOpenPlan
+		local plan = AddOn.db.profile.plans[planName]
+		plan.remindersEnabled = value
+		interfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, value)
 	end)
 
 	local simulateReminderButton = AceGUI:Create("EPButton")

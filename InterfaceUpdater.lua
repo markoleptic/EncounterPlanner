@@ -31,6 +31,11 @@ local tostring = tostring
 local tremove = tremove
 local type = type
 
+local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
+local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
+local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
+local reminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
+
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
 	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].roster
@@ -464,8 +469,14 @@ function InterfaceUpdater.UpdatePlanDropdown()
 		if planDropdown then
 			planDropdown:Clear()
 			local planDropdownData = {}
-			for planName, _ in pairs(AddOn.db.profile.plans) do
-				tinsert(planDropdownData, { itemValue = planName, text = planName })
+			for planName, plan in pairs(AddOn.db.profile.plans) do
+				tinsert(planDropdownData, {
+					itemValue = planName,
+					text = planName,
+					customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture,
+					customTextureVertexColor = plan.remindersEnabled and reminderEnabledIconColor
+						or reminderDisabledIconColor,
+				})
 			end
 			planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
 			planDropdown:Sort()
@@ -487,17 +498,47 @@ function InterfaceUpdater.AddPlanToDropdown(planName, select)
 		local planDropdown = Private.mainFrame.planDropdown
 		if planDropdown then
 			local item, _ = planDropdown:FindItemAndText(planName)
+			local enabled = AddOn.db.profile.plans[planName].remindersEnabled
 			if not item then
-				planDropdown:AddItem(planName, planName, "EPDropdownItemToggle")
+				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
+				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+				planDropdown:AddItem(planName, planName, "EPDropdownItemToggle", nil, false, customTexture, color)
 				planDropdown:Sort()
 			end
 			if select then
 				planDropdown:SetValue(planName)
 				local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
 				if planReminderEnableCheckBox then
-					local enabled = AddOn.db.profile.plans[planName].remindersEnabled
 					planReminderEnableCheckBox:SetChecked(enabled)
 				end
+			end
+		end
+	end
+end
+
+-- Removes a plan name from the plan dropdown.
+---@param planName string
+function InterfaceUpdater.RemovePlanFromDropdown(planName)
+	if Private.mainFrame then
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			planDropdown:RemoveItem(planName)
+		end
+	end
+end
+
+-- Removes a plan name from the plan dropdown.
+---@param planName string
+---@param enabled boolean
+function InterfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, enabled)
+	if Private.mainFrame then
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			local item, _ = planDropdown:FindItemAndText(planName)
+			if item then
+				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
+				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+				item:SetCustomTexture(customTexture, color)
 			end
 		end
 	end

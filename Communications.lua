@@ -219,31 +219,30 @@ local function ImportPlan(plan)
 		if existingPlanName ~= plan.name then
 			plans[existingPlanName] = nil
 		end
+		if AddOn.db.profile.lastOpenPlan == existingPlanName then -- Replace last open if it was removed
+			AddOn.db.profile.lastOpenPlan = plan.name
+		end
 		existingPlan = nil
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			plan.name = utilities.CreateUniquePlanName(plans, L["Imported"], plan.name)
+			local bossName = bossUtilities.GetBossName(plan.dungeonEncounterID) --[[@as string]]
+			plan.name = utilities.CreateUniquePlanName(plans, bossName, plan.name)
 		end
 		plans[plan.name] = plan
 	end
 
 	if Private.mainFrame then
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			local item, text = planDropdown:FindItemAndText(plan.name)
-			if not item then
-				planDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle") -- Only add if unique
-				planDropdown:Sort()
-			end
-			if text and text == existingPlanName then
-				planDropdown:RemoveItem(text) -- Remove existing plan name from dropdown
-			end
-			local currentPlanName = planDropdown:GetValue()
-			if currentPlanName == existingPlanName or currentPlanName == plan.name then
-				AddOn.db.profile.lastOpenPlan = plan.name
-				planDropdown:SetValue(plan.name)
-				interfaceUpdater.UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
-			end
+		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
+			interfaceUpdater.RemovePlanFromDropdown(existingPlanName)
+		end
+
+		local currentPlanName = Private.mainFrame.planDropdown:GetValue()
+		if currentPlanName == existingPlanName or currentPlanName == plan.name then
+			AddOn.db.profile.lastOpenPlan = plan.name
+			interfaceUpdater.AddPlanToDropdown(plan.name, true)
+			interfaceUpdater.UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
+		else
+			interfaceUpdater.AddPlanToDropdown(plan.name, false)
 		end
 	end
 end
