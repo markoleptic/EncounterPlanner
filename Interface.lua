@@ -117,14 +117,24 @@ local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterM
 	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 
 	if Private.assignmentEditor then
+		local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
+		local targetDropdown = Private.assignmentEditor.targetDropdown
 		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 		local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
 			GetCurrentRoster(),
 			assignmentTypeDropdownItems,
 			assigneeDropdownItems
 		)
-		Private.assignmentEditor.assigneeTypeDropdown:Clear()
-		Private.assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+		local previousValue = assigneeTypeDropdown:GetValue()
+		assigneeTypeDropdown:Clear()
+		assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+		assigneeTypeDropdown:SetValue(previousValue)
+
+		local previousTargetValue = targetDropdown:GetValue()
+		targetDropdown:Clear()
+		targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+		targetDropdown:SetValue(previousTargetValue)
+		Private.assignmentEditor:HandleRosterChanged()
 	end
 end
 
@@ -371,9 +381,33 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 			end
 		end
 	elseif dataType == "SpellAssignment" then
-		local spellInfo = GetSpellInfo(value)
-		if spellInfo then
-			assignment.spellInfo = spellInfo
+		if value == constants.kInvalidAssignmentSpellID then
+			if assignment.text:len() > 0 then
+				assignment.spellInfo = {
+					name = "",
+					iconID = 0,
+					originalIconID = 0,
+					castTime = 0,
+					minRange = 0,
+					maxRange = 0,
+					spellID = constants.kTextAssignmentSpellID,
+				}
+			else
+				assignment.spellInfo = {
+					name = "",
+					iconID = 0,
+					originalIconID = 0,
+					castTime = 0,
+					minRange = 0,
+					maxRange = 0,
+					spellID = constants.kInvalidAssignmentSpellID,
+				}
+			end
+		else
+			local spellInfo = GetSpellInfo(value)
+			if spellInfo then
+				assignment.spellInfo = spellInfo
+			end
 		end
 		updateAssignments = true
 		updatePreviewText = true
@@ -422,12 +456,12 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 		updatePreviewText = true
 	end
 
-	if updateFields then
+	if updateFields or updatePreviewText then
 		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
 		assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 	elseif updatePreviewText then
 		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
-		assignmentEditor.previewLabel:SetText(previewText)
+		assignmentEditor.previewLabel:SetText(previewText, 0)
 	end
 
 	local timeline = Private.mainFrame.timeline

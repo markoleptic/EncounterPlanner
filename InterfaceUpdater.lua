@@ -164,6 +164,12 @@ do
 end
 
 do
+	local assignmentMetaTables = {
+		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
+		TimedAssignment = Private.classes.TimedAssignment,
+		PhasedAssignment = Private.classes.PhasedAssignment,
+	}
+
 	---@param abilityEntry EPAbilityEntry
 	local function HandleDeleteAssigneeRowClicked(abilityEntry)
 		if Private.assignmentEditor then
@@ -216,10 +222,6 @@ do
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapAssignee(abilityEntry, _, newAssigneeNameOrRole)
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-
 		local key = abilityEntry:GetKey()
 		if key then
 			local assignments = GetCurrentAssignments()
@@ -244,6 +246,21 @@ do
 			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+			end
+			if Private.assignmentEditor then
+				local assignmentEditor = Private.assignmentEditor
+				local assignmentID = assignmentEditor:GetAssignmentID()
+				if assignmentID then
+					local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+					if assignment then
+						local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
+						assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+					else
+						assignmentEditor:Release()
+					end
+				else
+					assignmentEditor:Release()
+				end
 			end
 		end
 	end

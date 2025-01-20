@@ -352,9 +352,9 @@ local function OnAcquire(self)
 		self.enableSpellAssignmentCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
 			self.spellAssignmentDropdown:SetEnabled(checked)
 			if not checked then
-				self.spellAssignmentDropdown:SetValue("0")
+				self.spellAssignmentDropdown:SetValue(constants.kInvalidAssignmentSpellID)
 				self.spellAssignmentDropdown:SetText("")
-				self:Fire("DataChanged", "SpellAssignment", "0")
+				self:Fire("DataChanged", "SpellAssignment", constants.kInvalidAssignmentSpellID)
 			end
 		end)
 
@@ -365,7 +365,6 @@ local function OnAcquire(self)
 		end)
 		self.spellAssignmentDropdown:AddItem("Recent", L["Recent"], "EPDropdownItemMenu", {}, true)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
-		self.spellAssignmentDropdown:SetShowPathText(true, { 2, "n" })
 		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)
 	end
 
@@ -374,10 +373,9 @@ local function OnAcquire(self)
 		self.targetContainer:SetLayout("EPVerticalLayout")
 		self.targetContainer:SetSpacing(unpack(labelWidgetSpacing))
 		self.targetContainer:SetFullWidth(true)
-		self.targetContainer:SetPadding(indentWidth, 0, 0, 0)
 
 		self.enableTargetCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableTargetCheckBox:SetText(L["Targeted?"])
+		self.enableTargetCheckBox:SetText(L["Target?"])
 		self.enableTargetCheckBox:SetFullWidth(true)
 		self.enableTargetCheckBox:SetFrameHeightFromText()
 		self.enableTargetCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
@@ -397,12 +395,6 @@ local function OnAcquire(self)
 
 		self.targetContainer:AddChildren(self.enableTargetCheckBox, self.targetDropdown)
 	end
-
-	local spellContainer = AceGUI:Create("EPContainer")
-	spellContainer:SetLayout("EPVerticalLayout")
-	spellContainer:SetSpacing(unpack(containerContainerSpacing))
-	spellContainer:SetFullWidth(true)
-	spellContainer:AddChildren(self.spellAssignmentContainer, self.targetContainer)
 
 	do
 		self.optionalTextContainer = AceGUI:Create("EPContainer")
@@ -457,6 +449,10 @@ local function OnAcquire(self)
 	timeTypeSpacer:SetFullWidth(true)
 	timeTypeSpacer:SetHeight(spacingBetweenOptions)
 
+	local spellTargetSpacer = AceGUI:Create("EPSpacer")
+	spellTargetSpacer:SetFullWidth(true)
+	spellTargetSpacer:SetHeight(spacingBetweenOptions)
+
 	local spellTextSpacer = AceGUI:Create("EPSpacer")
 	spellTextSpacer:SetFullWidth(true)
 	spellTextSpacer:SetHeight(spacingBetweenOptions)
@@ -474,7 +470,9 @@ local function OnAcquire(self)
 		timeTypeSpacer,
 		self.assigneeTypeContainer,
 		line,
-		spellContainer,
+		self.spellAssignmentContainer,
+		spellTargetSpacer,
+		self.targetContainer,
 		spellTextSpacer,
 		self.optionalTextContainer,
 		line2,
@@ -579,7 +577,7 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 	local assigneeNameOrRole = assignment.assigneeNameOrRole
 	self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
 
-	self.previewLabel:SetText(previewText)
+	self.previewLabel:SetText(previewText, 0)
 
 	local enableTargetCheckBox = assignment.targetName ~= nil and assignment.targetName ~= ""
 	self.enableTargetCheckBox:SetChecked(enableTargetCheckBox)
@@ -622,6 +620,18 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
+	end
+end
+
+---@param self EPAssignmentEditor
+local function HandleRosterChanged(self)
+	local targetValue = self.targetDropdown:GetValue()
+	local item, _ = self.targetDropdown:FindItemAndText(targetValue, false)
+	if not item then
+		self.targetDropdown:SetEnabled(false)
+		self.targetDropdown:SetValue("")
+		self.targetDropdown:SetText("")
+		self:Fire("DataChanged", "Target", "")
 	end
 end
 
@@ -696,6 +706,7 @@ local function Constructor()
 		SetAssignmentID = SetAssignmentID,
 		GetAssignmentID = GetAssignmentID,
 		PopulateFields = PopulateFields,
+		HandleRosterChanged = HandleRosterChanged,
 		buttonFrame = buttonFrame,
 	}
 
