@@ -106,6 +106,8 @@ end
 ---@field text string the value shown in the dropdown
 ---@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
 ---@field selectable? boolean
+---@field customTexture? string|integer
+---@field customTextureVertexColor? number[]
 
 do
 	---@class EPDropdownPullout : AceGUIWidget
@@ -221,6 +223,9 @@ do
 					width = width + item.childSelectedIndicator:GetWidth() + item.childSelectedIndicatorOffsetX
 				elseif not item.neverShowItemsAsSelected then
 					width = width + item.check:GetWidth() + item.checkOffsetX
+				end
+				if item.customTexture:IsShown() then
+					width = width + item.customTexture:GetWidth() + item.checkOffsetX
 				end
 				maxItemWidth = max(maxItemWidth, width)
 			end
@@ -823,7 +828,18 @@ do
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
 	---@param dropdownItemData table<integer, DropdownItemData>? optional table of nested dropdown item menus
 	---@param neverShowItemsAsSelected boolean?
-	local function AddItem(self, itemValue, text, itemType, dropdownItemData, neverShowItemsAsSelected)
+	---@param customTexture? string|integer
+	---@param customTextureVertexColor? number[]
+	local function AddItem(
+		self,
+		itemValue,
+		text,
+		itemType,
+		dropdownItemData,
+		neverShowItemsAsSelected,
+		customTexture,
+		customTextureVertexColor
+	)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -855,6 +871,9 @@ do
 			dropdownItemToggle:SetText(text)
 			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
 			dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
+			if customTexture and customTextureVertexColor then
+				dropdownItemToggle:SetCustomTexture(customTexture, customTextureVertexColor)
+			end
 			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 			self.pullout:AddItem(dropdownItemToggle)
 			if neverShowItemsAsSelected == true then
@@ -903,7 +922,9 @@ do
 						itemData.text,
 						leafType,
 						nil,
-						neverShowItemsAsSelected or itemData.selectable == false
+						neverShowItemsAsSelected or itemData.selectable == false,
+						itemData.customTexture,
+						itemData.customTextureVertexColor
 					)
 				end
 			end

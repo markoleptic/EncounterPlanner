@@ -88,6 +88,7 @@ end
 function EPItemBase.OnAcquire(self)
 	self.frame:SetToplevel(true)
 	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX, 0)
 end
 
 ---@param self EPItemBase
@@ -97,6 +98,8 @@ function EPItemBase.OnRelease(self)
 	self.frame:SetParent(nil)
 	self.frame:ClearAllPoints()
 	self.frame:Hide()
+	self.customTexture:SetTexture(nil)
+	self.customTexture:Hide()
 end
 
 ---@param self EPItemBase
@@ -153,6 +156,16 @@ function EPItemBase.Hide(self)
 	self.frame:Hide()
 end
 
+---@param self EPItemBase
+---@param texture string|integer
+---@param vertexColor number[]
+function EPItemBase.SetCustomTexture(self, texture, vertexColor)
+	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+	self.customTexture:SetTexture(texture)
+	self.customTexture:SetVertexColor(unpack(vertexColor))
+	self.customTexture:Show()
+end
+
 -- This is called by a Dropdown-Pullout. Do not call this method directly
 function EPItemBase.SetOnLeave(self, func)
 	self.specialOnLeave = func
@@ -199,6 +212,12 @@ function EPItemBase.Create(type)
 	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	check:Hide()
 
+	local customTexture = frame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
+	customTexture:SetWidth(checkSize)
+	customTexture:SetHeight(checkSize)
+	customTexture:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
+	customTexture:Hide()
+
 	local childSelectedIndicator = frame:CreateTexture(type .. "ChildSelectedIndicator" .. count, "OVERLAY")
 	childSelectedIndicator:SetWidth(subHeight)
 	childSelectedIndicator:SetHeight(subHeight)
@@ -222,6 +241,7 @@ function EPItemBase.Create(type)
 		childSelectedIndicator = childSelectedIndicator,
 		highlight = highlight,
 		text = text,
+		customTexture = customTexture,
 		enabled = true,
 		OnAcquire = EPItemBase.OnAcquire,
 		OnRelease = EPItemBase.OnRelease,
@@ -236,6 +256,7 @@ function EPItemBase.Create(type)
 		SetOnEnter = EPItemBase.SetOnEnter,
 		SetFontSize = EPItemBase.SetFontSize,
 		SetHorizontalPadding = EPItemBase.SetHorizontalPadding,
+		SetCustomTexture = EPItemBase.SetCustomTexture,
 		textOffsetX = textOffsetX,
 		checkOffsetX = checkOffsetX,
 		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
@@ -522,6 +543,9 @@ do
 				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 				dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
+				if itemData.customTexture and itemData.customTextureVertexColor then
+					dropdownItemToggle:SetCustomTexture(itemData.customTexture, itemData.customTextureVertexColor)
+				end
 				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 				self.childPullout:AddItem(dropdownItemToggle)
 			end
@@ -572,6 +596,9 @@ do
 					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
 					dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
+					if itemData.customTexture and itemData.customTextureVertexColor then
+						dropdownItemToggle:SetCustomTexture(itemData.customTexture, itemData.customTextureVertexColor)
+					end
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 					if currentIndex then
 						self.childPullout:InsertItem(dropdownItemToggle, currentIndex)
