@@ -557,7 +557,7 @@ local function CreateDoubleCheckBox(self, option, index, label)
 	checkBoxTwo:SetFullHeight(true)
 	checkBoxTwo:SetRelativeWidth(0.5)
 	checkBoxTwo:SetText(option.labels[2])
-	checkBoxOne:SetChecked(option.get[2]())
+	checkBoxTwo:SetChecked(option.get[2]())
 
 	if option.enabled then
 		tinsert(self.refreshMap, { widget = checkBoxOne, enabled = option.enabled })
