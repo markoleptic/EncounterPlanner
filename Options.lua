@@ -570,6 +570,20 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Glow Frame for Targeted Spells"],
+				type = "checkBox",
+				description = L["Glows the unit frame of the target at assignment time. If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds. Otherwise, shows for 5 seconds."],
+				enabled = enableReminderOption,
+				get = function()
+					return GetReminderPreferences().glowTargetFrame
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetReminderPreferences().glowTargetFrame = key
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Reminder Advance Notice"],
 				type = "lineEdit",
 				description = L["How far ahead of assignment time to begin showing reminders."],

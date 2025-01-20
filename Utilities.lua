@@ -18,7 +18,6 @@ local floor = math.floor
 local format = string.format
 local GetClassInfo = GetClassInfo
 local GetClassColor = C_ClassColor.GetClassColor
-local GetItemNameByID = C_Item.GetItemNameByID
 local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetNumGroupMembers = GetNumGroupMembers
@@ -41,11 +40,11 @@ local tonumber = tonumber
 local tostring = tostring
 local type = type
 local UnitClass = UnitClass
+local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitName = UnitName
 local wipe = table.wipe
 
 local lineMatchRegex = "([^\r\n]+)"
-local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local kNumberOfClasses = 13
 
 local specIDToTypeL = {
@@ -1201,10 +1200,11 @@ function Utilities.IterateRosterUnits(maxGroup)
 	local units = {}
 	maxGroup = maxGroup or 8
 	local numMembers = GetNumGroupMembers()
+	local inRaid = IsInRaid()
 	for i = 1, numMembers do
 		if i == 1 and numMembers <= 4 then
 			units[i] = "player"
-		elseif IsInRaid() then
+		elseif inRaid then
 			local _, _, subgroup = GetRaidRosterInfo(i)
 			if subgroup and subgroup <= maxGroup then
 				units[i] = "raid" .. i
@@ -1214,6 +1214,18 @@ function Utilities.IterateRosterUnits(maxGroup)
 		end
 	end
 	return units
+end
+
+-- Attempts to find the unit GUID of a player in the group.
+---@param name string
+---@return string?
+function Utilities.FindGroupMemberUnit(name)
+	for _, unit in pairs(Utilities.IterateRosterUnits()) do
+		if name == UnitName(unit) then
+			return unit
+		end
+	end
+	return nil
 end
 
 -- Creates a table where keys are character names and the values are tables with class and role fields. Dependent on the

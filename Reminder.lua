@@ -3,6 +3,9 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+---@class Constants
+local constants = Private.constants
+
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
@@ -29,10 +32,13 @@ local pairs = pairs
 local PlaySoundFile = PlaySoundFile
 local SpeakText = C_VoiceChat.SpeakText
 local tinsert = tinsert
+local tremove = tremove
 local type = type
 local UnitGUID = UnitGUID
 local unpack = unpack
 local wipe = wipe
+
+local playerGUID = UnitGUID("player")
 
 local combatLogEventMap = {
 	["SCC"] = "SPELL_CAST_SUCCESS",
@@ -66,6 +72,15 @@ local spellCounts = {} -- Acts as filter for combat log events. Increments spell
 ---@type table<integer, table<integer, FunctionContainer>> -- Spell ID -> [timers]
 local cancelTimerIfCasted = {}
 
+---@type table<integer, table<integer, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
+local stopGlowIfCasted = {}
+
+---@type table<integer, Frame> -- [Frame]
+local noSpellIDGlowFrames = {}
+
+---@type table<integer, FunctionContainer> -- [timers]
+local frameGlowTimers = {}
+
 ---@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Spell ID -> [widgets]
 local hideWidgetIfCasted = {}
 
@@ -85,10 +100,13 @@ local isLocked = false -- Operation Queue lock state.
 local isSimulating = false
 local lastExecutionTime = 0
 local updateFrameTickRate = 0.04
+local defaultNoSpellIDGlowDuration = 5.0
+local maxGlowDuration = 10.0
 local updateFrame = CreateFrame("Frame")
 
 local function ResetLocalVariables()
 	updateFrame:SetScript("OnUpdate", nil)
+
 	for _, indexedTimers in pairs(timers) do
 		for _, timer in pairs(indexedTimers) do
 			if timer.Cancel then
@@ -96,11 +114,36 @@ local function ResetLocalVariables()
 			end
 		end
 	end
+	wipe(timers)
+
 	if simulationTimer then
 		simulationTimer:Cancel()
 	end
 	simulationTimer = nil
-	wipe(timers)
+
+	for _, timer in ipairs(frameGlowTimers) do
+		if timer.Cancel then
+			timer:Cancel()
+		end
+	end
+	wipe(frameGlowTimers)
+
+	for _, targetFrames in pairs(stopGlowIfCasted) do
+		for _, targetFrame in ipairs(targetFrames) do
+			if targetFrame.frame then
+				LCG.PixelGlow_Stop(targetFrame.frame)
+			end
+		end
+	end
+	wipe(stopGlowIfCasted)
+
+	for _, frame in ipairs(noSpellIDGlowFrames) do
+		if frame then
+			LCG.PixelGlow_Stop(frame)
+		end
+	end
+	wipe(noSpellIDGlowFrames)
+
 	wipe(operationQueue)
 	wipe(cancelTimerIfCasted)
 	wipe(hideWidgetIfCasted)
@@ -109,12 +152,15 @@ local function ResetLocalVariables()
 	wipe(phaseStartSpells)
 	wipe(phaseEndSpells)
 	wipe(phaseLimitedSpells)
+
 	if Private.messageContainer then
 		Private.messageContainer:Release()
 	end
+
 	if Private.progressBarContainer then
 		Private.progressBarContainer:Release()
 	end
+
 	lastExecutionTime = 0
 	isLocked = false
 	isSimulating = false
@@ -301,7 +347,7 @@ local function AddProgressBar(assignment, roster, duration, progressBarPreferenc
 		end)
 		Private.progressBarContainer:AddChildNoDoLayout(progressBar)
 		progressBar:Start()
-		if assignment.spellInfo.spellID > 1 then
+		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
 				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
 			end
@@ -339,7 +385,7 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 		else
 			message:Start(false)
 		end
-		if assignment.spellInfo.spellID > 1 then
+		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
 				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
 			end
@@ -403,6 +449,50 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 			PlaySoundFile(soundPreferences.atSound)
 		end
 	end
+	if reminderPreferences.glowTargetFrame and assignment.targetName ~= "" then
+		deferredFunctions[#deferredFunctions + 1] = function()
+			local unit = utilities.FindGroupMemberUnit(assignment.targetName)
+			if unit then
+				local frame = LGF.GetUnitFrame(unit)
+				if frame then
+					local spellID = assignment.spellInfo.spellID
+					if spellID > constants.kTextAssignmentSpellID then
+						if not stopGlowIfCasted[spellID] then
+							stopGlowIfCasted[spellID] = {}
+						end
+						local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
+						tinsert(stopGlowIfCasted[spellID], targetFrameObject)
+
+						local timer = NewTimer(maxGlowDuration, function()
+							LCG.PixelGlow_Stop(frame)
+							if stopGlowIfCasted[spellID] then
+								for index, obj in ipairs(stopGlowIfCasted[spellID]) do
+									if obj == targetFrameObject then
+										tremove(stopGlowIfCasted[spellID], index)
+										break
+									end
+								end
+							end
+						end)
+						frameGlowTimers[#frameGlowTimers + 1] = timer
+					else
+						noSpellIDGlowFrames[#noSpellIDGlowFrames + 1] = frame
+						local timer = NewTimer(defaultNoSpellIDGlowDuration, function()
+							LCG.PixelGlow_Stop(frame)
+							for index, f in ipairs(noSpellIDGlowFrames) do
+								if f == frame then
+									tremove(noSpellIDGlowFrames, index)
+									break
+								end
+							end
+						end)
+						frameGlowTimers[#frameGlowTimers + 1] = timer
+					end
+					LCG.PixelGlow_Start(frame)
+				end
+			end
+		end
+	end
 
 	if #deferredFunctions > 0 then
 		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex or 0
@@ -417,7 +507,7 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
 		end)
 		phaseTimers[#phaseTimers + 1] = timer
-		if hideIfAlreadyCasted and assignment.spellInfo.spellID > 1 then
+		if hideIfAlreadyCasted and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
 				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
 			end
@@ -452,7 +542,7 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 			ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 		end)
 		phaseTimers[#phaseTimers + 1] = timer
-		if hideIfAlreadyCasted and assignment.spellInfo.spellID > 1 then
+		if hideIfAlreadyCasted and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
 				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
 			end
@@ -629,10 +719,39 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 end
 
+-- Possibly cancels reminders or frame glows based on the spell being cast, subEvent, and destGUID.
+---@param playerIsSource boolean player GUID == source GUID
+---@param spellID integer
+---@param destGUID string
+---@param subEvent FullCombatLogEventType
+local function MaybeCancelStuff(playerIsSource, spellID, destGUID, subEvent)
+	if hideIfAlreadyCasted then
+		if playerIsSource and subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" then
+			CancelRemindersDueToSpellAlreadyCast(spellID)
+		end
+	end
+	if playerIsSource and stopGlowIfCasted[spellID] then
+		local toRemove = {}
+		for i = #stopGlowIfCasted[spellID], 1, -1 do
+			local obj = stopGlowIfCasted[spellID][i]
+			if not obj.targetGUID or destGUID == obj.targetGUID then
+				LCG.PixelGlow_Stop(obj.frame)
+				toRemove[#toRemove + 1] = i
+			end
+		end
+		for _, indexToRemove in ipairs(toRemove) do
+			tremove(stopGlowIfCasted[spellID], indexToRemove)
+		end
+		if not next(stopGlowIfCasted[spellID]) then
+			stopGlowIfCasted[spellID] = nil
+		end
+	end
+end
+
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
-	local _, subEvent, _, sourceGUID, _, _, _, _, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
+	local _, subEvent, _, sourceGUID, _, _, _, destGUID, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
 	if spellID then
 		if spellCounts[subEvent] and spellCounts[subEvent][spellID] then
 			local spellCount = spellCounts[subEvent][spellID] + 1
@@ -646,14 +765,7 @@ local function HandleCombatLogEventUnfiltered()
 			-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
 		end
 		MaybeUpdatePhase(spellID, subEvent)
-		if hideIfAlreadyCasted then
-			if
-				UnitGUID("player") == sourceGUID and subEvent == "SPELL_CAST_START"
-				or subEvent == "SPELL_CAST_SUCCESS"
-			then
-				CancelRemindersDueToSpellAlreadyCast(spellID)
-			end
-		end
+		MaybeCancelStuff(playerGUID == sourceGUID, spellID, destGUID, subEvent)
 	end
 end
 

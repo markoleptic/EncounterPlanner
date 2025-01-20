@@ -19,4 +19,6 @@
     <Script file="Libs\LibCompress\LibCompress.lua"/>
     <Script file="Libs\LibDeflate\LibDeflate.lua"/>
     <Include file="Libs\LibSharedMedia-3.0\lib.xml"/>
+    <Include file="Libs\LibGetFrame-1.0\LibGetFrame-1.0.xml"/>
+    <Include file="Libs\LibCustomGlow-1.0\LibCustomGlow-1.0.xml"/>
 </Ui>

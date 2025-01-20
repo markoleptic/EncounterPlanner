@@ -259,6 +259,7 @@ L["View"] = true
 L["None"] = true
 L["Unknown"] = true
 L["Text"] = true
+L["Text:"] = true
 L["Text Alignment"] = true
 L["Duration Alignment"] = true
 L["Assignment Editor"] = true
@@ -292,3 +293,6 @@ L["Shared Roster"] = true
 L["Current Plan Roster"] = true
 L["Update from Current Plan Roster"] = true
 L["Fill from Current Plan Roster"] = true
+L["Glows the unit frame of the target at assignment time. If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds. Otherwise, shows for 5 seconds."] =
+	true
+L["Glow Frame for Targeted Spells"] = true

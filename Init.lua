@@ -669,6 +669,7 @@ end
 ---@field removeDueToPhaseChange boolean
 ---@field cancelIfAlreadyCasted boolean
 ---@field advanceNotice number
+---@field glowTargetFrame boolean
 ---@field progressBars ProgressBarPreferences
 ---@field messages MessagePreferences
 ---@field textToSpeech ReminderTextToSpeechPreferences
@@ -714,6 +715,7 @@ local defaults = {
 				cancelIfAlreadyCasted = true,
 				removeDueToPhaseChange = true,
 				advanceNotice = 10.0,
+				glowTargetFrame = true,
 				messages = {
 					enabled = true,
 					font = "PT Sans Narrow",
