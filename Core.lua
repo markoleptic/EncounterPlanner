@@ -125,6 +125,9 @@ function AddOn:Refresh(_, db, newProfile)
 		interfaceUpdater.UpdatePlanDropdown()
 		interfaceUpdater.UpdateFromPlan(db.profile.lastOpenPlan)
 	end
+	if Private.optionsMenu then
+		Private:RecreateAnchors()
+	end
 end
 
 -- Closes any editors and dialogs that may incorrectly represent the current profile.

@@ -654,22 +654,23 @@ do
 					end
 				end,
 				set = function(key)
+					local preferences = GetMessagePreferences()
 					if key == "expirationOnly" then
-						if GetMessagePreferences().showOnlyAtExpiration ~= true then
+						if preferences.showOnlyAtExpiration ~= true then
 							if Private.messageAnchor.frame:IsShown() then
 								Private.messageAnchor:Pause()
 							end
 							Private.messageAnchor:SetDuration(0)
 						end
-						GetMessagePreferences().showOnlyAtExpiration = true
+						preferences.showOnlyAtExpiration = true
 					else -- if key == "fullCountdown" then
-						if GetMessagePreferences().showOnlyAtExpiration ~= false then
+						if preferences.showOnlyAtExpiration ~= false then
 							Private.messageAnchor:SetDuration(previewDuration)
 							if Private.messageAnchor.frame:IsShown() then
 								Private.messageAnchor:Start(true)
 							end
 						end
-						GetMessagePreferences().showOnlyAtExpiration = false
+						preferences.showOnlyAtExpiration = false
 					end
 				end,
 				enabled = function()
@@ -750,18 +751,26 @@ do
 				values = anchorPointValues,
 				updateIndices = { -3, -2, -1, 0 },
 				get = function()
-					return GetMessagePreferences().x, GetMessagePreferences().y
+					local preferences = GetMessagePreferences()
+					return preferences.x, preferences.y
 				end,
 				set = function(key, key2)
 					local x = tonumber(key)
 					local y = tonumber(key2)
 					if x and y then
-						GetMessagePreferences().x = x
-						GetMessagePreferences().y = y
-						local messages = GetMessagePreferences()
-						local regionName = utilities.IsValidRegionName(messages.relativeTo) and messages.relativeTo
+						local preferences = GetMessagePreferences()
+						preferences.x = x
+						preferences.y = y
+						local regionName = utilities.IsValidRegionName(preferences.relativeTo)
+								and preferences.relativeTo
 							or "UIParent"
-						Private.messageAnchor.frame:SetPoint(messages.point, regionName, messages.relativePoint, x, y)
+						Private.messageAnchor.frame:SetPoint(
+							preferences.point,
+							regionName,
+							preferences.relativePoint,
+							x,
+							y
+						)
 					end
 				end,
 				enabled = function()
@@ -796,12 +805,9 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetMessagePreferences().font = key
-						Private.messageAnchor:SetFont(
-							GetMessagePreferences().font,
-							GetMessagePreferences().fontSize,
-							GetMessagePreferences().fontOutline
-						)
+						local preferences = GetMessagePreferences()
+						preferences.font = key
+						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
 				enabled = function()
@@ -817,13 +823,11 @@ do
 					return GetMessagePreferences().fontSize
 				end,
 				set = function(key)
-					if type(key) == "number" then
-						GetMessagePreferences().fontSize = key
-						Private.messageAnchor:SetFont(
-							GetMessagePreferences().font,
-							GetMessagePreferences().fontSize,
-							GetMessagePreferences().fontOutline
-						)
+					local value = tonumber(key)
+					if value then
+						local preferences = GetMessagePreferences()
+						preferences.fontSize = value
+						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
 				enabled = function()
@@ -853,12 +857,9 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetMessagePreferences().fontOutline = key
-						Private.messageAnchor:SetFont(
-							GetMessagePreferences().font,
-							GetMessagePreferences().fontSize,
-							GetMessagePreferences().fontOutline
-						)
+						local preferences = GetMessagePreferences()
+						preferences.fontOutline = key
+						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
 				enabled = function()
@@ -1101,11 +1102,12 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetProgressBarPreferences().font = key
+						local preferences = GetProgressBarPreferences()
+						preferences.font = key
 						Private.progressBarAnchor:SetFont(
-							GetProgressBarPreferences().font,
-							GetProgressBarPreferences().fontSize,
-							GetProgressBarPreferences().fontOutline
+							preferences.font,
+							preferences.fontSize,
+							preferences.fontOutline
 						)
 					end
 				end,
@@ -1122,12 +1124,14 @@ do
 					return GetProgressBarPreferences().fontSize
 				end,
 				set = function(key)
-					if type(key) == "number" then
-						GetProgressBarPreferences().fontSize = key
+					local value = tonumber(key)
+					if value then
+						local preferences = GetProgressBarPreferences()
+						preferences.fontSize = value
 						Private.progressBarAnchor:SetFont(
-							GetProgressBarPreferences().font,
-							GetProgressBarPreferences().fontSize,
-							GetProgressBarPreferences().fontOutline
+							preferences.font,
+							preferences.fontSize,
+							preferences.fontOutline
 						)
 					end
 				end,
@@ -1158,11 +1162,12 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetProgressBarPreferences().fontOutline = key
+						local preferences = GetProgressBarPreferences()
+						preferences.fontOutline = key
 						Private.progressBarAnchor:SetFont(
-							GetProgressBarPreferences().font,
-							GetProgressBarPreferences().fontSize,
-							GetProgressBarPreferences().fontOutline
+							preferences.font,
+							preferences.fontSize,
+							preferences.fontOutline
 						)
 					end
 				end,
@@ -1247,9 +1252,10 @@ do
 					return GetProgressBarPreferences().width
 				end,
 				set = function(key)
-					if type(key) == "number" then
-						GetProgressBarPreferences().width = key
-						Private.progressBarAnchor:SetProgressBarWidth(GetProgressBarPreferences().width)
+					local value = tonumber(key)
+					if value then
+						GetProgressBarPreferences().width = value
+						Private.progressBarAnchor:SetProgressBarWidth(value)
 					end
 				end,
 				enabled = function()
@@ -1305,7 +1311,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().iconPosition = key
-						Private.progressBarAnchor:SetIconPosition(GetProgressBarPreferences().iconPosition)
+						Private.progressBarAnchor:SetIconPosition(key)
 					end
 				end,
 				enabled = function()
@@ -1474,8 +1480,9 @@ do
 					return GetReminderPreferences().textToSpeech.voiceID
 				end,
 				set = function(key)
-					if type(key) == "number" then
-						GetReminderPreferences().textToSpeech.voiceID = key
+					local value = tonumber(key)
+					if value then
+						GetReminderPreferences().textToSpeech.voiceID = value
 					end
 				end,
 				enabled = function()
@@ -1516,7 +1523,7 @@ do
 							return true
 						end
 					else
-						return false, GetMessagePreferences().fontSize
+						return false, GetReminderPreferences().textToSpeech.volume
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -1897,6 +1904,16 @@ function Private:CreateOptionsMenu()
 	optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 	Private.optionsMenu = optionsMenu
+end
+
+function Private:RecreateAnchors()
+	if Private.optionsMenu then
+		Private.messageAnchor = CreateMessageAnchor()
+		Private.messageAnchor.frame:Hide()
+
+		Private.progressBarAnchor = CreateProgressBarAnchor()
+		Private.progressBarAnchor.frame:Hide()
+	end
 end
 
 function OptionsModule:OnInitialize()
