@@ -1477,13 +1477,20 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 				end
 			end
 		end
-		local targetRosterEntry = roster[assignment.targetName]
+		local targetRosterEntry = roster[assignment.targetName] --[[@as RosterEntry]]
 		if targetRosterEntry and targetRosterEntry.classColoredName ~= "" then
-			reminderText = reminderText .. " " .. targetRosterEntry.classColoredName
+			if reminderText:len() > 0 then
+				reminderText = reminderText .. " " .. targetRosterEntry.classColoredName
+			else
+				reminderText = targetRosterEntry.classColoredName
+			end
 		else
-			reminderText = reminderText .. " " .. assignment.targetName
+			if reminderText:len() > 0 then
+				reminderText = reminderText .. " " .. assignment.targetName
+			else
+				reminderText = assignment.targetName
+			end
 		end
-		-- TODO: Consider highlighting frame
 	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
 		if assignment.spellInfo.name then
 			reminderText = assignment.spellInfo.name
