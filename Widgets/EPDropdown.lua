@@ -239,6 +239,7 @@ do
 			self.scrollIndicatorFrame:SetHeight(self.dropdownItemHeight / 2.0 - 1)
 			self.scrollIndicator:SetSize(self.dropdownItemHeight / 2.0 - 1, self.dropdownItemHeight / 2.0 - 1)
 			self.scrollIndicatorFrame:Show()
+			self:SetScroll(self.scrollFrame:GetVerticalScroll())
 		else
 			local h = #self.items * self.dropdownItemHeight
 			self.frame:SetHeight(min(h, self.maxHeight))
