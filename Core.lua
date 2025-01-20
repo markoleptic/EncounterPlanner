@@ -15,6 +15,7 @@ local interfaceUpdater = Private.interfaceUpdater
 local utilities = Private.utilities
 
 local AddOn = Private.addOn
+local L = Private.L
 local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
@@ -108,6 +109,15 @@ end
 function AddOn:Refresh(_, db, newProfile)
 	UpdateProfile(db.profile)
 	if Private.mainFrame then
+		local bossDungeonEncounterID = 2902
+		local plans = db.profile.plans --[[@as table<string, Plan>]]
+		local lastOpenPlan = db.profile.lastOpenPlan
+		if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
+			local defaultPlanName = L["Default"]
+			plans[defaultPlanName] = Private.classes.Plan:New(nil, defaultPlanName)
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
+			db.profile.lastOpenPlan = defaultPlanName
+		end
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			timeline:SetPreferences(db.profile.preferences)
