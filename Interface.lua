@@ -58,6 +58,7 @@ local menuButtonHorizontalPadding = 8
 local topContainerWidgetFontSize = 14
 local topContainerWidgetHeight = 26
 local assignmentEditorWidth = 240
+local defaultMaxVisibleDropdownItems = 8
 local preferencesMenuButtonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -1023,6 +1024,9 @@ local function HandleCreateNewNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
+	if Private.rosterEditor then
+		Private.rosterEditor:Release()
+	end
 	local plans = AddOn.db.profile.plans
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
@@ -1035,9 +1039,30 @@ local function HandleCreateNewNoteButtonClicked()
 	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 end
 
+local function HandleDuplicatePlanButtonClicked()
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	local plans = AddOn.db.profile.plans
+	local planToDuplicateName = AddOn.db.profile.lastOpenPlan
+	local planToDuplicate = plans[planToDuplicateName]
+	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+	local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+	local newPlanName = utilities.CreateUniquePlanName(plans, bossName, planToDuplicateName)
+	local newPlan = Private.classes.Plan:New(planToDuplicate, newPlanName, nil)
+	plans[newPlanName] = newPlan
+	AddOn.db.profile.lastOpenPlan = newPlanName
+	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, newPlan)
+	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
+end
+
 local function HandleDeleteCurrentNoteButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
+	end
+	if Private.rosterEditor then
+		Private.rosterEditor:Release()
 	end
 	local beforeRemovalCount = 0
 	local plans = AddOn.db.profile.plans
@@ -1265,6 +1290,13 @@ function Private:CreateInterface()
 			),
 		},
 		{
+			itemValue = "Duplicate Plan",
+			text = utilities.AddIconBeforeText(
+				[[Interface\AddOns\EncounterPlanner\Media\icons8-duplicate-32]],
+				L["Duplicate Plan"]
+			),
+		},
+		{
 			itemValue = "Import",
 			text = utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
 			dropdownItemMenuData = {
@@ -1307,6 +1339,8 @@ function Private:CreateInterface()
 		end
 		if value == "New Plan" then
 			HandleCreateNewNoteButtonClicked()
+		elseif value == "Duplicate Plan" then
+			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
 			HandleExportButtonClicked()
 		elseif value == "Delete Current Plan" then
@@ -1510,6 +1544,7 @@ function Private:CreateInterface()
 	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
+	planDropdown:SetMaxVisibleItems(defaultMaxVisibleDropdownItems)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanTextSubmitted)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 	planContainer:AddChildren(planLabel, planDropdown)
