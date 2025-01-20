@@ -129,7 +129,7 @@ Private.classes = {}
 ---@field assigneeNameOrRole string Who to assign the assignment to, AssigneeType.
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellInfo SpellInfo The spell info for the assignment.
----@field targetName string|nil The target's name if the assignment has a '@'.
+---@field targetName string The target's name if the assignment has a '@'.
 Private.classes.Assignment = {
 	uniqueID = 0,
 	assigneeNameOrRole = "",
@@ -675,6 +675,9 @@ end
 ---@field textToSpeech ReminderTextToSpeechPreferences
 ---@field sound ReminderSoundPreferences
 
+local playerClass = select(2, UnitClass("player"))
+local ccA, ccR, ccB, _ = GetClassColor(playerClass)
+
 local defaults = {
 	---@class DefaultProfile
 	---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
@@ -718,7 +721,7 @@ local defaults = {
 				glowTargetFrame = true,
 				messages = {
 					enabled = true,
-					font = "PT Sans Narrow",
+					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
 					fontSize = 24,
 					fontOutline = "",
 					point = "CENTER",
@@ -726,32 +729,32 @@ local defaults = {
 					relativePoint = "CENTER",
 					x = 0,
 					y = 300,
-					alpha = 0.95,
+					alpha = 1.0,
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
 				},
 				progressBars = {
 					enabled = true,
 					textAlignment = "LEFT",
-					font = "PT Sans Narrow",
-					fontSize = 14,
+					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+					fontSize = 16,
 					fontOutline = "",
-					point = "RIGHT",
+					point = "BOTTOMRIGHT",
 					relativeTo = "UIParent",
 					relativePoint = "CENTER",
-					x = -100,
+					x = -200,
 					y = 0,
-					alpha = 0.95,
-					texture = "Clean",
+					alpha = 0.90,
+					texture = "Interface\\AddOns\\WeakAuras\\Media\\Textures\\Statusbar_Clean",
 					iconPosition = "LEFT",
-					width = 100,
+					width = 200,
 					durationAlignment = "RIGHT",
 					fill = false,
-					showBorder = true,
+					showBorder = false,
 					showIconBorder = false,
-					color = { 0.05, 0.05, 0.05, 0.25 },
-					backgroundColor = { 0.5, 0.5, 0.5, 0.75 },
-					spacing = -1,
+					color = { ccA, ccR, ccB, 0.90 },
+					backgroundColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 },
+					spacing = 0,
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
