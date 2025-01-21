@@ -1111,6 +1111,7 @@ do
 	local function SetUseLineEditForDoubleClick(self, use)
 		if not self.lineEdit and use then
 			self.lineEdit = AceGUI:Create("EPLineEdit")
+			self.lineEdit:SetMaxLetters(24)
 			local font, size, flags = self.text:GetFont()
 			if font then
 				self.lineEdit:SetFont(font, size, flags)
