@@ -176,6 +176,82 @@ for specID, _ in pairs(specIDToName) do
 	specIDToName[specID] = name
 end
 
+local caseAndWhiteSpaceInsensitiveMetaTable = {
+	__index = function(tbl, key)
+		if type(key) == "string" then
+			key = key:lower()
+			key = key:gsub("%s", "")
+		end
+		return rawget(tbl, key)
+	end,
+	__newindex = function(tbl, key, value)
+		if type(key) == "string" then
+			key = key:lower()
+			key = key:gsub("%s", "")
+		end
+		rawset(tbl, key, value)
+	end,
+}
+
+local genericIcons = setmetatable({
+	["star"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1" .. ":0|t",
+	["circle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_2" .. ":0|t",
+	["diamond"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_3" .. ":0|t",
+	["triangle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4" .. ":0|t",
+	["moon"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_5" .. ":0|t",
+	["square"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_6" .. ":0|t",
+	["cross"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_7" .. ":0|t",
+	["skull"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8" .. ":0|t",
+	["wow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-WoWicon" .. ":16|t",
+	["d3"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-D3icon" .. ":16|t",
+	["sc2"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Sc2icon" .. ":16|t",
+	["bnet"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Portrait" .. ":16|t",
+	["bnet1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Battleneticon" .. ":16|t",
+	["alliance"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Alliance" .. ":16|t",
+	["horde"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Horde" .. ":16|t",
+	["hots"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-HotSicon" .. ":16|t",
+	["ow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Overwatchicon" .. ":16|t",
+	["sc1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-SCicon" .. ":16|t",
+	["barcade"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-BlizzardArcadeCollectionicon" .. ":16|t",
+	["crashb"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-CrashBandicoot4icon" .. ":16|t",
+	["tank"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:0:19:22:41|t",
+	["healer"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:1:20|t",
+	["dps"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:22:41|t",
+}, caseAndWhiteSpaceInsensitiveMetaTable)
+
+for i = 1, 8 do
+	local icon = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i .. ":0|t"
+	genericIcons[format("rt%d", i)] = icon
+end
+
+local prettyClassNames = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
+
+for i = 1, kNumberOfClasses do
+	local className, classFile, classID = GetClassInfo(i)
+	local colorMixin = GetClassColor(classFile)
+	local prettyClassName = colorMixin:WrapTextInColorCode(className)
+	prettyClassNames[classFile] = prettyClassName
+
+	local classNameWithoutSpaces = className:gsub(" ", "")
+	local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
+	genericIcons[format("%s", className)] = classIcon
+	genericIcons[format("%d", classID)] = classIcon
+	if classNameWithoutSpaces == "DeathKnight" then
+		genericIcons["dk"] = classIcon
+	elseif classNameWithoutSpaces == "DemonHunter" then
+		genericIcons["dh"] = classIcon
+	end
+end
+
+---@param text string
+---@return string
+local function ReplaceGenericIcons(text)
+	local result, _ = text:gsub("{(.-)}", function(match)
+		return genericIcons[match] or ("{" .. match .. "}")
+	end)
+	return result
+end
+
 ---@param value number
 ---@param precision integer
 ---@return number
@@ -575,38 +651,13 @@ function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, co
 	end
 end
 
-function Utilities.CreatePrettyClassNames()
-	wipe(Private.prettyClassNames)
-	setmetatable(Private.prettyClassNames, {
-		__index = function(tbl, key)
-			if type(key) == "string" then
-				key = key:lower()
-				key = key:gsub("%s", "")
-			end
-			return rawget(tbl, key)
-		end,
-		__newindex = function(tbl, key, value)
-			if type(key) == "string" then
-				key = key:lower()
-			end
-			rawset(tbl, key, value)
-		end,
-	})
-	for i = 1, kNumberOfClasses do
-		local className, classFile, _ = GetClassInfo(i)
-		local colorMixin = GetClassColor(classFile)
-		local prettyClassName = colorMixin:WrapTextInColorCode(className)
-		Private.prettyClassNames[classFile] = prettyClassName
-	end
-end
-
 ---@return DropdownItemData
 local function CreateSpellDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 	for className, classSpells in pairs(Private.spellDB.classes) do
 		local classDropdownData = {
 			itemValue = className,
-			text = Private.prettyClassNames[className],
+			text = prettyClassNames[className],
 			dropdownItemMenuData = {},
 		}
 		local spellTypeIndex = 1
@@ -698,7 +749,7 @@ function Utilities.CreateClassDropdownItemData()
 		end
 		local classDropdownData = {
 			itemValue = "class:" .. actualClassName:gsub("%s", ""),
-			text = Private.prettyClassNames[className],
+			text = prettyClassNames[className],
 		}
 		tinsert(dropdownData, classDropdownData)
 	end
@@ -1026,7 +1077,7 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
 		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
 		if classMatch then
-			local prettyClassName = Private.prettyClassNames[classMatch]
+			local prettyClassName = prettyClassNames[classMatch]
 			if prettyClassName then
 				legibleString = prettyClassName
 			else
@@ -1383,14 +1434,6 @@ function Utilities.AddIconBeforeText(iconID, text, size)
 	return format("|T%s:%d|t %s", iconID, size or 0, text)
 end
 
----@param spellID integer
----@param size? integer
----@return string
-function Utilities.SubSpellIconTextWithSpellIcon(spellID, size)
-	local spellTexture = GetSpellTexture(spellID)
-	return format("|T%s:%d|t", (spellTexture or [[Interface\Icons\INV_MISC_QUESTIONMARK]]), size or 0)
-end
-
 ---@return integer
 local function GetGroupNumber()
 	local playerName, _ = UnitName("player")
@@ -1461,17 +1504,19 @@ end
 
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param roster table<string, RosterEntry>
+---@param addIcon boolean
 ---@return string
-function Utilities.CreateReminderProgressBarText(assignment, roster)
+function Utilities.CreateReminderText(assignment, roster, addIcon)
 	local reminderText = ""
+	local spellID = assignment.spellInfo.spellID
 	if assignment.text ~= nil and assignment.text ~= "" then
-		reminderText = assignment.text
+		reminderText = ReplaceGenericIcons(assignment.text)
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
+		if spellID ~= nil and spellID > constants.kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
 				reminderText = assignment.spellInfo.name
 			else
-				local spellName = GetSpellName(assignment.spellInfo.spellID)
+				local spellName = GetSpellName(spellID)
 				if spellName then
 					reminderText = spellName
 				end
@@ -1491,12 +1536,17 @@ function Utilities.CreateReminderProgressBarText(assignment, roster)
 				reminderText = assignment.targetName
 			end
 		end
-	elseif assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-		if assignment.spellInfo.name then
-			reminderText = assignment.spellInfo.name
-		else
-			local spellName = GetSpellName(assignment.spellInfo.spellID)
-			if spellName then
+	elseif spellID ~= nil and spellID > constants.kTextAssignmentSpellID then
+		local spellName = assignment.spellInfo.name:len() > 0 and assignment.spellInfo.name or GetSpellName(spellID)
+		if spellName then
+			if addIcon then
+				local spellTexture = GetSpellTexture(spellID)
+				if spellTexture then
+					reminderText = Utilities.AddIconBeforeText(spellTexture, spellName, 16)
+				else
+					reminderText = spellName
+				end
+			else
 				reminderText = spellName
 			end
 		end

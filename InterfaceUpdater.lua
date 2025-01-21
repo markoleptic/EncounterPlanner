@@ -258,7 +258,7 @@ do
 				if assignmentID then
 					local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 					if assignment then
-						local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
+						local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
 						assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 					else
 						assignmentEditor:Release()

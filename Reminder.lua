@@ -329,16 +329,28 @@ local function CreateMessage(preferences, text, duration, icon)
 	return message
 end
 
+---@param spellInfo SpellInfo
+---@return integer|nil
+local function GetAssignmentIcon(spellInfo)
+	local icon = nil
+	local spellID = spellInfo.spellID
+	if spellInfo.iconID > 0 then
+		icon = spellInfo.iconID
+	elseif spellID > constants.kTextAssignmentSpellID then
+		icon = GetSpellTexture(spellID)
+	end
+	return icon
+end
+
 -- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, RosterEntry>
 ---@param duration number
+---@param reminderText string
 ---@param progressBarPreferences ProgressBarPreferences
-local function AddProgressBar(assignment, roster, duration, progressBarPreferences)
+local function AddProgressBar(assignment, duration, reminderText, progressBarPreferences)
 	tinsert(operationQueue, function()
-		local icon = assignment.spellInfo.iconID or GetSpellTexture(assignment.spellInfo.spellID)
-		local text = utilities.CreateReminderProgressBarText(assignment, roster)
-		local progressBar = CreateProgressBar(progressBarPreferences, text, duration, icon > 0 and icon or nil)
+		local icon = GetAssignmentIcon(assignment.spellInfo)
+		local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
 		progressBar:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
 				hideWidgetIfCasted[assignment.spellInfo.spellID] = nil
@@ -365,17 +377,17 @@ end
 
 -- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param roster table<string, RosterEntry>
 ---@param duration number|nil
+---@param reminderText string
 ---@param messagePreferences MessagePreferences
-local function AddMessage(assignment, roster, duration, messagePreferences)
+local function AddMessage(assignment, duration, reminderText, messagePreferences)
 	tinsert(operationQueue, function()
-		local icon = assignment.spellInfo.iconID or GetSpellTexture(assignment.spellInfo.spellID)
-		local text = utilities.CreateReminderProgressBarText(assignment, roster)
-		local message = CreateMessage(messagePreferences, text, duration, icon > 0 and icon or nil)
+		local icon = GetAssignmentIcon(assignment.spellInfo)
+		local message = CreateMessage(messagePreferences, reminderText, duration, icon)
+		local spellID = assignment.spellInfo.spellID
 		message:SetCallback("Completed", function()
 			tinsert(operationQueue, function()
-				hideWidgetIfCasted[assignment.spellInfo.spellID] = nil
+				hideWidgetIfCasted[spellID] = nil
 				Private.messageContainer:RemoveChildNoDoLayout(message)
 			end)
 		end)
@@ -385,11 +397,11 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 		else
 			message:Start(false)
 		end
-		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
-				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
+		if spellID > constants.kTextAssignmentSpellID then
+			if not hideWidgetIfCasted[spellID] then
+				hideWidgetIfCasted[spellID] = {}
 			end
-			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], message)
+			tinsert(hideWidgetIfCasted[spellID], message)
 		end
 		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 			if not hideWidgetIfPhased[assignment.bossPhaseOrderIndex] then
@@ -399,6 +411,46 @@ local function AddMessage(assignment, roster, duration, messagePreferences)
 			hideWidgetTable[#hideWidgetTable + 1] = message
 		end
 	end)
+end
+
+-- Starts glowing the frame for the unit and creates a timer to stop the glowing of the frame.
+---@param unit string
+---@param frame Frame
+---@param spellID integer
+local function GlowFrameAndCreateTimer(unit, frame, spellID)
+	if spellID > constants.kTextAssignmentSpellID then
+		if not stopGlowIfCasted[spellID] then
+			stopGlowIfCasted[spellID] = {}
+		end
+		local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
+		tinsert(stopGlowIfCasted[spellID], targetFrameObject)
+
+		local timer = NewTimer(maxGlowDuration, function()
+			LCG.PixelGlow_Stop(frame)
+			if stopGlowIfCasted[spellID] then
+				for index, obj in ipairs(stopGlowIfCasted[spellID]) do
+					if obj == targetFrameObject then
+						tremove(stopGlowIfCasted[spellID], index)
+						break
+					end
+				end
+			end
+		end)
+		frameGlowTimers[#frameGlowTimers + 1] = timer
+	else
+		noSpellIDGlowFrames[#noSpellIDGlowFrames + 1] = frame
+		local timer = NewTimer(defaultNoSpellIDGlowDuration, function()
+			LCG.PixelGlow_Stop(frame)
+			for index, f in ipairs(noSpellIDGlowFrames) do
+				if f == frame then
+					tremove(noSpellIDGlowFrames, index)
+					break
+				end
+			end
+		end)
+		frameGlowTimers[#frameGlowTimers + 1] = timer
+	end
+	LCG.PixelGlow_Start(frame)
 end
 
 -- Executes the actions that occur at the time in which reminders are first displayed. This is usually at advance notice
@@ -412,11 +464,13 @@ end
 local function ExecuteReminderTimer(assignment, roster, reminderPreferences, reminderText, duration)
 	local ttsPreferences = reminderPreferences.textToSpeech
 	local soundPreferences = reminderPreferences.sound
+	local spellID = assignment.spellInfo.spellID
+
 	if reminderPreferences.progressBars.enabled then
-		AddProgressBar(assignment, roster, duration, reminderPreferences.progressBars)
+		AddProgressBar(assignment, duration, reminderText, reminderPreferences.progressBars)
 	end
 	if reminderPreferences.messages.enabled and not reminderPreferences.messages.showOnlyAtExpiration then
-		AddMessage(assignment, roster, duration, reminderPreferences.messages)
+		AddMessage(assignment, duration, reminderText, reminderPreferences.messages)
 	end
 	if ttsPreferences.enableAtAdvanceNotice then
 		if reminderText:len() > 0 then
@@ -434,7 +488,7 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 
 	if reminderPreferences.messages.enabled and reminderPreferences.messages.showOnlyAtExpiration then
 		deferredFunctions[#deferredFunctions + 1] = function()
-			AddMessage(assignment, roster, nil, reminderPreferences.messages)
+			AddMessage(assignment, nil, reminderText, reminderPreferences.messages)
 		end
 	end
 	if ttsPreferences.enableAtTime then
@@ -455,40 +509,7 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 			if unit then
 				local frame = LGF.GetUnitFrame(unit)
 				if frame then
-					local spellID = assignment.spellInfo.spellID
-					if spellID > constants.kTextAssignmentSpellID then
-						if not stopGlowIfCasted[spellID] then
-							stopGlowIfCasted[spellID] = {}
-						end
-						local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
-						tinsert(stopGlowIfCasted[spellID], targetFrameObject)
-
-						local timer = NewTimer(maxGlowDuration, function()
-							LCG.PixelGlow_Stop(frame)
-							if stopGlowIfCasted[spellID] then
-								for index, obj in ipairs(stopGlowIfCasted[spellID]) do
-									if obj == targetFrameObject then
-										tremove(stopGlowIfCasted[spellID], index)
-										break
-									end
-								end
-							end
-						end)
-						frameGlowTimers[#frameGlowTimers + 1] = timer
-					else
-						noSpellIDGlowFrames[#noSpellIDGlowFrames + 1] = frame
-						local timer = NewTimer(defaultNoSpellIDGlowDuration, function()
-							LCG.PixelGlow_Stop(frame)
-							for index, f in ipairs(noSpellIDGlowFrames) do
-								if f == frame then
-									tremove(noSpellIDGlowFrames, index)
-									break
-								end
-							end
-						end)
-						frameGlowTimers[#frameGlowTimers + 1] = timer
-					end
-					LCG.PixelGlow_Start(frame)
+					GlowFrameAndCreateTimer(unit, frame, spellID)
 				end
 			end
 		end
@@ -504,14 +525,14 @@ local function ExecuteReminderTimer(assignment, roster, reminderPreferences, rem
 			for _, func in ipairs(deferredFunctions) do
 				func()
 			end
-			cancelTimerIfCasted[assignment.spellInfo.spellID] = nil
+			cancelTimerIfCasted[spellID] = nil
 		end)
 		phaseTimers[#phaseTimers + 1] = timer
-		if hideIfAlreadyCasted and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-			if not cancelTimerIfCasted[assignment.spellInfo.spellID] then
-				cancelTimerIfCasted[assignment.spellInfo.spellID] = {}
+		if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
+			if not cancelTimerIfCasted[spellID] then
+				cancelTimerIfCasted[spellID] = {}
 			end
-			tinsert(cancelTimerIfCasted[assignment.spellInfo.spellID], timer)
+			tinsert(cancelTimerIfCasted[spellID], timer)
 		end
 	end
 end
@@ -521,7 +542,7 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
-	local reminderText = utilities.CreateReminderProgressBarText(assignment, roster)
+	local reminderText = utilities.CreateReminderText(assignment, roster, false)
 	local duration = reminderPreferences.advanceNotice
 	local startTime = assignment.time - duration - elapsed
 

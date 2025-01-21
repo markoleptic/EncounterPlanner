@@ -37,18 +37,17 @@ local UnitClass = UnitClass
 local UnitName = UnitName
 local wipe = wipe
 
+---@class PhasedAssignment
+local PhasedAssignment = Private.classes.PhasedAssignment
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local postOptionsPreDashNoSpellRegex = "}(.-) %-"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
-
-local healerRegex = "{[Hh]}.-{/[Hh]}"
-local tankRegex = "{[Tt]}.-{/[Tt]}"
-local dpsRegex = "{[Dd]}.-{/[Dd]}"
-local groupRegex = "{(!?)[Gg](%d+)}(.-){/[Gg]}"
-local playerRegex = "{(!?)[Pp]:([^}]+)}(.-){/[Pp]}"
-local classRegex = "{(!?)[Cc]:([^}]+)}(.-){/[Cc]}"
-local raceRegex = "{(!?)[Rr][Aa][Cc][Ee]:([^}]+)}(.-){/[Rr][Aa][Cc][Ee]}"
 local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
 
 local colorStartRegex = "|?|c........"
@@ -133,155 +132,6 @@ local combatLogEventFromAbbreviation = {
 	["SAR"] = "SPELL_AURA_REMOVED",
 }
 
----@return integer
-local function GetGroupNumber()
-	local playerName, _ = UnitName("player")
-	local myGroup = 1
-	if IsInRaid() then
-		for i = 1, GetNumGroupMembers() do
-			local name, _, subgroup = GetRaidRosterInfo(i)
-			if name == playerName then
-				myGroup = subgroup
-				break
-			end
-		end
-	end
-	return myGroup
-end
-
----@param anti string (!)
----@param groups string (1,2)
----@param msg string (entire message for group number)
----@return string
-local function GsubGroup(anti, groups, msg)
-	local found = groups:find(tostring(GetGroupNumber()))
-	if (found and anti:len() == 0) or (not found and anti == "!") then
-		return msg
-	else
-		return ""
-	end
-end
-
----@param anti string (!)
----@param list string
----@param msg string
----@return string
-local function GSubPlayer(anti, list, msg)
-	local playerName, _ = UnitName("player")
-	local tableList = splitTable(",", list)
-	local found = false
-	local myName = playerName:lower()
-	for i = 1, #tableList do
-		tableList[i] = tableList[i]:gsub(colorStartRegex, ""):gsub(colorEndRegex, ""):lower()
-		if tableList[i] == myName then
-			found = true
-			break
-		end
-	end
-	if (found and anti:len() == 0) or (not found and anti == "!") then
-		return msg
-	else
-		return ""
-	end
-end
-
----@param anti string (!)
----@param list string
----@param msg string
----@return string
-local function GSubClass(anti, list, msg)
-	local tableList = splitTable(",", list)
-	local classID = select(3, UnitClass("player"))
-	local found = false
-	for i = 1, #tableList do
-		tableList[i] = tableList[i]:gsub(colorStartRegex, ""):gsub(colorEndRegex, ""):lower()
-		if classList[tableList[i]] == classID then
-			found = true
-			break
-		end
-	end
-
-	if (found and anti == "") or (not found and anti == "!") then
-		return msg
-	else
-		return ""
-	end
-end
-
----@param anti string (!)
----@param list string
----@param msg string
----@return string
-local function GSubRace(anti, list, msg)
-	local tableList = splitTable(",", list)
-	local race = select(2, UnitRace("player")):lower()
-	local found = false
-	for i = 1, #tableList do
-		tableList[i] = tableList[i]:gsub(colorStartRegex, ""):gsub(colorEndRegex, ""):lower()
-		if tableList[i] == race then
-			found = true
-			break
-		end
-	end
-
-	if (found and anti == "") or (not found and anti == "!") then
-		return msg
-	else
-		return ""
-	end
-end
-
----@param line string
----@return number|nil, string|nil
-local function ParseTime(line)
-	local minute, sec, options = line:match(timeOptionsSplitRegex)
-	local time = nil
-	if minute and sec then
-		time = tonumber(sec) + (tonumber(minute) * 60)
-	elseif minute and (sec == nil or sec == "") then
-		time = tonumber(minute)
-	end
-	return time, options
-end
-
--- Filters lines by the player's current role.
----@param lines string
----@return string
-local function FilterByCurrentRole(lines)
-	local spec = GetSpecialization() or nil
-	if spec then
-		local role = select(5, GetSpecializationInfo(spec))
-		if role ~= "HEALER" then
-			lines = lines:gsub(healerRegex, "")
-		end
-		if role ~= "TANK" then
-			lines = lines:gsub(tankRegex, "")
-		end
-		if role ~= "DAMAGER" then
-			lines = lines:gsub(dpsRegex, "")
-		end
-	end
-	return lines
-end
-
--- Filters based on group, player, class, race, and encounter.
----@param line string
----@return string
-local function Filter(line)
-	line = line:gsub(groupRegex, GsubGroup)
-		:gsub(playerRegex, GSubPlayer)
-		:gsub(classRegex, GSubClass)
-		:gsub(raceRegex, GSubRace)
-	return line
-end
-
----@param spellID string
----@return string
-local function GSubIcon(spellID)
-	local spellTexture = GetSpellTexture(spellID)
-	return "|T" .. (spellTexture or "Interface\\Icons\\INV_MISC_QUESTIONMARK") .. ":0|t"
-end
-
 -- Parses a line of text in the note and creates assignment(s).
 ---@param line string
 ---@return table<integer, Assignment>
@@ -343,7 +193,7 @@ end
 ---@param derivedAssignments table<integer, Assignment>
 ---@param time number
 ---@param options string
-function Private:ProcessOptions(assignments, derivedAssignments, time, options)
+local function ProcessOptions(assignments, derivedAssignments, time, options)
 	local regularTimer = true
 	local option = nil
 	while options do
@@ -362,7 +212,7 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 				local phaseNumber = tonumber(phase, 10)
 				if phaseNumber then
 					for _, assignment in pairs(assignments) do
-						local phasedAssignment = self.classes.PhasedAssignment:New(assignment)
+						local phasedAssignment = PhasedAssignment:New(assignment)
 						phasedAssignment.time = time
 						phasedAssignment.phase = phaseNumber
 						tinsert(derivedAssignments, phasedAssignment)
@@ -377,7 +227,7 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 				local spellCount = tonumber(spellCountStr)
 				if spellID and spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = self.classes.CombatLogEventAssignment:New(assignment)
+						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.spellCount = spellCount
@@ -391,11 +241,24 @@ function Private:ProcessOptions(assignments, derivedAssignments, time, options)
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = self.classes.TimedAssignment:New(assignment)
+			local timedAssignment = TimedAssignment:New(assignment)
 			timedAssignment.time = time
 			tinsert(derivedAssignments, timedAssignment)
 		end
 	end
+end
+
+---@param line string
+---@return number|nil, string|nil
+local function ParseTime(line)
+	local minute, sec, options = line:match(timeOptionsSplitRegex)
+	local time = nil
+	if minute and sec then
+		time = tonumber(sec) + (tonumber(minute) * 60)
+	elseif minute and (sec == nil or sec == "") then
+		time = tonumber(minute)
+	end
+	return time, options
 end
 
 -- Repopulates assignments for the note based on the note content. Returns a boss name if one was found using spellIDs
@@ -403,7 +266,7 @@ end
 ---@param plan Plan Plan to repopulate
 ---@param text table<integer, string> content
 ---@return integer|nil
-function Private:ParseNote(plan, text)
+local function ParseNote(plan, text)
 	wipe(plan.assignments)
 	local bossDungeonEncounterID = nil
 	local otherContent = {}
@@ -422,7 +285,7 @@ function Private:ParseNote(plan, text)
 				generalText = line:match(postOptionsPreDashNoSpellRegex)
 			end
 			local inputs = CreateAssignmentsFromLine(line)
-			self:ProcessOptions(inputs, plan.assignments, time, options)
+			ProcessOptions(inputs, plan.assignments, time, options)
 		else
 			if line:gsub("%s", ""):len() ~= 0 then
 				tinsert(otherContent, line)
@@ -526,9 +389,10 @@ local function CreateAssignmentExportString(assignment, roster)
 	return assignmentString
 end
 
+-- Exports a plan in MRT/KAZE format.
 ---@param plan Plan
 ---@return string|nil
-function Private:ExportPlan(plan)
+function Private:ExportPlanToNote(plan)
 	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
 	if bossDungeonEncounterID then
 		local timelineAssignments = utilities.CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
@@ -577,13 +441,13 @@ function Private:ExportPlan(plan)
 	return nil
 end
 
--- Clears the current assignments and repopulates it from a string of assignments. Updates the roster.
+-- Clears the current assignments and repopulates it from a string of assignments (note). Updates the roster.
 ---@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
 -- an empty plan will be created.
 ---@param currentBossDungeonEncounterID integer The current boss dungeon encounter ID to use as a fallback.
 ---@param content string A string containing assignments.
 ---@return integer|nil -- Boss dungeon encounter ID for the plan.
-function Private:Note(planName, currentBossDungeonEncounterID, content)
+function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
 	if not plans[planName] then
@@ -591,18 +455,14 @@ function Private:Note(planName, currentBossDungeonEncounterID, content)
 	end
 	local plan = plans[planName]
 
-	local bossDungeonEncounterID = self:ParseNote(plan, utilities.SplitStringIntoTable(content))
+	local bossDungeonEncounterID = ParseNote(plan, utilities.SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
 
 	if plan.dungeonEncounterID ~= currentBossDungeonEncounterID then
 		wipe(plan.customPhaseDurations)
 	end
 
-	local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
-	if boss then
-		plan.dungeonEncounterID = boss.dungeonEncounterID
-		plan.instanceID = boss.instanceID
-	end
+	bossUtilities.ChangePlanBoss(plan.dungeonEncounterID, plan)
 
 	utilities.UpdateRosterFromAssignments(plan.assignments, plan.roster)
 	utilities.UpdateRosterDataFromGroup(plan.roster)

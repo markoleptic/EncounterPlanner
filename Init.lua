@@ -795,7 +795,6 @@ Private.raidInstances = {} --[[@as table<integer, RaidInstance>]]
 Private.interfaceUpdater = {}
 Private.bossUtilities = {}
 Private.utilities = {}
-Private.prettyClassNames = {} --[[@as table<string, string>]] -- A map of class names to class pascal case colored class names
 
 Private.mainFrame = nil --[[@as EPMainFrame]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]

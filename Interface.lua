@@ -458,10 +458,10 @@ local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, 
 	end
 
 	if updateFields or updatePreviewText then
-		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
 		assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 	elseif updatePreviewText then
-		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
 		assignmentEditor.previewLabel:SetText(previewText, 0)
 	end
 
@@ -556,7 +556,7 @@ local function CreateAssignmentEditor()
 	return assignmentEditor
 end
 
-local function HandleImportNoteFromString(importType)
+local function HandleImportPlanFromString(importType)
 	local text = Private.importEditBox:GetText()
 	Private.importEditBox:Release()
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -564,12 +564,14 @@ local function HandleImportNoteFromString(importType)
 	local plans = AddOn.db.profile.plans
 
 	if importType == "FromStringOverwrite" then
-		bossDungeonEncounterID = Private:Note(lastOpenPlan, bossDungeonEncounterID, text) or bossDungeonEncounterID
+		bossDungeonEncounterID = Private:ImportPlanFromNote(lastOpenPlan, bossDungeonEncounterID, text)
+			or bossDungeonEncounterID
 	elseif importType == "FromStringNew" then
 		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 		local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
 		plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
-		bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text) or bossDungeonEncounterID
+		bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
+			or bossDungeonEncounterID
 		AddOn.db.profile.lastOpenPlan = newPlanName
 		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 	end
@@ -598,7 +600,7 @@ local function CreateImportEditBox(importType)
 		Private.importEditBox = nil
 	end)
 	Private.importEditBox:SetCallback("OkayButtonClicked", function()
-		HandleImportNoteFromString(importType)
+		HandleImportPlanFromString(importType)
 	end)
 	Private.importEditBox:HighlightTextAndFocus()
 end
@@ -900,7 +902,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 		if not Private.assignmentEditor then
 			Private.assignmentEditor = CreateAssignmentEditor()
 		end
-		local previewText = utilities.CreateReminderProgressBarText(assignment, GetCurrentRoster())
+		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
 		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 		local timeline = Private.mainFrame.timeline
 		if timeline then
@@ -1020,7 +1022,7 @@ local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time
 	end
 end
 
-local function HandleCreateNewNoteButtonClicked()
+local function HandleCreateNewPlanButtonClicked()
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
@@ -1116,13 +1118,16 @@ local function ImportPlan(importType)
 				local text = VMRT.Note.Text1
 				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 				if importType == "FromMRTOverwrite" then
-					bossDungeonEncounterID = Private:Note(AddOn.db.profile.lastOpenPlan, bossDungeonEncounterID, text)
-						or bossDungeonEncounterID
+					bossDungeonEncounterID = Private:ImportPlanFromNote(
+						AddOn.db.profile.lastOpenPlan,
+						bossDungeonEncounterID,
+						text
+					) or bossDungeonEncounterID
 				elseif importType == "FromMRTNew" then
 					local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 					local newPlanName =
 						utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName --[[@as string]])
-					bossDungeonEncounterID = Private:Note(newPlanName, bossDungeonEncounterID, text)
+					bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
 					AddOn.db.profile.lastOpenPlan = newPlanName
 					interfaceUpdater.AddPlanToDropdown(newPlanName, true)
@@ -1136,7 +1141,7 @@ local function ImportPlan(importType)
 	end
 end
 
-local function HandleExportButtonClicked()
+local function HandleExportPlanButtonClicked()
 	if not Private.exportEditBox then
 		Private.exportEditBox = AceGUI:Create("EPEditBox")
 		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
@@ -1147,7 +1152,7 @@ local function HandleExportButtonClicked()
 			Private.exportEditBox = nil
 		end)
 	end
-	local text = Private:ExportPlan(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan])
+	local text = Private:ExportPlanToNote(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan])
 	if text then
 		Private.exportEditBox:SetText(text)
 		Private.exportEditBox:HighlightTextAndFocus()
@@ -1198,7 +1203,7 @@ function Private:CreateInterface()
 		end
 		if VMRT and VMRT.Note and VMRT.Note.Text1 then
 			local text = VMRT.Note.Text1
-			bossDungeonEncounterID = Private:Note(defaultPlanName, bossDungeonEncounterID, text)
+			bossDungeonEncounterID = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, text)
 				or bossDungeonEncounterID
 		end
 		if not plans[defaultPlanName] then -- MRT not loaded
@@ -1338,11 +1343,11 @@ function Private:CreateInterface()
 			return
 		end
 		if value == "New Plan" then
-			HandleCreateNewNoteButtonClicked()
+			HandleCreateNewPlanButtonClicked()
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
-			HandleExportButtonClicked()
+			HandleExportPlanButtonClicked()
 		elseif value == "Delete Current Plan" then
 			local messageBox = interfaceUpdater.CreateMessageBox(
 				L["Delete Plan Confirmation"],
@@ -1740,7 +1745,6 @@ function Private:CreateInterface()
 end
 
 function Private:InitializeInterface()
-	utilities.CreatePrettyClassNames()
 	spellDropdownItems = utilities.CreateSpellAssignmentDropdownItems()
 	assignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems()
 	classDropdownItems = utilities.CreateClassDropdownItemData()
