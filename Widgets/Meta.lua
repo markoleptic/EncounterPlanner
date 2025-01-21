@@ -81,6 +81,9 @@
 ---@alias EPPhaseLengthEditorType
 ---|"EPPhaseLengthEditor"
 
+---@alias EPNewPlanDialogType
+---|"EPNewPlanDialog"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -102,6 +105,7 @@
 ---| EPColorPickerType
 ---| EPMessageBoxType
 ---| EPPhaseLengthEditor
+---| EPNewPlanDialog
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -221,6 +225,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPPhaseLengthEditorType
 ---@return EPPhaseLengthEditor
+function AceGUI:Create(type) end
+
+---@param type EPNewPlanDialogType
+---@return EPNewPlanDialog
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

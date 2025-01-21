@@ -297,4 +297,5 @@ L["Glows the unit frame of the target at assignment time. If the assignment has 
 	true
 L["Glow Frame for Targeted Spells"] = true
 L["Duplicate Plan"] = true
+L["Create"] = true
 L["in"] = true
