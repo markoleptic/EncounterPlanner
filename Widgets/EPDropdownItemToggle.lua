@@ -198,10 +198,8 @@ function EPItemBase.Create(type)
 
 	local highlight = frame:CreateTexture(type .. "Highlight" .. count, "OVERLAY")
 	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
-	highlight:SetTexelSnappingBias(0.0)
-	highlight:SetSnapToPixelGrid(false)
-	highlight:SetPoint("TOPLEFT", 1, -1)
-	highlight:SetPoint("BOTTOMRIGHT", -1, 1)
+	highlight:SetPoint("TOPLEFT", 1, 0)
+	highlight:SetPoint("BOTTOMRIGHT", -1, 0)
 	highlight:SetBlendMode("ADD")
 	highlight:Hide()
 

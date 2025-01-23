@@ -162,7 +162,6 @@ do
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h, self.maxHeight))
 		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
-		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -249,9 +248,6 @@ do
 
 		if self.autoWidth then
 			self.frame:SetWidth(maxItemWidth)
-			self.itemFrame:SetWidth(maxItemWidth)
-		else
-			self.itemFrame:SetWidth(self.frame:GetWidth())
 		end
 
 		FixStrata("TOOLTIP", self.frame, self.frame:GetChildren())
@@ -341,7 +337,6 @@ do
 
 		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
 		self:SetScroll(newVerticalScroll)
-		self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 	end
 
 	local function Sort(self)
@@ -365,15 +360,14 @@ do
 		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
 		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 		scrollFrame:EnableMouseWheel(true)
-		scrollFrame:SetToplevel(true)
 		scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 
 		local itemFrame = CreateFrame("Frame", Type .. "ItemFrame" .. count, scrollFrame)
 		itemFrame:SetWidth(defaultPulloutWidth)
-		itemFrame:SetToplevel(true)
 		itemFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 		scrollFrame:SetScrollChild(itemFrame)
 		itemFrame:SetPoint("TOPLEFT")
+		itemFrame:SetPoint("RIGHT")
 
 		local scrollIndicatorFrame =
 			CreateFrame("Frame", Type .. "ScrollIndicatorFrame" .. count, frame, "BackdropTemplate")
