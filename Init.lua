@@ -809,6 +809,7 @@ Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
 Private.messageBox = nil --[[@as EPMessageBox]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
+Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 
 LSM:Register(

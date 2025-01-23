@@ -751,6 +751,66 @@ local function CreatePhaseLengthEditor()
 	end
 end
 
+local function CreateNewPlanDialog(bossDropdownData)
+	if not Private.newPlanDialog then
+		local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
+		newPlanDialog:SetCallback("OnRelease", function()
+			Private.newPlanDialog = nil
+		end)
+		newPlanDialog:SetCallback("CloseButtonClicked", function()
+			Private.newPlanDialog:Release()
+		end)
+		newPlanDialog:SetCallback("CancelButtonClicked", function()
+			Private.newPlanDialog:Release()
+		end)
+		newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
+			local newBossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+			widget:SetPlanNameLineEditText(utilities.CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
+			widget:SetCreateButtonEnabled(true)
+		end)
+		newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
+			planName = planName:trim()
+			if planName == "" or AddOn.db.profile.plans[planName] then
+				widget:SetCreateButtonEnabled(false)
+			else
+				if Private.assignmentEditor then
+					Private.assignmentEditor:Release()
+				end
+				if Private.rosterEditor then
+					Private.rosterEditor:Release()
+				end
+				widget:Release()
+				local plans = AddOn.db.profile.plans
+				plans[planName] = Private.classes.Plan:New(nil, planName)
+				AddOn.db.profile.lastOpenPlan = planName
+				bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[planName])
+				interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+				interfaceUpdater.AddPlanToDropdown(planName, true)
+			end
+		end)
+		newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
+			planName = planName:trim()
+			if planName == "" or AddOn.db.profile.plans[planName] then
+				widget:SetCreateButtonEnabled(false)
+			else
+				widget:SetCreateButtonEnabled(true)
+			end
+		end)
+		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		newPlanDialog.frame:SetParent(UIParent)
+		newPlanDialog.frame:SetFrameLevel(80)
+		newPlanDialog:SetBossDropdownItems(bossDropdownData, bossDungeonEncounterID)
+		newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		newPlanDialog:Resize()
+		newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
+		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+		newPlanDialog:SetPlanNameLineEditText(
+			utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName, AddOn.db.profile.lastOpenPlan)
+		)
+		Private.newPlanDialog = newPlanDialog
+	end
+end
+
 ---@param value number|string
 local function HandleBossDropdownValueChanged(value)
 	if Private.messageBox then
@@ -1186,6 +1246,9 @@ local function CleanUp()
 	if Private.phaseLengthEditor then
 		Private.phaseLengthEditor:Release()
 	end
+	if Private.newPlanDialog then
+		Private.newPlanDialog:Release()
+	end
 end
 
 function Private:CreateInterface()
@@ -1211,6 +1274,22 @@ function Private:CreateInterface()
 			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
 		end
 		AddOn.db.profile.lastOpenPlan = defaultPlanName
+	end
+
+	local bossDropdownData = {}
+	for _, raidInstance in pairs(Private.raidInstances) do
+		EJ_SelectInstance(raidInstance.journalInstanceID)
+		local instanceName, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
+		local instanceIconText = format("|T%s:16|t %s", buttonImage2, instanceName)
+		local instanceDropdownData =
+			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+		for _, boss in ipairs(raidInstance.bosses) do
+			EJ_SelectEncounter(boss.journalEncounterID)
+			local _, bossName, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+			local iconText = format("|T%s:16|t %s", iconImage, bossName)
+			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
+		end
+		tinsert(bossDropdownData, instanceDropdownData)
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -1343,7 +1422,7 @@ function Private:CreateInterface()
 			return
 		end
 		if value == "New Plan" then
-			HandleCreateNewPlanButtonClicked()
+			CreateNewPlanDialog(bossDropdownData)
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
@@ -1510,21 +1589,6 @@ function Private:CreateInterface()
 	bossDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
 	bossDropdown:SetHeight(topContainerWidgetHeight)
 	bossDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
-	local bossDropdownData = {}
-	for _, raidInstance in pairs(Private.raidInstances) do
-		EJ_SelectInstance(raidInstance.journalInstanceID)
-		local instanceName, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
-		local instanceIconText = format("|T%s:16|t %s", buttonImage2, instanceName)
-		local instanceDropdownData =
-			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-		for _, boss in ipairs(raidInstance.bosses) do
-			EJ_SelectEncounter(boss.journalEncounterID)
-			local _, bossName, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
-			local iconText = format("|T%s:16|t %s", iconImage, bossName)
-			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
-		end
-		tinsert(bossDropdownData, instanceDropdownData)
-	end
 	bossDropdown:AddItems(bossDropdownData, "EPDropdownItemToggle")
 	bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		HandleBossDropdownValueChanged(value)

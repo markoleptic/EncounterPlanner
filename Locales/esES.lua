@@ -299,3 +299,6 @@ L["Glow Frame for Targeted Spells"] = true
 L["Duplicate Plan"] = true
 L["Create"] = true
 L["in"] = true
+L["Boss:"] = true
+L["Plan Name:"] = true
+L["Create New Plan"] = true
