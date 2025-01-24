@@ -64,6 +64,7 @@ end
 ---@field spellID number|nil
 ---@field enabled boolean
 ---@field showIcon boolean
+---@field value any
 ---@field horizontalTextPadding {left: number, right:number}
 ---@field iconPadding {left:number, top:number, right:number, bottom:number}
 
@@ -80,8 +81,13 @@ end
 
 ---@param self EPLabel
 local function OnAcquire(self)
-	self.horizontalTextPadding = defaultTextPadding
-	self.iconPadding = defaultIconPadding
+	self.horizontalTextPadding = { left = defaultTextPadding.left, right = defaultTextPadding.right }
+	self.iconPadding = {
+		left = defaultIconPadding.left,
+		top = defaultIconPadding.top,
+		right = defaultIconPadding.right,
+		bottom = defaultIconPadding.bottom,
+	}
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
 	self:SetFontSize(defaultFontHeight)
@@ -97,6 +103,7 @@ local function OnRelease(self)
 	self.horizontalTextPadding = nil
 	self.iconPadding = nil
 	self.spellID = nil
+	self.value = nil
 end
 
 ---@param self EPLabel
@@ -124,8 +131,10 @@ end
 ---@param self EPLabel
 ---@param text string
 ---@param paddingX number|nil
-local function SetText(self, text, paddingX)
+---@param value? any
+local function SetText(self, text, paddingX, value)
 	self.text:SetText(text or "")
+	self.value = value
 	self.horizontalTextPadding.left = paddingX or self.horizontalTextPadding.left
 	self.horizontalTextPadding.right = paddingX or self.horizontalTextPadding.right
 	UpdateIconAndTextAnchors(self)
@@ -159,6 +168,12 @@ end
 ---@return string
 local function GetText(self)
 	return self.text:GetText()
+end
+
+---@param self EPLabel
+---@return any
+local function GetValue(self)
+	return self.value
 end
 
 ---@param self EPLabel
@@ -207,6 +222,7 @@ local function Constructor()
 		SetFontSize = SetFontSize,
 		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		GetText = GetText,
+		GetValue = GetValue,
 		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetFrameWidthFromText = SetFrameWidthFromText,
 		SetHorizontalTextPadding = SetHorizontalTextPadding,
