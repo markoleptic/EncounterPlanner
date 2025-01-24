@@ -23,20 +23,11 @@ local dropdownHorizontalPadding = 4
 local defaultFontSize = 14
 local contentFramePadding = { x = 15, y = 15 }
 local otherPadding = { x = 10, y = 10 }
-local buttonFrameHeight = 28
 local windowBarHeight = 28
-local maxNumberOfRecentItems = 10
-local defaultButtonHeight = 24
-local indentWidth = 20
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local buttonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
-local labelWidgetSpacing = { 2, 2 }
-local containerContainerSpacing = { 0, 4 }
-local closeButtonIconPadding = { 2, 2 }
 local title = L["Create New Plan"]
-local spacingBetweenOptions = 8
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -53,20 +44,7 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local buttonFrameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local lineBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	edgeSize = 0,
-	insets = { left = 0, right = 0, top = spacingBetweenOptions, bottom = spacingBetweenOptions },
-}
+
 ---@class EPNewPlanDialog : AceGUIWidget
 ---@field frame table|Frame|BackdropTemplate
 ---@field type string
