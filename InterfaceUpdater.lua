@@ -48,11 +48,12 @@ end
 
 do
 	local lastBossDungeonEncounterID = 0
+	local instanceAndBossPadding = 4
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
 		local key = tonumber(abilityEntry:GetKey())
-		local boss = bossUtilities.GetBoss(Private.mainFrame.bossSelectDropdown:GetValue())
+		local boss = bossUtilities.GetBoss(Private.mainFrame.bossLabel:GetValue())
 		if key and boss then
 			local bossDungeonEncounterID = boss.dungeonEncounterID
 			local atLeastOneSelected = false
@@ -75,13 +76,18 @@ do
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
-		local bossDropdown = Private.mainFrame.bossSelectDropdown
-		if bossAbilityContainer and bossDropdown then
+		local bossLabel = Private.mainFrame.bossLabel
+		if bossAbilityContainer and bossLabel then
 			if AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] == nil then
 				AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] = {}
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
-			bossDropdown:SetValue(boss.dungeonEncounterID)
+			local raidInstance = Private.raidInstances[boss.instanceID]
+			Private.mainFrame.instanceLabel:SetText(raidInstance.name, instanceAndBossPadding, raidInstance.instanceID)
+			Private.mainFrame.instanceLabel:SetIcon(raidInstance.icon, 0, 0, 0, 0, 0)
+			bossLabel:SetText(boss.name, instanceAndBossPadding, boss.dungeonEncounterID)
+			bossLabel:SetIcon(boss.icon, 0, 0, 0, 0, 0)
+			print(bossLabel.frame:GetHeight(), bossLabel.iconPadding.top, bossLabel.iconPadding.bottom)
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}
 			local bossAbilitySelectItems = {}
@@ -202,7 +208,7 @@ do
 					end
 				end
 			end
-			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
@@ -213,7 +219,7 @@ do
 	---@param collapsed boolean
 	local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] = collapsed
-		local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+		local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 		end
@@ -248,7 +254,7 @@ do
 					end
 				end
 			end
-			local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end

@@ -302,3 +302,6 @@ L["in"] = true
 L["Boss:"] = true
 L["Plan Name:"] = true
 L["Create New Plan"] = true
+L["Change Boss"] = true
+L["Edit Current Plan Roster"] = true
+L["Edit Shared Roster"] = true

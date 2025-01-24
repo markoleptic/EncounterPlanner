@@ -47,7 +47,8 @@ local lastExecutionTime = 0
 ---@field closeButtonMinimizeFrame EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
----@field bossSelectDropdown EPDropdown
+---@field instanceLabel EPLabel
+---@field bossLabel EPLabel
 ---@field bossMenuButton EPDropdown
 ---@field planDropdown EPDropdown
 ---@field timeline EPTimeline
@@ -178,7 +179,8 @@ local function OnRelease(self)
 	self.closeButtonMinimizeFrame = nil
 	self.collapseAllButton = nil
 	self.expandAllButton = nil
-	self.bossSelectDropdown = nil
+	self.instanceLabel = nil
+	self.bossLabel = nil
 	self.bossMenuButton = nil
 	self.planDropdown = nil
 	self.timeline = nil

@@ -135,33 +135,7 @@ function AddOn:OnProfileShutdown()
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
-	if Private.messageAnchor then
-		Private.messageAnchor:Release()
-	end
-	if Private.progressBarAnchor then
-		Private.progressBarAnchor:Release()
-	end
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.rosterEditor then
-		Private.rosterEditor:Release()
-	end
-	if Private.importEditBox then
-		Private.importEditBox:Release()
-	end
-	if Private.exportEditBox then
-		Private.exportEditBox:Release()
-	end
-	if Private.phaseLengthEditor then
-		Private.phaseLengthEditor:Release()
-	end
-	if Private.exportEditBox then
-		Private.exportEditBox:Release()
-	end
-	if Private.messageBox then
-		Private.messageBox:Release()
-	end
+	Private:CloseAnchorsAndDialogs()
 end
 
 ---@param input string|nil

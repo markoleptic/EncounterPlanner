@@ -1699,8 +1699,8 @@ do
 					if type(key) == "string" then
 						if key ~= GetPreferences().assignmentSortType then
 							GetPreferences().assignmentSortType = key
-							if Private.mainFrame and Private.mainFrame.bossSelectDropdown then
-								local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
+							if Private.mainFrame and Private.mainFrame.bossLabel then
+								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 								if bossDungeonEncounterID then
 									interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 								end

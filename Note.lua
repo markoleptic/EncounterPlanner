@@ -391,54 +391,51 @@ end
 
 -- Exports a plan in MRT/KAZE format.
 ---@param plan Plan
+---@param bossDungeonEncounterID integer
 ---@return string|nil
-function Private:ExportPlanToNote(plan)
-	local bossDungeonEncounterID = Private.mainFrame.bossSelectDropdown:GetValue()
-	if bossDungeonEncounterID then
-		local timelineAssignments = utilities.CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
-		sort(timelineAssignments, function(a, b)
-			if a.startTime == b.startTime then
-				return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
-			end
-			return a.startTime < b.startTime
-		end)
+function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
+	local timelineAssignments = utilities.CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
+	sort(timelineAssignments, function(a, b)
+		if a.startTime == b.startTime then
+			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+		end
+		return a.startTime < b.startTime
+	end)
 
-		local stringTable = {}
-		local inStringTable = {}
-		for _, timelineAssignment in ipairs(timelineAssignments) do
-			local assignment = timelineAssignment.assignment
-			local timeAndOptionsString, assignmentString = "", ""
-			if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
-				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
-				assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-			elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
-				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
-				assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-			elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
-				-- Not yet supported
-			end
-			if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
-				local stringTableIndex = inStringTable[timeAndOptionsString]
-				if stringTableIndex then
-					stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
-				else
-					tinsert(stringTable, timeAndOptionsString .. assignmentString)
-					inStringTable[timeAndOptionsString] = #stringTable
-				end
+	local stringTable = {}
+	local inStringTable = {}
+	for _, timelineAssignment in ipairs(timelineAssignments) do
+		local assignment = timelineAssignment.assignment
+		local timeAndOptionsString, assignmentString = "", ""
+		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
+			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
+			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
+		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
+			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
+			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
+		elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
+			-- Not yet supported
+		end
+		if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
+			local stringTableIndex = inStringTable[timeAndOptionsString]
+			if stringTableIndex then
+				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
+			else
+				tinsert(stringTable, timeAndOptionsString .. assignmentString)
+				inStringTable[timeAndOptionsString] = #stringTable
 			end
 		end
-
-		for _, line in pairs(plan.content) do
-			tinsert(stringTable, line)
-		end
-
-		if #stringTable == 0 then
-			return nil
-		end
-
-		return concat(stringTable, "\n")
 	end
-	return nil
+
+	for _, line in pairs(plan.content) do
+		tinsert(stringTable, line)
+	end
+
+	if #stringTable == 0 then
+		return nil
+	end
+
+	return concat(stringTable, "\n")
 end
 
 -- Clears the current assignments and repopulates it from a string of assignments (note). Updates the roster.

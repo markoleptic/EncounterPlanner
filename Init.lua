@@ -189,11 +189,13 @@ Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 ---@field journalInstanceID number The journal instance ID of the raid or dungeon. All bosses share the same JournalInstanceID.
 ---@field instanceID number The instance ID for the zone. All bosses share the same instanceID.
 ---@field bosses table<integer, Boss> List of bosses for the instance.
+---@field icon integer Button image 2 from EJ_GetInstanceInfo.
 Private.classes.RaidInstance = {
 	name = "",
 	journalInstanceID = 0,
 	instanceID = 0,
 	bosses = {},
+	icon = 0,
 }
 
 -- A raid or dungeon boss containing abilities, phases, etc.
@@ -208,6 +210,7 @@ Private.classes.RaidInstance = {
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.
+---@field icon integer Icon image from EJ_GetCreatureInfo.
 Private.classes.Boss = {
 	name = "",
 	bossID = {},
@@ -219,6 +222,7 @@ Private.classes.Boss = {
 	sortedAbilityIDs = {},
 	abilityInstances = {},
 	treatAsSinglePhase = nil,
+	icon = 0,
 }
 
 -- A stage/phase in a boss encounter.
