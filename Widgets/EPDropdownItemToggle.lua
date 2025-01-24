@@ -190,6 +190,7 @@ function EPItemBase.Create(type)
 	text:SetJustifyH("LEFT")
 	text:SetJustifyV("MIDDLE")
 	text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
+	text:SetPoint("RIGHT", frame, "RIGHT", -textOffsetX, 0)
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
@@ -277,9 +278,7 @@ do
 	local function UpdateCheckVisibility(self)
 		if self.selected and not self.neverShowItemsAsSelected then
 			self.check:Show()
-			self.text:SetPoint("RIGHT", self.check, "LEFT", -textOffsetX / 2, 0)
 		else
-			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textOffsetX, 0)
 			self.check:Hide()
 		end
 	end
