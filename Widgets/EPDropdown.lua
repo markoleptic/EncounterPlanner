@@ -566,14 +566,13 @@ do
 	local function HandleMenuItemValueChanged(dropdownItem, _, selected, value, text)
 		local self = dropdownItem:GetUserDataTable().obj
 		if self.multiselect then
-			self:Fire("OnValueChanged", value, selected)
+			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue())
 		else
 			self:SetValue(value)
 			if self.showPathText then
-				--print(dropdownItem:GetText())
 				self:SetText(text)
 			end
-			self:Fire("OnValueChanged", value)
+			self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
 			if self.open then
 				self.pullout:Close()
 			end
