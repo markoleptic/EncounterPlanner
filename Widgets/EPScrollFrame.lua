@@ -226,7 +226,6 @@ local function SetScrollChild(self, child, needsWidthSetting, enableEdgeScrollin
 	self.scrollFrame:SetScrollChild(child)
 
 	child:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
-	child:SetPoint("RIGHT", self.scrollFrame, "RIGHT")
 
 	if needsWidthSetting then
 		child:SetWidth(self.scrollFrame:GetWidth())
@@ -264,9 +263,6 @@ local function UpdateVerticalScroll(self, delta)
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
 	local scrollChild = self.scrollFrame:GetScrollChild()
 	if scrollChild then
-		if self.setScrollChildWidth then
-			scrollChild:SetWidth(self.scrollFrame:GetWidth())
-		end
 		if not delta then
 			delta = 0
 		end
@@ -286,6 +282,9 @@ local function UpdateVerticalScroll(self, delta)
 			local currentScroll = self.scrollFrame:GetVerticalScroll()
 			local newVerticalScroll = Clamp(currentScroll - (delta * scrollMultiplier), 0, maxScroll)
 			self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+		end
+		if self.setScrollChildWidth then
+			scrollChild:SetWidth(self.scrollFrame:GetWidth())
 		end
 	end
 end
