@@ -54,17 +54,11 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local categoryTextColor = { 1, 0.82, 0, 1 }
 local labelTextColor = { 1, 1, 1, 1 }
-local scrollBarWidth = 15
-local thumbPadding = { x = 2, y = 2 }
-local totalVerticalThumbPadding = 2 * thumbPadding.y
-local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
-local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
-local minThumbSize = 20
 local frameChooserContainerSpacing = { 8, 0 }
 local doubleLineEditContainerSpacing = { 8, 0 }
 local radioButtonGroupSpacing = { 8, 0 }
+local activeContainerPadding = { 10, 10, 10, 10 }
 local categoryPadding = { 15, 15, 15, 15 }
-local scrollMultiplier = 25
 
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -177,53 +171,6 @@ local function SetButtonWidths(container)
 	for _, child in ipairs(container.children) do
 		child:SetWidth(maxWidth)
 	end
-end
-
----@param self EPOptions
-local function HandleVerticalThumbUpdate(self)
-	if not self.verticalThumbIsDragging then
-		return
-	end
-
-	local currentOffset = self.verticalThumbOffsetWhenThumbClicked
-	local currentHeight = self.verticalThumbHeightWhenThumbClicked
-	local currentScrollBarHeight = self.verticalScrollBarHeightWhenThumbClicked
-	local _, yPosition = GetCursorPosition()
-	local newOffset = self.scrollBar:GetTop() - (yPosition / UIParent:GetEffectiveScale()) - currentOffset
-
-	local minAllowedOffset = thumbPadding.y
-	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
-	newOffset = max(newOffset, minAllowedOffset)
-	newOffset = min(newOffset, maxAllowedOffset)
-	self.thumb:SetPoint("TOP", 0, -newOffset)
-
-	local scrollFrame = self.scrollFrame
-	local scrollFrameHeight = scrollFrame:GetHeight()
-	local timelineHeight = self.activeContainer.frame:GetHeight()
-	local maxScroll = timelineHeight - scrollFrameHeight
-
-	-- Calculate the scroll frame's vertical scroll based on the thumb's position
-	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
-	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-	scrollFrame:SetVerticalScroll(max(0, scrollOffset))
-end
-
----@param self EPOptions
-local function HandleVerticalThumbMouseDown(self)
-	local _, y = GetCursorPosition()
-	self.verticalThumbOffsetWhenThumbClicked = self.thumb:GetTop() - (y / UIParent:GetEffectiveScale())
-	self.verticalScrollBarHeightWhenThumbClicked = self.scrollBar:GetHeight()
-	self.verticalThumbHeightWhenThumbClicked = self.thumb:GetHeight()
-	self.verticalThumbIsDragging = true
-	self.thumb:SetScript("OnUpdate", function()
-		HandleVerticalThumbUpdate(self)
-	end)
-end
-
----@param self EPOptions
-local function HandleVerticalThumbMouseUp(self)
-	self.verticalThumbIsDragging = false
-	self.thumb:SetScript("OnUpdate", nil)
 end
 
 ---@param radioButton EPRadioButton
@@ -1138,6 +1085,7 @@ local function PopulateActiveTab(self, tab)
 	self.activeContainer:AddChildren(unpack(activeContainerChildren))
 	RefreshEnabledStates(self.refreshMap)
 	self:Resize()
+	self.scrollFrame:UpdateThumbPositionAndSize()
 end
 
 ---@alias EPSettingOptionType
@@ -1209,6 +1157,7 @@ end
 ---@field tabCategories table<string, table<integer, string>>
 ---@field updateIndices table<string, table<integer, table<integer, fun()>>>
 ---@field refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
+---@field scrollFrame EPScrollFrame
 
 ---@param self EPOptions
 local function OnAcquire(self)
@@ -1241,47 +1190,19 @@ local function OnAcquire(self)
 	self.tabTitleContainer.frame:SetParent(self.frame)
 	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y)
 
-	self.scrollBar:ClearAllPoints()
-	self.scrollBar:SetParent(self.frame)
-	self.scrollBar:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
-	self.scrollBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -contentFramePadding.x, contentFramePadding.y)
-	self.scrollBar:Show()
-
-	self.thumb:ClearAllPoints()
-	self.thumb:SetParent(self.scrollBar)
-	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
-	self.thumb:SetScript("OnMouseDown", function()
-		HandleVerticalThumbMouseDown(self)
-	end)
-	self.thumb:SetScript("OnMouseUp", function()
-		HandleVerticalThumbMouseUp(self)
-	end)
-	self.thumb:Show()
-
-	self.scrollFrame:ClearAllPoints()
-	self.scrollFrame:SetParent(self.frame)
-	self.scrollFrame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
-	self.scrollFrame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", contentFramePadding.x, contentFramePadding.y)
-	self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
-	self.scrollFrame:Show()
+	self.scrollFrame = AceGUI:Create("EPScrollFrame")
+	self.scrollFrame.frame:SetParent(self.frame)
+	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", contentFramePadding.x, 0)
+	self.scrollFrame.frame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
+	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
+	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, contentFramePadding.y)
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
-	self.activeContainer.frame:SetParent(self.scrollFrame)
+	self.activeContainer:SetPadding(unpack(activeContainerPadding))
 	self.activeContainer.frame:EnableMouse(true)
-	self.activeContainer.frame:SetScript("OnMouseWheel", function(_, delta)
-		local scrollFrameHeight = self.scrollFrame:GetHeight()
-		local timelineFrameHeight = self.activeContainer.frame:GetHeight()
-		local maxVerticalScroll = timelineFrameHeight - scrollFrameHeight
-		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
-		local newVerticalScroll = max(min(currentVerticalScroll - (delta * scrollMultiplier), maxVerticalScroll), 0)
-		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
-		self:UpdateVerticalScroll()
-	end)
-	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]])
-	self.activeContainer.frame:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
-	self.activeContainer.frame:SetPoint("RIGHT", self.scrollFrame, "RIGHT")
+	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
 end
 
 ---@param self EPOptions
@@ -1297,43 +1218,14 @@ local function OnRelease(self)
 	self.activeContainer:Release()
 	self.activeContainer = nil
 
-	self.scrollFrame:ClearAllPoints()
-	self.scrollFrame:SetParent(UIParent)
-	self.scrollFrame:Hide()
-
-	self.scrollBar:ClearAllPoints()
-	self.scrollBar:SetParent(UIParent)
-	self.scrollBar:Hide()
-
-	self.thumb:ClearAllPoints()
-	self.thumb:SetParent(UIParent)
-	self.thumb:Hide()
-
-	self.thumb:SetScript("OnMouseDown", nil)
-	self.thumb:SetScript("OnMouseUp", nil)
-	self.thumb:SetScript("OnUpdate", nil)
+	self.scrollFrame:Release()
+	self.scrollFrame = nil
 
 	self.optionTabs = nil
 	self.activeTab = nil
 	self.tabCategories = nil
 	self.updateIndices = nil
 	self.refreshMap = nil
-end
-
----@param self EPOptions
-local function UpdateVerticalScroll(self)
-	local scrollFrameHeight = self.scrollFrame:GetHeight()
-	local timelineHeight = self.activeContainer.frame:GetHeight()
-	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
-	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
-
-	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
-	thumbHeight = min(max(thumbHeight, minThumbSize), availableThumbHeight)
-	self.thumb:SetHeight(thumbHeight)
-
-	local maxThumbPosition = availableThumbHeight - thumbHeight
-	local verticalThumbPosition = max(0, min(maxThumbPosition, (scrollPercentage * maxThumbPosition))) + thumbPadding.y
-	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
 ---@param self EPOptions
@@ -1398,29 +1290,12 @@ local function Resize(self)
 	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
 	local paddingHeight = contentFramePadding.y * 3
 
-	local width = contentFramePadding.x * 2
-	local heightDifference = containerHeight - self.scrollFrame:GetHeight()
-	if heightDifference <= 0.0 then
-		self.scrollFrame:SetVerticalScroll(0)
-		self.scrollFrame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
-		self.scrollBar:Hide()
-	else
-		self.scrollBar:Show()
-		self.scrollFrame:SetPoint("RIGHT", self.scrollBar, "LEFT", -contentFramePadding.x / 2.0, 0)
-		width = width + self.scrollBar:GetWidth() + contentFramePadding.x * 0.5
-		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
-		if scrollPercentage > 1.0 then
-			self.scrollFrame:SetVerticalScroll(heightDifference)
-		end
-	end
-
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()
-	local activeWidth = self.activeContainer.frame:GetWidth()
-	width = width + max(tabWidth, activeWidth)
+	local activeWidth = self.scrollFrame.frame:GetWidth()
+	local width = contentFramePadding.x * 2 + max(tabWidth, activeWidth)
 
 	self.frame:SetSize(width, windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight)
 	self.activeContainer:DoLayout()
-	self:UpdateVerticalScroll()
 end
 
 local function Constructor()
@@ -1462,8 +1337,6 @@ local function Constructor()
 		frame:SetPoint("TOP", x - UIParent:GetWidth() / 2.0 + frame:GetWidth() / 2.0, -(UIParent:GetHeight() - y))
 	end)
 
-	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
-
 	local frameChooserFrame = CreateFrame("Frame", nil, frame)
 	frameChooserFrame:Hide()
 	local frameChooserBox = CreateFrame("Frame", nil, frameChooserFrame, "BackdropTemplate")
@@ -1476,48 +1349,20 @@ local function Constructor()
 	frameChooserBox:SetBackdropBorderColor(0, 1, 0)
 	frameChooserBox:Hide()
 
-	local verticalScrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
-	verticalScrollBar:SetWidth(scrollBarWidth)
-	verticalScrollBar:SetPoint("TOPRIGHT")
-	verticalScrollBar:SetPoint("BOTTOMRIGHT")
-
-	local verticalScrollBarBackground =
-		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
-	verticalScrollBarBackground:SetAllPoints()
-	verticalScrollBarBackground:SetColorTexture(unpack(verticalScrollBackgroundColor))
-
-	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, verticalScrollBar)
-	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
-	verticalThumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), verticalScrollBar:GetHeight() - 2 * thumbPadding.y)
-	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
-
-	local verticalThumbBackground =
-		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
-	verticalThumbBackground:SetAllPoints()
-	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
-
 	---@class EPOptions
 	local widget = {
 		type = Type,
 		count = count,
 		frame = frame,
-		scrollFrame = scrollFrame,
 		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		AddOptionTab = AddOptionTab,
 		SetCurrentTab = SetCurrentTab,
-		UpdateVerticalScroll = UpdateVerticalScroll,
 		UpdateOptions = UpdateOptions,
 		Resize = Resize,
 		frameChooserFrame = frameChooserFrame,
 		frameChooserBox = frameChooserBox,
-		scrollBar = verticalScrollBar,
-		thumb = verticalThumb,
-		verticalThumbOffsetWhenThumbClicked = 0,
-		verticalScrollBarHeightWhenThumbClicked = 0,
-		verticalThumbHeightWhenThumbClicked = 0,
-		verticalThumbIsDragging = false,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)
