@@ -1166,7 +1166,8 @@ local function OnAcquire(self)
 	self.tabCategories = {}
 	self.updateIndices = {}
 	self.refreshMap = {}
-	self.frame:Show()
+
+	self.frame:SetSize(frameWidth, frameHeight)
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
@@ -1192,6 +1193,7 @@ local function OnAcquire(self)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetParent(self.frame)
+	self.scrollFrame.frame:SetSize(frameWidth, frameHeight)
 	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", contentFramePadding.x, 0)
 	self.scrollFrame.frame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
 	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
@@ -1203,6 +1205,8 @@ local function OnAcquire(self)
 	self.activeContainer:SetPadding(unpack(activeContainerPadding))
 	self.activeContainer.frame:EnableMouse(true)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
+
+	self.frame:Show()
 end
 
 ---@param self EPOptions
@@ -1289,12 +1293,16 @@ local function Resize(self)
 	local containerHeight = self.activeContainer.frame:GetHeight()
 	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
 	local paddingHeight = contentFramePadding.y * 3
+	local height = windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight
 
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()
-	local activeWidth = self.scrollFrame.frame:GetWidth()
+	local activeWidth = self.activeContainer.frame:GetWidth() + 4
+	if self.scrollFrame.scrollBar:IsShown() then
+		activeWidth = activeWidth + self.scrollFrame.scrollBarScrollFramePadding + self.scrollFrame.scrollBar:GetWidth()
+	end
 	local width = contentFramePadding.x * 2 + max(tabWidth, activeWidth)
 
-	self.frame:SetSize(width, windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight)
+	self.frame:SetSize(width, height)
 	self.activeContainer:DoLayout()
 end
 
