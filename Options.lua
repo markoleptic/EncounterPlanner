@@ -3,6 +3,9 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+---@class Constants
+local constants = Private.constants
+
 ---@class OptionsModule : AceModule
 local OptionsModule = Private.addOn.optionsModule
 
@@ -31,6 +34,7 @@ local tonumber = tonumber
 local type = type
 local unpack = unpack
 
+local kOptionsMenuFrameLevel = constants.frameLevels.kOptionsMenuFrameLevel
 local previewDuration = 15.0
 
 local MouseButtonKeyBindingValues = {
@@ -1875,7 +1879,7 @@ function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
 	optionsMenu.frame:SetParent(UIParent)
 	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	optionsMenu.frame:SetFrameLevel(90)
+	optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
 	optionsMenu:SetCallback("OnRelease", function()
 		if Private.messageAnchor then
 			Private.messageAnchor:Release()

@@ -39,6 +39,7 @@ local UnitGUID = UnitGUID
 local unpack = unpack
 local wipe = wipe
 
+local kReminderContainerFrameLevel = constants.frameLevels.kReminderContainerFrameLevel
 local playerGUID = UnitGUID("player")
 
 local combatLogEventMap = {
@@ -251,7 +252,7 @@ local function CreateReminderContainer(preferences, spacing)
 	container:SetLayout("EPProgressBarLayout")
 	container.frame:SetParent(UIParent)
 	container.frame:SetFrameStrata("MEDIUM")
-	container.frame:SetFrameLevel(100)
+	container.frame:SetFrameLevel(kReminderContainerFrameLevel)
 	container:SetSpacing(0, spacing or 0)
 	local regionName = utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 	local point, relativePoint = preferences.point, preferences.relativePoint

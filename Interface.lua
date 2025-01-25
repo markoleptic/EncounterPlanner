@@ -42,6 +42,13 @@ local assignmentMetaTables = {
 	TimedAssignment = Private.classes.TimedAssignment,
 	PhasedAssignment = Private.classes.PhasedAssignment,
 }
+local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
+local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
+local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
+local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
+local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
+local kPhaseEditorFrameLevel = constants.frameLevels.kPhaseEditorFrameLevel
+
 local dropdownContainerLabelSpacing = 4
 local dropdownContainerSpacing = { 0, 4 }
 local mainFrameSpacing = { 0, 10 }
@@ -360,7 +367,7 @@ local function CreateRosterEditor(openToTab)
 			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
 		end)
 		Private.rosterEditor.frame:SetParent(UIParent)
-		Private.rosterEditor.frame:SetFrameLevel(80)
+		Private.rosterEditor.frame:SetFrameLevel(kRosterEditorFrameLevel)
 		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
 		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 		Private.rosterEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
@@ -624,7 +631,7 @@ local function CreateAssignmentEditor()
 	local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 	assignmentEditor.FormatTime = utilities.FormatTime
 	assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-	assignmentEditor.frame:SetFrameLevel(10)
+	assignmentEditor.frame:SetFrameLevel(kAssignmentEditorFrameLevel)
 	assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 	assignmentEditor:SetLayout("EPVerticalLayout")
 	assignmentEditor:SetCallback("OnRelease", function()
@@ -706,7 +713,7 @@ end
 local function CreateImportEditBox()
 	Private.importEditBox = AceGUI:Create("EPEditBox")
 	Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-	Private.importEditBox.frame:SetFrameLevel(30)
+	Private.importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
 	Private.importEditBox.frame:SetPoint("CENTER")
 	Private.importEditBox:SetTitle(L["Import From String"])
 	Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
@@ -897,7 +904,7 @@ local function CreatePhaseLengthEditor()
 		end
 
 		phaseLengthEditor.frame:SetParent(UIParent)
-		phaseLengthEditor.frame:SetFrameLevel(50)
+		phaseLengthEditor.frame:SetFrameLevel(kPhaseEditorFrameLevel)
 		phaseLengthEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		phaseLengthEditor:Resize()
 		phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
@@ -1279,7 +1286,7 @@ local function HandleExportPlanButtonClicked()
 	if not Private.exportEditBox then
 		Private.exportEditBox = AceGUI:Create("EPEditBox")
 		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.exportEditBox.frame:SetFrameLevel(12)
+		Private.exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
 		Private.exportEditBox.frame:SetPoint("CENTER")
 		Private.exportEditBox:SetTitle(L["Export"])
 		Private.exportEditBox:SetCallback("OnRelease", function()
@@ -1341,7 +1348,7 @@ local function CreateNewPlanDialog(bossDropdownData)
 		end)
 		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 		newPlanDialog.frame:SetParent(UIParent)
-		newPlanDialog.frame:SetFrameLevel(80)
+		newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
 		newPlanDialog:SetBossDropdownItems(bossDropdownData, bossDungeonEncounterID)
 		newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		newPlanDialog:Resize()
@@ -1865,6 +1872,8 @@ function Private:CreateInterface()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 	Private.mainFrame:DoLayout()
 	timeline:UpdateTimeline()
+
+	print(planReminderEnableCheckBox.frame:GetFrameLevel())
 end
 
 function Private:InitializeInterface()

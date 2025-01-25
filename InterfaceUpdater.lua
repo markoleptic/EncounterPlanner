@@ -31,6 +31,7 @@ local tostring = tostring
 local tremove = tremove
 local type = type
 
+local kMessageBoxFrameLevel = constants.frameLevels.kMessageBoxFrameLevel
 local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
 local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
 local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
@@ -559,7 +560,7 @@ function InterfaceUpdater.CreateMessageBox(title, text)
 	if not Private.messageBox then
 		local messageBox = AceGUI:Create("EPMessageBox")
 		messageBox.frame:SetParent(UIParent)
-		messageBox.frame:SetFrameLevel(110)
+		messageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
 		messageBox:SetTitle(title)
 		messageBox:SetText(text)
 		messageBox:SetCallback("OnRelease", function()
