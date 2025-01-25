@@ -125,11 +125,13 @@ local function ResetLocalVariables()
 	simulationTimer = nil
 
 	for _, timer in pairs(frameGlowTimers) do
-		if timer.Cancel then
+		if not timer:IsCancelled() then
+			timer:Invoke(timer)
 			timer:Cancel()
 		end
 	end
 	wipe(frameGlowTimers)
+	wipe(stopGlowIfPhased)
 
 	for _, targetFrames in pairs(stopGlowIfCasted) do
 		for _, targetFrame in ipairs(targetFrames) do
@@ -139,15 +141,6 @@ local function ResetLocalVariables()
 		end
 	end
 	wipe(stopGlowIfCasted)
-
-	for _, stopGlowTimers in pairs(stopGlowIfPhased) do
-		for _, timer in pairs(stopGlowTimers) do
-			if timer.Cancel then
-				timer:Cancel()
-			end
-		end
-	end
-	wipe(stopGlowIfPhased)
 
 	for _, frame in ipairs(noSpellIDGlowFrames) do
 		if frame then
@@ -970,6 +963,7 @@ end
 ---@param timelineAssignments table<integer, TimelineAssignment>
 ---@param roster table<string, RosterEntry>
 function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
+	LGF:ScanForUnitFrames()
 	isSimulating = true
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 
