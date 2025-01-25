@@ -7,9 +7,10 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local CreateFrame = CreateFrame
 
-local mainFrameWidth = 1125
-local mainFrameHeight = 600
+local mainFrameWidth = 400
+local mainFrameHeight = 400
 local contentFramePadding = { x = 4, y = 4 }
+local widgetHeight = 20
 
 ---@class EPRosterEntry : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
@@ -29,27 +30,29 @@ local function OnAcquire(self)
 	self:SetLayout("EPHorizontalLayout")
 
 	self.nameLineEdit = AceGUI:Create("EPLineEdit")
+	self.nameLineEdit:SetHeight(widgetHeight)
+	self.nameLineEdit:SetMaxLetters(12)
 	self.nameLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 		self:Fire("NameChanged", value)
 	end)
-	self.nameLineEdit:SetHeight(20)
-	self.nameLineEdit:SetMaxLetters(12)
+
 	self.classDropdown = AceGUI:Create("EPDropdown")
+	self.classDropdown:SetDropdownItemHeight(widgetHeight)
 	self.classDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("ClassChanged", value)
 	end)
-	self.classDropdown:SetDropdownItemHeight(20)
+
 	self.roleDropdown = AceGUI:Create("EPDropdown")
+	self.roleDropdown:SetDropdownItemHeight(widgetHeight)
 	self.roleDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("RoleChanged", value)
 	end)
-	self.roleDropdown:SetDropdownItemHeight(20)
 
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.deleteButton:SetIconPadding(0, 0)
-	self.deleteButton:SetHeight(20)
-	self.deleteButton:SetWidth(20)
+	self.deleteButton:SetHeight(widgetHeight)
+	self.deleteButton:SetWidth(widgetHeight)
 	self.deleteButton:SetCallback("Clicked", function()
 		self:Fire("DeleteButtonClicked")
 	end)
@@ -75,7 +78,7 @@ local function LayoutFinished(self, width, height)
 end
 
 ---@param self EPRosterEntry
----@param dropdownItemData DropdownItemData
+---@param dropdownItemData table<integer, DropdownItemData>
 local function PopulateClassDropdown(self, dropdownItemData)
 	self.classDropdown:AddItems(dropdownItemData, "EPDropdownItemToggle")
 end
@@ -94,7 +97,9 @@ local function PopulateRoleDropdown(self, roles)
 	if roles["role:damager"] then
 		items[#items + 1] = { itemValue = "role:damager", text = L["Damager"] }
 	end
-	self.roleDropdown:AddItems(items, "EPDropdownItemToggle")
+	if #items > 0 then
+		self.roleDropdown:AddItems(items, "EPDropdownItemToggle")
+	end
 end
 
 ---@param self EPRosterEntry
@@ -105,6 +110,16 @@ local function SetData(self, name, class, role)
 	self.nameLineEdit:SetText(name)
 	self.classDropdown:SetValue(class)
 	self.roleDropdown:SetValue(role)
+end
+
+local function SetRelativeWidths(self, width)
+	local nonSpacingWidth = width - 3 * self.content.spacing.x
+	local firstThreeWidth = (nonSpacingWidth - widgetHeight) / 3.0
+	local firstThreeRelativeWidth = firstThreeWidth / nonSpacingWidth
+	self.nameLineEdit:SetRelativeWidth(firstThreeRelativeWidth)
+	self.classDropdown:SetRelativeWidth(firstThreeRelativeWidth)
+	self.roleDropdown:SetRelativeWidth(firstThreeRelativeWidth)
+	self.deleteButton:SetRelativeWidth(widgetHeight / nonSpacingWidth)
 end
 
 local function Constructor()
@@ -127,6 +142,7 @@ local function Constructor()
 		PopulateClassDropdown = PopulateClassDropdown,
 		PopulateRoleDropdown = PopulateRoleDropdown,
 		SetData = SetData,
+		SetRelativeWidths = SetRelativeWidths,
 		frame = frame,
 		content = content,
 		type = Type,
