@@ -14,6 +14,7 @@ local utilities = Private.utilities
 
 local AddOn = Private.addOn
 local L = Private.L
+local GenerateUniqueID = Private.GenerateUniqueID
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
@@ -82,11 +83,13 @@ local cancelTimerIfPhased = {}
 ---@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Ordered boss phases index -> [widgets]
 local hideWidgetIfPhased = {}
 
----@type table<integer, table<integer, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
+---@type table<integer, table<string, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
 local stopGlowIfCasted = {}
+---@type table<integer, table<integer, FunctionContainer>> -- Ordered boss phases index -> [timers]
+local stopGlowIfPhased = {}
 ---@type table<integer, Frame> -- [Frame]
 local noSpellIDGlowFrames = {}
----@type table<integer, FunctionContainer> -- All timers used to glow frames [timers]
+---@type table<string, FunctionContainer> -- All timers used to glow frames [timers]
 local frameGlowTimers = {}
 
 local currentEstimatedPhaseNumber = 1
@@ -121,7 +124,7 @@ local function ResetLocalVariables()
 	end
 	simulationTimer = nil
 
-	for _, timer in ipairs(frameGlowTimers) do
+	for _, timer in pairs(frameGlowTimers) do
 		if timer.Cancel then
 			timer:Cancel()
 		end
@@ -136,6 +139,15 @@ local function ResetLocalVariables()
 		end
 	end
 	wipe(stopGlowIfCasted)
+
+	for _, stopGlowTimers in pairs(stopGlowIfPhased) do
+		for _, timer in pairs(stopGlowTimers) do
+			if timer.Cancel then
+				timer:Cancel()
+			end
+		end
+	end
+	wipe(stopGlowIfPhased)
 
 	for _, frame in ipairs(noSpellIDGlowFrames) do
 		if frame then
@@ -168,6 +180,42 @@ local function ResetLocalVariables()
 	hideIfAlreadyCasted = false
 	currentEstimatedPhaseNumber = 1
 	currentEstimatedOrderedBossPhaseIndex = 1
+end
+
+---@param ... unknown
+---@return table
+local function pack(...)
+	return { n = select("#", ...), ... }
+end
+
+---@param duration number
+---@param func fun(timerObject: FunctionContainer)
+---@param ... table<string, FunctionContainer>
+---@return FunctionContainer
+local function CreateTimerWithCleanup(duration, func, ...)
+	local args = pack(...)
+	local timer = NewTimer(duration, function(timerObject)
+		func(timerObject)
+		timerObject.RemoveTimerRef(timerObject)
+	end)
+	timer.RemoveTimerRef = function(self)
+		for i = 1, args.n do
+			local tableRef = args[i]
+			if tableRef then
+				tableRef[self.ID] = nil
+			end
+		end
+	end
+
+	local ID = GenerateUniqueID()
+	timer.ID = ID
+	for i = 1, args.n do
+		local tableRef = args[i]
+		if tableRef then
+			tableRef[ID] = timer
+		end
+	end
+	return timer
 end
 
 -- Locks the Operation Queue and dequeues until empty. Updates Message container and Progress Bar Container at end.
@@ -415,39 +463,30 @@ end
 -- Starts glowing the frame for the unit and creates a timer to stop the glowing of the frame.
 ---@param unit string
 ---@param frame Frame
----@param spellID integer
-local function GlowFrameAndCreateTimer(unit, frame, spellID)
+---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+local function GlowFrameAndCreateTimer(unit, frame, assignment)
+	local spellID = assignment.spellInfo.spellID
+	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+	if hideIfAlreadyPhased and bossPhaseOrderIndex then
+		stopGlowIfPhased[bossPhaseOrderIndex] = stopGlowIfPhased[bossPhaseOrderIndex] or {}
+	end
+	local timer
 	if spellID > constants.kTextAssignmentSpellID then
-		if not stopGlowIfCasted[spellID] then
-			stopGlowIfCasted[spellID] = {}
-		end
 		local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
-		tinsert(stopGlowIfCasted[spellID], targetFrameObject)
-
-		local timer = NewTimer(maxGlowDuration, function()
+		stopGlowIfCasted[spellID] = stopGlowIfCasted[spellID] or {}
+		timer = CreateTimerWithCleanup(maxGlowDuration, function(timerObject)
 			LCG.PixelGlow_Stop(frame)
 			if stopGlowIfCasted[spellID] then
-				for index, obj in ipairs(stopGlowIfCasted[spellID]) do
-					if obj == targetFrameObject then
-						tremove(stopGlowIfCasted[spellID], index)
-						break
-					end
-				end
+				stopGlowIfCasted[spellID][timerObject.ID] = nil
 			end
-		end)
-		frameGlowTimers[#frameGlowTimers + 1] = timer
+		end, frameGlowTimers, stopGlowIfPhased[bossPhaseOrderIndex])
+		stopGlowIfCasted[spellID][timer.ID] = targetFrameObject
 	else
-		noSpellIDGlowFrames[#noSpellIDGlowFrames + 1] = frame
-		local timer = NewTimer(defaultNoSpellIDGlowDuration, function()
+		timer = CreateTimerWithCleanup(defaultNoSpellIDGlowDuration, function(timerObject)
 			LCG.PixelGlow_Stop(frame)
-			for index, f in ipairs(noSpellIDGlowFrames) do
-				if f == frame then
-					tremove(noSpellIDGlowFrames, index)
-					break
-				end
-			end
-		end)
-		frameGlowTimers[#frameGlowTimers + 1] = timer
+			noSpellIDGlowFrames[timerObject.ID] = nil
+		end, frameGlowTimers, stopGlowIfPhased[bossPhaseOrderIndex])
+		noSpellIDGlowFrames[timer.ID] = frame
 	end
 	LCG.PixelGlow_Start(frame)
 end
@@ -509,7 +548,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 			if unit then
 				local frame = LGF.GetUnitFrame(unit)
 				if frame then
-					GlowFrameAndCreateTimer(unit, frame, spellID)
+					GlowFrameAndCreateTimer(unit, frame, assignment)
 				end
 			end
 		end
@@ -677,6 +716,13 @@ local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 		print(format("Removed %d widgets from %d", #hideWidgetIfPhased[orderedBossPhaseIndex], orderedBossPhaseIndex))
 		hideWidgetIfPhased[orderedBossPhaseIndex] = nil
 	end
+	if stopGlowIfPhased[orderedBossPhaseIndex] then
+		for _, timer in pairs(stopGlowIfPhased[orderedBossPhaseIndex]) do
+			timer:Cancel()
+			timer.RemoveTimerRef(timer)
+		end
+		stopGlowIfPhased[orderedBossPhaseIndex] = nil
+	end
 end
 
 -- Increments the current estimated phase number by using the next entry in the ordered boss phase table.
@@ -759,16 +805,12 @@ local function MaybeCancelStuff(spellID, destGUID, subEvent)
 		end
 	end
 	if stopGlowIfCasted[spellID] then
-		local toRemove = {}
-		for i = #stopGlowIfCasted[spellID], 1, -1 do
-			local obj = stopGlowIfCasted[spellID][i]
-			if not obj.targetGUID or destGUID == obj.targetGUID then
-				LCG.PixelGlow_Stop(obj.frame)
-				toRemove[#toRemove + 1] = i
+		for ID, obj in pairs(stopGlowIfCasted[spellID]) do
+			if destGUID == obj.targetGUID then
+				if frameGlowTimers[ID] and not frameGlowTimers[ID]:IsCancelled() then
+					frameGlowTimers[ID]:Invoke(frameGlowTimers[ID])
+				end
 			end
-		end
-		for _, indexToRemove in ipairs(toRemove) do
-			tremove(stopGlowIfCasted[spellID], indexToRemove)
 		end
 		if not next(stopGlowIfCasted[spellID]) then
 			stopGlowIfCasted[spellID] = nil

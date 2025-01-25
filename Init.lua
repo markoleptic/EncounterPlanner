@@ -118,6 +118,7 @@ local function GenerateUniqueID()
 	end
 	return concat(s)
 end
+Private.GenerateUniqueID = GenerateUniqueID
 
 local assignmentIDCounter = 0
 
