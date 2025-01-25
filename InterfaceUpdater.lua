@@ -83,11 +83,13 @@ do
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			local raidInstance = Private.raidInstances[boss.instanceID]
+
 			Private.mainFrame.instanceLabel:SetText(raidInstance.name, instanceAndBossPadding, raidInstance.instanceID)
 			Private.mainFrame.instanceLabel:SetIcon(raidInstance.icon, 0, 0, 0, 0, 0)
+
 			bossLabel:SetText(boss.name, instanceAndBossPadding, boss.dungeonEncounterID)
 			bossLabel:SetIcon(boss.icon, 0, 0, 0, 0, 0)
-			print(bossLabel.frame:GetHeight(), bossLabel.iconPadding.top, bossLabel.iconPadding.bottom)
+
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}
 			local bossAbilitySelectItems = {}

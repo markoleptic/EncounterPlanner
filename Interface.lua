@@ -99,12 +99,8 @@ local planMenuItems = {
 				},
 			},
 			{
-				itemValue = "From String",
+				itemValue = "FromString",
 				text = L["From String"],
-				dropdownItemMenuData = {
-					{ itemValue = "FromStringOverwrite", text = L["Overwrite Current Plan"] },
-					{ itemValue = "FromStringNew", text = L["Create New Plan"] },
-				},
 			},
 		},
 	},
@@ -684,53 +680,78 @@ local function CreateAssignmentEditor()
 	return assignmentEditor
 end
 
-local function HandleImportPlanFromString(importType)
+local function HandleImportPlanFromString(newPlanName)
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	if Private.phaseLengthEditor then
+		Private.phaseLengthEditor:Release()
+	end
+
 	local text = Private.importEditBox:GetText()
 	Private.importEditBox:Release()
 	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	local plans = AddOn.db.profile.plans
 
-	if importType == "FromStringOverwrite" then
-		bossDungeonEncounterID = Private:ImportPlanFromNote(lastOpenPlan, bossDungeonEncounterID, text)
-			or bossDungeonEncounterID
-	elseif importType == "FromStringNew" then
-		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
-		local newPlanName = utilities.CreateUniquePlanName(plans, bossName --[[@as string]])
-		plans[newPlanName] = Private.classes.Plan:New(nil, newPlanName)
-		bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
-			or bossDungeonEncounterID
-		AddOn.db.profile.lastOpenPlan = newPlanName
-		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
-	end
+	bossDungeonEncounterID = Private:ImportPlanFromNote(lastOpenPlan, bossDungeonEncounterID, text)
+		or bossDungeonEncounterID
 
+	AddOn.db.profile.lastOpenPlan = newPlanName
+	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 end
 
-local function CreateImportEditBox(importType)
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
+local function CreateImportEditBox()
 	Private.importEditBox = AceGUI:Create("EPEditBox")
 	Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 	Private.importEditBox.frame:SetFrameLevel(30)
 	Private.importEditBox.frame:SetPoint("CENTER")
-	Private.importEditBox:SetTitle(L["Import Text"])
-	local buttonText
-	if importType == "FromStringOverwrite" then
-		buttonText = L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan
-	else
-		buttonText = L["Import As New Plan"]
-	end
-	Private.importEditBox:ShowOkayButton(true, buttonText)
+	Private.importEditBox:SetTitle(L["Import From String"])
+	Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
+	Private.importEditBox.okayButton:SetEnabled(false)
 	Private.importEditBox:SetCallback("OnRelease", function()
 		Private.importEditBox = nil
 	end)
-	Private.importEditBox:SetCallback("OkayButtonClicked", function()
-		HandleImportPlanFromString(importType)
+	Private.importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
+		if checked then
+			widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
+			widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
+			widget.okayButton:SetWidthFromText()
+		else
+			widget.lineEdit:SetText("")
+			widget.okayButton:SetEnabled(false)
+			widget.okayButton:SetText(L["Import As New Plan"])
+			widget.okayButton:SetWidthFromText()
+		end
 	end)
-	Private.importEditBox:HighlightTextAndFocus()
+	Private.importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
+		planName = planName:trim()
+		if planName == "" or AddOn.db.profile.plans[planName] then
+			widget.okayButton:SetEnabled(false)
+		else
+			widget.okayButton:SetEnabled(true)
+		end
+		widget.okayButton:SetText(L["Import As"] .. " " .. planName)
+		widget.okayButton:SetWidthFromText()
+	end)
+	Private.importEditBox:ShowCheckBoxAndLineEdit(
+		true,
+		L["Overwrite Current Plan"],
+		L["New Plan Name:"],
+		AddOn.db.profile.lastOpenPlan
+	)
+	Private.importEditBox:SetCallback("OkayButtonClicked", function(widget)
+		local planName = widget.lineEdit:GetText()
+		planName = planName:trim()
+		if planName == "" then
+			widget.okayButton:SetEnabled(false)
+		else
+			if not AddOn.db.profile.plans[planName] or Private.importEditBox.checkBox:IsChecked() then
+				HandleImportPlanFromString(planName)
+			end
+		end
+	end)
 end
 
 ---@param boss Boss
@@ -1215,14 +1236,13 @@ end
 ---@param importType string
 local function ImportPlan(importType)
 	if not Private.importEditBox then
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.phaseLengthEditor then
-			Private.phaseLengthEditor:Release()
-		end
-
 		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
+			if Private.assignmentEditor then
+				Private.assignmentEditor:Release()
+			end
+			if Private.phaseLengthEditor then
+				Private.phaseLengthEditor:Release()
+			end
 			local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
 			if not loadingOrLoaded and not loaded then
 				print(format("%s: %s", AddOnName, L["No note was loaded due to MRT not being installed."]))
@@ -1248,8 +1268,8 @@ local function ImportPlan(importType)
 					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
 			end
-		elseif importType == "FromStringOverwrite" or importType == "FromStringNew" then
-			CreateImportEditBox(importType)
+		elseif importType == "FromString" then
+			CreateImportEditBox()
 		end
 	end
 end
@@ -1358,21 +1378,7 @@ local function HandlePlanMenuButtonClicked(planMenuButton, _, value)
 			end)
 		end
 	elseif sub(value, 1, 4) == "From" then
-		if string.find(value, "Overwrite") then
-			local messageBox = interfaceUpdater.CreateMessageBox(
-				L["Delete Plan Confirmation"],
-				format('%s "%s"?', L["Are you sure you want to overwrite the plan"], AddOn.db.profile.lastOpenPlan)
-			)
-			if messageBox then
-				messageBox:SetCallback("Accepted", function()
-					if Private.mainFrame then
-						ImportPlan(value)
-					end
-				end)
-			end
-		else
-			ImportPlan(value)
-		end
+		ImportPlan(value)
 	end
 	planMenuButton:SetValue("Plan")
 	planMenuButton:SetText(L["Plan"])

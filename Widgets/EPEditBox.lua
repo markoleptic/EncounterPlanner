@@ -7,7 +7,7 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 200
+local defaultFrameHeight = 400
 local defaultFrameWidth = 400
 local windowBarHeight = 28
 local backdropColor = { 0, 0, 0, 1 }
@@ -15,9 +15,8 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
 local okayButtonHeight = 24
 local resizerSize = 16
-local framePadding = 10
-local resizerOffset = { -6, 7 }
-local title = "Export as MRT Note"
+local framePadding = 15
+local otherPadding = 10
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -35,23 +34,15 @@ local titleBarBackdrop = {
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
----@class EPEditBox : AceGUIWidget
----@field frame table|Frame
----@field scrollFrame ScrollFrame|table
----@field type string
----@field text FontString
----@field highlight Texture
----@field editBox EditBox
----@field closeButton EPButton
----@field okayButton EPButton
----@field windowBar Frame|table
-
 ---@param self EPEditBox
 local function OnAcquire(self)
 	self.editBox:SetText("")
 	self:SetTitle("")
+
 	self.frame:SetHeight(defaultFrameHeight)
 	self.frame:SetWidth(defaultFrameWidth)
+	self.editBox:SetSize(defaultFrameWidth, defaultFrameWidth)
+	self.frame:Show()
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
@@ -67,24 +58,50 @@ local function OnAcquire(self)
 	self.closeButton:SetCallback("Clicked", function()
 		self:Release()
 	end)
-	self:ShowOkayButton(false)
 
-	self.frame:Show()
+	self.scrollFrame = AceGUI:Create("EPScrollFrame")
+	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
+	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", framePadding, 0)
+	self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
+	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -framePadding, 0)
+	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+	self.scrollFrame:SetScrollChild(self.editBox --[[@as Frame]], true, true)
+
+	self.editBox:SetScript("OnTextChanged", function()
+		self.scrollFrame:UpdateVerticalScroll()
+		self.scrollFrame:UpdateThumbPositionAndSize()
+	end)
+
+	self:ShowOkayButton(false)
 end
 
 ---@param self EPEditBox
 local function OnRelease(self)
-	if self.editBox then
-		self.editBox:SetText("")
+	self.editBox:SetText("")
+	self.editBox:SetScript("OnTextChanged", nil)
+
+	if self.scrollFrame then
+		self.scrollFrame:Release()
 	end
+	self.scrollFrame = nil
+
 	if self.closeButton then
 		self.closeButton:Release()
 	end
 	self.closeButton = nil
+
 	if self.okayButton then
 		self.okayButton:Release()
 	end
 	self.okayButton = nil
+
+	if self.container then
+		self.container:Release()
+	end
+	self.container = nil
+
+	self.checkBox = nil
+	self.lineEdit = nil
 end
 
 ---@param self EPEditBox
@@ -97,8 +114,7 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.editBox:SetText(text or "")
-	self.scrollFrame:UpdateScrollChildRect()
-	self.editBox:SetSize(self.scrollFrame:GetSize())
+	self.scrollFrame.scrollFrame:UpdateScrollChildRect()
 end
 
 ---@param self EPEditBox
@@ -114,28 +130,81 @@ local function ShowOkayButton(self, show, okayButtonText)
 	if show then
 		if not self.okayButton then
 			self.okayButton = AceGUI:Create("EPButton")
-			self.okayButton.frame:SetParent(self.frame)
+			self.okayButton.frame:SetParent(self.frame --[[@as Frame]])
 			self.okayButton:SetText(okayButtonText or "Okay")
 			self.okayButton:SetHeight(okayButtonHeight)
 			self.okayButton:SetWidthFromText()
 			self.okayButton:SetCallback("Clicked", function()
 				self:Fire("OkayButtonClicked")
 			end)
-			self.okayButton:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+			self.okayButton.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
 		end
-		self.scrollFrame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, framePadding)
+		self.scrollFrame.frame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, framePadding)
 	else
 		if self.okayButton then
 			self.okayButton:Release()
 		end
 		self.okayButton = nil
-		self.scrollFrame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding + resizerSize)
+		self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+	end
+end
+
+---@param self EPEditBox
+---@param show boolean
+---@param checkBoxText string
+---@param lineEditLabelText string
+---@param lineEditText string
+local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelText, lineEditText)
+	if show then
+		if not self.container then
+			self.container = AceGUI:Create("EPContainer")
+			self.container:SetLayout("EPVerticalLayout")
+			self.container:SetSpacing(0, 10)
+			self.container.frame:SetParent(self.frame --[[@as Frame]])
+			self.container.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
+
+			local lineEditLabel = AceGUI:Create("EPLabel")
+			lineEditLabel:SetText(lineEditLabelText)
+			lineEditLabel:SetFrameWidthFromText()
+
+			self.checkBox = AceGUI:Create("EPCheckBox")
+			self.checkBox:SetText(checkBoxText)
+			self.checkBox:SetChecked(false)
+			self.checkBox:SetFrameWidthFromText()
+			self.checkBox:SetCallback("OnValueChanged", function(_, _, checked)
+				self.lineEdit:SetEnabled(not checked)
+				lineEditLabel:SetEnabled(not checked)
+				self:Fire("OverwriteCheckBoxValueChanged", checked)
+			end)
+
+			self.lineEdit = AceGUI:Create("EPLineEdit")
+			self.lineEdit:SetText(lineEditText)
+			self.lineEdit:SetMaxLetters(24)
+			self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+				self:Fire("ValidatePlanName", value)
+			end)
+
+			local container = AceGUI:Create("EPContainer")
+			container:SetLayout("EPHorizontalLayout")
+			container:SetSpacing(8, 0)
+			container:AddChildren(lineEditLabel, self.lineEdit)
+
+			self.container:AddChildren(self.checkBox, container)
+			self.scrollFrame.frame:SetPoint("TOP", self.container.frame, "BOTTOM", 0, -otherPadding)
+		end
+	else
+		if self.container then
+			self.container:Release()
+		end
+		self.container = nil
+		self.checkBox = nil
+		self.lineEdit = nil
+		self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "TOP", 0, -framePadding)
 	end
 end
 
 ---@param self EPEditBox
 local function HighlightTextAndFocus(self)
-	self.editBox:SetSize(self.scrollFrame:GetSize())
 	self.editBox:HighlightText()
 	self.editBox:SetFocus()
 end
@@ -154,6 +223,7 @@ local function Constructor()
 	frame:SetResizable(true)
 	frame:SetResizeBounds(defaultFrameWidth, defaultFrameHeight, nil, nil)
 	frame:EnableMouse(true)
+
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
@@ -164,7 +234,7 @@ local function Constructor()
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(title)
+	windowBarText:SetText("Title")
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -178,38 +248,29 @@ local function Constructor()
 		frame:StopMovingOrSizing()
 	end)
 
-	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame, "UIPanelScrollFrameTemplate")
-	scrollFrame:SetPoint("LEFT", framePadding, 0)
-	scrollFrame:SetPoint("RIGHT", -2 * resizerSize, 0)
-	scrollFrame:SetPoint("TOP", 0, -windowBarHeight - framePadding)
-	scrollFrame:SetPoint("BOTTOM", 0, framePadding + resizerSize)
-
-	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, scrollFrame)
-	editBox:SetSize(scrollFrame:GetSize())
+	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
 	editBox:SetMultiLine(true)
-	editBox:SetAutoFocus(true)
+	editBox:EnableMouse(true)
+	editBox:SetAutoFocus(false)
+	editBox:SetMaxLetters(99999)
 	editBox:SetFontObject("ChatFontNormal")
-	scrollFrame:SetScrollChild(editBox)
+	editBox:SetTextInsets(5, 5, 5, 5)
 
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
-	resizer:SetPoint("BOTTOMRIGHT", unpack(resizerOffset))
+	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(resizerSize, resizerSize)
 	resizer:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
 	resizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
 	resizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-	resizer:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then
-			frame:StartSizing("BOTTOMRIGHT")
-			self:GetHighlightTexture():Hide()
-		end
-	end)
-	resizer:SetScript("OnMouseUp", function(self, _)
-		frame:StopMovingOrSizing()
-		self:GetHighlightTexture():Show()
-		editBox:SetWidth(scrollFrame:GetWidth())
-	end)
 
-	---@class EPEditBox
+	---@class EPEditBox : AceGUIWidget
+	---@field closeButton EPButton
+	---@field okayButton EPButton
+	---@field checkBox EPCheckBox
+	---@field lineEdit EPLineEdit
+	---@field container EPContainer
+	---@field windowBar Frame|table
+	---@field scrollFrame EPScrollFrame
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -218,13 +279,25 @@ local function Constructor()
 		HighlightTextAndFocus = HighlightTextAndFocus,
 		ShowOkayButton = ShowOkayButton,
 		SetTitle = SetTitle,
+		ShowCheckBoxAndLineEdit = ShowCheckBoxAndLineEdit,
 		frame = frame,
-		scrollFrame = scrollFrame,
 		type = Type,
 		editBox = editBox,
 		windowBar = windowBar,
 		windowBarText = windowBarText,
 	}
+
+	resizer:SetScript("OnMouseDown", function(_, mouseButton)
+		if mouseButton == "LeftButton" then
+			frame:StartSizing("BOTTOMRIGHT")
+		end
+	end)
+
+	resizer:SetScript("OnMouseUp", function(_, mouseButton)
+		if mouseButton == "LeftButton" then
+			frame:StopMovingOrSizing()
+		end
+	end)
 
 	editBox:SetScript("OnEscapePressed", function()
 		widget:Release()
