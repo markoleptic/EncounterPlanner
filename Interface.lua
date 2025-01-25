@@ -337,6 +337,7 @@ local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
 		elseif rosterTab == "Current Plan Roster" then
 			Private.rosterEditor:SetRosters(toRoster, fromRoster)
 		end
+		Private.rosterEditor:SetCurrentTab(rosterTab)
 	end
 end
 
