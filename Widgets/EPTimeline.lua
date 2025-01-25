@@ -2599,6 +2599,9 @@ local function SetIsSimulating(self, simulating)
 		self.bossAbilityTimeline.timelineFrame:SetScript("OnLeave", function(frame)
 			HandleTimelineFrameLeave(self, frame)
 		end)
+		self.assignmentTimeline.verticalPositionLine:Hide()
+		self.bossAbilityTimeline.verticalPositionLine:Hide()
+		UpdateTimeLabels(self)
 	end
 end
 
