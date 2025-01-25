@@ -613,6 +613,9 @@ do
 		self.frame:Show()
 		self.text:Show()
 		self.buttonCover:Show()
+		self.button:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+		self.button:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
+		self.button:SetWidth(defaultDropdownItemHeight)
 		self.button:Show()
 		self.itemHorizontalPadding = defaultHorizontalItemPadding
 		self.dropdownItemHeight = defaultDropdownItemHeight
@@ -998,6 +1001,7 @@ do
 	local function SetDropdownItemHeight(self, height)
 		self.dropdownItemHeight = height
 		self:SetHeight(height)
+		self.button:SetWidth(height)
 		self.pullout:SetItemHeight(height)
 	end
 
@@ -1151,7 +1155,8 @@ do
 
 		local button = _G[dropdown:GetName() .. "Button"]
 		button:ClearAllPoints()
-		button:SetPoint("RIGHT", frame, "RIGHT")
+		button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
+		button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 		button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
