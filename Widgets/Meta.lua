@@ -84,6 +84,9 @@
 ---@alias EPNewPlanDialogType
 ---|"EPNewPlanDialog"
 
+---@alias EPScrollFrameType
+---|"EPScrollFrame"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -106,6 +109,7 @@
 ---| EPMessageBoxType
 ---| EPPhaseLengthEditor
 ---| EPNewPlanDialog
+---| EPScrollFrame
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -229,6 +233,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPNewPlanDialogType
 ---@return EPNewPlanDialog
+function AceGUI:Create(type) end
+
+---@param type EPScrollFrameType
+---@return EPScrollFrame
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

@@ -9,6 +9,7 @@
 	<Script file="EPLabel.lua"/>
 	<Script file="EPLineEdit.lua"/>
     <Script file="EPButton.lua"/>
+    <Script file="EPScrollFrame.lua"/>
     <Script file="EPRadioButton.lua"/>
     <Script file="EPEditBox.lua"/>
     <Script file="EPProgressBar.lua"/>
