@@ -37,6 +37,7 @@ local buttonBackdrop = {
 ---@field obj any
 ---@field toggleable boolean|nil
 ---@field toggled boolean|nil
+---@field value any
 
 ---@param self EPButton
 local function OnAcquire(self)
@@ -60,6 +61,7 @@ end
 local function OnRelease(self)
 	self.toggleable = nil
 	self.toggled = nil
+	self.value = nil
 end
 
 ---@param self EPButton
@@ -87,8 +89,15 @@ end
 
 ---@param self EPButton
 ---@param text string
-local function SetText(self, text)
+---@param value any?
+local function SetText(self, text, value)
 	self.button:SetText(text or "")
+	self.value = value
+end
+
+---@return any?
+local function GetValue(self)
+	return self.value
 end
 
 ---@param self EPButton
@@ -283,6 +292,7 @@ local function Constructor()
 		SetIconColor = SetIconColor,
 		SetBackdrop = SetBackdrop,
 		SetFontSize = SetFontSize,
+		GetValue = GetValue,
 		frame = frame,
 		type = Type,
 		button = button,
