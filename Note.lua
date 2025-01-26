@@ -16,25 +16,14 @@ local AddOn = Private.addOn
 local concat = table.concat
 local format = format
 local floor = math.floor
-local GetClassInfo = GetClassInfo
-local GetNumGroupMembers = GetNumGroupMembers
-local GetRaidRosterInfo = GetRaidRosterInfo
-local GetSpecialization = GetSpecialization
-local GetSpecializationInfo = GetSpecializationInfo
 local GetSpellInfo = C_Spell.GetSpellInfo
-local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
-local IsInRaid = IsInRaid
 local pairs = pairs
-local select = select
 local split = string.split
 local splitTable = strsplittable
 local tinsert = tinsert
 local tonumber = tonumber
 local tostring = tostring
-local type = type
-local UnitClass = UnitClass
-local UnitName = UnitName
 local wipe = wipe
 
 ---@class PhasedAssignment
@@ -47,8 +36,10 @@ local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local postOptionsPreDashNoSpellRegex = "}(.-) %-"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
+-- postDashRegex = "([%w:,%s|%- ]+[ ]+%b{}[ ]-)"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
 local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
+local removeFirstDashRegex = "%-+%s-([^\n]+)"
 
 local colorStartRegex = "|?|c........"
 local colorEndRegex = "|?|r"
@@ -59,71 +50,7 @@ local targetNameRegex = "@(%S+)"
 local spellIconRegex = "{spell:(%d+):?%d*}"
 local assigneeGroupRegex = "^({.-})"
 local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}"
-local raidIconRegex = "{icon:([^}]+)}"
-local ertIconRegex = "%b{}"
 local phaseNumberRegex = "^p(g?):?(.-)$"
-
-local genericIcons = setmetatable({
-	["{star}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1" .. ":0|t",
-	["{circle}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_2" .. ":0|t",
-	["{diamond}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_3" .. ":0|t",
-	["{triangle}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4" .. ":0|t",
-	["{moon}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_5" .. ":0|t",
-	["{square}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_6" .. ":0|t",
-	["{cross}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_7" .. ":0|t",
-	["{skull}"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8" .. ":0|t",
-	["{wow}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-WoWicon" .. ":16|t",
-	["{d3}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-D3icon" .. ":16|t",
-	["{sc2}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Sc2icon" .. ":16|t",
-	["{bnet}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Portrait" .. ":16|t",
-	["{bnet1}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Battleneticon" .. ":16|t",
-	["{alliance}"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Alliance" .. ":16|t",
-	["{horde}"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Horde" .. ":16|t",
-	["{hots}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-HotSicon" .. ":16|t",
-	["{ow}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Overwatchicon" .. ":16|t",
-	["{sc1}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-SCicon" .. ":16|t",
-	["{barcade}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-BlizzardArcadeCollectionicon" .. ":16|t",
-	["{crashb}"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-CrashBandicoot4icon" .. ":16|t",
-	["{tank}"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:0:19:22:41|t",
-	["{healer}"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:1:20|t",
-	["{dps}"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:22:41|t",
-}, {
-	__index = function(tbl, key)
-		if type(key) == "string" then
-			key = key:lower()
-			key = key:gsub("%s", "")
-		end
-		return rawget(tbl, key)
-	end,
-	__newindex = function(tbl, key, value)
-		if type(key) == "string" then
-			key = key:lower()
-			key = key:gsub("%s", "")
-		end
-		rawset(tbl, key, value)
-	end,
-})
-
-for i = 1, 8 do
-	local icon = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i .. ":0|t"
-	genericIcons[format("{rt%d}", i)] = icon
-end
-
-local classList = {}
-
-for i = 1, 13 do
-	local className, _, classID = GetClassInfo(i)
-	local classNameWithoutSpaces = className:gsub(" ", "")
-	local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
-	genericIcons[format("{%s}", className)] = classIcon
-	genericIcons[format("{%d}", classID)] = classIcon
-	if classNameWithoutSpaces == "DeathKnight" then
-		genericIcons["{dk}"] = classIcon
-	elseif classNameWithoutSpaces == "DemonHunter" then
-		genericIcons["{dh}"] = classIcon
-	end
-	classList[classID] = i
-end
 
 local combatLogEventFromAbbreviation = {
 	["SCC"] = "SPELL_CAST_SUCCESS",
@@ -137,7 +64,8 @@ local combatLogEventFromAbbreviation = {
 ---@return table<integer, Assignment>
 local function CreateAssignmentsFromLine(line)
 	local assignments = {}
-	for str in (line .. "  "):gmatch(postDashRegex) do
+	local removedFirstDash = line:match(removeFirstDashRegex)
+	for str in (removedFirstDash):gmatch(postDashRegex) do
 		local targetName = str:match(targetNameRegex)
 		if targetName then
 			targetName = targetName:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
@@ -156,32 +84,23 @@ local function CreateAssignmentsFromLine(line)
 		end
 		local nameOrGroup = strWithoutSpell:match(assigneeGroupRegex) or strWithoutSpell:match(nameRegex)
 		if nameOrGroup then
-			for _, entry in pairs(strsplittable(",", nameOrGroup)) do
+			for _, entry in pairs(splitTable(",", nameOrGroup)) do
 				entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
-				local specMatch = entry:match("spec:%s*(%a+)")
-				local typeMatch = entry:match("type:%s*(%a+)")
-				if specMatch then
-					for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
-						if name:lower() == specMatch:lower() then
-							entry = "spec:" .. tostring(specID)
-							break
+				local assigneeNameOrRole = utilities.IsValidAssigneeNameOrRole(entry)
+				if assigneeNameOrRole then
+					local assignment = Private.classes.Assignment:New({
+						assigneeNameOrRole = assigneeNameOrRole,
+						text = text,
+						spellInfo = spellInfo,
+						targetName = targetName,
+					})
+					if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+						if assignment.text:len() > 0 then
+							assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
 						end
 					end
-				elseif typeMatch then
-					entry = "type:" .. typeMatch:lower()
+					tinsert(assignments, assignment)
 				end
-				local assignment = Private.classes.Assignment:New({
-					assigneeNameOrRole = entry or "",
-					text = text,
-					spellInfo = spellInfo,
-					targetName = targetName,
-				})
-				if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
-					if assignment.text:len() > 0 then
-						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
-					end
-				end
-				tinsert(assignments, assignment)
 			end
 		end
 	end
@@ -203,39 +122,51 @@ local function ProcessOptions(assignments, derivedAssignments, time, options)
 				option, options = split(",", options, 2)
 				if option then -- custom event
 					-- TODO: Handle custom event
-					regularTimer = false
 				end
 			end
 		elseif option:sub(1, 1) == "p" then
-			local _, phase = option:match(phaseNumberRegex)
-			if phase and phase ~= "" then
-				local phaseNumber = tonumber(phase, 10)
-				if phaseNumber then
-					for _, assignment in pairs(assignments) do
-						local phasedAssignment = PhasedAssignment:New(assignment)
-						phasedAssignment.time = time
-						phasedAssignment.phase = phaseNumber
-						tinsert(derivedAssignments, phasedAssignment)
-					end
-				end
-				regularTimer = false
-			end
+			-- local _, phase = option:match(phaseNumberRegex)
+			-- if phase and phase ~= "" then
+			-- 	local phaseNumber = tonumber(phase, 10)
+			-- 	if phaseNumber then
+			-- 		for _, assignment in pairs(assignments) do
+			-- 			local phasedAssignment = PhasedAssignment:New(assignment)
+			-- 			phasedAssignment.time = time
+			-- 			phasedAssignment.phase = phaseNumber
+			-- 			tinsert(derivedAssignments, phasedAssignment)
+			-- 		end
+			-- 	end
+			-- 	regularTimer = false
+			-- end
 		else
 			local combatLogEventAbbreviation, spellIDStr, spellCountStr = split(":", option, 3)
 			if combatLogEventFromAbbreviation[combatLogEventAbbreviation] then
 				local spellID = tonumber(spellIDStr)
 				local spellCount = tonumber(spellCountStr)
-				if spellID and spellCount then
-					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
-						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
-						combatLogEventAssignment.time = time
-						combatLogEventAssignment.spellCount = spellCount
-						combatLogEventAssignment.combatLogEventSpellID = spellID
-						tinsert(derivedAssignments, combatLogEventAssignment)
+				if spellID then
+					local bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
+					if bossDungeonEncounterID then
+						if spellCount then
+							if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
+							else
+								spellCount = bossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
+							end
+						else
+							spellCount = 1
+						end
+						if spellCount then
+							for _, assignment in pairs(assignments) do
+								local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
+								combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
+								combatLogEventAssignment.time = time
+								combatLogEventAssignment.spellCount = spellCount
+								combatLogEventAssignment.combatLogEventSpellID = spellID
+								tinsert(derivedAssignments, combatLogEventAssignment)
+							end
+							regularTimer = false
+						end
 					end
 				end
-				regularTimer = false
 			end
 		end
 	end
@@ -358,11 +289,9 @@ local function CreateAssignmentExportString(assignment, roster)
 		if specMatch then
 			local specIDMatch = tonumber(specMatch)
 			if specIDMatch then
-				for specID, name in pairs(utilities.GetSpecIDToNameTable()) do
-					if specIDMatch == specID then
-						assignmentString = "spec:" .. name
-						break
-					end
+				local specName = utilities.GetLocalizedSpecNameFromSpecID(specIDMatch)
+				if specIDMatch then
+					assignmentString = "spec:" .. specName
 				end
 			end
 		elseif typeMatch then

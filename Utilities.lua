@@ -13,6 +13,7 @@ local Utilities = Private.utilities
 local bossUtilities = Private.bossUtilities
 
 local L = Private.L
+local Ambiguate = Ambiguate
 local ceil = math.ceil
 local EJ_SelectInstance, EJ_GetInstanceInfo = EJ_SelectInstance, EJ_GetInstanceInfo
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
@@ -43,216 +44,256 @@ local tonumber = tonumber
 local tostring = tostring
 local type = type
 local UnitClass = UnitClass
+local UnitFullName = UnitFullName
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitName = UnitName
 local wipe = table.wipe
 
 local lineMatchRegex = "([^\r\n]+)"
-local kNumberOfClasses = 13
 
-local specIDToTypeL = {
-	["ranged"] = L["Ranged"],
-	["melee"] = L["Melee"],
-}
+do
+	local kNumberOfClasses = 13
 
-local roleL = {
-	["damager"] = L["Damager"],
-	["healer"] = L["Healer"],
-	["tank"] = L["Tank"],
-}
+	local caseAndWhiteSpaceInsensitiveMetaTable = {
+		__index = function(tbl, key)
+			if type(key) == "string" then
+				key = key:lower()
+				key = key:gsub("%s", "")
+			end
+			return rawget(tbl, key)
+		end,
+		__newindex = function(tbl, key, value)
+			if type(key) == "string" then
+				key = key:lower()
+				key = key:gsub("%s", "")
+			end
+			rawset(tbl, key, value)
+		end,
+	}
 
-local specIDToType = {
-	-- Mage
-	[62] = "ranged", -- Arcane
-	[63] = "ranged", -- Fire
-	[64] = "ranged", -- Frost
-	-- Paladin
-	[65] = "melee", -- Holy
-	[66] = "melee", -- Protection
-	[70] = "melee", -- Retribution
-	-- Warrior
-	[71] = "melee", -- Arms
-	[72] = "melee", -- Fury
-	[73] = "melee", -- Protection
-	-- Druid
-	[102] = "ranged", -- Balance
-	[103] = "melee", -- Feral
-	[104] = "melee", -- Guardian
-	[105] = "ranged", -- Restoration
-	-- Death Knight
-	[250] = "melee", -- Blood
-	[251] = "melee", -- Frost
-	[252] = "melee", -- Unholy
-	-- Hunter
-	[253] = "ranged", -- Beast Mastery
-	[254] = "ranged", -- Marksmanship
-	[255] = "melee", -- Survival
-	-- Priest
-	[256] = "ranged", -- Discipline
-	[257] = "ranged", -- Holy
-	[258] = "ranged", -- Shadow
-	-- Rogue
-	[259] = "melee", -- Assassination
-	[260] = "melee", -- Outlaw
-	[261] = "melee", -- Subtlety
-	-- Shaman
-	[262] = "ranged", -- Elemental
-	[263] = "melee", -- Enhancement
-	[264] = "ranged", -- Restoration
-	-- Warlock
-	[265] = "ranged", -- Affliction
-	[266] = "ranged", -- Demonology
-	[267] = "ranged", -- Destruction
-	-- Monk
-	[268] = "melee", -- Brewmaster
-	[270] = "melee", -- Mistweaver
-	[269] = "melee", -- Windwalker
-	-- Demon Hunter
-	[577] = "melee", -- Havoc
-	[581] = "melee", -- Vengeance
-	-- Evoker
-	[1467] = "ranged", -- Devastation
-	[1468] = "ranged", -- Preservation
-	[1473] = "ranged", -- Augmentation
-}
+	local prettyClassNames = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
+	local englishClassNamesWithoutSpaces = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
+	local localizedClassNames = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
+	local localizedTypes = setmetatable({
+		["ranged"] = L["Ranged"],
+		["melee"] = L["Melee"],
+	}, caseAndWhiteSpaceInsensitiveMetaTable)
+	local localizedRoles = setmetatable({
+		["damager"] = L["Damager"],
+		["healer"] = L["Healer"],
+		["tank"] = L["Tank"],
+	}, caseAndWhiteSpaceInsensitiveMetaTable)
+	local specIDToName = {}
+	local specIDToIconAndName = {}
+	local specIDToType = {
+		-- Mage
+		[62] = "ranged", -- Arcane
+		[63] = "ranged", -- Fire
+		[64] = "ranged", -- Frost
+		-- Paladin
+		[65] = "melee", -- Holy
+		[66] = "melee", -- Protection
+		[70] = "melee", -- Retribution
+		-- Warrior
+		[71] = "melee", -- Arms
+		[72] = "melee", -- Fury
+		[73] = "melee", -- Protection
+		-- Druid
+		[102] = "ranged", -- Balance
+		[103] = "melee", -- Feral
+		[104] = "melee", -- Guardian
+		[105] = "ranged", -- Restoration
+		-- Death Knight
+		[250] = "melee", -- Blood
+		[251] = "melee", -- Frost
+		[252] = "melee", -- Unholy
+		-- Hunter
+		[253] = "ranged", -- Beast Mastery
+		[254] = "ranged", -- Marksmanship
+		[255] = "melee", -- Survival
+		-- Priest
+		[256] = "ranged", -- Discipline
+		[257] = "ranged", -- Holy
+		[258] = "ranged", -- Shadow
+		-- Rogue
+		[259] = "melee", -- Assassination
+		[260] = "melee", -- Outlaw
+		[261] = "melee", -- Subtlety
+		-- Shaman
+		[262] = "ranged", -- Elemental
+		[263] = "melee", -- Enhancement
+		[264] = "ranged", -- Restoration
+		-- Warlock
+		[265] = "ranged", -- Affliction
+		[266] = "ranged", -- Demonology
+		[267] = "ranged", -- Destruction
+		-- Monk
+		[268] = "melee", -- Brewmaster
+		[270] = "melee", -- Mistweaver
+		[269] = "melee", -- Windwalker
+		-- Demon Hunter
+		[577] = "melee", -- Havoc
+		[581] = "melee", -- Vengeance
+		-- Evoker
+		[1467] = "ranged", -- Devastation
+		[1468] = "ranged", -- Preservation
+		[1473] = "ranged", -- Augmentation
+	}
 
-local specIDToName = {
-	-- Mage
-	[62] = "Arcane",
-	[63] = "Fire",
-	[64] = "Frost",
-	-- Paladin
-	[65] = "Holy",
-	[66] = "Protection",
-	[70] = "Retribution",
-	-- Warrior
-	[71] = "Arms",
-	[72] = "Fury",
-	[73] = "Protection",
-	-- Druid
-	[102] = "Balance",
-	[103] = "Feral",
-	[104] = "Guardian",
-	[105] = "Restoration",
-	-- Death Knight
-	[250] = "Blood",
-	[251] = "Frost",
-	[252] = "Unholy",
-	-- Hunter
-	[253] = "Beast Mastery",
-	[254] = "Marksmanship",
-	[255] = "Survival",
-	-- Priest
-	[256] = "Discipline",
-	[257] = "Holy",
-	[258] = "Shadow",
-	-- Rogue
-	[259] = "Assassination",
-	[260] = "Outlaw",
-	[261] = "Subtlety",
-	-- Shaman
-	[262] = "Elemental",
-	[263] = "Enhancement",
-	[264] = "Restoration",
-	-- Warlock
-	[265] = "Affliction",
-	[266] = "Demonology",
-	[267] = "Destruction",
-	-- Monk
-	[268] = "Brewmaster",
-	[270] = "Mistweaver",
-	[269] = "Windwalker",
-	-- Demon Hunter
-	[577] = "Havoc",
-	[581] = "Vengeance",
-	-- Evoker
-	[1467] = "Devastation",
-	[1468] = "Preservation",
-	[1473] = "Augmentation",
-}
-
-local specIDToIconAndName = {}
-
-for specID, _ in pairs(specIDToName) do
-	local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
-	specIDToIconAndName[specID] = format("|T%s:16|t %s", icon, name)
-	specIDToName[specID] = name
-end
-
-local caseAndWhiteSpaceInsensitiveMetaTable = {
-	__index = function(tbl, key)
-		if type(key) == "string" then
-			key = key:lower()
-			key = key:gsub("%s", "")
-		end
-		return rawget(tbl, key)
-	end,
-	__newindex = function(tbl, key, value)
-		if type(key) == "string" then
-			key = key:lower()
-			key = key:gsub("%s", "")
-		end
-		rawset(tbl, key, value)
-	end,
-}
-
-local genericIcons = setmetatable({
-	["star"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1" .. ":0|t",
-	["circle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_2" .. ":0|t",
-	["diamond"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_3" .. ":0|t",
-	["triangle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4" .. ":0|t",
-	["moon"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_5" .. ":0|t",
-	["square"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_6" .. ":0|t",
-	["cross"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_7" .. ":0|t",
-	["skull"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8" .. ":0|t",
-	["wow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-WoWicon" .. ":16|t",
-	["d3"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-D3icon" .. ":16|t",
-	["sc2"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Sc2icon" .. ":16|t",
-	["bnet"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Portrait" .. ":16|t",
-	["bnet1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Battleneticon" .. ":16|t",
-	["alliance"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Alliance" .. ":16|t",
-	["horde"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Horde" .. ":16|t",
-	["hots"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-HotSicon" .. ":16|t",
-	["ow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Overwatchicon" .. ":16|t",
-	["sc1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-SCicon" .. ":16|t",
-	["barcade"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-BlizzardArcadeCollectionicon" .. ":16|t",
-	["crashb"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-CrashBandicoot4icon" .. ":16|t",
-	["tank"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:0:19:22:41|t",
-	["healer"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:1:20|t",
-	["dps"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:22:41|t",
-}, caseAndWhiteSpaceInsensitiveMetaTable)
-
-for i = 1, 8 do
-	local icon = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i .. ":0|t"
-	genericIcons[format("rt%d", i)] = icon
-end
-
-local prettyClassNames = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
-
-for i = 1, kNumberOfClasses do
-	local className, classFile, classID = GetClassInfo(i)
-	local colorMixin = GetClassColor(classFile)
-	local prettyClassName = colorMixin:WrapTextInColorCode(className)
-	prettyClassNames[classFile] = prettyClassName
-
-	local classNameWithoutSpaces = className:gsub(" ", "")
-	local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
-	genericIcons[format("%s", className)] = classIcon
-	genericIcons[format("%d", classID)] = classIcon
-	if classNameWithoutSpaces == "DeathKnight" then
-		genericIcons["dk"] = classIcon
-	elseif classNameWithoutSpaces == "DemonHunter" then
-		genericIcons["dh"] = classIcon
+	for specID, _ in pairs(specIDToType) do
+		local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
+		specIDToIconAndName[specID] = format("|T%s:16|t %s", icon, name)
+		specIDToName[specID] = name
 	end
-end
 
----@param text string
----@return string
-local function ReplaceGenericIcons(text)
-	local result, _ = text:gsub("{(.-)}", function(match)
-		return genericIcons[match] or ("{" .. match .. "}")
-	end)
-	return result
+	local genericIcons = setmetatable({
+		["star"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1" .. ":0|t",
+		["circle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_2" .. ":0|t",
+		["diamond"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_3" .. ":0|t",
+		["triangle"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4" .. ":0|t",
+		["moon"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_5" .. ":0|t",
+		["square"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_6" .. ":0|t",
+		["cross"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_7" .. ":0|t",
+		["skull"] = "|T" .. "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8" .. ":0|t",
+		["wow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-WoWicon" .. ":16|t",
+		["d3"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-D3icon" .. ":16|t",
+		["sc2"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Sc2icon" .. ":16|t",
+		["bnet"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Portrait" .. ":16|t",
+		["bnet1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Battleneticon" .. ":16|t",
+		["alliance"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Alliance" .. ":16|t",
+		["horde"] = "|T" .. "Interface\\FriendsFrame\\PlusManz-Horde" .. ":16|t",
+		["hots"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-HotSicon" .. ":16|t",
+		["ow"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-Overwatchicon" .. ":16|t",
+		["sc1"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-SCicon" .. ":16|t",
+		["barcade"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-BlizzardArcadeCollectionicon" .. ":16|t",
+		["crashb"] = "|T" .. "Interface\\FriendsFrame\\Battlenet-CrashBandicoot4icon" .. ":16|t",
+		["tank"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:0:19:22:41|t",
+		["healer"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:1:20|t",
+		["dps"] = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":16:16:0:0:64:64:20:39:22:41|t",
+	}, caseAndWhiteSpaceInsensitiveMetaTable)
+
+	for i = 1, 8 do
+		local icon = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i .. ":0|t"
+		genericIcons[format("rt%d", i)] = icon
+	end
+
+	for i = 1, kNumberOfClasses do
+		local className, classFile, classID = GetClassInfo(i)
+		local enClassName
+		if classFile == "DEATHKNIGHT" then
+			enClassName = "DeathKnight"
+		elseif classFile == "DEMONHUNTER" then
+			enClassName = "DemonHunter"
+		else
+			enClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
+		end
+		englishClassNamesWithoutSpaces[classFile] = enClassName
+
+		localizedClassNames[classFile] = className
+
+		local colorMixin = GetClassColor(classFile)
+		local prettyClassName = colorMixin:WrapTextInColorCode(className)
+		prettyClassNames[classFile] = prettyClassName
+		prettyClassNames[className] = prettyClassName
+
+		local classNameWithoutSpaces = className:gsub(" ", "")
+		local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
+		genericIcons[format("%s", classFile)] = classIcon
+		genericIcons[format("%s", className)] = classIcon
+		genericIcons[format("%d", classID)] = classIcon
+	end
+
+	---@param text string
+	---@return string
+	function Utilities.ReplaceGenericIcons(text)
+		local result, _ = text:gsub("{(.-)}", function(match)
+			return genericIcons[match] or ("{" .. match .. "}")
+		end)
+		return result
+	end
+
+	---@param className string
+	---@return string|nil
+	function Utilities.GetLocalizedPrettyClassName(className)
+		return prettyClassNames[className]
+	end
+
+	---@param specID integer
+	---@return string|nil
+	function Utilities.GetSpecIconAndLocalizedSpecName(specID)
+		return specIDToIconAndName[specID]
+	end
+
+	---@return table<integer, integer>
+	function Utilities.GetSpecIDs()
+		local IDs = {}
+		for specID, _ in pairs(specIDToType) do
+			tinsert(IDs, specID)
+		end
+		return IDs
+	end
+
+	---@param specID integer
+	---@return string|nil
+	function Utilities.GetTypeFromSpecID(specID)
+		return specIDToType[specID]
+	end
+
+	---@param name string
+	---@return integer|nil
+	function Utilities.GetSpecIDFromSpecName(name)
+		local normalizedSpecName = name:gsub("%s", ""):lower()
+		for specID, specName in pairs(specIDToName) do
+			if name == specName then
+				return specID
+			elseif normalizedSpecName == specName:gsub("%s", ""):lower() then
+				return specID
+			end
+		end
+		return nil
+	end
+
+	---@param specID integer
+	---@return string|nil
+	function Utilities.GetLocalizedSpecNameFromSpecID(specID)
+		return specIDToName[specID]
+	end
+
+	---@param stringType string
+	---@return string|nil
+	function Utilities.GetLocalizedType(stringType)
+		return localizedTypes[stringType]
+	end
+
+	---@param role string
+	---@return string|nil
+	function Utilities.GetLocalizedRole(role)
+		return localizedRoles[role]
+	end
+
+	---@param name string
+	---@return string|nil
+	function Utilities.GetEnglishClassNameWithoutSpaces(name)
+		return englishClassNamesWithoutSpaces[name]
+	end
+
+	---@param specID integer
+	---@return boolean
+	function Utilities.IsValidSpecID(specID)
+		return specIDToType[specID] ~= nil
+	end
+
+	---@param stringType string
+	---@return boolean
+	function Utilities.IsValidType(stringType)
+		return localizedTypes[stringType] ~= nil
+	end
+
+	---@param role string
+	---@return boolean
+	function Utilities.IsValidRole(role)
+		return localizedRoles[role] ~= nil
+	end
 end
 
 ---@param value number
@@ -312,11 +353,6 @@ function Utilities.FindAssignmentByUniqueID(assignments, ID)
 			return assignment
 		end
 	end
-end
-
----@return table<integer, string>
-function Utilities.GetSpecIDToNameTable()
-	return specIDToName
 end
 
 ---@param time number
@@ -660,7 +696,7 @@ local function CreateSpellDropdownItems()
 	for className, classSpells in pairs(Private.spellDB.classes) do
 		local classDropdownData = {
 			itemValue = className,
-			text = prettyClassNames[className],
+			text = Utilities.GetLocalizedPrettyClassName(className),
 			dropdownItemMenuData = {},
 		}
 		local spellTypeIndex = 1
@@ -727,10 +763,10 @@ end
 ---@return DropdownItemData
 local function CreateSpecDropdownItems()
 	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for specID, iconAndName in pairs(specIDToIconAndName) do
+	for _, specID in ipairs(Utilities.GetSpecIDs()) do
 		tinsert(dropdownItems, {
 			itemValue = "spec:" .. tostring(specID),
-			text = iconAndName,
+			text = Utilities.GetSpecIconAndLocalizedSpecName(specID),
 		})
 	end
 	Utilities.SortDropdownDataByItemValue(dropdownItems)
@@ -752,7 +788,7 @@ function Utilities.CreateClassDropdownItemData()
 		end
 		local classDropdownData = {
 			itemValue = "class:" .. actualClassName:gsub("%s", ""),
-			text = prettyClassNames[className],
+			text = Utilities.GetLocalizedPrettyClassName(className),
 		}
 		tinsert(dropdownData, classDropdownData)
 	end
@@ -1091,6 +1127,61 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 end
 
 ---@param assigneeNameOrRole string
+---@return string|nil
+function Utilities.IsValidAssigneeNameOrRole(assigneeNameOrRole)
+	if assigneeNameOrRole == "{everyone}" then
+		return assigneeNameOrRole
+	else
+		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
+		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
+		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
+		local specMatch = assigneeNameOrRole:match("spec:%s*([%a%d]+)")
+		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
+		if classMatch then
+			local englishClassName = Utilities.GetEnglishClassNameWithoutSpaces(classMatch)
+			if englishClassName then
+				return "class:" .. englishClassName
+			end
+		elseif roleMatch then
+			if Utilities.IsValidRole(roleMatch) then
+				return "role:" .. roleMatch:lower()
+			end
+		elseif groupMatch then
+			return "group:" .. groupMatch
+		elseif specMatch then
+			local specIDMatch = tonumber(specMatch)
+			if specIDMatch then
+				if Utilities.IsValidSpecID(specIDMatch) then
+					return "spec:" .. specIDMatch
+				end
+			else
+				local specID = Utilities.GetSpecIDFromSpecName(specMatch)
+				if specID then
+					return "spec:" .. tostring(specID)
+				end
+			end
+		elseif typeMatch then
+			if Utilities.IsValidType(typeMatch) then
+				return "type:" .. typeMatch
+			end
+		else
+			assigneeNameOrRole = assigneeNameOrRole:gsub("%s", "")
+			local characterMatch, realmMatch = assigneeNameOrRole:match("^(%a+)(%-(%a[%a%s%d']+))$")
+			if characterMatch and realmMatch then
+				characterMatch = characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
+				return characterMatch .. "-" .. realmMatch:gsub("%s", "")
+			else
+				characterMatch = assigneeNameOrRole:match("^(%a+)$")
+				if characterMatch then
+					return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
+				end
+			end
+		end
+	end
+	return nil
+end
+
+---@param assigneeNameOrRole string
 ---@param roster table<string, RosterEntry> Roster for the assignments
 ---@return string
 function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
@@ -1104,23 +1195,32 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
 		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
 		if classMatch then
-			local prettyClassName = prettyClassNames[classMatch]
+			local prettyClassName = Utilities.GetLocalizedPrettyClassName(classMatch)
 			if prettyClassName then
 				legibleString = prettyClassName
 			else
 				legibleString = classMatch:sub(1, 1):upper() .. classMatch:sub(2):lower()
 			end
 		elseif roleMatch then
-			legibleString = roleL[roleMatch:lower()]
+			local localizedRole = Utilities.GetLocalizedRole(roleMatch:lower())
+			if localizedRole then
+				legibleString = localizedRole
+			end
 		elseif groupMatch then
 			legibleString = L["Group"] .. " " .. groupMatch
 		elseif specMatch then
 			local specIDMatch = tonumber(specMatch)
 			if specIDMatch then
-				legibleString = specIDToIconAndName[specIDMatch]
+				local specIconAndLocalizedSpecName = Utilities.GetSpecIconAndLocalizedSpecName(specIDMatch)
+				if specIconAndLocalizedSpecName then
+					legibleString = specIconAndLocalizedSpecName
+				end
 			end
 		elseif typeMatch then
-			legibleString = specIDToTypeL[typeMatch:lower()]
+			local localizedType = Utilities.GetLocalizedType(typeMatch)
+			if localizedType then
+				legibleString = localizedType
+			end
 		elseif roster and roster[assigneeNameOrRole] then
 			if roster[assigneeNameOrRole].classColoredName ~= "" then
 				legibleString = roster[assigneeNameOrRole].classColoredName
@@ -1301,6 +1401,14 @@ function Utilities.FindGroupMemberUnit(name)
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
 		if name == UnitName(unit) then
 			return unit
+		else
+			local unitName, unitRealm = UnitFullName(unit)
+			if unitName and unitRealm then
+				local unitFullName = unitName .. "-" .. unitRealm
+				if name == unitFullName then
+					return unitFullName
+				end
+			end
 		end
 	end
 	return nil
@@ -1315,18 +1423,15 @@ function Utilities.GetDataFromGroup()
 		if unit then
 			local role = UnitGroupRolesAssigned(unit)
 			local _, classFileName, _ = UnitClass(unit)
-			local unitName, unitServer = UnitName(unit)
+			local unitName, unitServer = UnitFullName(unit)
+			unitName = Ambiguate(unitName .. "-" .. unitServer, "all")
 			if classFileName then
 				groupData[unitName] = {}
 				groupData[unitName].class = classFileName
 				groupData[unitName].role = role
 				local colorMixin = GetClassColor(classFileName)
-				local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+				local classColoredName = colorMixin:WrapTextInColorCode(unitName:gsub("%-.*", ""))
 				groupData[unitName].classColoredName = classColoredName
-				if unitServer then -- nil if on same server
-					local unitNameAndServer = unitName .. "-" .. unitServer
-					groupData[unitNameAndServer] = groupData[unitName]
-				end
 			end
 		end
 	end
@@ -1481,10 +1586,10 @@ end
 ---@return table<integer, TimelineAssignment|Assignment>
 function Utilities.FilterSelf(timelineAssignments)
 	local filtered = {}
-	local unitName = select(1, UnitName("player"))
+	local unitName, unitRealm = UnitFullName("player")
 	local unitClass = select(2, UnitClass("player"))
-	local specID, spec, _, _, role = GetSpecializationInfo(GetSpecialization())
-	local classType = specIDToType[specID]
+	local specID, _, _, _, role = GetSpecializationInfo(GetSpecialization())
+	local classType = Utilities.GetTypeFromSpecID(specID)
 	for _, timelineAssignment in ipairs(timelineAssignments) do
 		local nameOrRole = timelineAssignment.assigneeNameOrRole or timelineAssignment.assignment.assigneeNameOrRole
 		if nameOrRole:find("class:") then
@@ -1522,7 +1627,7 @@ function Utilities.FilterSelf(timelineAssignments)
 			end
 		elseif nameOrRole:find("{everyone}") then
 			tinsert(filtered, timelineAssignment)
-		elseif unitName == nameOrRole then
+		elseif unitName == nameOrRole or unitName .. "-" .. unitRealm == nameOrRole then
 			tinsert(filtered, timelineAssignment)
 		end
 	end
@@ -1537,7 +1642,7 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 	local reminderText = ""
 	local spellID = assignment.spellInfo.spellID
 	if assignment.text ~= nil and assignment.text ~= "" then
-		reminderText = ReplaceGenericIcons(assignment.text)
+		reminderText = Utilities.ReplaceGenericIcons(assignment.text)
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
 		if spellID ~= nil and spellID > constants.kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
