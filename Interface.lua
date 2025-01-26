@@ -20,6 +20,9 @@ local L = Private.L
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 
+local Create = {}
+local Handle = {}
+
 local abs = math.abs
 local format = format
 local getmetatable = getmetatable
@@ -98,12 +101,8 @@ local planMenuItems = {
 		text = utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
 		dropdownItemMenuData = {
 			{
-				itemValue = "From MRT",
+				itemValue = "FromMRT",
 				text = L["From"] .. "MRT",
-				dropdownItemMenuData = {
-					{ itemValue = "FromMRTOverwrite", text = L["Overwrite Current Plan"] },
-					{ itemValue = "FromMRTNew", text = L["Create New Plan"] },
-				},
 			},
 			{
 				itemValue = "FromString",
@@ -158,49 +157,6 @@ local function GetBossMenuButtonItems()
 	}
 end
 
-local autoOpenNextMenuButtonEntered = nil
-local menuButtonToClose = nil
-
----@param menuButton EPDropdown
-local function HandleMenuButtonEntered(menuButton)
-	if menuButton.open then
-		return
-	end
-	if autoOpenNextMenuButtonEntered and menuButtonToClose then
-		menuButtonToClose:Close()
-		menuButton:Open()
-		menuButtonToClose = menuButton
-	end
-end
-
----@param menuButton EPDropdown
-local function HandleMenuButtonOpened(menuButton)
-	autoOpenNextMenuButtonEntered = true
-	menuButtonToClose = menuButton
-end
-
-local function HandleMenuButtonClosed()
-	autoOpenNextMenuButtonEntered = false
-	menuButtonToClose = nil
-end
-
-local function InitMenuButton(button, text)
-	local menuButtonHeight = Private.mainFrame.windowBar:GetHeight() - 2
-	button:SetTextFontSize(menuButtonFontSize)
-	button:SetItemTextFontSize(menuButtonFontSize)
-	button:SetText(text)
-	button:SetTextCentered(true)
-	button:SetButtonVisibility(false)
-	button:SetAutoItemWidth(true)
-	button:SetShowHighlight(true)
-	button:SetItemHorizontalPadding(menuButtonHorizontalPadding)
-	button:SetWidth(button.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
-	button:SetHeight(menuButtonHeight)
-	button:SetCallback("OnEnter", HandleMenuButtonEntered)
-	button:SetCallback("OnOpened", HandleMenuButtonOpened)
-	button:SetCallback("OnClosed", HandleMenuButtonClosed)
-end
-
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
@@ -225,696 +181,681 @@ local function GetCurrentBossDungeonEncounterID()
 	return Private.mainFrame.bossLabel:GetValue()
 end
 
----@param currentRosterMap table<integer, RosterWidgetMapping>
----@param sharedRosterMap table<integer, RosterWidgetMapping>
-local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	if lastOpenPlan then
+-- Menu Button
+do
+	local autoOpenNextMenuButtonEntered = nil
+	local menuButtonToClose = nil
+
+	---@param menuButton EPDropdown
+	local function HandleMenuButtonEntered(menuButton)
+		if menuButton.open then
+			return
+		end
+		if autoOpenNextMenuButtonEntered and menuButtonToClose then
+			menuButtonToClose:Close()
+			menuButton:Open()
+			menuButtonToClose = menuButton
+		end
+	end
+
+	---@param menuButton EPDropdown
+	local function HandleMenuButtonOpened(menuButton)
+		autoOpenNextMenuButtonEntered = true
+		menuButtonToClose = menuButton
+	end
+
+	local function HandleMenuButtonClosed()
+		autoOpenNextMenuButtonEntered = false
+		menuButtonToClose = nil
+	end
+
+	---@param text string
+	---@return EPDropdown
+	function Create.MenuButton(text)
+		local menuButton = AceGUI:Create("EPDropdown")
+		local menuButtonHeight = Private.mainFrame.windowBar:GetHeight() - 2
+		menuButton:SetTextFontSize(menuButtonFontSize)
+		menuButton:SetItemTextFontSize(menuButtonFontSize)
+		menuButton:SetText(text)
+		menuButton:SetTextCentered(true)
+		menuButton:SetButtonVisibility(false)
+		menuButton:SetAutoItemWidth(true)
+		menuButton:SetShowHighlight(true)
+		menuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
+		menuButton:SetWidth(menuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
+		menuButton:SetHeight(menuButtonHeight)
+		menuButton:SetCallback("OnEnter", HandleMenuButtonEntered)
+		menuButton:SetCallback("OnOpened", HandleMenuButtonOpened)
+		menuButton:SetCallback("OnClosed", HandleMenuButtonClosed)
+		return menuButton
+	end
+end
+
+-- Roster Editor
+do
+	---@param currentRosterMap table<integer, RosterWidgetMapping>
+	---@param sharedRosterMap table<integer, RosterWidgetMapping>
+	local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
+		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+		if lastOpenPlan then
+			local tempRoster = {}
+			for _, rosterWidgetMapping in ipairs(currentRosterMap) do
+				tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
+			AddOn.db.profile.plans[lastOpenPlan].roster = tempRoster
+		end
+
 		local tempRoster = {}
-		for _, rosterWidgetMapping in ipairs(currentRosterMap) do
+		for _, rosterWidgetMapping in ipairs(sharedRosterMap) do
 			tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
 		end
-		AddOn.db.profile.plans[lastOpenPlan].roster = tempRoster
+		AddOn.db.profile.sharedRoster = tempRoster
+
+		Private.rosterEditor:Release()
+		utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
+		utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+
+		if Private.assignmentEditor then
+			local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
+			local targetDropdown = Private.assignmentEditor.targetDropdown
+			local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
+			local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
+				GetCurrentRoster(),
+				assignmentTypeDropdownItems,
+				assigneeDropdownItems
+			)
+			local previousValue = assigneeTypeDropdown:GetValue()
+			assigneeTypeDropdown:Clear()
+			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+			assigneeTypeDropdown:SetValue(previousValue)
+
+			local previousTargetValue = targetDropdown:GetValue()
+			targetDropdown:Clear()
+			targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+			targetDropdown:SetValue(previousTargetValue)
+			Private.assignmentEditor:HandleRosterChanged()
+		end
 	end
 
-	local tempRoster = {}
-	for _, rosterWidgetMapping in ipairs(sharedRosterMap) do
-		tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+	---@param rosterTab EPRosterEditorTab
+	local function HandleImportCurrentGroupButtonClicked(_, _, rosterTab)
+		local importRosterWidgetMapping = nil
+		local noChangeRosterWidgetMapping = nil
+		if rosterTab == "Shared Roster" then
+			noChangeRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+			importRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+		elseif rosterTab == "Current Plan Roster" then
+			noChangeRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+			importRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+		end
+		if importRosterWidgetMapping and noChangeRosterWidgetMapping then
+			local importRoster = {}
+			local noChangeRoster = {}
+			for _, rosterWidgetMapping in ipairs(importRosterWidgetMapping) do
+				importRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
+			for _, rosterWidgetMapping in ipairs(noChangeRosterWidgetMapping) do
+				noChangeRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
+			utilities.ImportGroupIntoRoster(importRoster)
+			utilities.UpdateRosterDataFromGroup(importRoster)
+			if rosterTab == "Shared Roster" then
+				Private.rosterEditor:SetRosters(noChangeRoster, importRoster)
+			elseif rosterTab == "Current Plan Roster" then
+				Private.rosterEditor:SetRosters(importRoster, noChangeRoster)
+			end
+			Private.rosterEditor:SetCurrentTab(rosterTab)
+		end
 	end
-	AddOn.db.profile.sharedRoster = tempRoster
 
-	Private.rosterEditor:Release()
-	utilities.UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	utilities.UpdateRosterDataFromGroup(GetCurrentRoster())
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	---@param rosterTab EPRosterEditorTab
+	---@param fill boolean
+	local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
+		local fromRosterWidgetMapping = nil
+		local toRosterWidgetMapping = nil
+		if rosterTab == "Shared Roster" then
+			fromRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+			toRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+		elseif rosterTab == "Current Plan Roster" then
+			fromRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
+			toRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
+		end
+		if fromRosterWidgetMapping and toRosterWidgetMapping then
+			local fromRoster = {}
+			local toRoster = {}
+			for _, rosterWidgetMapping in ipairs(fromRosterWidgetMapping) do
+				fromRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
+			for _, rosterWidgetMapping in ipairs(toRosterWidgetMapping) do
+				toRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
+			for name, dbEntry in pairs(fromRoster) do
+				if fill and not toRoster[name] then
+					toRoster[name] = Private.DeepCopy(dbEntry)
+				elseif toRoster[name] then
+					if dbEntry.class then
+						if toRoster[name].class == "" then
+							toRoster[name].class = dbEntry.class
+							toRoster[name].classColoredName = ""
+						end
+					end
+					if dbEntry.role then
+						if toRoster[name].role == "" then
+							toRoster[name].role = dbEntry.role
+						end
+					end
+				end
+			end
+			if rosterTab == "Shared Roster" then
+				Private.rosterEditor:SetRosters(fromRoster, toRoster)
+			elseif rosterTab == "Current Plan Roster" then
+				Private.rosterEditor:SetRosters(toRoster, fromRoster)
+			end
+			Private.rosterEditor:SetCurrentTab(rosterTab)
+		end
+	end
 
-	if Private.assignmentEditor then
-		local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
-		local targetDropdown = Private.assignmentEditor.targetDropdown
+	---@param openToTab string
+	function Create.RosterEditor(openToTab)
+		if Private.IsSimulatingBoss() then
+			return
+		end
+		if not Private.rosterEditor then
+			Private.rosterEditor = AceGUI:Create("EPRosterEditor")
+			Private.rosterEditor:SetCallback("OnRelease", function()
+				Private.rosterEditor = nil
+			end)
+			Private.rosterEditor:SetCallback("EditingFinished", HandleRosterEditingFinished)
+			Private.rosterEditor:SetCallback("ImportCurrentGroupButtonClicked", HandleImportCurrentGroupButtonClicked)
+			Private.rosterEditor:SetCallback("FillRosterButtonClicked", function(_, _, tabName)
+				HandleFillOrUpdateRosterButtonClicked(_, _, tabName, true)
+			end)
+			Private.rosterEditor:SetCallback("UpdateRosterButtonClicked", function(_, _, tabName)
+				HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
+			end)
+			Private.rosterEditor.frame:SetParent(UIParent)
+			Private.rosterEditor.frame:SetFrameLevel(kRosterEditorFrameLevel)
+			Private.rosterEditor:SetClassDropdownData(classDropdownItems)
+			Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
+			Private.rosterEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+			Private.rosterEditor:SetCurrentTab(openToTab)
+			Private.rosterEditor:SetPoint("TOP", UIParent, "TOP", 0, -Private.rosterEditor.frame:GetBottom())
+		end
+	end
+end
+
+-- Assignment Editor
+do
+	local function HandleAssignmentEditorDeleteButtonClicked()
+		local assignmentID = Private.assignmentEditor:GetAssignmentID()
+		Private.assignmentEditor:Release()
+		for i, v in ipairs(GetCurrentAssignments()) do
+			if v.uniqueID == assignmentID then
+				tremove(GetCurrentAssignments(), i)
+				break
+			end
+		end
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	end
+
+	---@param assignmentEditor EPAssignmentEditor
+	---@param dataType string
+	---@param value string
+	local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, value)
+		local assignmentID = assignmentEditor:GetAssignmentID()
+		if not assignmentID then
+			return
+		end
+
+		local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+		if not assignment then
+			return
+		end
+
+		local updateFields = false
+		local updatePreviewText = false
+		local updateAssignments = false
+
+		if dataType == "AssignmentType" then
+			if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
+				if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
+					local combatLogEventSpellID, spellCount, minTime = nil, nil, nil
+					if getmetatable(assignment) == Private.classes.TimedAssignment then
+						combatLogEventSpellID, spellCount, minTime = utilities.FindNearestCombatLogEvent(
+							assignment.time,
+							GetCurrentBossDungeonEncounterID(),
+							value,
+							true
+						)
+					end
+					local boss = GetCurrentBoss()
+					if boss then
+						assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
+						if combatLogEventSpellID and spellCount and minTime then
+							local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
+							local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+							if castTimeTable and bossPhaseTable then
+								if
+									castTimeTable[combatLogEventSpellID]
+									and castTimeTable[combatLogEventSpellID][spellCount]
+								then
+									local orderedBossPhaseIndex =
+										castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
+									assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+									assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+								end
+							end
+							assignment.time = utilities.Round(minTime, 1)
+							assignment.combatLogEventSpellID = combatLogEventSpellID
+							assignment.spellCount = spellCount
+						end
+						updateFields = true
+					end
+				end
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
+			elseif value == "Fixed Time" then
+				if getmetatable(assignment) ~= Private.classes.TimedAssignment then
+					local convertedTime = nil
+					if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+						convertedTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime(
+							assignment.time,
+							GetCurrentBossDungeonEncounterID(),
+							assignment.combatLogEventSpellID,
+							assignment.spellCount,
+							assignment.combatLogEventType
+						)
+					end
+					assignment = Private.classes.TimedAssignment:New(assignment, true)
+					if convertedTime then
+						assignment.time = utilities.Round(convertedTime, 1)
+					end
+					updateFields = true
+				end
+			elseif value == "Boss Phase" then
+				if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
+					assignment = Private.classes.PhasedAssignment:New(assignment, true)
+					updateFields = true
+				end
+			end
+		elseif dataType == "CombatLogEventSpellID" then
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local spellID = tonumber(value)
+				if spellID then
+					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+					local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
+					if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
+						assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+						assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+					else
+						local newSpellCount, newMinTime = utilities.FindNearestSpellCount(
+							assignment.time,
+							bossDungeonEncounterID,
+							assignment.combatLogEventType,
+							assignment.combatLogEventSpellID,
+							spellCount,
+							spellID,
+							true
+						)
+						if newSpellCount and newMinTime then
+							assignment--[[@as CombatLogEventAssignment]].time = newMinTime
+							assignment--[[@as CombatLogEventAssignment]].spellCount = newSpellCount
+							assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+						end
+					end
+				end
+				updateFields = true
+			end
+		elseif dataType == "CombatLogEventSpellCount" then
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local spellCount = tonumber(value)
+				if spellCount then
+					local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+					if bossUtilities.IsValidSpellCount(GetCurrentBossDungeonEncounterID(), spellID, spellCount) then
+						assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+					end
+				end
+				updateFields = true
+			end
+		elseif dataType == "PhaseNumber" then
+			if getmetatable(assignment) == Private.classes.PhasedAssignment then
+				local phase = tonumber(value, 10)
+				if phase then
+					assignment--[[@as PhasedAssignment]].phase = phase
+				end
+			end
+		elseif dataType == "SpellAssignment" then
+			if value == constants.kInvalidAssignmentSpellID then
+				if assignment.text:len() > 0 then
+					assignment.spellInfo = {
+						name = "",
+						iconID = 0,
+						originalIconID = 0,
+						castTime = 0,
+						minRange = 0,
+						maxRange = 0,
+						spellID = constants.kTextAssignmentSpellID,
+					}
+				else
+					assignment.spellInfo = {
+						name = "",
+						iconID = 0,
+						originalIconID = 0,
+						castTime = 0,
+						minRange = 0,
+						maxRange = 0,
+						spellID = constants.kInvalidAssignmentSpellID,
+					}
+				end
+			else
+				local spellInfo = GetSpellInfo(value)
+				if spellInfo then
+					assignment.spellInfo = spellInfo
+				end
+			end
+			updateAssignments = true
+			updatePreviewText = true
+		elseif dataType == "AssigneeType" then
+			assignment.assigneeNameOrRole = value
+			updatePreviewText = true
+			updateAssignments = true
+		elseif dataType == "Time" then
+			local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
+			local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
+			local newTime = assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time
+			if timeMinutes and timeSeconds then
+				local roundedMinutes = utilities.Round(timeMinutes, 0)
+				local roundedSeconds = utilities.Round(timeSeconds, 1)
+				local timeValue = roundedMinutes * 60 + roundedSeconds
+				local maxTime = Private.mainFrame.timeline.GetTotalTimelineDuration()
+				if timeValue < 0 or timeValue > maxTime then
+					newTime = max(min(timeValue, maxTime), 0)
+				else
+					newTime = timeValue
+				end
+			end
+			if
+				getmetatable(assignment) == Private.classes.CombatLogEventAssignment
+				or getmetatable(assignment) == Private.classes.PhasedAssignment
+				or getmetatable(assignment) == Private.classes.TimedAssignment
+			then
+				newTime = utilities.Round(newTime, 1)
+				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = newTime
+			end
+			local minutes, seconds = utilities.FormatTime(newTime)
+			assignmentEditor.timeMinuteLineEdit:SetText(minutes)
+			assignmentEditor.timeSecondLineEdit:SetText(seconds)
+		elseif dataType == "OptionalText" then
+			assignment.text = value
+			if assignment.text:len() > 0 and assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+				assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+				updateAssignments = true
+			elseif assignment.text:len() == 0 and assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
+				assignment.spellInfo.spellID = constants.kInvalidAssignmentSpellID
+				updateAssignments = true
+			end
+			updatePreviewText = true
+		elseif dataType == "Target" then
+			assignment.targetName = value
+			updatePreviewText = true
+		end
+
+		if updateFields or updatePreviewText then
+			local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
+			assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+		elseif updatePreviewText then
+			local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
+			assignmentEditor.previewLabel:SetText(previewText, 0)
+		end
+
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			for _, timelineAssignment in pairs(timeline:GetAssignments()) do
+				if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
+					utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBossDungeonEncounterID())
+					break
+				end
+			end
+			timeline:UpdateTimeline()
+			timeline:ClearSelectedBossAbilities()
+			if
+				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+				and assignment--[[@as CombatLogEventAssignment]].spellCount
+			then
+				timeline:SelectBossAbility(
+					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
+					assignment--[[@as CombatLogEventAssignment]].spellCount,
+					true
+				)
+			end
+		end
+		if updateAssignments then
+			interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+			if timeline then
+				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
+			end
+		end
+	end
+
+	---@return EPAssignmentEditor
+	function Create.AssignmentEditor()
+		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
+		assignmentEditor.FormatTime = utilities.FormatTime
+		assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		assignmentEditor.frame:SetFrameLevel(kAssignmentEditorFrameLevel)
+		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
+		assignmentEditor:SetLayout("EPVerticalLayout")
+		assignmentEditor:SetCallback("OnRelease", function()
+			local recent = Private.assignmentEditor.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent")
+			for _, dropdownItemData in ipairs(recent) do
+				tinsert(AddOn.db.profile.recentSpellAssignments, dropdownItemData)
+			end
+			while #AddOn.db.profile.recentSpellAssignments > maxNumberOfRecentItems do
+				tremove(AddOn.db.profile.recentSpellAssignments, 1)
+			end
+			if Private.mainFrame then
+				local timeline = Private.mainFrame.timeline
+				if timeline then
+					timeline:ClearSelectedAssignments()
+					timeline:ClearSelectedBossAbilities()
+				end
+			end
+			Private.assignmentEditor = nil
+		end)
+		assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
+		assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
+		assignmentEditor:SetCallback("CloseButtonClicked", function()
+			Private.assignmentEditor:Release()
+			interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		end)
+		assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
 		local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
 		local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
 			GetCurrentRoster(),
 			assignmentTypeDropdownItems,
 			assigneeDropdownItems
 		)
-		local previousValue = assigneeTypeDropdown:GetValue()
-		assigneeTypeDropdown:Clear()
-		assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
-		assigneeTypeDropdown:SetValue(previousValue)
-
-		local previousTargetValue = targetDropdown:GetValue()
-		targetDropdown:Clear()
-		targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
-		targetDropdown:SetValue(previousTargetValue)
-		Private.assignmentEditor:HandleRosterChanged()
-	end
-end
-
----@param rosterTab EPRosterEditorTab
-local function HandleImportCurrentGroupButtonClicked(_, _, rosterTab)
-	local importRosterWidgetMapping = nil
-	local noChangeRosterWidgetMapping = nil
-	if rosterTab == "Shared Roster" then
-		noChangeRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
-		importRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-	elseif rosterTab == "Current Plan Roster" then
-		noChangeRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-		importRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
-	end
-	if importRosterWidgetMapping and noChangeRosterWidgetMapping then
-		local importRoster = {}
-		local noChangeRoster = {}
-		for _, rosterWidgetMapping in ipairs(importRosterWidgetMapping) do
-			importRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
-		end
-		for _, rosterWidgetMapping in ipairs(noChangeRosterWidgetMapping) do
-			noChangeRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
-		end
-		utilities.ImportGroupIntoRoster(importRoster)
-		utilities.UpdateRosterDataFromGroup(importRoster)
-		if rosterTab == "Shared Roster" then
-			Private.rosterEditor:SetRosters(noChangeRoster, importRoster)
-		elseif rosterTab == "Current Plan Roster" then
-			Private.rosterEditor:SetRosters(importRoster, noChangeRoster)
-		end
-		Private.rosterEditor:SetCurrentTab(rosterTab)
-	end
-end
-
----@param rosterTab EPRosterEditorTab
----@param fill boolean
-local function HandleFillOrUpdateRosterButtonClicked(_, _, rosterTab, fill)
-	local fromRosterWidgetMapping = nil
-	local toRosterWidgetMapping = nil
-	if rosterTab == "Shared Roster" then
-		fromRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
-		toRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-	elseif rosterTab == "Current Plan Roster" then
-		fromRosterWidgetMapping = Private.rosterEditor.sharedRosterWidgetMap
-		toRosterWidgetMapping = Private.rosterEditor.currentRosterWidgetMap
-	end
-	if fromRosterWidgetMapping and toRosterWidgetMapping then
-		local fromRoster = {}
-		local toRoster = {}
-		for _, rosterWidgetMapping in ipairs(fromRosterWidgetMapping) do
-			fromRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
-		end
-		for _, rosterWidgetMapping in ipairs(toRosterWidgetMapping) do
-			toRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
-		end
-		for name, dbEntry in pairs(fromRoster) do
-			if fill and not toRoster[name] then
-				toRoster[name] = Private.DeepCopy(dbEntry)
-			elseif toRoster[name] then
-				if dbEntry.class then
-					if toRoster[name].class == "" then
-						toRoster[name].class = dbEntry.class
-						toRoster[name].classColoredName = ""
-					end
-				end
-				if dbEntry.role then
-					if toRoster[name].role == "" then
-						toRoster[name].role = dbEntry.role
-					end
+		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
+		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+			"Recent",
+			AddOn.db.profile.recentSpellAssignments
+		)
+		local dropdownItems = {}
+		local boss = GetCurrentBoss()
+		if boss then
+			for _, ID in pairs(boss.sortedAbilityIDs) do
+				local spellInfo = GetSpellInfo(ID)
+				if spellInfo then
+					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+					tinsert(dropdownItems, { itemValue = ID, text = iconText })
 				end
 			end
 		end
-		if rosterTab == "Shared Roster" then
-			Private.rosterEditor:SetRosters(fromRoster, toRoster)
-		elseif rosterTab == "Current Plan Roster" then
-			Private.rosterEditor:SetRosters(toRoster, fromRoster)
-		end
-		Private.rosterEditor:SetCurrentTab(rosterTab)
+		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+		assignmentEditor:SetWidth(assignmentEditorWidth)
+		assignmentEditor:DoLayout()
+		return assignmentEditor
 	end
 end
 
----@param openToTab string
-local function CreateRosterEditor(openToTab)
-	if Private.IsSimulatingBoss() then
-		return
-	end
-	if not Private.rosterEditor then
-		Private.rosterEditor = AceGUI:Create("EPRosterEditor")
-		Private.rosterEditor:SetCallback("OnRelease", function()
-			Private.rosterEditor = nil
-		end)
-		Private.rosterEditor:SetCallback("EditingFinished", HandleRosterEditingFinished)
-		Private.rosterEditor:SetCallback("ImportCurrentGroupButtonClicked", HandleImportCurrentGroupButtonClicked)
-		Private.rosterEditor:SetCallback("FillRosterButtonClicked", function(_, _, tabName)
-			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, true)
-		end)
-		Private.rosterEditor:SetCallback("UpdateRosterButtonClicked", function(_, _, tabName)
-			HandleFillOrUpdateRosterButtonClicked(_, _, tabName, false)
-		end)
-		Private.rosterEditor.frame:SetParent(UIParent)
-		Private.rosterEditor.frame:SetFrameLevel(kRosterEditorFrameLevel)
-		Private.rosterEditor:SetClassDropdownData(classDropdownItems)
-		Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
-		Private.rosterEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		Private.rosterEditor:SetCurrentTab(openToTab)
-		Private.rosterEditor:SetPoint("TOP", UIParent, "TOP", 0, -Private.rosterEditor.frame:GetBottom())
-	end
-end
-
-local function HandleAssignmentEditorDeleteButtonClicked()
-	local assignmentID = Private.assignmentEditor:GetAssignmentID()
-	Private.assignmentEditor:Release()
-	for i, v in ipairs(GetCurrentAssignments()) do
-		if v.uniqueID == assignmentID then
-			tremove(GetCurrentAssignments(), i)
-			break
-		end
-	end
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-end
-
----@param assignmentEditor EPAssignmentEditor
----@param dataType string
----@param value string
-local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, value)
-	local assignmentID = assignmentEditor:GetAssignmentID()
-	if not assignmentID then
-		return
-	end
-
-	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-	if not assignment then
-		return
-	end
-
-	local updateFields = false
-	local updatePreviewText = false
-	local updateAssignments = false
-
-	if dataType == "AssignmentType" then
-		if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
-			if getmetatable(assignment) ~= Private.classes.CombatLogEventAssignment then
-				local combatLogEventSpellID, spellCount, minTime = nil, nil, nil
-				if getmetatable(assignment) == Private.classes.TimedAssignment then
-					combatLogEventSpellID, spellCount, minTime = utilities.FindNearestCombatLogEvent(
-						assignment.time,
-						GetCurrentBossDungeonEncounterID(),
-						value,
-						true
-					)
-				end
-				local boss = GetCurrentBoss()
-				if boss then
-					assignment = Private.classes.CombatLogEventAssignment:New(assignment, true)
-					if combatLogEventSpellID and spellCount and minTime then
-						local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
-						local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
-						if castTimeTable and bossPhaseTable then
-							if
-								castTimeTable[combatLogEventSpellID]
-								and castTimeTable[combatLogEventSpellID][spellCount]
-							then
-								local orderedBossPhaseIndex =
-									castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
-								assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-								assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
-							end
-						end
-						assignment.time = utilities.Round(minTime, 1)
-						assignment.combatLogEventSpellID = combatLogEventSpellID
-						assignment.spellCount = spellCount
-					end
-					updateFields = true
-				end
-			end
-			assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
-		elseif value == "Fixed Time" then
-			if getmetatable(assignment) ~= Private.classes.TimedAssignment then
-				local convertedTime = nil
-				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-					convertedTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime(
-						assignment.time,
-						GetCurrentBossDungeonEncounterID(),
-						assignment.combatLogEventSpellID,
-						assignment.spellCount,
-						assignment.combatLogEventType
-					)
-				end
-				assignment = Private.classes.TimedAssignment:New(assignment, true)
-				if convertedTime then
-					assignment.time = utilities.Round(convertedTime, 1)
-				end
-				updateFields = true
-			end
-		elseif value == "Boss Phase" then
-			if getmetatable(assignment) ~= Private.classes.PhasedAssignment then
-				assignment = Private.classes.PhasedAssignment:New(assignment, true)
-				updateFields = true
-			end
-		end
-	elseif dataType == "CombatLogEventSpellID" then
-		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			local spellID = tonumber(value)
-			if spellID then
-				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
-				if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
-					assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
-					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
-				else
-					local newSpellCount, newMinTime = utilities.FindNearestSpellCount(
-						assignment.time,
-						bossDungeonEncounterID,
-						assignment.combatLogEventType,
-						assignment.combatLogEventSpellID,
-						spellCount,
-						spellID,
-						true
-					)
-					if newSpellCount and newMinTime then
-						assignment--[[@as CombatLogEventAssignment]].time = newMinTime
-						assignment--[[@as CombatLogEventAssignment]].spellCount = newSpellCount
-						assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
-					end
-				end
-			end
-			updateFields = true
-		end
-	elseif dataType == "CombatLogEventSpellCount" then
-		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			local spellCount = tonumber(value)
-			if spellCount then
-				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-				if bossUtilities.IsValidSpellCount(GetCurrentBossDungeonEncounterID(), spellID, spellCount) then
-					assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
-				end
-			end
-			updateFields = true
-		end
-	elseif dataType == "PhaseNumber" then
-		if getmetatable(assignment) == Private.classes.PhasedAssignment then
-			local phase = tonumber(value, 10)
-			if phase then
-				assignment--[[@as PhasedAssignment]].phase = phase
-			end
-		end
-	elseif dataType == "SpellAssignment" then
-		if value == constants.kInvalidAssignmentSpellID then
-			if assignment.text:len() > 0 then
-				assignment.spellInfo = {
-					name = "",
-					iconID = 0,
-					originalIconID = 0,
-					castTime = 0,
-					minRange = 0,
-					maxRange = 0,
-					spellID = constants.kTextAssignmentSpellID,
-				}
-			else
-				assignment.spellInfo = {
-					name = "",
-					iconID = 0,
-					originalIconID = 0,
-					castTime = 0,
-					minRange = 0,
-					maxRange = 0,
-					spellID = constants.kInvalidAssignmentSpellID,
-				}
-			end
-		else
-			local spellInfo = GetSpellInfo(value)
-			if spellInfo then
-				assignment.spellInfo = spellInfo
-			end
-		end
-		updateAssignments = true
-		updatePreviewText = true
-	elseif dataType == "AssigneeType" then
-		assignment.assigneeNameOrRole = value
-		updatePreviewText = true
-		updateAssignments = true
-	elseif dataType == "Time" then
-		local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
-		local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
-		local newTime = assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time
-		if timeMinutes and timeSeconds then
-			local roundedMinutes = utilities.Round(timeMinutes, 0)
-			local roundedSeconds = utilities.Round(timeSeconds, 1)
-			local timeValue = roundedMinutes * 60 + roundedSeconds
-			local maxTime = Private.mainFrame.timeline.GetTotalTimelineDuration()
-			if timeValue < 0 or timeValue > maxTime then
-				newTime = max(min(timeValue, maxTime), 0)
-			else
-				newTime = timeValue
-			end
-		end
-		if
-			getmetatable(assignment) == Private.classes.CombatLogEventAssignment
-			or getmetatable(assignment) == Private.classes.PhasedAssignment
-			or getmetatable(assignment) == Private.classes.TimedAssignment
-		then
-			newTime = utilities.Round(newTime, 1)
-			assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = newTime
-		end
-		local minutes, seconds = utilities.FormatTime(newTime)
-		assignmentEditor.timeMinuteLineEdit:SetText(minutes)
-		assignmentEditor.timeSecondLineEdit:SetText(seconds)
-	elseif dataType == "OptionalText" then
-		assignment.text = value
-		if assignment.text:len() > 0 and assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
-			assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
-			updateAssignments = true
-		elseif assignment.text:len() == 0 and assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
-			assignment.spellInfo.spellID = constants.kInvalidAssignmentSpellID
-			updateAssignments = true
-		end
-		updatePreviewText = true
-	elseif dataType == "Target" then
-		assignment.targetName = value
-		updatePreviewText = true
-	end
-
-	if updateFields or updatePreviewText then
-		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
-		assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
-	elseif updatePreviewText then
-		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
-		assignmentEditor.previewLabel:SetText(previewText, 0)
-	end
-
-	local timeline = Private.mainFrame.timeline
-	if timeline then
-		for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-			if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-				utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBossDungeonEncounterID())
-				break
-			end
-		end
-		timeline:UpdateTimeline()
-		timeline:ClearSelectedBossAbilities()
-		if
-			assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-			and assignment--[[@as CombatLogEventAssignment]].spellCount
-		then
-			timeline:SelectBossAbility(
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-				assignment--[[@as CombatLogEventAssignment]].spellCount,
-				true
-			)
-		end
-	end
-	if updateAssignments then
-		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-		if timeline then
-			timeline:ScrollAssignmentIntoView(assignment.uniqueID)
-		end
-	end
-end
-
----@return EPAssignmentEditor
-local function CreateAssignmentEditor()
-	local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
-	assignmentEditor.FormatTime = utilities.FormatTime
-	assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-	assignmentEditor.frame:SetFrameLevel(kAssignmentEditorFrameLevel)
-	assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
-	assignmentEditor:SetLayout("EPVerticalLayout")
-	assignmentEditor:SetCallback("OnRelease", function()
-		local recent = Private.assignmentEditor.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent")
-		for _, dropdownItemData in ipairs(recent) do
-			tinsert(AddOn.db.profile.recentSpellAssignments, dropdownItemData)
-		end
-		while #AddOn.db.profile.recentSpellAssignments > maxNumberOfRecentItems do
-			tremove(AddOn.db.profile.recentSpellAssignments, 1)
-		end
-		if Private.mainFrame then
-			local timeline = Private.mainFrame.timeline
-			if timeline then
-				timeline:ClearSelectedAssignments()
-				timeline:ClearSelectedBossAbilities()
-			end
-		end
-		Private.assignmentEditor = nil
-	end)
-	assignmentEditor:SetCallback("DataChanged", HandleAssignmentEditorDataChanged)
-	assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
-	assignmentEditor:SetCallback("CloseButtonClicked", function()
-		Private.assignmentEditor:Release()
-		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-	end)
-	assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
-	local assigneeDropdownItems = utilities.CreateAssigneeDropdownItems(GetCurrentRoster())
-	local updatedDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(
-		GetCurrentRoster(),
-		assignmentTypeDropdownItems,
-		assigneeDropdownItems
-	)
-	assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
-	assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
-	assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
-	assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
-		"Recent",
-		AddOn.db.profile.recentSpellAssignments
-	)
-	local dropdownItems = {}
-	local boss = GetCurrentBoss()
-	if boss then
-		for _, ID in pairs(boss.sortedAbilityIDs) do
-			local spellInfo = GetSpellInfo(ID)
-			if spellInfo then
-				local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-				tinsert(dropdownItems, { itemValue = ID, text = iconText })
-			end
-		end
-	end
-	assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
-	assignmentEditor:SetWidth(assignmentEditorWidth)
-	assignmentEditor:DoLayout()
-	return assignmentEditor
-end
-
-local function HandleImportPlanFromString(newPlanName)
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.phaseLengthEditor then
-		Private.phaseLengthEditor:Release()
-	end
-
-	local text = Private.importEditBox:GetText()
-	Private.importEditBox:Release()
-	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-
-	bossDungeonEncounterID = Private:ImportPlanFromNote(lastOpenPlan, bossDungeonEncounterID, text)
-		or bossDungeonEncounterID
-
-	AddOn.db.profile.lastOpenPlan = newPlanName
-	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
-	interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-end
-
-local function CreateImportEditBox()
-	Private.importEditBox = AceGUI:Create("EPEditBox")
-	Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-	Private.importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
-	Private.importEditBox.frame:SetPoint("CENTER")
-	Private.importEditBox:SetTitle(L["Import From String"])
-	Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
-	Private.importEditBox.okayButton:SetEnabled(false)
-	Private.importEditBox:SetCallback("OnRelease", function()
-		Private.importEditBox = nil
-	end)
-	Private.importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
-		if checked then
-			widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
-			widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
-			widget.okayButton:SetWidthFromText()
-		else
-			widget.lineEdit:SetText("")
-			widget.okayButton:SetEnabled(false)
-			widget.okayButton:SetText(L["Import As New Plan"])
-			widget.okayButton:SetWidthFromText()
-		end
-	end)
-	Private.importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
-		planName = planName:trim()
-		if planName == "" or AddOn.db.profile.plans[planName] then
-			widget.okayButton:SetEnabled(false)
-		else
-			widget.okayButton:SetEnabled(true)
-		end
-		widget.okayButton:SetText(L["Import As"] .. " " .. planName)
-		widget.okayButton:SetWidthFromText()
-	end)
-	Private.importEditBox:ShowCheckBoxAndLineEdit(
-		true,
-		L["Overwrite Current Plan"],
-		L["New Plan Name:"],
-		AddOn.db.profile.lastOpenPlan
-	)
-	Private.importEditBox:SetCallback("OkayButtonClicked", function(widget)
-		local planName = widget.lineEdit:GetText()
-		planName = planName:trim()
-		if planName == "" then
-			widget.okayButton:SetEnabled(false)
-		else
-			if not AddOn.db.profile.plans[planName] or Private.importEditBox.checkBox:IsChecked() then
-				HandleImportPlanFromString(planName)
-			end
-		end
-	end)
-end
-
----@param boss Boss
----@return table<integer, string>
-local function GetLongPhaseNames(boss)
-	local longPhaseNames = {}
-	for index, phase in ipairs(boss.phases) do
-		local bossPhaseName = phase.name or index
-		if type(bossPhaseName) == "string" then
-			local intMatch = bossPhaseName:match("^Int(%d+)")
-			if intMatch then
-				bossPhaseName = L["Intermission"] .. " " .. intMatch
-			end
-		elseif type(bossPhaseName) == "number" then
-			bossPhaseName = L["Phase"] .. " " .. bossPhaseName
-		end
-		tinsert(longPhaseNames, bossPhaseName)
-	end
-	return longPhaseNames
-end
-
----@param phaseName string
----@param minLineEdit EPLineEdit
----@param secLineEdit EPLineEdit
-local function HandlePhaseLengthEditorDataChanged(_, _, phaseName, minLineEdit, secLineEdit)
-	local boss = GetCurrentBoss()
-	if boss then
-		local previousDuration
-		local totalBossDurationWithoutCurrent = 0.0
-		local longPhaseNames = GetLongPhaseNames(boss)
+-- Phase Length Editor
+do
+	---@param boss Boss
+	---@return table<integer, string>
+	local function GetLongPhaseNames(boss)
+		local longPhaseNames = {}
 		for index, phase in ipairs(boss.phases) do
-			if phaseName == longPhaseNames[index] then
-				previousDuration = phase.duration
-			else
-				totalBossDurationWithoutCurrent = totalBossDurationWithoutCurrent + phase.duration
-			end
-		end
-
-		local formatAndReturn = false
-		local newDuration = previousDuration
-		local timeMinutes = tonumber(minLineEdit:GetText())
-		local timeSeconds = tonumber(secLineEdit:GetText())
-
-		if timeMinutes and timeSeconds then
-			local roundedMinutes = utilities.Round(timeMinutes, 0)
-			local roundedSeconds = utilities.Round(timeSeconds, 1)
-			newDuration = roundedMinutes * 60 + roundedSeconds
-			if abs(newDuration - previousDuration) < 0.01 then
-				formatAndReturn = true
-			end
-			local maxTime = 1200 - totalBossDurationWithoutCurrent
-			if newDuration < 1.0 or newDuration > maxTime then
-				newDuration = max(min(newDuration, maxTime), 1.0)
-			end
-		end
-
-		local minutes, seconds = utilities.FormatTime(newDuration)
-		minLineEdit:SetText(minutes)
-		secLineEdit:SetText(seconds)
-
-		if formatAndReturn then
-			return
-		end
-
-		local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-		local cumulativePhaseTime = 0.0
-		if boss.treatAsSinglePhase then
-			for phaseIndex, phase in ipairs(boss.phases) do
-				if cumulativePhaseTime + phase.defaultDuration <= newDuration then
-					cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
-					phase.duration = phase.defaultDuration
-				elseif cumulativePhaseTime < newDuration then
-					phase.duration = newDuration - cumulativePhaseTime
-					cumulativePhaseTime = cumulativePhaseTime + phase.duration
-				else
-					phase.duration = 0.0
+			local bossPhaseName = phase.name or index
+			if type(bossPhaseName) == "string" then
+				local intMatch = bossPhaseName:match("^Int(%d+)")
+				if intMatch then
+					bossPhaseName = L["Intermission"] .. " " .. intMatch
 				end
-				customPhaseDurations[phaseIndex] = phase.duration
+			elseif type(bossPhaseName) == "number" then
+				bossPhaseName = L["Phase"] .. " " .. bossPhaseName
 			end
-		else
-			for phaseIndex, phase in ipairs(boss.phases) do
-				if phaseName == longPhaseNames[phaseIndex] then
-					phase.duration = newDuration
-					customPhaseDurations[phaseIndex] = phase.duration
-					break
-				end
-			end
+			tinsert(longPhaseNames, bossPhaseName)
 		end
-
-		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-		interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-		interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+		return longPhaseNames
 	end
-end
 
-local function CreatePhaseLengthEditor()
-	if not Private.phaseLengthEditor then
-		local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
-		phaseLengthEditor.FormatTime = utilities.FormatTime
-		phaseLengthEditor:SetCallback("OnRelease", function()
-			Private.phaseLengthEditor = nil
-		end)
-		phaseLengthEditor:SetCallback("CloseButtonClicked", function()
-			Private.phaseLengthEditor:Release()
-		end)
-		phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
+	---@param phaseName string
+	---@param minLineEdit EPLineEdit
+	---@param secLineEdit EPLineEdit
+	local function HandlePhaseLengthEditorDataChanged(_, _, phaseName, minLineEdit, secLineEdit)
+		local boss = GetCurrentBoss()
+		if boss then
+			local previousDuration
+			local totalBossDurationWithoutCurrent = 0.0
+			local longPhaseNames = GetLongPhaseNames(boss)
+			for index, phase in ipairs(boss.phases) do
+				if phaseName == longPhaseNames[index] then
+					previousDuration = phase.duration
+				else
+					totalBossDurationWithoutCurrent = totalBossDurationWithoutCurrent + phase.duration
+				end
+			end
+
+			local formatAndReturn = false
+			local newDuration = previousDuration
+			local timeMinutes = tonumber(minLineEdit:GetText())
+			local timeSeconds = tonumber(secLineEdit:GetText())
+
+			if timeMinutes and timeSeconds then
+				local roundedMinutes = utilities.Round(timeMinutes, 0)
+				local roundedSeconds = utilities.Round(timeSeconds, 1)
+				newDuration = roundedMinutes * 60 + roundedSeconds
+				if abs(newDuration - previousDuration) < 0.01 then
+					formatAndReturn = true
+				end
+				local maxTime = 1200 - totalBossDurationWithoutCurrent
+				if newDuration < 1.0 or newDuration > maxTime then
+					newDuration = max(min(newDuration, maxTime), 1.0)
+				end
+			end
+
+			local minutes, seconds = utilities.FormatTime(newDuration)
+			minLineEdit:SetText(minutes)
+			secLineEdit:SetText(seconds)
+
+			if formatAndReturn then
+				return
+			end
+
 			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-			wipe(customPhaseDurations)
+			local cumulativePhaseTime = 0.0
+			if boss.treatAsSinglePhase then
+				for phaseIndex, phase in ipairs(boss.phases) do
+					if cumulativePhaseTime + phase.defaultDuration <= newDuration then
+						cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
+						phase.duration = phase.defaultDuration
+					elseif cumulativePhaseTime < newDuration then
+						phase.duration = newDuration - cumulativePhaseTime
+						cumulativePhaseTime = cumulativePhaseTime + phase.duration
+					else
+						phase.duration = 0.0
+					end
+					customPhaseDurations[phaseIndex] = phase.duration
+				end
+			else
+				for phaseIndex, phase in ipairs(boss.phases) do
+					if phaseName == longPhaseNames[phaseIndex] then
+						phase.duration = newDuration
+						customPhaseDurations[phaseIndex] = phase.duration
+						break
+					end
+				end
+			end
+
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 			interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-		end)
-		phaseLengthEditor:SetCallback("DataChanged", HandlePhaseLengthEditorDataChanged)
-
-		local boss = GetCurrentBoss()
-		if boss then
-			local phaseData = {}
-			if boss.treatAsSinglePhase then
-				local totalTime, defaultTotalTime = 0.0, 0.0
-				for _, phase in ipairs(boss.phases) do
-					totalTime = totalTime + phase.duration
-					defaultTotalTime = defaultTotalTime + phase.defaultDuration
-				end
-				tinsert(phaseData, {
-					name = "P1",
-					defaultDuration = defaultTotalTime,
-					fixedDuration = boss.phases[1].fixedDuration,
-					duration = totalTime,
-				})
-			else
-				local longPhaseNames = GetLongPhaseNames(boss)
-				for phaseIndex, phase in ipairs(boss.phases) do
-					tinsert(phaseData, {
-						name = longPhaseNames[phaseIndex],
-						defaultDuration = phase.defaultDuration,
-						fixedDuration = phase.fixedDuration,
-						duration = phase.duration,
-					})
-				end
-			end
-			phaseLengthEditor:AddEntries(phaseData)
 		end
+	end
 
-		phaseLengthEditor.frame:SetParent(UIParent)
-		phaseLengthEditor.frame:SetFrameLevel(kPhaseEditorFrameLevel)
-		phaseLengthEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		phaseLengthEditor:Resize()
-		phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
+	function Create.PhaseLengthEditor()
+		if not Private.phaseLengthEditor then
+			local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
+			phaseLengthEditor.FormatTime = utilities.FormatTime
+			phaseLengthEditor:SetCallback("OnRelease", function()
+				Private.phaseLengthEditor = nil
+			end)
+			phaseLengthEditor:SetCallback("CloseButtonClicked", function()
+				Private.phaseLengthEditor:Release()
+			end)
+			phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
+				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
+				wipe(customPhaseDurations)
+				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+				interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+				interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+			end)
+			phaseLengthEditor:SetCallback("DataChanged", HandlePhaseLengthEditorDataChanged)
 
-		Private.phaseLengthEditor = phaseLengthEditor
+			local boss = GetCurrentBoss()
+			if boss then
+				local phaseData = {}
+				if boss.treatAsSinglePhase then
+					local totalTime, defaultTotalTime = 0.0, 0.0
+					for _, phase in ipairs(boss.phases) do
+						totalTime = totalTime + phase.duration
+						defaultTotalTime = defaultTotalTime + phase.defaultDuration
+					end
+					tinsert(phaseData, {
+						name = "P1",
+						defaultDuration = defaultTotalTime,
+						fixedDuration = boss.phases[1].fixedDuration,
+						duration = totalTime,
+					})
+				else
+					local longPhaseNames = GetLongPhaseNames(boss)
+					for phaseIndex, phase in ipairs(boss.phases) do
+						tinsert(phaseData, {
+							name = longPhaseNames[phaseIndex],
+							defaultDuration = phase.defaultDuration,
+							fixedDuration = phase.fixedDuration,
+							duration = phase.duration,
+						})
+					end
+				end
+				phaseLengthEditor:AddEntries(phaseData)
+			end
+
+			phaseLengthEditor.frame:SetParent(UIParent)
+			phaseLengthEditor.frame:SetFrameLevel(kPhaseEditorFrameLevel)
+			phaseLengthEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+			phaseLengthEditor:Resize()
+			phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
+
+			Private.phaseLengthEditor = phaseLengthEditor
+		end
 	end
 end
 
 ---@param value number|string
-local function HandleBossDropdownValueChanged(value)
+local function HandleChangeBossDropdownValueChanged(value)
 	local bossDungeonEncounterID = tonumber(value)
 	if bossDungeonEncounterID then
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
@@ -991,7 +932,7 @@ end
 ---@param dropdown EPDropdown
 ---@param value number|string
 ---@param selected boolean
-local function HandleBossAbilitySelectDropdownValueChanged(dropdown, value, selected)
+local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 	if value == L["Filter Spells"] or type(value) ~= "number" then
 		return
 	end
@@ -1061,7 +1002,7 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
 	if assignment then
 		if not Private.assignmentEditor then
-			Private.assignmentEditor = CreateAssignmentEditor()
+			Private.assignmentEditor = Create.AssignmentEditor()
 		end
 		local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
 		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
@@ -1183,88 +1124,153 @@ local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time
 	end
 end
 
-local function HandleDuplicatePlanButtonClicked()
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	local plans = AddOn.db.profile.plans
-	local planToDuplicateName = AddOn.db.profile.lastOpenPlan
-	local planToDuplicate = plans[planToDuplicateName]
-	local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-	local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
-	local newPlanName = utilities.CreateUniquePlanName(plans, bossName, planToDuplicateName)
-	local newPlan = Private.classes.Plan:New(planToDuplicate, newPlanName, nil)
-	plans[newPlanName] = newPlan
-	AddOn.db.profile.lastOpenPlan = newPlanName
-	bossUtilities.ChangePlanBoss(bossDungeonEncounterID, newPlan)
-	interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-	interfaceUpdater.AddPlanToDropdown(newPlanName, true)
-end
-
-local function HandleDeleteCurrentNoteButtonClicked()
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.rosterEditor then
-		Private.rosterEditor:Release()
-	end
-	local beforeRemovalCount = 0
-	local plans = AddOn.db.profile.plans
-	for _, _ in pairs(plans) do
-		beforeRemovalCount = beforeRemovalCount + 1
-	end
-
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	if lastOpenPlan then
-		plans[lastOpenPlan] = nil
-		interfaceUpdater.RemovePlanFromDropdown(lastOpenPlan)
-	end
-	if beforeRemovalCount > 1 then
-		for name, _ in pairs(plans) do
-			AddOn.db.profile.lastOpenPlan = name
-			local bossDungeonEncounterID = plans[name].dungeonEncounterID
-			if bossDungeonEncounterID then
-				interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-			end
-			break
+-- Plan Menu Button Handlers
+do
+	local function HandleImportPlanFromString(newPlanName)
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
 		end
-	else
-		local newPlanName = L["Default"]
-		plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
-		AddOn.db.profile.lastOpenPlan = newPlanName
+		if Private.phaseLengthEditor then
+			Private.phaseLengthEditor:Release()
+		end
+
+		local text = Private.importEditBox:GetText()
+		Private.importEditBox:Release()
 		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-		bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
+		bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
+			or bossDungeonEncounterID
+
+		AddOn.db.profile.lastOpenPlan = newPlanName
+		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
+		interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+		interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+	end
+
+	local function CreateImportEditBox()
+		Private.importEditBox = AceGUI:Create("EPEditBox")
+		Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
+		Private.importEditBox.frame:SetPoint("CENTER")
+		Private.importEditBox:SetTitle(L["Import From String"])
+		Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
+		Private.importEditBox.okayButton:SetEnabled(true)
+		Private.importEditBox:SetCallback("OnRelease", function()
+			Private.importEditBox = nil
+		end)
+		Private.importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
+			if checked then
+				widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
+				widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
+				widget.okayButton:SetWidthFromText()
+				widget.okayButton:SetEnabled(true)
+			else
+				widget.lineEdit:SetText("")
+				widget.okayButton:SetEnabled(false)
+				widget.okayButton:SetText(L["Import As New Plan"])
+				widget.okayButton:SetWidthFromText()
+			end
+		end)
+		Private.importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
+			planName = planName:trim()
+			if planName == "" or AddOn.db.profile.plans[planName] then
+				widget.okayButton:SetEnabled(false)
+			else
+				widget.okayButton:SetEnabled(true)
+			end
+			widget.okayButton:SetText(L["Import As"] .. " " .. planName)
+			widget.okayButton:SetWidthFromText()
+		end)
+		Private.importEditBox:ShowCheckBoxAndLineEdit(
+			true,
+			L["Overwrite Current Plan"],
+			L["New Plan Name:"],
+			utilities.CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name, AddOn.db.profile.lastOpenPlan)
+		)
+		Private.importEditBox:SetCallback("OkayButtonClicked", function(widget)
+			local planName = widget.lineEdit:GetText()
+			planName = planName:trim()
+			if planName == "" then
+				widget.okayButton:SetEnabled(false)
+			else
+				if not AddOn.db.profile.plans[planName] or Private.importEditBox.checkBox:IsChecked() then
+					HandleImportPlanFromString(planName)
+				end
+			end
+		end)
+	end
+
+	local function HandleDuplicatePlanButtonClicked()
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+		local plans = AddOn.db.profile.plans
+		local planToDuplicateName = AddOn.db.profile.lastOpenPlan
+		local planToDuplicate = plans[planToDuplicateName]
+		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+		local newPlanName = utilities.CreateUniquePlanName(plans, bossName, planToDuplicateName)
+		local newPlan = Private.classes.Plan:New(planToDuplicate, newPlanName, nil)
+		plans[newPlanName] = newPlan
+		AddOn.db.profile.lastOpenPlan = newPlanName
+		bossUtilities.ChangePlanBoss(bossDungeonEncounterID, newPlan)
+		interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		interfaceUpdater.AddPlanToDropdown(newPlanName, true)
 	end
-	local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
-	interfaceUpdater.AddPlanToDropdown(newLastOpenPlan, true)
-	interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
-end
 
----@param importType string
-local function ImportPlan(importType)
-	if not Private.importEditBox then
-		if importType == "FromMRTOverwrite" or importType == "FromMRTNew" then
-			if Private.assignmentEditor then
-				Private.assignmentEditor:Release()
+	local function HandleDeleteCurrentNoteButtonClicked()
+		if Private.assignmentEditor then
+			Private.assignmentEditor:Release()
+		end
+		if Private.rosterEditor then
+			Private.rosterEditor:Release()
+		end
+		local beforeRemovalCount = 0
+		local plans = AddOn.db.profile.plans
+		for _, _ in pairs(plans) do
+			beforeRemovalCount = beforeRemovalCount + 1
+		end
+
+		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+		if lastOpenPlan then
+			plans[lastOpenPlan] = nil
+			interfaceUpdater.RemovePlanFromDropdown(lastOpenPlan)
+		end
+		if beforeRemovalCount > 1 then
+			for name, _ in pairs(plans) do
+				AddOn.db.profile.lastOpenPlan = name
+				local bossDungeonEncounterID = plans[name].dungeonEncounterID
+				if bossDungeonEncounterID then
+					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
+				end
+				break
 			end
-			if Private.phaseLengthEditor then
-				Private.phaseLengthEditor:Release()
-			end
-			local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
-			if not loadingOrLoaded and not loaded then
-				print(format("%s: %s", AddOnName, L["No note was loaded due to MRT not being installed."]))
-			end
-			if VMRT and VMRT.Note and VMRT.Note.Text1 then
-				local text = VMRT.Note.Text1
-				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-				if importType == "FromMRTOverwrite" then
-					bossDungeonEncounterID = Private:ImportPlanFromNote(
-						AddOn.db.profile.lastOpenPlan,
-						bossDungeonEncounterID,
-						text
-					) or bossDungeonEncounterID
-				elseif importType == "FromMRTNew" then
+		else
+			local newPlanName = L["Default"]
+			plans[newPlanName] = Private.classes.Plan:New({}, newPlanName)
+			AddOn.db.profile.lastOpenPlan = newPlanName
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
+			interfaceUpdater.AddPlanToDropdown(newPlanName, true)
+		end
+		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
+		interfaceUpdater.AddPlanToDropdown(newLastOpenPlan, true)
+		interfaceUpdater.UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	end
+
+	---@param importType string
+	local function ImportPlan(importType)
+		if not Private.importEditBox then
+			if importType == "FromMRT" then
+				if Private.assignmentEditor then
+					Private.assignmentEditor:Release()
+				end
+				if Private.phaseLengthEditor then
+					Private.phaseLengthEditor:Release()
+				end
+
+				if VMRT and VMRT.Note and VMRT.Note.Text1 then
+					local text = VMRT.Note.Text1
+					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 					local bossName = bossUtilities.GetBossName(bossDungeonEncounterID)
 					local newPlanName =
 						utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName --[[@as string]])
@@ -1275,121 +1281,121 @@ local function ImportPlan(importType)
 					interfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
+			elseif importType == "FromString" then
+				CreateImportEditBox()
 			end
-		elseif importType == "FromString" then
-			CreateImportEditBox()
 		end
 	end
-end
 
-local function HandleExportPlanButtonClicked()
-	if not Private.exportEditBox then
-		Private.exportEditBox = AceGUI:Create("EPEditBox")
-		Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
-		Private.exportEditBox.frame:SetPoint("CENTER")
-		Private.exportEditBox:SetTitle(L["Export"])
-		Private.exportEditBox:SetCallback("OnRelease", function()
-			Private.exportEditBox = nil
-		end)
-	end
-	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-	local text = Private:ExportPlanToNote(plan, GetCurrentBossDungeonEncounterID())
-	if text then
-		Private.exportEditBox:SetText(text)
-		Private.exportEditBox:HighlightTextAndFocus()
-	end
-end
-
-local function CreateNewPlanDialog(bossDropdownData)
-	if not Private.newPlanDialog then
-		local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
-		newPlanDialog:SetCallback("OnRelease", function()
-			Private.newPlanDialog = nil
-		end)
-		newPlanDialog:SetCallback("CloseButtonClicked", function()
-			Private.newPlanDialog:Release()
-		end)
-		newPlanDialog:SetCallback("CancelButtonClicked", function()
-			Private.newPlanDialog:Release()
-		end)
-		newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
-			local newBossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
-			widget:SetPlanNameLineEditText(utilities.CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
-			widget:SetCreateButtonEnabled(true)
-		end)
-		newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
-			planName = planName:trim()
-			if planName == "" or AddOn.db.profile.plans[planName] then
-				widget:SetCreateButtonEnabled(false)
-			else
-				if Private.assignmentEditor then
-					Private.assignmentEditor:Release()
-				end
-				if Private.rosterEditor then
-					Private.rosterEditor:Release()
-				end
-				widget:Release()
-				local plans = AddOn.db.profile.plans
-				plans[planName] = Private.classes.Plan:New(nil, planName)
-				AddOn.db.profile.lastOpenPlan = planName
-				bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[planName])
-				interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
-				interfaceUpdater.AddPlanToDropdown(planName, true)
-			end
-		end)
-		newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
-			planName = planName:trim()
-			if planName == "" or AddOn.db.profile.plans[planName] then
-				widget:SetCreateButtonEnabled(false)
-			else
-				widget:SetCreateButtonEnabled(true)
-			end
-		end)
-		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-		newPlanDialog.frame:SetParent(UIParent)
-		newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
-		newPlanDialog:SetBossDropdownItems(bossDropdownData, bossDungeonEncounterID)
-		newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		newPlanDialog:Resize()
-		newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
-		local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
-		newPlanDialog:SetPlanNameLineEditText(
-			utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName, AddOn.db.profile.lastOpenPlan)
-		)
-		Private.newPlanDialog = newPlanDialog
-	end
-end
-
----@param planMenuButton EPDropdown
----@param value any
-local function HandlePlanMenuButtonClicked(planMenuButton, _, value)
-	if value == "Plan" then
-		return
-	end
-	if value == "New Plan" then
-		CreateNewPlanDialog(bossDropdownItems)
-	elseif value == "Duplicate Plan" then
-		HandleDuplicatePlanButtonClicked()
-	elseif value == "Export Current Plan" then
-		HandleExportPlanButtonClicked()
-	elseif value == "Delete Current Plan" then
-		local messageBox = interfaceUpdater.CreateMessageBox(
-			L["Delete Plan Confirmation"],
-			format('%s "%s"?', L["Are you sure you want to delete the plan"], AddOn.db.profile.lastOpenPlan)
-		)
-		if messageBox then
-			messageBox:SetCallback("Accepted", function()
-				if Private.mainFrame then
-					HandleDeleteCurrentNoteButtonClicked()
-				end
+	local function HandleExportPlanButtonClicked()
+		if not Private.exportEditBox then
+			Private.exportEditBox = AceGUI:Create("EPEditBox")
+			Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			Private.exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
+			Private.exportEditBox.frame:SetPoint("CENTER")
+			Private.exportEditBox:SetTitle(L["Export"])
+			Private.exportEditBox:SetCallback("OnRelease", function()
+				Private.exportEditBox = nil
 			end)
 		end
-	elseif sub(value, 1, 4) == "From" then
-		ImportPlan(value)
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local text = Private:ExportPlanToNote(plan, GetCurrentBossDungeonEncounterID())
+		if text then
+			Private.exportEditBox:SetText(text)
+			Private.exportEditBox:HighlightTextAndFocus()
+		end
 	end
-	planMenuButton:SetValue("Plan")
-	planMenuButton:SetText(L["Plan"])
+
+	local function CreateNewPlanDialog(bossDropdownData)
+		if not Private.newPlanDialog then
+			local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
+			newPlanDialog:SetCallback("OnRelease", function()
+				Private.newPlanDialog = nil
+			end)
+			newPlanDialog:SetCallback("CloseButtonClicked", function()
+				Private.newPlanDialog:Release()
+			end)
+			newPlanDialog:SetCallback("CancelButtonClicked", function()
+				Private.newPlanDialog:Release()
+			end)
+			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
+				local newBossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+				widget:SetPlanNameLineEditText(utilities.CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
+				widget:SetCreateButtonEnabled(true)
+			end)
+			newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
+				planName = planName:trim()
+				if planName == "" or AddOn.db.profile.plans[planName] then
+					widget:SetCreateButtonEnabled(false)
+				else
+					if Private.assignmentEditor then
+						Private.assignmentEditor:Release()
+					end
+					if Private.rosterEditor then
+						Private.rosterEditor:Release()
+					end
+					widget:Release()
+					local plans = AddOn.db.profile.plans
+					plans[planName] = Private.classes.Plan:New(nil, planName)
+					AddOn.db.profile.lastOpenPlan = planName
+					bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[planName])
+					interfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+					interfaceUpdater.AddPlanToDropdown(planName, true)
+				end
+			end)
+			newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
+				planName = planName:trim()
+				if planName == "" or AddOn.db.profile.plans[planName] then
+					widget:SetCreateButtonEnabled(false)
+				else
+					widget:SetCreateButtonEnabled(true)
+				end
+			end)
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			newPlanDialog.frame:SetParent(UIParent)
+			newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
+			newPlanDialog:SetBossDropdownItems(bossDropdownData, bossDungeonEncounterID)
+			newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+			newPlanDialog:Resize()
+			newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
+			local bossName = bossUtilities.GetBossName(bossDungeonEncounterID) --[[@as string]]
+			newPlanDialog:SetPlanNameLineEditText(
+				utilities.CreateUniquePlanName(AddOn.db.profile.plans, bossName, AddOn.db.profile.lastOpenPlan)
+			)
+			Private.newPlanDialog = newPlanDialog
+		end
+	end
+
+	---@param planMenuButton EPDropdown
+	---@param value any
+	function Handle.PlanMenuButtonClicked(planMenuButton, _, value)
+		if value == "Plan" then
+			return
+		end
+		if value == "New Plan" then
+			CreateNewPlanDialog(bossDropdownItems)
+		elseif value == "Duplicate Plan" then
+			HandleDuplicatePlanButtonClicked()
+		elseif value == "Export Current Plan" then
+			HandleExportPlanButtonClicked()
+		elseif value == "Delete Current Plan" then
+			local messageBox = interfaceUpdater.CreateMessageBox(
+				L["Delete Plan Confirmation"],
+				format('%s "%s"?', L["Are you sure you want to delete the plan"], AddOn.db.profile.lastOpenPlan)
+			)
+			if messageBox then
+				messageBox:SetCallback("Accepted", function()
+					if Private.mainFrame then
+						HandleDeleteCurrentNoteButtonClicked()
+					end
+				end)
+			end
+		elseif sub(value, 1, 4) == "From" then
+			ImportPlan(value)
+		end
+		planMenuButton:SetValue("Plan")
+		planMenuButton:SetText(L["Plan"])
+	end
 end
 
 ---@param bossMenuButton EPDropdown
@@ -1398,15 +1404,16 @@ local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, t
 	if value == "Boss" then
 		return
 	elseif value == "Edit Phase Timings" then
-		CreatePhaseLengthEditor()
+		Create.PhaseLengthEditor()
 		bossMenuButton:SetValue("Boss")
 		bossMenuButton:SetText("Boss")
 	elseif topLevelItemValue == "Change Boss" then
-		HandleBossDropdownValueChanged(value)
+		bossMenuButton:Close()
+		HandleChangeBossDropdownValueChanged(value)
 		bossMenuButton:SetValue("Boss")
 		bossMenuButton:SetText("Boss")
 	elseif topLevelItemValue == "Filter Spells" then
-		HandleBossAbilitySelectDropdownValueChanged(bossMenuButton, value, selected)
+		HandleActiveBossAbilitiesChanged(bossMenuButton, value, selected)
 	end
 end
 
@@ -1417,9 +1424,9 @@ local function HandleRosterMenuButtonClicked(rosterMenuButton, _, value)
 		return
 	end
 	if value == "Edit Current Plan Roster" then
-		CreateRosterEditor("Current Plan Roster")
+		Create.RosterEditor("Current Plan Roster")
 	elseif value == "Edit Shared Roster" then
-		CreateRosterEditor("Shared Roster")
+		Create.RosterEditor("Shared Roster")
 	end
 	rosterMenuButton:SetValue("Roster")
 	rosterMenuButton:SetText(L["Roster"])
@@ -1656,20 +1663,22 @@ function Private:CreateInterface()
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 
+	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
+
 	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
 		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
 		local defaultPlanName = L["Default"]
-		local loadingOrLoaded, loaded = IsAddOnLoaded("MRT")
-		if not loadingOrLoaded and not loaded then
-			print(format("%s: %s", L["No note was loaded due to MRT not being installed."]))
-		end
-		if VMRT and VMRT.Note and VMRT.Note.Text1 then
+		if (MRTLoadingOrLoaded or MRTLoaded) and VMRT and VMRT.Note then
 			local text = VMRT.Note.Text1
-			bossDungeonEncounterID = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, text)
-				or bossDungeonEncounterID
+			if text then
+				local newDungeonEncounterID = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, text)
+				if newDungeonEncounterID then
+					bossDungeonEncounterID = newDungeonEncounterID
+				end
+			end
 		end
-		if not plans[defaultPlanName] then -- MRT not loaded
+		if not plans[defaultPlanName] then
 			plans[defaultPlanName] = Private.classes.Plan:New(nil, defaultPlanName)
 			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
 		end
@@ -1700,19 +1709,17 @@ function Private:CreateInterface()
 		Private.menuButtonContainer = nil
 	end)
 
-	local planMenuButton = AceGUI:Create("EPDropdown")
-	InitMenuButton(planMenuButton, L["Plan"])
+	local planMenuButton = Create.MenuButton(L["Plan"])
 	planMenuButton:AddItems(planMenuItems, "EPDropdownItemToggle", true)
-	planMenuButton:SetCallback("OnValueChanged", HandlePlanMenuButtonClicked)
+	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
+	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
-	local bossMenuButton = AceGUI:Create("EPDropdown")
-	InitMenuButton(bossMenuButton, L["Boss"])
+	local bossMenuButton = Create.MenuButton(L["Boss"])
 	bossMenuButton:SetMultiselect(true)
 	bossMenuButton:AddItems(GetBossMenuButtonItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
-	local rosterMenuButton = AceGUI:Create("EPDropdown")
-	InitMenuButton(rosterMenuButton, L["Roster"])
+	local rosterMenuButton = Create.MenuButton(L["Roster"])
 	rosterMenuButton:AddItems(rosterMenuItems, "EPDropdownItemToggle", true)
 	rosterMenuButton:SetCallback("OnValueChanged", HandleRosterMenuButtonClicked)
 
@@ -1872,8 +1879,6 @@ function Private:CreateInterface()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 	Private.mainFrame:DoLayout()
 	timeline:UpdateTimeline()
-
-	print(planReminderEnableCheckBox.frame:GetFrameLevel())
 end
 
 function Private:InitializeInterface()
