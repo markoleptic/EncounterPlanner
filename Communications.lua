@@ -2,24 +2,38 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local AddOn = Private.addOn
+local L = Private.L
+local Encode = Private.Encode
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
+---@class Plan
+local Plan = Private.classes.Plan
+---@class RosterEntry
+local RosterEntry = Private.classes.RosterEntry
 
 ---@class Utilities
 local utilities = Private.utilities
+local CreateUniquePlanName = utilities.CreateUniquePlanName
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local GetBossName = bossUtilities.GetBossName
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
+local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
+local CreateMessageBox = interfaceUpdater.CreateMessageBox
+local FindMatchingPlan = interfaceUpdater.FindMatchingPlan
+local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
+local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
-local AddOn = Private.addOn
-local L = Private.L
-local GetSpellInfo = C_Spell.GetSpellInfo
 local format = format
-local LibStub = LibStub
-local LibDeflate = LibStub("LibDeflate")
+local GetSpellInfo = C_Spell.GetSpellInfo
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
-local print = print
+local LibDeflate = LibStub("LibDeflate")
 local type = type
 local UnitFullName = UnitFullName
 
@@ -97,9 +111,9 @@ local function DeserializeAssignment(data)
 		assignment.spellCount = data[8]
 		assignment.phase = data[9]
 		assignment.bossPhaseOrderIndex = data[10]
-		return Private.classes.CombatLogEventAssignment:New(assignment)
+		return CombatLogEventAssignment:New(assignment)
 	else
-		return Private.classes.TimedAssignment:New(assignment)
+		return TimedAssignment:New(assignment)
 	end
 end
 
@@ -119,7 +133,7 @@ end
 ---@param serializedRosterEntry SerializedRosterEntry
 ---@return string, RosterEntry
 local function DeserializeRosterEntry(serializedRosterEntry)
-	local rosterEntry = Private.classes.RosterEntry:New({})
+	local rosterEntry = RosterEntry:New({})
 	rosterEntry.class = serializedRosterEntry[2]
 	rosterEntry.role = serializedRosterEntry[3]
 	rosterEntry.classColoredName = serializedRosterEntry[4]
@@ -155,7 +169,7 @@ end
 local function DeserializePlan(serializedPlan)
 	local ID = serializedPlan[1]
 	local name = serializedPlan[2]
-	local plan = Private.classes.Plan:New({}, name, ID)
+	local plan = Plan:New({}, name, ID)
 	plan.dungeonEncounterID = serializedPlan[3]
 	plan.instanceID = serializedPlan[4]
 	for _, serializedAssignment in ipairs(serializedPlan[5]) do
@@ -175,7 +189,7 @@ end
 ---@return string
 local function TableToString(inTable, forChat, level)
 	---@diagnostic disable-next-line: undefined-field
-	local serialized = Private.Encode(inTable)
+	local serialized = Encode(inTable)
 	local compressed = LibDeflate:CompressZlib(serialized, configForDeflate[level] or nil)
 
 	if forChat then
@@ -212,7 +226,7 @@ end
 ---@param plan Plan
 local function ImportPlan(plan)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-	local existingPlanName, existingPlan = interfaceUpdater.FindMatchingPlan(plan.ID)
+	local existingPlanName, existingPlan = FindMatchingPlan(plan.ID)
 
 	if existingPlanName and existingPlan then -- Replace matching plan with imported plan
 		plans[plan.name] = plan
@@ -225,24 +239,24 @@ local function ImportPlan(plan)
 		existingPlan = nil
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			local bossName = bossUtilities.GetBossName(plan.dungeonEncounterID) --[[@as string]]
-			plan.name = utilities.CreateUniquePlanName(plans, bossName, plan.name)
+			local bossName = GetBossName(plan.dungeonEncounterID) --[[@as string]]
+			plan.name = CreateUniquePlanName(plans, bossName, plan.name)
 		end
 		plans[plan.name] = plan
 	end
 
 	if Private.mainFrame then
 		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
-			interfaceUpdater.RemovePlanFromDropdown(existingPlanName)
+			RemovePlanFromDropdown(existingPlanName)
 		end
 
 		local currentPlanName = Private.mainFrame.planDropdown:GetValue()
 		if currentPlanName == existingPlanName or currentPlanName == plan.name then
 			AddOn.db.profile.lastOpenPlan = plan.name
-			interfaceUpdater.AddPlanToDropdown(plan.name, true)
-			interfaceUpdater.UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
+			AddPlanToDropdown(plan.name, true)
+			UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
 		else
-			interfaceUpdater.AddPlanToDropdown(plan.name, false)
+			AddPlanToDropdown(plan.name, false)
 		end
 	end
 end
@@ -282,7 +296,7 @@ function AddOn:OnCommReceived(prefix, message, distribution, sender)
 					plan.name,
 					L["Do you wish to accept the plan? Trusting this character will suppress this warning in the future."]
 				)
-				local messageBox = interfaceUpdater.CreateMessageBox(L["Plan Received"], messageContent)
+				local messageBox = CreateMessageBox(L["Plan Received"], messageContent)
 				if messageBox then
 					messageBox:SetAcceptButtonText(L["Accept and Trust"])
 					messageBox:SetRejectButtonText(L["Reject"])

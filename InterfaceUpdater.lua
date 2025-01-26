@@ -2,22 +2,34 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local AddOn = Private.addOn
+local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
+local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
+local kMessageBoxFrameLevel = constants.frameLevels.kMessageBoxFrameLevel
+local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class InterfaceUpdater
 local InterfaceUpdater = Private.interfaceUpdater
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local GenerateBossTables = bossUtilities.GenerateBossTables
+local GetBoss = bossUtilities.GetBoss
+local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
 
 ---@class Utilities
 local utilities = Private.utilities
+local CreateAssignmentListTable = utilities.CreateAssignmentListTable
+local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
+local CreateReminderText = utilities.CreateReminderText
+local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
+local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
+local SortAssignments = utilities.SortAssignments
 
-local AddOn = Private.addOn
-local L = Private.L
-local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
 local GetSpecializationInfoByID = GetSpecializationInfoByID
@@ -31,11 +43,10 @@ local tostring = tostring
 local tremove = tremove
 local type = type
 
-local kMessageBoxFrameLevel = constants.frameLevels.kMessageBoxFrameLevel
-local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
 local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
-local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 local reminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
+local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
+local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
@@ -54,7 +65,7 @@ do
 	---@param abilityEntry EPAbilityEntry
 	local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
 		local key = tonumber(abilityEntry:GetKey())
-		local boss = bossUtilities.GetBoss(Private.mainFrame.bossLabel:GetValue())
+		local boss = GetBoss(Private.mainFrame.bossLabel:GetValue())
 		if key and boss then
 			local bossDungeonEncounterID = boss.dungeonEncounterID
 			local atLeastOneSelected = false
@@ -136,7 +147,7 @@ do
 	---@param boss Boss
 	---@param timeline EPTimeline
 	local function UpdateTimelineBossAbilities(boss, timeline)
-		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+		local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
 		if bossPhaseTable then
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			timeline:SetBossAbilities(
@@ -156,10 +167,10 @@ do
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
 		if lastBossDungeonEncounterID ~= 0 then
-			bossUtilities.ResetBossPhaseTimings(lastBossDungeonEncounterID)
+			ResetBossPhaseTimings(lastBossDungeonEncounterID)
 		end
 		lastBossDungeonEncounterID = bossDungeonEncounterID
-		local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
+		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
 			for phaseIndex, phaseDuration in pairs(customPhaseDurations) do
@@ -167,7 +178,7 @@ do
 					boss.phases[phaseIndex].duration = phaseDuration
 				end
 			end
-			bossUtilities.GenerateBossTables(boss)
+			GenerateBossTables(boss)
 			local timeline = Private.mainFrame.timeline
 			if timeline then
 				UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
@@ -230,7 +241,7 @@ do
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapButtonClicked(abilityEntry)
-		local assigneeDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
+		local assigneeDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 		abilityEntry:SetAssigneeDropdownItems(assigneeDropdownItems)
 	end
 
@@ -265,9 +276,9 @@ do
 				local assignmentEditor = Private.assignmentEditor
 				local assignmentID = assignmentEditor:GetAssignmentID()
 				if assignmentID then
-					local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+					local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 					if assignment then
-						local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
+						local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
 						assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
 					else
 						assignmentEditor:Release()
@@ -290,7 +301,7 @@ do
 				assignmentContainer:ReleaseChildren()
 				local children = {}
 				local roster = GetCurrentRoster()
-				local map = utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
+				local map = CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 				for _, textTable in ipairs(map) do
 					local assigneeNameOrRole = textTable.assigneeNameOrRole
@@ -346,9 +357,9 @@ do
 						for _, spellID in ipairs(textTable.spells) do
 							local spellEntry = AceGUI:Create("EPAbilityEntry")
 							local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
-							if spellID == constants.kInvalidAssignmentSpellID then
+							if spellID == kInvalidAssignmentSpellID then
 								spellEntry:SetNullAbility(key)
-							elseif spellID == constants.kTextAssignmentSpellID then
+							elseif spellID == kTextAssignmentSpellID then
 								spellEntry:SetGeneralAbility(key)
 							else
 								spellEntry:SetAbility(spellID, key)
@@ -402,7 +413,7 @@ function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, s
 	if timeline then
 		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		if not sortedWithSpellID then
-			sortedWithSpellID = utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+			sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 		end
 		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
 		if not firstUpdate then
@@ -419,7 +430,7 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 		addAssigneeDropdown:Clear()
 		addAssigneeDropdown:SetText(L["Add Assignee"])
 		addAssigneeDropdown:AddItems(
-			utilities.CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
+			CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 			"EPDropdownItemToggle",
 			true
 		)
@@ -432,13 +443,13 @@ end
 ---@param bossDungeonEncounterID integer
 ---@param firstUpdate boolean|nil
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate)
-	local sortedTimelineAssignments = utilities.SortAssignments(
+	local sortedTimelineAssignments = SortAssignments(
 		GetCurrentAssignments(),
 		GetCurrentRoster(),
 		AddOn.db.profile.preferences.assignmentSortType,
 		bossDungeonEncounterID
 	)
-	local sortedWithSpellID = utilities.SortAssigneesWithSpellID(
+	local sortedWithSpellID = SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	)

@@ -1,6 +1,9 @@
 ---@meta _
 C_Timer = {}
 
+---@class Private
+local Private = {}
+
 ---@class FunctionContainer
 ---@field ID string
 local FunctionContainer = {}
@@ -33,3 +36,7 @@ function C_Timer.NewTimer(seconds, callback) end
 ---@alias TickerTimerObjectCallback FunctionContainer|fun(cb: FunctionContainer)
 
 ---@alias TimerTimerObjectCallback FunctionContainer|fun(cb: FunctionContainer)
+
+---@param obj any
+---@return string
+function Private.Encode(obj) end

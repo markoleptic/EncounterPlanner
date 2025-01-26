@@ -6,9 +6,9 @@ local Private = Namespace
 ---@class BossUtilities
 local BossUtilities = Private.bossUtilities
 
-local EJ_SelectInstance = EJ_SelectInstance
-local EJ_SelectEncounter = EJ_SelectEncounter
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
+local EJ_SelectEncounter = EJ_SelectEncounter
+local EJ_SelectInstance = EJ_SelectInstance
 local hugeNumber = math.huge
 local ipairs = ipairs
 local min = math.min

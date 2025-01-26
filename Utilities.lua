@@ -2,33 +2,54 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
+---@class Assignment
+local Assignment = Private.classes.Assignment
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
+---@class Plan
+local Plan = Private.classes.Plan
+---@class PhasedAssignment
+local PhasedAssignment = Private.classes.PhasedAssignment
+---@class RosterEntry
+local RosterEntry = Private.classes.RosterEntry
+---@class TimelineAssignment
+local TimelineAssignment = Private.classes.TimelineAssignment
 
 ---@class Constants
 local constants = Private.constants
+local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class Utilities
 local Utilities = Private.utilities
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local FindBossAbility = bossUtilities.FindBossAbility
+local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
+local GetBoss = bossUtilities.GetBoss
+local GetBossName = bossUtilities.GetBossName
+local GetCumulativePhaseStartTime = bossUtilities.GetCumulativePhaseStartTime
+local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
-local L = Private.L
 local Ambiguate = Ambiguate
 local ceil = math.ceil
-local EJ_SelectInstance, EJ_GetInstanceInfo = EJ_SelectInstance, EJ_GetInstanceInfo
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 local EJ_SelectEncounter, EJ_GetEncounterInfo = EJ_SelectEncounter, EJ_GetEncounterInfo
+local EJ_SelectInstance, EJ_GetInstanceInfo = EJ_SelectInstance, EJ_GetInstanceInfo
 local floor = math.floor
 local format = string.format
-local GetClassInfo = GetClassInfo
 local GetClassColor = C_ClassColor.GetClassColor
-local GetSpellName = C_Spell.GetSpellName
-local GetSpellTexture = C_Spell.GetSpellTexture
+local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetSpecialization = GetSpecialization
 local GetSpecializationInfo = GetSpecializationInfo
 local GetSpecializationInfoByID = GetSpecializationInfoByID
+local GetSpellName = C_Spell.GetSpellName
+local GetSpellTexture = C_Spell.GetSpellTexture
 local hugeNumber = math.huge
 local ipairs = ipairs
 local IsInRaid = IsInRaid
@@ -47,7 +68,6 @@ local UnitClass = UnitClass
 local UnitFullName = UnitFullName
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitName = UnitName
-local wipe = table.wipe
 
 local lineMatchRegex = "([^\r\n]+)"
 
@@ -368,14 +388,14 @@ function Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
 	spellCount,
 	combatLogEventType
 )
-	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable then
 		if
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
 			local adjustedTime = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart + time
-			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+			local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
 					adjustedTime = adjustedTime + ability.duration + ability.castTime
@@ -402,14 +422,14 @@ function Utilities.ConvertAbsoluteTimeToCombatLogEventTime(
 	spellCount,
 	combatLogEventType
 )
-	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable then
 		if
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
 			local adjustedTime = absoluteTime - absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart
-			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+			local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
 					adjustedTime = adjustedTime - ability.duration - ability.castTime
@@ -434,14 +454,14 @@ function Utilities.GetMinimumCombatLogEventTime(
 	spellCount,
 	combatLogEventType
 )
-	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable then
 		if
 			absoluteSpellCastStartTable[combatLogEventSpellID]
 			and absoluteSpellCastStartTable[combatLogEventSpellID][spellCount]
 		then
 			local time = absoluteSpellCastStartTable[combatLogEventSpellID][spellCount].castStart
-			local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+			local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 			if ability then
 				if combatLogEventType == "SAR" then
 					time = time + ability.duration + ability.castTime
@@ -466,14 +486,14 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 	local minTime = hugeNumber
 	local combatLogEventSpellIDForMinTime = nil
 	local spellCountForMinTime = nil
-	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable then
 		if allowBefore then
 			local minTimeBefore = hugeNumber
 			local combatLogEventSpellIDForMinTimeBefore = nil
 			local spellCountForMinTimeBefore = nil
 			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
-				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+				local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 				for spellCount, time in pairs(spellCountAndTime) do
 					local adjustedTime = time.castStart
 					if ability then
@@ -507,7 +527,7 @@ function Utilities.FindNearestCombatLogEvent(absoluteTime, bossDungeonEncounterI
 			end
 		else
 			for combatLogEventSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
-				local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+				local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 				for spellCount, time in pairs(spellCountAndTime) do
 					local adjustedTime = time.castStart
 					if ability then
@@ -562,10 +582,10 @@ function Utilities.FindNearestSpellCount(
 	)
 	local minTime = hugeNumber
 	local spellCountForMinTime = nil
-	local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	if absoluteSpellCastStartTable and absoluteSpellCastStartTable[newCombatLogEventSpellID] then
 		local spellCountAndTime = absoluteSpellCastStartTable[newCombatLogEventSpellID]
-		local ability = bossUtilities.FindBossAbility(bossDungeonEncounterID, newCombatLogEventSpellID)
+		local ability = FindBossAbility(bossDungeonEncounterID, newCombatLogEventSpellID)
 		if allowBefore then
 			local minTimeBefore = hugeNumber
 			local spellCountForMinTimeBefore = nil
@@ -633,7 +653,7 @@ end
 function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, conversionMethod)
 	if conversionMethod == 1 then
 		for _, assignment in ipairs(assignments) do
-			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			if getmetatable(assignment) == CombatLogEventAssignment then
 				local convertedTime = Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
 					assignment.time,
 					oldBoss.dungeonEncounterID,
@@ -642,7 +662,7 @@ function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, co
 					assignment.combatLogEventType
 				)
 				if convertedTime then
-					assignment = Private.classes.TimedAssignment:New(assignment, true)
+					assignment = TimedAssignment:New(assignment, true)
 					assignment.time = Utilities.Round(convertedTime, 1)
 				end
 			end
@@ -650,7 +670,7 @@ function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, co
 	elseif conversionMethod == 2 then
 		for _, assignment in ipairs(assignments) do
 			if
-				getmetatable(assignment --[[@as CombatLogEventAssignment]]) == Private.classes.CombatLogEventAssignment
+				getmetatable(assignment --[[@as CombatLogEventAssignment]]) == CombatLogEventAssignment
 			then
 				local absoluteTime = Utilities.ConvertCombatLogEventTimeToAbsoluteTime(
 					assignment.time,
@@ -667,8 +687,8 @@ function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, co
 						true
 					)
 					if newCombatLogEventSpellID and newSpellCount and newTime then
-						local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(newBoss.dungeonEncounterID)
-						local bossPhaseTable = bossUtilities.GetOrderedBossPhases(newBoss.dungeonEncounterID)
+						local castTimeTable = GetAbsoluteSpellCastTimeTable(newBoss.dungeonEncounterID)
+						local bossPhaseTable = GetOrderedBossPhases(newBoss.dungeonEncounterID)
 						if castTimeTable and bossPhaseTable then
 							if
 								castTimeTable[newCombatLogEventSpellID]
@@ -925,7 +945,7 @@ function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID
 	local allSucceeded = true
 	local warningStrings = {}
 	for _, assignment in pairs(assignments) do
-		local timelineAssignment = Private.classes.TimelineAssignment:New(assignment)
+		local timelineAssignment = TimelineAssignment:New(assignment)
 		local success, warningString =
 			Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
 		if success == true then
@@ -1268,17 +1288,16 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 	local assignment = timelineAssignment.assignment
 	local warningString = nil
 
-	if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+	if getmetatable(assignment) == CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
-		local absoluteSpellCastStartTable = bossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		if absoluteSpellCastStartTable then
 			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
 			if spellIDSpellCastStartTable then
 				local spellCastStart = spellIDSpellCastStartTable[assignment.spellCount].castStart
 				if spellCastStart then
 					local startTime = spellCastStart + assignment.time
-					local ability =
-						bossUtilities.FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID)
+					local ability = FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID)
 					if ability then
 						if assignment.combatLogEventType == "SAR" then
 							startTime = startTime + ability.duration + ability.castTime
@@ -1291,7 +1310,7 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 					warningString = format(
 						'%s %s %s "%d" %s %d.',
 						L["No spell cast times found for boss"],
-						bossUtilities.GetBossName(bossDungeonEncounterID),
+						GetBossName(bossDungeonEncounterID),
 						L["with spell ID"],
 						assignment.combatLogEventSpellID,
 						L["with spell count"],
@@ -1302,35 +1321,29 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 				warningString = format(
 					'%s %s %s "%d".',
 					L["No spell cast times found for boss"],
-					bossUtilities.GetBossName(bossDungeonEncounterID),
+					GetBossName(bossDungeonEncounterID),
 					L["with spell ID"],
 					assignment.combatLogEventSpellID
 				)
 				DevTool:AddData(assignment)
 			end
 		else
-			warningString = format(
-				"%s: %s.",
-				L["No spell cast times found for boss"],
-				bossUtilities.GetBossName(bossDungeonEncounterID)
-			)
+			warningString =
+				format("%s: %s.", L["No spell cast times found for boss"], GetBossName(bossDungeonEncounterID))
 		end
-	elseif getmetatable(assignment) == Private.classes.TimedAssignment then
+	elseif getmetatable(assignment) == TimedAssignment then
 		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
-	elseif getmetatable(assignment) == Private.classes.PhasedAssignment then
+	elseif getmetatable(assignment) == PhasedAssignment then
 		assignment = assignment --[[@as PhasedAssignment]]
 		if bossDungeonEncounterID then
-			local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
+			local boss = GetBoss(bossDungeonEncounterID)
 			if boss then
-				local bossPhaseTable = bossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
+				local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
 				local phase = boss.phases[assignment.phase]
 				if bossPhaseTable and phase then
 					for phaseCount = 1, #phase.count do
-						local phaseStartTime = bossUtilities.GetCumulativePhaseStartTime(
-							bossDungeonEncounterID,
-							bossPhaseTable,
-							phaseCount
-						)
+						local phaseStartTime =
+							GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
 						timelineAssignment.startTime = phaseStartTime
 						break -- TODO: Only first phase appearance implemented
 					end
@@ -1492,7 +1505,7 @@ function Utilities.ImportGroupIntoRoster(roster)
 		if unit then
 			local unitName, _ = UnitName(unit)
 			if unitName then
-				roster[unitName] = Private.classes.RosterEntry:New({})
+				roster[unitName] = RosterEntry:New({})
 			end
 		end
 	end
@@ -1528,7 +1541,7 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 				and not nameOrRole:find("{everyone}")
 			then
 				if not roster[nameOrRole] then
-					roster[nameOrRole] = Private.classes.RosterEntry:New({})
+					roster[nameOrRole] = RosterEntry:New({})
 				end
 				if roster[nameOrRole].role == "" then
 					if determinedRoles[nameOrRole] then
@@ -1644,7 +1657,7 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 	if assignment.text ~= nil and assignment.text ~= "" then
 		reminderText = Utilities.ReplaceGenericIcons(assignment.text)
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if spellID ~= nil and spellID > constants.kTextAssignmentSpellID then
+		if spellID ~= nil and spellID > kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
 				reminderText = assignment.spellInfo.name
 			else
@@ -1668,7 +1681,7 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 				reminderText = assignment.targetName
 			end
 		end
-	elseif spellID ~= nil and spellID > constants.kTextAssignmentSpellID then
+	elseif spellID ~= nil and spellID > kTextAssignmentSpellID then
 		local spellName = assignment.spellInfo.name:len() > 0 and assignment.spellInfo.name or GetSpellName(spellID)
 		if spellName then
 			if addIcon then
@@ -1689,7 +1702,7 @@ end
 ---@param assignments table<integer, Assignment>
 function Utilities.SetAssignmentMetaTables(assignments)
 	for _, assignment in pairs(assignments) do
-		assignment = Private.classes.Assignment:New(assignment)
+		assignment = Assignment:New(assignment)
 		if
 			---@diagnostic disable-next-line: undefined-field
 			assignment.combatLogEventType
@@ -1698,13 +1711,13 @@ function Utilities.SetAssignmentMetaTables(assignments)
 			---@diagnostic disable-next-line: undefined-field
 			and assignment.combatLogEventSpellID > 0
 		then
-			assignment = Private.classes.CombatLogEventAssignment:New(assignment)
+			assignment = CombatLogEventAssignment:New(assignment)
 			---@diagnostic disable-next-line: undefined-field
 		elseif assignment.phase then
-			assignment = Private.classes.PhasedAssignment:New(assignment)
+			assignment = PhasedAssignment:New(assignment)
 			---@diagnostic disable-next-line: undefined-field
 		elseif assignment.time then
-			assignment = Private.classes.TimedAssignment:New(assignment)
+			assignment = TimedAssignment:New(assignment)
 		end
 	end
 end

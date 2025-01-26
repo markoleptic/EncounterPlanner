@@ -2,56 +2,69 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local AddOn = Private.addOn
+---@class Assignment
+local Assignment = Private.classes.Assignment
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+---@class PhasedAssignment
+local PhasedAssignment = Private.classes.PhasedAssignment
+---@class Plan
+local Plan = Private.classes.Plan
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
 
 ---@class Constants
 local constants = Private.constants
+local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
+local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local ChangePlanBoss = bossUtilities.ChangePlanBoss
+local GetBossDungeonEncounterIDFromSpellID = bossUtilities.GetBossDungeonEncounterIDFromSpellID
+local GetMaxSpellCount = bossUtilities.GetMaxSpellCount
+local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
 ---@class Utilities
 local utilities = Private.utilities
+local CreateTimelineAssignments = utilities.CreateTimelineAssignments
+local GetLocalizedSpecNameFromSpecID = utilities.GetLocalizedSpecNameFromSpecID
+local IsValidAssigneeNameOrRole = utilities.IsValidAssigneeNameOrRole
+local SplitStringIntoTable = utilities.SplitStringIntoTable
+local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
+local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 
-local AddOn = Private.addOn
 local concat = table.concat
-local format = format
+local format = string.format
 local floor = math.floor
 local GetSpellInfo = C_Spell.GetSpellInfo
+local getmetatable = getmetatable
 local ipairs = ipairs
 local pairs = pairs
+local sort = sort
 local split = string.split
 local splitTable = strsplittable
 local tinsert = tinsert
 local tonumber = tonumber
-local tostring = tostring
 local wipe = wipe
 
----@class PhasedAssignment
-local PhasedAssignment = Private.classes.PhasedAssignment
----@class TimedAssignment
-local TimedAssignment = Private.classes.TimedAssignment
----@class CombatLogEventAssignment
-local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
-
-local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
-local postOptionsPreDashNoSpellRegex = "}(.-) %-"
+local assigneeGroupRegex = "^({.-})"
+local colorEndRegex = "|?|r"
+local colorStartRegex = "|?|c........"
+local nameRegex = "^(%S+)"
+local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
+local phaseNumberRegex = "^p(g?):?(.-)$"
 local postDashRegex = "([^ \n-][^\n-]-)  +"
 -- postDashRegex = "([%w:,%s|%- ]+[ ]+%b{}[ ]-)"
-local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
-local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
+local postOptionsPreDashNoSpellRegex = "}(.-) %-"
+local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local removeFirstDashRegex = "%-+%s-([^\n]+)"
-
-local colorStartRegex = "|?|c........"
-local colorEndRegex = "|?|r"
-
-local timeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}"
-local nameRegex = "^(%S+)"
-local targetNameRegex = "@(%S+)"
 local spellIconRegex = "{spell:(%d+):?%d*}"
-local assigneeGroupRegex = "^({.-})"
 local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}"
-local phaseNumberRegex = "^p(g?):?(.-)$"
-
+local targetNameRegex = "@(%S+)"
+local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
+local timeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}"
 local combatLogEventFromAbbreviation = {
 	["SCC"] = "SPELL_CAST_SUCCESS",
 	["SCS"] = "SPELL_CAST_START",
@@ -86,17 +99,17 @@ local function CreateAssignmentsFromLine(line)
 		if nameOrGroup then
 			for _, entry in pairs(splitTable(",", nameOrGroup)) do
 				entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "")
-				local assigneeNameOrRole = utilities.IsValidAssigneeNameOrRole(entry)
+				local assigneeNameOrRole = IsValidAssigneeNameOrRole(entry)
 				if assigneeNameOrRole then
-					local assignment = Private.classes.Assignment:New({
+					local assignment = Assignment:New({
 						assigneeNameOrRole = assigneeNameOrRole,
 						text = text,
 						spellInfo = spellInfo,
 						targetName = targetName,
 					})
-					if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+					if assignment.spellInfo.spellID == kInvalidAssignmentSpellID then
 						if assignment.text:len() > 0 then
-							assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+							assignment.spellInfo.spellID = kTextAssignmentSpellID
 						end
 					end
 					tinsert(assignments, assignment)
@@ -144,12 +157,12 @@ local function ProcessOptions(assignments, derivedAssignments, time, options)
 				local spellID = tonumber(spellIDStr)
 				local spellCount = tonumber(spellCountStr)
 				if spellID then
-					local bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
+					local bossDungeonEncounterID = GetBossDungeonEncounterIDFromSpellID(spellID)
 					if bossDungeonEncounterID then
 						if spellCount then
-							if bossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
+							if IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
 							else
-								spellCount = bossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
+								spellCount = GetMaxSpellCount(bossDungeonEncounterID, spellID)
 							end
 						else
 							spellCount = 1
@@ -210,7 +223,7 @@ local function ParseNote(plan, text)
 			if spellID then
 				spellIDNumber = tonumber(spellID)
 				if not bossDungeonEncounterID and spellIDNumber then
-					bossDungeonEncounterID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(spellIDNumber)
+					bossDungeonEncounterID = GetBossDungeonEncounterIDFromSpellID(spellIDNumber)
 				end
 			else
 				generalText = line:match(postOptionsPreDashNoSpellRegex)
@@ -228,8 +241,8 @@ local function ParseNote(plan, text)
 
 	if not bossDungeonEncounterID then
 		for _, assignment in ipairs(plan.assignments) do
-			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-				local maybeID = bossUtilities.GetBossDungeonEncounterIDFromSpellID(
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				local maybeID = GetBossDungeonEncounterIDFromSpellID(
 					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 				)
 				if maybeID then
@@ -265,7 +278,7 @@ local function CreateTimeAndOptionsExportString(assignment)
 			timeAndOptionsString = timeAndOptionsString .. spellIconAndName
 		end
 	else
-		timeAndOptionsString = string.format("{time:%d:%02d}", minutes, seconds)
+		timeAndOptionsString = format("{time:%d:%02d}", minutes, seconds)
 	end
 
 	timeAndOptionsString = timeAndOptionsString .. " - "
@@ -289,7 +302,7 @@ local function CreateAssignmentExportString(assignment, roster)
 		if specMatch then
 			local specIDMatch = tonumber(specMatch)
 			if specIDMatch then
-				local specName = utilities.GetLocalizedSpecNameFromSpecID(specIDMatch)
+				local specName = GetLocalizedSpecNameFromSpecID(specIDMatch)
 				if specIDMatch then
 					assignmentString = "spec:" .. specName
 				end
@@ -301,17 +314,17 @@ local function CreateAssignmentExportString(assignment, roster)
 	if assignment.targetName ~= nil and assignment.targetName ~= "" then
 		if roster[assignment.targetName] and roster[assignment.targetName].classColoredName ~= "" then
 			local classColoredName = roster[assignment.targetName].classColoredName
-			assignmentString = assignmentString .. string.format(" @%s", classColoredName:gsub("|", "||"))
+			assignmentString = assignmentString .. format(" @%s", classColoredName:gsub("|", "||"))
 		else
-			assignmentString = assignmentString .. string.format(" @%s", assignment.targetName)
+			assignmentString = assignmentString .. format(" @%s", assignment.targetName)
 		end
 	end
-	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-		local spellString = string.format(" {spell:%d}", assignment.spellInfo.spellID)
+	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > kTextAssignmentSpellID then
+		local spellString = format(" {spell:%d}", assignment.spellInfo.spellID)
 		assignmentString = assignmentString .. spellString
 	end
 	if assignment.text ~= nil and assignment.text ~= "" then
-		local textString = string.format(" {text}%s{/text}", assignment.text)
+		local textString = format(" {text}%s{/text}", assignment.text)
 		assignmentString = assignmentString .. textString
 	end
 
@@ -323,7 +336,7 @@ end
 ---@param bossDungeonEncounterID integer
 ---@return string|nil
 function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
-	local timelineAssignments = utilities.CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
+	local timelineAssignments = CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
 	sort(timelineAssignments, function(a, b)
 		if a.startTime == b.startTime then
 			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
@@ -336,13 +349,13 @@ function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
 	for _, timelineAssignment in ipairs(timelineAssignments) do
 		local assignment = timelineAssignment.assignment
 		local timeAndOptionsString, assignmentString = "", ""
-		if getmetatable(timelineAssignment.assignment) == Private.classes.CombatLogEventAssignment then
+		if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
 			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
 			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.TimedAssignment then
+		elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
 			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
 			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-		elseif getmetatable(timelineAssignment.assignment) == Private.classes.PhasedAssignment then
+		elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
 			-- Not yet supported
 		end
 		if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
@@ -377,21 +390,21 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
 	if not plans[planName] then
-		plans[planName] = Private.classes.Plan:New({}, planName)
+		plans[planName] = Plan:New({}, planName)
 	end
 	local plan = plans[planName]
 
-	local bossDungeonEncounterID = ParseNote(plan, utilities.SplitStringIntoTable(content))
+	local bossDungeonEncounterID = ParseNote(plan, SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
 
 	if plan.dungeonEncounterID ~= currentBossDungeonEncounterID then
 		wipe(plan.customPhaseDurations)
 	end
 
-	bossUtilities.ChangePlanBoss(plan.dungeonEncounterID, plan)
+	ChangePlanBoss(plan.dungeonEncounterID, plan)
 
-	utilities.UpdateRosterFromAssignments(plan.assignments, plan.roster)
-	utilities.UpdateRosterDataFromGroup(plan.roster)
+	UpdateRosterFromAssignments(plan.assignments, plan.roster)
+	UpdateRosterDataFromGroup(plan.roster)
 	for name, sharedRosterEntry in pairs(AddOn.db.profile.sharedRoster) do
 		local planRosterEntry = plan.roster[name]
 		if planRosterEntry then

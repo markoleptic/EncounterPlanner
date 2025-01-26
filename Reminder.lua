@@ -2,19 +2,31 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
-
----@class Constants
-local constants = Private.constants
-
----@class BossUtilities
-local bossUtilities = Private.bossUtilities
-
----@class Utilities
-local utilities = Private.utilities
-
 local AddOn = Private.addOn
 local L = Private.L
 local GenerateUniqueID = Private.GenerateUniqueID
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+
+---@class Constants
+local constants = Private.constants
+local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
+
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+local GetBoss = bossUtilities.GetBoss
+local GenerateBossTables = bossUtilities.GenerateBossTables
+local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+
+---@class Utilities
+local utilities = Private.utilities
+local IsValidRegionName = utilities.IsValidRegionName
+local CreateReminderText = utilities.CreateReminderText
+local FindGroupMemberUnit = utilities.FindGroupMemberUnit
+local FilterSelf = utilities.FilterSelf
+
 local LibStub = LibStub
 local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
@@ -295,7 +307,7 @@ local function CreateReminderContainer(preferences, spacing)
 	container.frame:SetFrameStrata("MEDIUM")
 	container.frame:SetFrameLevel(kReminderContainerFrameLevel)
 	container:SetSpacing(0, spacing or 0)
-	local regionName = utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
+	local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 	local point, relativePoint = preferences.point, preferences.relativePoint
 	local x, y = preferences.x, preferences.y
 	container.frame:SetPoint(point, regionName, relativePoint, x, y)
@@ -376,7 +388,7 @@ local function GetAssignmentIcon(spellInfo)
 	local spellID = spellInfo.spellID
 	if spellInfo.iconID > 0 then
 		icon = spellInfo.iconID
-	elseif spellID > constants.kTextAssignmentSpellID then
+	elseif spellID > kTextAssignmentSpellID then
 		icon = GetSpellTexture(spellID)
 	end
 	return icon
@@ -400,7 +412,7 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 		end)
 	end)
 
-	if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
+	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
 		hideWidgetIfCasted[spellID] = hideWidgetIfCasted[spellID] or {}
 		hideWidgetIfCasted[spellID][uniqueID] = widget
 	end
@@ -460,7 +472,7 @@ local function GlowFrameAndCreateTimer(unit, frame, assignment)
 		stopGlowIfPhased[bossPhaseOrderIndex] = stopGlowIfPhased[bossPhaseOrderIndex] or {}
 	end
 	local timer
-	if spellID > constants.kTextAssignmentSpellID then
+	if spellID > kTextAssignmentSpellID then
 		local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
 		stopGlowIfCasted[spellID] = stopGlowIfCasted[spellID] or {}
 		timer = CreateTimerWithCleanup(maxGlowDuration, function(timerObject)
@@ -485,7 +497,7 @@ end
 ---@return table
 local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
 	local args = {}
-	if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
+	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
 		cancelTimerIfCasted[spellID] = cancelTimerIfCasted[spellID] or {}
 		args[#args + 1] = cancelTimerIfCasted[spellID]
 	end
@@ -505,7 +517,7 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param duration number
 local function ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
-	local reminderText = utilities.CreateReminderText(assignment, roster, false)
+	local reminderText = CreateReminderText(assignment, roster, false)
 	local ttsPreferences = reminderPreferences.textToSpeech
 	local soundPreferences = reminderPreferences.sound
 	local spellID = assignment.spellInfo.spellID
@@ -550,7 +562,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	end
 	if reminderPreferences.glowTargetFrame and assignment.targetName ~= "" then
 		deferredFunctions[#deferredFunctions + 1] = function()
-			local unit = utilities.FindGroupMemberUnit(assignment.targetName)
+			local unit = FindGroupMemberUnit(assignment.targetName)
 			if unit then
 				local frame = LGF.GetUnitFrame(unit)
 				if frame then
@@ -626,10 +638,10 @@ local function SetupReminders(plans, preferences, startTime)
 		local assignments = plan.assignments
 		local filteredAssignments = nil
 		if preferences.onlyShowMe then
-			filteredAssignments = utilities.FilterSelf(assignments) --[[@as table<integer, Assignment>]]
+			filteredAssignments = FilterSelf(assignments) --[[@as table<integer, Assignment>]]
 		end
 		for _, assignment in ipairs(filteredAssignments or assignments) do
-			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+			if getmetatable(assignment) == CombatLogEventAssignment then
 				local abbreviatedCombatLogEventType = assignment--[[@as CombatLogEventAssignment]].combatLogEventType
 				local fullCombatLogEventType = combatLogEventMap[abbreviatedCombatLogEventType]
 				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
@@ -642,7 +654,7 @@ local function SetupReminders(plans, preferences, startTime)
 					assignment = assignment --[[@as CombatLogEventAssignment]],
 					roster = roster,
 				}
-			elseif getmetatable(assignment) == Private.classes.TimedAssignment then
+			elseif getmetatable(assignment) == TimedAssignment then
 				CreateTimer(assignment--[[@as TimedAssignment]], roster, preferences, GetTime() - startTime)
 			end
 		end
@@ -843,11 +855,11 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			end
 		end
 		if #activePlans > 0 then
-			local boss = bossUtilities.GetBoss(encounterID)
+			local boss = GetBoss(encounterID)
 			if boss then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-				bossUtilities.GenerateBossTables(boss)
-				local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+				GenerateBossTables(boss)
+				local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
 				if bossPhaseTable then
 					orderedBossPhaseTable = bossPhaseTable
 				end
@@ -959,12 +971,12 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 		CreateProgressBarContainer(reminderPreferences.progressBars)
 	end
 
-	local boss = bossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = GetBoss(bossDungeonEncounterID)
 	if boss then
 		hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
 		hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
-		bossUtilities.GenerateBossTables(boss)
-		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(boss.dungeonEncounterID)
+		GenerateBossTables(boss)
+		local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
 		if bossPhaseTable then
 			orderedBossPhaseTable = bossPhaseTable
 		end
@@ -990,7 +1002,7 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 
 		local filtered
 		if reminderPreferences.onlyShowMe then
-			filtered = utilities.FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
+			filtered = FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
 		end
 		for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
 			CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)

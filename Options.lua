@@ -2,39 +2,39 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local AddOn = Private.addOn
+local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
+local kOptionsMenuFrameLevel = constants.frameLevels.kOptionsMenuFrameLevel
 
 ---@class OptionsModule : AceModule
 local OptionsModule = Private.addOn.optionsModule
 
 ---@class Utilities
 local utilities = Private.utilities
-
----@class BossUtilities
-local bossUtilities = Private.bossUtilities
+local IsValidRegionName = utilities.IsValidRegionName
+local Round = utilities.Round
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
+local UpdateAllAssignments = interfaceUpdater.UpdateAllAssignments
 
-local AddOn = Private.addOn
-local L = Private.L
 local LibStub = LibStub
-local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
-local ACR = LibStub("AceConfigRegistry-3.0")
 local ACD = LibStub("AceConfigDialog-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
+local ACR = LibStub("AceConfigRegistry-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 local GetTtsVoices = C_VoiceChat.GetTtsVoices
 local pairs = pairs
 local sort = sort
 local tinsert = tinsert
-local tostring = tostring
 local tonumber = tonumber
+local tostring = tostring
 local type = type
 local unpack = unpack
 
-local kOptionsMenuFrameLevel = constants.frameLevels.kOptionsMenuFrameLevel
 local previewDuration = 15.0
 
 local MouseButtonKeyBindingValues = {
@@ -158,15 +158,15 @@ end
 local function ApplyPoint(frame, point, regionName, relativePoint)
 	local p, rF, rP, _, _ = frame:GetPoint()
 	point = point or p
-	local relativeFrame = utilities.IsValidRegionName(regionName) and _G[regionName] or rF
+	local relativeFrame = IsValidRegionName(regionName) and _G[regionName] or rF
 	relativePoint = relativePoint or rP
 	local left, top, width, height = frame:GetLeft(), frame:GetTop(), frame:GetWidth(), frame:GetHeight()
 	local rLeft, rTop, rWidth, rHeight =
 		relativeFrame:GetLeft(), relativeFrame:GetTop(), relativeFrame:GetWidth(), relativeFrame:GetHeight()
 
 	local x, y = CalculateNewOffset(left, top, width, height, point, rLeft, rTop, rWidth, rHeight, relativePoint)
-	x = utilities.Round(x, 2)
-	y = utilities.Round(y, 2)
+	x = Round(x, 2)
+	y = Round(y, 2)
 
 	local relativeTo = relativeFrame:GetName()
 	frame:ClearAllPoints()
@@ -243,7 +243,7 @@ local function CreateProgressBarAnchor()
 	do
 		local preferences = GetProgressBarPreferences()
 		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
-		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
+		regionName = IsValidRegionName(regionName) and regionName or "UIParent"
 		progressBarAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
 		progressBarAnchor:SetAnchorMode(true)
 		progressBarAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
@@ -289,7 +289,7 @@ local function CreateMessageAnchor()
 	do
 		local preferences = GetMessagePreferences()
 		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
-		regionName = utilities.IsValidRegionName(regionName) and regionName or "UIParent"
+		regionName = IsValidRegionName(regionName) and regionName or "UIParent"
 		messageAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
 		messageAnchor:SetAnchorMode(true)
 		messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
@@ -765,8 +765,7 @@ do
 						local preferences = GetMessagePreferences()
 						preferences.x = x
 						preferences.y = y
-						local regionName = utilities.IsValidRegionName(preferences.relativeTo)
-								and preferences.relativeTo
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
 						Private.messageAnchor.frame:SetPoint(
 							preferences.point,
@@ -841,7 +840,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 8 or value > 48 then
-							return false, utilities.Clamp(value, 8, 48)
+							return false, Clamp(value, 8, 48)
 						else
 							return true
 						end
@@ -911,7 +910,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 0.0 or value > 1.0 then
-							return false, utilities.Clamp(value, 0.0, 1.0)
+							return false, Clamp(value, 0.0, 1.0)
 						else
 							return true
 						end
@@ -1062,8 +1061,7 @@ do
 						GetProgressBarPreferences().x = x
 						GetProgressBarPreferences().y = y
 						local progressBars = GetProgressBarPreferences()
-						local regionName = utilities.IsValidRegionName(progressBars.relativeTo)
-								and progressBars.relativeTo
+						local regionName = IsValidRegionName(progressBars.relativeTo) and progressBars.relativeTo
 							or "UIParent"
 						Private.progressBarAnchor.frame:SetPoint(
 							progressBars.point,
@@ -1146,7 +1144,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 8 or value > 48 then
-							return false, utilities.Clamp(value, 8, 48)
+							return false, Clamp(value, 8, 48)
 						else
 							return true
 						end
@@ -1269,7 +1267,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 0.0 or value < 500.0 then
-							return false, utilities.Clamp(value, 0.0, 500.0)
+							return false, Clamp(value, 0.0, 500.0)
 						else
 							return true
 						end
@@ -1344,7 +1342,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 0.0 or value > 1.0 then
-							return false, utilities.Clamp(value, 0.0, 1.0)
+							return false, Clamp(value, 0.0, 1.0)
 						else
 							return true
 						end
@@ -1435,7 +1433,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < -1 or value > 100 then
-							return false, utilities.Clamp(value, -1, 100)
+							return false, Clamp(value, -1, 100)
 						else
 							return true
 						end
@@ -1522,7 +1520,7 @@ do
 					local value = tonumber(key)
 					if value then
 						if value < 0.0 or value > 100.0 then
-							return false, utilities.Clamp(value, 0.0, 100.0)
+							return false, Clamp(value, 0.0, 100.0)
 						else
 							return true
 						end
@@ -1706,7 +1704,7 @@ do
 							if Private.mainFrame and Private.mainFrame.bossLabel then
 								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 								if bossDungeonEncounterID then
-									interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+									UpdateAllAssignments(false, bossDungeonEncounterID)
 								end
 							end
 						end

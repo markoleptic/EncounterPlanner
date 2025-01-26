@@ -2,22 +2,36 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local AddOn = Private.addOn
+local L = Private.L
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+---@class Plan
+local Plan = Private.classes.Plan
 
+---@class Constants
 local constants = Private.constants
+local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
+local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local ChangePlanBoss = bossUtilities.ChangePlanBoss
+local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
+local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
+local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
+local UpdatePlanDropdown = interfaceUpdater.UpdatePlanDropdown
 
 ---@class Utilities
 local utilities = Private.utilities
+local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
+local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 
-local AddOn = Private.addOn
-local L = Private.L
-local LibStub = LibStub
 local AceDB = LibStub("AceDB-3.0")
+local getmetatable = getmetatable
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local pairs = pairs
 local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
@@ -25,7 +39,7 @@ local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGrou
 local function HandleGroupRosterUpdate()
 	local enableButton = false
 	if IsInGroup() or IsInRaid() then
-		utilities.UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
+		UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
 		if UnitIsGroupAssistant("player") or UnitIsGroupLeader("player") then
 			enableButton = true
 		end
@@ -40,19 +54,19 @@ end
 local function UpdateProfile(profile)
 	if profile then
 		for _, plan in pairs(profile.plans) do
-			utilities.SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
+			SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 
-			plan = Private.classes.Plan:New(plan, plan.name, plan.ID)
-			local absoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(plan.dungeonEncounterID)
-			local orderedBossPhaseTable = bossUtilities.GetOrderedBossPhases(plan.dungeonEncounterID)
+			plan = Plan:New(plan, plan.name, plan.ID)
+			local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(plan.dungeonEncounterID)
+			local orderedBossPhaseTable = GetOrderedBossPhases(plan.dungeonEncounterID)
 
 			for _, assignment in ipairs(plan.assignments) do
-				if assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
+				if assignment.spellInfo.spellID == kInvalidAssignmentSpellID then
 					if assignment.text:len() > 0 then
-						assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+						assignment.spellInfo.spellID = kTextAssignmentSpellID
 					end
 				end
-				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				if getmetatable(assignment) == CombatLogEventAssignment then
 					assignment = assignment --[[@as CombatLogEventAssignment]]
 					if absoluteSpellCastTimeTable and orderedBossPhaseTable then
 						local spellIDSpellCastStartTable = absoluteSpellCastTimeTable[assignment.combatLogEventSpellID]
@@ -114,16 +128,16 @@ function AddOn:Refresh(_, db, newProfile)
 		local lastOpenPlan = db.profile.lastOpenPlan
 		if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
 			local defaultPlanName = L["Default"]
-			plans[defaultPlanName] = Private.classes.Plan:New(nil, defaultPlanName)
-			bossUtilities.ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
+			plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
+			ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
 			db.profile.lastOpenPlan = defaultPlanName
 		end
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			timeline:SetPreferences(db.profile.preferences)
 		end
-		interfaceUpdater.UpdatePlanDropdown()
-		interfaceUpdater.UpdateFromPlan(db.profile.lastOpenPlan)
+		UpdatePlanDropdown()
+		UpdateFromPlan(db.profile.lastOpenPlan)
 	end
 	if Private.optionsMenu then
 		Private:RecreateAnchors()
