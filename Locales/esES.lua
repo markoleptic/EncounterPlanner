@@ -28,7 +28,6 @@ L["Export"] = true
 L["New Plan"] = true
 L["Import"] = true
 L["From"] = true
-L["Overwrite Current Plan"] = true
 L["Create New Plan"] = true
 L["From String"] = true
 L["Export Current Plan"] = true
