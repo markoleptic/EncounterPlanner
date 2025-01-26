@@ -66,7 +66,7 @@ local simulationTimer = nil
 ---@type table<string,FunctionContainer>
 local timers = {} -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
 
----@type table<integer, integer> -- [boss phase order index -> boss phase index]
+---@type table<integer, integer> -- [Ordered boss phase index -> boss phase index]
 local orderedBossPhaseTable = {}
 ---@type table<FullCombatLogEventType, table<integer, integer>> -- FullCombatLogEventType -> SpellID -> Count \
 local spellCounts = {} -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events.
@@ -75,17 +75,17 @@ local combatLogEventReminders = {} -- Table of active reminders for responding t
 
 ---@type table<integer, table<string, FunctionContainer>> -- Spell ID -> Timer ID -> Timer
 local cancelTimerIfCasted = {}
----@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Spell ID -> [widgets]
+---@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Spell ID -> Timer ID -> Widget
 local hideWidgetIfCasted = {}
 
----@type table<integer, table<string, FunctionContainer>> -- Ordered boss phases index ->  Timer ID -> Timer
+---@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
 local cancelTimerIfPhased = {}
----@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Ordered boss phases index -> [widgets]
+---@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Ordered boss phase index -> Timer ID -> Widget
 local hideWidgetIfPhased = {}
 
 ---@type table<integer, table<string, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
 local stopGlowIfCasted = {}
----@type table<integer, table<integer, FunctionContainer>> -- Ordered boss phases index -> [timers]
+---@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
 local stopGlowIfPhased = {}
 ---@type table<integer, Frame> -- [Frame]
 local noSpellIDGlowFrames = {}
@@ -134,7 +134,7 @@ local function ResetLocalVariables()
 	wipe(stopGlowIfPhased)
 
 	for _, targetFrames in pairs(stopGlowIfCasted) do
-		for _, targetFrame in ipairs(targetFrames) do
+		for _, targetFrame in pairs(targetFrames) do
 			if targetFrame.frame then
 				LCG.PixelGlow_Stop(targetFrame.frame)
 			end
@@ -382,6 +382,35 @@ local function GetAssignmentIcon(spellInfo)
 	return icon
 end
 
+---@param widget EPReminderMessage|EPProgressBar
+---@param spellID integer
+---@param bossPhaseOrderIndex integer|nil
+local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex)
+	local uniqueID = GenerateUniqueID()
+
+	widget:SetCallback("Completed", function()
+		if hideWidgetIfCasted[spellID] then
+			hideWidgetIfCasted[spellID][uniqueID] = nil
+		end
+		if hideWidgetIfPhased[bossPhaseOrderIndex] then
+			hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = nil
+		end
+		tinsert(operationQueue, function()
+			Private.progressBarContainer:RemoveChildNoDoLayout(widget)
+		end)
+	end)
+
+	if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
+		hideWidgetIfCasted[spellID] = hideWidgetIfCasted[spellID] or {}
+		hideWidgetIfCasted[spellID][uniqueID] = widget
+	end
+
+	if hideIfAlreadyPhased and bossPhaseOrderIndex then
+		hideWidgetIfPhased[bossPhaseOrderIndex] = hideWidgetIfPhased[bossPhaseOrderIndex] or {}
+		hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = widget
+	end
+end
+
 -- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param duration number
@@ -390,28 +419,12 @@ end
 local function AddProgressBar(assignment, duration, reminderText, progressBarPreferences)
 	tinsert(operationQueue, function()
 		local icon = GetAssignmentIcon(assignment.spellInfo)
+		local spellID = assignment.spellInfo.spellID
+		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 		local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
-		progressBar:SetCallback("Completed", function()
-			tinsert(operationQueue, function()
-				hideWidgetIfCasted[assignment.spellInfo.spellID] = nil
-				Private.progressBarContainer:RemoveChildNoDoLayout(progressBar)
-			end)
-		end)
+		CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex)
 		Private.progressBarContainer:AddChildNoDoLayout(progressBar)
 		progressBar:Start()
-		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-			if not hideWidgetIfCasted[assignment.spellInfo.spellID] then
-				hideWidgetIfCasted[assignment.spellInfo.spellID] = {}
-			end
-			tinsert(hideWidgetIfCasted[assignment.spellInfo.spellID], progressBar)
-		end
-		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			if not hideWidgetIfPhased[assignment.bossPhaseOrderIndex] then
-				hideWidgetIfPhased[assignment.bossPhaseOrderIndex] = {}
-			end
-			local hideWidgetTable = hideWidgetIfPhased[assignment.bossPhaseOrderIndex]
-			hideWidgetTable[#hideWidgetTable + 1] = progressBar
-		end
 	end)
 end
 
@@ -423,32 +436,15 @@ end
 local function AddMessage(assignment, duration, reminderText, messagePreferences)
 	tinsert(operationQueue, function()
 		local icon = GetAssignmentIcon(assignment.spellInfo)
-		local message = CreateMessage(messagePreferences, reminderText, duration, icon)
 		local spellID = assignment.spellInfo.spellID
-		message:SetCallback("Completed", function()
-			tinsert(operationQueue, function()
-				hideWidgetIfCasted[spellID] = nil
-				Private.messageContainer:RemoveChildNoDoLayout(message)
-			end)
-		end)
+		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+		local message = CreateMessage(messagePreferences, reminderText, duration, icon)
+		CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex)
 		Private.messageContainer:AddChildNoDoLayout(message)
 		if duration then
 			message:Start(true)
 		else
 			message:Start(false)
-		end
-		if spellID > constants.kTextAssignmentSpellID then
-			if not hideWidgetIfCasted[spellID] then
-				hideWidgetIfCasted[spellID] = {}
-			end
-			tinsert(hideWidgetIfCasted[spellID], message)
-		end
-		if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-			if not hideWidgetIfPhased[assignment.bossPhaseOrderIndex] then
-				hideWidgetIfPhased[assignment.bossPhaseOrderIndex] = {}
-			end
-			local hideWidgetTable = hideWidgetIfPhased[assignment.bossPhaseOrderIndex]
-			hideWidgetTable[#hideWidgetTable + 1] = message
 		end
 	end)
 end
@@ -601,18 +597,10 @@ end
 ---@param spellID integer
 ---@param spellCount integer
 local function CreateSpellCountEntry(combatLogEventType, spellID, spellCount)
-	if not spellCounts[combatLogEventType] then
-		spellCounts[combatLogEventType] = {}
-	end
-	if not spellCounts[combatLogEventType][spellID] then
-		spellCounts[combatLogEventType][spellID] = 0
-	end
-	if not combatLogEventReminders[combatLogEventType] then
-		combatLogEventReminders[combatLogEventType] = {}
-	end
-	if not combatLogEventReminders[combatLogEventType][spellID] then
-		combatLogEventReminders[combatLogEventType][spellID] = {}
-	end
+	spellCounts[combatLogEventType] = spellCounts[combatLogEventType] or {}
+	spellCounts[combatLogEventType][spellID] = spellCounts[combatLogEventType][spellID] or {}
+	combatLogEventReminders[combatLogEventType] = combatLogEventReminders[combatLogEventType] or {}
+	combatLogEventReminders[combatLogEventType][spellID] = combatLogEventReminders[combatLogEventType][spellID] or {}
 	for i = 1, spellCount do
 		if not combatLogEventReminders[combatLogEventType][spellID][i] then
 			combatLogEventReminders[combatLogEventType][spellID][i] = {}
@@ -673,10 +661,11 @@ local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 			timer:Cancel()
 			timer.RemoveTimerRef(timer)
 		end
-		print(format("Removed %d timers from %d", removedTimerCount, orderedBossPhaseIndex))
+		print(format("Removed %d timers from Phase %d", removedTimerCount, orderedBossPhaseIndex))
 		cancelTimerIfPhased[orderedBossPhaseIndex] = nil
 	end
 	if hideWidgetIfPhased[orderedBossPhaseIndex] then
+		local removedWidgetCount = #hideWidgetIfPhased[orderedBossPhaseIndex]
 		for _, widget in pairs(hideWidgetIfPhased[orderedBossPhaseIndex]) do
 			if widget and widget.parent then
 				widget.parent:RemoveChildNoDoLayout(widget)
@@ -688,7 +677,7 @@ local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 		if Private.progressBarContainer then
 			Private.progressBarContainer:DoLayout()
 		end
-		print(format("Removed %d widgets from %d", #hideWidgetIfPhased[orderedBossPhaseIndex], orderedBossPhaseIndex))
+		print(format("Removed %d widgets from Phase %d", removedWidgetCount, orderedBossPhaseIndex))
 		hideWidgetIfPhased[orderedBossPhaseIndex] = nil
 	end
 	if stopGlowIfPhased[orderedBossPhaseIndex] then
@@ -761,7 +750,7 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 		cancelTimerIfCasted[spellID] = nil
 	end
 	if type(hideWidgetIfCasted[spellID]) == "table" then
-		for _, widget in ipairs(hideWidgetIfCasted[spellID]) do
+		for _, widget in pairs(hideWidgetIfCasted[spellID]) do
 			if widget.parent and widget.parent.RemoveChildNoDoLayout then
 				widget.parent:RemoveChildNoDoLayout(widget)
 			end
