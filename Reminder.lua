@@ -63,7 +63,7 @@ local combatLogEventMap = {
 ---@type FunctionContainer|nil
 local simulationTimer = nil
 
----@type table<integer,FunctionContainer>
+---@type table<string,FunctionContainer>
 local timers = {} -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
 
 ---@type table<integer, integer> -- [boss phase order index -> boss phase index]
@@ -548,13 +548,12 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	end
 
 	if #deferredFunctions > 0 then
-		local timer = NewTimer(duration, function()
+		local timer = CreateTimerWithCleanup(duration, function()
 			for _, func in ipairs(deferredFunctions) do
 				func()
 			end
 			cancelTimerIfCasted[spellID] = nil
-		end)
-		timers[#timers + 1] = timer
+		end, timers)
 
 		if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
 			if not cancelTimerIfCasted[spellID] then
@@ -591,11 +590,10 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 		ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
 	else
 		local spellID = assignment.spellInfo.spellID
-		local timer = NewTimer(startTime, function()
+		local timer = CreateTimerWithCleanup(startTime, function()
 			cancelTimerIfCasted[spellID] = nil
 			ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
-		end)
-		timers[#timers + 1] = timer
+		end, timers)
 
 		if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
 			if not cancelTimerIfCasted[spellID] then
