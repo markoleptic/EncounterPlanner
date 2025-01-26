@@ -191,6 +191,20 @@ function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
 end
 
 ---@param bossDungeonEncounterID integer
+---@param spellID integer
+---@return integer|nil
+function BossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
+	local spellCount = absoluteSpellCastStartTables[bossDungeonEncounterID]
+	if spellCount then
+		local spellCountBySpellID = spellCount[spellID]
+		if spellCountBySpellID then
+			return #spellCountBySpellID
+		end
+	end
+	return nil
+end
+
+---@param bossDungeonEncounterID integer
 ---@param plan Plan
 function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
