@@ -73,12 +73,12 @@ local spellCounts = {} -- Acts as filter for combat log events. Increments spell
 ---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
 local combatLogEventReminders = {} -- Table of active reminders for responding to combat log events
 
----@type table<integer, table<integer, FunctionContainer>> -- Spell ID -> [timers]
+---@type table<integer, table<string, FunctionContainer>> -- Spell ID -> Timer ID -> Timer
 local cancelTimerIfCasted = {}
 ---@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Spell ID -> [widgets]
 local hideWidgetIfCasted = {}
 
----@type table<integer, table<integer, FunctionContainer>> -- Ordered boss phases index -> [timers for combat log events]
+---@type table<integer, table<string, FunctionContainer>> -- Ordered boss phases index ->  Timer ID -> Timer
 local cancelTimerIfPhased = {}
 ---@type table<integer, table<integer, EPProgressBar|EPReminderMessage>> -- Ordered boss phases index -> [widgets]
 local hideWidgetIfPhased = {}
@@ -484,6 +484,23 @@ local function GlowFrameAndCreateTimer(unit, frame, assignment)
 	LCG.PixelGlow_Start(frame)
 end
 
+---@param spellID integer
+---@param bossPhaseOrderIndex integer|nil
+---@return table
+local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
+	local args = {}
+	if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
+		cancelTimerIfCasted[spellID] = cancelTimerIfCasted[spellID] or {}
+		args[#args + 1] = cancelTimerIfCasted[spellID]
+	end
+
+	if hideIfAlreadyPhased and bossPhaseOrderIndex then
+		cancelTimerIfPhased[bossPhaseOrderIndex] = cancelTimerIfPhased[bossPhaseOrderIndex] or {}
+		args[#args + 1] = cancelTimerIfPhased[bossPhaseOrderIndex]
+	end
+	return args
+end
+
 -- Executes the actions that occur at the time in which reminders are first displayed. This is usually at advance notice
 -- time before the assignment, but can also be sooner if towards the start of the encounter. Creates timers for actions
 -- that occur at assignment time.
@@ -548,29 +565,12 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	end
 
 	if #deferredFunctions > 0 then
-		local timer = CreateTimerWithCleanup(duration, function()
+		local args = CreateTimerWithCleanupArgs(spellID, assignment.bossPhaseOrderIndex)
+		CreateTimerWithCleanup(duration, function()
 			for _, func in ipairs(deferredFunctions) do
 				func()
 			end
-			cancelTimerIfCasted[spellID] = nil
-		end, timers)
-
-		if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
-			if not cancelTimerIfCasted[spellID] then
-				cancelTimerIfCasted[spellID] = {}
-			end
-			tinsert(cancelTimerIfCasted[spellID], timer)
-		end
-
-		if hideIfAlreadyPhased then
-			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-			if bossPhaseOrderIndex then
-				if not cancelTimerIfPhased[bossPhaseOrderIndex] then
-					cancelTimerIfPhased[bossPhaseOrderIndex] = {}
-				end
-				tinsert(cancelTimerIfPhased[bossPhaseOrderIndex], timer)
-			end
-		end
+		end, timers, unpack(args))
 	end
 end
 
@@ -589,28 +589,10 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 	if startTime < 0.1 then
 		ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
 	else
-		local spellID = assignment.spellInfo.spellID
-		local timer = CreateTimerWithCleanup(startTime, function()
-			cancelTimerIfCasted[spellID] = nil
+		local args = CreateTimerWithCleanupArgs(assignment.spellInfo.spellID, assignment.bossPhaseOrderIndex)
+		CreateTimerWithCleanup(startTime, function()
 			ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
-		end, timers)
-
-		if hideIfAlreadyCasted and spellID > constants.kTextAssignmentSpellID then
-			if not cancelTimerIfCasted[spellID] then
-				cancelTimerIfCasted[spellID] = {}
-			end
-			tinsert(cancelTimerIfCasted[spellID], timer)
-		end
-
-		if hideIfAlreadyPhased then
-			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-			if bossPhaseOrderIndex then
-				if not cancelTimerIfPhased[bossPhaseOrderIndex] then
-					cancelTimerIfPhased[bossPhaseOrderIndex] = {}
-				end
-				tinsert(cancelTimerIfPhased[bossPhaseOrderIndex], timer)
-			end
-		end
+		end, timers, unpack(args))
 	end
 end
 
@@ -686,10 +668,12 @@ end
 ---@param orderedBossPhaseIndex integer
 local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 	if cancelTimerIfPhased[orderedBossPhaseIndex] then
+		local removedTimerCount = #cancelTimerIfPhased[orderedBossPhaseIndex]
 		for _, timer in pairs(cancelTimerIfPhased[orderedBossPhaseIndex]) do
 			timer:Cancel()
+			timer.RemoveTimerRef(timer)
 		end
-		print(format("Removed %d timers from %d", #cancelTimerIfPhased[orderedBossPhaseIndex], orderedBossPhaseIndex))
+		print(format("Removed %d timers from %d", removedTimerCount, orderedBossPhaseIndex))
 		cancelTimerIfPhased[orderedBossPhaseIndex] = nil
 	end
 	if hideWidgetIfPhased[orderedBossPhaseIndex] then
@@ -770,8 +754,9 @@ end
 ---@param spellID integer
 local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	if type(cancelTimerIfCasted[spellID]) == "table" then
-		for _, timer in ipairs(cancelTimerIfCasted[spellID]) do
+		for _, timer in pairs(cancelTimerIfCasted[spellID]) do
 			timer:Cancel()
+			timer.RemoveTimerRef(timer)
 		end
 		cancelTimerIfCasted[spellID] = nil
 	end
