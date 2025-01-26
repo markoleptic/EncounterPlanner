@@ -911,7 +911,9 @@ do
 						itemData.text,
 						"EPDropdownItemMenu",
 						itemData.dropdownItemMenuData,
-						neverShowItemsAsSelected or itemData.selectable == false
+						neverShowItemsAsSelected or itemData.selectable == false,
+						itemData.customTexture,
+						itemData.customTextureVertexColor
 					)
 				else
 					self:AddItem(
