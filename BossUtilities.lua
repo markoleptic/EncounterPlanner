@@ -6,6 +6,7 @@ local Private = Namespace
 ---@class BossUtilities
 local BossUtilities = Private.bossUtilities
 
+local Clamp = Clamp
 local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 local EJ_SelectEncounter = EJ_SelectEncounter
 local EJ_SelectInstance = EJ_SelectInstance
@@ -176,6 +177,16 @@ function BossUtilities.ResetBossPhaseTimings(bossDungeonEncounterID)
 end
 
 ---@param bossDungeonEncounterID integer
+function BossUtilities.ResetBossPhaseCounts(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		for _, phase in ipairs(boss.phases) do
+			phase.count = phase.defaultCount
+		end
+	end
+end
+
+---@param bossDungeonEncounterID integer
 ---@param spellID integer
 ---@param count integer
 ---@return boolean
@@ -205,6 +216,187 @@ function BossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
 end
 
 ---@param bossDungeonEncounterID integer
+---@param maxTotalDuration number
+---@return table<integer, integer>
+function BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalDuration)
+	local counts = {}
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		local phases = boss.phases
+		local currentTotalDuration = 0.0
+		local currentPhaseIndex = 1
+		while currentPhaseIndex do
+			local newTotalDuration = currentTotalDuration + phases[currentPhaseIndex].duration
+			if newTotalDuration > maxTotalDuration then
+				break
+			end
+			currentTotalDuration = newTotalDuration
+			counts[currentPhaseIndex] = (counts[currentPhaseIndex] or 0) + 1
+			currentPhaseIndex = phases[currentPhaseIndex].repeatAfter
+		end
+	end
+	return counts
+end
+
+---@param bossDungeonEncounterID integer
+---@param changedPhase integer|nil
+---@param newCount integer|nil
+---@param maxTotalDuration number
+---@return table<integer, integer>
+function BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
+	local validatedCounts = {}
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		local phases = boss.phases
+		if changedPhase and newCount then
+			local phaseBeforeChangedPhaseCount = newCount
+			local phaseAfterChangedPhaseCount = newCount
+
+			-- Determine count of phases before changed phase, can be one greater or equal
+			if phases[changedPhase - 1] then
+				local count = phases[changedPhase - 1].count
+				phaseBeforeChangedPhaseCount = Clamp(count, newCount, newCount + 1)
+			end
+			-- Determine count of phases after changed phase, can be equal or one less
+			if phases[changedPhase + 1] then
+				local count = phases[changedPhase + 1].count
+				phaseAfterChangedPhaseCount = Clamp(count, newCount - 1, newCount)
+			end
+
+			-- Populate validatedCounts
+			for phaseIndex = changedPhase - 1, 1, -1 do
+				validatedCounts[phaseIndex] = phaseBeforeChangedPhaseCount
+			end
+			validatedCounts[changedPhase] = newCount
+			for phaseIndex = changedPhase + 1, #phases do
+				validatedCounts[phaseIndex] = phaseAfterChangedPhaseCount
+			end
+		else
+			for index, phase in ipairs(phases) do
+				validatedCounts[index] = phase.count
+			end
+		end
+
+		-- Clamp phases to their min/maxes
+		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalDuration)
+		validatedCounts[1] = Clamp(validatedCounts[1], 1, maxCounts[1])
+		local lastPhaseIndexCount = validatedCounts[1]
+		for phaseIndex = 2, #validatedCounts do
+			local phaseCount = validatedCounts[phaseIndex]
+			local minCount = max(0, lastPhaseIndexCount - 1)
+			local maxCount = min(lastPhaseIndexCount, maxCounts[phaseIndex])
+			validatedCounts[phaseIndex] = Clamp(phaseCount, minCount, maxCount)
+			lastPhaseIndexCount = validatedCounts[phaseIndex]
+		end
+	end
+	return validatedCounts
+end
+
+---@param bossDungeonEncounterID integer
+---@param changedPhase integer
+---@param newCount integer
+---@param maxTotalDuration number
+---@return table<integer, integer>
+function BossUtilities.SetPhaseCount(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
+	local validatedCounts =
+		BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		local phases = boss.phases
+		for phaseIndex, phaseCount in ipairs(validatedCounts) do
+			if phases[phaseIndex] then
+				phases[phaseIndex].count = phaseCount
+			end
+		end
+	end
+	return validatedCounts
+end
+
+---@param bossDungeonEncounterID integer
+---@param phaseCounts  table<integer, integer>
+---@param maxTotalDuration number
+---@return table<integer, integer>
+function BossUtilities.SetPhaseCounts(bossDungeonEncounterID, phaseCounts, maxTotalDuration)
+	local validatedCounts = {}
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		local phases = boss.phases
+		for phaseIndex, phaseCount in pairs(phaseCounts) do
+			if phases[phaseIndex] then
+				phases[phaseIndex].count = phaseCount
+			end
+		end
+		validatedCounts = BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, nil, nil, maxTotalDuration)
+		for phaseIndex, phaseCount in ipairs(validatedCounts) do
+			if phases[phaseIndex] then
+				phases[phaseIndex].count = phaseCount
+			end
+		end
+	end
+	return validatedCounts
+end
+
+---@param bossDungeonEncounterID integer
+---@param phaseIndex integer
+---@param maxTotalDuration number
+---@return number|nil
+function BossUtilities.CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, maxTotalDuration)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
+	if boss and orderedBossPhaseTable then
+		local totalDurationWithoutPhaseDuration = 0.0
+		local phases = boss.phases
+		for _, index in ipairs(orderedBossPhaseTable) do
+			if index ~= phaseIndex then
+				totalDurationWithoutPhaseDuration = totalDurationWithoutPhaseDuration + phases[index].duration
+			end
+		end
+		local phaseCount = boss.phases[phaseIndex].count
+		return (maxTotalDuration - totalDurationWithoutPhaseDuration) / phaseCount
+	end
+end
+
+---@param bossDungeonEncounterID integer
+---@return number totalCustomDuration
+---@return number totalDefaultDuration
+function BossUtilities.GetTotalDurations(bossDungeonEncounterID)
+	local totalCustomDuration, totalDefaultDuration = 0.0, 0.0
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		for _, phase in pairs(boss.phases) do
+			totalCustomDuration = totalCustomDuration + (phase.duration * phase.count)
+			totalDefaultDuration = totalDefaultDuration + (phase.defaultDuration * phase.defaultCount)
+		end
+	end
+	return totalCustomDuration, totalDefaultDuration
+end
+
+---@param bossDungeonEncounterID integer
+---@param phaseIndex integer
+---@param phaseDuration number
+function BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phaseDuration)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		boss.phases[phaseIndex].duration = phaseDuration
+	end
+end
+
+---@param bossDungeonEncounterID integer
+---@param phaseDurations table<integer, number>
+---@param maxTotalDuration number
+function BossUtilities.SetPhaseDurations(bossDungeonEncounterID, phaseDurations, maxTotalDuration)
+	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	if boss then
+		local phases = boss.phases
+		for phaseIndex, phaseDuration in pairs(phaseDurations) do
+			if phases[phaseIndex] then
+				phases[phaseIndex].duration = phaseDuration
+			end
+		end
+	end
+end
+
+---@param bossDungeonEncounterID integer
 ---@param plan Plan
 function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
@@ -212,6 +404,7 @@ function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
 		plan.dungeonEncounterID = boss.dungeonEncounterID
 		plan.instanceID = boss.instanceID
 		wipe(plan.customPhaseDurations)
+		wipe(plan.customPhaseCounts)
 	end
 end
 
@@ -224,9 +417,7 @@ do
 		local orderedBossPhaseTable = {}
 		if boss then
 			local totalPhaseOccurrences = 0
-			local totalTimelineDuration = 0
 			for _, phase in pairs(boss.phases) do
-				totalTimelineDuration = totalTimelineDuration + (phase.duration * phase.count)
 				totalPhaseOccurrences = totalPhaseOccurrences + phase.count
 			end
 			local currentPhase = 1

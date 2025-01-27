@@ -308,3 +308,6 @@ L["Change Boss"] = true
 L["Edit Current Plan Roster"] = true
 L["Edit Shared Roster"] = true
 L["Overwrite Plan Confirmation"] = true
+L["Default Count"] = true
+L["Custom Count"] = true
+L["Total"] = true

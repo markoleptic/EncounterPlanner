@@ -396,11 +396,6 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 
 	local bossDungeonEncounterID = ParseNote(plan, SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
-
-	if plan.dungeonEncounterID ~= currentBossDungeonEncounterID then
-		wipe(plan.customPhaseDurations)
-	end
-
 	ChangePlanBoss(plan.dungeonEncounterID, plan)
 
 	UpdateRosterFromAssignments(plan.assignments, plan.roster)

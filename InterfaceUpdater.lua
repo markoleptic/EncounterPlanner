@@ -14,13 +14,6 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 ---@class InterfaceUpdater
 local InterfaceUpdater = Private.interfaceUpdater
 
----@class BossUtilities
-local bossUtilities = Private.bossUtilities
-local GenerateBossTables = bossUtilities.GenerateBossTables
-local GetBoss = bossUtilities.GetBoss
-local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
-local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
-
 ---@class Utilities
 local utilities = Private.utilities
 local CreateAssignmentListTable = utilities.CreateAssignmentListTable
@@ -59,8 +52,19 @@ local function GetCurrentAssignments()
 end
 
 do
-	local lastBossDungeonEncounterID = 0
+	---@class BossUtilities
+	local bossUtilities = Private.bossUtilities
+	local GenerateBossTables = bossUtilities.GenerateBossTables
+	local GetBoss = bossUtilities.GetBoss
+	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
+	local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
+	local SetPhaseCounts = bossUtilities.SetPhaseCounts
+	local SetPhaseDurations = bossUtilities.SetPhaseDurations
+
 	local instanceAndBossPadding = 4
+	local kMaxBossDuration = constants.kMaxBossDuration
+	local lastBossDungeonEncounterID = 0
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
@@ -168,16 +172,15 @@ do
 	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
 		if lastBossDungeonEncounterID ~= 0 then
 			ResetBossPhaseTimings(lastBossDungeonEncounterID)
+			ResetBossPhaseCounts(lastBossDungeonEncounterID)
 		end
 		lastBossDungeonEncounterID = bossDungeonEncounterID
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-			for phaseIndex, phaseDuration in pairs(customPhaseDurations) do
-				if boss.phases[phaseIndex] then
-					boss.phases[phaseIndex].duration = phaseDuration
-				end
-			end
+			SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations, kMaxBossDuration)
+			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
+			customPhaseCounts = SetPhaseCounts(bossDungeonEncounterID, customPhaseCounts, kMaxBossDuration)
 			GenerateBossTables(boss)
 			local timeline = Private.mainFrame.timeline
 			if timeline then

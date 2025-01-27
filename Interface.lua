@@ -22,19 +22,12 @@ local assignmentMetaTables = {
 
 ---@class Constants
 local constants = Private.constants
-local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
-local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
-local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
-local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
-local kPhaseEditorFrameLevel = constants.frameLevels.kPhaseEditorFrameLevel
-local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
 
 ---@class Utilities
 local utilities = Private.utilities
 local AddIconBeforeText = utilities.AddIconBeforeText
 local ConvertAbsoluteTimeToCombatLogEventTime = utilities.ConvertAbsoluteTimeToCombatLogEventTime
 local ConvertAssignmentsToNewBoss = utilities.ConvertAssignmentsToNewBoss
-local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
@@ -43,8 +36,6 @@ local CreateReminderText = utilities.CreateReminderText
 local CreateSpellAssignmentDropdownItems = utilities.CreateSpellAssignmentDropdownItems
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
-local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
-local FindNearestSpellCount = utilities.FindNearestSpellCount
 local FormatTime = utilities.FormatTime
 local GetMinimumCombatLogEventTime = utilities.GetMinimumCombatLogEventTime
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
@@ -54,12 +45,10 @@ local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
 local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
-local UpdateTimelineAssignmentStartTime = utilities.UpdateTimelineAssignmentStartTime
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 local ChangePlanBoss = bossUtilities.ChangePlanBoss
-local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 local GetBoss = bossUtilities.GetBoss
 local GetBossName = bossUtilities.GetBossName
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
@@ -77,6 +66,7 @@ local UpdatePlanDropdownItemCustomTexture = interfaceUpdater.UpdatePlanDropdownI
 
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
+local Clamp = Clamp
 local format = format
 local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
@@ -96,32 +86,9 @@ local wipe = wipe
 local Create = {}
 local Handle = {}
 
-local assignmentEditorWidth = 240
-local defaultMaxVisibleDropdownItems = 8
-local dropdownContainerLabelSpacing = 4
-local dropdownContainerSpacing = { 0, 4 }
-local instanceAndBossLabelContainerSpacing = { 0, 2 }
-local instanceAndBossLabelFontSize = 16
-local instanceAndBossLabelHeight = 18
-local mainFramePadding = { 10, 10, 10, 10 }
-local mainFrameSpacing = { 0, 10 }
 local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
-local planAndReminderContainerSpacerHeight = 12
-local preferencesMenuButtonBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
-}
-local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
-local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
-local topContainerDropdownWidth = 200
-local topContainerWidgetFontSize = 14
-local topContainerWidgetHeight = 26
 
 local spellDropdownItems = {}
 local assignmentTypeDropdownItems = {}
@@ -269,6 +236,8 @@ end
 
 -- Roster Editor
 do
+	local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
+
 	---@param currentRosterMap table<integer, RosterWidgetMapping>
 	---@param sharedRosterMap table<integer, RosterWidgetMapping>
 	local function HandleRosterEditingFinished(_, _, currentRosterMap, sharedRosterMap)
@@ -423,6 +392,15 @@ end
 
 -- Assignment Editor
 do
+	local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
+	local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
+	local FindNearestSpellCount = utilities.FindNearestSpellCount
+	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
+	local UpdateTimelineAssignmentStartTime = utilities.UpdateTimelineAssignmentStartTime
+
+	local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
+	local assignmentEditorWidth = 240
+
 	local function HandleAssignmentEditorDeleteButtonClicked()
 		local assignmentID = Private.assignmentEditor:GetAssignmentID()
 		Private.assignmentEditor:Release()
@@ -734,6 +712,14 @@ end
 
 -- Phase Length Editor
 do
+	local CalculateMaxPhaseDuration = bossUtilities.CalculateMaxPhaseDuration
+	local GetTotalDurations = bossUtilities.GetTotalDurations
+	local SetPhaseDuration = bossUtilities.SetPhaseDuration
+	local SetPhaseCount = bossUtilities.SetPhaseCount
+
+	local kPhaseEditorFrameLevel = constants.frameLevels.kPhaseEditorFrameLevel
+	local kMaxBossDuration = constants.kMaxBossDuration
+
 	---@param boss Boss
 	---@return table<integer, string>
 	local function GetLongPhaseNames(boss)
@@ -753,77 +739,84 @@ do
 		return longPhaseNames
 	end
 
-	---@param phaseName string
+	local function UpdateTotalTime()
+		if Private.phaseLengthEditor then
+			local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
+			local totalCustomMinutes, totalCustomSeconds = FormatTime(totalCustomTime)
+			local totalCustomTimeString = totalCustomMinutes .. ":" .. totalCustomSeconds
+			local totalDefaultMinutes, totalDefaultSeconds = FormatTime(totalDefaultTime)
+			local totalDefaultTimeString = totalDefaultMinutes .. ":" .. totalDefaultSeconds
+			Private.phaseLengthEditor:SetTotalDurations(totalDefaultTimeString, totalCustomTimeString)
+		end
+	end
+
+	---@param phaseIndex integer
 	---@param minLineEdit EPLineEdit
 	---@param secLineEdit EPLineEdit
-	local function HandlePhaseLengthEditorDataChanged(_, _, phaseName, minLineEdit, secLineEdit)
+	local function HandlePhaseLengthEditorDataChanged(_, _, phaseIndex, minLineEdit, secLineEdit)
 		local boss = GetCurrentBoss()
 		if boss then
-			local previousDuration
-			local totalBossDurationWithoutCurrent = 0.0
-			local longPhaseNames = GetLongPhaseNames(boss)
-			for index, phase in ipairs(boss.phases) do
-				if phaseName == longPhaseNames[index] then
-					previousDuration = phase.duration
-				else
-					totalBossDurationWithoutCurrent = totalBossDurationWithoutCurrent + phase.duration
-				end
-			end
-
+			local previousDuration = boss.phases[phaseIndex].duration
+			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			local formatAndReturn = false
 			local newDuration = previousDuration
 			local timeMinutes = tonumber(minLineEdit:GetText())
 			local timeSeconds = tonumber(secLineEdit:GetText())
-
 			if timeMinutes and timeSeconds then
 				local roundedMinutes = Round(timeMinutes, 0)
 				local roundedSeconds = Round(timeSeconds, 1)
 				newDuration = roundedMinutes * 60 + roundedSeconds
+
+				local maxPhaseDuration = CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration)
+				if maxPhaseDuration then
+					newDuration = Clamp(newDuration, 1.0, maxPhaseDuration)
+				end
 				if abs(newDuration - previousDuration) < 0.01 then
 					formatAndReturn = true
 				end
-				local maxTime = 1200 - totalBossDurationWithoutCurrent
-				if newDuration < 1.0 or newDuration > maxTime then
-					newDuration = max(min(newDuration, maxTime), 1.0)
-				end
+			else
+				formatAndReturn = true
 			end
 
 			local minutes, seconds = FormatTime(newDuration)
 			minLineEdit:SetText(minutes)
 			secLineEdit:SetText(seconds)
 
-			if formatAndReturn then
+			if not formatAndReturn then
+				SetPhaseDuration(bossDungeonEncounterID, phaseIndex, newDuration)
+				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
+				customPhaseDurations[phaseIndex] = newDuration
+				UpdateBoss(bossDungeonEncounterID, true)
+				UpdateAllAssignments(false, bossDungeonEncounterID)
+				UpdateTotalTime()
+			end
+		end
+	end
+
+	---@param phaseIndex integer
+	---@param text string
+	---@param widget EPLineEdit
+	local function HandlePhaseCountChanged(_, _, phaseIndex, text, widget)
+		local boss = GetCurrentBoss()
+		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		if boss then
+			local previousCount = boss.phases[phaseIndex].count
+			local newCount = tonumber(text)
+			if newCount then
+				newCount = floor(newCount)
+			else
+				widget:SetText(tostring(previousCount))
 				return
 			end
-
-			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-			local cumulativePhaseTime = 0.0
-			if boss.treatAsSinglePhase then
-				for phaseIndex, phase in ipairs(boss.phases) do
-					if cumulativePhaseTime + phase.defaultDuration <= newDuration then
-						cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
-						phase.duration = phase.defaultDuration
-					elseif cumulativePhaseTime < newDuration then
-						phase.duration = newDuration - cumulativePhaseTime
-						cumulativePhaseTime = cumulativePhaseTime + phase.duration
-					else
-						phase.duration = 0.0
-					end
-					customPhaseDurations[phaseIndex] = phase.duration
-				end
-			else
-				for phaseIndex, phase in ipairs(boss.phases) do
-					if phaseName == longPhaseNames[phaseIndex] then
-						phase.duration = newDuration
-						customPhaseDurations[phaseIndex] = phase.duration
-						break
-					end
-				end
+			local validatedPhaseCounts = SetPhaseCount(bossDungeonEncounterID, phaseIndex, newCount, kMaxBossDuration)
+			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
+			for index, count in ipairs(validatedPhaseCounts) do
+				customPhaseCounts[index] = count
 			end
-
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			Private.phaseLengthEditor:SetPhaseCounts(validatedPhaseCounts)
 			UpdateBoss(bossDungeonEncounterID, true)
 			UpdateAllAssignments(false, bossDungeonEncounterID)
+			UpdateTotalTime()
 		end
 	end
 
@@ -838,28 +831,30 @@ do
 				Private.phaseLengthEditor:Release()
 			end)
 			phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
-				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-				wipe(customPhaseDurations)
+				local lastOpenPlan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+				wipe(lastOpenPlan.customPhaseDurations)
+				wipe(lastOpenPlan.customPhaseCounts)
 				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 				UpdateBoss(bossDungeonEncounterID, true)
 				UpdateAllAssignments(false, bossDungeonEncounterID)
+				UpdateTotalTime()
 			end)
 			phaseLengthEditor:SetCallback("DataChanged", HandlePhaseLengthEditorDataChanged)
+			phaseLengthEditor:SetCallback("CountChanged", HandlePhaseCountChanged)
 
 			local boss = GetCurrentBoss()
 			if boss then
 				local phaseData = {}
+				local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
 				if boss.treatAsSinglePhase then
-					local totalTime, defaultTotalTime = 0.0, 0.0
-					for _, phase in ipairs(boss.phases) do
-						totalTime = totalTime + phase.duration
-						defaultTotalTime = defaultTotalTime + phase.defaultDuration
-					end
 					tinsert(phaseData, {
-						name = "P1",
-						defaultDuration = defaultTotalTime,
+						name = L["Phase"] .. " 1",
+						defaultDuration = totalDefaultTime,
 						fixedDuration = boss.phases[1].fixedDuration,
-						duration = totalTime,
+						duration = totalCustomTime,
+						count = 1,
+						defaultCount = 1,
+						repeatAfter = nil,
 					})
 				else
 					local longPhaseNames = GetLongPhaseNames(boss)
@@ -869,10 +864,18 @@ do
 							defaultDuration = phase.defaultDuration,
 							fixedDuration = phase.fixedDuration,
 							duration = phase.duration,
+							count = phase.count,
+							defaultCount = phase.defaultCount,
+							repeatAfter = phase.repeatAfter,
 						})
 					end
 				end
 				phaseLengthEditor:AddEntries(phaseData)
+				local totalCustomMinutes, totalCustomSeconds = FormatTime(totalCustomTime)
+				local totalCustomTimeString = totalCustomMinutes .. ":" .. totalCustomSeconds
+				local totalDefaultMinutes, totalDefaultSeconds = FormatTime(totalDefaultTime)
+				local totalDefaultTimeString = totalDefaultMinutes .. ":" .. totalDefaultSeconds
+				phaseLengthEditor:SetTotalDurations(totalDefaultTimeString, totalCustomTimeString)
 			end
 
 			phaseLengthEditor.frame:SetParent(UIParent)
@@ -1158,6 +1161,10 @@ end
 
 -- Plan Menu Button Handlers
 do
+	local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
+	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
+	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
+
 	local function HandleImportPlanFromString(newPlanName)
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
@@ -1690,6 +1697,28 @@ local function HandleMainFrameReleased()
 end
 
 function Private:CreateInterface()
+	local defaultMaxVisibleDropdownItems = 8
+	local dropdownContainerLabelSpacing = 4
+	local dropdownContainerSpacing = { 0, 4 }
+	local instanceAndBossLabelContainerSpacing = { 0, 2 }
+	local instanceAndBossLabelFontSize = 16
+	local instanceAndBossLabelHeight = 18
+	local mainFramePadding = { 10, 10, 10, 10 }
+	local mainFrameSpacing = { 0, 10 }
+	local planAndReminderContainerSpacerHeight = 12
+	local preferencesMenuButtonBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	}
+	local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+	local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
+	local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
+	local topContainerDropdownWidth = 200
+	local topContainerWidgetFontSize = 14
+	local topContainerWidgetHeight = 26
 	local bossDungeonEncounterID = 2902
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan

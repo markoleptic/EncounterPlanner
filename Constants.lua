@@ -19,4 +19,5 @@ Private.constants = {
 		kMessageBoxFrameLevel = 160,
 		kReminderContainerFrameLevel = 100,
 	},
+	kMaxBossDuration = 1200.0,
 }

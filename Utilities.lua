@@ -1294,9 +1294,9 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 		if absoluteSpellCastStartTable then
 			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
 			if spellIDSpellCastStartTable then
-				local spellCastStart = spellIDSpellCastStartTable[assignment.spellCount].castStart
-				if spellCastStart then
-					local startTime = spellCastStart + assignment.time
+				local spellCastStartTable = spellIDSpellCastStartTable[assignment.spellCount]
+				if spellCastStartTable then
+					local startTime = spellCastStartTable.castStart + assignment.time
 					local ability = FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID)
 					if ability then
 						if assignment.combatLogEventType == "SAR" then
