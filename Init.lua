@@ -131,6 +131,7 @@ Private.classes = {}
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellInfo SpellInfo The spell info for the assignment.
 ---@field targetName string The target's name if the assignment has a '@'.
+---@field cooldownDuration? number
 Private.classes.Assignment = {
 	uniqueID = 0,
 	assigneeNameOrRole = "",
@@ -180,7 +181,6 @@ Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 ---@field assignment Assignment The assignment.
 ---@field startTime number Time used to place the assignment on the timeline.
 ---@field order number The row of the assignment in the timeline.
----@field spellCooldownDuration number Cached cooldown duration of the spell associated with the assignment.
 Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
@@ -697,6 +697,7 @@ local defaults = {
 	---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
 	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
+	---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
 	---@field preferences Preferences Settings.
 	profile = {
 		activeBossAbilities = {},
@@ -705,6 +706,7 @@ local defaults = {
 		lastOpenPlan = "",
 		recentSpellAssignments = {},
 		trustedCharacters = {},
+		cooldownOverrides = {},
 		preferences = {
 			keyBindings = {
 				pan = "RightButton",

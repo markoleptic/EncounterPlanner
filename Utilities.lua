@@ -42,12 +42,12 @@ local EJ_SelectInstance, EJ_GetInstanceInfo = EJ_SelectInstance, EJ_GetInstanceI
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
-local GetClassInfo = GetClassInfo
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetSpecialization = GetSpecialization
 local GetSpecializationInfo = GetSpecializationInfo
-local GetSpecializationInfoByID = GetSpecializationInfoByID
+local GetSpellBaseCooldown = GetSpellBaseCooldown
+local GetSpellCharges = C_Spell.GetSpellCharges
 local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local hugeNumber = math.huge
@@ -55,10 +55,7 @@ local ipairs = ipairs
 local IsInRaid = IsInRaid
 local pairs = pairs
 local print = print
-local rawget = rawget
-local rawset = rawset
 local select = select
-local setmetatable = setmetatable
 local sort = table.sort
 local tinsert = table.insert
 local tonumber = tonumber
@@ -72,6 +69,11 @@ local UnitName = UnitName
 local lineMatchRegex = "([^\r\n]+)"
 
 do
+	local GetClassInfo = GetClassInfo
+	local GetSpecializationInfoByID = GetSpecializationInfoByID
+	local rawget = rawget
+	local rawset = rawset
+	local setmetatable = setmetatable
 	local kNumberOfClasses = 13
 
 	local caseAndWhiteSpaceInsensitiveMetaTable = {
@@ -943,6 +945,26 @@ end
 function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
 	local timelineAssignments = {}
 	for _, assignment in pairs(assignments) do
+		local duration = 0.0
+		local spellID = assignment.spellInfo.spellID
+		if spellID > kTextAssignmentSpellID then
+			local chargeInfo = GetSpellCharges(spellID)
+			if chargeInfo then
+				duration = chargeInfo.cooldownDuration
+			else
+				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+				if cooldownMS then
+					duration = cooldownMS / 1000
+				end
+			end
+			if duration <= 1 then
+				local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
+				if spellDBDuration then
+					duration = spellDBDuration
+				end
+			end
+		end
+		assignment.cooldownDuration = duration
 		tinsert(timelineAssignments, TimelineAssignment:New(assignment))
 	end
 	local success, failTable = Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)

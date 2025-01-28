@@ -3,7 +3,6 @@ local _, Namespace = ...
 ---@class Private
 local Private = Namespace
 
-local spellDB = Private.spellDB
 local constants = Private.constants
 
 local Type = "EPTimeline"
@@ -145,23 +144,6 @@ local function SafeCall(func, ...)
 	if type(func) == "function" then
 		return xpcall(func, errorhandler, ...)
 	end
-end
-
--- Searches the Spells.lua table for the matching spellID. Also considers "spec" a match
----@param spellID integer
----@return integer|nil -- Duration in seconds or nil
-local function FindCooldownDurationFromSpellDB(spellID)
-	for _, spells in pairs(spellDB.classes) do
-		for _, spell in pairs(spells) do
-			if spell.spellID == spellID or spell.spec == spellID then
-				if type(spell.duration) == "number" then
-					---@diagnostic disable-next-line: return-type-mismatch
-					return spell.duration
-				end
-			end
-		end
-	end
-	return nil
 end
 
 ---@param value number
@@ -1240,7 +1222,7 @@ local function UpdateAssignments(self)
 			orderedSpellIDFrameIndices[order][spellID] = {}
 		end
 		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
-		local startTime, duration = timelineAssignment.startTime, timelineAssignment.spellCooldownDuration
+		local startTime, duration = timelineAssignment.startTime, timelineAssignment.assignment.cooldownDuration
 
 		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
 
@@ -2070,29 +2052,6 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	self.timelineAssignments = assignments
 	self.assigneesAndSpells = assigneesAndSpells
 	self.collapsed = collapsed
-
-	for _, timelineAssignment in ipairs(self.timelineAssignments) do
-		local spellID = timelineAssignment.assignment.spellInfo.spellID
-		local duration = 0.0
-		if timelineAssignment.assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-			local chargeInfo = GetSpellCharges(spellID)
-			if chargeInfo then
-				duration = chargeInfo.cooldownDuration
-			else
-				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-				if cooldownMS then
-					duration = cooldownMS / 1000
-				end
-			end
-			if duration <= 1 then
-				local spellDBDuration = FindCooldownDurationFromSpellDB(spellID)
-				if spellDBDuration then
-					duration = spellDBDuration
-				end
-			end
-		end
-		timelineAssignment.spellCooldownDuration = duration
-	end
 
 	self:UpdateHeightFromAssignments()
 

@@ -7151,3 +7151,20 @@ Private.spellDB = {
 		},
 	},
 }
+
+-- Searches the Spells.lua table for the matching spellID. Also considers "spec" a match
+---@param spellID integer
+---@return integer|nil -- Duration in seconds or nil
+function Private.spellDB.FindCooldownDuration(spellID)
+	for _, spells in pairs(Private.spellDB.classes) do
+		for _, spell in pairs(spells) do
+			if spell.spellID == spellID or spell.spec == spellID then
+				if type(spell.duration) == "number" then
+					---@diagnostic disable-next-line: return-type-mismatch
+					return spell.duration
+				end
+			end
+		end
+	end
+	return nil
+end
