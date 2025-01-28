@@ -291,7 +291,9 @@ Private.classes.EventTriggerRepeatCriteria = {
 	castTimes = {},
 }
 
--- Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
+-- Data about a single instance of a boss ability stored in a boss ability frame in the timeline. The instance may have
+-- a different castStart, castEnd, or effectEnd if the boss phase duration or boss phase count are different from
+-- default.
 ---@class BossAbilityInstance
 ---@field bossAbilitySpellID integer The SpellID of the boss ability.
 ---@field bossAbilityInstanceIndex integer The occurrence number of this instance out of all boss ability instances.

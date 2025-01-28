@@ -607,26 +607,28 @@ do
 							local castEnd = castStart + bossAbility.castTime
 							local effectEnd = castEnd + bossAbility.duration
 
-							if castStart <= phaseEndTime then
-								if bossAbilityPhase.signifiesPhaseStart and castIndex == 1 then
-									castEnd = min(castEnd, phaseEndTime)
-									if castEnd + bossAbility.duration >= phaseEndTime then
-										local newDuration = phaseEndTime - castEnd
-										effectEnd = castEnd + newDuration
-									end
+							if bossAbilityPhase.signifiesPhaseStart and castIndex == 1 then
+								castEnd = min(castEnd, phaseEndTime)
+								if castEnd + bossAbility.duration >= phaseEndTime then
+									local newDuration = phaseEndTime - castEnd
+									effectEnd = castEnd + newDuration
 								end
-								if bossAbilityPhase.signifiesPhaseEnd and castIndex == #bossAbilityPhase.castTimes then
-									if castEnd < phaseEndTime and bossAbility.duration > 0.0 then
-										effectEnd = phaseEndTime
-									else
-										if castTime == bossPhase.defaultDuration then
-											castStart = phaseEndTime
-										end
-										castEnd = phaseEndTime
-										effectEnd = castEnd
-									end
-								end
+							end
 
+							-- If phase duration is modified, update spells that depend on it
+							if bossAbilityPhase.signifiesPhaseEnd and castIndex == #bossAbilityPhase.castTimes then
+								if castEnd < phaseEndTime and bossAbility.duration > 0.0 then
+									effectEnd = phaseEndTime
+								else
+									if castTime == bossPhase.defaultDuration then -- "Phase transition" spells
+										castStart = phaseEndTime
+									end
+									castEnd = phaseEndTime
+									effectEnd = castEnd
+								end
+							end
+
+							if castStart <= phaseEndTime then
 								tinsert(spellCount[bossAbilitySpellID], castStart)
 								tinsert(abilityInstances, {
 									bossAbilitySpellID = bossAbilitySpellID,

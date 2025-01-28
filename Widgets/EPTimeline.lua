@@ -2040,11 +2040,11 @@ local function SetBossAbilities(self, bossAbilityInstances, abilityOrder, phases
 		totalTimelineDuration = totalTimelineDuration + (phaseData.duration * phaseData.count)
 	end
 
-	for index, _ in pairs(self.bossPhaseOrder) do
-		if not self.bossPhaseIndicators[index] then
-			self.bossPhaseIndicators[index] = {}
-			self.bossPhaseIndicators[index][1] = CreatePhaseIndicatorTexture(self)
-			self.bossPhaseIndicators[index][2] = CreatePhaseIndicatorTexture(self)
+	for bossPhaseOrderIndex, _ in pairs(self.bossPhaseOrder) do
+		if not self.bossPhaseIndicators[bossPhaseOrderIndex] then
+			self.bossPhaseIndicators[bossPhaseOrderIndex] = {}
+			self.bossPhaseIndicators[bossPhaseOrderIndex][1] = CreatePhaseIndicatorTexture(self)
+			self.bossPhaseIndicators[bossPhaseOrderIndex][2] = CreatePhaseIndicatorTexture(self)
 		end
 	end
 

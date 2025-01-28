@@ -20,4 +20,5 @@ Private.constants = {
 		kReminderContainerFrameLevel = 100,
 	},
 	kMaxBossDuration = 1200.0,
+	kMinBossPhaseDuration = 10.0,
 }

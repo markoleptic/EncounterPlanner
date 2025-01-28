@@ -719,6 +719,7 @@ do
 
 	local kPhaseEditorFrameLevel = constants.frameLevels.kPhaseEditorFrameLevel
 	local kMaxBossDuration = constants.kMaxBossDuration
+	local kMinBossPhaseDuration = constants.kMinBossPhaseDuration
 
 	---@param boss Boss
 	---@return table<integer, string>
@@ -769,7 +770,7 @@ do
 
 				local maxPhaseDuration = CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration)
 				if maxPhaseDuration then
-					newDuration = Clamp(newDuration, 1.0, maxPhaseDuration)
+					newDuration = Clamp(newDuration, kMinBossPhaseDuration, maxPhaseDuration)
 				end
 				if abs(newDuration - previousDuration) < 0.01 then
 					formatAndReturn = true
