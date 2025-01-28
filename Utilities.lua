@@ -942,29 +942,61 @@ end
 ---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
 function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
 	local timelineAssignments = {}
-	local allSucceeded = true
-	local warningStrings = {}
 	for _, assignment in pairs(assignments) do
-		local timelineAssignment = TimelineAssignment:New(assignment)
-		local success, warningString =
-			Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
-		if success == true then
-			tinsert(timelineAssignments, timelineAssignment)
-		else
-			tinsert(warningStrings, warningString)
-			allSucceeded = false
-		end
+		tinsert(timelineAssignments, TimelineAssignment:New(assignment))
 	end
-	if allSucceeded == false then
-		local alreadyPrinted = {}
-		local combinedString = format("%s: %s:", AddOnName, L["The following assignments failed to update"])
-		for _, warningString in pairs(warningStrings) do
-			if not alreadyPrinted[warningString] then
-				combinedString = combinedString .. "\n" .. warningString
-				alreadyPrinted[warningString] = true
+	local success, failTable = Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
+
+	local invalidSpellIDOnlyCount = 0
+	local spellCounts = {}
+	if not success and failTable then
+		local startCount = #timelineAssignments
+		local failedSpellIDs = failTable.combatLogEventSpellIDs
+		local onlyFailedSpellIDsString = ""
+
+		for i = #timelineAssignments, 1, -1 do
+			local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
+			local spellID = assignment.combatLogEventSpellID
+			if spellID and failedSpellIDs[spellID] then
+				local spellCount = assignment.spellCount
+				if failedSpellIDs[spellID][spellCount] then
+					spellCounts[spellID] = spellCounts[spellID] or {}
+					tinsert(spellCounts[spellID], spellCount)
+				else
+					onlyFailedSpellIDsString = onlyFailedSpellIDsString .. spellID .. ", "
+					invalidSpellIDOnlyCount = invalidSpellIDOnlyCount + 1
+				end
+				tremove(timelineAssignments, i)
 			end
 		end
-		print(combinedString)
+
+		print(format("%s: %d %s.", AddOnName, startCount - #timelineAssignments, L["assignment(s) failed to update"]))
+
+		if onlyFailedSpellIDsString:len() > 1 then
+			onlyFailedSpellIDsString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
+			print(format("%d %s: %s", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], onlyFailedSpellIDsString))
+		end
+
+		if #spellCounts > 0 then
+			local total = 0
+			local spellCountsString = ""
+			sort(spellCounts)
+			for spellID, counts in pairs(spellCounts) do
+				local spellIDAndSpellCountString = tostring(spellID) .. ":"
+				for _, spellCount in pairs(counts) do
+					spellIDAndSpellCountString = spellIDAndSpellCountString .. " " .. spellCount .. ", "
+					total = total + 1
+				end
+				if spellIDAndSpellCountString:len() > 1 then
+					spellIDAndSpellCountString = spellIDAndSpellCountString:sub(1, spellIDAndSpellCountString:len() - 2)
+					spellCountsString = spellCountsString .. spellIDAndSpellCountString .. "\n"
+				end
+			end
+			if spellCountsString:len() > 0 then
+				spellCountsString = spellCountsString:sub(1, spellCountsString:len() - 2)
+				print(format("%d %s:\n %s", total, L["Invalid Boss Spell Count(s)"], spellCountsString))
+			end
+		end
 	end
 	return timelineAssignments
 end
@@ -1028,9 +1060,6 @@ local function CompareAssignments(roster, assignmentSortType)
 			return 3
 		elseif role == nil or role == "" then
 			return 4
-		else
-			print(format('%s: Invalid role type "%s"', AddOnName, role))
-			return 4
 		end
 	end
 
@@ -1076,7 +1105,6 @@ local function CompareAssignments(roster, assignmentSortType)
 			end
 			return rolePriorityA < rolePriorityB
 		else
-			print(format('%s: Invalid assignment sort type "%s"', AddOnName, assignmentSortType))
 			return false
 		end
 	end
@@ -1282,14 +1310,11 @@ end
 
 -- Updates a timeline assignment's start time.
 ---@param timelineAssignment TimelineAssignment
----@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
----@return boolean, string|nil -- Whether or not the update succeeded, optional warning message
+---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
+---@return boolean -- Whether or not the update succeeded
 function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
-	local assignment = timelineAssignment.assignment
-	local warningString = nil
-
-	if getmetatable(assignment) == CombatLogEventAssignment then
-		assignment = assignment --[[@as CombatLogEventAssignment]]
+	if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
+		local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		if absoluteSpellCastStartTable then
 			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
@@ -1306,36 +1331,90 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 						end
 					end
 					timelineAssignment.startTime = startTime
-				else
-					warningString = format(
-						'%s %s %s "%d" %s %d.',
-						L["No spell cast times found for boss"],
-						GetBossName(bossDungeonEncounterID),
-						L["with spell ID"],
-						assignment.combatLogEventSpellID,
-						L["with spell count"],
-						assignment.spellCount
-					)
+					return true
+				end
+			end
+		end
+		return false
+	elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
+		local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+		timelineAssignment.startTime = assignment.time
+	elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
+		local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
+		local boss = GetBoss(bossDungeonEncounterID)
+		if boss then
+			local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
+			local phase = boss.phases[assignment.phase]
+			if bossPhaseTable and phase then
+				for phaseCount = 1, #phase.count do
+					local phaseStartTime =
+						GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
+					timelineAssignment.startTime = phaseStartTime
+					break -- TODO: Only first phase appearance implemented
 				end
 			else
-				warningString = format(
-					'%s %s %s "%d".',
-					L["No spell cast times found for boss"],
-					GetBossName(bossDungeonEncounterID),
-					L["with spell ID"],
-					assignment.combatLogEventSpellID
-				)
-				DevTool:AddData(assignment)
+				return false
 			end
 		else
-			warningString =
-				format("%s: %s.", L["No spell cast times found for boss"], GetBossName(bossDungeonEncounterID))
+			return false
 		end
-	elseif getmetatable(assignment) == TimedAssignment then
-		timelineAssignment.startTime = assignment--[[@as TimedAssignment]].time
-	elseif getmetatable(assignment) == PhasedAssignment then
-		assignment = assignment --[[@as PhasedAssignment]]
-		if bossDungeonEncounterID then
+	end
+	return true
+end
+
+---@class FailedInfo
+---@field bossName string|nil
+---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
+
+-- Updates multiple timeline assignments' start times.
+---@param timelineAssignments table<integer, TimelineAssignment>
+---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
+---@return boolean
+---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
+function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
+	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+	local bossName = GetBossName(bossDungeonEncounterID)
+	local failedTable = {
+		bossName = bossName,
+		combatLogEventSpellIDs = {},
+	}
+
+	if not absoluteSpellCastStartTable or not bossName then
+		return false, failedTable
+	end
+
+	local failedSpellIDs = failedTable.combatLogEventSpellIDs
+	for _, timelineAssignment in ipairs(timelineAssignments) do
+		if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
+			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+			local spellID = assignment.combatLogEventSpellID
+			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[spellID]
+			if spellIDSpellCastStartTable then
+				local spellCount = assignment.spellCount
+				local spellCastStartTable = spellIDSpellCastStartTable[spellCount]
+				if spellCastStartTable then
+					local startTime = spellCastStartTable.castStart + assignment.time
+					local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
+					local combatLogEventType = assignment.combatLogEventType
+					if combatLogEventType == "SAR" then
+						startTime = startTime + ability.duration + ability.castTime
+					elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+						startTime = startTime + ability.castTime
+					end
+					timelineAssignment.startTime = startTime
+				else
+					failedSpellIDs[spellID] = failedSpellIDs or {}
+					failedSpellIDs[spellID][spellCount] = true
+				end
+			else
+				failedSpellIDs[spellID] = failedSpellIDs or {}
+			end
+		elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
+			timelineAssignment.startTime = timelineAssignment
+				.assignment--[[@as TimedAssignment]]
+				.time
+		elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
+			local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
 			local boss = GetBoss(bossDungeonEncounterID)
 			if boss then
 				local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
@@ -1349,14 +1428,13 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 					end
 				end
 			end
-		else
-			return false
 		end
 	end
-	if warningString then
-		return false, warningString
+	if #failedTable.combatLogEventSpellIDs == 0 then
+		return true
+	else
+		return false, failedTable
 	end
-	return true
 end
 
 -- Creates a sorted table used to populate the assignment list.
