@@ -29,11 +29,8 @@ local AddIconBeforeText = utilities.AddIconBeforeText
 local ConvertAbsoluteTimeToCombatLogEventTime = utilities.ConvertAbsoluteTimeToCombatLogEventTime
 local ConvertAssignmentsToNewBoss = utilities.ConvertAssignmentsToNewBoss
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
-local CreateAssignmentTypeDropdownItems = utilities.CreateAssignmentTypeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
-local CreateClassDropdownItemData = utilities.CreateClassDropdownItemData
 local CreateReminderText = utilities.CreateReminderText
-local CreateSpellAssignmentDropdownItems = utilities.CreateSpellAssignmentDropdownItems
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
@@ -90,9 +87,6 @@ local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
 
-local spellDropdownItems = {}
-local assignmentTypeDropdownItems = {}
-local classDropdownItems = {}
 local bossDropdownItems = {}
 local planMenuItems = {
 	{
@@ -236,6 +230,8 @@ end
 
 -- Roster Editor
 do
+	local GetOrCreateAssignmentTypeDropdownItems = utilities.GetOrCreateAssignmentTypeDropdownItems
+	local GetOrCreateClassDropdownItemData = utilities.GetOrCreateClassDropdownItemData
 	local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
 
 	---@param currentRosterMap table<integer, RosterWidgetMapping>
@@ -267,7 +263,7 @@ do
 			local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
 			local updatedDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(
 				GetCurrentRoster(),
-				assignmentTypeDropdownItems,
+				GetOrCreateAssignmentTypeDropdownItems(),
 				assigneeDropdownItems
 			)
 			local previousValue = assigneeTypeDropdown:GetValue()
@@ -381,7 +377,7 @@ do
 			end)
 			Private.rosterEditor.frame:SetParent(UIParent)
 			Private.rosterEditor.frame:SetFrameLevel(kRosterEditorFrameLevel)
-			Private.rosterEditor:SetClassDropdownData(classDropdownItems)
+			Private.rosterEditor:SetClassDropdownData(GetOrCreateClassDropdownItemData())
 			Private.rosterEditor:SetRosters(GetCurrentRoster(), AddOn.db.profile.sharedRoster)
 			Private.rosterEditor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 			Private.rosterEditor:SetCurrentTab(openToTab)
@@ -393,6 +389,8 @@ end
 -- Assignment Editor
 do
 	local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
+	local GetOrCreateAssignmentTypeDropdownItems = utilities.GetOrCreateAssignmentTypeDropdownItems
+	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
 	local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
 	local FindNearestSpellCount = utilities.FindNearestSpellCount
 	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
@@ -678,11 +676,14 @@ do
 			Private.assignmentEditor:Release()
 			UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 		end)
-		assignmentEditor.spellAssignmentDropdown:AddItems(spellDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.spellAssignmentDropdown:AddItems(
+			GetOrCreateSpellAssignmentDropdownItems(),
+			"EPDropdownItemToggle"
+		)
 		local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
 		local updatedDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(
 			GetCurrentRoster(),
-			assignmentTypeDropdownItems,
+			GetOrCreateAssignmentTypeDropdownItems(),
 			assigneeDropdownItems
 		)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
@@ -1943,9 +1944,6 @@ function Private:CreateInterface()
 end
 
 function Private:InitializeInterface()
-	spellDropdownItems = CreateSpellAssignmentDropdownItems()
-	assignmentTypeDropdownItems = CreateAssignmentTypeDropdownItems()
-	classDropdownItems = CreateClassDropdownItemData()
 	bossDropdownItems = InitializeRaidInstances()
 end
 

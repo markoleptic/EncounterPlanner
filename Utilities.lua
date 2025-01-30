@@ -712,115 +712,129 @@ function Utilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, co
 	end
 end
 
----@return DropdownItemData
-local function CreateSpellDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for className, classSpells in pairs(Private.spellDB.classes) do
-		local classDropdownData = {
-			itemValue = className,
-			text = Utilities.GetLocalizedPrettyClassName(className),
-			dropdownItemMenuData = {},
-		}
-		local spellTypeIndex = 1
-		local spellTypeIndexMap = {}
-		for _, spell in pairs(classSpells) do
-			if not spellTypeIndexMap[spell["type"]] then
-				classDropdownData.dropdownItemMenuData[spellTypeIndex] = {
-					itemValue = spell["type"],
-					text = spell["type"],
+do
+	local spellDropdownItems = nil
+	local racialDropdownItems = nil
+	local trinketDropdownItems = nil
+
+	---@return DropdownItemData
+	function Utilities.GetOrCreateSpellDropdownItems()
+		if not spellDropdownItems then
+			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+			for className, classSpells in pairs(Private.spellDB.classes) do
+				local classDropdownData = {
+					itemValue = className,
+					text = Utilities.GetLocalizedPrettyClassName(className),
 					dropdownItemMenuData = {},
 				}
-				spellTypeIndexMap[spell["type"]] = spellTypeIndex
-				spellTypeIndex = spellTypeIndex + 1
+				local spellTypeIndex = 1
+				local spellTypeIndexMap = {}
+				for _, spell in pairs(classSpells) do
+					if not spellTypeIndexMap[spell["type"]] then
+						classDropdownData.dropdownItemMenuData[spellTypeIndex] = {
+							itemValue = spell["type"],
+							text = spell["type"],
+							dropdownItemMenuData = {},
+						}
+						spellTypeIndexMap[spell["type"]] = spellTypeIndex
+						spellTypeIndex = spellTypeIndex + 1
+					end
+					local name = GetSpellName(spell["spellID"])
+					local iconText = format("|T%s:16|t %s", spell["icon"], name)
+					local spellID = spell["commonSpellID"] or spell["spellID"]
+					tinsert(
+						classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
+						{
+							itemValue = spellID,
+							text = iconText,
+						}
+					)
+				end
+				tinsert(dropdownItems, classDropdownData)
 			end
-			local name = GetSpellName(spell["spellID"])
-			local iconText = format("|T%s:16|t %s", spell["icon"], name)
-			local spellID = spell["commonSpellID"] or spell["spellID"]
-			tinsert(classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData, {
-				itemValue = spellID,
-				text = iconText,
-			})
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			spellDropdownItems = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
-		tinsert(dropdownItems, classDropdownData)
+		return spellDropdownItems
 	end
-	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
-end
 
----@return DropdownItemData
-local function CreateRacialDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
-		local name = GetSpellName(racialInfo["spellID"])
-		local iconText = format("|T%s:16|t %s", racialInfo["icon"], name)
-		tinsert(dropdownItems, {
-			itemValue = racialInfo["spellID"],
-			text = iconText,
-		})
-	end
-	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
-end
-
----@return DropdownItemData
-local function CreateTrinketDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
-		local name = GetSpellName(trinketInfo["spellID"])
-		local iconText = format("|T%s:16|t %s", trinketInfo["icon"], name)
-		tinsert(dropdownItems, {
-			itemValue = trinketInfo["spellID"],
-			text = iconText,
-		})
-	end
-	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
-end
-
----@return DropdownItemData
-function Utilities.CreateSpellAssignmentDropdownItems()
-	return { CreateSpellDropdownItems(), CreateRacialDropdownItems(), CreateTrinketDropdownItems() }
-end
-
----@return DropdownItemData
-local function CreateSpecDropdownItems()
-	local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
-	for _, specID in ipairs(Utilities.GetSpecIDs()) do
-		tinsert(dropdownItems, {
-			itemValue = "spec:" .. tostring(specID),
-			text = Utilities.GetSpecIconAndLocalizedSpecName(specID),
-		})
-	end
-	Utilities.SortDropdownDataByItemValue(dropdownItems)
-	return { itemValue = "Spec", text = L["Spec"], dropdownItemMenuData = dropdownItems }
-end
-
----@return table<integer, DropdownItemData>
-function Utilities.CreateClassDropdownItemData()
-	local dropdownData = {}
-
-	for className, _ in pairs(Private.spellDB.classes) do
-		local actualClassName
-		if className == "DEATHKNIGHT" then
-			actualClassName = "DeathKnight"
-		elseif className == "DEMONHUNTER" then
-			actualClassName = "DemonHunter"
-		else
-			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+	---@return DropdownItemData
+	local function GetOrCreateRacialDropdownItems()
+		if not racialDropdownItems then
+			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
+				local name = GetSpellName(racialInfo["spellID"])
+				local iconText = format("|T%s:16|t %s", racialInfo["icon"], name)
+				tinsert(dropdownItems, {
+					itemValue = racialInfo["spellID"],
+					text = iconText,
+				})
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			racialDropdownItems = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
 		end
-		local classDropdownData = {
-			itemValue = "class:" .. actualClassName:gsub("%s", ""),
-			text = Utilities.GetLocalizedPrettyClassName(className),
+		return racialDropdownItems
+	end
+
+	---@return DropdownItemData
+	local function GetOrCreateTrinketDropdownItems()
+		if not trinketDropdownItems then
+			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
+				local name = GetSpellName(trinketInfo["spellID"])
+				local iconText = format("|T%s:16|t %s", trinketInfo["icon"], name)
+				tinsert(dropdownItems, {
+					itemValue = trinketInfo["spellID"],
+					text = iconText,
+				})
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			trinketDropdownItems = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
+		end
+		return trinketDropdownItems
+	end
+
+	---@return DropdownItemData
+	function Utilities.GetOrCreateSpellAssignmentDropdownItems()
+		return {
+			Utilities.GetOrCreateSpellDropdownItems(),
+			GetOrCreateRacialDropdownItems(),
+			GetOrCreateTrinketDropdownItems(),
 		}
-		tinsert(dropdownData, classDropdownData)
 	end
-
-	Utilities.SortDropdownDataByItemValue(dropdownData)
-	return dropdownData
 end
 
----@return table<integer, DropdownItemData>
-function Utilities.CreateAssignmentTypeDropdownItems()
+do
+	local classDropdownData = nil
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateClassDropdownItemData()
+		if not classDropdownData then
+			local dropdownData = {}
+			for className, _ in pairs(Private.spellDB.classes) do
+				local actualClassName
+				if className == "DEATHKNIGHT" then
+					actualClassName = "DeathKnight"
+				elseif className == "DEMONHUNTER" then
+					actualClassName = "DemonHunter"
+				else
+					actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
+				end
+				local classData = {
+					itemValue = "class:" .. actualClassName:gsub("%s", ""),
+					text = Utilities.GetLocalizedPrettyClassName(className),
+				}
+				tinsert(dropdownData, classData)
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownData)
+			classDropdownData = dropdownData
+		end
+
+		return classDropdownData
+	end
+end
+
+do
+	local specDropdownItems = nil
 	local assignmentTypes = {
 		{
 			text = L["Group Number"],
@@ -857,18 +871,37 @@ function Utilities.CreateAssignmentTypeDropdownItems()
 		},
 	} --[[@as table<integer, DropdownItemData>]]
 
-	local classAssignmentTypes = {
-		text = L["Class"],
-		itemValue = "Class",
-		dropdownItemMenuData = Utilities.CreateClassDropdownItemData(),
-	}
+	---@return DropdownItemData
+	local function GetOrCreateSpecDropdownItems()
+		if not specDropdownItems then
+			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+			for _, specID in ipairs(Utilities.GetSpecIDs()) do
+				tinsert(dropdownItems, {
+					itemValue = "spec:" .. tostring(specID),
+					text = Utilities.GetSpecIconAndLocalizedSpecName(specID),
+				})
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			specDropdownItems = { itemValue = "Spec", text = L["Spec"], dropdownItemMenuData = dropdownItems }
+		end
+		return specDropdownItems
+	end
 
-	tinsert(assignmentTypes, classAssignmentTypes)
-	tinsert(assignmentTypes, CreateSpecDropdownItems())
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateAssignmentTypeDropdownItems()
+		local classAssignmentTypes = {
+			text = L["Class"],
+			itemValue = "Class",
+			dropdownItemMenuData = Utilities.GetOrCreateClassDropdownItemData(),
+		}
 
-	Utilities.SortDropdownDataByItemValue(assignmentTypes)
+		tinsert(assignmentTypes, classAssignmentTypes)
+		tinsert(assignmentTypes, GetOrCreateSpecDropdownItems())
 
-	return assignmentTypes
+		Utilities.SortDropdownDataByItemValue(assignmentTypes)
+
+		return assignmentTypes
+	end
 end
 
 ---@param roster table<string, RosterEntry>
@@ -897,7 +930,7 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(
 	assignmentTypeDropdownItems,
 	assigneeDropdownItems
 )
-	local assignmentTypes = assignmentTypeDropdownItems or Utilities.CreateAssignmentTypeDropdownItems()
+	local assignmentTypes = assignmentTypeDropdownItems or Utilities.GetOrCreateAssignmentTypeDropdownItems()
 
 	local individualIndex = nil
 	for index, assignmentType in ipairs(assignmentTypes) do
@@ -938,89 +971,92 @@ function Utilities.InitializeRaidInstances()
 	return bossDropdownData
 end
 
--- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
----@param assignments table<integer, Assignment> Assignments to create timeline assignments from
----@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
----@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
-function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
-	local timelineAssignments = {}
-	for _, assignment in pairs(assignments) do
-		local duration = 0.0
-		local spellID = assignment.spellInfo.spellID
-		if spellID > kTextAssignmentSpellID then
-			local chargeInfo = GetSpellCharges(spellID)
-			if chargeInfo then
-				duration = chargeInfo.cooldownDuration
+do
+	local AddOn = Private.addOn
+
+	-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
+	---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
+	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
+	---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
+	function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
+		local timelineAssignments = {}
+		local cooldownOverrides = AddOn.db.profile.cooldownOverrides
+		for _, assignment in pairs(assignments) do
+			local spellID = assignment.spellInfo.spellID
+			local overrideDuration = cooldownOverrides[spellID]
+			if overrideDuration then
+				assignment.cooldownDuration = overrideDuration
 			else
-				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-				if cooldownMS then
-					duration = cooldownMS / 1000
+				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
+			end
+			tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+		end
+		local success, failTable =
+			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
+
+		local invalidSpellIDOnlyCount = 0
+		local spellCounts = {}
+		if not success and failTable then
+			local startCount = #timelineAssignments
+			local failedSpellIDs = failTable.combatLogEventSpellIDs
+			local onlyFailedSpellIDsString = ""
+
+			for i = #timelineAssignments, 1, -1 do
+				local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
+				local spellID = assignment.combatLogEventSpellID
+				if spellID and failedSpellIDs[spellID] then
+					local spellCount = assignment.spellCount
+					if failedSpellIDs[spellID][spellCount] then
+						spellCounts[spellID] = spellCounts[spellID] or {}
+						tinsert(spellCounts[spellID], spellCount)
+					else
+						onlyFailedSpellIDsString = onlyFailedSpellIDsString .. spellID .. ", "
+						invalidSpellIDOnlyCount = invalidSpellIDOnlyCount + 1
+					end
+					tremove(timelineAssignments, i)
 				end
 			end
-			if duration <= 1 then
-				local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
-				if spellDBDuration then
-					duration = spellDBDuration
+
+			print(
+				format("%s: %d %s.", AddOnName, startCount - #timelineAssignments, L["assignment(s) failed to update"])
+			)
+
+			if onlyFailedSpellIDsString:len() > 1 then
+				onlyFailedSpellIDsString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
+				print(
+					format(
+						"%d %s: %s",
+						invalidSpellIDOnlyCount,
+						L["Invalid Boss Spell ID(s)"],
+						onlyFailedSpellIDsString
+					)
+				)
+			end
+
+			if #spellCounts > 0 then
+				local total = 0
+				local spellCountsString = ""
+				sort(spellCounts)
+				for spellID, counts in pairs(spellCounts) do
+					local spellIDAndSpellCountString = tostring(spellID) .. ":"
+					for _, spellCount in pairs(counts) do
+						spellIDAndSpellCountString = spellIDAndSpellCountString .. " " .. spellCount .. ", "
+						total = total + 1
+					end
+					if spellIDAndSpellCountString:len() > 1 then
+						spellIDAndSpellCountString =
+							spellIDAndSpellCountString:sub(1, spellIDAndSpellCountString:len() - 2)
+						spellCountsString = spellCountsString .. spellIDAndSpellCountString .. "\n"
+					end
+				end
+				if spellCountsString:len() > 0 then
+					spellCountsString = spellCountsString:sub(1, spellCountsString:len() - 2)
+					print(format("%d %s:\n %s", total, L["Invalid Boss Spell Count(s)"], spellCountsString))
 				end
 			end
 		end
-		assignment.cooldownDuration = duration
-		tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+		return timelineAssignments
 	end
-	local success, failTable = Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
-
-	local invalidSpellIDOnlyCount = 0
-	local spellCounts = {}
-	if not success and failTable then
-		local startCount = #timelineAssignments
-		local failedSpellIDs = failTable.combatLogEventSpellIDs
-		local onlyFailedSpellIDsString = ""
-
-		for i = #timelineAssignments, 1, -1 do
-			local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
-			local spellID = assignment.combatLogEventSpellID
-			if spellID and failedSpellIDs[spellID] then
-				local spellCount = assignment.spellCount
-				if failedSpellIDs[spellID][spellCount] then
-					spellCounts[spellID] = spellCounts[spellID] or {}
-					tinsert(spellCounts[spellID], spellCount)
-				else
-					onlyFailedSpellIDsString = onlyFailedSpellIDsString .. spellID .. ", "
-					invalidSpellIDOnlyCount = invalidSpellIDOnlyCount + 1
-				end
-				tremove(timelineAssignments, i)
-			end
-		end
-
-		print(format("%s: %d %s.", AddOnName, startCount - #timelineAssignments, L["assignment(s) failed to update"]))
-
-		if onlyFailedSpellIDsString:len() > 1 then
-			onlyFailedSpellIDsString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
-			print(format("%d %s: %s", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], onlyFailedSpellIDsString))
-		end
-
-		if #spellCounts > 0 then
-			local total = 0
-			local spellCountsString = ""
-			sort(spellCounts)
-			for spellID, counts in pairs(spellCounts) do
-				local spellIDAndSpellCountString = tostring(spellID) .. ":"
-				for _, spellCount in pairs(counts) do
-					spellIDAndSpellCountString = spellIDAndSpellCountString .. " " .. spellCount .. ", "
-					total = total + 1
-				end
-				if spellIDAndSpellCountString:len() > 1 then
-					spellIDAndSpellCountString = spellIDAndSpellCountString:sub(1, spellIDAndSpellCountString:len() - 2)
-					spellCountsString = spellCountsString .. spellIDAndSpellCountString .. "\n"
-				end
-			end
-			if spellCountsString:len() > 0 then
-				spellCountsString = spellCountsString:sub(1, spellCountsString:len() - 2)
-				print(format("%d %s:\n %s", total, L["Invalid Boss Spell Count(s)"], spellCountsString))
-			end
-		end
-	end
-	return timelineAssignments
 end
 
 -- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
@@ -1849,4 +1885,35 @@ function Utilities.FormatTime(time)
 	end
 
 	return formattedMinutes, formattedSeconds
+end
+
+do
+	local cooldowns = {}
+
+	---@param spellID integer
+	---@return number
+	function Utilities.GetSpellCooldown(spellID)
+		if not cooldowns[spellID] then
+			local duration = 0.0
+			if spellID > kTextAssignmentSpellID then
+				local chargeInfo = GetSpellCharges(spellID)
+				if chargeInfo then
+					duration = chargeInfo.cooldownDuration
+				else
+					local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+					if cooldownMS then
+						duration = cooldownMS / 1000
+					end
+				end
+				if duration <= 1 then
+					local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
+					if spellDBDuration then
+						duration = spellDBDuration
+					end
+				end
+			end
+			cooldowns[spellID] = duration
+		end
+		return cooldowns[spellID]
+	end
 end
