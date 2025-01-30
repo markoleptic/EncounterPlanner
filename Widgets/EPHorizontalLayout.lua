@@ -24,7 +24,7 @@ AceGUI:RegisterLayout(Type, function(content, children)
 	local maxHeight = 0
 	local paddingX = defaultSpacing
 	local alignment = "default"
-	if content.spacing then
+	if content.spacing and content.spacing.x then
 		paddingX = content.spacing.x
 	end
 	if content.alignment then
