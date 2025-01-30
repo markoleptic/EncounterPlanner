@@ -319,6 +319,8 @@ end
 
 do
 	--[[@type table<integer, EPSettingOption>]]
+	local cooldownOverrideOptions = nil
+	--[[@type table<integer, EPSettingOption>]]
 	local keyBindingOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
 	local viewOptions = nil
@@ -1830,6 +1832,30 @@ do
 		}
 	end
 
+	local function GetCooldownOverrideOptions()
+		return {
+			{
+				label = L["Cooldown Overrides"],
+				type = "cooldownOverrides",
+				description = L["Override the default cooldown of player spells."],
+				get = function()
+					return AddOn.db.profile.cooldownOverrides
+				end,
+				set = function(value)
+					if type(value) == "table" then
+						AddOn.db.profile.cooldownOverrides = value
+						if Private.mainFrame and Private.mainFrame.bossLabel then
+							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
+							if bossDungeonEncounterID then
+								UpdateAllAssignments(false, bossDungeonEncounterID)
+							end
+						end
+					end
+				end,
+			} --[[@as EPSettingOption]],
+		}
+	end
+
 	function Private:GetOrCreateOptions()
 		if not sounds then
 			sounds = IterateHashTable("sound")
@@ -1848,6 +1874,9 @@ do
 			sort(voices, sortFunc)
 		end
 
+		if not cooldownOverrideOptions then
+			cooldownOverrideOptions = GetCooldownOverrideOptions()
+		end
 		if not keyBindingOptions then
 			keyBindingOptions = CreateKeyBindingOptions()
 		end
@@ -1861,13 +1890,14 @@ do
 			profileOptions = CreateProfileOptions()
 		end
 
+		local cooldownOverrideTab = { L["Cooldown Overrides"], cooldownOverrideOptions }
 		local keyBindingsTab = { L["Keybindings"], keyBindingOptions, { L["Assignment"], L["Timeline"] } }
 		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"], L["Other"] }
 		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
 		local viewTab = { L["View"], viewOptions, { L["Assignment"] } }
 		local profileTab = { L["Profile"], profileOptions, { L["Profile"] } }
 
-		return keyBindingsTab, reminderTab, viewTab, profileTab
+		return cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab
 	end
 end
 
@@ -1875,6 +1905,9 @@ end
 -- released.
 function Private:CreateOptionsMenu()
 	local optionsMenu = AceGUI:Create("EPOptions")
+	optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems().dropdownItemMenuData
+	optionsMenu.FormatTime = utilities.FormatTime
+	optionsMenu.GetSpellCooldown = utilities.GetSpellCooldown
 	optionsMenu.frame:SetParent(UIParent)
 	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
@@ -1896,7 +1929,8 @@ function Private:CreateOptionsMenu()
 	Private.progressBarAnchor = CreateProgressBarAnchor()
 	Private.progressBarAnchor.frame:Hide()
 
-	local keyBindingsTab, reminderTab, viewTab, profileTab = self:GetOrCreateOptions()
+	local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = self:GetOrCreateOptions()
+	optionsMenu:AddOptionTab(unpack(cooldownOverrideTab))
 	optionsMenu:AddOptionTab(unpack(keyBindingsTab))
 	optionsMenu:AddOptionTab(unpack(reminderTab))
 	optionsMenu:AddOptionTab(unpack(viewTab))

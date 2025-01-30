@@ -317,3 +317,4 @@ L["Total"] = true
 L["Default Cooldown"] = true
 L["Custom Cooldown"] = true
 L["Cooldown Overrides"] = true
+L["Override the default cooldown of player spells."] = true

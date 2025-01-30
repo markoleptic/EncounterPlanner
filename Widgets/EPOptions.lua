@@ -14,17 +14,19 @@ local tooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
 local geterrorhandler = geterrorhandler
+local format = format
 local GetMouseFoci = GetMouseFoci
 local ipairs = ipairs
-local min = math.min
-local pairs = pairs
-local type = type
-local tinsert = tinsert
-local unpack = unpack
 local IsMouseButtonDown = IsMouseButtonDown
+local max, min = math.max, math.min
+local pairs = pairs
 local ResetCursor = ResetCursor
 local SetCursor = SetCursor
+local tinsert = tinsert
+local type = type
+local unpack = unpack
 local xpcall = xpcall
+local wipe = wipe
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -36,29 +38,30 @@ local function SafeCall(func, ...)
 	end
 end
 
-local frameWidth = 500
-local frameHeight = 500
-local minScrollFrameHeight = 400
-local maxScrollFrameHeight = 600
-local windowBarHeight = 28
-local contentFramePadding = { x = 15, y = 15 }
-local title = L["Preferences"]
+local activeContainerPadding = { 10, 10, 10, 10 }
+local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+local backdropColor = { 0, 0, 0, 1 }
 local categoryFontSize = 18
+local categoryPadding = { 15, 15, 15, 15 }
+local categoryTextColor = { 1, 0.82, 0, 1 }
+local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local contentFramePadding = { x = 15, y = 15 }
+local doubleLineEditContainerSpacing = { 8, 0 }
+local frameChooserContainerSpacing = { 8, 0 }
+local frameHeight = 500
+local frameWidth = 500
+local groupBoxBorderColor = { 0.25, 0.25, 0.25, 1.0 }
+local indentWidth = 20
+local labelTextColor = { 1, 1, 1, 1 }
+local maxScrollFrameHeight = 600
+local minScrollFrameHeight = 400
 local optionLabelFontSize = 14
-local spacingBetweenOptions = 10
+local radioButtonGroupSpacing = { 8, 0 }
 local spacingBetweenCategories = 15
 local spacingBetweenLabelAndWidget = 8
-local indentWidth = 20
-local backdropColor = { 0, 0, 0, 1 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
-local categoryTextColor = { 1, 0.82, 0, 1 }
-local labelTextColor = { 1, 1, 1, 1 }
-local frameChooserContainerSpacing = { 8, 0 }
-local doubleLineEditContainerSpacing = { 8, 0 }
-local radioButtonGroupSpacing = { 8, 0 }
-local activeContainerPadding = { 10, 10, 10, 10 }
-local categoryPadding = { 15, 15, 15, 15 }
+local spacingBetweenOptions = 10
+local title = L["Preferences"]
+local windowBarHeight = 28
 
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -67,13 +70,6 @@ local frameBackdrop = {
 	tileSize = 16,
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 27, bottom = 0 },
-}
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
 }
 local groupBoxBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -88,7 +84,13 @@ local lineBackdrop = {
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = spacingBetweenOptions / 2, bottom = spacingBetweenOptions / 2 },
 }
-local groupBoxBorderColor = { 0.25, 0.25, 0.25, 0.9 }
+local titleBarBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	edgeFile = "Interface\\BUTTONS\\White8x8",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 2,
+}
 
 local isChoosingFrame = false
 local messageBox = nil
@@ -160,6 +162,292 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
 			end
 		end
 	end)
+end
+
+---@class CooldownOverrideObject
+---@field spellDropdownItems table<integer, DropdownItemData>
+---@field FormatTime fun(number): string,string
+---@field GetSpellCooldown fun(integer): number
+---@field cooldownDurations table<integer, number>
+---@field option EPSettingOption
+---@field activeContainer EPContainer
+---@field scrollFrame EPScrollFrame
+local cooldownOverrideObject = {}
+
+do
+	local deleteButtonSize = 24
+	local headingColor = { 1, 0.82, 0, 1 }
+	local minDuration = 0.0
+	local separatorRelWidth = 0.05
+	local timeLineEditRelWidth = 0.475
+
+	local abs = math.abs
+	local ceil, floor = ceil, floor
+	local Clamp = Clamp
+	local tonumber = tonumber
+
+	local function Round(value, precision)
+		local factor = 10 ^ precision
+		if value > 0 then
+			return floor(value * factor + 0.5) / factor
+		else
+			return ceil(value * factor - 0.5) / factor
+		end
+	end
+
+	local function CopyAndSet()
+		local copy = {}
+		for k, v in pairs(cooldownOverrideObject.cooldownDurations) do
+			copy[k] = v
+		end
+		cooldownOverrideObject.option.set(copy)
+	end
+
+	---@param spellID integer
+	---@param minLineEdit EPLineEdit
+	---@param secLineEdit EPLineEdit
+	function UpdateCooldown(spellID, minLineEdit, secLineEdit)
+		local previousDuration = cooldownOverrideObject.cooldownDurations[spellID]
+		local newDuration = previousDuration
+		local timeMinutes = tonumber(minLineEdit:GetText())
+		local timeSeconds = tonumber(secLineEdit:GetText())
+		if timeMinutes and timeSeconds then
+			local roundedMinutes = Round(timeMinutes, 0)
+			local roundedSeconds = Round(timeSeconds, 1)
+			newDuration = roundedMinutes * 60 + roundedSeconds
+			newDuration = Clamp(newDuration, minDuration, cooldownOverrideObject.GetSpellCooldown(spellID) * 2.0)
+			cooldownOverrideObject.cooldownDurations[spellID] = newDuration
+			if abs(previousDuration - newDuration) > 0.01 then
+				CopyAndSet()
+			end
+		end
+
+		local minutes, seconds = cooldownOverrideObject.FormatTime(newDuration)
+		minLineEdit:SetText(minutes)
+		secLineEdit:SetText(seconds)
+	end
+
+	local function SetRelativeLabelWidths()
+		local width = cooldownOverrideObject.scrollFrame.scrollFrameWrapper:GetWidth()
+		local labelContainer = cooldownOverrideObject.labelContainer
+		labelContainer.frame:SetWidth(width)
+		local containerWidth = cooldownOverrideObject.activeContainer.frame:GetWidth()
+		local widthDiff = width - 4 - containerWidth
+
+		local fullNonSpacingWidth = width - 3 * labelContainer.content.spacing.x
+		local spacerWidth = (deleteButtonSize + widthDiff) / fullNonSpacingWidth
+		local firstThreeWidth = (fullNonSpacingWidth - deleteButtonSize - widthDiff) / 3.0
+		local firstThreeRelativeWidth = firstThreeWidth / fullNonSpacingWidth
+
+		labelContainer.children[1]:SetRelativeWidth(firstThreeRelativeWidth)
+		labelContainer.children[2]:SetRelativeWidth(firstThreeRelativeWidth)
+		labelContainer.children[3]:SetRelativeWidth(firstThreeRelativeWidth)
+		labelContainer.children[4]:SetRelativeWidth(spacerWidth)
+		labelContainer:DoLayout()
+	end
+
+	---@param container EPContainer
+	---@param width number
+	local function SetRelativeWidths(container, width)
+		local nonSpacingWidth = width - 3 * container.content.spacing.x
+		local firstThreeWidth = (nonSpacingWidth - deleteButtonSize) / 3.0
+		local firstThreeRelativeWidth = firstThreeWidth / nonSpacingWidth
+
+		for _, widget in ipairs(container.children) do
+			if widget.children and #widget.children == 4 then
+				widget.children[1]:SetRelativeWidth(firstThreeRelativeWidth)
+				widget.children[2]:SetRelativeWidth(firstThreeRelativeWidth)
+				widget.children[3]:SetRelativeWidth(firstThreeRelativeWidth)
+				widget.children[4]:SetRelativeWidth(deleteButtonSize / nonSpacingWidth)
+				widget:DoLayout()
+			end
+		end
+	end
+
+	---@param activeContainer EPContainer
+	---@param initialSpellID? integer
+	---@param duration? number
+	---@return EPContainer
+	---@return EPSpacer
+	local function CreateEntry(activeContainer, initialSpellID, duration)
+		local currentSpellID = initialSpellID
+
+		local container = AceGUI:Create("EPContainer")
+		container:SetLayout("EPHorizontalLayout")
+		container:SetSpacing(spacingBetweenLabelAndWidget, 0)
+		container:SetFullWidth(true)
+
+		local dropdownContainer = AceGUI:Create("EPContainer")
+		dropdownContainer:SetLayout("EPHorizontalLayout")
+		dropdownContainer:SetSpacing(0, 0)
+
+		local dropdown = AceGUI:Create("EPDropdown")
+		dropdown:AddItems(cooldownOverrideObject.spellDropdownItems, "EPDropdownItemToggle")
+		dropdown:SetValue(initialSpellID)
+		dropdown:SetEnabled(initialSpellID == nil)
+		dropdown:SetFullWidth(true)
+
+		local defaultContainer = AceGUI:Create("EPContainer")
+		defaultContainer:SetLayout("EPHorizontalLayout")
+		defaultContainer:SetSpacing(0, 0)
+
+		local defaultLabel = AceGUI:Create("EPLabel")
+		defaultLabel:SetHorizontalTextAlignment("CENTER")
+		defaultLabel:SetFullWidth(true)
+		if initialSpellID then
+			local spellCooldown = cooldownOverrideObject.GetSpellCooldown(initialSpellID)
+			defaultLabel:SetText(format("%s:%s", cooldownOverrideObject.FormatTime(spellCooldown)), 0)
+		else
+			defaultLabel:SetText("0:00")
+		end
+
+		local currentContainer = AceGUI:Create("EPContainer")
+		currentContainer:SetLayout("EPHorizontalLayout")
+		currentContainer:SetSpacing(0, 0)
+
+		local minutes, seconds = "0", "00"
+		if duration then
+			minutes, seconds = cooldownOverrideObject.FormatTime(duration)
+		end
+
+		local minuteLineEdit = AceGUI:Create("EPLineEdit")
+		minuteLineEdit:SetText(minutes)
+		minuteLineEdit:SetRelativeWidth(timeLineEditRelWidth)
+
+		local secondLineEdit = AceGUI:Create("EPLineEdit")
+		secondLineEdit:SetText(seconds)
+		secondLineEdit:SetRelativeWidth(timeLineEditRelWidth)
+
+		local separatorLabel = AceGUI:Create("EPLabel")
+		separatorLabel:SetText(":", 0)
+		separatorLabel:SetHorizontalTextAlignment("CENTER")
+		separatorLabel:SetRelativeWidth(separatorRelWidth)
+
+		minuteLineEdit:SetCallback("OnTextSubmitted", function()
+			if type(currentSpellID) == "number" then
+				UpdateCooldown(currentSpellID, minuteLineEdit, secondLineEdit)
+			end
+		end)
+		secondLineEdit:SetCallback("OnTextSubmitted", function()
+			if type(currentSpellID) == "number" then
+				UpdateCooldown(currentSpellID, minuteLineEdit, secondLineEdit)
+			end
+		end)
+
+		local cooldownDurations = cooldownOverrideObject.cooldownDurations
+		dropdown:SetCallback("OnValueChanged", function(widget, _, value)
+			if type(value) == "number" then
+				if not cooldownDurations[value] then
+					local cooldown = cooldownOverrideObject.GetSpellCooldown(value)
+					local m, s = cooldownOverrideObject.FormatTime(cooldown)
+					defaultLabel:SetText(format("%s:%s", m, s), 0)
+					minuteLineEdit:SetText(m)
+					secondLineEdit:SetText(s)
+					dropdown:SetEnabled(false)
+					currentSpellID = value
+					cooldownDurations[currentSpellID] = cooldown
+					CopyAndSet()
+				else
+					widget:SetValue(nil)
+				end
+			end
+		end)
+
+		local deleteButton = AceGUI:Create("EPButton")
+		deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+		deleteButton:SetIconPadding(0, 0)
+		deleteButton:SetWidth(deleteButtonSize)
+		deleteButton:SetHeight(deleteButtonSize)
+
+		local spacer = AceGUI:Create("EPSpacer")
+		spacer:SetFullWidth(true)
+		spacer:SetHeight(4)
+
+		deleteButton:SetCallback("Clicked", function()
+			if currentSpellID then
+				cooldownDurations[currentSpellID] = nil
+				CopyAndSet()
+			end
+			activeContainer:RemoveChildNoDoLayout(container)
+			activeContainer:RemoveChildNoDoLayout(spacer)
+			activeContainer:DoLayout()
+			SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
+			SetRelativeLabelWidths()
+		end)
+
+		dropdownContainer:AddChild(dropdown)
+		defaultContainer:AddChild(defaultLabel)
+		currentContainer:AddChildren(minuteLineEdit, separatorLabel, secondLineEdit)
+		container:AddChildren(dropdownContainer, defaultContainer, currentContainer, deleteButton)
+
+		return container, spacer
+	end
+
+	---@param entries table<integer, number>
+	local function AddEntries(entries)
+		local cooldownDurations = cooldownOverrideObject.cooldownDurations
+		wipe(cooldownDurations)
+
+		local containers = {}
+		local activeContainer = cooldownOverrideObject.activeContainer
+		for spellID, duration in pairs(entries) do
+			cooldownDurations[spellID] = duration
+			local container, spacer = CreateEntry(activeContainer, spellID, duration)
+			tinsert(containers, container)
+			tinsert(containers, spacer)
+		end
+
+		local beforeWidget = activeContainer.children[#activeContainer.children]
+		activeContainer:InsertChildren(beforeWidget, unpack(containers))
+	end
+
+	---@param option EPSettingOption
+	function cooldownOverrideObject.CreateCooldownOverrideTab(option)
+		local columnZeroLabel = AceGUI:Create("EPLabel")
+		columnZeroLabel:SetText(L["Spell"], 0)
+		columnZeroLabel.text:SetTextColor(unpack(headingColor))
+
+		local columnOneLabel = AceGUI:Create("EPLabel")
+		columnOneLabel:SetText(L["Default Cooldown"], 0)
+		columnOneLabel:SetHorizontalTextAlignment("CENTER")
+		columnOneLabel.text:SetTextColor(unpack(headingColor))
+
+		local columnTwoLabel = AceGUI:Create("EPLabel")
+		columnTwoLabel:SetText(L["Custom Cooldown"], 0)
+		columnTwoLabel:SetHorizontalTextAlignment("CENTER")
+		columnTwoLabel.text:SetTextColor(unpack(headingColor))
+
+		local spacer = AceGUI:Create("EPSpacer")
+		spacer:SetWidth(deleteButtonSize)
+		spacer:SetHeight(deleteButtonSize)
+
+		cooldownOverrideObject.labelContainer:AddChildren(columnZeroLabel, columnOneLabel, columnTwoLabel, spacer)
+
+		local activeContainer = cooldownOverrideObject.activeContainer
+		local options = option.get()
+		local addEntryButton = AceGUI:Create("EPButton")
+		addEntryButton:SetText("+")
+		addEntryButton:SetHeight(deleteButtonSize)
+		addEntryButton:SetWidth(deleteButtonSize)
+		addEntryButton:SetCallback("Clicked", function()
+			local container, space = CreateEntry(activeContainer, nil, nil)
+			activeContainer:InsertChildren(addEntryButton, container, space)
+			SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
+			activeContainer:DoLayout()
+			SetRelativeLabelWidths()
+		end)
+
+		activeContainer:AddChild(addEntryButton)
+		if type(options) == "table" then
+			AddEntries(options)
+		end
+	end
+
+	function cooldownOverrideObject.UpdateRelativeWidths()
+		local activeContainer = cooldownOverrideObject.activeContainer
+		SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
+		SetRelativeLabelWidths()
+	end
 end
 
 ---@param container EPContainer
@@ -1005,87 +1293,124 @@ local function PopulateActiveTab(self, tab)
 	self.activeContainer:ReleaseChildren()
 	wipe(self.updateIndices)
 	wipe(self.refreshMap)
-	local activeContainerChildren = {}
 
-	local uncategorizedContainer = CreateUncategorizedOptionWidgets(self, tab)
-	if uncategorizedContainer then
-		tinsert(activeContainerChildren, uncategorizedContainer)
-		local categorySpacer = AceGUI:Create("EPSpacer")
-		categorySpacer:SetHeight(spacingBetweenCategories)
-		tinsert(activeContainerChildren, categorySpacer)
-	end
+	if self.optionTabs[tab][1].type == "cooldownOverrides" then
+		self.labelContainer.frame:Show()
+		self.labelContainer.frame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
+		self.labelContainer.frame:SetPoint("LEFT", self.frame, "LEFT", contentFramePadding.x, 0)
+		local wrapperPadding = self.scrollFrame.GetWrapperPadding()
+		self.scrollFrame.frame:SetPoint("TOP", self.labelContainer.frame, "BOTTOM", 0, wrapperPadding)
 
-	local categories = self.tabCategories[tab]
-	if categories then
-		for categoryIndex, category in ipairs(categories) do
-			local categoryLabel = AceGUI:Create("EPLabel")
-			categoryLabel:SetText(category, 0)
-			categoryLabel:SetFontSize(categoryFontSize)
-			categoryLabel:SetFullWidth(true)
-			categoryLabel:SetFrameHeightFromText()
-			categoryLabel.text:SetTextColor(unpack(categoryTextColor))
-			tinsert(activeContainerChildren, categoryLabel)
+		cooldownOverrideObject.FormatTime = self.FormatTime
+		cooldownOverrideObject.GetSpellCooldown = self.GetSpellCooldown
+		cooldownOverrideObject.spellDropdownItems = self.spellDropdownItems
+		cooldownOverrideObject.cooldownDurations = self.cooldownDurations
+		cooldownOverrideObject.labelContainer = self.labelContainer
+		cooldownOverrideObject.activeContainer = self.activeContainer
+		cooldownOverrideObject.scrollFrame = self.scrollFrame
+		cooldownOverrideObject.option = self.optionTabs[tab][1]
+		cooldownOverrideObject.CreateCooldownOverrideTab(self.optionTabs[tab][1])
 
-			local categoryContainer = AceGUI:Create("EPContainer")
-			categoryContainer:SetLayout("EPVerticalLayout")
-			categoryContainer:SetSpacing(0, spacingBetweenOptions)
-			categoryContainer:SetFullWidth(true)
-			categoryContainer:SetPadding(unpack(categoryPadding))
-			categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
+		self:Resize()
+		cooldownOverrideObject.UpdateRelativeWidths()
+		self.scrollFrame:UpdateThumbPositionAndSize()
+	else
+		self.scrollFrame.frame:SetPoint("TOP", self.tabTitleContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
+		self.labelContainer:ReleaseChildren()
+		self.labelContainer.frame:ClearAllPoints()
+		self.labelContainer.frame:Hide()
 
-			local categoryContainerChildren = {}
-			local labels = {}
-			local maxLabelWidth = 0
+		cooldownOverrideObject.FormatTime = nil
+		cooldownOverrideObject.GetSpellCooldown = nil
+		cooldownOverrideObject.spellDropdownItems = nil
+		cooldownOverrideObject.cooldownDurations = nil
+		cooldownOverrideObject.labelContainer = nil
+		cooldownOverrideObject.activeContainer = nil
+		cooldownOverrideObject.scrollFrame = nil
+		cooldownOverrideObject.option = nil
 
-			for index, option in ipairs(self.optionTabs[tab]) do
-				if option.category == category then
-					if option.type == "horizontalLine" then
-						local line = AceGUI:Create("EPSpacer")
-						line.frame:SetBackdrop(lineBackdrop)
-						line.frame:SetBackdropColor(unpack(backdropBorderColor))
-						line:SetFullWidth(true)
-						line:SetHeight(2 + spacingBetweenOptions)
-						tinsert(categoryContainerChildren, line)
-					else
-						local container = CreateOptionWidget(self, option, index)
-						if #container.children >= 2 and container.children[1].type == "EPLabel" then
-							maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
-							tinsert(labels, container.children[1])
-						end
-						tinsert(categoryContainerChildren, container)
-					end
-				end
-			end
+		local activeContainerChildren = {}
 
-			for _, label in ipairs(labels) do
-				label:SetWidth(maxLabelWidth)
-			end
-
-			categoryContainer:AddChildren(unpack(categoryContainerChildren))
-			tinsert(activeContainerChildren, categoryContainer)
-
-			if categoryIndex < #categories then
-				local categorySpacer = AceGUI:Create("EPSpacer")
-				categorySpacer:SetHeight(spacingBetweenCategories)
-				tinsert(activeContainerChildren, categorySpacer)
-			end
-		end
-	end
-
-	for index, option in ipairs(self.optionTabs[tab]) do
-		if option.uncategorizedBottom and not option.category then
+		local uncategorizedContainer = CreateUncategorizedOptionWidgets(self, tab)
+		if uncategorizedContainer then
+			tinsert(activeContainerChildren, uncategorizedContainer)
 			local categorySpacer = AceGUI:Create("EPSpacer")
 			categorySpacer:SetHeight(spacingBetweenCategories)
 			tinsert(activeContainerChildren, categorySpacer)
-			local container = CreateOptionWidget(self, option, index)
-			tinsert(activeContainerChildren, container)
 		end
-	end
 
-	self.activeContainer:AddChildren(unpack(activeContainerChildren))
-	RefreshEnabledStates(self.refreshMap)
-	self:Resize()
-	self.scrollFrame:UpdateThumbPositionAndSize()
+		local categories = self.tabCategories[tab]
+		if categories then
+			for categoryIndex, category in ipairs(categories) do
+				local categoryLabel = AceGUI:Create("EPLabel")
+				categoryLabel:SetText(category, 0)
+				categoryLabel:SetFontSize(categoryFontSize)
+				categoryLabel:SetFullWidth(true)
+				categoryLabel:SetFrameHeightFromText()
+				categoryLabel.text:SetTextColor(unpack(categoryTextColor))
+				tinsert(activeContainerChildren, categoryLabel)
+
+				local categoryContainer = AceGUI:Create("EPContainer")
+				categoryContainer:SetLayout("EPVerticalLayout")
+				categoryContainer:SetSpacing(0, spacingBetweenOptions)
+				categoryContainer:SetFullWidth(true)
+				categoryContainer:SetPadding(unpack(categoryPadding))
+				categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
+
+				local categoryContainerChildren = {}
+				local labels = {}
+				local maxLabelWidth = 0
+
+				for index, option in ipairs(self.optionTabs[tab]) do
+					if option.category == category then
+						if option.type == "horizontalLine" then
+							local line = AceGUI:Create("EPSpacer")
+							line.frame:SetBackdrop(lineBackdrop)
+							line.frame:SetBackdropColor(unpack(backdropBorderColor))
+							line:SetFullWidth(true)
+							line:SetHeight(2 + spacingBetweenOptions)
+							tinsert(categoryContainerChildren, line)
+						else
+							local container = CreateOptionWidget(self, option, index)
+							if #container.children >= 2 and container.children[1].type == "EPLabel" then
+								maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
+								tinsert(labels, container.children[1])
+							end
+							tinsert(categoryContainerChildren, container)
+						end
+					end
+				end
+
+				for _, label in ipairs(labels) do
+					label:SetWidth(maxLabelWidth)
+				end
+
+				categoryContainer:AddChildren(unpack(categoryContainerChildren))
+				tinsert(activeContainerChildren, categoryContainer)
+
+				if categoryIndex < #categories then
+					local categorySpacer = AceGUI:Create("EPSpacer")
+					categorySpacer:SetHeight(spacingBetweenCategories)
+					tinsert(activeContainerChildren, categorySpacer)
+				end
+			end
+		end
+
+		for index, option in ipairs(self.optionTabs[tab]) do
+			if option.uncategorizedBottom and not option.category then
+				local categorySpacer = AceGUI:Create("EPSpacer")
+				categorySpacer:SetHeight(spacingBetweenCategories)
+				tinsert(activeContainerChildren, categorySpacer)
+				local container = CreateOptionWidget(self, option, index)
+				tinsert(activeContainerChildren, container)
+			end
+		end
+
+		self.activeContainer:AddChildren(unpack(activeContainerChildren))
+		RefreshEnabledStates(self.refreshMap)
+		self:Resize()
+		self.scrollFrame:UpdateThumbPositionAndSize()
+	end
 end
 
 ---@alias EPSettingOptionType
@@ -1103,12 +1428,13 @@ end
 ---| "checkBoxWithDropdown"
 ---| "centeredButton"
 ---| "dropdownBesideButton"
+---| "cooldownOverrides"
 
 ---@alias GetFunction
----| fun(): string|boolean|number,number?,number?,number?
+---| fun(): string|boolean|table<integer, number>|number,number?,number?,number?
 
 ---@alias SetFunction
----| fun(value: string|boolean|number, value2?: string|boolean|number, value3?:number, value4?:number)
+---| fun(value: string|boolean|number|table<integer, number>, value2?: string|boolean|number, value3?:number, value4?:number)
 
 ---@alias ValidateFunction
 ---| fun(value: string|number, value2?: string): boolean, string|number?,number?
@@ -1152,12 +1478,17 @@ end
 ---@field closeButton EPButton
 ---@field tabTitleContainer EPContainer
 ---@field activeContainer EPContainer
+---@field labelContainer EPContainer
 ---@field activeTab string
 ---@field optionTabs table<string, table<integer, EPSettingOption>>
 ---@field tabCategories table<string, table<integer, string>>
 ---@field updateIndices table<string, table<integer, table<integer, fun()>>>
 ---@field refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
 ---@field scrollFrame EPScrollFrame
+---@field spellDropdownItems table<integer, DropdownItemData>
+---@field FormatTime fun(number): string,string
+---@field GetSpellCooldown fun(integer): number
+---@field cooldownDurations table<integer, number>
 
 ---@param self EPOptions
 local function OnAcquire(self)
@@ -1166,6 +1497,7 @@ local function OnAcquire(self)
 	self.tabCategories = {}
 	self.updateIndices = {}
 	self.refreshMap = {}
+	self.cooldownDurations = {}
 
 	self.frame:SetSize(frameWidth, frameHeight)
 
@@ -1206,6 +1538,18 @@ local function OnAcquire(self)
 	self.activeContainer.frame:EnableMouse(true)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
 
+	self.labelContainer = AceGUI:Create("EPContainer")
+	self.labelContainer:SetLayout("EPHorizontalLayout")
+	self.labelContainer:SetSpacing(spacingBetweenLabelAndWidget, 0)
+	local horizontalLabelContainerPadding = self.scrollFrame.GetWrapperPadding() + activeContainerPadding[1]
+	self.labelContainer:SetPadding(horizontalLabelContainerPadding, 0, horizontalLabelContainerPadding, 0)
+	self.labelContainer.frame:SetBackdrop(groupBoxBackdrop)
+	self.labelContainer.frame:SetBackdropColor(unpack(backdropColor))
+	self.labelContainer.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	self.labelContainer.frame:SetParent(self.frame)
+	self.labelContainer.frame:SetHeight(0)
+	self.labelContainer.frame:Hide()
+
 	self.frame:Show()
 end
 
@@ -1222,6 +1566,9 @@ local function OnRelease(self)
 	self.activeContainer:Release()
 	self.activeContainer = nil
 
+	self.labelContainer:Release()
+	self.labelContainer = nil
+
 	self.scrollFrame:Release()
 	self.scrollFrame = nil
 
@@ -1230,12 +1577,16 @@ local function OnRelease(self)
 	self.tabCategories = nil
 	self.updateIndices = nil
 	self.refreshMap = nil
+	self.FormatTime = nil
+	self.GetSpellCooldown = nil
+	self.spellDropdownItems = nil
+	self.cooldownDurations = nil
 end
 
 ---@param self EPOptions
 ---@param tabName string
----@param categories table<integer, string>?
 ---@param options table<integer, EPSettingOption>
+---@param categories table<integer, string>?
 local function AddOptionTab(self, tabName, options, categories)
 	self.optionTabs[tabName] = options
 	if categories then
@@ -1289,14 +1640,19 @@ end
 
 ---@param self EPOptions
 local function Resize(self)
+	local wrapperPadding = self.scrollFrame.GetWrapperPadding()
+
 	local tableTitleContainerHeight = self.tabTitleContainer.frame:GetHeight()
 	local containerHeight = self.activeContainer.frame:GetHeight()
+	if self.labelContainer.frame:IsShown() then
+		containerHeight = containerHeight + self.labelContainer.frame:GetHeight() - wrapperPadding
+	end
 	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
 	local paddingHeight = contentFramePadding.y * 3
 	local height = windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight
 
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()
-	local activeWidth = self.activeContainer.frame:GetWidth() + 4
+	local activeWidth = self.activeContainer.frame:GetWidth() + 2 * wrapperPadding
 	if self.scrollFrame.scrollBar:IsShown() then
 		activeWidth = activeWidth + self.scrollFrame.scrollBarScrollFramePadding + self.scrollFrame.scrollBar:GetWidth()
 	end

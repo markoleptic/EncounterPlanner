@@ -27,7 +27,6 @@
 	<Script file="EPTimeline.lua"/>
     <Script file="EPRosterEntry.lua"/>
     <Script file="EPRosterEditor.lua"/>
-    <Script file="EPCooldownOverrideEditor.lua"/>
 	<Script file="EPMainFrame.lua"/>
     <Script file="EPOptions.lua"/>
 </Ui>

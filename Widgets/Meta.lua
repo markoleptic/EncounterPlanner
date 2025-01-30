@@ -87,9 +87,6 @@
 ---@alias EPScrollFrameType
 ---|"EPScrollFrame"
 
----@alias EPCooldownOverrideEditorType
----|"EPCooldownOverrideEditor"
-
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -113,7 +110,6 @@
 ---| EPPhaseLengthEditor
 ---| EPNewPlanDialog
 ---| EPScrollFrame
----| EPCooldownOverrideEditor
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -241,10 +237,6 @@ function AceGUI:Create(type) end
 
 ---@param type EPScrollFrameType
 ---@return EPScrollFrame
-function AceGUI:Create(type) end
-
----@param type EPCooldownOverrideEditorType
----@return EPCooldownOverrideEditor
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType
