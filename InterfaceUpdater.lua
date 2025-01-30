@@ -16,18 +16,12 @@ local InterfaceUpdater = Private.interfaceUpdater
 
 ---@class Utilities
 local utilities = Private.utilities
-local CreateAssignmentListTable = utilities.CreateAssignmentListTable
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
-local CreateReminderText = utilities.CreateReminderText
-local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
 
 local AceGUI = LibStub("AceGUI-3.0")
 local format = format
-local GetSpecializationInfoByID = GetSpecializationInfoByID
-local GetSpellInfo = C_Spell.GetSpellInfo
-local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
 local pairs = pairs
 local tinsert = tinsert
@@ -35,11 +29,6 @@ local tonumber = tonumber
 local tostring = tostring
 local tremove = tremove
 local type = type
-
-local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
-local reminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
-local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
-local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
@@ -85,6 +74,8 @@ do
 			end
 		end
 	end
+
+	local GetSpellInfo = C_Spell.GetSpellInfo
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
@@ -192,6 +183,8 @@ do
 end
 
 do
+	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
+
 	local assignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
 		TimedAssignment = Private.classes.TimedAssignment,
@@ -248,6 +241,8 @@ do
 		abilityEntry:SetAssigneeDropdownItems(assigneeDropdownItems)
 	end
 
+	local CreateReminderText = utilities.CreateReminderText
+
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapAssignee(abilityEntry, _, newAssigneeNameOrRole)
 		local key = abilityEntry:GetKey()
@@ -292,6 +287,10 @@ do
 			end
 		end
 	end
+
+	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
+	local GetSpecializationInfoByID = GetSpecializationInfoByID
+	local GetSpellName = C_Spell.GetSpellName
 
 	-- Clears and repopulates the list of assignments and spells.
 	---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
@@ -484,84 +483,91 @@ function InterfaceUpdater.UpdateFromPlan(planName)
 	end
 end
 
--- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
-function InterfaceUpdater.UpdatePlanDropdown()
-	if Private.mainFrame then
-		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			planDropdown:Clear()
-			local planDropdownData = {}
-			for planName, plan in pairs(AddOn.db.profile.plans) do
-				tinsert(planDropdownData, {
-					itemValue = planName,
-					text = planName,
-					customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture,
-					customTextureVertexColor = plan.remindersEnabled and reminderEnabledIconColor
-						or reminderDisabledIconColor,
-				})
+do
+	local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
+	local reminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
+	local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
+	local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
+
+	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
+	function InterfaceUpdater.UpdatePlanDropdown()
+		if Private.mainFrame then
+			local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+			local planDropdown = Private.mainFrame.planDropdown
+			if planDropdown then
+				planDropdown:Clear()
+				local planDropdownData = {}
+				for planName, plan in pairs(AddOn.db.profile.plans) do
+					tinsert(planDropdownData, {
+						itemValue = planName,
+						text = planName,
+						customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture,
+						customTextureVertexColor = plan.remindersEnabled and reminderEnabledIconColor
+							or reminderDisabledIconColor,
+					})
+				end
+				planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
+				planDropdown:Sort()
+				planDropdown:SetValue(lastOpenPlan)
 			end
-			planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
-			planDropdown:Sort()
-			planDropdown:SetValue(lastOpenPlan)
-		end
-		local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
-		if planReminderEnableCheckBox then
-			local enabled = AddOn.db.profile.plans[lastOpenPlan].remindersEnabled
-			planReminderEnableCheckBox:SetChecked(enabled)
+			local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
+			if planReminderEnableCheckBox then
+				local enabled = AddOn.db.profile.plans[lastOpenPlan].remindersEnabled
+				planReminderEnableCheckBox:SetChecked(enabled)
+			end
 		end
 	end
-end
 
--- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
----@param planName string
----@param select boolean
-function InterfaceUpdater.AddPlanToDropdown(planName, select)
-	if Private.mainFrame then
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			local item, _ = planDropdown:FindItemAndText(planName)
-			local enabled = AddOn.db.profile.plans[planName].remindersEnabled
-			if not item then
-				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
-				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-				planDropdown:AddItem(planName, planName, "EPDropdownItemToggle", nil, false, customTexture, color)
-				planDropdown:Sort()
-			end
-			if select then
-				planDropdown:SetValue(planName)
-				local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
-				if planReminderEnableCheckBox then
-					planReminderEnableCheckBox:SetChecked(enabled)
+	-- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
+	---@param planName string
+	---@param select boolean
+	function InterfaceUpdater.AddPlanToDropdown(planName, select)
+		if Private.mainFrame then
+			local planDropdown = Private.mainFrame.planDropdown
+			if planDropdown then
+				local item, _ = planDropdown:FindItemAndText(planName)
+				local enabled = AddOn.db.profile.plans[planName].remindersEnabled
+				if not item then
+					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
+					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+					planDropdown:AddItem(planName, planName, "EPDropdownItemToggle", nil, false, customTexture, color)
+					planDropdown:Sort()
+				end
+				if select then
+					planDropdown:SetValue(planName)
+					local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
+					if planReminderEnableCheckBox then
+						planReminderEnableCheckBox:SetChecked(enabled)
+					end
 				end
 			end
 		end
 	end
-end
 
--- Removes a plan name from the plan dropdown.
----@param planName string
-function InterfaceUpdater.RemovePlanFromDropdown(planName)
-	if Private.mainFrame then
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			planDropdown:RemoveItem(planName)
+	-- Removes a plan name from the plan dropdown.
+	---@param planName string
+	function InterfaceUpdater.RemovePlanFromDropdown(planName)
+		if Private.mainFrame then
+			local planDropdown = Private.mainFrame.planDropdown
+			if planDropdown then
+				planDropdown:RemoveItem(planName)
+			end
 		end
 	end
-end
 
--- Removes a plan name from the plan dropdown.
----@param planName string
----@param enabled boolean
-function InterfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, enabled)
-	if Private.mainFrame then
-		local planDropdown = Private.mainFrame.planDropdown
-		if planDropdown then
-			local item, _ = planDropdown:FindItemAndText(planName)
-			if item then
-				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
-				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-				item:SetCustomTexture(customTexture, color)
+	-- Removes a plan name from the plan dropdown.
+	---@param planName string
+	---@param enabled boolean
+	function InterfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, enabled)
+		if Private.mainFrame then
+			local planDropdown = Private.mainFrame.planDropdown
+			if planDropdown then
+				local item, _ = planDropdown:FindItemAndText(planName)
+				if item then
+					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
+					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+					item:SetCustomTexture(customTexture, color)
+				end
 			end
 		end
 	end
