@@ -662,6 +662,7 @@ do
 		self.value = nil
 		self.open = nil
 		self.hasClose = nil
+		self.isFake = nil
 
 		self.frame:ClearAllPoints()
 		self.frame:Hide()
@@ -1257,6 +1258,7 @@ do
 			background = background,
 			fadeIn = fadeInGroup,
 			fadeOut = fadeOutGroup,
+			isFake = false,
 		}
 
 		buttonCover:SetScript("OnEnter", function()
@@ -1277,7 +1279,9 @@ do
 			if #widget.pullout.items == 0 then
 				widget:Fire("Clicked")
 			end
-			HandleToggleDropdownPullout(widget)
+			if not widget.isFake then
+				HandleToggleDropdownPullout(widget)
+			end
 		end)
 		frame:SetScript("OnHide", function()
 			HandleDropdownHide(widget)

@@ -165,13 +165,13 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
 end
 
 ---@class CooldownOverrideObject
----@field spellDropdownItems table<integer, DropdownItemData>
 ---@field FormatTime fun(number): string,string
 ---@field GetSpellCooldown fun(integer): number
 ---@field cooldownDurations table<integer, number>
 ---@field option EPSettingOption
 ---@field activeContainer EPContainer
 ---@field scrollFrame EPScrollFrame
+---@field realDropdown EPDropdown
 local cooldownOverrideObject = {}
 
 do
@@ -184,6 +184,8 @@ do
 	local abs = math.abs
 	local ceil, floor = ceil, floor
 	local Clamp = Clamp
+	local GetSpellName = C_Spell.GetSpellName
+	local sort = sort
 	local tonumber = tonumber
 
 	local function Round(value, precision)
@@ -282,10 +284,9 @@ do
 		dropdownContainer:SetSpacing(0, 0)
 
 		local dropdown = AceGUI:Create("EPDropdown")
-		dropdown:AddItems(cooldownOverrideObject.spellDropdownItems, "EPDropdownItemToggle")
-		dropdown:SetValue(initialSpellID)
 		dropdown:SetEnabled(initialSpellID == nil)
 		dropdown:SetFullWidth(true)
+		dropdown.isFake = true
 
 		local defaultContainer = AceGUI:Create("EPContainer")
 		defaultContainer:SetLayout("EPHorizontalLayout")
@@ -334,25 +335,6 @@ do
 			end
 		end)
 
-		local cooldownDurations = cooldownOverrideObject.cooldownDurations
-		dropdown:SetCallback("OnValueChanged", function(widget, _, value)
-			if type(value) == "number" then
-				if not cooldownDurations[value] then
-					local cooldown = cooldownOverrideObject.GetSpellCooldown(value)
-					local m, s = cooldownOverrideObject.FormatTime(cooldown)
-					defaultLabel:SetText(format("%s:%s", m, s), 0)
-					minuteLineEdit:SetText(m)
-					secondLineEdit:SetText(s)
-					dropdown:SetEnabled(false)
-					currentSpellID = value
-					cooldownDurations[currentSpellID] = cooldown
-					CopyAndSet()
-				else
-					widget:SetValue(nil)
-				end
-			end
-		end)
-
 		local deleteButton = AceGUI:Create("EPButton")
 		deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 		deleteButton:SetIconPadding(0, 0)
@@ -363,6 +345,7 @@ do
 		spacer:SetFullWidth(true)
 		spacer:SetHeight(4)
 
+		local cooldownDurations = cooldownOverrideObject.cooldownDurations
 		deleteButton:SetCallback("Clicked", function()
 			if currentSpellID then
 				cooldownDurations[currentSpellID] = nil
@@ -374,6 +357,54 @@ do
 			SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
 			SetRelativeLabelWidths()
 		end)
+
+		if initialSpellID then
+			local _, text = cooldownOverrideObject.realDropdown:FindItemAndText(initialSpellID)
+			if text then
+				dropdown:SetText(text)
+			end
+		else
+			dropdown:SetCallback("Clicked", function()
+				if dropdown.enabled then
+					local realDropdown = cooldownOverrideObject.realDropdown
+					realDropdown:SetText("")
+					realDropdown.frame:SetParent(dropdown.frame)
+					realDropdown.frame:SetFrameLevel(dropdown.frame:GetFrameLevel() + 10)
+					realDropdown.frame:SetSize(dropdown.frame:GetSize())
+					realDropdown.frame:SetPoint("TOPLEFT", dropdown.frame, "TOPLEFT")
+					realDropdown.frame:SetPoint("BOTTOMRIGHT", dropdown.frame, "BOTTOMRIGHT")
+					realDropdown:SetCallback("OnValueChanged", function(widget, _, value)
+						local _, text = widget:FindItemAndText(value)
+						if type(value) == "number" then
+							if not cooldownDurations[value] then
+								local cooldown = cooldownOverrideObject.GetSpellCooldown(value)
+								local m, s = cooldownOverrideObject.FormatTime(cooldown)
+								defaultLabel:SetText(format("%s:%s", m, s), 0)
+								minuteLineEdit:SetText(m)
+								secondLineEdit:SetText(s)
+								dropdown:SetText(text)
+								dropdown:SetEnabled(false)
+								currentSpellID = value
+								cooldownDurations[currentSpellID] = cooldown
+								CopyAndSet()
+							else
+								activeContainer:RemoveChildNoDoLayout(container)
+								activeContainer:RemoveChildNoDoLayout(spacer)
+								activeContainer:DoLayout()
+								SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
+								SetRelativeLabelWidths()
+							end
+						end
+						realDropdown:Close()
+						realDropdown.frame:Hide()
+						realDropdown.frame:SetParent(UIParent)
+						realDropdown.frame:ClearAllPoints()
+					end)
+					realDropdown.frame:Show()
+					realDropdown:Open()
+				end
+			end)
+		end
 
 		dropdownContainer:AddChild(dropdown)
 		defaultContainer:AddChild(defaultLabel)
@@ -388,17 +419,27 @@ do
 		local cooldownDurations = cooldownOverrideObject.cooldownDurations
 		wipe(cooldownDurations)
 
-		local containers = {}
+		local containersAndSpacers = {}
 		local activeContainer = cooldownOverrideObject.activeContainer
 		for spellID, duration in pairs(entries) do
 			cooldownDurations[spellID] = duration
+			local spellName = GetSpellName(spellID)
 			local container, spacer = CreateEntry(activeContainer, spellID, duration)
-			tinsert(containers, container)
-			tinsert(containers, spacer)
+			tinsert(containersAndSpacers, { container = container, spacer = spacer, spellName = spellName or "" })
+		end
+
+		sort(containersAndSpacers, function(a, b)
+			return a.spellName < b.spellName
+		end)
+
+		local widgets = {}
+		for _, obj in ipairs(containersAndSpacers) do
+			tinsert(widgets, obj.container)
+			tinsert(widgets, obj.spacer)
 		end
 
 		local beforeWidget = activeContainer.children[#activeContainer.children]
-		activeContainer:InsertChildren(beforeWidget, unpack(containers))
+		activeContainer:InsertChildren(beforeWidget, unpack(widgets))
 	end
 
 	---@param option EPSettingOption
@@ -1303,12 +1344,14 @@ local function PopulateActiveTab(self, tab)
 
 		cooldownOverrideObject.FormatTime = self.FormatTime
 		cooldownOverrideObject.GetSpellCooldown = self.GetSpellCooldown
-		cooldownOverrideObject.spellDropdownItems = self.spellDropdownItems
-		cooldownOverrideObject.cooldownDurations = self.cooldownDurations
 		cooldownOverrideObject.labelContainer = self.labelContainer
 		cooldownOverrideObject.activeContainer = self.activeContainer
 		cooldownOverrideObject.scrollFrame = self.scrollFrame
 		cooldownOverrideObject.option = self.optionTabs[tab][1]
+		cooldownOverrideObject.cooldownDurations = {}
+		cooldownOverrideObject.realDropdown = AceGUI:Create("EPDropdown")
+		cooldownOverrideObject.realDropdown:AddItems(self.spellDropdownItems, "EPDropdownItemToggle")
+		cooldownOverrideObject.realDropdown.frame:Hide()
 		cooldownOverrideObject.CreateCooldownOverrideTab(self.optionTabs[tab][1])
 
 		self:Resize()
@@ -1322,12 +1365,16 @@ local function PopulateActiveTab(self, tab)
 
 		cooldownOverrideObject.FormatTime = nil
 		cooldownOverrideObject.GetSpellCooldown = nil
-		cooldownOverrideObject.spellDropdownItems = nil
 		cooldownOverrideObject.cooldownDurations = nil
 		cooldownOverrideObject.labelContainer = nil
 		cooldownOverrideObject.activeContainer = nil
 		cooldownOverrideObject.scrollFrame = nil
 		cooldownOverrideObject.option = nil
+		cooldownOverrideObject.cooldownDurations = nil
+		if cooldownOverrideObject.realDropdown then
+			cooldownOverrideObject.realDropdown:Release()
+			cooldownOverrideObject.realDropdown = nil
+		end
 
 		local activeContainerChildren = {}
 
@@ -1488,7 +1535,6 @@ end
 ---@field spellDropdownItems table<integer, DropdownItemData>
 ---@field FormatTime fun(number): string,string
 ---@field GetSpellCooldown fun(integer): number
----@field cooldownDurations table<integer, number>
 
 ---@param self EPOptions
 local function OnAcquire(self)
@@ -1497,7 +1543,6 @@ local function OnAcquire(self)
 	self.tabCategories = {}
 	self.updateIndices = {}
 	self.refreshMap = {}
-	self.cooldownDurations = {}
 
 	self.frame:SetSize(frameWidth, frameHeight)
 
@@ -1580,7 +1625,6 @@ local function OnRelease(self)
 	self.FormatTime = nil
 	self.GetSpellCooldown = nil
 	self.spellDropdownItems = nil
-	self.cooldownDurations = nil
 end
 
 ---@param self EPOptions
