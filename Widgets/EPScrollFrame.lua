@@ -25,6 +25,7 @@ local scrollFrameBackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local maxEdgeCursorScrollDistance = 300.0
 local minEdgeMultiplier = 0.05
 local maxEdgeMultiplier = 1.5
+
 local edgeMultiplierRange = maxEdgeMultiplier - minEdgeMultiplier
 local scrollFrameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -33,6 +34,7 @@ local scrollFrameBackdrop = {
 	edgeFile = "Interface\\BUTTONS\\White8x8",
 	edgeSize = 2,
 }
+local wrapperPadding = scrollFrameBackdrop.edgeSize
 
 ---@param self EPScrollFrame
 local function HandleEdgeScrolling(self)
@@ -159,11 +161,11 @@ local function OnAcquire(self)
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.scrollFrameWrapper --[[@as Frame]])
 	self.scrollFrame:SetSize(
-		defaultFrameWidth - defaultScrollBarScrollFramePadding - defaultScrollBarWidth - 4,
-		defaultFrameHeight - 4
+		defaultFrameWidth - defaultScrollBarScrollFramePadding - defaultScrollBarWidth - 2 * wrapperPadding,
+		defaultFrameHeight - 2 * wrapperPadding
 	)
-	self.scrollFrame:SetPoint("TOPLEFT", 2, -2)
-	self.scrollFrame:SetPoint("BOTTOMRIGHT", -2, 2)
+	self.scrollFrame:SetPoint("TOPLEFT", wrapperPadding, -wrapperPadding)
+	self.scrollFrame:SetPoint("BOTTOMRIGHT", -wrapperPadding, wrapperPadding)
 	self.scrollFrame:Show()
 
 	self.scrollBar:ClearAllPoints()
@@ -318,6 +320,11 @@ local function OnHeightSet(self, height)
 	self:UpdateThumbPositionAndSize()
 end
 
+---@return number
+local function GetWrapperPadding()
+	return wrapperPadding
+end
+
 ---@param self EPScrollFrame
 ---@param width number
 local function SetScrollBarWidth(self, width)
@@ -376,6 +383,7 @@ local function Constructor()
 		UpdateVerticalScroll = UpdateVerticalScroll,
 		SetScrollBarWidth = SetScrollBarWidth,
 		SetScrollBarScrollFramePadding = SetScrollBarScrollFramePadding,
+		GetWrapperPadding = GetWrapperPadding,
 		frame = frame,
 		scrollFrame = scrollFrame,
 		scrollFrameWrapper = scrollFrameWrapper,
