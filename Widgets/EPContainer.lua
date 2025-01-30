@@ -25,10 +25,10 @@ local defaultWidth = 100
 ---@param self EPContainer
 local function OnAcquire(self)
 	self.frame:Show()
+	self.content.spacing = { x = defaultSpacing.x, y = defaultSpacing.y }
 	self:SetPadding(0, 0, 0, 0)
 	self:SetHeight(defaultHeight)
 	self:SetWidth(defaultWidth)
-	self.content.spacing = defaultSpacing
 	self.content:SetScript("OnSizeChanged", nil)
 	self.frame:SetScript("OnSizeChanged", nil)
 end
@@ -145,6 +145,19 @@ local function RemoveChildNoDoLayout(self, child)
 	end
 end
 
+---@param self EPContainer
+---@param child AceGUIWidget
+local function RemoveChild(self, child)
+	for i = #self.children, 1, -1 do
+		if self.children[i] == child then
+			self.children[i]:Release()
+			tremove(self.children, i)
+			break
+		end
+	end
+	self:DoLayout()
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -166,6 +179,7 @@ local function Constructor()
 		SetSelfAlignment = SetSelfAlignment,
 		InsertChildren = InsertChildren,
 		AddChildNoDoLayout = AddChildNoDoLayout,
+		RemoveChild = RemoveChild,
 		RemoveChildNoDoLayout = RemoveChildNoDoLayout,
 		SetBackdrop = SetBackdrop,
 		SetPadding = SetPadding,
