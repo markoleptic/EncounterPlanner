@@ -19,8 +19,7 @@ local wipe = wipe
 
 local defaultFrameWidth = 500
 local defaultFrameHeight = 500
-local minScrollFrameHeight = 400
-local maxScrollFrameHeight = 600
+local preferredHeight = 600
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
 local otherPadding = { x = 10, y = 10 }
@@ -537,20 +536,9 @@ end
 
 ---@param self EPRosterEditor
 local function Resize(self)
-	local tableTitleContainerHeight = self.tabContainer.frame:GetHeight()
-	local containerHeight = self.activeContainer.frame:GetHeight()
-	local scrollAreaHeight = min(max(containerHeight + 4, minScrollFrameHeight), maxScrollFrameHeight)
-	local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
-	local paddingHeight = contentFramePadding.y * 4
-	local height = windowBarHeight
-		+ tableTitleContainerHeight
-		+ scrollAreaHeight
-		+ buttonContainerHeight
-		+ paddingHeight
-
 	local width = contentFramePadding.x * 2 + self.buttonContainer.frame:GetWidth()
 
-	self.frame:SetSize(width, height)
+	self.frame:SetSize(width, preferredHeight)
 	self.activeContainer:DoLayout()
 end
 

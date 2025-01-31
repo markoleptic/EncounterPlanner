@@ -90,7 +90,6 @@ end
 
 function AddOn:OnInitialize()
 	local loadedOrLoading, loaded = IsAddOnLoaded("WeakAuras")
-	print(loadedOrLoading, loaded)
 	if not loadedOrLoading and not loaded then
 		self.defaults.profile.preferences.reminder.progressBars.texture = [[Interface\Buttons\WHITE8X8]]
 	end

@@ -18,7 +18,7 @@ local format = format
 local GetMouseFoci = GetMouseFoci
 local ipairs = ipairs
 local IsMouseButtonDown = IsMouseButtonDown
-local max, min = math.max, math.min
+local max = math.max
 local pairs = pairs
 local ResetCursor = ResetCursor
 local SetCursor = SetCursor
@@ -53,8 +53,7 @@ local frameWidth = 500
 local groupBoxBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local indentWidth = 20
 local labelTextColor = { 1, 1, 1, 1 }
-local maxScrollFrameHeight = 600
-local minScrollFrameHeight = 400
+local preferredHeight = 600
 local optionLabelFontSize = 14
 local radioButtonGroupSpacing = { 8, 0 }
 local spacingBetweenCategories = 15
@@ -1720,14 +1719,14 @@ end
 local function Resize(self)
 	local wrapperPadding = self.scrollFrame.GetWrapperPadding()
 
-	local tableTitleContainerHeight = self.tabTitleContainer.frame:GetHeight()
-	local containerHeight = self.activeContainer.frame:GetHeight()
-	if self.labelContainer.frame:IsShown() then
-		containerHeight = containerHeight + self.labelContainer.frame:GetHeight() - wrapperPadding
-	end
-	local scrollAreaHeight = min(max(containerHeight, minScrollFrameHeight), maxScrollFrameHeight)
-	local paddingHeight = contentFramePadding.y * 3
-	local height = windowBarHeight + tableTitleContainerHeight + scrollAreaHeight + paddingHeight
+	-- local tableTitleContainerHeight = self.tabTitleContainer.frame:GetHeight()
+	-- local containerHeight = self.activeContainer.frame:GetHeight()
+	-- if self.labelContainer.frame:IsShown() then
+	-- 	containerHeight = containerHeight + self.labelContainer.frame:GetHeight() - wrapperPadding
+	-- end
+
+	-- local paddingHeight = contentFramePadding.y * 3
+	-- local height = windowBarHeight + tableTitleContainerHeight + containerHeight + paddingHeight
 
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()
 	local activeWidth = self.activeContainer.frame:GetWidth() + 2 * wrapperPadding
@@ -1736,7 +1735,7 @@ local function Resize(self)
 	end
 	local width = contentFramePadding.x * 2 + max(tabWidth, activeWidth)
 
-	self.frame:SetSize(width, height)
+	self.frame:SetSize(width, preferredHeight)
 	self.activeContainer:DoLayout()
 end
 
