@@ -260,11 +260,13 @@ end
 
 ---@param self EPProgressBar
 ---@param texture string|integer
-local function SetTexture(self, texture)
+---@param foregroundColor {[1]:number, [2]:number, [3]:number, [4]:number}
+---@param backgroundColor {[1]:number, [2]:number, [3]:number, [4]:number}
+local function SetTexture(self, texture, foregroundColor, backgroundColor)
 	self.statusBar:SetStatusBarTexture(texture)
 	self.background:SetTexture(texture)
-	self:SetBackgroundColor(unpack(defaultBackgroundColor))
-	self:SetColor(unpack(defaultColor))
+	self:SetColor(unpack(foregroundColor))
+	self:SetBackgroundColor(unpack(backgroundColor))
 end
 
 ---@param self EPProgressBar

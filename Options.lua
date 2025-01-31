@@ -53,18 +53,18 @@ local MouseButtonKeyBindingValues = {
 }
 
 local rowValues = {
-	{ itemValue = "1", text = "1" },
-	{ itemValue = "2", text = "2" },
-	{ itemValue = "3", text = "3" },
-	{ itemValue = "4", text = "4" },
-	{ itemValue = "5", text = "5" },
-	{ itemValue = "6", text = "6" },
-	{ itemValue = "7", text = "7" },
-	{ itemValue = "8", text = "8" },
-	{ itemValue = "9", text = "9" },
-	{ itemValue = "10", text = "10" },
-	{ itemValue = "11", text = "11" },
-	{ itemValue = "12", text = "12" },
+	{ itemValue = 1, text = "1" },
+	{ itemValue = 2, text = "2" },
+	{ itemValue = 3, text = "3" },
+	{ itemValue = 4, text = "4" },
+	{ itemValue = 5, text = "5" },
+	{ itemValue = 6, text = "6" },
+	{ itemValue = 7, text = "7" },
+	{ itemValue = 8, text = "8" },
+	{ itemValue = 9, text = "9" },
+	{ itemValue = 10, text = "10" },
+	{ itemValue = 11, text = "11" },
+	{ itemValue = 12, text = "12" },
 }
 
 local textAlignmentValues = {
@@ -251,11 +251,9 @@ local function CreateProgressBarAnchor()
 		progressBarAnchor:SetShowIconBorder(preferences.showIconBorder)
 		progressBarAnchor:SetHorizontalTextAlignment(preferences.textAlignment)
 		progressBarAnchor:SetDurationTextAlignment(preferences.durationAlignment)
-		progressBarAnchor:SetTexture(preferences.texture)
+		progressBarAnchor:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
 		progressBarAnchor:SetIconPosition(preferences.iconPosition)
 		progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], L["Progress Bar Text"])
-		progressBarAnchor:SetColor(unpack(preferences.color))
-		progressBarAnchor:SetBackgroundColor(unpack(preferences.backgroundColor))
 		progressBarAnchor:SetProgressBarWidth(preferences.width)
 		progressBarAnchor:SetFill(preferences.fill)
 		progressBarAnchor:SetAlpha(preferences.alpha)
@@ -318,6 +316,9 @@ local function CreateMessageAnchor()
 end
 
 do
+	local Clamp = Clamp
+	local wipe = wipe
+
 	--[[@type table<integer, EPSettingOption>]]
 	local cooldownOverrideOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
@@ -371,11 +372,12 @@ do
 					end
 				end,
 				validate = function(key)
+					local preferences = GetPreferences()
 					if
-						GetPreferences().keyBindings.editAssignment == key
-						or GetPreferences().keyBindings.newAssignment == key
+						preferences.keyBindings.editAssignment == key
+						or preferences.keyBindings.newAssignment == key
 					then
-						return false, GetPreferences().keyBindings.pan
+						return false, preferences.keyBindings.pan
 					end
 					return true
 				end,
@@ -400,8 +402,9 @@ do
 					end
 				end,
 				validate = function(key)
-					if GetPreferences().keyBindings.zoom == key then
-						return false, GetPreferences().keyBindings.scroll
+					local preferences = GetPreferences()
+					if preferences.keyBindings.zoom == key then
+						return false, preferences.keyBindings.scroll
 					end
 					return true
 				end,
@@ -426,8 +429,9 @@ do
 					end
 				end,
 				validate = function(key)
-					if GetPreferences().keyBindings.scroll == key then
-						return false, GetPreferences().keyBindings.zoom
+					local preferences = GetPreferences()
+					if preferences.keyBindings.scroll == key then
+						return false, preferences.keyBindings.zoom
 					end
 					return true
 				end,
@@ -447,8 +451,9 @@ do
 					end
 				end,
 				validate = function(key)
-					if GetPreferences().keyBindings.pan == key then
-						return false, GetPreferences().keyBindings.newAssignment
+					local preferences = GetPreferences()
+					if preferences.keyBindings.pan == key then
+						return false, preferences.keyBindings.newAssignment
 					end
 					return true
 				end,
@@ -468,10 +473,11 @@ do
 					end
 				end,
 				validate = function(key)
-					if GetPreferences().keyBindings.pan == key then
-						return false, GetPreferences().keyBindings.editAssignment
-					elseif GetPreferences().keyBindings.duplicateAssignment == key then
-						return false, GetPreferences().keyBindings.editAssignment
+					local preferences = GetPreferences()
+					if preferences.keyBindings.pan == key then
+						return false, preferences.keyBindings.editAssignment
+					elseif preferences.keyBindings.duplicateAssignment == key then
+						return false, preferences.keyBindings.editAssignment
 					end
 					return true
 				end,
@@ -491,8 +497,9 @@ do
 					end
 				end,
 				validate = function(key)
-					if GetPreferences().keyBindings.editAssignment == key then
-						return false, GetPreferences().keyBindings.duplicateAssignment
+					local preferences = GetPreferences()
+					if preferences.keyBindings.editAssignment == key then
+						return false, preferences.keyBindings.duplicateAssignment
 					end
 					return true
 				end,
@@ -504,6 +511,14 @@ do
 		local enableReminderOption = function()
 			return GetReminderPreferences().enabled == true
 		end
+		local enableMessageOption = function()
+			local preferences = GetReminderPreferences()
+			return preferences.enabled == true and preferences.messages.enabled == true
+		end
+		local enableProgressBarOption = function()
+			local preferences = GetReminderPreferences()
+			return preferences.enabled == true and preferences.progressBars.enabled == true
+		end
 		return {
 			{
 				label = L["Enable Reminders"],
@@ -514,7 +529,8 @@ do
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						if key ~= GetReminderPreferences().enabled then
+						local preferences = GetReminderPreferences()
+						if key ~= preferences.enabled then
 							if key == true then
 								Private:RegisterReminderEvents()
 							else
@@ -529,7 +545,7 @@ do
 								end
 							end
 						end
-						GetReminderPreferences().enabled = key
+						preferences.enabled = key
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -616,19 +632,21 @@ do
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						if key ~= GetMessagePreferences().enabled and key == false then
+						local preferences = GetMessagePreferences()
+						if key ~= preferences.enabled and key == false then
 							if Private.messageAnchor.frame:IsShown() then
 								Private.messageAnchor:Pause()
 								Private.messageAnchor.frame:Hide()
 							end
 						end
-						GetMessagePreferences().enabled = key
+						preferences.enabled = key
 					end
 				end,
 				enabled = enableReminderOption,
 				buttonText = L["Toggle Message Anchor"],
 				buttonEnabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
+					local preferences = GetReminderPreferences()
+					return preferences.enabled == true and preferences.messages.enabled == true
 				end,
 				buttonCallback = function()
 					if Private.messageAnchor.frame:IsShown() then
@@ -679,9 +697,7 @@ do
 						preferences.showOnlyAtExpiration = false
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Anchor Point"],
@@ -700,9 +716,7 @@ do
 							ApplyPoint(Private.messageAnchor.frame, key, messages.relativeTo, messages.relativePoint)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Anchor Frame"],
@@ -720,9 +734,7 @@ do
 							ApplyPoint(Private.messageAnchor.frame, messages.point, key, messages.relativePoint)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Relative Anchor Point"],
@@ -741,9 +753,7 @@ do
 							ApplyPoint(Private.messageAnchor.frame, messages.point, messages.relativeTo, key)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Position"],
@@ -778,16 +788,16 @@ do
 						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 				validate = function(key, key2)
 					local x = tonumber(key)
 					local y = tonumber(key2)
 					if x and y then
 						return true
+					else
+						local preferences = GetMessagePreferences()
+						return false, preferences.x, preferences.y
 					end
-					return false, GetMessagePreferences().x, GetMessagePreferences().y
 				end,
 			} --[[@as EPSettingOption]],
 			{
@@ -815,9 +825,7 @@ do
 						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Font Size"],
@@ -835,9 +843,7 @@ do
 						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -867,9 +873,7 @@ do
 						Private.messageAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Text Color"],
@@ -886,9 +890,7 @@ do
 						Private.messageAnchor:SetTextColor(r, g, b, a)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Alpha"],
@@ -905,9 +907,7 @@ do
 						Private.messageAnchor:SetAlpha(value)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetMessagePreferences().enabled == true
-				end,
+				enabled = enableMessageOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -931,20 +931,19 @@ do
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						if key ~= GetProgressBarPreferences().enabled and key == false then
+						local preferences = GetProgressBarPreferences()
+						if key ~= preferences.enabled and key == false then
 							if Private.progressBarAnchor.frame:IsShown() then
 								Private.progressBarAnchor:Pause()
 								Private.progressBarAnchor.frame:Hide()
 							end
 						end
-						GetProgressBarPreferences().enabled = key
+						preferences.enabled = key
 					end
 				end,
 				enabled = enableReminderOption,
 				buttonText = L["Toggle Progress Bar Anchor"],
-				buttonEnabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				buttonEnabled = enableProgressBarOption,
 				buttonCallback = function()
 					if Private.progressBarAnchor.frame:IsShown() then
 						Private.progressBarAnchor:Pause()
@@ -968,22 +967,20 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						local progressBars = GetProgressBarPreferences()
+						local preferences = GetProgressBarPreferences()
 						local point, relativeTo, relativePoint, x, y = ApplyPoint(
 							Private.progressBarAnchor.frame,
 							key,
-							progressBars.relativeTo,
-							progressBars.relativePoint
+							preferences.relativeTo,
+							preferences.relativePoint
 						)
-						progressBars.point = point
-						progressBars.relativeTo = relativeTo
-						progressBars.relativePoint = relativePoint
-						progressBars.x, progressBars.y = x, y
+						preferences.point = point
+						preferences.relativeTo = relativeTo
+						preferences.relativePoint = relativePoint
+						preferences.x, preferences.y = x, y
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Anchor Frame"],
@@ -996,22 +993,20 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						local progressBars = GetProgressBarPreferences()
+						local preferences = GetProgressBarPreferences()
 						local point, relativeTo, relativePoint, x, y = ApplyPoint(
 							Private.progressBarAnchor.frame,
-							progressBars.point,
+							preferences.point,
 							key,
-							progressBars.relativePoint
+							preferences.relativePoint
 						)
-						progressBars.point = point
-						progressBars.relativeTo = relativeTo
-						progressBars.relativePoint = relativePoint
-						progressBars.x, progressBars.y = x, y
+						preferences.point = point
+						preferences.relativeTo = relativeTo
+						preferences.relativePoint = relativePoint
+						preferences.x, preferences.y = x, y
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Relative Anchor Point"],
@@ -1025,22 +1020,16 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						local progressBars = GetProgressBarPreferences()
-						local point, relativeTo, relativePoint, x, y = ApplyPoint(
-							Private.progressBarAnchor.frame,
-							progressBars.point,
-							progressBars.relativeTo,
-							key
-						)
-						progressBars.point = point
-						progressBars.relativeTo = relativeTo
-						progressBars.relativePoint = relativePoint
-						progressBars.x, progressBars.y = x, y
+						local preferences = GetProgressBarPreferences()
+						local point, relativeTo, relativePoint, x, y =
+							ApplyPoint(Private.progressBarAnchor.frame, preferences.point, preferences.relativeTo, key)
+						preferences.point = point
+						preferences.relativeTo = relativeTo
+						preferences.relativePoint = relativePoint
+						preferences.x, preferences.y = x, y
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Position"],
@@ -1060,30 +1049,29 @@ do
 					local x = tonumber(key)
 					local y = tonumber(key2)
 					if x and y then
-						GetProgressBarPreferences().x = x
-						GetProgressBarPreferences().y = y
-						local progressBars = GetProgressBarPreferences()
-						local regionName = IsValidRegionName(progressBars.relativeTo) and progressBars.relativeTo
+						local preferences = GetProgressBarPreferences()
+						preferences.x, preferences.y = x, y
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
 						Private.progressBarAnchor.frame:SetPoint(
-							progressBars.point,
+							preferences.point,
 							regionName,
-							progressBars.relativePoint,
+							preferences.relativePoint,
 							x,
 							y
 						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 				validate = function(key, key2)
 					local x = tonumber(key)
 					local y = tonumber(key2)
 					if x and y then
 						return true
+					else
+						local preferences = GetProgressBarPreferences()
+						return false, preferences.x, preferences.y
 					end
-					return false, GetProgressBarPreferences().x, GetProgressBarPreferences().y
 				end,
 			} --[[@as EPSettingOption]],
 			{
@@ -1115,9 +1103,7 @@ do
 						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Font Size"],
@@ -1139,9 +1125,7 @@ do
 						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -1175,9 +1159,7 @@ do
 						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Text Alignment"],
@@ -1191,12 +1173,10 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().textAlignment = key
-						Private.progressBarAnchor:SetHorizontalTextAlignment(GetProgressBarPreferences().textAlignment)
+						Private.progressBarAnchor:SetHorizontalTextAlignment(key)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Duration Alignment"],
@@ -1210,14 +1190,10 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().durationAlignment = key
-						Private.progressBarAnchor:SetDurationTextAlignment(
-							GetProgressBarPreferences().durationAlignment
-						)
+						Private.progressBarAnchor:SetDurationTextAlignment(key)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = "",
@@ -1239,13 +1215,16 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetProgressBarPreferences().texture = key
-						Private.progressBarAnchor:SetTexture(GetProgressBarPreferences().texture)
+						local preferences = GetProgressBarPreferences()
+						preferences.texture = key
+						Private.progressBarAnchor:SetTexture(
+							preferences.texture,
+							preferences.color,
+							preferences.backgroundColor
+						)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Bar Width"],
@@ -1262,9 +1241,7 @@ do
 						Private.progressBarAnchor:SetProgressBarWidth(value)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -1292,16 +1269,17 @@ do
 					end
 				end,
 				set = function(key)
-					if key == "fill" then
-						GetProgressBarPreferences().fill = true
-					else
-						GetProgressBarPreferences().fill = false
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						if key == "fill" then
+							preferences.fill = true
+						else
+							preferences.fill = false
+						end
+						Private.progressBarAnchor:SetFill(preferences.fill)
 					end
-					Private.progressBarAnchor:SetFill(GetProgressBarPreferences().fill)
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Icon Position"],
@@ -1318,9 +1296,7 @@ do
 						Private.progressBarAnchor:SetIconPosition(key)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Alpha"],
@@ -1337,9 +1313,7 @@ do
 						Private.progressBarAnchor:SetAlpha(value)
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -1363,25 +1337,39 @@ do
 				category = L["Progress Bars"],
 				get = {
 					function()
-						return unpack(GetProgressBarPreferences().color)
+						local r, g, b, a = unpack(GetProgressBarPreferences().color)
+						return r, g, b, a
 					end,
 					function()
-						return unpack(GetProgressBarPreferences().backgroundColor)
+						local r, g, b, a = unpack(GetProgressBarPreferences().backgroundColor)
+						return r, g, b, a
 					end,
 				},
 				set = {
 					function(r, g, b, a)
-						GetProgressBarPreferences().color = { r, g, b, a }
-						Private.progressBarAnchor:SetColor(r, g, b, a)
+						if
+							type(r) == "number"
+							and type(g) == "number"
+							and type(b) == "number"
+							and type(a) == "number"
+						then
+							GetProgressBarPreferences().color = { r, g, b, a }
+							Private.progressBarAnchor:SetColor(r, g, b, a)
+						end
 					end,
 					function(r, g, b, a)
-						GetProgressBarPreferences().backgroundColor = { r, g, b, a }
-						Private.progressBarAnchor:SetBackgroundColor(r, g, b, a)
+						if
+							type(r) == "number"
+							and type(g) == "number"
+							and type(b) == "number"
+							and type(a) == "number"
+						then
+							GetProgressBarPreferences().backgroundColor = { r, g, b, a }
+							Private.progressBarAnchor:SetBackgroundColor(r, g, b, a)
+						end
 					end,
 				},
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Border"],
@@ -1402,17 +1390,19 @@ do
 				},
 				set = {
 					function(key)
-						GetProgressBarPreferences().showBorder = key
-						Private.progressBarAnchor:SetShowBorder(GetProgressBarPreferences().showBorder)
+						if type(key) == "boolean" then
+							GetProgressBarPreferences().showBorder = key
+							Private.progressBarAnchor:SetShowBorder(key)
+						end
 					end,
 					function(key)
-						GetProgressBarPreferences().showIconBorder = key
-						Private.progressBarAnchor:SetShowIconBorder(GetProgressBarPreferences().showIconBorder)
+						if type(key) == "boolean" then
+							GetProgressBarPreferences().showIconBorder = key
+							Private.progressBarAnchor:SetShowIconBorder(key)
+						end
 					end,
 				},
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Spacing"],
@@ -1428,9 +1418,7 @@ do
 						GetProgressBarPreferences().spacing = value
 					end
 				end,
-				enabled = function()
-					return GetReminderPreferences().enabled == true and GetProgressBarPreferences().enabled == true
-				end,
+				enabled = enableProgressBarOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
@@ -1490,11 +1478,9 @@ do
 					end
 				end,
 				enabled = function()
-					return GetReminderPreferences().enabled == true
-						and (
-							GetReminderPreferences().textToSpeech.enableAtTime
-							or GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
-						)
+					local preferences = GetReminderPreferences()
+					return preferences.enabled == true
+						and (preferences.textToSpeech.enableAtTime or preferences.textToSpeech.enableAtAdvanceNotice)
 				end,
 			} --[[@as EPSettingOption]],
 			{
@@ -1512,11 +1498,9 @@ do
 					end
 				end,
 				enabled = function()
-					return GetReminderPreferences().enabled == true
-						and (
-							GetReminderPreferences().textToSpeech.enableAtTime
-							or GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
-						)
+					local preferences = GetReminderPreferences()
+					return preferences.enabled == true
+						and (preferences.textToSpeech.enableAtTime or preferences.textToSpeech.enableAtAdvanceNotice)
 				end,
 				validate = function(key)
 					local value = tonumber(key)
@@ -1551,17 +1535,21 @@ do
 				},
 				set = {
 					function(key)
-						GetReminderPreferences().sound.enableAtAdvanceNotice = key
+						if type(key) == "boolean" then
+							GetReminderPreferences().sound.enableAtAdvanceNotice = key
+						end
 					end,
 					function(key)
-						GetReminderPreferences().sound.advanceNoticeSound = key
+						if type(key) == "boolean" then
+							GetReminderPreferences().sound.advanceNoticeSound = key
+						end
 					end,
 				},
 				enabled = {
 					enableReminderOption,
 					function()
-						return GetReminderPreferences().enabled == true
-							and GetReminderPreferences().sound.enableAtAdvanceNotice == true
+						local preferences = GetReminderPreferences()
+						return preferences.enabled == true and preferences.sound.enableAtAdvanceNotice == true
 					end,
 				},
 			} --[[@as EPSettingOption]],
@@ -1585,17 +1573,21 @@ do
 				},
 				set = {
 					function(key)
-						GetReminderPreferences().sound.enableAtTime = key
+						if type(key) == "boolean" then
+							GetReminderPreferences().sound.enableAtTime = key
+						end
 					end,
 					function(key)
-						GetReminderPreferences().sound.atSound = key
+						if type(key) == "boolean" then
+							GetReminderPreferences().sound.atSound = key
+						end
 					end,
 				},
 				enabled = {
 					enableReminderOption,
 					function()
-						return GetReminderPreferences().enabled == true
-							and GetReminderPreferences().sound.enableAtTime == true
+						local preferences = GetReminderPreferences()
+						return preferences.enabled == true and preferences.sound.enableAtTime == true
 					end,
 				},
 			} --[[@as EPSettingOption]],
@@ -1627,7 +1619,7 @@ do
 				description = L["The assignment timeline will attempt to expand or shrink to show this many rows."],
 				values = rowValues,
 				get = function()
-					return tostring(GetPreferences().timelineRows.numberOfAssignmentsToShow)
+					return GetPreferences().timelineRows.numberOfAssignmentsToShow
 				end,
 				set = function(key)
 					local value = tonumber(key)
@@ -1647,7 +1639,7 @@ do
 				description = L["The boss ability timeline will attempt to expand or shrink to show this many rows."],
 				values = rowValues,
 				get = function()
-					return tostring(GetPreferences().timelineRows.numberOfBossAbilitiesToShow)
+					return GetPreferences().timelineRows.numberOfBossAbilitiesToShow
 				end,
 				set = function(key)
 					local value = tonumber(key)
@@ -1678,10 +1670,12 @@ do
 					end
 				end,
 				set = function(key)
-					if key == "At cursor" then
-						GetPreferences().zoomCenteredOnCursor = true
-					else
-						GetPreferences().zoomCenteredOnCursor = false
+					if type(key) == "string" then
+						if key == "At cursor" then
+							GetPreferences().zoomCenteredOnCursor = true
+						else
+							GetPreferences().zoomCenteredOnCursor = false
+						end
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -1701,8 +1695,9 @@ do
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						if key ~= GetPreferences().assignmentSortType then
-							GetPreferences().assignmentSortType = key
+						local preferences = GetPreferences()
+						if key ~= preferences.assignmentSortType then
+							preferences.assignmentSortType = key
 							if Private.mainFrame and Private.mainFrame.bossLabel then
 								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 								if bossDungeonEncounterID then
@@ -1710,7 +1705,6 @@ do
 								end
 							end
 						end
-						GetPreferences().assignmentSortType = key
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -1724,13 +1718,13 @@ do
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						if key ~= GetPreferences().showSpellCooldownDuration then
-							GetPreferences().showSpellCooldownDuration = key
+						local preferences = GetPreferences()
+						if key ~= preferences.showSpellCooldownDuration then
+							preferences.showSpellCooldownDuration = key
 							if Private.mainFrame and Private.mainFrame.timeline then
 								Private.mainFrame.timeline:UpdateTimeline()
 							end
 						end
-						GetPreferences().showSpellCooldownDuration = key
 					end
 				end,
 			} --[[@as EPSettingOption]],
