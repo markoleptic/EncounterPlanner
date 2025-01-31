@@ -223,16 +223,18 @@ function BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalD
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 	if boss then
 		local phases = boss.phases
-		local currentTotalDuration = 0.0
-		local currentPhaseIndex = 1
-		while currentPhaseIndex do
-			local newTotalDuration = currentTotalDuration + phases[currentPhaseIndex].duration
-			if newTotalDuration > maxTotalDuration then
+		local currentPhaseIndex, currentTotalDuration = 1, 0.0
+		while phases[currentPhaseIndex] do
+			currentTotalDuration = currentTotalDuration + phases[currentPhaseIndex].duration
+			if currentTotalDuration > maxTotalDuration then
 				break
 			end
-			currentTotalDuration = newTotalDuration
 			counts[currentPhaseIndex] = (counts[currentPhaseIndex] or 0) + 1
-			currentPhaseIndex = phases[currentPhaseIndex].repeatAfter
+			if phases[currentPhaseIndex].repeatAfter == nil then
+				currentPhaseIndex = currentPhaseIndex + 1
+			else
+				currentPhaseIndex = phases[currentPhaseIndex].repeatAfter
+			end
 		end
 	end
 	return counts
