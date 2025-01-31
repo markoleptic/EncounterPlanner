@@ -378,7 +378,7 @@ do
 		end
 		if self.enabled and self.childPullout then
 			self.childPullout:SetWidth(self:GetUserDataTable().obj.pulloutWidth or self.frame:GetWidth())
-			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 0)
+			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 1)
 		end
 	end
 
@@ -386,6 +386,7 @@ do
 		local self = frame.obj --[[@as EPDropdownItemMenu]]
 		if self.childPullout then
 			self.childPullout:Close()
+			self.childPullout.frame:ClearAllPoints()
 		end
 	end
 

@@ -18,7 +18,7 @@ local textOffsetX = 4
 local defaultHorizontalItemPadding = 4
 local fontSize = 14
 local defaultDropdownItemHeight = 24
-local minimumPulloutWidth = 60
+local minimumPulloutWidth = 100
 local pulloutBackdropColor = { 0.1, 0.1, 0.1, 1 }
 local pulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local dropdownBackdropColor = { 0.1, 0.1, 0.1, 1 }
@@ -45,6 +45,7 @@ local dropdownBackdrop = {
 	tileSize = 16,
 	edgeSize = 1,
 }
+local edgeSize = dropdownBackdrop.edgeSize
 
 local function FixLevels(parent, ...)
 	local i = 1
@@ -128,7 +129,7 @@ do
 	---@param self EPDropdownPullout
 	local function OnAcquire(self)
 		self.dropdownItemHeight = defaultDropdownItemHeight
-		self.scrollIndicatorFrame:SetHeight(defaultDropdownItemHeight / 2 - 2)
+		self.scrollIndicatorFrame:SetHeight(defaultDropdownItemHeight / 2)
 		self.frame:SetParent(UIParent)
 		self.autoWidth = false
 	end
@@ -160,9 +161,7 @@ do
 		item:SetHeight(self.dropdownItemHeight)
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h, self.maxHeight))
-		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
-		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
+		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -175,9 +174,7 @@ do
 		item:SetHeight(self.dropdownItemHeight)
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h, self.maxHeight))
-		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
-		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
+		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -195,7 +192,7 @@ do
 		end
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h, self.maxHeight))
+		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
 		self:FixScroll()
 	end
 
@@ -212,11 +209,16 @@ do
 			maxItemWidth = parent.frame:GetWidth()
 		end
 		self.frame:SetPoint(point, relFrame, relPoint, x, y)
-		local height = 0
-		for i, item in ipairs(self.items) do
-			item:SetPoint("TOP", self.itemFrame, "TOP", 0, (i - 1) * -self.dropdownItemHeight)
+		local previousFrame = nil
+		for _, item in ipairs(self.items) do
+			if previousFrame then
+				item:SetPoint("TOPLEFT", previousFrame, "BOTTOMLEFT")
+				item:SetPoint("TOPRIGHT", previousFrame, "BOTTOMRIGHT")
+			else
+				item:SetPoint("TOPLEFT", self.itemFrame, "TOPLEFT")
+				item:SetPoint("TOPRIGHT", self.itemFrame, "TOPRIGHT")
+			end
 			item:Show()
-			height = height + self.dropdownItemHeight
 			if self.autoWidth then
 				local width = item.text:GetStringWidth() + item.textOffsetX * 2
 				if item.childSelectedIndicator:IsShown() then
@@ -229,22 +231,25 @@ do
 				end
 				maxItemWidth = max(maxItemWidth, width)
 			end
+			previousFrame = item.frame
 		end
 
+		local height = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(height)
 
-		if height > self.maxHeight then
-			self.frame:SetHeight(self.maxHeight + self.dropdownItemHeight / 2.0)
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, self.dropdownItemHeight / 2.0)
-			self.scrollIndicatorFrame:SetHeight(self.dropdownItemHeight / 2.0 - 1)
-			self.scrollIndicator:SetSize(self.dropdownItemHeight / 2.0 - 1, self.dropdownItemHeight / 2.0 - 1)
+		if height + edgeSize * 2 > self.maxHeight then
+			local halfHeight = self.dropdownItemHeight / 2.0
+			self.frame:SetHeight(self.maxHeight + halfHeight)
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + edgeSize)
+			self.scrollIndicatorFrame:SetHeight(halfHeight)
+			self.scrollIndicator:SetSize(halfHeight, halfHeight)
 			self.scrollIndicatorFrame:Show()
 			self:SetScroll(self.scrollFrame:GetVerticalScroll())
 		else
-			local h = #self.items * self.dropdownItemHeight
-			self.frame:SetHeight(min(h, self.maxHeight))
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, 0)
+			self.frame:SetHeight(min(height + edgeSize * 2, self.maxHeight))
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, edgeSize)
 			self.scrollIndicatorFrame:Hide()
+			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 		end
 
 		if self.autoWidth then
@@ -275,11 +280,11 @@ do
 	---@param maxVisibleItems integer
 	local function SetMaxVisibleItems(self, maxVisibleItems)
 		self.maxItems = maxVisibleItems
-		self.maxHeight = maxVisibleItems * self.dropdownItemHeight
+		self.maxHeight = maxVisibleItems * self.dropdownItemHeight + edgeSize * 2
 		if self.frame:GetHeight() > self.maxHeight then
 			self.frame:SetHeight(self.maxHeight)
-		elseif (self.itemFrame:GetHeight()) < self.maxHeight then
-			self.frame:SetHeight(self.itemFrame:GetHeight())
+		elseif (self.itemFrame:GetHeight()) < self.maxHeight - edgeSize * 2 then
+			self.frame:SetHeight(self.itemFrame:GetHeight() + edgeSize * 2)
 		end
 	end
 
@@ -293,13 +298,13 @@ do
 	---@param height number
 	local function SetItemHeight(self, height)
 		self.dropdownItemHeight = height
-		self.maxHeight = self.maxItems * height
+		self.maxHeight = self.maxItems * height + edgeSize * 2
 		for _, item in ipairs(self.items) do
 			item:SetHeight(height)
 		end
 		local h = #self.items * height
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h, self.maxHeight))
+		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
 	end
 
 	---@param self EPDropdownPullout
@@ -327,6 +332,9 @@ do
 		else
 			self.scrollIndicator:Hide()
 		end
+		if self.itemFrame:GetWidth() ~= self.scrollFrame:GetWidth() then
+			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
+		end
 	end
 
 	---@param self EPDropdownPullout
@@ -338,9 +346,6 @@ do
 
 		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
 		self:SetScroll(newVerticalScroll)
-		if self.itemFrame:GetWidth() ~= self.scrollFrame:GetWidth() then
-			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
-		end
 	end
 
 	local function Sort(self)
@@ -361,8 +366,8 @@ do
 		frame:SetHeight(defaultDropdownItemHeight)
 
 		local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
-		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
-		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
+		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -edgeSize)
+		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, edgeSize)
 		scrollFrame:EnableMouseWheel(true)
 		scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
 
@@ -379,8 +384,8 @@ do
 		scrollIndicatorFrame:SetBackdropColor(unpack(pulloutBackdropColor))
 		scrollIndicatorFrame:SetBackdropBorderColor(unpack(pulloutBackdropColor))
 		local scrollIndicator = scrollIndicatorFrame:CreateTexture(nil, "OVERLAY")
-		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 1, 1)
-		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
+		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", edgeSize, edgeSize)
+		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -edgeSize, edgeSize)
 		scrollIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-sort-down-32]])
 		scrollIndicator:SetPoint("CENTER")
 		scrollIndicatorFrame:Hide()
