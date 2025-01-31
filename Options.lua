@@ -37,61 +37,6 @@ local unpack = unpack
 
 local previewDuration = 15.0
 
-local MouseButtonKeyBindingValues = {
-	{ itemValue = "LeftButton", text = L["Left Click"] },
-	{ itemValue = "Alt-LeftButton", text = L["Alt + Left Click"] },
-	{ itemValue = "Ctrl-LeftButton", text = L["Ctrl + Left Click"] },
-	{ itemValue = "Shift-LeftButton", text = L["Shift + Left Click"] },
-	{ itemValue = "MiddleButton", text = L["Middle Mouse Button"] },
-	{ itemValue = "Alt-MiddleButton", text = L["Alt + Middle Mouse Button"] },
-	{ itemValue = "Ctrl-MiddleButton", text = L["Ctrl + Middle Mouse Button"] },
-	{ itemValue = "Shift-MiddleButton", text = L["Shift + Middle Mouse Button"] },
-	{ itemValue = "RightButton", text = L["Right Click"] },
-	{ itemValue = "Alt-RightButton", text = L["Alt + Right Click"] },
-	{ itemValue = "Ctrl-RightButton", text = L["Ctrl + Right Click"] },
-	{ itemValue = "Shift-RightButton", text = L["Shift + Right Click"] },
-}
-
-local rowValues = {
-	{ itemValue = 1, text = "1" },
-	{ itemValue = 2, text = "2" },
-	{ itemValue = 3, text = "3" },
-	{ itemValue = 4, text = "4" },
-	{ itemValue = 5, text = "5" },
-	{ itemValue = 6, text = "6" },
-	{ itemValue = 7, text = "7" },
-	{ itemValue = 8, text = "8" },
-	{ itemValue = 9, text = "9" },
-	{ itemValue = 10, text = "10" },
-	{ itemValue = 11, text = "11" },
-	{ itemValue = 12, text = "12" },
-}
-
-local textAlignmentValues = {
-	{ itemValue = "LEFT", text = L["Left"] },
-	{ itemValue = "CENTER", text = L["Center"] },
-	{ itemValue = "RIGHT", text = L["Right"] },
-}
-
-local anchorPointValues = {
-	{ itemValue = "TOPLEFT", text = L["Top Left"] },
-	{ itemValue = "TOP", text = L["Top"] },
-	{ itemValue = "TOPRIGHT", text = L["Top Right"] },
-	{ itemValue = "RIGHT", text = L["Right"] },
-	{ itemValue = "BOTTOMRIGHT", text = L["Bottom Right"] },
-	{ itemValue = "BOTTOM", text = L["Bottom"] },
-	{ itemValue = "LEFT", text = L["Left"] },
-	{ itemValue = "BOTTOMLEFT", text = L["Bottom Left"] },
-	{ itemValue = "CENTER", text = L["Center"] },
-}
-
-local fontOutlineValues = {
-	{ itemValue = "", text = L["None"] },
-	{ itemValue = "MONOCHROME", text = L["Monochrome"] },
-	{ itemValue = "OUTLINE", text = L["Outline"] },
-	{ itemValue = "THICKOUTLINE", text = L["Thick Outline"] },
-}
-
 ---@param left number
 ---@param top number
 ---@param width number
@@ -315,9 +260,65 @@ local function CreateMessageAnchor()
 	return messageAnchor
 end
 
+local optionCreator = {}
 do
 	local Clamp = Clamp
 	local wipe = wipe
+
+	local MouseButtonKeyBindingValues = {
+		{ itemValue = "LeftButton", text = L["Left Click"] },
+		{ itemValue = "Alt-LeftButton", text = L["Alt + Left Click"] },
+		{ itemValue = "Ctrl-LeftButton", text = L["Ctrl + Left Click"] },
+		{ itemValue = "Shift-LeftButton", text = L["Shift + Left Click"] },
+		{ itemValue = "MiddleButton", text = L["Middle Mouse Button"] },
+		{ itemValue = "Alt-MiddleButton", text = L["Alt + Middle Mouse Button"] },
+		{ itemValue = "Ctrl-MiddleButton", text = L["Ctrl + Middle Mouse Button"] },
+		{ itemValue = "Shift-MiddleButton", text = L["Shift + Middle Mouse Button"] },
+		{ itemValue = "RightButton", text = L["Right Click"] },
+		{ itemValue = "Alt-RightButton", text = L["Alt + Right Click"] },
+		{ itemValue = "Ctrl-RightButton", text = L["Ctrl + Right Click"] },
+		{ itemValue = "Shift-RightButton", text = L["Shift + Right Click"] },
+	}
+
+	local rowValues = {
+		{ itemValue = 1, text = "1" },
+		{ itemValue = 2, text = "2" },
+		{ itemValue = 3, text = "3" },
+		{ itemValue = 4, text = "4" },
+		{ itemValue = 5, text = "5" },
+		{ itemValue = 6, text = "6" },
+		{ itemValue = 7, text = "7" },
+		{ itemValue = 8, text = "8" },
+		{ itemValue = 9, text = "9" },
+		{ itemValue = 10, text = "10" },
+		{ itemValue = 11, text = "11" },
+		{ itemValue = 12, text = "12" },
+	}
+
+	local textAlignmentValues = {
+		{ itemValue = "LEFT", text = L["Left"] },
+		{ itemValue = "CENTER", text = L["Center"] },
+		{ itemValue = "RIGHT", text = L["Right"] },
+	}
+
+	local anchorPointValues = {
+		{ itemValue = "TOPLEFT", text = L["Top Left"] },
+		{ itemValue = "TOP", text = L["Top"] },
+		{ itemValue = "TOPRIGHT", text = L["Top Right"] },
+		{ itemValue = "RIGHT", text = L["Right"] },
+		{ itemValue = "BOTTOMRIGHT", text = L["Bottom Right"] },
+		{ itemValue = "BOTTOM", text = L["Bottom"] },
+		{ itemValue = "LEFT", text = L["Left"] },
+		{ itemValue = "BOTTOMLEFT", text = L["Bottom Left"] },
+		{ itemValue = "CENTER", text = L["Center"] },
+	}
+
+	local fontOutlineValues = {
+		{ itemValue = "", text = L["None"] },
+		{ itemValue = "MONOCHROME", text = L["Monochrome"] },
+		{ itemValue = "OUTLINE", text = L["Outline"] },
+		{ itemValue = "THICKOUTLINE", text = L["Thick Outline"] },
+	}
 
 	--[[@type table<integer, EPSettingOption>]]
 	local cooldownOverrideOptions = nil
@@ -609,8 +610,6 @@ do
 				label = L["Reminder Advance Notice"],
 				type = "lineEdit",
 				description = L["How far ahead of assignment time to begin showing reminders."],
-				category = nil,
-				values = nil,
 				get = function()
 					return tostring(GetReminderPreferences().advanceNotice)
 				end,
@@ -1436,7 +1435,6 @@ do
 				type = "checkBox",
 				description = L["Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds)."],
 				category = L["Text to Speech"],
-				values = nil,
 				get = function()
 					return GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
 				end,
@@ -1850,7 +1848,7 @@ do
 		}
 	end
 
-	function Private:GetOrCreateOptions()
+	function optionCreator.GetOrCreateOptions()
 		if not sounds then
 			sounds = IterateHashTable("sound")
 		end
@@ -1906,6 +1904,7 @@ function Private:CreateOptionsMenu()
 	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
 	optionsMenu:SetCallback("OnRelease", function()
+		GetPreferences().lastOpenTab = Private.optionsMenu.activeTab
 		if Private.messageAnchor then
 			Private.messageAnchor:Release()
 		end
@@ -1923,14 +1922,14 @@ function Private:CreateOptionsMenu()
 	Private.progressBarAnchor = CreateProgressBarAnchor()
 	Private.progressBarAnchor.frame:Hide()
 
-	local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = self:GetOrCreateOptions()
+	local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = optionCreator.GetOrCreateOptions()
 	optionsMenu:AddOptionTab(unpack(cooldownOverrideTab))
 	optionsMenu:AddOptionTab(unpack(keyBindingsTab))
 	optionsMenu:AddOptionTab(unpack(reminderTab))
 	optionsMenu:AddOptionTab(unpack(viewTab))
 	optionsMenu:AddOptionTab(unpack(profileTab))
 	optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-	optionsMenu:SetCurrentTab(L["Keybindings"])
+	optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab or L["Cooldown Overrides"])
 	optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 	Private.optionsMenu = optionsMenu

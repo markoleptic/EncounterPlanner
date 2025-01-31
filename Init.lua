@@ -14,6 +14,8 @@ local pairs = pairs
 local random = math.random
 local type = type
 
+Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
+
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS
 ---| "SCS" SPELL_CAST_START
@@ -624,6 +626,7 @@ end
 ---@field duplicateAssignment MouseButtonKeyBinding
 
 ---@class Preferences
+---@field lastOpenTab string
 ---@field keyBindings KeyBindings
 ---@field assignmentSortType AssignmentSortType
 ---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
@@ -708,6 +711,7 @@ local defaults = {
 		trustedCharacters = {},
 		cooldownOverrides = {},
 		preferences = {
+			lastOpenTab = Private.L["Cooldown Overrides"],
 			keyBindings = {
 				pan = "RightButton",
 				zoom = "Ctrl-MouseScroll",
@@ -794,7 +798,6 @@ function callbackTarget.RegisterCallback(target, name, func) end
 function callbackTarget.UnregisterCallback(target, name) end
 
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
-Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
 Private.addOn.defaults = defaults
 ---@type AceDBObject-3.0
 Private.addOn.db = nil
