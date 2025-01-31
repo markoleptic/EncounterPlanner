@@ -1778,6 +1778,7 @@ do
 			{
 				label = L["Copy From"],
 				type = "dropdown",
+				neverShowItemsAsSelected = true,
 				category = L["Profile"],
 				description = L["Copy the settings from an existing profile into the currently active profile."],
 				values = function()
@@ -1799,6 +1800,7 @@ do
 			{
 				label = L["Delete a Profile"],
 				type = "dropdown",
+				neverShowItemsAsSelected = true,
 				category = L["Profile"],
 				description = L["Delete a profile from the database."],
 				values = function()

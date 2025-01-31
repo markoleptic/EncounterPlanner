@@ -513,11 +513,12 @@ end
 
 ---@param dropdown EPDropdown
 ---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
-local function AddDropdownValues(dropdown, values)
+---@param neverShowItemsAsSelected boolean?
+local function AddDropdownValues(dropdown, values, neverShowItemsAsSelected)
 	if type(values) == "table" then
-		dropdown:AddItems(values, "EPDropdownItemToggle")
+		dropdown:AddItems(values, "EPDropdownItemToggle", neverShowItemsAsSelected)
 	elseif type(values) == "function" then
-		dropdown:AddItems(values(), "EPDropdownItemToggle")
+		dropdown:AddItems(values(), "EPDropdownItemToggle", neverShowItemsAsSelected)
 	end
 end
 
@@ -928,7 +929,7 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 
 	local dropdown = AceGUI:Create("EPDropdown")
 	dropdown:SetRelativeWidth(0.5)
-	AddDropdownValues(dropdown, option.values)
+	AddDropdownValues(dropdown, option.values, option.neverShowItemsAsSelected)
 	dropdown:SetValue(option.get[2]())
 
 	if
@@ -1061,9 +1062,17 @@ local function CreateDropdownBesideButton(self, option, index)
 	button:SetRelativeWidth(0.3)
 
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
-			dropdown:SetValue(option.get())
-		end)
+		if type(option.values) == "function" then
+			UpdateUpdateIndices(self.updateIndices, option, index, function()
+				dropdown:Clear()
+				dropdown:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+				dropdown:SetValue(option.get())
+			end)
+		else
+			UpdateUpdateIndices(self.updateIndices, option, index, function()
+				dropdown:SetValue(option.get())
+			end)
+		end
 	end
 
 	dropdown:SetCallback("OnValueChanged", function(_, _, value)
@@ -1090,7 +1099,6 @@ local function CreateDropdownBesideButton(self, option, index)
 				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 				messageBox:SetCallback("Accepted", function()
 					option.buttonCallback()
-					messageBox:Release()
 					RefreshEnabledStates(self.refreshMap)
 					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 						Update(self.updateIndices[option.category][index])
@@ -1155,7 +1163,7 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 				if option.type == "dropdown" and type(option.values) == "function" then
 					UpdateUpdateIndices(self.updateIndices, option, index, function()
 						widget:Clear()
-						widget:AddItems(option.values(), "EPDropdownItemToggle")
+						widget:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
 						setWidgetValue(widget, option.get())
 					end)
 				else
@@ -1201,6 +1209,9 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 						end)
 						messageBox:SetCallback("OnRelease", function()
 							messageBox = nil
+							if widget and widget.pullout and option and option.neverShowItemsAsSelected then
+								setWidgetValue(widget, nil)
+							end
 						end)
 					end
 				end)
@@ -1280,7 +1291,7 @@ local function CreateOptionWidget(self, option, index)
 		if option.type == "dropdown" then
 			local widget = AceGUI:Create("EPDropdown")
 			widget:SetFullWidth(true)
-			AddDropdownValues(widget, option.values)
+			AddDropdownValues(widget, option.values, option.neverShowItemsAsSelected)
 			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetValue, label)
 			tinsert(containerChildren, widget)
 		elseif option.type == "lineEdit" then
@@ -1367,6 +1378,10 @@ local function PopulateActiveTab(self, tab)
 	self.activeContainer:ReleaseChildren()
 	wipe(self.updateIndices)
 	wipe(self.refreshMap)
+
+	if messageBox then
+		messageBox:Release()
+	end
 
 	if self.optionTabs[tab][1].type == "cooldownOverrides" then
 		self.labelContainer.frame:Show()
@@ -1549,6 +1564,7 @@ end
 ---@field uncategorizedBottom? boolean
 ---@field confirm? boolean
 ---@field confirmText? string|fun(arg: string|boolean|number):string
+---@field neverShowItemsAsSelected? boolean
 
 ---@class EPOptions : AceGUIWidget
 ---@field type string
@@ -1633,6 +1649,9 @@ end
 
 ---@param self EPOptions
 local function OnRelease(self)
+	if messageBox then
+		messageBox:Release()
+	end
 	self.closeButton:Release()
 	self.closeButton = nil
 
