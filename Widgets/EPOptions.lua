@@ -512,11 +512,21 @@ local function handleRadioButtonToggled(radioButton, radioButtonGroup)
 	end
 end
 
+---@param dropdown EPDropdown
+---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
+local function AddDropdownValues(dropdown, values)
+	if type(values) == "table" then
+		dropdown:AddItems(values, "EPDropdownItemToggle")
+	elseif type(values) == "function" then
+		dropdown:AddItems(values(), "EPDropdownItemToggle")
+	end
+end
+
 ---@param refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
 local function RefreshEnabledStates(refreshMap)
 	for _, tab in pairs(refreshMap) do
 		---@diagnostic disable-next-line: undefined-field
-		if tab.widget.SetEnabled then
+		if tab.widget.SetEnabled and tab.enabled then
 			---@diagnostic disable-next-line: undefined-field
 			tab.widget:SetEnabled(tab.enabled())
 		end
@@ -536,16 +546,18 @@ end
 ---@param option EPSettingOption
 ---@param func fun()
 local function UpdateUpdateIndices(updateIndices, option, index, func)
-	if option.updateIndices then
-		if not updateIndices[option.category] then
-			updateIndices[option.category] = {}
-		end
-		for _, relativeOptionIndex in pairs(option.updateIndices) do
-			local optionIndex = index + relativeOptionIndex
-			if not updateIndices[option.category][optionIndex] then
-				updateIndices[option.category][optionIndex] = {}
+	if type(func) == "function" then
+		if option.updateIndices then
+			if not updateIndices[option.category] then
+				updateIndices[option.category] = {}
 			end
-			tinsert(updateIndices[option.category][optionIndex], func)
+			for _, relativeOptionIndex in pairs(option.updateIndices) do
+				local optionIndex = index + relativeOptionIndex
+				if not updateIndices[option.category][optionIndex] then
+					updateIndices[option.category][optionIndex] = {}
+				end
+				tinsert(updateIndices[option.category][optionIndex], func)
+			end
 		end
 	end
 end
@@ -625,14 +637,19 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	radioButtonGroup:SetSpacing(unpack(radioButtonGroupSpacing))
 	radioButtonGroup:SetFullWidth(true)
 	local radioButtonGroupChildren = {}
-	local values = type(option.values) == "table" and option.values or option.values() --[[@as table<integer, DropdownItemData>]]
+	local values = {}
+	if type(option.values) == "table" then
+		values = option.values --[[@as table]]
+	elseif type(option.values) == "function" then
+		values = option.values()
+	end
 	local relativeWidth = 1.0 / #values
 	for _, itemValueAndText in pairs(values) do
 		local radioButton = AceGUI:Create("EPRadioButton")
 		radioButton:SetRelativeWidth(relativeWidth)
 		radioButton:SetLabelText(itemValueAndText.text)
 		radioButton:SetToggled(option.get() == itemValueAndText.itemValue)
-		radioButton:GetUserDataTable().key = itemValueAndText.itemValue
+		radioButton:SetUserData("key", itemValueAndText.itemValue)
 		tinsert(radioButtonGroupChildren, radioButton)
 	end
 	if option.enabled then
@@ -642,7 +659,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	if option.updateIndices then
 		UpdateUpdateIndices(self.updateIndices, option, index, function()
 			for _, child in ipairs(radioButtonGroup.children) do
-				child:SetToggled(option.get() == child:GetUserDataTable().key)
+				child:SetToggled(option.get() == child:GetUserData("key"))
 			end
 		end)
 	end
@@ -717,7 +734,6 @@ local function CreateDoubleLineEdit(self, option, index, label)
 		if not valid and valueToRevertTo and valueToRevertToB then
 			lineEditX:SetText(valueToRevertTo)
 			lineEditY:SetText(valueToRevertToB)
-			option.set(valueToRevertTo, valueToRevertToB)
 		else
 			option.set(valueX, valueY)
 		end
@@ -753,6 +769,12 @@ end
 ---@param label EPLabel
 ---@return EPContainer
 local function CreateDoubleColorPicker(self, option, index, label)
+	if not option.set[1] or not option.set[2] then
+		error("No set functions for double color picker.")
+	end
+	if not option.get[1] or not option.get[2] then
+		error("No get functions for double color picker.")
+	end
 	local doubleColorPickerContainer = AceGUI:Create("EPContainer")
 	doubleColorPickerContainer:SetFullWidth(true)
 	doubleColorPickerContainer:SetLayout("EPHorizontalLayout")
@@ -770,7 +792,7 @@ local function CreateDoubleColorPicker(self, option, index, label)
 	colorPickerTwo:SetLabelText(option.labels[2] .. ":", spacingBetweenLabelAndWidget)
 	colorPickerTwo:SetColor(option.get[2]())
 
-	if option.enabled then
+	if type(option.enabled) == "function" then
 		tinsert(self.refreshMap, { widget = colorPickerOne, enabled = option.enabled })
 		tinsert(self.refreshMap, { widget = colorPickerTwo, enabled = option.enabled })
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
@@ -818,6 +840,12 @@ end
 ---@param label EPLabel
 ---@return EPContainer
 local function CreateDoubleCheckBox(self, option, index, label)
+	if not option.set[1] or not option.set[2] then
+		error("No set functions for double check box.")
+	end
+	if not option.get[1] or not option.get[2] then
+		error("No get functions for double check box.")
+	end
 	local doubleCheckBoxContainer = AceGUI:Create("EPContainer")
 	doubleCheckBoxContainer:SetFullWidth(true)
 	doubleCheckBoxContainer:SetLayout("EPHorizontalLayout")
@@ -835,7 +863,7 @@ local function CreateDoubleCheckBox(self, option, index, label)
 	checkBoxTwo:SetText(option.labels[2])
 	checkBoxTwo:SetChecked(option.get[2]())
 
-	if option.enabled then
+	if type(option.enabled) == "function" then
 		tinsert(self.refreshMap, { widget = checkBoxOne, enabled = option.enabled })
 		tinsert(self.refreshMap, { widget = checkBoxTwo, enabled = option.enabled })
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
@@ -882,6 +910,12 @@ end
 ---@param index integer
 ---@return EPContainer
 local function CreateCheckBoxWithDropdown(self, option, index)
+	if not option.set[1] or not option.set[2] then
+		error("No set functions for check box with dropdown.")
+	end
+	if not option.get[1] or not option.get[2] then
+		error("No get functions for check box with dropdown.")
+	end
 	local checkBoxWithDropdownContainer = AceGUI:Create("EPContainer")
 	checkBoxWithDropdownContainer:SetFullWidth(true)
 	checkBoxWithDropdownContainer:SetLayout("EPHorizontalLayout")
@@ -895,11 +929,14 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 
 	local dropdown = AceGUI:Create("EPDropdown")
 	dropdown:SetRelativeWidth(0.5)
-	local values = type(option.values) == "table" and option.values or option.values() --[[@as table<integer, DropdownItemData>]]
-	dropdown:AddItems(values, "EPDropdownItemToggle")
+	AddDropdownValues(dropdown, option.values)
 	dropdown:SetValue(option.get[2]())
 
-	if option.enabled then
+	if
+		type(option.enabled) == "table"
+		and type(option.enabled[1]) == "function"
+		and type(option.enabled[2]) == "function"
+	then
 		tinsert(self.refreshMap, { widget = checkBox, enabled = option.enabled[1] })
 		tinsert(self.refreshMap, { widget = dropdown, enabled = option.enabled[2] })
 	end
@@ -957,7 +994,7 @@ local function CreateCheckBoxBesideButton(self, option)
 	button:SetText(option.buttonText)
 	button:SetRelativeWidth(0.5)
 	button:SetCallback("Clicked", option.buttonCallback)
-	if option.buttonEnabled then
+	if type(option.buttonEnabled) == "function" then
 		tinsert(self.refreshMap, { widget = button, enabled = option.buttonEnabled })
 	end
 	checkBoxBesideButtonContainer:AddChildren(widget, button)
@@ -978,11 +1015,11 @@ local function CreateCenteredButton(self, option)
 	button:SetText(option.label)
 	button:SetWidthFromText()
 
-	if option.enabled then
+	if type(option.enabled) == "function" then
 		tinsert(self.refreshMap, { widget = button, enabled = option.enabled })
 	end
 	button:SetCallback("Clicked", function()
-		if option.buttonCallback then
+		if type(option.buttonCallback) == "function" then
 			option.buttonCallback()
 		end
 		RefreshEnabledStates(self.refreshMap)
@@ -1011,17 +1048,13 @@ local function CreateDropdownBesideButton(self, option, index)
 
 	local dropdown = AceGUI:Create("EPDropdown")
 	dropdown:SetRelativeWidth(0.7)
-	if type(option.values) == "function" then
-		dropdown:AddItems(option.values(), "EPDropdownItemToggle")
-		if option.updateIndices then
-			UpdateUpdateIndices(self.updateIndices, option, index, function()
-				dropdown:Clear()
-				dropdown:AddItems(option.values(), "EPDropdownItemToggle")
-			end)
-		end
-	elseif type(option.values) == "table" then
-		dropdown:AddItems(option.values --[[@as table]], "EPDropdownItemToggle")
+	local values = {}
+	if type(option.values) == "table" then
+		values = option.values --[[@as table]]
+	elseif type(option.values) == "function" then
+		values = option.values()
 	end
+	dropdown:AddItems(values, "EPDropdownItemToggle")
 	dropdown:SetValue(option.get())
 
 	local button = AceGUI:Create("EPButton")
@@ -1047,7 +1080,7 @@ local function CreateDropdownBesideButton(self, option, index)
 			if not messageBox then
 				messageBox = AceGUI:Create("EPMessageBox")
 				messageBox.frame:SetParent(UIParent)
-				messageBox.frame:SetFrameLevel(110)
+				messageBox.frame:SetFrameLevel(self.frame:GetFrameLevel() + 100)
 				messageBox:SetTitle(L["Confirmation"])
 				if type(option.confirmText) == "string" then
 					messageBox:SetText(option.confirmText --[[@as string]])
@@ -1073,10 +1106,10 @@ local function CreateDropdownBesideButton(self, option, index)
 		button:SetCallback("Clicked", option.buttonCallback)
 	end
 
-	if option.enabled then
+	if type(option.enabled) == "function" then
 		tinsert(self.refreshMap, { widget = dropdown, enabled = option.enabled })
 	end
-	if option.buttonEnabled then
+	if type(option.buttonEnabled) == "function" then
 		tinsert(self.refreshMap, { widget = button, enabled = option.buttonEnabled })
 	end
 
@@ -1101,111 +1134,42 @@ local function CreateDropdownBesideButton(self, option, index)
 end
 
 ---@param self EPOptions
+---@param widget any
 ---@param option EPSettingOption
 ---@param index integer
----@return EPContainer
-local function CreateOptionWidget(self, option, index)
-	local container = AceGUI:Create("EPContainer")
-	container:SetLayout("EPHorizontalLayout")
-	container:SetSpacing(spacingBetweenLabelAndWidget, 0)
-	container:SetFullWidth(true)
-
-	if option.indent then
-		container:SetPadding(indentWidth, 0, 0, 0)
-	end
-
-	local containerChildren = {}
-	local widget, setWidgetValue, callbackName, addWidget = nil, nil, nil, true
-	local label = nil
-	if option.type == "checkBox" then
-		widget = AceGUI:Create("EPCheckBox")
-		widget:SetFullWidth(true)
-		widget:SetText(option.label)
-		setWidgetValue = widget.SetChecked
-		callbackName = "OnValueChanged"
-	elseif option.type == "checkBoxBesideButton" then
-		local checkBoxBesideButtonContainer
-		checkBoxBesideButtonContainer, widget, setWidgetValue, callbackName = CreateCheckBoxBesideButton(self, option)
-		tinsert(containerChildren, checkBoxBesideButtonContainer)
-		addWidget = false
-	elseif option.type == "checkBoxWithDropdown" then
-		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, index))
-	elseif option.type == "centeredButton" then
-		tinsert(containerChildren, CreateCenteredButton(self, option))
-	else
-		label = AceGUI:Create("EPLabel")
-		label:SetText(option.label .. ":", 0)
-		label:SetFontSize(optionLabelFontSize)
-		label:SetFrameWidthFromText()
-		label:SetFullHeight(true)
-		label.text:SetTextColor(unpack(labelTextColor))
-		tinsert(containerChildren, label)
-
-		if option.type == "dropdown" then
-			widget = AceGUI:Create("EPDropdown")
-			widget:SetFullWidth(true)
-			if type(option.values) == "function" then
-				widget:AddItems(option.values(), "EPDropdownItemToggle")
-				if option.updateIndices then
-					UpdateUpdateIndices(self.updateIndices, option, index, function()
-						widget:Clear()
-						widget:AddItems(option.values(), "EPDropdownItemToggle")
-					end)
-				end
-			elseif type(option.values) == "table" then
-				widget:AddItems(option.values --[[@as table]], "EPDropdownItemToggle")
-			end
-			setWidgetValue = widget.SetValue
-			callbackName = "OnValueChanged"
-		elseif option.type == "lineEdit" then
-			widget = AceGUI:Create("EPLineEdit")
-			widget:SetFullWidth(true)
-			setWidgetValue = widget.SetText
-			callbackName = "OnTextSubmitted"
-		elseif option.type == "colorPicker" then
-			widget = AceGUI:Create("EPColorPicker")
-			widget:SetFullWidth(true)
-			setWidgetValue = widget.SetColor
-			callbackName = "OnValueChanged"
-		elseif option.type == "doubleColorPicker" then
-			tinsert(containerChildren, CreateDoubleColorPicker(self, option, index, label))
-		elseif option.type == "doubleCheckBox" then
-			tinsert(containerChildren, CreateDoubleCheckBox(self, option, index, label))
-		elseif option.type == "radioButtonGroup" then
-			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
-		elseif option.type == "doubleLineEdit" then
-			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, label))
-		elseif option.type == "frameChooser" then
-			tinsert(containerChildren, CreateFrameChooser(self, option, index, label))
-		elseif option.type == "dropdownBesideButton" then
-			tinsert(containerChildren, CreateDropdownBesideButton(self, option, index))
-		end
-	end
-
+---@param callbackName string
+---@param setWidgetValue fun(...:any)?
+---@param label EPLabel?
+local function SetCallbacks(self, widget, option, index, callbackName, setWidgetValue, label)
 	if widget and callbackName then
-		if setWidgetValue then
+		if type(setWidgetValue) == "function" then
 			setWidgetValue(widget, option.get())
 		end
-		if option.enabled then
+		if type(option.enabled) == "function" then
 			tinsert(self.refreshMap, { widget = widget, enabled = option.enabled })
 			if label then
 				tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 			end
 		end
-		if option.updateIndices then
-			if setWidgetValue then
-				UpdateUpdateIndices(self.updateIndices, option, index, function()
-					setWidgetValue(widget, option.get())
-				end)
+		if type(setWidgetValue) == "function" then
+			if option.updateIndices then
+				if option.type == "dropdown" and type(option.values) == "function" then
+					UpdateUpdateIndices(self.updateIndices, option, index, function()
+						widget:Clear()
+						widget:AddItems(option.values(), "EPDropdownItemToggle")
+						setWidgetValue(widget, option.get())
+					end)
+				else
+					UpdateUpdateIndices(self.updateIndices, option, index, function()
+						setWidgetValue(widget, option.get())
+					end)
+				end
 			end
-		end
-		if setWidgetValue then
-			widget:SetCallback(callbackName, function(_, _, ...)
-				if option.validate then
-					local valid, valueToRevertTo = option.validate(...)
+			if type(option.validate) == "function" then
+				widget:SetCallback(callbackName, function(_, _, ...)
+					local valid, valueToRevertTo, _ = option.validate(...)
 					if not valid and valueToRevertTo then
 						setWidgetValue(widget, valueToRevertTo)
-						option.set(valueToRevertTo)
 					else
 						option.set(...)
 					end
@@ -1213,12 +1177,14 @@ local function CreateOptionWidget(self, option, index)
 					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 						Update(self.updateIndices[option.category][index])
 					end
-				elseif option.confirm then
+				end)
+			elseif option.confirm then
+				widget:SetCallback(callbackName, function(_, _, ...)
 					if not messageBox then
 						local value1, value2, value3, value4 = ...
 						messageBox = AceGUI:Create("EPMessageBox")
 						messageBox.frame:SetParent(UIParent)
-						messageBox.frame:SetFrameLevel(110)
+						messageBox.frame:SetFrameLevel(self.frame:GetFrameLevel() + 100)
 						messageBox:SetTitle(L["Confirmation"])
 						if type(option.confirmText) == "string" then
 							messageBox:SetText(option.confirmText --[[@as string]])
@@ -1238,21 +1204,21 @@ local function CreateOptionWidget(self, option, index)
 							messageBox = nil
 						end)
 					end
-				else
+				end)
+			else
+				widget:SetCallback(callbackName, function(_, _, ...)
 					option.set(...)
 					RefreshEnabledStates(self.refreshMap)
 					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 						Update(self.updateIndices[option.category][index])
 					end
-				end
-			end)
+				end)
+			end
 		else
 			widget:SetCallback(callbackName, function(_, _, ...)
-				if option.validate then
-					local valid, valueToRevertTo = option.validate(...)
-					if not valid and valueToRevertTo then
-						option.set(valueToRevertTo)
-					else
+				if type(option.validate) == "function" then
+					local valid, _, _ = option.validate(...)
+					if valid then
 						option.set(...)
 					end
 				else
@@ -1270,8 +1236,76 @@ local function CreateOptionWidget(self, option, index)
 		widget:SetCallback("OnLeave", function()
 			tooltip:Hide()
 		end)
-		if addWidget then
+	end
+end
+
+---@param self EPOptions
+---@param option EPSettingOption
+---@param index integer
+---@return EPContainer
+local function CreateOptionWidget(self, option, index)
+	local container = AceGUI:Create("EPContainer")
+	container:SetLayout("EPHorizontalLayout")
+	container:SetSpacing(spacingBetweenLabelAndWidget, 0)
+	container:SetFullWidth(true)
+
+	if option.indent then
+		container:SetPadding(indentWidth, 0, 0, 0)
+	end
+
+	local containerChildren = {}
+	if option.type == "checkBox" then
+		local widget = AceGUI:Create("EPCheckBox")
+		widget:SetFullWidth(true)
+		widget:SetText(option.label)
+		SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetChecked, nil)
+		tinsert(containerChildren, widget)
+	elseif option.type == "checkBoxBesideButton" then
+		local checkBoxBesideButtonContainer, widget, setWidgetValue, callbackName =
+			CreateCheckBoxBesideButton(self, option)
+		SetCallbacks(self, widget, option, index, callbackName, setWidgetValue, nil)
+		tinsert(containerChildren, checkBoxBesideButtonContainer)
+	elseif option.type == "checkBoxWithDropdown" then
+		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, index))
+	elseif option.type == "centeredButton" then
+		tinsert(containerChildren, CreateCenteredButton(self, option))
+	else
+		local label = AceGUI:Create("EPLabel")
+		label:SetText(option.label .. ":", 0)
+		label:SetFontSize(optionLabelFontSize)
+		label:SetFrameWidthFromText()
+		label:SetFullHeight(true)
+		label.text:SetTextColor(unpack(labelTextColor))
+		tinsert(containerChildren, label)
+
+		if option.type == "dropdown" then
+			local widget = AceGUI:Create("EPDropdown")
+			widget:SetFullWidth(true)
+			AddDropdownValues(widget, option.values)
+			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetValue, label)
 			tinsert(containerChildren, widget)
+		elseif option.type == "lineEdit" then
+			local widget = AceGUI:Create("EPLineEdit")
+			widget:SetFullWidth(true)
+			SetCallbacks(self, widget, option, index, "OnTextSubmitted", widget.SetText, label)
+			tinsert(containerChildren, widget)
+		elseif option.type == "colorPicker" then
+			local widget = AceGUI:Create("EPColorPicker")
+			widget:SetFullWidth(true)
+			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetColor, label)
+			tinsert(containerChildren, widget)
+		elseif option.type == "doubleColorPicker" then
+			tinsert(containerChildren, CreateDoubleColorPicker(self, option, index, label))
+		elseif option.type == "doubleCheckBox" then
+			tinsert(containerChildren, CreateDoubleCheckBox(self, option, index, label))
+		elseif option.type == "radioButtonGroup" then
+			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
+		elseif option.type == "doubleLineEdit" then
+			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, label))
+		elseif option.type == "frameChooser" then
+			tinsert(containerChildren, CreateFrameChooser(self, option, index, label))
+		elseif option.type == "dropdownBesideButton" then
+			tinsert(containerChildren, CreateDropdownBesideButton(self, option, index))
 		end
 	end
 
@@ -1506,7 +1540,7 @@ end
 ---@field validate? ValidateFunction|{func1: ValidateFunction, func2:ValidateFunction}
 ---@field category? string
 ---@field indent? boolean
----@field values? table<integer, string|DropdownItemData>|fun():table<integer, string|DropdownItemData>
+---@field values? table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
 ---@field enabled? EnabledFunction|{func1: EnabledFunction, func2: EnabledFunction}
 ---@field updateIndices? table<integer, integer>
 ---@field buttonText? string
