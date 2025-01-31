@@ -230,7 +230,6 @@ end
 
 -- Roster Editor
 do
-	local GetOrCreateAssignmentTypeDropdownItems = utilities.GetOrCreateAssignmentTypeDropdownItems
 	local GetOrCreateClassDropdownItemData = utilities.GetOrCreateClassDropdownItemData
 	local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
 
@@ -261,11 +260,8 @@ do
 			local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
 			local targetDropdown = Private.assignmentEditor.targetDropdown
 			local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
-			local updatedDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(
-				GetCurrentRoster(),
-				GetOrCreateAssignmentTypeDropdownItems(),
-				assigneeDropdownItems
-			)
+			local updatedDropdownItems =
+				CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster(), assigneeDropdownItems)
 			local previousValue = assigneeTypeDropdown:GetValue()
 			assigneeTypeDropdown:Clear()
 			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
@@ -389,7 +385,6 @@ end
 -- Assignment Editor
 do
 	local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
-	local GetOrCreateAssignmentTypeDropdownItems = utilities.GetOrCreateAssignmentTypeDropdownItems
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
 	local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
 	local FindNearestSpellCount = utilities.FindNearestSpellCount
@@ -681,11 +676,8 @@ do
 			"EPDropdownItemToggle"
 		)
 		local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
-		local updatedDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(
-			GetCurrentRoster(),
-			GetOrCreateAssignmentTypeDropdownItems(),
-			assigneeDropdownItems
-		)
+		local updatedDropdownItems =
+			CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster(), assigneeDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)

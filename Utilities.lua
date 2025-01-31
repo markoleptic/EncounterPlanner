@@ -806,6 +806,7 @@ end
 
 do
 	local classDropdownData = nil
+
 	---@return table<integer, DropdownItemData>
 	function Utilities.GetOrCreateClassDropdownItemData()
 		if not classDropdownData then
@@ -834,7 +835,10 @@ do
 end
 
 do
+	local wipe = wipe
+
 	local specDropdownItems = nil
+	local addedClassAndSpecDropdownItems = false
 	local assignmentTypes = {
 		{
 			text = L["Group Number"],
@@ -889,17 +893,23 @@ do
 
 	---@return table<integer, DropdownItemData>
 	function Utilities.GetOrCreateAssignmentTypeDropdownItems()
-		local classAssignmentTypes = {
-			text = L["Class"],
-			itemValue = "Class",
-			dropdownItemMenuData = Utilities.GetOrCreateClassDropdownItemData(),
-		}
-
-		tinsert(assignmentTypes, classAssignmentTypes)
-		tinsert(assignmentTypes, GetOrCreateSpecDropdownItems())
-
-		Utilities.SortDropdownDataByItemValue(assignmentTypes)
-
+		if not addedClassAndSpecDropdownItems then
+			local classAssignmentTypes = {
+				text = L["Class"],
+				itemValue = "Class",
+				dropdownItemMenuData = Utilities.GetOrCreateClassDropdownItemData(),
+			}
+			tinsert(assignmentTypes, classAssignmentTypes)
+			tinsert(assignmentTypes, GetOrCreateSpecDropdownItems())
+			Utilities.SortDropdownDataByItemValue(assignmentTypes)
+			addedClassAndSpecDropdownItems = true
+		end
+		for _, assignmentType in ipairs(assignmentTypes) do
+			if assignmentType.itemValue == "Individual" then
+				wipe(assignmentType.dropdownItemMenuData)
+				break
+			end
+		end
 		return assignmentTypes
 	end
 end
@@ -922,15 +932,10 @@ end
 
 -- Creates dropdown data with all assignments types including individual roster members.
 ---@param roster table<string, RosterEntry> Roster to character names from
----@param assignmentTypeDropdownItems? table<integer, DropdownItemData>
 ---@param assigneeDropdownItems? table<integer, DropdownItemData>
 ---@return table<integer, DropdownItemData>
-function Utilities.CreateAssignmentTypeWithRosterDropdownItems(
-	roster,
-	assignmentTypeDropdownItems,
-	assigneeDropdownItems
-)
-	local assignmentTypes = assignmentTypeDropdownItems or Utilities.GetOrCreateAssignmentTypeDropdownItems()
+function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
+	local assignmentTypes = Utilities.GetOrCreateAssignmentTypeDropdownItems()
 
 	local individualIndex = nil
 	for index, assignmentType in ipairs(assignmentTypes) do
@@ -939,9 +944,12 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(
 			break
 		end
 	end
-	if individualIndex and roster then
-		assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
-			or Utilities.CreateAssigneeDropdownItems(roster)
+	if individualIndex then
+		if assigneeDropdownItems then
+			assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
+		elseif roster then
+			assignmentTypes[individualIndex].dropdownItemMenuData = Utilities.CreateAssigneeDropdownItems(roster)
+		end
 		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
 	return assignmentTypes

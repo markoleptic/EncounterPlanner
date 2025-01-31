@@ -162,6 +162,7 @@ do
 		self.itemFrame:SetHeight(h)
 		self.frame:SetHeight(min(h, self.maxHeight))
 		item.frame:SetPoint("LEFT", self.itemFrame, "LEFT")
+		item.frame:SetPoint("RIGHT", self.itemFrame, "RIGHT")
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -337,6 +338,9 @@ do
 
 		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
 		self:SetScroll(newVerticalScroll)
+		if self.itemFrame:GetWidth() ~= self.scrollFrame:GetWidth() then
+			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
+		end
 	end
 
 	local function Sort(self)
