@@ -32,6 +32,7 @@ local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 
 local AceDB = LibStub("AceDB-3.0")
 local getmetatable = getmetatable
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local pairs = pairs
 local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
@@ -88,6 +89,11 @@ local function UpdateProfile(profile)
 end
 
 function AddOn:OnInitialize()
+	local loadedOrLoading, loaded = IsAddOnLoaded("WeakAuras")
+	print(loadedOrLoading, loaded)
+	if not loadedOrLoading and not loaded then
+		self.defaults.profile.preferences.reminder.progressBars.texture = [[Interface\Buttons\WHITE8X8]]
+	end
 	self.db = AceDB:New(AddOnName .. "DB", self.defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")

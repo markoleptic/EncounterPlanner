@@ -6,7 +6,7 @@
 ## Author: Markoleptic
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
-## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT, DevTool
+## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT, DevTool, WeakAuras
 ## X-Localizations: enUS
 
 Embeds.xml

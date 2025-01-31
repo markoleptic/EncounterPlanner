@@ -664,13 +664,13 @@ end
 ---@field fill boolean
 ---@field showBorder boolean
 ---@field showIconBorder boolean
----@field color {r:number, g:number, b:number, a:number}
----@field backgroundColor {r:number, g:number, b:number, a:number}
+---@field color {[1]:number, [2]:number, [3]:number, [4]:number}
+---@field backgroundColor {[1]:number, [2]:number, [3]:number, [4]:number}
 ---@field spacing integer
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
----@field textColor {r:number, g:number, b:number, a:number}
+---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
 
 ---@class ReminderPreferences
 ---@field enabled boolean
