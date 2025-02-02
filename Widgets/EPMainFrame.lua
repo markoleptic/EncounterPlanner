@@ -14,6 +14,8 @@ local mainFrameWidth = 1125
 local mainFrameHeight = 600
 local windowBarHeight = 30
 local defaultPadding = 10
+local statusBarHeight = 60
+local statusBarPadding = 5
 local padding = { top = 10, right = 10, bottom = 10, left = 10 }
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
@@ -47,6 +49,7 @@ local lastExecutionTime = 0
 ---@field closeButtonMinimizeFrame EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
+---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
 ---@field bossLabel EPLabel
 ---@field bossMenuButton EPDropdown
@@ -134,7 +137,6 @@ local function OnAcquire(self)
 	self.collapseAllButton:SetHeight(buttonSize)
 	self.collapseAllButton:SetBackdropColor(unpack(backdropColor))
 	self.collapseAllButton.frame:SetParent(self.frame)
-	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
 	self.collapseAllButton:SetCallback("Clicked", function()
 		self:Fire("CollapseAllButtonClicked")
 	end)
@@ -146,10 +148,21 @@ local function OnAcquire(self)
 	self.expandAllButton:SetHeight(buttonSize)
 	self.expandAllButton:SetBackdropColor(unpack(backdropColor))
 	self.expandAllButton.frame:SetParent(self.frame)
-	self.expandAllButton.frame:SetPoint("LEFT", self.collapseAllButton.frame, "RIGHT", edgeSize, 0)
 	self.expandAllButton:SetCallback("Clicked", function()
 		self:Fire("ExpandAllButtonClicked")
 	end)
+
+	self.statusBar = AceGUI:Create("EPStatusBar")
+	self.statusBar.frame:SetParent(self.frame)
+	self.statusBar.frame:SetHeight(statusBarHeight)
+	self.statusBar.frame:SetPoint("LEFT", self.frame, "LEFT", padding.left, 0)
+	self.statusBar.frame:SetPoint("RIGHT", self.frame, "RIGHT", -padding.right, 0)
+	self.statusBar.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, padding.bottom)
+
+	local verticalOffset = statusBarHeight + statusBarPadding + padding.bottom
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, verticalOffset)
+	local expandHorizontalOffset = padding.right + 2 + self.collapseAllButton.frame:GetWidth()
+	self.expandAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", expandHorizontalOffset, verticalOffset)
 end
 
 ---@param self EPMainFrame
@@ -172,6 +185,9 @@ local function OnRelease(self)
 	if self.expandAllButton then
 		self.expandAllButton:Release()
 	end
+	if self.statusBar then
+		self.statusBar:Release()
+	end
 	self.minimizeFrame:Hide()
 	self.closeButton = nil
 	self.minimizeButton = nil
@@ -179,6 +195,7 @@ local function OnRelease(self)
 	self.closeButtonMinimizeFrame = nil
 	self.collapseAllButton = nil
 	self.expandAllButton = nil
+	self.statusBar = nil
 	self.instanceLabel = nil
 	self.bossLabel = nil
 	self.bossMenuButton = nil
@@ -194,7 +211,14 @@ end
 local function LayoutFinished(self, width, height)
 	if not self.frame.isResizing then
 		if height then
-			self:SetHeight(height + windowBarHeight + padding.top + padding.bottom)
+			self:SetHeight(
+				height
+					+ windowBarHeight
+					+ padding.top
+					+ padding.bottom
+					+ self.statusBar.frame:GetHeight()
+					+ statusBarPadding
+			)
 		end
 	end
 end
@@ -209,16 +233,13 @@ local function SetPadding(self, top, right, bottom, left)
 	padding.right = right
 	padding.bottom = bottom
 	padding.left = left
+
 	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -padding.right, padding.bottom)
-	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, padding.bottom)
-	self.expandAllButton.frame:SetPoint(
-		"BOTTOMLEFT",
-		self.frame,
-		"BOTTOMLEFT",
-		padding.right + 2 + self.collapseAllButton.frame:GetWidth(),
-		padding.bottom
-	)
+	local verticalOffset = self.statusBar.frame:GetHeight() + statusBarPadding + padding.bottom
+	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -padding.right, verticalOffset)
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, verticalOffset)
+	local expandHorizontalOffset = padding.right + 2 + self.collapseAllButton.frame:GetWidth()
+	self.expandAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", expandHorizontalOffset, verticalOffset)
 end
 
 ---@param self EPMainFrame

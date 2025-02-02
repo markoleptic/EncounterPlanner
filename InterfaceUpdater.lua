@@ -594,6 +594,15 @@ function InterfaceUpdater.CreateMessageBox(title, text)
 	return nil
 end
 
+---@param message string
+---@param severityLevel SeverityLevel?
+---@param indentLevel IndentLevel?
+function InterfaceUpdater.LogMessage(message, severityLevel, indentLevel)
+	if Private.mainFrame and Private.mainFrame.statusBar then
+		Private.mainFrame.statusBar:AddMessage(message, severityLevel, indentLevel)
+	end
+end
+
 ---@param planID string
 ---@return string|nil
 ---@return Plan|nil
