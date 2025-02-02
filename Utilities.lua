@@ -1815,6 +1815,7 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 	local spellID = assignment.spellInfo.spellID
 	if assignment.text ~= nil and assignment.text ~= "" then
 		reminderText = Utilities.ReplaceGenericIconsOrSpells(assignment.text)
+		reminderText = reminderText:gsub("||", "|")
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
 		if spellID ~= nil and spellID > kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
