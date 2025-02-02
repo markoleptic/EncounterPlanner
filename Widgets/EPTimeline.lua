@@ -1045,7 +1045,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 	local totalAssignmentHeight = 0
 	local assigneeIndex = nil
 	for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assigneeNameOrRole] then
+		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
 			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
 			if totalAssignmentHeight >= relativeDistanceFromTop then
 				assigneeIndex = index
@@ -1219,7 +1219,7 @@ local function UpdateAssignments(self)
 		if not orderedSpellIDFrameIndices[order][spellID] then
 			orderedSpellIDFrameIndices[order][spellID] = {}
 		end
-		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assigneeNameOrRole]
+		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assignee]
 		local startTime, duration = timelineAssignment.startTime, timelineAssignment.assignment.cooldownDuration
 
 		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
@@ -1575,7 +1575,7 @@ local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentHeight = 0
 	local totalAssignmentRows = 0
 	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+		if as.spellID == nil or not self.collapsed[as.assignee] then
 			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
 			totalAssignmentRows = totalAssignmentRows + 1
 		end
@@ -1638,7 +1638,7 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	local totalAssignmentRows = 1
 	local minH, maxH, stepH = 0, 0, (assignmentTextureSize.y + paddingBetweenAssignments)
 	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assigneeNameOrRole] then
+		if as.spellID == nil or not self.collapsed[as.assignee] then
 			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
 				maxH = maxH + stepH
 			end
@@ -1700,7 +1700,7 @@ end
 ---@field thumb Button
 ---@field addAssigneeDropdown EPDropdown
 ---@field currentTimeLabel EPLabel
----@field assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+---@field assigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
 ---@field assignmentFrames table<integer, AssignmentFrame>
 ---@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
 ---@field fakeAssignmentFrame FakeAssignmentFrame
@@ -2044,7 +2044,7 @@ end
 
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
----@param assigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+---@param assigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
 ---@param collapsed table<string, boolean>
 local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	self.timelineAssignments = assignments

@@ -1085,12 +1085,12 @@ end
 -- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@param collapsed table<string, boolean>
----@return table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+---@return table<integer, {assignee:string, spellID:number|nil}>
 function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 	local assigneeIndices = {}
 	local groupedByAssignee = {}
 	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assigneeNameOrRole
+		local assignee = entry.assignment.assignee
 		if not groupedByAssignee[assignee] then
 			groupedByAssignee[assignee] = {}
 			tinsert(assigneeIndices, assignee)
@@ -1110,7 +1110,7 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 					order = order,
 					spellIDs = {},
 				}
-				tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = nil })
+				tinsert(assigneeOrder, { assignee = assignee, spellID = nil })
 				order = order + 1
 			end
 			if not assigneeMap[assignee].spellIDs[spellID] then
@@ -1118,7 +1118,7 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 					order = order + 1
 				end
 				assigneeMap[assignee].spellIDs[spellID] = order
-				tinsert(assigneeOrder, { assigneeNameOrRole = assignee, spellID = spellID })
+				tinsert(assigneeOrder, { assignee = assignee, spellID = spellID })
 			end
 			entry.order = assigneeMap[assignee].spellIDs[spellID]
 		end
@@ -1147,39 +1147,39 @@ local function CompareAssignments(roster, assignmentSortType)
 	---@param a TimelineAssignment
 	---@param b TimelineAssignment
 	return function(a, b)
-		local nameOrRoleA, nameOrRoleB = a.assignment.assigneeNameOrRole, b.assignment.assigneeNameOrRole
+		local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
 		local spellIDA, spellIDB = a.assignment.spellInfo.spellID, b.assignment.spellInfo.spellID
 		if assignmentSortType == "Alphabetical" then
-			if nameOrRoleA == nameOrRoleB then
+			if assigneeA == assigneeB then
 				return spellIDA < spellIDB
 			end
-			return nameOrRoleA < nameOrRoleB
+			return assigneeA < assigneeB
 		elseif assignmentSortType == "First Appearance" then
 			if a.startTime == b.startTime then
-				if nameOrRoleA == nameOrRoleB then
+				if assigneeA == assigneeB then
 					return spellIDA < spellIDB
 				end
-				return nameOrRoleA < nameOrRoleB
+				return assigneeA < assigneeB
 			end
 			return a.startTime < b.startTime
 		elseif assignmentSortType:match("^Role") then
-			local roleA, roleB = roster[nameOrRoleA], roster[nameOrRoleB]
+			local roleA, roleB = roster[assigneeA], roster[assigneeB]
 			local rolePriorityA, rolePriorityB = RolePriority(roleA and roleA.role), RolePriority(roleB and roleB.role)
 			if rolePriorityA == rolePriorityB then
 				if assignmentSortType == "Role > Alphabetical" then
-					if nameOrRoleA == nameOrRoleB then
+					if assigneeA == assigneeB then
 						if spellIDA == spellIDB then
 							return a.startTime < b.startTime
 						end
 						return spellIDA < spellIDB
 					end
-					return nameOrRoleA < nameOrRoleB
+					return assigneeA < assigneeB
 				elseif assignmentSortType == "Role > First Appearance" then
 					if a.startTime == b.startTime then
-						if nameOrRoleA == nameOrRoleB then
+						if assigneeA == assigneeB then
 							return spellIDA < spellIDB
 						end
-						return nameOrRoleA < nameOrRoleB
+						return assigneeA < assigneeB
 					end
 					return a.startTime < b.startTime
 				end
@@ -1217,7 +1217,7 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 		["SHAMAN"] = "role:healer",
 	}
 	for _, assignment in pairs(assignments) do
-		local assignee = assignment.assigneeNameOrRole
+		local assignee = assignment.assignee
 		if not assigneeAssignments[assignee] then
 			assigneeAssignments[assignee] = {}
 		end
@@ -1255,17 +1255,17 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 	return determinedRoles
 end
 
----@param assigneeNameOrRole string
+---@param assignee string
 ---@return string|nil
-function Utilities.IsValidAssigneeNameOrRole(assigneeNameOrRole)
-	if assigneeNameOrRole == "{everyone}" then
-		return assigneeNameOrRole
+function Utilities.IsValidAssignee(assignee)
+	if assignee == "{everyone}" then
+		return assignee
 	else
-		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-		local specMatch = assigneeNameOrRole:match("spec:%s*([%a%d]+)")
-		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
+		local classMatch = assignee:match("class:%s*(%a+)")
+		local roleMatch = assignee:match("role:%s*(%a+)")
+		local groupMatch = assignee:match("group:%s*(%d)")
+		local specMatch = assignee:match("spec:%s*([%a%d]+)")
+		local typeMatch = assignee:match("type:%s*(%a+)")
 		if classMatch then
 			local englishClassName = Utilities.GetEnglishClassNameWithoutSpaces(classMatch)
 			if englishClassName then
@@ -1294,13 +1294,13 @@ function Utilities.IsValidAssigneeNameOrRole(assigneeNameOrRole)
 				return "type:" .. typeMatch
 			end
 		else
-			assigneeNameOrRole = assigneeNameOrRole:gsub("%s", "")
-			local characterMatch, realmMatch = assigneeNameOrRole:match("^(%S+)%s*%-%s*(%S.+)$")
+			assignee = assignee:gsub("%s", "")
+			local characterMatch, realmMatch = assignee:match("^(%S+)%s*%-%s*(%S.+)$")
 			if characterMatch and realmMatch then
 				characterMatch = characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
 				return Ambiguate(characterMatch .. "-" .. realmMatch:gsub("%s", ""), "all")
 			else
-				characterMatch = assigneeNameOrRole:match("^(%S+)$")
+				characterMatch = assignee:match("^(%S+)$")
 				if characterMatch then
 					return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
 				end
@@ -1310,19 +1310,19 @@ function Utilities.IsValidAssigneeNameOrRole(assigneeNameOrRole)
 	return nil
 end
 
----@param assigneeNameOrRole string
+---@param assignee string
 ---@param roster table<string, RosterEntry> Roster for the assignments
 ---@return string
-function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
-	local legibleString = assigneeNameOrRole
-	if assigneeNameOrRole == "{everyone}" then
+function Utilities.ConvertAssigneeToLegibleString(assignee, roster)
+	local legibleString = assignee
+	if assignee == "{everyone}" then
 		return L["Everyone"]
 	else
-		local classMatch = assigneeNameOrRole:match("class:%s*(%a+)")
-		local roleMatch = assigneeNameOrRole:match("role:%s*(%a+)")
-		local groupMatch = assigneeNameOrRole:match("group:%s*(%d)")
-		local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
-		local typeMatch = assigneeNameOrRole:match("type:%s*(%a+)")
+		local classMatch = assignee:match("class:%s*(%a+)")
+		local roleMatch = assignee:match("role:%s*(%a+)")
+		local groupMatch = assignee:match("group:%s*(%d)")
+		local specMatch = assignee:match("spec:%s*(%d+)")
+		local typeMatch = assignee:match("type:%s*(%a+)")
 		if classMatch then
 			local prettyClassName = Utilities.GetLocalizedPrettyClassName(classMatch)
 			if prettyClassName then
@@ -1350,9 +1350,9 @@ function Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, 
 			if localizedType then
 				legibleString = localizedType
 			end
-		elseif roster and roster[assigneeNameOrRole] then
-			if roster[assigneeNameOrRole].classColoredName ~= "" then
-				legibleString = roster[assigneeNameOrRole].classColoredName
+		elseif roster and roster[assignee] then
+			if roster[assignee].classColoredName ~= "" then
+				legibleString = roster[assignee].classColoredName
 			end
 		end
 	end
@@ -1519,18 +1519,18 @@ function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossD
 end
 
 -- Creates a sorted table used to populate the assignment list.
----@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}> Sorted assignment list
+---@param sortedAssigneesAndSpells table<integer, {assignee:string, spellID:number|nil}> Sorted assignment list
 ---@param roster table<string, RosterEntry> Roster for the assignments
----@return table<integer, {assigneeNameOrRole:string, text:string, spells:table<integer, integer>}>
+---@return table<integer, {assignee:string, text:string, spells:table<integer, integer>}>
 function Utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 	local visited = {}
 	local map = {}
 	for _, nameAndSpell in ipairs(sortedAssigneesAndSpells) do
-		local assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
-		local abilityEntryText = Utilities.ConvertAssigneeNameOrRoleToLegibleString(assigneeNameOrRole, roster)
+		local assignee = nameAndSpell.assignee
+		local abilityEntryText = Utilities.ConvertAssigneeToLegibleString(assignee, roster)
 		if not visited[abilityEntryText] then
 			tinsert(map, {
-				assigneeNameOrRole = assigneeNameOrRole,
+				assignee = assignee,
 				text = abilityEntryText,
 				spells = {},
 			})
@@ -1689,32 +1689,32 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 	local determinedRoles = Utilities.DetermineRolesFromAssignments(assignments)
 	local visited = {}
 	for _, assignment in ipairs(assignments) do
-		if assignment.assigneeNameOrRole and not visited[assignment.assigneeNameOrRole] then
-			local nameOrRole = assignment.assigneeNameOrRole
+		if assignment.assignee and not visited[assignment.assignee] then
+			local assignee = assignment.assignee
 			if
-				not nameOrRole:find("class:")
-				and not nameOrRole:find("group:")
-				and not nameOrRole:find("role:")
-				and not nameOrRole:find("spec:")
-				and not nameOrRole:find("type:")
-				and not nameOrRole:find("{everyone}")
+				not assignee:find("class:")
+				and not assignee:find("group:")
+				and not assignee:find("role:")
+				and not assignee:find("spec:")
+				and not assignee:find("type:")
+				and not assignee:find("{everyone}")
 			then
-				if not roster[nameOrRole] then
-					roster[nameOrRole] = RosterEntry:New({})
+				if not roster[assignee] then
+					roster[assignee] = RosterEntry:New({})
 				end
-				if roster[nameOrRole].role == "" then
-					if determinedRoles[nameOrRole] then
-						roster[nameOrRole].role = determinedRoles[nameOrRole]
+				if roster[assignee].role == "" then
+					if determinedRoles[assignee] then
+						roster[assignee].role = determinedRoles[assignee]
 					end
 				end
-				UpdateRosterEntryClassColoredName(nameOrRole, roster[nameOrRole])
+				UpdateRosterEntryClassColoredName(assignee, roster[assignee])
 			end
-			visited[nameOrRole] = true
+			visited[assignee] = true
 		end
 	end
-	for nameOrRole, _ in pairs(roster) do
-		if not visited[nameOrRole] then
-			UpdateRosterEntryClassColoredName(nameOrRole, roster[nameOrRole])
+	for assigneeName, _ in pairs(roster) do
+		if not visited[assigneeName] then
+			UpdateRosterEntryClassColoredName(assigneeName, roster[assigneeName])
 		end
 	end
 end
@@ -1754,52 +1754,52 @@ local function GetGroupNumber()
 	return myGroup
 end
 
----@param timelineAssignments table<integer, TimelineAssignment>|table<integer, Assignment>
+---@param timelineAssignmentsOrAssignments table<integer, TimelineAssignment>|table<integer, Assignment>
 ---@return table<integer, TimelineAssignment|Assignment>
-function Utilities.FilterSelf(timelineAssignments)
+function Utilities.FilterSelf(timelineAssignmentsOrAssignments)
 	local filtered = {}
 	local unitName, unitRealm = UnitFullName("player")
 	local unitClass = select(2, UnitClass("player"))
 	local specID, _, _, _, role = GetSpecializationInfo(GetSpecialization())
 	local classType = Utilities.GetTypeFromSpecID(specID)
-	for _, timelineAssignment in ipairs(timelineAssignments) do
-		local nameOrRole = timelineAssignment.assigneeNameOrRole or timelineAssignment.assignment.assigneeNameOrRole
-		if nameOrRole:find("class:") then
-			local classMatch = nameOrRole:match("class:%s*(%a+)")
+	for _, timelineAssignment in ipairs(timelineAssignmentsOrAssignments) do
+		local assignee = timelineAssignment.assignee or timelineAssignment.assignment.assignee
+		if assignee:find("class:") then
+			local classMatch = assignee:match("class:%s*(%a+)")
 			if classMatch then
 				if classMatch:upper() == unitClass then
 					tinsert(filtered, timelineAssignment)
 				end
 			end
-		elseif nameOrRole:find("group:") then
-			if nameOrRole:find(tostring(GetGroupNumber())) then
+		elseif assignee:find("group:") then
+			if assignee:find(tostring(GetGroupNumber())) then
 				tinsert(filtered, timelineAssignment)
 			end
-		elseif nameOrRole:find("role:") then
-			local roleMatch = nameOrRole:match("role:%s*(%a+)")
+		elseif assignee:find("role:") then
+			local roleMatch = assignee:match("role:%s*(%a+)")
 			if roleMatch then
 				if roleMatch:upper() == role then
 					tinsert(filtered, timelineAssignment)
 				end
 			end
-		elseif nameOrRole:find("type:") then
-			local typeMatch = nameOrRole:match("type:%s*(%a+)")
+		elseif assignee:find("type:") then
+			local typeMatch = assignee:match("type:%s*(%a+)")
 			if typeMatch then
 				if typeMatch:lower() == classType then
 					tinsert(filtered, timelineAssignment)
 				end
 			end
-		elseif nameOrRole:find("spec:") then
-			local specMatch = nameOrRole:match("spec:%s*(%d+)")
+		elseif assignee:find("spec:") then
+			local specMatch = assignee:match("spec:%s*(%d+)")
 			if specMatch then
 				local foundSpecID = tonumber(specMatch)
 				if foundSpecID and foundSpecID == specID then
 					tinsert(filtered, timelineAssignment)
 				end
 			end
-		elseif nameOrRole:find("{everyone}") then
+		elseif assignee:find("{everyone}") then
 			tinsert(filtered, timelineAssignment)
-		elseif unitName == nameOrRole or unitName .. "-" .. unitRealm == nameOrRole then
+		elseif unitName == assignee or unitName .. "-" .. unitRealm == assignee then
 			tinsert(filtered, timelineAssignment)
 		end
 	end

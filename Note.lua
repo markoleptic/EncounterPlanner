@@ -31,7 +31,7 @@ local IsValidSpellCount = bossUtilities.IsValidSpellCount
 local utilities = Private.utilities
 local CreateTimelineAssignments = utilities.CreateTimelineAssignments
 local GetLocalizedSpecNameFromSpecID = utilities.GetLocalizedSpecNameFromSpecID
-local IsValidAssigneeNameOrRole = utilities.IsValidAssigneeNameOrRole
+local IsValidAssignee = utilities.IsValidAssignee
 local SplitStringIntoTable = utilities.SplitStringIntoTable
 local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
@@ -119,10 +119,10 @@ local function CreateAssignmentsFromLine(line, failed)
 				end
 				return "" -- Remove match
 			end)
-			local assigneeNameOrRole = IsValidAssigneeNameOrRole(entry)
-			if assigneeNameOrRole then
+			local assignee = IsValidAssignee(entry)
+			if assignee then
 				local assignment = Assignment:New({
-					assigneeNameOrRole = assigneeNameOrRole,
+					assignee = assignee,
 					text = text,
 					spellInfo = spellInfo,
 					targetName = targetName,
@@ -474,10 +474,10 @@ end
 ---@param roster RosterEntry
 ---@return string
 local function CreateAssignmentExportString(assignment, roster)
-	local assignmentString = assignment.assigneeNameOrRole
+	local assignmentString = assignment.assignee
 
-	if roster[assignment.assigneeNameOrRole] then
-		local classColoredName = roster[assignment.assigneeNameOrRole].classColoredName
+	if roster[assignment.assignee] then
+		local classColoredName = roster[assignment.assignee].classColoredName
 		if classColoredName ~= "" then
 			assignmentString = classColoredName:gsub("|", "||")
 		end
@@ -524,7 +524,7 @@ function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
 	local timelineAssignments = CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
 	sort(timelineAssignments, function(a, b)
 		if a.startTime == b.startTime then
-			return a.assignment.assigneeNameOrRole < b.assignment.assigneeNameOrRole
+			return a.assignment.assignee < b.assignment.assignee
 		end
 		return a.startTime < b.startTime
 	end)
@@ -656,7 +656,7 @@ do
 			for _, entry in ipairs(textTable) do
 				ParseNote(plan, { entry })
 				for _, assignment in ipairs(plan.assignments) do
-					TestEqual(assignment.assigneeNameOrRole, "Markoleptic", entry)
+					TestEqual(assignment.assignee, "Markoleptic", entry)
 					actualAssignmentCount = actualAssignmentCount + 1
 				end
 			end
@@ -753,7 +753,7 @@ do
 			for _, entry in ipairs(textTable) do
 				ParseNote(plan, { entry })
 				for _, assignment in ipairs(plan.assignments) do
-					TestEqual(assignment.assigneeNameOrRole, "Markoleptic", entry)
+					TestEqual(assignment.assignee, "Markoleptic", entry)
 					TestEqual(assignment.targetName, "Markoleptic", entry)
 					actualAssignmentCount = actualAssignmentCount + 1
 				end
@@ -800,7 +800,7 @@ do
 				"type:ranged",
 				"type:melee",
 			})
-			TestContains(plan.assignments, "assigneeNameOrRole", valuesTable)
+			TestContains(plan.assignments, "assignee", valuesTable)
 
 			return "TestAssignmentUnits"
 		end
@@ -820,27 +820,27 @@ do
 			local textTable = SplitStringIntoTable(text)
 			ParseNote(plan, textTable)
 
-			TestEqual(plan.assignments[1].assigneeNameOrRole, "Markoleptic", textTable[1])
-			TestEqual(plan.assignments[2].assigneeNameOrRole, "Idk", textTable[1])
-			TestEqual(plan.assignments[3].assigneeNameOrRole, "Dk", textTable[1])
+			TestEqual(plan.assignments[1].assignee, "Markoleptic", textTable[1])
+			TestEqual(plan.assignments[2].assignee, "Idk", textTable[1])
+			TestEqual(plan.assignments[3].assignee, "Dk", textTable[1])
 
-			TestEqual(plan.assignments[4].assigneeNameOrRole, "Markoleptic", textTable[3])
-			TestEqual(plan.assignments[5].assigneeNameOrRole, "class:Mage", textTable[3])
-			TestEqual(plan.assignments[6].assigneeNameOrRole, "role:damager", textTable[3])
+			TestEqual(plan.assignments[4].assignee, "Markoleptic", textTable[3])
+			TestEqual(plan.assignments[5].assignee, "class:Mage", textTable[3])
+			TestEqual(plan.assignments[6].assignee, "role:damager", textTable[3])
 
-			TestEqual(plan.assignments[7].assigneeNameOrRole, "Markoleptic", textTable[3])
-			TestEqual(plan.assignments[8].assigneeNameOrRole, "group:1", textTable[3])
-			TestEqual(plan.assignments[9].assigneeNameOrRole, "spec:62", textTable[3])
-			TestEqual(plan.assignments[10].assigneeNameOrRole, "type:ranged", textTable[3])
+			TestEqual(plan.assignments[7].assignee, "Markoleptic", textTable[3])
+			TestEqual(plan.assignments[8].assignee, "group:1", textTable[3])
+			TestEqual(plan.assignments[9].assignee, "spec:62", textTable[3])
+			TestEqual(plan.assignments[10].assignee, "type:ranged", textTable[3])
 
-			TestEqual(plan.assignments[11].assigneeNameOrRole, "Markoleptic", textTable[4])
+			TestEqual(plan.assignments[11].assignee, "Markoleptic", textTable[4])
 			TestEqual(plan.assignments[11].targetName, "Idk", textTable[4])
-			TestEqual(plan.assignments[12].assigneeNameOrRole, "Idk", textTable[4])
+			TestEqual(plan.assignments[12].assignee, "Idk", textTable[4])
 			TestEqual(plan.assignments[12].targetName, "Markoleptic", textTable[4])
 
-			TestEqual(plan.assignments[13].assigneeNameOrRole, "Markoleptic", textTable[5])
+			TestEqual(plan.assignments[13].assignee, "Markoleptic", textTable[5])
 			TestEqual(plan.assignments[13].targetName, "Idk", textTable[5])
-			TestEqual(plan.assignments[14].assigneeNameOrRole, "Idk", textTable[5])
+			TestEqual(plan.assignments[14].assignee, "Idk", textTable[5])
 			TestEqual(plan.assignments[14].targetName, "Markoleptic", textTable[5])
 
 			return "TestMultiValuedAssignmentUnits"

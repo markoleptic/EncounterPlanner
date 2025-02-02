@@ -574,8 +574,8 @@ end
 ---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
 local function PopulateFields(self, assignment, previewText, metaTables)
 	self:SetAssignmentID(assignment.uniqueID)
-	local assigneeNameOrRole = assignment.assigneeNameOrRole
-	self.assigneeTypeDropdown:SetValue(assigneeNameOrRole)
+	local assignee = assignment.assignee
+	self.assigneeTypeDropdown:SetValue(assignee)
 
 	self.previewLabel:SetText(previewText, 0)
 

@@ -183,19 +183,16 @@ do
 			local assignments = GetCurrentAssignments()
 			if type(key) == "string" then
 				for i = #assignments, 1, -1 do
-					if assignments[i].assigneeNameOrRole == key then
+					if assignments[i].assignee == key then
 						tremove(assignments, i)
 						removed = removed + 1
 					end
 				end
 			elseif type(key) == "table" then
-				local assigneeNameOrRole = key.assigneeNameOrRole
+				local assignee = key.assignee
 				local spellID = key.spellID
 				for i = #assignments, 1, -1 do
-					if
-						assignments[i].assigneeNameOrRole == assigneeNameOrRole
-						and assignments[i].spellInfo.spellID == spellID
-					then
+					if assignments[i].assignee == assignee and assignments[i].spellInfo.spellID == spellID then
 						tremove(assignments, i)
 						removed = removed + 1
 					end
@@ -228,25 +225,22 @@ do
 	local CreateReminderText = utilities.CreateReminderText
 
 	---@param abilityEntry EPAbilityEntry
-	local function HandleSwapAssignee(abilityEntry, _, newAssigneeNameOrRole)
+	local function HandleSwapAssignee(abilityEntry, _, newAssignee)
 		local key = abilityEntry:GetKey()
 		if key then
 			local assignments = GetCurrentAssignments()
 			if type(key) == "string" then
 				for _, assignment in ipairs(assignments) do
-					if assignment.assigneeNameOrRole == key then
-						assignment.assigneeNameOrRole = newAssigneeNameOrRole
+					if assignment.assignee == key then
+						assignment.assignee = newAssignee
 					end
 				end
 			elseif type(key) == "table" then
-				local assigneeNameOrRole = key.assigneeNameOrRole
+				local assignee = key.assignee
 				local spellID = key.spellID
 				for _, assignment in ipairs(assignments) do
-					if
-						assignment.assigneeNameOrRole == assigneeNameOrRole
-						and assignment.spellInfo.spellID == spellID
-					then
-						assignment.assigneeNameOrRole = newAssigneeNameOrRole
+					if assignment.assignee == assignee and assignment.spellInfo.spellID == spellID then
+						assignment.assignee = newAssignee
 					end
 				end
 			end
@@ -277,7 +271,7 @@ do
 	local GetSpellName = C_Spell.GetSpellName
 
 	-- Clears and repopulates the list of assignments and spells.
-	---@param sortedAssigneesAndSpells table<integer, {assigneeNameOrRole:string, spellID:number|nil}>
+	---@param sortedAssigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
 	---@param firstUpdate boolean|nil
 	function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
 		local timeline = Private.mainFrame.timeline
@@ -290,29 +284,27 @@ do
 				local map = CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 				for _, textTable in ipairs(map) do
-					local assigneeNameOrRole = textTable.assigneeNameOrRole
-					local coloredAssigneeNameOrRole = textTable.text
-					local assigneeCollapsed = collapsed[assigneeNameOrRole]
+					local assignee = textTable.assignee
+					local coloredAssignee = textTable.text
+					local assigneeCollapsed = collapsed[assignee]
 
 					local specIconID = nil
-					local specMatch = assigneeNameOrRole:match("spec:%s*(%d+)")
+					local specMatch = assignee:match("spec:%s*(%d+)")
 					if specMatch then
 						local specIDMatch = tonumber(specMatch)
 						if specIDMatch then
 							local _, _, _, icon, _ = GetSpecializationInfoByID(specIDMatch)
 							specIconID = icon
-							coloredAssigneeNameOrRole = coloredAssigneeNameOrRole:gsub("|T[^:]+:16|t ", "")
+							coloredAssignee = coloredAssignee:gsub("|T[^:]+:16|t ", "")
 						end
 					end
 
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-					assigneeEntry:SetText(coloredAssigneeNameOrRole, assigneeNameOrRole)
+					assigneeEntry:SetText(coloredAssignee, assignee)
 					assigneeEntry:SetFullWidth(true)
 					assigneeEntry:SetHeight(30)
 					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-					assigneeEntry:SetRoleOrSpec(
-						roster[assigneeNameOrRole] and roster[assigneeNameOrRole].role or specIconID or nil
-					)
+					assigneeEntry:SetRoleOrSpec(roster[assignee] and roster[assignee].role or specIconID or nil)
 					assigneeEntry:SetCollapsible(true)
 					assigneeEntry:ShowSwapIcon(true)
 					assigneeEntry:SetCollapsed(assigneeCollapsed)
@@ -326,7 +318,7 @@ do
 								"%s %s %s?",
 								L["Are you sure you want to delete all"],
 								L["assignments for"],
-								coloredAssigneeNameOrRole
+								coloredAssignee
 							)
 						)
 						if messageBox then
@@ -342,7 +334,7 @@ do
 					if not assigneeCollapsed then
 						for _, spellID in ipairs(textTable.spells) do
 							local spellEntry = AceGUI:Create("EPAbilityEntry")
-							local key = { assigneeNameOrRole = assigneeNameOrRole, spellID = spellID }
+							local key = { assignee = assignee, spellID = spellID }
 							if spellID == kInvalidAssignmentSpellID then
 								spellEntry:SetNullAbility(key)
 							elseif spellID == kTextAssignmentSpellID then
@@ -364,7 +356,7 @@ do
 										L["Are you sure you want to delete all"],
 										spellName,
 										L["assignments for"],
-										coloredAssigneeNameOrRole
+										coloredAssignee
 									)
 								)
 								if messageBox then
@@ -392,7 +384,7 @@ end
 
 -- Sets the assignments and assignees for the timeline and rerenders it.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
----@param sortedWithSpellID table<integer, { assigneeNameOrRole: string, spellID: number|nil }>|nil
+---@param sortedWithSpellID table<integer, { assignee: string, spellID: number|nil }>|nil
 ---@param firstUpdate boolean|nil
 function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	local timeline = Private.mainFrame.timeline

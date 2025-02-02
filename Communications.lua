@@ -59,7 +59,7 @@ local configForDeflate = {
 ---@field [7] table<integer, string> content
 
 ---@class SerializedAssignment
----@field [1] string assigneeNameOrRole
+---@field [1] string assignee
 ---@field [2] number spellInfo.spellID
 ---@field [3] string text
 ---@field [4] string targetName
@@ -79,8 +79,7 @@ local configForDeflate = {
 ---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
 ---@return SerializedAssignment
 local function SerializeAssignment(assignment)
-	local required =
-		{ assignment.assigneeNameOrRole, assignment.spellInfo.spellID, assignment.text, assignment.targetName }
+	local required = { assignment.assignee, assignment.spellInfo.spellID, assignment.text, assignment.targetName }
 	if assignment.time then
 		required[5] = assignment.time
 	end
@@ -98,7 +97,7 @@ end
 ---@return CombatLogEventAssignment|TimedAssignment
 local function DeserializeAssignment(data)
 	local assignment = {
-		assigneeNameOrRole = data[1],
+		assignee = data[1],
 		spellInfo = GetSpellInfo(data[2])
 			or { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
 		text = data[3],

@@ -65,11 +65,11 @@ The **Time** section determines what triggers an assignment and specifies one of
     This can also be considered the occurrence number.
     The first occurrence in an encounter will always be 1.
 
-The **Assignments** section is list separated by double spaces (`  `), where each entry is composed of **Assignment Unit(s)** and an **Assignment**.
+The **Assignments** section is list separated by double spaces (`  `), where each entry is composed of **Assignee(s)** and an **Assignment**.
 
-**Assignment Unit(s)**
+**Assignee(s)**
 
-This can be a character name, class, role, group, spec, or type. Multiple **Assignment Unit(s)** can be assigned to the same **Assignment** by using commas between them.
+This can be a character name, class, role, group, spec, or type. Multiple **Assignee(s)** can be assigned to the same **Assignment** by using commas between them.
 
 -   **Character Name**:
     `[Name]`, where **\[Name\]** is the name of a character. If the realm name is included, there must be a dash (`-`) between the **Time** and **Assignments** sections.
@@ -99,7 +99,7 @@ This can be a character name, class, role, group, spec, or type. Multiple **Assi
 
 **Assignment**
 
-This is the spell and/or text being assigned to the **Assignment Unit(s)**.
+This is the spell and/or text being assigned to the **Assignee(s)**.
 
 -   **Spell**:
     `{spell:[Spell ID]}` where **\[Spell ID\]** is the ID of the spell being assigned.

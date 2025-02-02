@@ -56,6 +56,12 @@ end
 local function UpdateProfile(profile)
 	if profile then
 		for _, plan in pairs(profile.plans) do
+			for _, assignment in ipairs(plan.assignments) do
+				if assignment.assigneeNameOrRole then
+					assignment.assignee = assignment.assigneeNameOrRole
+					assignment.assigneeNameOrRole = nil
+				end
+			end
 			SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 
 			plan = Plan:New(plan, plan.name, plan.ID)

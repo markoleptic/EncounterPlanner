@@ -559,7 +559,7 @@ do
 			updateAssignments = true
 			updatePreviewText = true
 		elseif dataType == "AssigneeType" then
-			assignment.assigneeNameOrRole = value
+			assignment.assignee = value
 			updatePreviewText = true
 			updateAssignments = true
 		elseif dataType == "Time" then
@@ -1060,14 +1060,14 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	end
 
 	for _, assignment in pairs(GetCurrentAssignments()) do
-		if assignment.assigneeNameOrRole == value then
+		if assignment.assignee == value then
 			dropdown:SetText(L["Add Assignee"])
 			return
 		end
 	end
 
 	local assignment = TimedAssignment:New()
-	assignment.assigneeNameOrRole = value
+	assignment.assignee = value
 	tinsert(GetCurrentAssignments(), assignment)
 	UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
@@ -1089,7 +1089,7 @@ local function HandleCreateNewAssignment(_, _, abilityInstance, assigneesAndSpel
 	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
 	if nameAndSpell then
 		local assignment = Assignment:New()
-		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
+		assignment.assignee = nameAndSpell.assignee
 		if nameAndSpell.spellID then
 			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
 			if spellInfo then
@@ -1136,7 +1136,7 @@ local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time
 	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
 	if nameAndSpell then
 		local assignment = Assignment:New()
-		assignment.assigneeNameOrRole = nameAndSpell.assigneeNameOrRole
+		assignment.assignee = nameAndSpell.assignee
 		if nameAndSpell.spellID then
 			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
 			if spellInfo then
@@ -1614,7 +1614,7 @@ local function HandleCollapseAllButtonClicked()
 	)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
-		collapsed[timelineAssignment.assignment.assigneeNameOrRole] = true
+		collapsed[timelineAssignment.assignment.assignee] = true
 	end
 	UpdateAllAssignments(true, currentBossDungeonEncounterID)
 end
@@ -1629,7 +1629,7 @@ local function HandleExpandAllButtonClicked()
 	)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
-		collapsed[timelineAssignment.assignment.assigneeNameOrRole] = false
+		collapsed[timelineAssignment.assignment.assignee] = false
 	end
 	UpdateAllAssignments(false, currentBossDungeonEncounterID)
 	Private.mainFrame.timeline:SetMaxAssignmentHeight()
