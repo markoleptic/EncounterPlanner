@@ -226,9 +226,18 @@ do
 
 	---@param text string
 	---@return string
-	function Utilities.ReplaceGenericIcons(text)
+	function Utilities.ReplaceGenericIconsOrSpells(text)
 		local result, _ = text:gsub("{(.-)}", function(match)
-			return genericIcons[match] or ("{" .. match .. "}")
+			local genericIcon = genericIcons[match]
+			if genericIcon then
+				return genericIcon
+			else
+				local texture = GetSpellTexture(match)
+				if texture then
+					return format("|T%s:16|t", texture)
+				end
+			end
+			return "{" .. match .. "}"
 		end)
 		return result
 	end
@@ -1805,7 +1814,7 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 	local reminderText = ""
 	local spellID = assignment.spellInfo.spellID
 	if assignment.text ~= nil and assignment.text ~= "" then
-		reminderText = Utilities.ReplaceGenericIcons(assignment.text)
+		reminderText = Utilities.ReplaceGenericIconsOrSpells(assignment.text)
 	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
 		if spellID ~= nil and spellID > kTextAssignmentSpellID then
 			if assignment.spellInfo.name then
