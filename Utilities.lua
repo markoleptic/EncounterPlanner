@@ -54,7 +54,6 @@ local hugeNumber = math.huge
 local ipairs = ipairs
 local IsInRaid = IsInRaid
 local pairs = pairs
-local print = print
 local select = select
 local sort = table.sort
 local tinsert = table.insert
@@ -981,6 +980,48 @@ end
 
 do
 	local AddOn = Private.addOn
+	local tremove = table.remove
+
+	---@param count integer
+	---@param invalidSpellIDOnlyCount integer
+	---@param onlyFailedSpellIDsString string
+	---@param spellCounts table<integer, table<integer, integer>>
+	local function LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts)
+		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
+		if interfaceUpdater then
+			local countMsg = format("%s: %d %s.", AddOnName, count, L["assignment(s) failed to update"])
+			interfaceUpdater.LogMessage(countMsg, 3, 1)
+
+			if onlyFailedSpellIDsString:len() > 1 then
+				local spellString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
+				local msg = format("%d %s: %s", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], spellString)
+				interfaceUpdater.LogMessage(msg, 3, 2)
+			end
+
+			if #spellCounts > 0 then
+				local total = 0
+				local delayedMsgs = {}
+				sort(spellCounts)
+				for spellID, counts in pairs(spellCounts) do
+					local invalidSpellCounts = tostring(spellID) .. ":"
+					for _, spellCount in pairs(counts) do
+						invalidSpellCounts = invalidSpellCounts .. " " .. spellCount .. ", "
+						total = total + 1
+					end
+					if invalidSpellCounts:len() > 1 then
+						invalidSpellCounts = invalidSpellCounts:sub(1, invalidSpellCounts:len() - 2)
+						tinsert(delayedMsgs, invalidSpellCounts)
+					end
+				end
+				if total > 0 then
+					interfaceUpdater.LogMessage(format("%d %s:", total, L["Invalid Boss Spell Count(s)"]), 3, 1)
+					for _, msg in ipairs(delayedMsgs) do
+						interfaceUpdater.LogMessage(msg, 3, 2)
+					end
+				end
+			end
+		end
+	end
 
 	-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
 	---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
@@ -1025,43 +1066,8 @@ do
 				end
 			end
 
-			print(
-				format("%s: %d %s.", AddOnName, startCount - #timelineAssignments, L["assignment(s) failed to update"])
-			)
-
-			if onlyFailedSpellIDsString:len() > 1 then
-				onlyFailedSpellIDsString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
-				print(
-					format(
-						"%d %s: %s",
-						invalidSpellIDOnlyCount,
-						L["Invalid Boss Spell ID(s)"],
-						onlyFailedSpellIDsString
-					)
-				)
-			end
-
-			if #spellCounts > 0 then
-				local total = 0
-				local spellCountsString = ""
-				sort(spellCounts)
-				for spellID, counts in pairs(spellCounts) do
-					local spellIDAndSpellCountString = tostring(spellID) .. ":"
-					for _, spellCount in pairs(counts) do
-						spellIDAndSpellCountString = spellIDAndSpellCountString .. " " .. spellCount .. ", "
-						total = total + 1
-					end
-					if spellIDAndSpellCountString:len() > 1 then
-						spellIDAndSpellCountString =
-							spellIDAndSpellCountString:sub(1, spellIDAndSpellCountString:len() - 2)
-						spellCountsString = spellCountsString .. spellIDAndSpellCountString .. "\n"
-					end
-				end
-				if spellCountsString:len() > 0 then
-					spellCountsString = spellCountsString:sub(1, spellCountsString:len() - 2)
-					print(format("%d %s:\n %s", total, L["Invalid Boss Spell Count(s)"], spellCountsString))
-				end
-			end
+			local count = startCount - #timelineAssignments
+			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts)
 		end
 		return timelineAssignments
 	end
