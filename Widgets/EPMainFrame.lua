@@ -238,6 +238,26 @@ local function SetMinimizeFramePosition(self, x, y)
 	end
 end
 
+---@param self EPMainFrame
+---@param timelineFrameHeight number
+---@param minHeight number
+---@param maxHeight number
+local function HandleResizeBoundsCalculated(self, timelineFrameHeight, minHeight, maxHeight)
+	local topContainer = self.children[1]
+	local topContainerSpacing = topContainer.content.spacing
+	local heightDiff = self.frame:GetHeight() - timelineFrameHeight
+	local minWidth, maxWidth = 0.0, nil
+	for _, child in ipairs(topContainer.children) do
+		if child.type ~= "EPSpacer" then
+			minWidth = minWidth + child.frame:GetWidth() + topContainerSpacing.x
+		end
+	end
+	minWidth = minWidth + padding.left + padding.right - topContainerSpacing.x
+	minHeight = minHeight + heightDiff
+	maxHeight = maxHeight + heightDiff
+	self.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
+end
+
 ---@return {left:number, top:number, right:number, bottom:number}
 local function GetPadding()
 	return padding
@@ -332,6 +352,7 @@ local function Constructor()
 		SetSpacing = SetSpacing,
 		SetMinimizeFramePosition = SetMinimizeFramePosition,
 		GetPadding = GetPadding,
+		HandleResizeBoundsCalculated = HandleResizeBoundsCalculated,
 		frame = frame,
 		type = Type,
 		content = contentFrame,

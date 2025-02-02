@@ -1593,20 +1593,9 @@ end
 ---@param minHeight number
 ---@param maxHeight number
 local function HandleResizeBoundsCalculated(timeline, _, minHeight, maxHeight)
-	local topContainer = Private.mainFrame.children[1]
-	local topContainerSpacing = topContainer.content.spacing
-	local heightDiff = Private.mainFrame.frame:GetHeight() - timeline.frame:GetHeight()
-	local minWidth, maxWidth = 0.0, nil
-	for _, child in ipairs(topContainer.children) do
-		if child.type ~= "EPSpacer" then
-			minWidth = minWidth + child.frame:GetWidth() + topContainerSpacing.x
-		end
+	if Private.mainFrame then
+		Private.mainFrame:HandleResizeBoundsCalculated(timeline.frame:GetHeight(), minHeight, maxHeight)
 	end
-	local padding = Private.mainFrame:GetPadding()
-	minWidth = minWidth + padding.left + padding.right - topContainerSpacing.x
-	minHeight = minHeight + heightDiff
-	maxHeight = maxHeight + heightDiff
-	Private.mainFrame.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
 end
 
 local function HandleCloseButtonClicked()
