@@ -60,9 +60,9 @@ local postDashRegex = "([^ \n][^\n]-)  +"
 -- postDashRegex = "([%w:,%s|%- ]+[ ]+%b{}[ ]-)"
 local postOptionsPreDashNoSpellRegex = "}(.-) %-"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
-local removeFirstDashRegex = "%-+%s-([^\n]+)"
+local removeFirstDashRegex = "^[^%-]*%-+%s*"
 local spellIconRegex = "{spell:(%d+):?%d*}"
-local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}"
+local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}(.*)"
 local targetNameRegex = "(@%S+)"
 local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
 local timeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}"
@@ -95,23 +95,24 @@ local combatLogEventFromAbbreviation = {
 local function CreateAssignmentsFromLine(line, failed)
 	local assignments = {}
 	local failedCount = 0
-	local removedFirstDash = line:match(removeFirstDashRegex)
-	for str in (removedFirstDash .. "  "):gmatch(postDashRegex) do
+	line = line:gsub(removeFirstDashRegex, "", 1)
+	for str in (line .. "  "):gmatch(postDashRegex) do
 		local spellInfo =
 			{ name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 }
-		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(rest, id)
+		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(left, id, right)
 			spellInfo = GetSpellInfo(id)
-			return rest
+			return left .. right
 		end)
 		local text = str:match(textRegex)
 		if text then
 			text = text:gsub("{everyone}", "") -- duplicate everyone
-			text = text:gsub("^%s*", ""):gsub("$^%s*", "") -- remove beginning/trailing whitespace
+			text = text:gsub("^%s*(.-)%s*$", "%1") -- remove beginning/trailing whitespace
 			strWithoutSpell = strWithoutSpell:gsub(textRegex, "")
 		end
-		for _, entry in pairs(splitTable(",", strWithoutSpell:gsub("%s", ""))) do
-			entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "") -- Remove colors
+		for _, entry in pairs(splitTable(",", strWithoutSpell)) do
 			local targetName = nil
+			entry = entry:gsub("^%s*(.-)%s*$", "%1") -- remove beginning/trailing whitespace
+			entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "") -- Remove colors
 			entry = entry:gsub(targetNameRegex, function(target)
 				if target then
 					targetName = target:gsub("@", "") -- Extract target name
@@ -137,11 +138,6 @@ local function CreateAssignmentsFromLine(line, failed)
 				failedCount = failedCount + 1
 			end
 		end
-
-		-- elseif strWithoutSpell:gsub("%s", ""):len() > 0 then
-		-- 	tinsert(failed, { reason = 6, string = strWithoutSpell })
-		-- 	failedCount = failedCount + 1
-		-- end
 	end
 	return assignments, failedCount
 end
@@ -205,7 +201,7 @@ local function ProcessCombatEventLogEventOption(option, time, assignments, deriv
 		tinsert(replaced, { reason = 2, string = option })
 		return false, false, true
 	end
-	return true, false, false
+	return false, false, false
 end
 
 -- Adds an assignment using a more derived type by parsing the options (comma-separated list after time).
@@ -271,16 +267,22 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 end
 
 ---@param line string
----@return number|nil, string|nil
+---@return number|nil
+---@return string|nil
+---@return string
 local function ParseTime(line)
-	local minute, sec, options = line:match(timeOptionsSplitRegex)
-	local time = nil
-	if minute and sec then
-		time = tonumber(sec) + (tonumber(minute) * 60)
-	elseif minute and (sec == nil or sec == "") then
-		time = tonumber(minute)
-	end
-	return time, options
+	local time, options = nil, nil
+	local rest, _ = line:gsub(timeOptionsSplitRegex, function(minute, sec, opts)
+		if minute and (sec == nil or sec == "") then
+			time = tonumber(minute)
+		elseif minute and sec then
+			time = tonumber(sec) + (tonumber(minute) * 60)
+		end
+		options = opts
+		return ""
+	end)
+
+	return time, options, rest
 end
 
 ---@param failedOrReplaced table<integer, FailureTableEntry>
@@ -370,7 +372,7 @@ local function ParseNote(plan, text)
 	local failedCount, defaultedToTimedCount, defaultedSpellCount = 0, 0, 0
 
 	for _, line in pairs(text) do
-		local time, options = ParseTime(line)
+		local time, options, rest = ParseTime(line)
 		if time and options then
 			local spellID, _ = line:match(postOptionsPreDashRegex)
 			local spellIDNumber = nil
@@ -385,7 +387,7 @@ local function ParseNote(plan, text)
 					end
 				end
 			end
-			local inputs, count = CreateAssignmentsFromLine(line, failedOrReplaced)
+			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced)
 			failedCount = failedCount + count
 			local defaultedToTimed, defaultedCombatLogAssignment =
 				ProcessOptions(inputs, plan.assignments, time, options, failedOrReplaced, bossDungeonEncounterIDs)
