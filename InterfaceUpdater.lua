@@ -55,26 +55,6 @@ do
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
 
-	---@param abilityEntry EPAbilityEntry
-	local function HandleBossAbilityAbilityEntryValueChanged(abilityEntry, _)
-		local key = tonumber(abilityEntry:GetKey())
-		local boss = GetBoss(Private.mainFrame.bossLabel:GetValue())
-		if key and boss then
-			local bossDungeonEncounterID = boss.dungeonEncounterID
-			local atLeastOneSelected = false
-			for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]) do
-				if currentAbilityID ~= key and currentSelected then
-					atLeastOneSelected = true
-					break
-				end
-			end
-			if atLeastOneSelected then
-				AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID][key] = false
-				InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-			end
-		end
-	end
-
 	local GetSpellInfo = C_Spell.GetSpellInfo
 
 	-- Clears and repopulates the boss ability container based on the boss name.
@@ -108,7 +88,7 @@ do
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
 					abilityEntry:SetAbility(abilityID, tostring(abilityID))
-					abilityEntry:SetCallback("OnValueChanged", HandleBossAbilityAbilityEntryValueChanged)
+					abilityEntry:HideCheckBox()
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then

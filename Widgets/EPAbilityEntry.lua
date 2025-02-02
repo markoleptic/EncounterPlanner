@@ -103,7 +103,9 @@ local function OnRelease(self)
 	self.label:Release()
 	self.label = nil
 
-	self.check:Release()
+	if self.check then
+		self.check:Release()
+	end
 	self.check = nil
 
 	if self.swap then
@@ -133,7 +135,9 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	self.label:SetEnabled(enabled)
-	self.check:SetEnabled(enabled)
+	if self.check then
+		self.check:SetEnabled(enabled)
+	end
 	if self.swap then
 		self.swap:SetEnabled(enabled)
 	end
@@ -145,7 +149,9 @@ end
 ---@param self EPAbilityEntry
 ---@param textureAsset? string|number
 local function SetCheckedTexture(self, textureAsset)
-	self.check:SetIcon(textureAsset)
+	if self.check then
+		self.check:SetIcon(textureAsset)
+	end
 end
 
 ---@param self EPAbilityEntry
@@ -154,7 +160,9 @@ end
 ---@param b number
 ---@param a number
 local function SetCheckedTextureColor(self, r, g, b, a)
-	self.check:SetIconColor(r, g, b, a)
+	if self.check then
+		self.check:SetIconColor(r, g, b, a)
+	end
 end
 
 ---@param self EPAbilityEntry
@@ -334,6 +342,16 @@ local function ShowSwapIcon(self, show)
 	end
 end
 
+local function HideCheckBox(self)
+	if self.check then
+		self.check:Release()
+	end
+	self.check = nil
+	self.checkBackground:ClearAllPoints()
+	self.checkBackground:Hide()
+	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -387,6 +405,7 @@ local function Constructor()
 		SetCheckedTextureColor = SetCheckedTextureColor,
 		ShowSwapIcon = ShowSwapIcon,
 		SetAssigneeDropdownItems = SetAssigneeDropdownItems,
+		HideCheckBox = HideCheckBox,
 		frame = frame,
 		type = Type,
 		count = count,

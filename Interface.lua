@@ -962,24 +962,24 @@ end
 ---@param value number|string
 ---@param selected boolean
 local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
-	if value == L["Filter Spells"] or type(value) ~= "number" then
-		return
-	end
-	local boss = GetBoss(Private.mainFrame.bossLabel:GetValue())
-	if boss then
-		local atLeastOneSelected = false
-		for currentAbilityID, currentSelected in pairs(AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]) do
-			if currentAbilityID ~= value and currentSelected then
-				atLeastOneSelected = true
-				break
+	if type(value) == "number" then
+		local boss = GetBoss(Private.mainFrame.bossLabel:GetValue())
+		if boss then
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
+			local atLeastOneSelected = false
+			for currentAbilityID, currentSelected in pairs(activeBossAbilities) do
+				if currentAbilityID ~= value and currentSelected then
+					atLeastOneSelected = true
+					break
+				end
 			end
-		end
-		if atLeastOneSelected then
-			AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID][value] = selected
-			UpdateBoss(boss.dungeonEncounterID, false)
-		else
-			dropdown:SetItemIsSelected(value, true, true)
-			AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID][value] = true
+			if atLeastOneSelected then
+				activeBossAbilities[value] = selected
+				UpdateBoss(boss.dungeonEncounterID, false)
+			else
+				dropdown:SetItemIsSelected(value, true, true)
+				activeBossAbilities[value] = true
+			end
 		end
 	end
 end
