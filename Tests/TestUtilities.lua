@@ -90,9 +90,9 @@ do
 		currentFailedComparisonsContexts = {}
 	end
 
-	---@param func fun()
-	function TestUtilities.SetCurrentTest(func)
-		currentTestName = tostring(func)
+	---@param name string
+	function TestUtilities.SetCurrentTest(name)
+		currentTestName = name
 	end
 
 	function TestUtilities.PrintResults()

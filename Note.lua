@@ -111,7 +111,7 @@ local function CreateAssignmentsFromLine(line, failed)
 		end
 		for _, entry in pairs(splitTable(",", strWithoutSpell)) do
 			local targetName = nil
-			entry = entry:gsub("^%s*(.-)%s*$", "%1") -- remove beginning/trailing whitespace
+			entry = entry:gsub("%s", "") -- remove all whitespace
 			entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "") -- Remove colors
 			entry = entry:gsub(targetNameRegex, function(target)
 				if target then
@@ -629,59 +629,253 @@ do
 
 	do
 		local text = [[
-        {time:75}Markoleptic {spell:235450}{text}Yo{/text}
-        {time:85}-Markoleptic {spell:235450}{text}Yo{/text}
-        {time:95} -Markoleptic {spell:235450}{text}Yo{/text}
-        {time:105}- Markoleptic {spell:235450}{text}Yo{/text}
-        {time:115} - Markoleptic {spell:235450}{text}Yo{/text}
-        {time:125}Random Text-Markoleptic {spell:235450}{text}Yo{/text}
-        {time:135}Random Text -Markoleptic {spell:235450}{text}Yo{/text}
-        {time:145}Random Text- Markoleptic {spell:235450}{text}Yo{/text}
-        {time:145}Random Text - Markoleptic {spell:235450}{text}Yo{/text}
-        {time:155}-Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:165} -Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:175}- Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:185} - Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:195}Random Text-Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:205}Random Text -Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:215}Random Text- Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
-        {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:75}Markoleptic {spell:235450}
+        {time:85}-Markoleptic {spell:235450}
+        {time:95} -Markoleptic {spell:235450}
+        {time:105}- Markoleptic {spell:235450}
+        {time:115} - Markoleptic {spell:235450}
+        {time:125}Random Text-Markoleptic {spell:235450}
+        {time:135}Random Text -Markoleptic {spell:235450}
+        {time:145}Random Text- Markoleptic {spell:235450}
+        {time:145}Random Text - Markoleptic {spell:235450}
+        {time:155}-Markoleptic-Bleeding Hollow {spell:235450}
+        {time:165} -Markoleptic-Bleeding Hollow {spell:235450}
+        {time:175}- Markoleptic-Bleeding Hollow {spell:235450}
+        {time:185} - Markoleptic-Bleeding Hollow {spell:235450}
+        {time:195}Random Text-Markoleptic-Bleeding Hollow {spell:235450}
+        {time:205}Random Text -Markoleptic-Bleeding Hollow {spell:235450}
+        {time:215}Random Text- Markoleptic-Bleeding Hollow {spell:235450}
+        {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}
         ]]
 
 		function tests.TestDashParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = SplitStringIntoTable(text)
 			local actualAssignmentCount, expectedAssignmentCount = 0, 17
+
 			for _, entry in ipairs(textTable) do
 				ParseNote(plan, { entry })
 				for _, assignment in ipairs(plan.assignments) do
 					TestEqual(assignment.assigneeNameOrRole, "Markoleptic", entry)
-					TestEqual(assignment.spellInfo.spellID, 235450, entry)
-					TestEqual(assignment.text, "Yo", entry)
 					actualAssignmentCount = actualAssignmentCount + 1
 				end
 			end
 			TestEqual(actualAssignmentCount, expectedAssignmentCount, "Expected Assignment Count")
-			return plan
+
+			return "TestDashParsing"
 		end
 	end
 
 	do
 		local text = [[
-        {time:1} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:0:05} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:01:10} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:15,SCS:450483:1} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:0:25,SCC:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:0:35,SAA:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
-        {time:45,SAR:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:5} Markoleptic {spell:235450}
+        {time:10} Markoleptic {spell:}
+        {time:15} Markoleptic {spell:a}
+        ]]
+
+		function tests.TestSpellParsing()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			ParseNote(plan, textTable)
+
+			TestEqual(plan.assignments[1].spellInfo.spellID, 235450, textTable[1])
+			TestEqual(plan.assignments[2].spellInfo.spellID, 0, textTable[2])
+			TestEqual(plan.assignments[3].spellInfo.spellID, 0, textTable[3])
+
+			return "TestSpellParsing"
+		end
+	end
+
+	do
+		local text = [[
+        {time:5} Markoleptic {text}Yo{/text}
+        {time:10} Markoleptic {text} Y o {/text}
+        {time:15} Markoleptic {text}|cff3ec6ea Yo |r{/text}
+        {time:20} Markoleptic {text}Use Healthstone {6262}{/text}
+        {time:25} Markoleptic {spell:235450}{text}Use Healthstone {6262}{/text}
+        {time:30} Markoleptic {text}Use Healthstone {6262}{/text}{spell:235450}
+        ]]
+
+		function tests.TestTextParsing()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			ParseNote(plan, textTable)
+
+			TestEqual(plan.assignments[1].text, "Yo", textTable[1])
+			TestEqual(plan.assignments[2].text, "Y o", textTable[2])
+			TestEqual(plan.assignments[3].text, "|cff3ec6ea Yo |r", textTable[3])
+			TestEqual(plan.assignments[4].text, "Use Healthstone {6262}", textTable[4])
+
+			TestEqual(plan.assignments[5].text, "Use Healthstone {6262}", textTable[5])
+			TestEqual(plan.assignments[5].spellInfo.spellID, 235450, textTable[5])
+
+			TestEqual(plan.assignments[6].text, "Use Healthstone {6262}", textTable[6])
+			TestEqual(plan.assignments[6].spellInfo.spellID, 235450, textTable[6])
+
+			return "TestTextParsing"
+		end
+	end
+
+	do
+		local text = [[
+        {time:1} Markoleptic {spell:235450}
+        {time:0:05} Markoleptic {spell:235450}
+        {time:01:10} Markoleptic {spell:235450}
+        {time:15,SCS:450483:1} Markoleptic {spell:235450}
+        {time:0:25,SCC:450483:2} Markoleptic {spell:235450}
+        {time:0:35,SAA:450483:2} Markoleptic {spell:235450}
+        {time:45,SAR:450483:2} Markoleptic {spell:235450}
         ]]
 
 		function tests.TestTimeParsing()
 			local plan = Plan:New({}, "Test")
 			ParseNote(plan, SplitStringIntoTable(text))
+
 			local valuesTable = CreateValuesTable({ 1, 5, 70, 15, 25, 35, 45 })
 			TestContains(plan.assignments, "time", valuesTable)
+
+			return "TestTimeParsing"
+		end
+	end
+
+	do
+		local text = [[
+        {time:5} Markoleptic @Markoleptic {spell:235450}
+        {time:10} Markoleptic@Markoleptic {spell:235450}
+        {time:15} Markoleptic@ Markoleptic {spell:235450}
+        ]]
+
+		function tests.TestTargetParsing()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			local actualAssignmentCount, expectedAssignmentCount = 0, 3
+
+			for _, entry in ipairs(textTable) do
+				ParseNote(plan, { entry })
+				for _, assignment in ipairs(plan.assignments) do
+					TestEqual(assignment.assigneeNameOrRole, "Markoleptic", entry)
+					TestEqual(assignment.targetName, "Markoleptic", entry)
+					actualAssignmentCount = actualAssignmentCount + 1
+				end
+			end
+			TestEqual(actualAssignmentCount, expectedAssignmentCount, "Expected Assignment Count")
+
+			return "TestTargetParsing"
+		end
+	end
+
+	do
+		local text = [[
+        {time:5} Markoleptic {spell:235450}
+        {time:10} class:Mage {spell:235450}
+        {time:15} role:damager {spell:235450}
+        {time:20} role:healer {spell:235450}
+        {time:25} role:tank {spell:235450}
+        {time:30} group:1 {spell:235450}
+        {time:35} group:2 {spell:235450}
+        {time:40} group:3 {spell:235450}
+        {time:45} group:4 {spell:235450}
+        {time:55} spec:62 {spell:235450}
+        {time:50} spec:fire {spell:235450}
+        {time:60} type:ranged {spell:235450}
+        {time:65} type:melee {spell:235450}
+        ]]
+
+		function tests.TestAssignmentUnits()
+			local plan = Plan:New({}, "Test")
+			ParseNote(plan, SplitStringIntoTable(text))
+			local valuesTable = CreateValuesTable({
+				"Markoleptic",
+				"class:Mage",
+				"role:damager",
+				"role:damager",
+				"role:healer",
+				"role:tank",
+				"group:1",
+				"group:2",
+				"group:3",
+				"group:4",
+				"spec:62",
+				"spec:63",
+				"type:ranged",
+				"type:melee",
+			})
+			TestContains(plan.assignments, "assigneeNameOrRole", valuesTable)
+
+			return "TestAssignmentUnits"
+		end
+	end
+
+	do
+		local text = [[
+        {time:5} Markoleptic, Idk, Dk {spell:235450}
+        {time:10} Markoleptic, class:Mage,role:damager {spell:235450}
+        {time:15} Markoleptic, group:1,spec:62, type:ranged {spell:235450}
+        {time:20} Markoleptic@Idk, Idk@Markoleptic {spell:235450}
+        {time:25} Markoleptic @Idk, Idk@ Markoleptic {spell:235450}
+        ]]
+
+		function tests.TestMultiValuedAssignmentUnits()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			ParseNote(plan, textTable)
+
+			TestEqual(plan.assignments[1].assigneeNameOrRole, "Markoleptic", textTable[1])
+			TestEqual(plan.assignments[2].assigneeNameOrRole, "Idk", textTable[1])
+			TestEqual(plan.assignments[3].assigneeNameOrRole, "Dk", textTable[1])
+
+			TestEqual(plan.assignments[4].assigneeNameOrRole, "Markoleptic", textTable[3])
+			TestEqual(plan.assignments[5].assigneeNameOrRole, "class:Mage", textTable[3])
+			TestEqual(plan.assignments[6].assigneeNameOrRole, "role:damager", textTable[3])
+
+			TestEqual(plan.assignments[7].assigneeNameOrRole, "Markoleptic", textTable[3])
+			TestEqual(plan.assignments[8].assigneeNameOrRole, "group:1", textTable[3])
+			TestEqual(plan.assignments[9].assigneeNameOrRole, "spec:62", textTable[3])
+			TestEqual(plan.assignments[10].assigneeNameOrRole, "type:ranged", textTable[3])
+
+			TestEqual(plan.assignments[11].assigneeNameOrRole, "Markoleptic", textTable[4])
+			TestEqual(plan.assignments[11].targetName, "Idk", textTable[4])
+			TestEqual(plan.assignments[12].assigneeNameOrRole, "Idk", textTable[4])
+			TestEqual(plan.assignments[12].targetName, "Markoleptic", textTable[4])
+
+			TestEqual(plan.assignments[13].assigneeNameOrRole, "Markoleptic", textTable[5])
+			TestEqual(plan.assignments[13].targetName, "Idk", textTable[5])
+			TestEqual(plan.assignments[14].assigneeNameOrRole, "Idk", textTable[5])
+			TestEqual(plan.assignments[14].targetName, "Markoleptic", textTable[5])
+
+			return "TestMultiValuedAssignmentUnits"
+		end
+	end
+
+	do
+		local text = [[
+        {time:5,SCC:435136:1} Markoleptic {spell:235450}
+        {time:10,SCC:435136:1} Markoleptic {spell:235450}
+        {time:15,SCC:435136:1} Markoleptic {spell:235450}
+        {time:20,SCC:444497:1} Markoleptic,group:1,spec:62,type:ranged {spell:235450}
+        ]]
+
+		function tests.TestBossParsing()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			local bossDungeonEncounterID = ParseNote(plan, textTable)
+
+			TestEqual(bossDungeonEncounterID, 2917, "Correct boss dungeon encounter ID")
+			for i = 1, 3 do
+				---@diagnostic disable-next-line: undefined-field
+				TestEqual(plan.assignments[i].combatLogEventType, nil, "Combat log event type removed")
+				---@diagnostic disable-next-line: undefined-field
+				TestEqual(plan.assignments[i].combatLogEventSpellID, nil, "Combat log event spell ID removed")
+				---@diagnostic disable-next-line: undefined-field
+				TestEqual(plan.assignments[i].spellCount, nil, "Spell count removed")
+				---@diagnostic disable-next-line: undefined-field
+				TestEqual(plan.assignments[i].phase, nil, "Phase removed")
+				---@diagnostic disable-next-line: undefined-field
+				TestEqual(plan.assignments[i].bossPhaseOrderIndex, nil, "Boss phase order index removed")
+				TestEqual(getmetatable(plan.assignments[i]), TimedAssignment, "Correct meta table")
+			end
+
+			return "TestBossParsing"
 		end
 	end
 end

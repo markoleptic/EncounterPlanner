@@ -21,8 +21,7 @@ local type = type
 function TestRunner.RunTests()
 	for _, test in pairs(tests) do
 		if type(test) == "function" then
-			testUtilities.SetCurrentTest(test)
-			test()
+			testUtilities.SetCurrentTest(test())
 			testUtilities.ResetCurrent()
 		end
 	end
