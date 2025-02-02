@@ -179,7 +179,7 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 
 			self.lineEdit = AceGUI:Create("EPLineEdit")
 			self.lineEdit:SetText(lineEditText)
-			self.lineEdit:SetMaxLetters(24)
+			self.lineEdit:SetMaxLetters(36)
 			self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 				self:Fire("ValidatePlanName", value)
 			end)

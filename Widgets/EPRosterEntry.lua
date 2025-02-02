@@ -31,7 +31,7 @@ local function OnAcquire(self)
 
 	self.nameLineEdit = AceGUI:Create("EPLineEdit")
 	self.nameLineEdit:SetHeight(widgetHeight)
-	self.nameLineEdit:SetMaxLetters(12)
+	self.nameLineEdit:SetMaxLetters(36)
 	self.nameLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 		self:Fire("NameChanged", value)
 	end)
