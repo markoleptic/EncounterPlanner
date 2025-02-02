@@ -198,12 +198,14 @@ do
 		end
 
 		local key = abilityEntry:GetKey()
+		local removed = 0
 		if key then
 			local assignments = GetCurrentAssignments()
 			if type(key) == "string" then
 				for i = #assignments, 1, -1 do
 					if assignments[i].assigneeNameOrRole == key then
 						tremove(assignments, i)
+						removed = removed + 1
 					end
 				end
 			elseif type(key) == "table" then
@@ -215,6 +217,7 @@ do
 						and assignments[i].spellInfo.spellID == spellID
 					then
 						tremove(assignments, i)
+						removed = removed + 1
 					end
 				end
 			end
@@ -222,6 +225,7 @@ do
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
+			InterfaceUpdater.LogMessage("Removed " .. removed .. " assignments.")
 		end
 	end
 
