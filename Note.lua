@@ -616,3 +616,72 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	end
 	return bossDungeonEncounterID
 end
+
+do
+	---@class Tests
+	local tests = Private.tests
+	---@class TestUtilities
+	local testUtilities = Private.testUtilities
+
+	local CreateValuesTable = testUtilities.CreateValuesTable
+	local TestContains = testUtilities.TestContains
+	local TestEqual = testUtilities.TestEqual
+
+	do
+		local text = [[
+        {time:75}Markoleptic {spell:235450}{text}Yo{/text}
+        {time:85}-Markoleptic {spell:235450}{text}Yo{/text}
+        {time:95} -Markoleptic {spell:235450}{text}Yo{/text}
+        {time:105}- Markoleptic {spell:235450}{text}Yo{/text}
+        {time:115} - Markoleptic {spell:235450}{text}Yo{/text}
+        {time:125}Random Text-Markoleptic {spell:235450}{text}Yo{/text}
+        {time:135}Random Text -Markoleptic {spell:235450}{text}Yo{/text}
+        {time:145}Random Text- Markoleptic {spell:235450}{text}Yo{/text}
+        {time:145}Random Text - Markoleptic {spell:235450}{text}Yo{/text}
+        {time:155}-Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:165} -Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:175}- Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:185} - Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:195}Random Text-Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:205}Random Text -Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:215}Random Text- Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}{text}Yo{/text}
+        ]]
+
+		function tests.TestDashParsing()
+			local plan = Plan:New({}, "Test")
+			local textTable = SplitStringIntoTable(text)
+			local actualAssignmentCount, expectedAssignmentCount = 0, 17
+			for _, entry in ipairs(textTable) do
+				ParseNote(plan, { entry })
+				for _, assignment in ipairs(plan.assignments) do
+					TestEqual(assignment.assigneeNameOrRole, "Markoleptic", entry)
+					TestEqual(assignment.spellInfo.spellID, 235450, entry)
+					TestEqual(assignment.text, "Yo", entry)
+					actualAssignmentCount = actualAssignmentCount + 1
+				end
+			end
+			TestEqual(actualAssignmentCount, expectedAssignmentCount, "Expected Assignment Count")
+			return plan
+		end
+	end
+
+	do
+		local text = [[
+        {time:1} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:0:05} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:01:10} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:15,SCS:450483:1} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:0:25,SCC:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:0:35,SAA:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
+        {time:45,SAR:450483:2} Markoleptic {spell:235450}{text}Yo{/text}
+        ]]
+
+		function tests.TestTimeParsing()
+			local plan = Plan:New({}, "Test")
+			ParseNote(plan, SplitStringIntoTable(text))
+			local valuesTable = CreateValuesTable({ 1, 5, 70, 15, 25, 35, 45 })
+			TestContains(plan.assignments, "time", valuesTable)
+		end
+	end
+end

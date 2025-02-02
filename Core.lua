@@ -198,6 +198,8 @@ function AddOn:SlashCommand(input)
 					timeline:UpdateTimeline()
 				end
 			end
+		elseif trimmed == "runtests" then
+			Private.testRunner.RunTests()
 		end
 	end
 end

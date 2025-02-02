@@ -14,6 +14,7 @@ Locales\Locales.xml
 Constants.lua
 Spells.lua
 Init.lua
+Tests\TestUtilities.lua
 Libs\Cbor.lua
 Widgets\Widgets.xml
 NerubarPalace.lua
@@ -26,3 +27,4 @@ Communications.lua
 Options.lua
 Interface.lua
 Core.lua
+Tests\TestRunner.lua

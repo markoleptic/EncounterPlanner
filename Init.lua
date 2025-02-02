@@ -826,6 +826,8 @@ Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 
+Private.tests = {}
+
 LSM:Register(
 	"font",
 	"PT Sans Narrow",

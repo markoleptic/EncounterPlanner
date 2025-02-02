@@ -32,7 +32,8 @@ The **Time** section determines what triggers an assignment and specifies one of
 -   A time relative to the start of the encounter
 -   A time relative to a combat log event
 
-**Note**: Phase based assignments are not currently supported. However, combat log event assignments can accomplish the same thing.
+> [!NOTE]
+> Phase based assignments are not currently supported. However, combat log event assignments can accomplish the same thing.
 
 **Time Relative to the Start of the Encounter**
 
