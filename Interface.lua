@@ -103,7 +103,7 @@ local planMenuItems = {
 		dropdownItemMenuData = {
 			{
 				itemValue = "FromMRT",
-				text = L["From"] .. "MRT",
+				text = L["From"] .. " " .. "MRT",
 			},
 			{
 				itemValue = "FromString",
