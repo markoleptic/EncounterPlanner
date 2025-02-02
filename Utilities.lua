@@ -1280,12 +1280,12 @@ function Utilities.IsValidAssigneeNameOrRole(assigneeNameOrRole)
 			end
 		else
 			assigneeNameOrRole = assigneeNameOrRole:gsub("%s", "")
-			local characterMatch, realmMatch = assigneeNameOrRole:match("^(%a+)(%-(%a[%a%s%d']+))$")
+			local characterMatch, realmMatch = assigneeNameOrRole:match("^(%S+)%s*%-%s*(%S.+)$")
 			if characterMatch and realmMatch then
 				characterMatch = characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
-				return characterMatch .. "-" .. realmMatch:gsub("%s", "")
+				return Ambiguate(characterMatch .. "-" .. realmMatch:gsub("%s", ""), "all")
 			else
-				characterMatch = assigneeNameOrRole:match("^(%a+)$")
+				characterMatch = assigneeNameOrRole:match("^(%S+)$")
 				if characterMatch then
 					return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
 				end
