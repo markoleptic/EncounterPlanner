@@ -87,6 +87,9 @@
 ---@alias EPScrollFrameType
 ---|"EPScrollFrame"
 
+---@alias EPStatusBarType
+---|"EPStatusBar"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -110,6 +113,7 @@
 ---| EPPhaseLengthEditor
 ---| EPNewPlanDialog
 ---| EPScrollFrame
+---| EPStatusBar
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -237,6 +241,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPScrollFrameType
 ---@return EPScrollFrame
+function AceGUI:Create(type) end
+
+---@param type EPStatusBarType
+---@return EPStatusBar
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

@@ -20,6 +20,7 @@
 	<Script file="EPDropdown.lua"/>
 	<Script file="EPAbilityEntry.lua"/>
     <Script file="EPCheckBox.lua"/>
+    <Script file="EPStatusBar.lua"/>
     <Script file="EPNewPlanDialog.lua"/>
     <Script file="EPPhaseLengthEditor.lua"/>
 	<Script file="EPAssignmentEditor.lua"/>
