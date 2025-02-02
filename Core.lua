@@ -18,6 +18,7 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 local bossUtilities = Private.bossUtilities
 local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
+local GetBoss = bossUtilities.GetBoss
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 ---@class InterfaceUpdater
@@ -58,6 +59,9 @@ local function UpdateProfile(profile)
 			SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 
 			plan = Plan:New(plan, plan.name, plan.ID)
+			if not GetBoss(plan.dungeonEncounterID) then
+				ChangePlanBoss(2902, plan)
+			end
 			local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(plan.dungeonEncounterID)
 			local orderedBossPhaseTable = GetOrderedBossPhases(plan.dungeonEncounterID)
 
