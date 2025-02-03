@@ -31,6 +31,7 @@ local interfaceUpdater = Private.interfaceUpdater
 local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
 local CreateMessageBox = interfaceUpdater.CreateMessageBox
 local FindMatchingPlan = interfaceUpdater.FindMatchingPlan
+local LogMessage = interfaceUpdater.LogMessage
 local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
@@ -199,6 +200,39 @@ local function DeserializePlan(serializedPlan)
 	return plan
 end
 
+---@param inString string
+---@param forChat boolean
+---@param level integer|nil
+---@return string
+local function CompressString(inString, forChat, level)
+	local compressed = LibDeflate:CompressZlib(inString, configForDeflate[level] or nil)
+	if forChat then
+		return LibDeflate:EncodeForPrint(compressed)
+	else
+		return LibDeflate:EncodeForWoWAddonChannel(compressed)
+	end
+end
+
+---@param inString string
+---@return string
+local function DecompressString(inString, fromChat)
+	local decoded
+	if fromChat then
+		decoded = LibDeflate:DecodeForPrint(inString)
+	else
+		decoded = LibDeflate:DecodeForWoWAddonChannel(inString)
+	end
+	if not decoded then
+		return L["Error decoding"]
+	end
+
+	local decompressed = LibDeflate:DecompressZlib(decoded)
+	if not decompressed then
+		return L["Error decompressing"]
+	end
+	return decompressed
+end
+
 ---@param inTable table
 ---@param forChat boolean
 ---@param level integer|nil
@@ -240,7 +274,8 @@ local function StringToTable(inString, fromChat)
 end
 
 ---@param plan Plan
-local function ImportPlan(plan)
+---@param fullName string
+local function ImportPlan(plan, fullName)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local existingPlanName, existingPlan = FindMatchingPlan(plan.ID)
 
@@ -261,6 +296,8 @@ local function ImportPlan(plan)
 		plans[plan.name] = plan
 	end
 
+	LogMessage(format("%s '%s' %s %s", L["Received plan"], plan.name, L["from"], fullName))
+
 	if Private.mainFrame then
 		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
 			RemovePlanFromDropdown(existingPlanName)
@@ -277,77 +314,113 @@ local function ImportPlan(plan)
 	end
 end
 
----@param prefix string
----@param message string
----@param distribution string
----@param sender string
-function AddOn:OnCommReceived(prefix, message, distribution, sender)
-	local name, realm = UnitFullName(sender)
-	if not name then
-		return
-	end
-	if not realm or string.len(realm) < 3 then
-		local _, r = UnitFullName("player")
-		realm = r
-	end
-	local fullName = name .. "-" .. realm
-	if prefix == "EPDistributePlan" then
-		local package = StringToTable(message, false)
-		if type(package == "table") then
-			local plan = DeserializePlan(package --[[@as table]])
-			local foundTrustedCharacter = false
-			for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
-				if fullName == trustedCharacter then
-					foundTrustedCharacter = true
-					break
+do
+	local activePlanBeingSent = nil
+	local activePlanTimer = nil
+	local totalReceivedConfirmations = 0
+
+	---@param prefix string
+	---@param message string
+	---@param distribution string
+	---@param sender string
+	function AddOn:OnCommReceived(prefix, message, distribution, sender)
+		local name, realm = UnitFullName(sender)
+		if not name then
+			return
+		end
+		if not realm or string.len(realm) < 3 then
+			local _, r = UnitFullName("player")
+			realm = r
+		end
+		local fullName = name .. "-" .. realm
+		if prefix == "EPDistributePlan" then
+			local package = StringToTable(message, false)
+			if type(package == "table") then
+				local plan = DeserializePlan(package --[[@as table]])
+				local inGroup = (IsInRaid() and "RAID") or (IsInGroup() and "PARTY")
+				if inGroup then
+					local returnMessage = CompressString(format("%s,%s", plan.ID, fullName), false)
+					AddOn:SendCommMessage("EPPlanReceived", returnMessage, inGroup, nil, "NORMAL")
+				end
+				local foundTrustedCharacter = false
+				for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
+					if fullName == trustedCharacter then
+						foundTrustedCharacter = true
+						break
+					end
+				end
+				if foundTrustedCharacter then
+					ImportPlan(plan, fullName)
+				else
+					local messageContent = format(
+						'%s %s "%s". %s',
+						fullName,
+						L["has sent you the plan"],
+						plan.name,
+						L["Do you wish to accept the plan? Trusting this character will suppress this warning in the future."]
+					)
+					local messageBox = CreateMessageBox(L["Plan Received"], messageContent)
+					if messageBox then
+						messageBox:SetAcceptButtonText(L["Accept and Trust"])
+						messageBox:SetRejectButtonText(L["Reject"])
+						local rejectButton = messageBox.buttonContainer.children[2]
+						messageBox:AddButton(L["Accept without Trusting"], rejectButton)
+						messageBox:SetCallback(L["Accept without Trusting"] .. "Clicked", function()
+							ImportPlan(plan, fullName)
+						end)
+						messageBox:SetCallback("Accepted", function()
+							local trustedCharacters = AddOn.db.profile.trustedCharacters
+							trustedCharacters[#trustedCharacters + 1] = fullName
+							ImportPlan(plan, fullName)
+						end)
+					end
 				end
 			end
-			if foundTrustedCharacter then
-				ImportPlan(plan)
-			else
-				local messageContent = format(
-					'%s %s "%s". %s',
-					fullName,
-					L["has sent you the plan"],
-					plan.name,
-					L["Do you wish to accept the plan? Trusting this character will suppress this warning in the future."]
-				)
-				local messageBox = CreateMessageBox(L["Plan Received"], messageContent)
-				if messageBox then
-					messageBox:SetAcceptButtonText(L["Accept and Trust"])
-					messageBox:SetRejectButtonText(L["Reject"])
-					local rejectButton = messageBox.buttonContainer.children[2]
-					messageBox:AddButton(L["Accept without Trusting"], rejectButton)
-					messageBox:SetCallback(L["Accept without Trusting"] .. "Clicked", function()
-						ImportPlan(plan)
-					end)
-					messageBox:SetCallback("Accepted", function()
-						local trustedCharacters = AddOn.db.profile.trustedCharacters
-						trustedCharacters[#trustedCharacters + 1] = fullName
-						ImportPlan(plan)
-					end)
+		elseif prefix == "EPPlanReceived" and activePlanBeingSent then
+			local package = DecompressString(message, false)
+			local messageTable = strsplittable(",", package)
+			if messageTable[1] and messageTable[2] then
+				if messageTable[1] == activePlanBeingSent then
+					totalReceivedConfirmations = totalReceivedConfirmations + 1
 				end
 			end
 		end
+	end
+
+	local function CallbackProgress(_, sent, total)
+		local progress = sent / total
+		if progress >= 1.0 then
+			LogMessage(L["Plan sent"] .. ".")
+			activePlanTimer = C_Timer.NewTimer(5, function()
+				LogMessage(format("%s %d %s.", L["Plan received by"], totalReceivedConfirmations, L["players"]))
+				totalReceivedConfirmations = 0
+				activePlanTimer = nil
+				activePlanBeingSent = nil
+			end)
+		end
+	end
+
+	---@param plan Plan
+	function Private:SendPlanToGroup(plan)
+		local inGroup = (IsInRaid() and "RAID") or (IsInGroup() and "PARTY")
+		if not inGroup then
+			return
+		end
+		if activePlanBeingSent then
+			return
+		end
+
+		activePlanBeingSent = plan.ID
+		local export = TableToString(SerializePlan(plan), false)
+		LogMessage(L["Sending plan"] .. "...")
+		AddOn:SendCommMessage("EPDistributePlan", export, inGroup, nil, "BULK", CallbackProgress)
 	end
 end
 
 function Private:RegisterCommunications()
 	AddOn:RegisterComm(AddOnName)
 	AddOn:RegisterComm("EPDistributePlan")
-end
-
----@param plan Plan
-function Private:SendPlanToGroup(plan)
-	local inGroup = (IsInRaid() and "RAID") or (IsInGroup() and "PARTY")
-	if not inGroup then
-		return
-	end
-	local export = TableToString(SerializePlan(plan), false)
-	local function callback(callbackArg, sent, total)
-		--print(sent, total)
-	end
-	AddOn:SendCommMessage("EPDistributePlan", export, inGroup, nil, "BULK", callback)
+	AddOn:RegisterComm("EPPlanReceived")
 end
 
 do
