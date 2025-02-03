@@ -100,7 +100,12 @@ local function CreateAssignmentsFromLine(line, failed)
 		local spellInfo =
 			{ name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 }
 		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(left, id, right)
-			spellInfo = GetSpellInfo(id)
+			if id and id ~= "" then
+				local newSpellInfo = GetSpellInfo(id)
+				if newSpellInfo then
+					spellInfo = newSpellInfo
+				end
+			end
 			return left .. right
 		end)
 		local text = str:match(textRegex)
@@ -363,7 +368,7 @@ end
 ---@param plan Plan Plan to repopulate
 ---@param text table<integer, string> content
 ---@return integer|nil
-local function ParseNote(plan, text)
+function Private.ParseNote(plan, text)
 	wipe(plan.assignments)
 	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, integer>, string: string}>
 	local lowerPriorityEncounterIDs = {} ---@type table<integer, integer>
@@ -440,7 +445,7 @@ local function ParseNote(plan, text)
 
 	return determinedBossDungeonEncounterID
 end
-
+local ParseNote = Private.ParseNote
 do
 	---@param assignment CombatLogEventAssignment|TimedAssignment
 	---@return string

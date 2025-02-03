@@ -5,8 +5,12 @@ local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
 local Encode = Private.Encode
+---@class Assignment
+local Assignment = Private.classes.Assignment
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+---@class Constants
+local constants = Private.constants
 ---@class TimedAssignment
 local TimedAssignment = Private.classes.TimedAssignment
 ---@class Plan
@@ -79,7 +83,11 @@ local configForDeflate = {
 ---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
 ---@return SerializedAssignment
 local function SerializeAssignment(assignment)
-	local required = { assignment.assignee, assignment.spellInfo.spellID, assignment.text, assignment.targetName }
+	local required = {}
+	required[1] = assignment.assignee
+	required[2] = assignment.spellInfo.spellID
+	required[3] = assignment.text
+	required[4] = assignment.targetName
 	if assignment.time then
 		required[5] = assignment.time
 	end
@@ -96,24 +104,33 @@ end
 ---@param data SerializedAssignment
 ---@return CombatLogEventAssignment|TimedAssignment
 local function DeserializeAssignment(data)
-	local assignment = {
-		assignee = data[1],
-		spellInfo = GetSpellInfo(data[2])
-			or { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
-		text = data[3],
-		targetName = data[4],
-		time = data[5],
-	}
+	local assignment = Assignment:New({})
+	assignment.assignee = data[1]
+	assignment.spellInfo.spellID = data[2]
+	assignment.text = data[3]
+	assignment.targetName = data[4]
+
+	if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
+		local spellInfo = GetSpellInfo(assignment.spellInfo.spellID)
+		if spellInfo then
+			assignment.spellInfo = spellInfo
+		end
+	end
+
 	if data[10] then
+		assignment = CombatLogEventAssignment:New(assignment)
+		assignment.time = data[5]
 		assignment.combatLogEventType = data[6]
 		assignment.combatLogEventSpellID = data[7]
 		assignment.spellCount = data[8]
 		assignment.phase = data[9]
 		assignment.bossPhaseOrderIndex = data[10]
-		return CombatLogEventAssignment:New(assignment)
 	else
-		return TimedAssignment:New(assignment)
+		assignment = TimedAssignment:New(assignment)
+		assignment.time = data[5]
 	end
+
+	return assignment
 end
 
 ---@param name string
@@ -331,4 +348,85 @@ function Private:SendPlanToGroup(plan)
 		--print(sent, total)
 	end
 	AddOn:SendCommMessage("EPDistributePlan", export, inGroup, nil, "BULK", callback)
+end
+
+do
+	---@class Tests
+	local tests = Private.tests
+	---@class TestUtilities
+	local testUtilities = Private.testUtilities
+
+	local ChangePlanBoss = bossUtilities.ChangePlanBoss
+	local RemoveTabs = testUtilities.RemoveTabs
+	local SplitStringIntoTable = utilities.SplitStringIntoTable
+	local TestEqual = testUtilities.TestEqual
+	local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
+
+	do
+		local text = [[
+            {time:0:16,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
+            {time:0:23,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r -  {spell:421453}  Brockx {spell:97462}  Majablast {spell:108281}
+            {time:0:29,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Sephx {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:0:46,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Poglizard {spell:359816}
+            {time:0:59,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:06,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374968}  Draugmentor {spell:374227}  Gun {spell:77764}  Vodkabro {spell:192077}
+            {time:1:13,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r -  {spell:451234}  Stranko {spell:97462}
+            {time:1:26,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}
+            {time:1:29,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:56,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:374968}  Skorke {spell:77764}
+            {time:1:59,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:2:06,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Poglizard {spell:363534}
+            {time:2:30,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:2:30,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - class:Mage {spell:414660}
+            {time:2:46,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r - Poglizard {spell:359816}
+            {time:2:52,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r -  {spell:246287}
+            {time:2:57,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - Vodkabro {spell:114049}
+            {time:3:02,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - Vodkabro {spell:108280}
+            {time:0:16,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
+            {time:0:23,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r - Majablast {spell:108281}
+            {time:0:26,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:421453}
+            {time:0:29,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:0:59,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:06,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}
+            {time:1:06,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374227}  Draugmentor {spell:374968}  Gun {spell:77764}  Vodkabro {spell:192077}
+            {time:1:13,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r - Brockx {spell:97462}  Vodkabro {spell:98008}
+            {time:1:29,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:56,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:374968}  Skorke {spell:77764}
+            {time:2:00,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:2:03,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:451234}  Stranko {spell:97462}
+            {time:2:30,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:2:46,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r - Poglizard {spell:359816}
+            {time:2:52,SCS:442432:2}{spell:442432}|cff8B4513Ingest Black Blood|r -  {spell:246287}  Vodkabro {spell:108280}  class:Mage {spell:414660}
+            {time:3:02,SCS:442432:2}{spell:442432}|cff8B4513Ingest Black Blood|r - Poglizard {spell:363534}  Vodkabro {spell:114049}
+            {time:0:16,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
+            {time:0:23,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:421453}  {everyone} {text}{Personals{/text}
+            {time:0:29,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:0:59,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}
+            {time:1:06,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Draugmentor {spell:374227}
+            {time:1:06,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374968}  Gun {spell:77764}  Vodkabro {spell:192077}  {everyone} {text}Spread for Webs{/text}
+            {time:1:09,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:56,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:1:56,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:359816}  Poglizard {spell:374968}  Skorke {spell:77764}
+            {time:1:57,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:451234}  Brockx {spell:97462}
+            {time:2:26,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+            {time:2:27,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r - Stranko {spell:97462}
+            {time:2:56,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
+        ]]
+
+		function tests.TestEncodeDecodePlan()
+			local plan = Plan:New({}, "Test")
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
+			local bossDungeonEncounterID = Private.ParseNote(plan, textTable) --[[@as integer]]
+			plan.dungeonEncounterID = bossDungeonEncounterID
+			ChangePlanBoss(plan.dungeonEncounterID, plan)
+			UpdateRosterFromAssignments(plan.assignments, plan.roster)
+
+			local export = TableToString(SerializePlan(plan), false)
+			local package = StringToTable(export, false)
+			local deserializedPlan = DeserializePlan(package --[[@as table]])
+			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
+
+			return "TestEncodeDecodePlan"
+		end
+	end
 end
