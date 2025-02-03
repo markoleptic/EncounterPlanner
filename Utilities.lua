@@ -36,9 +36,6 @@ local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 local Ambiguate = Ambiguate
 local ceil = math.ceil
-local EJ_GetCreatureInfo = EJ_GetCreatureInfo
-local EJ_SelectEncounter, EJ_GetEncounterInfo = EJ_SelectEncounter, EJ_GetEncounterInfo
-local EJ_SelectInstance, EJ_GetInstanceInfo = EJ_SelectInstance, EJ_GetInstanceInfo
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
@@ -922,6 +919,32 @@ do
 	end
 end
 
+do
+	local bossDropdownItems = nil
+
+	-- Creates dropdown item data for instances and bosses
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateBossDropdownItems()
+		if not bossDropdownItems then
+			bossDropdownItems = {}
+			for _, raidInstance in pairs(Private.raidInstances) do
+				local instanceIconText = format("|T%s:16|t %s", raidInstance.icon, raidInstance.name)
+				local instanceDropdownData =
+					{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				for _, boss in ipairs(raidInstance.bosses) do
+					local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
+					tinsert(
+						instanceDropdownData.dropdownItemMenuData,
+						{ itemValue = boss.dungeonEncounterID, text = iconText }
+					)
+				end
+				tinsert(bossDropdownItems, instanceDropdownData)
+			end
+		end
+		return bossDropdownItems
+	end
+end
+
 ---@param roster table<string, RosterEntry>
 ---@return table<integer, DropdownItemData>
 function Utilities.CreateAssigneeDropdownItems(roster)
@@ -961,30 +984,6 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
 	end
 	return assignmentTypes
-end
-
--- Initializes names and icons for raid instances and bosses and creates dropdown item data.
----@return table<integer, DropdownItemData>
-function Utilities.InitializeRaidInstances()
-	local bossDropdownData = {}
-	for _, raidInstance in pairs(Private.raidInstances) do
-		EJ_SelectInstance(raidInstance.journalInstanceID)
-		local instanceName, _, _, _, _, buttonImage2, _, _, _, _ = EJ_GetInstanceInfo(raidInstance.journalInstanceID)
-		raidInstance.name, raidInstance.icon = instanceName, buttonImage2
-		local instanceIconText = format("|T%s:16|t %s", buttonImage2, instanceName)
-		local instanceDropdownData =
-			{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-		for _, boss in ipairs(raidInstance.bosses) do
-			EJ_SelectEncounter(boss.journalEncounterID)
-			local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
-			local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
-			boss.name, boss.icon = encounterName, iconImage
-			local iconText = format("|T%s:16|t %s", iconImage, encounterName)
-			tinsert(instanceDropdownData.dropdownItemMenuData, { itemValue = boss.dungeonEncounterID, text = iconText })
-		end
-		tinsert(bossDropdownData, instanceDropdownData)
-	end
-	return bossDropdownData
 end
 
 do

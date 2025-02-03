@@ -56,12 +56,6 @@ end
 local function UpdateProfile(profile)
 	if profile then
 		for _, plan in pairs(profile.plans) do
-			for _, assignment in ipairs(plan.assignments) do
-				if assignment.assigneeNameOrRole then
-					assignment.assignee = assignment.assigneeNameOrRole
-					assignment.assigneeNameOrRole = nil
-				end
-			end
 			SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 
 			plan = Plan:New(plan, plan.name, plan.ID)
@@ -98,6 +92,31 @@ local function UpdateProfile(profile)
 	end
 end
 
+do
+	local EJ_GetCreatureInfo = EJ_GetCreatureInfo
+	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
+	local EJ_GetInstanceInfo, EJ_SelectInstance = EJ_GetInstanceInfo, EJ_SelectInstance
+
+	local initialized = false
+	-- Initializes names and icons for raid instances.
+	function InitializeRaidInstances()
+		if not initialized then
+			for _, raidInstance in pairs(Private.raidInstances) do
+				EJ_SelectInstance(raidInstance.journalInstanceID)
+				local instanceName, _, _, _, _, buttonImage2, _, _, _, _ =
+					EJ_GetInstanceInfo(raidInstance.journalInstanceID)
+				raidInstance.name, raidInstance.icon = instanceName, buttonImage2
+				for _, boss in ipairs(raidInstance.bosses) do
+					EJ_SelectEncounter(boss.journalEncounterID)
+					local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
+					local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+					boss.name, boss.icon = encounterName, iconImage
+				end
+			end
+		end
+	end
+end
+
 function AddOn:OnInitialize()
 	local loadedOrLoading, loaded = IsAddOnLoaded("WeakAuras")
 	if not loadedOrLoading and not loaded then
@@ -119,7 +138,7 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	Private:InitializeInterface()
+	InitializeRaidInstances()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", HandleGroupRosterUpdate)

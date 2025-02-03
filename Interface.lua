@@ -87,71 +87,106 @@ local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
 
-local bossDropdownItems = {}
-local planMenuItems = {
-	{
-		itemValue = "New Plan",
-		text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["New Plan"]),
-	},
-	{
-		itemValue = "Duplicate Plan",
-		text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-duplicate-32]], L["Duplicate Plan"]),
-	},
-	{
-		itemValue = "Import",
-		text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
-		dropdownItemMenuData = {
-			{
-				itemValue = "FromMRT",
-				text = L["From"] .. " " .. "MRT",
-			},
-			{
-				itemValue = "FromString",
-				text = L["From String"],
-			},
-		},
-	},
-	{
-		itemValue = "Export Current Plan",
-		text = AddIconBeforeText(
-			[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
-			L["Export Current Plan"]
-		),
-	},
-	{
-		itemValue = "Delete Current Plan",
-		text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]], L["Delete Current Plan"]),
-	},
-}
-local rosterMenuItems = {
-	{ itemValue = "Edit Current Plan Roster", text = L["Edit Current Plan Roster"] },
-	{ itemValue = "Edit Shared Roster", text = L["Edit Shared Roster"] },
-}
+do -- Plan Menu Items
+	local AddIconBeforeText = utilities.AddIconBeforeText
 
----@return table<integer, DropdownItemData>
-local function GetBossMenuButtonItems()
-	return {
-		{
-			itemValue = "Change Boss",
-			text = L["Change Boss"],
-			dropdownItemMenuData = bossDropdownItems,
-		},
-		{
-			itemValue = "Edit Phase Timings",
-			text = L["Edit Phase Timings"],
-			selectable = false,
-		},
-		{
-			itemValue = "Filter Spells",
-			text = L["Filter Spells"],
-			dropdownItemMenuData = {
+	local planMenuItems = nil
+
+	---@return table<integer, DropdownItemData>
+	function Create.PlanMenuItems()
+		if not planMenuItems then
+			planMenuItems = {
 				{
-					itemValue = "",
-					text = "",
+					itemValue = "New Plan",
+					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["New Plan"]),
 				},
-			},
-		},
-	}
+				{
+					itemValue = "Duplicate Plan",
+					text = AddIconBeforeText(
+						[[Interface\AddOns\EncounterPlanner\Media\icons8-duplicate-32]],
+						L["Duplicate Plan"]
+					),
+				},
+				{
+					itemValue = "Import",
+					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
+					dropdownItemMenuData = {
+						{
+							itemValue = "FromMRT",
+							text = L["From"] .. " " .. "MRT",
+						},
+						{
+							itemValue = "FromString",
+							text = L["From String"],
+						},
+					},
+				},
+				{
+					itemValue = "Export Current Plan",
+					text = AddIconBeforeText(
+						[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
+						L["Export Current Plan"]
+					),
+				},
+				{
+					itemValue = "Delete Current Plan",
+					text = AddIconBeforeText(
+						[[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
+						L["Delete Current Plan"]
+					),
+				},
+			}
+		end
+		return planMenuItems
+	end
+end
+
+do -- Roster Menu Items
+	local rosterMenuItems = nil
+
+	---@return table<integer, DropdownItemData>
+	function Create.RosterMenuItems()
+		if not rosterMenuItems then
+			rosterMenuItems = {
+				{ itemValue = "Edit Current Plan Roster", text = L["Edit Current Plan Roster"] },
+				{ itemValue = "Edit Shared Roster", text = L["Edit Shared Roster"] },
+			}
+		end
+		return rosterMenuItems
+	end
+end
+
+do -- Boss Menu Items
+	local bossMenuItems = nil
+
+	---@return table<integer, DropdownItemData>
+	function Create.BossMenuItems()
+		if not bossMenuItems then
+			bossMenuItems = {
+				{
+					itemValue = "Change Boss",
+					text = L["Change Boss"],
+					dropdownItemMenuData = utilities.GetOrCreateBossDropdownItems(),
+				},
+				{
+					itemValue = "Edit Phase Timings",
+					text = L["Edit Phase Timings"],
+					selectable = false,
+				},
+				{
+					itemValue = "Filter Spells",
+					text = L["Filter Spells"],
+					dropdownItemMenuData = {
+						{
+							itemValue = "",
+							text = "",
+						},
+					},
+				},
+			}
+		end
+		return bossMenuItems
+	end
 end
 
 ---@return table<string, RosterEntry>
@@ -1398,6 +1433,8 @@ do
 		end
 	end
 
+	local GetOrCreateBossDropdownItems = utilities.GetOrCreateBossDropdownItems
+
 	---@param planMenuButton EPDropdown
 	---@param value any
 	function Handle.PlanMenuButtonClicked(planMenuButton, _, value)
@@ -1405,7 +1442,7 @@ do
 			return
 		end
 		if value == "New Plan" then
-			CreateNewPlanDialog(bossDropdownItems)
+			CreateNewPlanDialog(GetOrCreateBossDropdownItems())
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
@@ -1753,17 +1790,17 @@ function Private:CreateInterface()
 	end)
 
 	local planMenuButton = Create.MenuButton(L["Plan"])
-	planMenuButton:AddItems(planMenuItems, "EPDropdownItemToggle", true)
+	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
 	local bossMenuButton = Create.MenuButton(L["Boss"])
 	bossMenuButton:SetMultiselect(true)
-	bossMenuButton:AddItems(GetBossMenuButtonItems(), "EPDropdownItemToggle")
+	bossMenuButton:AddItems(Create.BossMenuItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
 	local rosterMenuButton = Create.MenuButton(L["Roster"])
-	rosterMenuButton:AddItems(rosterMenuItems, "EPDropdownItemToggle", true)
+	rosterMenuButton:AddItems(Create.RosterMenuItems(), "EPDropdownItemToggle", true)
 	rosterMenuButton:SetCallback("OnValueChanged", HandleRosterMenuButtonClicked)
 
 	local preferencesMenuButton = AceGUI:Create("EPButton")
@@ -1922,10 +1959,6 @@ function Private:CreateInterface()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 	Private.mainFrame:DoLayout()
 	timeline:UpdateTimeline()
-end
-
-function Private:InitializeInterface()
-	bossDropdownItems = InitializeRaidInstances()
 end
 
 function Private:CloseAnchorsAndDialogs()
