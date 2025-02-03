@@ -1036,17 +1036,26 @@ do
 	---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
 	function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
 		local timelineAssignments = {}
-		local cooldownOverrides = AddOn.db.profile.cooldownOverrides
-		for _, assignment in pairs(assignments) do
-			local spellID = assignment.spellInfo.spellID
-			local overrideDuration = cooldownOverrides[spellID]
-			if overrideDuration then
-				assignment.cooldownDuration = overrideDuration
-			else
-				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
+		if AddOn.db then
+			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
+			for _, assignment in pairs(assignments) do
+				local spellID = assignment.spellInfo.spellID
+				local overrideDuration = cooldownOverrides[spellID]
+				if overrideDuration then
+					assignment.cooldownDuration = overrideDuration
+				else
+					assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
+				end
+				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
 			end
-			tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+		else
+			for _, assignment in pairs(assignments) do
+				local spellID = assignment.spellInfo.spellID
+				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
+				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+			end
 		end
+
 		local success, failTable =
 			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
 
