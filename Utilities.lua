@@ -60,7 +60,6 @@ local type = type
 local UnitClass = UnitClass
 local UnitFullName = UnitFullName
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
-local UnitName = UnitName
 
 local lineMatchRegex = "([^\r\n]+)"
 
@@ -1570,14 +1569,14 @@ end
 ---@return string?
 function Utilities.FindGroupMemberUnit(name)
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
-		if name == UnitName(unit) then
-			return unit
-		else
-			local unitName, unitRealm = UnitFullName(unit)
-			if unitName and unitRealm then
+		local unitName, unitRealm = UnitFullName(unit)
+		if unitName then
+			if unitName == name then
+				return unit
+			elseif unitRealm then
 				local unitFullName = unitName .. "-" .. unitRealm
-				if name == unitFullName then
-					return unitFullName
+				if unitFullName == name then
+					return unit
 				end
 			end
 		end
@@ -1739,7 +1738,7 @@ end
 
 ---@return integer
 local function GetGroupNumber()
-	local playerName, _ = UnitName("player")
+	local playerName, _ = UnitFullName("player")
 	local myGroup = 1
 	if IsInRaid() then
 		for i = 1, GetNumGroupMembers() do
