@@ -441,128 +441,154 @@ local function ParseNote(plan, text)
 	return determinedBossDungeonEncounterID
 end
 
----@param assignment CombatLogEventAssignment|TimedAssignment
----@return string
-local function CreateTimeAndOptionsExportString(assignment)
-	local minutes = floor(assignment.time / 60)
-	local seconds = assignment.time - (minutes * 60)
-	local timeAndOptionsString = ""
-	if assignment.combatLogEventType and assignment.combatLogEventSpellID and assignment.spellCount then
-		timeAndOptionsString = format(
-			"{time:%d:%02d,%s:%d:%d}",
-			minutes,
-			seconds,
-			assignment.combatLogEventType,
-			assignment.combatLogEventSpellID,
-			assignment.spellCount
-		)
-		-- Add spell icon and name so note is more readable
-		local spellInfo = GetSpellInfo(assignment.combatLogEventSpellID)
-		if spellInfo then
-			local spellIconAndName = format("{spell:%d}%s", assignment.combatLogEventSpellID, spellInfo.name)
-			timeAndOptionsString = timeAndOptionsString .. spellIconAndName
+do
+	---@param assignment CombatLogEventAssignment|TimedAssignment
+	---@return string
+	local function CreateTimeAndOptionsExportString(assignment)
+		local minutes = floor(assignment.time / 60)
+		local seconds = assignment.time - (minutes * 60)
+		local timeAndOptionsString = ""
+		if assignment.combatLogEventType and assignment.combatLogEventSpellID and assignment.spellCount then
+			timeAndOptionsString = format(
+				"{time:%d:%02d,%s:%d:%d}",
+				minutes,
+				seconds,
+				assignment.combatLogEventType,
+				assignment.combatLogEventSpellID,
+				assignment.spellCount
+			)
+			-- Add spell icon and name so note is more readable
+			local spellInfo = GetSpellInfo(assignment.combatLogEventSpellID)
+			if spellInfo then
+				local spellIconAndName = format("{spell:%d}%s", assignment.combatLogEventSpellID, spellInfo.name)
+				timeAndOptionsString = timeAndOptionsString .. spellIconAndName
+			end
+		else
+			timeAndOptionsString = format("{time:%d:%02d}", minutes, seconds)
 		end
-	else
-		timeAndOptionsString = format("{time:%d:%02d}", minutes, seconds)
+
+		return timeAndOptionsString
 	end
 
-	timeAndOptionsString = timeAndOptionsString .. " - "
-	return timeAndOptionsString
-end
+	---@param assignment Assignment
+	---@param roster RosterEntry
+	---@return string
+	---@return string
+	local function CreateAssignmentExportString(assignment, roster)
+		local assigneeString = assignment.assignee
+		local assignmentString = ""
 
----@param assignment Assignment
----@param roster RosterEntry
----@return string
-local function CreateAssignmentExportString(assignment, roster)
-	local assignmentString = assignment.assignee
-
-	if roster[assignment.assignee] then
-		local classColoredName = roster[assignment.assignee].classColoredName
-		if classColoredName ~= "" then
-			assignmentString = classColoredName:gsub("|", "||")
-		end
-	else
-		local specMatch = assignmentString:match("spec:%s*(%d+)")
-		local typeMatch = assignmentString:match("type:%s*(%a+)")
-		if specMatch then
-			local specIDMatch = tonumber(specMatch)
-			if specIDMatch then
-				local specName = GetLocalizedSpecNameFromSpecID(specIDMatch)
+		if roster[assignment.assignee] then
+			local classColoredName = roster[assignment.assignee].classColoredName
+			if classColoredName ~= "" then
+				assigneeString = classColoredName:gsub("|", "||")
+			end
+		else
+			local specMatch = assigneeString:match("spec:%s*(%d+)")
+			local typeMatch = assigneeString:match("type:%s*(%a+)")
+			if specMatch then
+				local specIDMatch = tonumber(specMatch)
 				if specIDMatch then
-					assignmentString = "spec:" .. specName
+					local specName = GetLocalizedSpecNameFromSpecID(specIDMatch)
+					if specIDMatch then
+						assigneeString = "spec:" .. specName
+					end
+				end
+			elseif typeMatch then
+				assigneeString = "type:" .. typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
+			end
+		end
+		if assignment.targetName ~= nil and assignment.targetName ~= "" then
+			if roster[assignment.targetName] and roster[assignment.targetName].classColoredName ~= "" then
+				local classColoredName = roster[assignment.targetName].classColoredName
+				assigneeString = assigneeString .. format(" @%s", classColoredName:gsub("|", "||"))
+			else
+				assigneeString = assigneeString .. format(" @%s", assignment.targetName)
+			end
+		end
+		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > kTextAssignmentSpellID then
+			assignmentString = format("{spell:%d}", assignment.spellInfo.spellID)
+		end
+		if assignment.text ~= nil and assignment.text ~= "" then
+			if assignmentString:len() > 0 then
+				assignmentString = assignmentString .. format(" {text}%s{/text}", assignment.text)
+			else
+				assignmentString = format("{text}%s{/text}", assignment.text)
+			end
+		end
+
+		return assigneeString, assignmentString
+	end
+
+	-- Exports a plan in MRT/KAZE format.
+	---@param plan Plan
+	---@param bossDungeonEncounterID integer
+	---@return string
+	function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
+		local timelineAssignments = CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
+		sort(timelineAssignments, function(a, b)
+			if a.startTime == b.startTime then
+				return a.assignment.assignee < b.assignment.assignee
+			end
+			return a.startTime < b.startTime
+		end)
+
+		---@type table<integer, {timeAndOptions: string, assignmentsAndAssignees: table<string, table<integer, string>>}>
+		local lines = {}
+		local inLines = {}
+
+		for _, timelineAssignment in ipairs(timelineAssignments) do
+			local assignment = timelineAssignment.assignment
+			local timeAndOptionsString, assigneeString, assignmentString = "", "", ""
+			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
+				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
+				assigneeString, assignmentString = CreateAssignmentExportString(assignment, plan.roster)
+			elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
+				timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
+				assigneeString, assignmentString = CreateAssignmentExportString(assignment, plan.roster)
+			elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
+				-- Not yet supported
+			end
+			if timeAndOptionsString:len() > 0 and assigneeString:len() > 0 and assignmentString:len() > 0 then
+				local linesTableIndex = inLines[timeAndOptionsString]
+				if linesTableIndex then
+					local line = lines[linesTableIndex]
+					line.assignmentsAndAssignees[assignmentString] = line.assignmentsAndAssignees[assignmentString]
+						or {}
+					tinsert(line.assignmentsAndAssignees[assignmentString], assigneeString)
+				else
+					tinsert(lines, {
+						timeAndOptions = timeAndOptionsString,
+						assignmentsAndAssignees = { [assignmentString] = { assigneeString } },
+					})
+					inLines[timeAndOptionsString] = #lines
 				end
 			end
-		elseif typeMatch then
-			assignmentString = "type:" .. typeMatch:sub(1, 1):upper() .. typeMatch:sub(2):lower()
 		end
-	end
-	if assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if roster[assignment.targetName] and roster[assignment.targetName].classColoredName ~= "" then
-			local classColoredName = roster[assignment.targetName].classColoredName
-			assignmentString = assignmentString .. format(" @%s", classColoredName:gsub("|", "||"))
-		else
-			assignmentString = assignmentString .. format(" @%s", assignment.targetName)
-		end
-	end
-	if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > kTextAssignmentSpellID then
-		local spellString = format(" {spell:%d}", assignment.spellInfo.spellID)
-		assignmentString = assignmentString .. spellString
-	end
-	if assignment.text ~= nil and assignment.text ~= "" then
-		local textString = format(" {text}%s{/text}", assignment.text)
-		assignmentString = assignmentString .. textString
-	end
 
-	return assignmentString
-end
-
--- Exports a plan in MRT/KAZE format.
----@param plan Plan
----@param bossDungeonEncounterID integer
----@return string|nil
-function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
-	local timelineAssignments = CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
-	sort(timelineAssignments, function(a, b)
-		if a.startTime == b.startTime then
-			return a.assignment.assignee < b.assignment.assignee
-		end
-		return a.startTime < b.startTime
-	end)
-
-	local stringTable = {}
-	local inStringTable = {}
-	for _, timelineAssignment in ipairs(timelineAssignments) do
-		local assignment = timelineAssignment.assignment
-		local timeAndOptionsString, assignmentString = "", ""
-		if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
-			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as CombatLogEventAssignment]])
-			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-		elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
-			timeAndOptionsString = CreateTimeAndOptionsExportString(assignment --[[@as TimedAssignment]])
-			assignmentString = CreateAssignmentExportString(assignment, plan.roster)
-		elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
-			-- Not yet supported
-		end
-		if timeAndOptionsString:len() > 0 and assignmentString:len() > 0 then
-			local stringTableIndex = inStringTable[timeAndOptionsString]
-			if stringTableIndex then
-				stringTable[stringTableIndex] = stringTable[stringTableIndex] .. "  " .. assignmentString
-			else
-				tinsert(stringTable, timeAndOptionsString .. assignmentString)
-				inStringTable[timeAndOptionsString] = #stringTable
+		local returnTable = {}
+		for _, line in ipairs(lines) do
+			local fullLine = format("%s - ", line.timeAndOptions)
+			for assignment, assignees in pairs(line.assignmentsAndAssignees) do
+				fullLine = format("%s%s", fullLine, assignees[1]) -- Always expects at least one space
+				for i = 2, #assignees do
+					fullLine = format("%s,%s", fullLine, assignees[i])
+				end
+				fullLine = format("%s %s  ", fullLine, assignment)
 			end
+			tinsert(returnTable, fullLine:trim())
 		end
-	end
 
-	for _, line in pairs(plan.content) do
-		tinsert(stringTable, line)
-	end
+		for _, line in ipairs(plan.content) do
+			tinsert(returnTable, line)
+		end
 
-	if #stringTable == 0 then
-		return nil
-	end
+		if #returnTable > 0 then
+			return concat(returnTable, "\n")
+		end
 
-	return concat(stringTable, "\n")
+		return ""
+	end
 end
 
 -- Clears the current assignments and repopulates it from a string of assignments (note). Updates the roster.
@@ -627,30 +653,39 @@ do
 	local TestContains = testUtilities.TestContains
 	local TestEqual = testUtilities.TestEqual
 
+	---@param textTable table<integer, string>
+	---@return table<integer, string>
+	local function RemoveTabs(textTable)
+		for i, str in ipairs(textTable) do
+			textTable[i] = str:trim()
+		end
+		return textTable
+	end
+
 	do
 		local text = [[
-        {time:75}Markoleptic {spell:235450}
-        {time:85}-Markoleptic {spell:235450}
-        {time:95} -Markoleptic {spell:235450}
-        {time:105}- Markoleptic {spell:235450}
-        {time:115} - Markoleptic {spell:235450}
-        {time:125}Random Text-Markoleptic {spell:235450}
-        {time:135}Random Text -Markoleptic {spell:235450}
-        {time:145}Random Text- Markoleptic {spell:235450}
-        {time:145}Random Text - Markoleptic {spell:235450}
-        {time:155}-Markoleptic-Bleeding Hollow {spell:235450}
-        {time:165} -Markoleptic-Bleeding Hollow {spell:235450}
-        {time:175}- Markoleptic-Bleeding Hollow {spell:235450}
-        {time:185} - Markoleptic-Bleeding Hollow {spell:235450}
-        {time:195}Random Text-Markoleptic-Bleeding Hollow {spell:235450}
-        {time:205}Random Text -Markoleptic-Bleeding Hollow {spell:235450}
-        {time:215}Random Text- Markoleptic-Bleeding Hollow {spell:235450}
-        {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}
+            {time:75}Markoleptic {spell:235450}
+            {time:85}-Markoleptic {spell:235450}
+            {time:95} -Markoleptic {spell:235450}
+            {time:105}- Markoleptic {spell:235450}
+            {time:115} - Markoleptic {spell:235450}
+            {time:125}Random Text-Markoleptic {spell:235450}
+            {time:135}Random Text -Markoleptic {spell:235450}
+            {time:145}Random Text- Markoleptic {spell:235450}
+            {time:145}Random Text - Markoleptic {spell:235450}
+            {time:155}-Markoleptic-Bleeding Hollow {spell:235450}
+            {time:165} -Markoleptic-Bleeding Hollow {spell:235450}
+            {time:175}- Markoleptic-Bleeding Hollow {spell:235450}
+            {time:185} - Markoleptic-Bleeding Hollow {spell:235450}
+            {time:195}Random Text-Markoleptic-Bleeding Hollow {spell:235450}
+            {time:205}Random Text -Markoleptic-Bleeding Hollow {spell:235450}
+            {time:215}Random Text- Markoleptic-Bleeding Hollow {spell:235450}
+            {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}
         ]]
 
 		function tests.TestDashParsing()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local actualAssignmentCount, expectedAssignmentCount = 0, 17
 
 			for _, entry in ipairs(textTable) do
@@ -668,14 +703,14 @@ do
 
 	do
 		local text = [[
-        {time:5} Markoleptic {spell:235450}
-        {time:10} Markoleptic {spell:}
-        {time:15} Markoleptic {spell:a}
+            {time:5} Markoleptic {spell:235450}
+            {time:10} Markoleptic {spell:}
+            {time:15} Markoleptic {spell:a}
         ]]
 
 		function tests.TestSpellParsing()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable)
 
 			TestEqual(plan.assignments[1].spellInfo.spellID, 235450, textTable[1])
@@ -688,17 +723,17 @@ do
 
 	do
 		local text = [[
-        {time:5} Markoleptic {text}Yo{/text}
-        {time:10} Markoleptic {text} Y o {/text}
-        {time:15} Markoleptic {text}|cff3ec6ea Yo |r{/text}
-        {time:20} Markoleptic {text}Use Healthstone {6262}{/text}
-        {time:25} Markoleptic {spell:235450}{text}Use Healthstone {6262}{/text}
-        {time:30} Markoleptic {text}Use Healthstone {6262}{/text}{spell:235450}
+            {time:5} Markoleptic {text}Yo{/text}
+            {time:10} Markoleptic {text} Y o {/text}
+            {time:15} Markoleptic {text}|cff3ec6ea Yo |r{/text}
+            {time:20} Markoleptic {text}Use Healthstone {6262}{/text}
+            {time:25} Markoleptic {spell:235450}{text}Use Healthstone {6262}{/text}
+            {time:30} Markoleptic {text}Use Healthstone {6262}{/text}{spell:235450}
         ]]
 
 		function tests.TestTextParsing()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable)
 
 			TestEqual(plan.assignments[1].text, "Yo", textTable[1])
@@ -718,18 +753,18 @@ do
 
 	do
 		local text = [[
-        {time:1} Markoleptic {spell:235450}
-        {time:0:05} Markoleptic {spell:235450}
-        {time:01:10} Markoleptic {spell:235450}
-        {time:15,SCS:450483:1} Markoleptic {spell:235450}
-        {time:0:25,SCC:450483:2} Markoleptic {spell:235450}
-        {time:0:35,SAA:450483:2} Markoleptic {spell:235450}
-        {time:45,SAR:450483:2} Markoleptic {spell:235450}
+            {time:1} Markoleptic {spell:235450}
+            {time:0:05} Markoleptic {spell:235450}
+            {time:01:10} Markoleptic {spell:235450}
+            {time:15,SCS:450483:1} Markoleptic {spell:235450}
+            {time:0:25,SCC:450483:2} Markoleptic {spell:235450}
+            {time:0:35,SAA:450483:2} Markoleptic {spell:235450}
+            {time:45,SAR:450483:2} Markoleptic {spell:235450}
         ]]
 
 		function tests.TestTimeParsing()
 			local plan = Plan:New({}, "Test")
-			ParseNote(plan, SplitStringIntoTable(text))
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)))
 
 			local valuesTable = CreateValuesTable({ 1, 5, 70, 15, 25, 35, 45 })
 			TestContains(plan.assignments, "time", valuesTable)
@@ -740,14 +775,14 @@ do
 
 	do
 		local text = [[
-        {time:5} Markoleptic @Markoleptic {spell:235450}
-        {time:10} Markoleptic@Markoleptic {spell:235450}
-        {time:15} Markoleptic@ Markoleptic {spell:235450}
+            {time:5} Markoleptic @Markoleptic {spell:235450}
+            {time:10} Markoleptic@Markoleptic {spell:235450}
+            {time:15} Markoleptic@ Markoleptic {spell:235450}
         ]]
 
 		function tests.TestTargetParsing()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local actualAssignmentCount, expectedAssignmentCount = 0, 3
 
 			for _, entry in ipairs(textTable) do
@@ -766,24 +801,24 @@ do
 
 	do
 		local text = [[
-        {time:5} Markoleptic {spell:235450}
-        {time:10} class:Mage {spell:235450}
-        {time:15} role:damager {spell:235450}
-        {time:20} role:healer {spell:235450}
-        {time:25} role:tank {spell:235450}
-        {time:30} group:1 {spell:235450}
-        {time:35} group:2 {spell:235450}
-        {time:40} group:3 {spell:235450}
-        {time:45} group:4 {spell:235450}
-        {time:55} spec:62 {spell:235450}
-        {time:50} spec:fire {spell:235450}
-        {time:60} type:ranged {spell:235450}
-        {time:65} type:melee {spell:235450}
+            {time:5} Markoleptic {spell:235450}
+            {time:10} class:Mage {spell:235450}
+            {time:15} role:damager {spell:235450}
+            {time:20} role:healer {spell:235450}
+            {time:25} role:tank {spell:235450}
+            {time:30} group:1 {spell:235450}
+            {time:35} group:2 {spell:235450}
+            {time:40} group:3 {spell:235450}
+            {time:45} group:4 {spell:235450}
+            {time:55} spec:62 {spell:235450}
+            {time:50} spec:fire {spell:235450}
+            {time:60} type:ranged {spell:235450}
+            {time:65} type:melee {spell:235450}
         ]]
 
 		function tests.TestAssignmentUnits()
 			local plan = Plan:New({}, "Test")
-			ParseNote(plan, SplitStringIntoTable(text))
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)))
 			local valuesTable = CreateValuesTable({
 				"Markoleptic",
 				"class:Mage",
@@ -808,16 +843,16 @@ do
 
 	do
 		local text = [[
-        {time:5} Markoleptic, Idk, Dk {spell:235450}
-        {time:10} Markoleptic, class:Mage,role:damager {spell:235450}
-        {time:15} Markoleptic, group:1,spec:62, type:ranged {spell:235450}
-        {time:20} Markoleptic@Idk, Idk@Markoleptic {spell:235450}
-        {time:25} Markoleptic @Idk, Idk@ Markoleptic {spell:235450}
+            {time:5} Markoleptic, Idk, Dk {spell:235450}
+            {time:10} Markoleptic, class:Mage,role:damager {spell:235450}
+            {time:15} Markoleptic, group:1,spec:62, type:ranged {spell:235450}
+            {time:20} Markoleptic@Idk, Idk@Markoleptic {spell:235450}
+            {time:25} Markoleptic @Idk, Idk@ Markoleptic {spell:235450}
         ]]
 
 		function tests.TestMultiValuedAssignmentUnits()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable)
 
 			TestEqual(plan.assignments[1].assignee, "Markoleptic", textTable[1])
@@ -849,15 +884,47 @@ do
 
 	do
 		local text = [[
-        {time:5,SCC:435136:1} Markoleptic {spell:235450}
-        {time:10,SCC:435136:1} Markoleptic {spell:235450}
-        {time:15,SCC:435136:1} Markoleptic {spell:235450}
-        {time:20,SCC:444497:1} Markoleptic,group:1,spec:62,type:ranged {spell:235450}
+            {time:5} Markoleptic {spell:235450}  Idk {spell:196718}  Dk,Mans {spell:51052}
+            {time:10} Markoleptic@Idk {spell:235450}  Idk@ Markoleptic {spell:196718}
+            {time:15} group:1 {text}Yo{/text}  type:ranged {text}Yo 2{/text}
+        ]]
+
+		function tests.TestMultipleAssignmentsPerRow()
+			local plan = Plan:New({}, "Test")
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
+			ParseNote(plan, textTable)
+
+			local valuesTable = CreateValuesTable({
+				"Markoleptic",
+				"Idk",
+				"Dk",
+				"Mans",
+				"group:1",
+				"type:ranged",
+			})
+			TestContains(plan.assignments, "assignee", valuesTable)
+			valuesTable = CreateValuesTable({
+				"Markoleptic",
+				"Idk",
+			})
+			TestContains(plan.assignments, "targetName", valuesTable)
+			TestEqual(#plan.assignments, 8, "Expected number of assignments")
+
+			return "TestMultipleAssignmentsPerRow"
+		end
+	end
+
+	do
+		local text = [[
+            {time:5,SCC:435136:1} Markoleptic {spell:235450}
+            {time:10,SCC:435136:1} Markoleptic {spell:235450}
+            {time:15,SCC:435136:1} Markoleptic {spell:235450}
+            {time:20,SCC:444497:1} Markoleptic,group:1,spec:62,type:ranged {spell:235450}
         ]]
 
 		function tests.TestBossParsing()
 			local plan = Plan:New({}, "Test")
-			local textTable = SplitStringIntoTable(text)
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = ParseNote(plan, textTable)
 
 			TestEqual(bossDungeonEncounterID, 2917, "Correct boss dungeon encounter ID")
@@ -876,6 +943,37 @@ do
 			end
 
 			return "TestBossParsing"
+		end
+	end
+
+	do
+		local text = [[
+            {time:0:00} - Idk,Markoleptic @Markoleptic {spell:235450}
+            {time:0:05,SCS:435136:1}{spell:435136}Venomous Lash - Dk,Markoleptic {spell:235450}
+            {time:0:10,SCC:435136:2}{spell:435136}Venomous Lash - Markoleptic,type:Ranged {spell:235450} {text}Use Healthstone {6262}{/text}  spec:Fire {spell:235450}
+            {time:0:15,SAA:435136:2}{spell:435136}Venomous Lash - Markoleptic,class:Mage,role:damager {text}Use Healthstone {6262}{/text}
+            {time:0:20,SAR:445123:2}{spell:445123}Hulking Crash - Markoleptic,group:1,spec:Arcane {spell:235450} {text}Use Healthstone {6262}{/text}
+            BLUE LEFT:Person Person2
+            BLUE RIGHT:Person3 Person4
+            RED LEFT:Person5 Person6
+            RED RIGHT:Person7 Person8
+        ]]
+
+		function tests.TestExport()
+			local plan = Plan:New({}, "Test")
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
+			local bossDungeonEncounterID = ParseNote(plan, textTable) --[[@as integer]]
+			plan.dungeonEncounterID = bossDungeonEncounterID or bossDungeonEncounterID
+			ChangePlanBoss(plan.dungeonEncounterID, plan)
+			UpdateRosterFromAssignments(plan.assignments, plan.roster)
+
+			local exportString = Private:ExportPlanToNote(plan, bossDungeonEncounterID --[[@as integer]]) --[[@as string]]
+			local exportStringTable = SplitStringIntoTable(exportString)
+			for index, line in ipairs(exportStringTable) do
+				TestEqual(line, textTable[index], "")
+			end
+
+			return "TestExport"
 		end
 	end
 end

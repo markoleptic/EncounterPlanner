@@ -28,5 +28,3 @@ function TestRunner.RunTests()
 	testUtilities.PrintResults()
 	testUtilities.Reset()
 end
-
-TestRunner.RunTests()

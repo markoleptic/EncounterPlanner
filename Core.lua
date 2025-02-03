@@ -142,6 +142,7 @@ function AddOn:OnEnable()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", HandleGroupRosterUpdate)
+	Private.testRunner.RunTests()
 end
 
 function AddOn:OnDisable()

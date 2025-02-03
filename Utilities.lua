@@ -985,9 +985,138 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 	return assignmentTypes
 end
 
+-- Updates a timeline assignment's start time.
+---@param timelineAssignment TimelineAssignment
+---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
+---@return boolean -- Whether or not the update succeeded
+function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
+	if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
+		local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		if absoluteSpellCastStartTable then
+			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
+			if spellIDSpellCastStartTable then
+				local spellCastStartTable = spellIDSpellCastStartTable[assignment.spellCount]
+				if spellCastStartTable then
+					local startTime = spellCastStartTable.castStart + assignment.time
+					local ability = FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID)
+					if ability then
+						if assignment.combatLogEventType == "SAR" then
+							startTime = startTime + ability.duration + ability.castTime
+						elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
+							startTime = startTime + ability.castTime
+						end
+					end
+					timelineAssignment.startTime = startTime
+					return true
+				end
+			end
+		end
+		return false
+	elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
+		local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+		timelineAssignment.startTime = assignment.time
+	elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
+		local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
+		local boss = GetBoss(bossDungeonEncounterID)
+		if boss then
+			local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
+			local phase = boss.phases[assignment.phase]
+			if bossPhaseTable and phase then
+				for phaseCount = 1, #phase.count do
+					local phaseStartTime =
+						GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
+					timelineAssignment.startTime = phaseStartTime
+					break -- TODO: Only first phase appearance implemented
+				end
+			else
+				return false
+			end
+		else
+			return false
+		end
+	end
+	return true
+end
+
 do
 	local AddOn = Private.addOn
 	local tremove = table.remove
+
+	---@class FailedInfo
+	---@field bossName string|nil
+	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
+
+	-- Updates multiple timeline assignments' start times.
+	---@param timelineAssignments table<integer, TimelineAssignment>
+	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
+	---@return boolean
+	---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
+	function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
+		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local bossName = GetBossName(bossDungeonEncounterID)
+		local failedTable = {
+			bossName = bossName,
+			combatLogEventSpellIDs = {},
+		}
+
+		if not absoluteSpellCastStartTable or not bossName then
+			return false, failedTable
+		end
+
+		local failedSpellIDs = failedTable.combatLogEventSpellIDs
+		for _, timelineAssignment in ipairs(timelineAssignments) do
+			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
+				local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+				local spellID = assignment.combatLogEventSpellID
+				local spellIDSpellCastStartTable = absoluteSpellCastStartTable[spellID]
+				if spellIDSpellCastStartTable then
+					local spellCount = assignment.spellCount
+					local spellCastStartTable = spellIDSpellCastStartTable[spellCount]
+					if spellCastStartTable then
+						local startTime = spellCastStartTable.castStart + assignment.time
+						local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
+						local combatLogEventType = assignment.combatLogEventType
+						if combatLogEventType == "SAR" then
+							startTime = startTime + ability.duration + ability.castTime
+						elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+							startTime = startTime + ability.castTime
+						end
+						timelineAssignment.startTime = startTime
+					else
+						failedSpellIDs[spellID] = failedSpellIDs or {}
+						failedSpellIDs[spellID][spellCount] = true
+					end
+				else
+					failedSpellIDs[spellID] = failedSpellIDs or {}
+				end
+			elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
+				timelineAssignment.startTime = timelineAssignment
+					.assignment--[[@as TimedAssignment]]
+					.time
+			elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
+				local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
+				local boss = GetBoss(bossDungeonEncounterID)
+				if boss then
+					local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
+					local phase = boss.phases[assignment.phase]
+					if bossPhaseTable and phase then
+						for phaseCount = 1, #phase.count do
+							local phaseStartTime =
+								GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
+							timelineAssignment.startTime = phaseStartTime
+							break -- TODO: Only first phase appearance implemented
+						end
+					end
+				end
+			end
+		end
+		if #failedTable.combatLogEventSpellIDs == 0 then
+			return true
+		else
+			return false, failedTable
+		end
+	end
 
 	---@param count integer
 	---@param invalidSpellIDOnlyCount integer
@@ -1393,135 +1522,6 @@ function Utilities.SortDropdownDataByItemValue(data)
 		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
 			Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
 		end
-	end
-end
-
--- Updates a timeline assignment's start time.
----@param timelineAssignment TimelineAssignment
----@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
----@return boolean -- Whether or not the update succeeded
-function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
-	if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
-		local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
-		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
-		if absoluteSpellCastStartTable then
-			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
-			if spellIDSpellCastStartTable then
-				local spellCastStartTable = spellIDSpellCastStartTable[assignment.spellCount]
-				if spellCastStartTable then
-					local startTime = spellCastStartTable.castStart + assignment.time
-					local ability = FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID)
-					if ability then
-						if assignment.combatLogEventType == "SAR" then
-							startTime = startTime + ability.duration + ability.castTime
-						elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
-							startTime = startTime + ability.castTime
-						end
-					end
-					timelineAssignment.startTime = startTime
-					return true
-				end
-			end
-		end
-		return false
-	elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
-		local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
-		timelineAssignment.startTime = assignment.time
-	elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
-		local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
-		local boss = GetBoss(bossDungeonEncounterID)
-		if boss then
-			local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
-			local phase = boss.phases[assignment.phase]
-			if bossPhaseTable and phase then
-				for phaseCount = 1, #phase.count do
-					local phaseStartTime =
-						GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
-					timelineAssignment.startTime = phaseStartTime
-					break -- TODO: Only first phase appearance implemented
-				end
-			else
-				return false
-			end
-		else
-			return false
-		end
-	end
-	return true
-end
-
----@class FailedInfo
----@field bossName string|nil
----@field combatLogEventSpellIDs table<integer, table<integer, integer>>
-
--- Updates multiple timeline assignments' start times.
----@param timelineAssignments table<integer, TimelineAssignment>
----@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
----@return boolean
----@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
-function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
-	local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
-	local bossName = GetBossName(bossDungeonEncounterID)
-	local failedTable = {
-		bossName = bossName,
-		combatLogEventSpellIDs = {},
-	}
-
-	if not absoluteSpellCastStartTable or not bossName then
-		return false, failedTable
-	end
-
-	local failedSpellIDs = failedTable.combatLogEventSpellIDs
-	for _, timelineAssignment in ipairs(timelineAssignments) do
-		if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
-			local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
-			local spellID = assignment.combatLogEventSpellID
-			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[spellID]
-			if spellIDSpellCastStartTable then
-				local spellCount = assignment.spellCount
-				local spellCastStartTable = spellIDSpellCastStartTable[spellCount]
-				if spellCastStartTable then
-					local startTime = spellCastStartTable.castStart + assignment.time
-					local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
-					local combatLogEventType = assignment.combatLogEventType
-					if combatLogEventType == "SAR" then
-						startTime = startTime + ability.duration + ability.castTime
-					elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
-						startTime = startTime + ability.castTime
-					end
-					timelineAssignment.startTime = startTime
-				else
-					failedSpellIDs[spellID] = failedSpellIDs or {}
-					failedSpellIDs[spellID][spellCount] = true
-				end
-			else
-				failedSpellIDs[spellID] = failedSpellIDs or {}
-			end
-		elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
-			timelineAssignment.startTime = timelineAssignment
-				.assignment--[[@as TimedAssignment]]
-				.time
-		elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
-			local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
-			local boss = GetBoss(bossDungeonEncounterID)
-			if boss then
-				local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
-				local phase = boss.phases[assignment.phase]
-				if bossPhaseTable and phase then
-					for phaseCount = 1, #phase.count do
-						local phaseStartTime =
-							GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
-						timelineAssignment.startTime = phaseStartTime
-						break -- TODO: Only first phase appearance implemented
-					end
-				end
-			end
-		end
-	end
-	if #failedTable.combatLogEventSpellIDs == 0 then
-		return true
-	else
-		return false, failedTable
 	end
 end
 
