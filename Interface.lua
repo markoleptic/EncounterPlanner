@@ -25,7 +25,6 @@ local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
-local AddIconBeforeText = utilities.AddIconBeforeText
 local ConvertAbsoluteTimeToCombatLogEventTime = utilities.ConvertAbsoluteTimeToCombatLogEventTime
 local ConvertAssignmentsToNewBoss = utilities.ConvertAssignmentsToNewBoss
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
@@ -36,7 +35,6 @@ local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
 local GetMinimumCombatLogEventTime = utilities.GetMinimumCombatLogEventTime
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
-local InitializeRaidInstances = utilities.InitializeRaidInstances
 local Round = utilities.Round
 local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
@@ -47,15 +45,11 @@ local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 local bossUtilities = Private.bossUtilities
 local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetBoss = bossUtilities.GetBoss
-local GetBossName = bossUtilities.GetBossName
-local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
-local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
 local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
 local CreateMessageBox = interfaceUpdater.CreateMessageBox
-local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 local UpdateAllAssignments = interfaceUpdater.UpdateAllAssignments
 local UpdateBoss = interfaceUpdater.UpdateBoss
 local UpdatePlanDropdown = interfaceUpdater.UpdatePlanDropdown
@@ -213,8 +207,7 @@ local function GetCurrentBossDungeonEncounterID()
 	return Private.mainFrame.bossLabel:GetValue()
 end
 
--- Menu Button
-do
+do -- Menu Button
 	local autoOpenNextMenuButtonEntered = nil
 	local menuButtonToClose = nil
 
@@ -263,8 +256,7 @@ do
 	end
 end
 
--- Roster Editor
-do
+do -- Roster Editor
 	local GetOrCreateClassDropdownItemData = utilities.GetOrCreateClassDropdownItemData
 	local kRosterEditorFrameLevel = constants.frameLevels.kRosterEditorFrameLevel
 
@@ -417,8 +409,7 @@ do
 	end
 end
 
--- Assignment Editor
-do
+do -- Assignment Editor
 	local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
 	local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
@@ -440,6 +431,9 @@ do
 		end
 		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 	end
+
+	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
 	---@param assignmentEditor EPAssignmentEditor
 	---@param dataType string
@@ -738,8 +732,7 @@ do
 	end
 end
 
--- Phase Length Editor
-do
+do -- Phase Length Editor
 	local CalculateMaxPhaseDuration = bossUtilities.CalculateMaxPhaseDuration
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local SetPhaseDuration = bossUtilities.SetPhaseDuration
@@ -1188,8 +1181,9 @@ local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time
 	end
 end
 
--- Plan Menu Button Handlers
-do
+do -- Plan Menu Button Handlers
+	local GetBossName = bossUtilities.GetBossName
+
 	local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
 	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
@@ -1284,6 +1278,8 @@ do
 		UpdateAllAssignments(true, bossDungeonEncounterID)
 		AddPlanToDropdown(newPlanName, true)
 	end
+
+	local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 
 	local function HandleDeleteCurrentNoteButtonClicked()
 		if Private.assignmentEditor then
