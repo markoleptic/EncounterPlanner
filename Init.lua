@@ -633,6 +633,7 @@ end
 ---@field zoomCenteredOnCursor boolean
 ---@field reminder ReminderPreferences
 ---@field showSpellCooldownDuration boolean
+---@field minimap {hide: boolean}
 
 ---@class ReminderTextToSpeechPreferences
 ---@field enableAtAdvanceNotice boolean
@@ -727,6 +728,9 @@ local defaults = {
 			},
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,
+			minimap = {
+				hide = false,
+			},
 			reminder = {
 				enabled = true,
 				onlyShowMe = true,

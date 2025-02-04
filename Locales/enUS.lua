@@ -338,3 +338,7 @@ L["Received plan"] = true
 L["from"] = true
 L["Plan received by"] = true
 L["players"] = true
+L["Use /ep minimap to show the minimap icon again."] = true
+L["Left-Click|r to toggle showing the main window."] = true
+L["Right-Click|r to open the options menu."] = true
+L["Middle-Click|r to hide this icon."] = true
