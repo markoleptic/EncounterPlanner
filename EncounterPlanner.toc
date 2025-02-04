@@ -1,12 +1,13 @@
 ## Interface: 110007
 ## Version: 0.0.1
 ## Title: Encounter Planner
-## Notes: 
-## X-Flavor: Mainline
+## Notes: Planner of mythic encounters /ep
 ## Author: Markoleptic
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
-## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, DBM-Core, MRT, DevTool, WeakAuras
+## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, MRT, DevTool, WeakAuras
+## IconTexture: Interface\AddOns\EncounterPlanner\Media\ep-logo.tga
+## X-Flavor: Mainline
 ## X-Localizations: enUS
 
 Embeds.xml
