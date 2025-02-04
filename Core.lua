@@ -85,25 +85,31 @@ do -- Minimap icon initialization and handling
 
 	local MenuUtil = MenuUtil
 
+	---@param buttonNameOrMenuInputData string|table
+	local function HandleMinimapButtonClicked(_, buttonNameOrMenuInputData, _)
+		local mouseButton = buttonNameOrMenuInputData
+		if type(buttonNameOrMenuInputData) == "table" then
+			mouseButton = buttonNameOrMenuInputData.buttonName
+		end
+		if mouseButton == "LeftButton" then
+			if not Private.mainFrame then
+				Private:CreateInterface()
+			end
+		elseif mouseButton == "MiddleButton" then
+			ToggleMinimap()
+		elseif mouseButton == "RightButton" then
+			if not Private.optionsMenu then
+				Private:CreateOptionsMenu()
+			end
+		end
+	end
+
 	local AddonCompartmentFrameObject = {
 		text = AddOnName,
 		icon = "Interface\\AddOns\\EncounterPlanner\\Media\\ep-logo.tga",
 		registerForAnyClick = true,
 		notCheckable = true,
-		func = function(button, menuInputData, menu)
-			local mouseButton = menuInputData.buttonName
-			if mouseButton == "LeftButton" then
-				if not Private.mainFrame then
-					Private:CreateInterface()
-				end
-			elseif mouseButton == "MiddleButton" then
-				ToggleMinimap()
-			elseif mouseButton == "RightButton" then
-				if not Private.optionsMenu then
-					Private:CreateOptionsMenu()
-				end
-			end
-		end,
+		func = HandleMinimapButtonClicked,
 		funcOnEnter = function(button)
 			MenuUtil.ShowTooltip(button, function(tooltip)
 				DrawTooltip(true, tooltip)
@@ -121,20 +127,7 @@ do -- Minimap icon initialization and handling
 		type = "launcher",
 		text = AddOnName,
 		icon = "Interface\\AddOns\\EncounterPlanner\\Media\\ep-logo.tga",
-		OnClick = function(_, button)
-			if button == "LeftButton" then
-				if not Private.mainFrame then
-					Private:CreateInterface()
-				end
-			elseif button == "MiddleButton" then
-				ToggleMinimap()
-			else
-				if not Private.optionsMenu then
-					Private:CreateOptionsMenu()
-				end
-			end
-			--DrawTooltip(false)
-		end,
+		OnClick = HandleMinimapButtonClicked,
 		OnEnter = function(frame)
 			GameTooltip:SetOwner(frame, "ANCHOR_NONE")
 			GameTooltip:SetPoint(GetAnchors(frame))
@@ -366,7 +359,7 @@ function AddOn:SlashCommand(input)
 			self.db.profile.preferences.minimap.show = not self.db.profile.preferences.minimap.show
 			if not self.db.profile.preferences.minimap.show then
 				LDBIcon:Hide(AddOnName)
-				print(L["Use /ep minimap to show the minimap icon again."])
+				print(AddOnName .. ": " .. L["Use /ep minimap to show the minimap icon again."])
 			else
 				LDBIcon:Show(AddOnName)
 			end
