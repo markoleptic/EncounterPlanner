@@ -5,18 +5,6 @@ local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
 local Encode = Private.Encode
----@class Assignment
-local Assignment = Private.classes.Assignment
----@class CombatLogEventAssignment
-local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
----@class Constants
-local constants = Private.constants
----@class TimedAssignment
-local TimedAssignment = Private.classes.TimedAssignment
----@class Plan
-local Plan = Private.classes.Plan
----@class RosterEntry
-local RosterEntry = Private.classes.RosterEntry
 
 ---@class Utilities
 local utilities = Private.utilities
@@ -29,15 +17,14 @@ local GetBossName = bossUtilities.GetBossName
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
 local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
-local CreateMessageBox = interfaceUpdater.CreateMessageBox
+
 local FindMatchingPlan = interfaceUpdater.FindMatchingPlan
 local LogMessage = interfaceUpdater.LogMessage
 local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
 local format = format
-local GetSpellInfo = C_Spell.GetSpellInfo
-local IsInGroup, IsInRaid = IsInGroup, IsInRaid
+
 local LibDeflate = LibStub("LibDeflate")
 local type = type
 local UnitFullName = UnitFullName
@@ -54,150 +41,138 @@ local configForDeflate = {
 	[9] = { level = 9 },
 }
 
----@class SerializedPlan
----@field [1] string ID
----@field [2] string name
----@field [3] integer dungeonEncounterID
----@field [4] integer instanceID
----@field [5] table<integer, SerializedAssignment> assignments
----@field [6] table<string, SerializedRosterEntry> roster
----@field [7] table<integer, string> content
+local planSerializer = {}
+do
+	---@class Assignment
+	local Assignment = Private.classes.Assignment
+	---@class CombatLogEventAssignment
+	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+	---@class Constants
+	local constants = Private.constants
+	---@class TimedAssignment
+	local TimedAssignment = Private.classes.TimedAssignment
+	---@class Plan
+	local Plan = Private.classes.Plan
+	---@class RosterEntry
+	local RosterEntry = Private.classes.RosterEntry
+	local GetSpellInfo = C_Spell.GetSpellInfo
 
----@class SerializedAssignment
----@field [1] string assignee
----@field [2] number spellInfo.spellID
----@field [3] string text
----@field [4] string targetName
----@field [5] number time
----@field [6] CombatLogEventType|nil combatLogEventType
----@field [7] integer|nil combatLogEventSpellID
----@field [8] integer|nil spellCount
----@field [9] integer|nil phase
----@field [10] integer|nil bossPhaseOrderIndex
-
----@class SerializedRosterEntry
----@field [1] string name
----@field [2] string class
----@field [3] RaidGroupRole role
----@field [4] string classColoredName
-
----@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
----@return SerializedAssignment
-local function SerializeAssignment(assignment)
-	local required = {}
-	required[1] = assignment.assignee
-	required[2] = assignment.spellInfo.spellID
-	required[3] = assignment.text
-	required[4] = assignment.targetName
-	if assignment.time then
-		required[5] = assignment.time
-	end
-	if assignment.combatLogEventType then
-		required[6] = assignment.combatLogEventType
-		required[7] = assignment.combatLogEventSpellID
-		required[8] = assignment.spellCount
-		required[9] = assignment.phase
-		required[10] = assignment.bossPhaseOrderIndex
-	end
-	return required
-end
-
----@param data SerializedAssignment
----@return CombatLogEventAssignment|TimedAssignment
-local function DeserializeAssignment(data)
-	local assignment = Assignment:New({})
-	assignment.assignee = data[1]
-	assignment.spellInfo.spellID = data[2]
-	assignment.text = data[3]
-	assignment.targetName = data[4]
-
-	if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-		local spellInfo = GetSpellInfo(assignment.spellInfo.spellID)
-		if spellInfo then
-			assignment.spellInfo = spellInfo
+	---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
+	---@return SerializedAssignment
+	local function SerializeAssignment(assignment)
+		local required = {}
+		required[1] = assignment.assignee
+		required[2] = assignment.spellInfo.spellID
+		required[3] = assignment.text
+		required[4] = assignment.targetName
+		if assignment.time then
+			required[5] = assignment.time
 		end
+		if assignment.combatLogEventType then
+			required[6] = assignment.combatLogEventType
+			required[7] = assignment.combatLogEventSpellID
+			required[8] = assignment.spellCount
+			required[9] = assignment.phase
+			required[10] = assignment.bossPhaseOrderIndex
+		end
+		return required
 	end
 
-	if data[10] then
-		assignment = CombatLogEventAssignment:New(assignment)
-		assignment.time = data[5]
-		assignment.combatLogEventType = data[6]
-		assignment.combatLogEventSpellID = data[7]
-		assignment.spellCount = data[8]
-		assignment.phase = data[9]
-		assignment.bossPhaseOrderIndex = data[10]
-	else
-		assignment = TimedAssignment:New(assignment)
-		assignment.time = data[5]
+	---@param data SerializedAssignment
+	---@return CombatLogEventAssignment|TimedAssignment
+	local function DeserializeAssignment(data)
+		local assignment = Assignment:New({})
+		assignment.assignee = data[1]
+		assignment.spellInfo.spellID = data[2]
+		assignment.text = data[3]
+		assignment.targetName = data[4]
+
+		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
+			local spellInfo = GetSpellInfo(assignment.spellInfo.spellID)
+			if spellInfo then
+				assignment.spellInfo = spellInfo
+			end
+		end
+
+		if data[10] then
+			assignment = CombatLogEventAssignment:New(assignment)
+			assignment.time = data[5]
+			assignment.combatLogEventType = data[6]
+			assignment.combatLogEventSpellID = data[7]
+			assignment.spellCount = data[8]
+			assignment.phase = data[9]
+			assignment.bossPhaseOrderIndex = data[10]
+		else
+			assignment = TimedAssignment:New(assignment)
+			assignment.time = data[5]
+		end
+
+		return assignment
 	end
 
-	return assignment
-end
-
----@param name string
----@param rosterEntry RosterEntry
----@return SerializedRosterEntry
-local function SerializeRosterEntry(name, rosterEntry)
-	local serializedRosterEntry = {
-		name or "",
-		rosterEntry.class or "",
-		rosterEntry.role or "",
-		rosterEntry.classColoredName or "",
-	} --[[@as SerializedRosterEntry]]
-	return serializedRosterEntry
-end
-
----@param serializedRosterEntry SerializedRosterEntry
----@return string, RosterEntry
-local function DeserializeRosterEntry(serializedRosterEntry)
-	local rosterEntry = RosterEntry:New({})
-	rosterEntry.class = serializedRosterEntry[2]
-	rosterEntry.role = serializedRosterEntry[3]
-	rosterEntry.classColoredName = serializedRosterEntry[4]
-	return serializedRosterEntry[1], rosterEntry
-end
-
----@param plan Plan
----@return SerializedPlan
-local function SerializePlan(plan)
-	local serializedPlan = {
-		plan.ID,
-		plan.name,
-		plan.dungeonEncounterID,
-		plan.instanceID,
-		{},
-		{},
-		{},
-	} --[[@as SerializedPlan]]
-	local assignments = serializedPlan[5]
-	for _, assignment in ipairs(plan.assignments) do
-		assignments[#assignments + 1] = SerializeAssignment(assignment)
+	---@param name string
+	---@param rosterEntry RosterEntry
+	---@return SerializedRosterEntry
+	local function SerializeRosterEntry(name, rosterEntry)
+		local serializedRosterEntry = {}
+		serializedRosterEntry[1] = name or ""
+		serializedRosterEntry[2] = rosterEntry.class or ""
+		serializedRosterEntry[3] = rosterEntry.role or ""
+		serializedRosterEntry[4] = rosterEntry.classColoredName or ""
+		return serializedRosterEntry
 	end
-	local roster = serializedPlan[6]
-	for name, rosterInfo in pairs(plan.roster) do
-		roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
-	end
-	serializedPlan[7] = plan.content
-	return serializedPlan
-end
 
----@param serializedPlan SerializedPlan
----@return Plan
-local function DeserializePlan(serializedPlan)
-	local ID = serializedPlan[1]
-	local name = serializedPlan[2]
-	local plan = Plan:New({}, name, ID)
-	plan.dungeonEncounterID = serializedPlan[3]
-	plan.instanceID = serializedPlan[4]
-	for _, serializedAssignment in ipairs(serializedPlan[5]) do
-		plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
+	---@param serializedRosterEntry SerializedRosterEntry
+	---@return string, RosterEntry
+	local function DeserializeRosterEntry(serializedRosterEntry)
+		local rosterEntry = RosterEntry:New({})
+		local name = serializedRosterEntry[1]
+		rosterEntry.class = serializedRosterEntry[2]
+		rosterEntry.role = serializedRosterEntry[3]
+		rosterEntry.classColoredName = serializedRosterEntry[4]
+		return name, rosterEntry
 	end
-	for _, serializedRosterEntry in ipairs(serializedPlan[6]) do
-		local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
-		plan.roster[rosterEntryName] = rosterEntry
+
+	---@param plan Plan
+	---@return SerializedPlan
+	function planSerializer.SerializePlan(plan)
+		local serializedPlan = {}
+		serializedPlan[1] = plan.ID
+		serializedPlan[2] = plan.name
+		serializedPlan[3] = plan.dungeonEncounterID
+		serializedPlan[4] = plan.instanceID
+		serializedPlan[5] = {}
+		local assignments = serializedPlan[5]
+		for _, assignment in ipairs(plan.assignments) do
+			assignments[#assignments + 1] = SerializeAssignment(assignment)
+		end
+		serializedPlan[6] = {}
+		local roster = serializedPlan[6]
+		for name, rosterInfo in pairs(plan.roster) do
+			roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
+		end
+		serializedPlan[7] = plan.content
+		return serializedPlan
 	end
-	plan.content = serializedPlan[7]
-	return plan
+
+	---@param serializedPlan SerializedPlan
+	---@return Plan
+	function planSerializer.DeserializePlan(serializedPlan)
+		local ID = serializedPlan[1]
+		local name = serializedPlan[2]
+		local plan = Plan:New({}, name, ID)
+		plan.dungeonEncounterID = serializedPlan[3]
+		plan.instanceID = serializedPlan[4]
+		for _, serializedAssignment in ipairs(serializedPlan[5]) do
+			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
+		end
+		for _, serializedRosterEntry in ipairs(serializedPlan[6]) do
+			local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
+			plan.roster[rosterEntryName] = rosterEntry
+		end
+		plan.content = serializedPlan[7]
+		return plan
+	end
 end
 
 ---@param inString string
@@ -279,6 +254,7 @@ local function ImportPlan(plan, fullName)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local existingPlanName, existingPlan = FindMatchingPlan(plan.ID)
 
+	local importInfo = ""
 	if existingPlanName and existingPlan then -- Replace matching plan with imported plan
 		plans[plan.name] = plan
 		if existingPlanName ~= plan.name then
@@ -288,15 +264,18 @@ local function ImportPlan(plan, fullName)
 			AddOn.db.profile.lastOpenPlan = plan.name
 		end
 		existingPlan = nil
+		importInfo = format("%s '%s'", L["Updated matching plan"], existingPlanName)
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
 			local bossName = GetBossName(plan.dungeonEncounterID) --[[@as string]]
 			plan.name = CreateUniquePlanName(plans, bossName, plan.name)
 		end
 		plans[plan.name] = plan
+		importInfo = format("%s '%s'", L["Imported plan as"], plan.name)
 	end
 
 	LogMessage(format("%s '%s' %s %s", L["Received plan"], plan.name, L["from"], fullName))
+	LogMessage(importInfo)
 
 	if Private.mainFrame then
 		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
@@ -314,10 +293,135 @@ local function ImportPlan(plan, fullName)
 	end
 end
 
+local commObject = {}
 do
-	local activePlanBeingSent = nil
-	local activePlanTimer = nil
-	local totalReceivedConfirmations = 0
+	local CreateMessageBox = interfaceUpdater.CreateMessageBox
+	local IsInGroup, IsInRaid = IsInGroup, IsInRaid
+	local next = next
+	local RemoveFromMessageQueue = interfaceUpdater.RemoveFromMessageQueue
+	local strsplittable = strsplittable
+	local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
+	local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
+	local wipe = wipe
+
+	local activePlanIDsBeingSent = {} ---@type table<string, {timer:FunctionContainer|nil, totalReceivedConfirmations: integer}>
+	local activePlanReceiveMessageBoxDataIDs = {} ---@type table<integer, string>
+
+	function commObject.Reset()
+		for _, ID in ipairs(activePlanReceiveMessageBoxDataIDs) do
+			RemoveFromMessageQueue(ID)
+		end
+		wipe(activePlanReceiveMessageBoxDataIDs)
+		for _, obj in pairs(activePlanIDsBeingSent) do
+			obj.timer:Cancel()
+		end
+		wipe(activePlanIDsBeingSent)
+	end
+
+	local function UpdateSendPlanButtonEnabledState()
+		if Private.mainFrame and Private.mainFrame.sendPlanButton then
+			local inGroup = IsInGroup() or IsInRaid()
+			local isLeader = UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")
+			Private.mainFrame.sendPlanButton:SetEnabled(inGroup and isLeader)
+		end
+	end
+
+	---@return string|nil
+	local function GetGroupType()
+		local groupType = nil
+		if IsInRaid() then
+			groupType = "RAID"
+		elseif IsInGroup() then
+			groupType = "PARTY"
+		end
+		return groupType
+	end
+
+	function commObject.HandleGroupRosterUpdate()
+		if IsInGroup() or IsInRaid() then
+			UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
+		end
+		UpdateSendPlanButtonEnabledState()
+	end
+
+	---@param IDToRemove string
+	local function RemoveFromActiveMessageBoxDataIDs(IDToRemove)
+		for index, ID in ipairs(activePlanReceiveMessageBoxDataIDs) do
+			if ID == IDToRemove then
+				tremove(activePlanReceiveMessageBoxDataIDs, index)
+				break
+			end
+		end
+	end
+
+	---@param plan Plan
+	---@param sender string
+	local function CreateImportMessageBox(plan, sender)
+		local ID = Private.GenerateUniqueID()
+		local messageBoxData = {
+			ID = ID,
+			isCommunication = true,
+			title = L["Plan Received"],
+			message = format(
+				"%s %s '%s'. %s %s",
+				sender,
+				L["has sent you the plan"],
+				plan.name,
+				L["Do you wish to accept the plan?"],
+				L["Trusting this character will allow them to send you new plans and update plans they have previously sent you without showing this message."]
+			),
+			acceptButtonText = L["Accept and Trust"],
+			acceptButtonCallback = function()
+				local trustedCharacters = AddOn.db.profile.trustedCharacters
+				trustedCharacters[#trustedCharacters + 1] = sender
+				if plan then
+					ImportPlan(plan, sender)
+				end
+				RemoveFromActiveMessageBoxDataIDs(ID)
+			end,
+			rejectButtonText = L["Reject"],
+			rejectButtonCallback = function()
+				RemoveFromActiveMessageBoxDataIDs(ID)
+			end,
+			buttonsToAdd = {
+				{
+					beforeButtonIndex = 2,
+					buttonText = L["Accept without Trusting"],
+					callback = function()
+						if plan then
+							ImportPlan(plan, sender)
+						end
+						RemoveFromActiveMessageBoxDataIDs(ID)
+					end,
+				},
+			},
+		} --[[@as MessageBoxData]]
+		tinsert(activePlanReceiveMessageBoxDataIDs, messageBoxData.ID)
+		CreateMessageBox(messageBoxData, true)
+	end
+
+	---@param package table
+	---@param sender string
+	local function HandleDistributePlanCommReceived(package, sender)
+		local plan = planSerializer.DeserializePlan(package --[[@as table]])
+		local groupType = GetGroupType()
+		if groupType then
+			local returnMessage = CompressString(format("%s,%s", plan.ID, sender), false)
+			AddOn:SendCommMessage("EPPlanReceived", returnMessage, groupType, nil, "NORMAL")
+		end
+		local foundTrustedCharacter = false
+		for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
+			if sender == trustedCharacter then
+				foundTrustedCharacter = true
+				break
+			end
+		end
+		if foundTrustedCharacter then
+			ImportPlan(plan, sender)
+		else
+			CreateImportMessageBox(plan, sender)
+		end
+	end
 
 	---@param prefix string
 	---@param message string
@@ -328,92 +432,70 @@ do
 		if not name then
 			return
 		end
-		if not realm or string.len(realm) < 3 then
-			local _, r = UnitFullName("player")
-			realm = r
+		local playerName, playerRealm = UnitFullName("player")
+		local playerFullName = format("%s-%s", playerName, playerRealm)
+		if not realm or realm:len() < 3 then
+			realm = playerRealm
 		end
-		local fullName = name .. "-" .. realm
+		local fullName = format("%s-%s", name, realm)
+		-- if fullName == playerName .. "-" .. playerRealm then
+		-- 	return
+		-- end
 		if prefix == "EPDistributePlan" then
 			local package = StringToTable(message, false)
 			if type(package == "table") then
-				local plan = DeserializePlan(package --[[@as table]])
-				local inGroup = (IsInRaid() and "RAID") or (IsInGroup() and "PARTY")
-				if inGroup then
-					local returnMessage = CompressString(format("%s,%s", plan.ID, fullName), false)
-					AddOn:SendCommMessage("EPPlanReceived", returnMessage, inGroup, nil, "NORMAL")
-				end
-				local foundTrustedCharacter = false
-				for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
-					if fullName == trustedCharacter then
-						foundTrustedCharacter = true
-						break
-					end
-				end
-				if foundTrustedCharacter then
-					ImportPlan(plan, fullName)
-				else
-					local messageContent = format(
-						'%s %s "%s". %s',
-						fullName,
-						L["has sent you the plan"],
-						plan.name,
-						L["Do you wish to accept the plan? Trusting this character will suppress this warning in the future."]
-					)
-					local messageBox = CreateMessageBox(L["Plan Received"], messageContent)
-					if messageBox then
-						messageBox:SetAcceptButtonText(L["Accept and Trust"])
-						messageBox:SetRejectButtonText(L["Reject"])
-						local rejectButton = messageBox.buttonContainer.children[2]
-						messageBox:AddButton(L["Accept without Trusting"], rejectButton)
-						messageBox:SetCallback(L["Accept without Trusting"] .. "Clicked", function()
-							ImportPlan(plan, fullName)
-						end)
-						messageBox:SetCallback("Accepted", function()
-							local trustedCharacters = AddOn.db.profile.trustedCharacters
-							trustedCharacters[#trustedCharacters + 1] = fullName
-							ImportPlan(plan, fullName)
-						end)
-					end
-				end
+				HandleDistributePlanCommReceived(package --[[@as table]], fullName)
 			end
-		elseif prefix == "EPPlanReceived" and activePlanBeingSent then
+		elseif prefix == "EPPlanReceived" and next(activePlanIDsBeingSent) then
 			local package = DecompressString(message, false)
 			local messageTable = strsplittable(",", package)
-			if messageTable[1] and messageTable[2] then
-				if messageTable[1] == activePlanBeingSent then
-					totalReceivedConfirmations = totalReceivedConfirmations + 1
+			local planID, originalPlanSender = messageTable[1], messageTable[2]
+			if planID and originalPlanSender then
+				if activePlanIDsBeingSent[planID] then
+					if originalPlanSender == playerFullName then
+						local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
+						activePlanIDsBeingSent[planID].totalReceivedConfirmations = count + 1
+					end
 				end
 			end
 		end
 	end
 
-	local function CallbackProgress(_, sent, total)
+	---@param planID string
+	---@param sent integer
+	---@param total integer
+	local function CallbackProgress(planID, sent, total)
 		local progress = sent / total
 		if progress >= 1.0 then
 			LogMessage(L["Plan sent"] .. ".")
-			activePlanTimer = C_Timer.NewTimer(5, function()
-				LogMessage(format("%s %d %s.", L["Plan received by"], totalReceivedConfirmations, L["players"]))
-				totalReceivedConfirmations = 0
-				activePlanTimer = nil
-				activePlanBeingSent = nil
-			end)
+			if activePlanIDsBeingSent[planID] then
+				activePlanIDsBeingSent[planID].timer = C_Timer.NewTimer(10, function()
+					local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
+					local playerString = count == 1 and L["player"] or L["players"]
+					LogMessage(format("%s %d %s.", L["Plan received by"], count, playerString))
+					activePlanIDsBeingSent[planID] = nil
+				end)
+			end
 		end
 	end
 
-	---@param plan Plan
-	function Private:SendPlanToGroup(plan)
-		local inGroup = (IsInRaid() and "RAID") or (IsInGroup() and "PARTY")
-		if not inGroup then
-			return
-		end
-		if activePlanBeingSent then
-			return
-		end
+	function Private.HandleSendPlanButtonConstructed()
+		UpdateSendPlanButtonEnabledState()
+	end
 
-		activePlanBeingSent = plan.ID
-		local export = TableToString(SerializePlan(plan), false)
-		LogMessage(L["Sending plan"] .. "...")
-		AddOn:SendCommMessage("EPDistributePlan", export, inGroup, nil, "BULK", CallbackProgress)
+	function Private.SendPlanToGroup()
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local groupType = GetGroupType()
+		if groupType then
+			if activePlanIDsBeingSent[plan.ID] then
+				activePlanIDsBeingSent[plan.ID].timer:Cancel()
+				activePlanIDsBeingSent[plan.ID].timer = nil
+			end
+			activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
+			local exportString = TableToString(planSerializer.SerializePlan(plan), false)
+			LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
+			AddOn:SendCommMessage("EPDistributePlan", exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
+		end
 	end
 end
 
@@ -421,9 +503,20 @@ function Private:RegisterCommunications()
 	AddOn:RegisterComm(AddOnName)
 	AddOn:RegisterComm("EPDistributePlan")
 	AddOn:RegisterComm("EPPlanReceived")
+	Private.callbackTarget.RegisterCallback(self, "ProfileRefreshed", commObject.Reset)
+	self:RegisterEvent("GROUP_ROSTER_UPDATE", commObject.HandleGroupRosterUpdate)
+end
+
+function Private:UnregisterCommunications()
+	commObject.Reset()
+	AddOn:UnregisterAllComm()
+	Private.callbackTarget.UnregisterCallback(self, "ProfileRefreshed")
+	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
 end
 
 do
+	---@class Plan
+	local Plan = Private.classes.Plan
 	---@class Tests
 	local tests = Private.tests
 	---@class TestUtilities
@@ -494,9 +587,9 @@ do
 			ChangePlanBoss(plan.dungeonEncounterID, plan)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
-			local export = TableToString(SerializePlan(plan), false)
+			local export = TableToString(planSerializer.SerializePlan(plan), false)
 			local package = StringToTable(export, false)
-			local deserializedPlan = DeserializePlan(package --[[@as table]])
+			local deserializedPlan = planSerializer.DeserializePlan(package --[[@as table]])
 			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
 
 			return "TestEncodeDecodePlan"

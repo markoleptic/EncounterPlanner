@@ -1597,7 +1597,7 @@ do
 					return ""
 				end,
 				set = function() end,
-				description = L["Clears all saved trusted characters. You will see a warning each time a new character sends a plan to you."],
+				description = L["Clears all saved trusted characters. You will see a confirmation dialogue each time a non-trusted character sends a plan to you."],
 				enabled = function()
 					return #AddOn.db.profile.trustedCharacters > 0
 				end,

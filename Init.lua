@@ -382,6 +382,49 @@ Private.classes.Plan = {
 	remindersEnabled = true,
 }
 
+---@class SerializedPlan
+---@field [1] string ID
+---@field [2] string name
+---@field [3] integer dungeonEncounterID
+---@field [4] integer instanceID
+---@field [5] table<integer, SerializedAssignment> assignments
+---@field [6] table<string, SerializedRosterEntry> roster
+---@field [7] table<integer, string> content
+
+---@class SerializedAssignment
+---@field [1] string assignee
+---@field [2] number spellInfo.spellID
+---@field [3] string text
+---@field [4] string targetName
+---@field [5] number time
+---@field [6] CombatLogEventType|nil combatLogEventType
+---@field [7] integer|nil combatLogEventSpellID
+---@field [8] integer|nil spellCount
+---@field [9] integer|nil phase
+---@field [10] integer|nil bossPhaseOrderIndex
+
+---@class SerializedRosterEntry
+---@field [1] string name
+---@field [2] string class
+---@field [3] RaidGroupRole role
+---@field [4] string classColoredName
+
+---@class AdditionalMessageBoxButtonData Data needed to add additional buttons an EPMessageBox widget.
+---@field beforeButtonIndex integer The child widget index (of EPMessageBox) to insert the button before, at the time of insertion.
+---@field buttonText string Button text of the button in the message box.
+---@field callback fun()|nil Function executed when the button is clicked.
+
+---@class MessageBoxData Data needed to construct an EPMessageBox widget.
+---@field ID string Unique ID to distinguish message boxes in the queue.
+---@field isCommunication boolean True if the message box data was constructed from Communications.lua.
+---@field title string Title of the message box.
+---@field message string Content of the message box.
+---@field acceptButtonText string Accept button text of the message box.
+---@field acceptButtonCallback fun() Function executed when the accept button is clicked.
+---@field rejectButtonText string Reject button text of the message box.
+---@field rejectButtonCallback fun()|nil Function executed when the reject button is clicked.
+---@field buttonsToAdd table<integer, AdditionalMessageBoxButtonData> Additional buttons to add to the message box.
+
 --- Copies a table
 ---@generic T
 ---@param inTable T A table with any keys and values of type T
@@ -825,7 +868,6 @@ Private.progressBarAnchor = nil --[[@as EPProgressBar]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
-Private.messageBox = nil --[[@as EPMessageBox]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")

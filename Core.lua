@@ -10,32 +10,20 @@ local constants = Private.constants
 local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
 local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
+---@class InterfaceUpdater
+local interfaceUpdater = Private.interfaceUpdater
+
 ---@class Utilities
 local utilities = Private.utilities
-local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 
 local AceDB = LibStub("AceDB-3.0")
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
-local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
 local print = print
-local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
-local versionStringFromToc = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
-local function HandleGroupRosterUpdate()
-	local enableButton = false
-	if IsInGroup() or IsInRaid() then
-		UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
-		if UnitIsGroupAssistant("player") or UnitIsGroupLeader("player") then
-			enableButton = true
-		end
-	end
-	if Private.mainFrame and Private.mainFrame.sendPlanButton then
-		Private.mainFrame.sendPlanButton:SetEnabled(enableButton)
-	end
-end
+local versionStringFromToc = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 local minimapIconObject = {}
 do -- Minimap icon initialization and handling
@@ -237,8 +225,6 @@ do -- Profile updating and refreshing
 		end
 	end
 
-	---@class InterfaceUpdater
-	local interfaceUpdater = Private.interfaceUpdater
 	local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 	local UpdatePlanDropdown = interfaceUpdater.UpdatePlanDropdown
 
@@ -247,6 +233,8 @@ do -- Profile updating and refreshing
 	function AddOn:Refresh(_, db, newProfile)
 		self.UpdateProfile(db.profile)
 		LDBIcon:Refresh(AddOnName, db.profile.preferences.minimap)
+		Private.callbackHandler:Fire("ProfileRefreshed")
+		interfaceUpdater.RemoveMessageBoxes(false)
 		if Private.mainFrame then
 			local bossDungeonEncounterID = 2902
 			local plans = db.profile.plans --[[@as table<string, Plan>]]
@@ -295,19 +283,20 @@ function AddOn:OnEnable()
 	InitializeRaidInstances()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
-	self:RegisterEvent("GROUP_ROSTER_UPDATE", HandleGroupRosterUpdate)
 	Private.testRunner.RunTests()
 end
 
 function AddOn:OnDisable()
 	self:OnProfileShutdown()
+	Private:UnregisterCommunications()
 	Private:UnregisterAllEvents()
 	if Private.mainFrame then
-		Private.mainFrame:Release() -- Cleans up remaining gui elements
+		Private.mainFrame:Release()
 	end
 	if Private.optionsMenu then
-		Private.optionsMenu:Release() -- Cleans up remaining gui elements
+		Private.optionsMenu:Release()
 	end
+	interfaceUpdater.RemoveMessageBoxes(false)
 end
 
 -- Closes any editors and dialogs that may incorrectly represent the current profile.

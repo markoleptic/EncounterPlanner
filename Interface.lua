@@ -63,14 +63,12 @@ local getmetatable = getmetatable
 local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
-local IsInGroup, IsInRaid = IsInGroup, IsInRaid
 local min, max = math.min, math.max
 local pairs = pairs
 local sub = string.sub
 local tinsert = tinsert
 local tonumber = tonumber
 local tremove = tremove
-local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 local unpack = unpack
 local wipe = wipe
 
@@ -924,55 +922,63 @@ local function HandleChangeBossDropdownValueChanged(value)
 			end
 		end
 		if containsCombatLogEventAssignment then
-			if not Private.messageBox then
-				local messageBox = CreateMessageBox(
-					L["Changing Boss with Combat Log Event Assignments"],
-					L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"]
-						.. "\n\n"
-						.. L["1. Convert all assignments to timed assignments for the new boss"]
-						.. "\n"
-						.. L["2. Replace spells with those of the new boss, matching the closest timing"]
-						.. "\n"
-						.. L["3. Cancel"]
-						.. "\n\n"
-						.. L["Note: Replacing spells may not be reversible and could result in changes if you revert to the original boss."]
-				)
-				if messageBox then
+			local messageBoxData = {
+				ID = Private.GenerateUniqueID(),
+				isCommunication = true,
+				title = L["Changing Boss with Combat Log Event Assignments"],
+				message = format(
+					"%s\n\n%s\n%s\n%s\n\n%s",
+					L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"],
+					L["1. Convert all assignments to timed assignments for the new boss"],
+					L["2. Replace spells with those of the new boss, matching the closest timing"],
+					L["3. Cancel"],
+					L["Note: Replacing spells may not be reversible and could result in changes if you revert to the original boss."]
+				),
+				acceptButtonText = L["Convert to Timed Assignments"],
+				acceptButtonCallback = function()
+					if Private.assignmentEditor then
+						Private.assignmentEditor:Release()
+					end
+					if Private.phaseLengthEditor then
+						Private.phaseLengthEditor:Release()
+					end
 					local currentBoss = GetBoss(plan.dungeonEncounterID)
 					local newBoss = GetBoss(bossDungeonEncounterID)
 					local currentAssignments = plan.assignments
 					if currentBoss and newBoss then
-						messageBox:SetAcceptButtonText(L["Convert to Timed Assignments"])
-						messageBox:SetRejectButtonText(L["Cancel"])
-						local rejectButton = messageBox.buttonContainer.children[2]
-						messageBox:AddButton(L["Replace Spells"], rejectButton)
-						messageBox:SetCallback(L["Replace Spells"] .. "Clicked", function()
-							if Private.assignmentEditor then
-								Private.assignmentEditor:Release()
-							end
-							if Private.phaseLengthEditor then
-								Private.phaseLengthEditor:Release()
-							end
-							ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 2)
-							ChangePlanBoss(bossDungeonEncounterID, plan)
-							UpdateBoss(bossDungeonEncounterID, true)
-							UpdateAllAssignments(false, bossDungeonEncounterID)
-						end)
-						messageBox:SetCallback("Accepted", function()
-							if Private.assignmentEditor then
-								Private.assignmentEditor:Release()
-							end
-							if Private.phaseLengthEditor then
-								Private.phaseLengthEditor:Release()
-							end
-							ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 1)
-							ChangePlanBoss(bossDungeonEncounterID, plan)
-							UpdateBoss(bossDungeonEncounterID, true)
-							UpdateAllAssignments(false, bossDungeonEncounterID)
-						end)
+						ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 1)
+						ChangePlanBoss(bossDungeonEncounterID, plan)
+						UpdateBoss(bossDungeonEncounterID, true)
+						UpdateAllAssignments(false, bossDungeonEncounterID)
 					end
-				end
-			end
+				end,
+				rejectButtonText = L["Cancel"],
+				rejectButtonCallback = nil,
+				buttonsToAdd = {
+					{
+						beforeButtonIndex = 2,
+						buttonText = L["Replace Spells"],
+						callback = function()
+							if Private.assignmentEditor then
+								Private.assignmentEditor:Release()
+							end
+							if Private.phaseLengthEditor then
+								Private.phaseLengthEditor:Release()
+							end
+							local currentBoss = GetBoss(plan.dungeonEncounterID)
+							local newBoss = GetBoss(bossDungeonEncounterID)
+							local currentAssignments = plan.assignments
+							if currentBoss and newBoss then
+								ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 2)
+								ChangePlanBoss(bossDungeonEncounterID, plan)
+								UpdateBoss(bossDungeonEncounterID, true)
+								UpdateAllAssignments(false, bossDungeonEncounterID)
+							end
+						end,
+					},
+				},
+			} --[[@as MessageBoxData]]
+			CreateMessageBox(messageBoxData, false)
 		else
 			if Private.assignmentEditor then
 				Private.assignmentEditor:Release()
@@ -1444,17 +1450,26 @@ do -- Plan Menu Button Handlers
 		elseif value == "Export Current Plan" then
 			HandleExportPlanButtonClicked()
 		elseif value == "Delete Current Plan" then
-			local messageBox = CreateMessageBox(
-				L["Delete Plan Confirmation"],
-				format('%s "%s"?', L["Are you sure you want to delete the plan"], AddOn.db.profile.lastOpenPlan)
-			)
-			if messageBox then
-				messageBox:SetCallback("Accepted", function()
+			local messageBoxData = {
+				ID = Private.GenerateUniqueID(),
+				isCommunication = false,
+				title = L["Delete Plan Confirmation"],
+				message = format(
+					"%s '%s'?",
+					L["Are you sure you want to delete the plan"],
+					AddOn.db.profile.lastOpenPlan
+				),
+				acceptButtonText = L["Okay"],
+				acceptButtonCallback = function()
 					if Private.mainFrame then
 						HandleDeleteCurrentNoteButtonClicked()
 					end
-				end)
-			end
+				end,
+				rejectButtonText = L["Cancel"],
+				rejectButtonCallback = nil,
+				buttonsToAdd = {},
+			} --[[@as MessageBoxData]]
+			CreateMessageBox(messageBoxData, false)
 		elseif sub(value, 1, 4) == "From" then
 			ImportPlan(value)
 		end
@@ -1686,15 +1701,13 @@ local function CloseDialogs()
 	if Private.exportEditBox then
 		Private.exportEditBox:Release()
 	end
-	if Private.messageBox then
-		Private.messageBox:Release()
-	end
 	if Private.phaseLengthEditor then
 		Private.phaseLengthEditor:Release()
 	end
 	if Private.newPlanDialog then
 		Private.newPlanDialog:Release()
 	end
+	interfaceUpdater.RemoveMessageBoxes(true)
 end
 
 local function HandleMainFrameReleased()
@@ -1882,12 +1895,7 @@ function Private:CreateInterface()
 	sendPlanButton:SetText(L["Send Plan to Group"])
 	sendPlanButton:SetWidthFromText()
 	sendPlanButton:SetFullHeight(true)
-	sendPlanButton:SetCallback("Clicked", function()
-		Private:SendPlanToGroup(AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan])
-	end)
-	sendPlanButton:SetEnabled(
-		(IsInGroup() or IsInRaid()) and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player"))
-	)
+	sendPlanButton:SetCallback("Clicked", Private.SendPlanToGroup)
 
 	reminderAndSendPlanButtonContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton, sendPlanButton)
 
@@ -1937,6 +1945,7 @@ function Private:CreateInterface()
 	Private.mainFrame.timeline = timeline
 	Private.mainFrame.sendPlanButton = sendPlanButton
 
+	Private.HandleSendPlanButtonConstructed()
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
 	UpdatePlanDropdown()
