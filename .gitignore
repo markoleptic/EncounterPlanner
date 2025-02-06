@@ -1,4 +1,3 @@
 .env
-Libs/*
 .lua/*
 .vscode
