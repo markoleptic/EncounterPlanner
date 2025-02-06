@@ -341,6 +341,29 @@ local function SetScrollBarScrollFramePadding(self, padding)
 	self.scrollFrameWrapper:SetPoint("BOTTOMRIGHT", -padding - scrollBarWidth, 0)
 end
 
+---@param self EPScrollFrame
+---@return number -- min
+---@return number -- max
+local function GetScrollRange(self)
+	local minScroll, maxScroll = 0.0, 0.0
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local scrollChild = self.scrollFrame:GetScrollChild()
+	if scrollChild then
+		local scrollChildHeight = scrollChild:GetHeight()
+		maxScroll = max(maxScroll, scrollChildHeight - scrollFrameHeight)
+	end
+	return minScroll, maxScroll
+end
+
+---@param self EPScrollFrame
+---@param newVerticalScroll number
+local function SetScroll(self, newVerticalScroll)
+	local minScroll, maxScroll = GetScrollRange(self)
+	newVerticalScroll = Clamp(newVerticalScroll, minScroll, maxScroll)
+	self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+	UpdateThumbPositionAndSize(self)
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -384,6 +407,8 @@ local function Constructor()
 		SetScrollBarWidth = SetScrollBarWidth,
 		SetScrollBarScrollFramePadding = SetScrollBarScrollFramePadding,
 		GetWrapperPadding = GetWrapperPadding,
+		GetScrollRange = GetScrollRange,
+		SetScroll = SetScroll,
 		frame = frame,
 		scrollFrame = scrollFrame,
 		scrollFrameWrapper = scrollFrameWrapper,
