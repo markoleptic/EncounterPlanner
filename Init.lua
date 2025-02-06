@@ -880,7 +880,3 @@ LSM:Register(
 	"Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
 	bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU)
 )
-
--- Public facing API.
----@class EncounterPlanner
-EncounterPlanner = {}
