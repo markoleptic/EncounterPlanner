@@ -681,8 +681,8 @@ do
 	---@param severityLevel SeverityLevel?
 	---@param indentLevel IndentLevel?
 	function InterfaceUpdater.LogMessage(message, severityLevel, indentLevel)
+		tinsert(messageLog, { message = message, severityLevel = severityLevel, indentLevel = indentLevel })
 		if Private.mainFrame and Private.mainFrame.statusBar then
-			tinsert(messageLog, { message = message, severityLevel = severityLevel, indentLevel = indentLevel })
 			Private.mainFrame.statusBar:AddMessage(message, severityLevel, indentLevel)
 		end
 	end
