@@ -1946,6 +1946,7 @@ function Private:CreateInterface()
 	Private.mainFrame.sendPlanButton = sendPlanButton
 
 	Private.HandleSendPlanButtonConstructed()
+	interfaceUpdater.RestoreMessageLog()
 	Private.mainFrame:AddChildren(topContainer, timeline)
 
 	UpdatePlanDropdown()
@@ -1967,11 +1968,11 @@ function Private:CreateInterface()
 end
 
 function Private:CloseAnchorsAndDialogs()
-	if Private.messageAnchor then
-		Private.messageAnchor:Release()
+	if self.messageAnchor then
+		self.messageAnchor:Release()
 	end
-	if Private.progressBarAnchor then
-		Private.progressBarAnchor:Release()
+	if self.progressBarAnchor then
+		self.progressBarAnchor:Release()
 	end
 	CloseDialogs()
 end

@@ -29,6 +29,7 @@ local tonumber = tonumber
 local tostring = tostring
 local tremove = tremove
 local type = type
+local wipe = wipe
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
@@ -673,12 +674,31 @@ do
 	end
 end
 
----@param message string
----@param severityLevel SeverityLevel?
----@param indentLevel IndentLevel?
-function InterfaceUpdater.LogMessage(message, severityLevel, indentLevel)
-	if Private.mainFrame and Private.mainFrame.statusBar then
-		Private.mainFrame.statusBar:AddMessage(message, severityLevel, indentLevel)
+do
+	local messageLog = {} ---@type table<integer, {message: string, severityLevel: integer, indentLevel: integer}>
+
+	---@param message string
+	---@param severityLevel SeverityLevel?
+	---@param indentLevel IndentLevel?
+	function InterfaceUpdater.LogMessage(message, severityLevel, indentLevel)
+		if Private.mainFrame and Private.mainFrame.statusBar then
+			tinsert(messageLog, { message = message, severityLevel = severityLevel, indentLevel = indentLevel })
+			Private.mainFrame.statusBar:AddMessage(message, severityLevel, indentLevel)
+		end
+	end
+
+	function InterfaceUpdater.ClearMessageLog()
+		wipe(messageLog)
+		if Private.mainFrame and Private.mainFrame.statusBar then
+			Private.mainFrame.statusBar:ClearMessages()
+		end
+	end
+
+	function InterfaceUpdater.RestoreMessageLog()
+		if Private.mainFrame and Private.mainFrame.statusBar then
+			Private.mainFrame.statusBar:ClearMessages()
+			Private.mainFrame.statusBar:AddMessages(messageLog)
+		end
 	end
 end
 

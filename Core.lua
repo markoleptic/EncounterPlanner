@@ -267,7 +267,6 @@ function AddOn:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
-	self.db.RegisterCallback(self, "OnProfileDeleted", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileShutdown", "OnProfileShutdown")
 
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
@@ -296,15 +295,17 @@ function AddOn:OnDisable()
 	if Private.optionsMenu then
 		Private.optionsMenu:Release()
 	end
-	interfaceUpdater.RemoveMessageBoxes(false)
 end
 
--- Closes any editors and dialogs that may incorrectly represent the current profile.
+-- Executed before a profile is changed. Closes any editors and dialogs that may incorrectly represent the current
+-- profile. Refresh will be called afterwards.
 function AddOn:OnProfileShutdown()
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
 	Private:CloseAnchorsAndDialogs()
+	interfaceUpdater.ClearMessageLog()
+	interfaceUpdater.RemoveMessageBoxes(false)
 end
 
 ---@param input string|nil

@@ -2,15 +2,20 @@ local Type = "EPStatusBar"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
-local UIParent = UIParent
 local CreateFrame = CreateFrame
+local ipairs = ipairs
+local LSM = LibStub("LibSharedMedia-3.0")
+local select = select
+local tinsert = tinsert
+local UIParent = UIParent
+local wipe = wipe
 
 local defaultFrameHeight = 400
 local defaultFrameWidth = 400
-local framePadding = 2
-local textPadding = 2
 local fontSize = 12
+local lineNumberWidth = 20
+local textPadding = 2
+local padding = { left = 2, top = 2, right = 2, bottom = 2 }
 
 ---@class EPStatusBar : AceGUIWidget
 ---@field frame table|Frame|BackdropTemplate
@@ -23,7 +28,7 @@ local fontSize = 12
 ---@field lineNumber integer
 
 ---@alias SeverityLevel
----|1 Normal
+---|1
 ---|2
 ---|3
 
@@ -35,14 +40,14 @@ local fontSize = 12
 ---@param self EPStatusBar
 local function OnAcquire(self)
 	self.lineNumber = 1
-	self.messageFrame:SetHeight(0)
+	self.messageFrame:SetHeight(padding.top)
 	self.messagePool = self.messagePool or {}
 	self.activeMessages = {}
 	self.frame:Show()
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
-	self.scrollFrame.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", framePadding, -framePadding)
-	self.scrollFrame.frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -framePadding, framePadding)
+	self.scrollFrame.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	self.scrollFrame.frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
 	self.scrollFrame:SetScrollChild(self.messageFrame, true, true)
 end
 
@@ -57,7 +62,8 @@ end
 ---@param message string
 ---@param severityLevel SeverityLevel?
 ---@param indentLevel IndentLevel?
-local function AddMessage(self, message, severityLevel, indentLevel)
+---@return number -- textHeight
+local function AddSingleMessage(self, message, severityLevel, indentLevel)
 	local lineNumber, --[[@as FontString]]
 		line --[[@as FontString]]
 	if #self.messagePool > 0 then
@@ -101,13 +107,13 @@ local function AddMessage(self, message, severityLevel, indentLevel)
 		line:SetText("    " .. "    " .. message)
 	end
 
-	lineNumber:SetWidth(20)
+	lineNumber:SetWidth(lineNumberWidth)
 
 	lineNumber:ClearAllPoints()
 	line:ClearAllPoints()
 
-	line:SetPoint("LEFT", self.messageFrame, "LEFT", 20, 0)
-	line:SetPoint("RIGHT", self.messageFrame, "RIGHT")
+	line:SetPoint("LEFT", self.messageFrame, "LEFT", lineNumberWidth + padding.left, 0)
+	line:SetPoint("RIGHT", self.messageFrame, "RIGHT", -padding.right, 0)
 	lineNumber:SetPoint("RIGHT", line, "LEFT")
 
 	local textHeight = line:GetStringHeight()
@@ -116,12 +122,35 @@ local function AddMessage(self, message, severityLevel, indentLevel)
 		line:SetPoint("TOP", lastLine, "BOTTOM", 0, -textPadding)
 		textHeight = textHeight + textPadding
 	else
-		line:SetPoint("TOP", self.messageFrame, "TOP")
+		line:SetPoint("TOP", self.messageFrame, "TOP", 0, -padding.top)
+		textHeight = textHeight + padding.top
 	end
-	self.messageFrame:SetHeight(self.messageFrame:GetHeight() + textHeight)
 
 	self.lineNumber = self.lineNumber + 1
 	tinsert(self.activeMessages, { lineNumber = lineNumber, line = line })
+
+	return textHeight
+end
+
+---@param self EPStatusBar
+---@param message string
+---@param severityLevel SeverityLevel?
+---@param indentLevel IndentLevel?
+local function AddMessage(self, message, severityLevel, indentLevel)
+	local textHeight = AddSingleMessage(self, message, severityLevel, indentLevel)
+	self.messageFrame:SetHeight(self.messageFrame:GetHeight() + textHeight)
+	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
+end
+
+---@param self EPStatusBar
+---@param messages table<integer, {message: string, severityLevel: integer, indentLevel: integer}>
+local function AddMessages(self, messages)
+	local height = self.messageFrame:GetHeight()
+	for _, message in ipairs(messages) do
+		height = height + AddSingleMessage(self, message.message, message.severityLevel, message.indentLevel)
+	end
+	self.messageFrame:SetHeight(height)
+	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
 end
 
 ---@param self EPStatusBar
@@ -136,7 +165,7 @@ local function ClearMessages(self)
 		tinsert(self.messagePool, obj)
 	end
 	wipe(self.activeMessages)
-	self.messageFrame:SetHeight(0)
+	self.messageFrame:SetHeight(padding.bottom)
 	self.lineNumber = 1
 end
 
@@ -157,6 +186,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		ClearMessages = ClearMessages,
 		AddMessage = AddMessage,
+		AddMessages = AddMessages,
 		frame = frame,
 		messageFrame = messageFrame,
 		type = Type,
