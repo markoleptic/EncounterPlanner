@@ -1727,13 +1727,23 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 end
 
 -- Splits a string into table using new lines as separators.
----@param text string The text to use to create the table
+---@param text string The text to use to create the table.
+---@param removeEmptyLines boolean? If true, don't add empty lines.
 ---@return table<integer, string>
-function Utilities.SplitStringIntoTable(text)
+function Utilities.SplitStringIntoTable(text, removeEmptyLines)
 	local stringTable = {}
-	for line in text:gmatch(lineMatchRegex) do
-		tinsert(stringTable, line)
+	if removeEmptyLines then
+		for line in text:gmatch(lineMatchRegex) do
+			if line:trim():len() > 0 then
+				tinsert(stringTable, line)
+			end
+		end
+	else
+		for line in text:gmatch(lineMatchRegex) do
+			tinsert(stringTable, line)
+		end
 	end
+
 	return stringTable
 end
 
