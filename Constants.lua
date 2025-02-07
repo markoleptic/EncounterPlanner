@@ -19,6 +19,11 @@ Private.constants = {
 		kMessageBoxFrameLevel = 160,
 		kReminderContainerFrameLevel = 100,
 	},
+	communications = {
+		kDistributePlan = "EPDistributePlan",
+		kPlanReceived = "EPPlanReceived",
+		kDistributeText = "EPDistributeText",
+	},
 	kMaxBossDuration = 1200.0,
 	kMinBossPhaseDuration = 10.0,
 }

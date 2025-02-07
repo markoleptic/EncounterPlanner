@@ -49,6 +49,7 @@ local tinsert = tinsert
 local tremove = tremove
 local type = type
 local UnitGUID = UnitGUID
+local UnitIsGroupLeader = UnitIsGroupLeader
 local unpack = unpack
 local wipe = wipe
 
@@ -844,6 +845,9 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 		return
 	end
 	if difficultyID == 16 then -- Mythic raid
+		if UnitIsGroupLeader("player") then
+			Private.SendTextToGroup(encounterID)
+		end
 		local startTime = GetTime()
 		local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 		local activePlans = {}

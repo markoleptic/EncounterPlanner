@@ -6,6 +6,12 @@ local AddOn = Private.addOn
 local L = Private.L
 local Encode = Private.Encode
 
+---@class Constants
+local constants = Private.constants
+local kDistributePlan = constants.communications.kDistributePlan
+local kPlanReceived = constants.communications.kPlanReceived
+local kDistributeText = constants.communications.kDistributeText
+
 ---@class Utilities
 local utilities = Private.utilities
 local CreateUniquePlanName = utilities.CreateUniquePlanName
@@ -47,8 +53,6 @@ do
 	local Assignment = Private.classes.Assignment
 	---@class CombatLogEventAssignment
 	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
-	---@class Constants
-	local constants = Private.constants
 	---@class TimedAssignment
 	local TimedAssignment = Private.classes.TimedAssignment
 	---@class Plan
@@ -407,7 +411,7 @@ do
 		local groupType = GetGroupType()
 		if groupType then
 			local returnMessage = CompressString(format("%s,%s", plan.ID, sender), false)
-			AddOn:SendCommMessage("EPPlanReceived", returnMessage, groupType, nil, "NORMAL")
+			AddOn:SendCommMessage(kPlanReceived, returnMessage, groupType, nil, "NORMAL")
 		end
 		local foundTrustedCharacter = false
 		for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
@@ -441,12 +445,12 @@ do
 		-- if fullName == playerName .. "-" .. playerRealm then
 		-- 	return
 		-- end
-		if prefix == "EPDistributePlan" then
+		if prefix == kDistributePlan then
 			local package = StringToTable(message, false)
 			if type(package == "table") then
 				HandleDistributePlanCommReceived(package --[[@as table]], fullName)
 			end
-		elseif prefix == "EPPlanReceived" and next(activePlanIDsBeingSent) then
+		elseif prefix == kPlanReceived and next(activePlanIDsBeingSent) then
 			local package = DecompressString(message, false)
 			local messageTable = strsplittable(",", package)
 			local planID, originalPlanSender = messageTable[1], messageTable[2]
@@ -458,6 +462,9 @@ do
 					end
 				end
 			end
+		elseif prefix == kDistributeText then
+			local package = DecompressString(message, false)
+			self.db.profile.activeText = package
 		end
 	end
 
@@ -494,15 +501,33 @@ do
 			activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
 			local exportString = TableToString(planSerializer.SerializePlan(plan), false)
 			LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
-			AddOn:SendCommMessage("EPDistributePlan", exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
+			AddOn:SendCommMessage(kDistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
+		end
+	end
+
+	---@param bossDungeonEncounterID integer
+	function Private.SendTextToGroup(bossDungeonEncounterID)
+		local plans = AddOn.db.profile.plans --[[@as table<integer, Plan>]]
+		local primaryPlan --[[@as Plan]]
+		for _, plan in pairs(plans) do
+			if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
+				primaryPlan = plan
+				break
+			end
+		end
+		local groupType = GetGroupType()
+		if groupType then
+			local exportString = CompressString(primaryPlan.content, false)
+			AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
 		end
 	end
 end
 
 function Private:RegisterCommunications()
 	AddOn:RegisterComm(AddOnName)
-	AddOn:RegisterComm("EPDistributePlan")
-	AddOn:RegisterComm("EPPlanReceived")
+	AddOn:RegisterComm(kDistributePlan)
+	AddOn:RegisterComm(kPlanReceived)
+	AddOn:RegisterComm(kDistributeText)
 	Private.callbackTarget.RegisterCallback(self, "ProfileRefreshed", commObject.Reset)
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", commObject.HandleGroupRosterUpdate)
 end
