@@ -57,6 +57,7 @@ local lastExecutionTime = 0
 ---@field timeline EPTimeline
 ---@field planReminderEnableCheckBox EPCheckBox
 ---@field sendPlanButton EPButton
+---@field primaryPlanCheckBox EPCheckBox
 ---@field children table<integer, EPContainer>
 
 ---@param self EPMainFrame
@@ -203,6 +204,7 @@ local function OnRelease(self)
 	self.timeline = nil
 	self.planReminderEnableCheckBox = nil
 	self.sendPlanButton = nil
+	self.primaryPlanCheckBox = nil
 end
 
 ---@param self EPMainFrame

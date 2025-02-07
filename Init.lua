@@ -371,6 +371,7 @@ Private.classes.RosterEntry = {
 ---@field remindersEnabled boolean Whether reminders are enabled for the plan.
 Private.classes.Plan = {
 	ID = "",
+	isPrimaryPlan = false,
 	name = "",
 	dungeonEncounterID = 0,
 	instanceID = 0,
@@ -616,6 +617,22 @@ function Private.classes.Plan:New(o, name, existingID)
 		instance.ID = GenerateUniqueID()
 	end
 	return instance
+end
+
+-- Copies an assignment with a new uniqueID.
+---@param planToCopy Plan
+---@param name string
+---@return Plan
+function Private.DuplicatePlan(planToCopy, name)
+	local newPlan = Private.classes.Plan:New({}, "")
+	local newId = newPlan.ID
+	for key, value in pairs(Private.DeepCopy(planToCopy)) do
+		newPlan[key] = value
+	end
+	newPlan.name = name
+	newPlan.ID = newId
+	setmetatable(newPlan, getmetatable(planToCopy))
+	return newPlan
 end
 
 ---@param o any

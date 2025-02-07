@@ -466,6 +466,8 @@ function InterfaceUpdater.UpdateFromPlan(planName)
 			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		end
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
+		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.isPrimaryPlan)
+		Private.mainFrame.planReminderEnableCheckBox:SetEnabled(not plan.isPrimaryPlan)
 		Private.mainFrame:DoLayout()
 	end
 end
@@ -476,8 +478,20 @@ do
 	local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
 	local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 
+	---@param planName string
+	function InterfaceUpdater.UpdatePrimaryPlanCheckBox(planName)
+		if Private.mainFrame then
+			local primaryPlanCheckBox = Private.mainFrame.primaryPlanCheckBox
+			if primaryPlanCheckBox then
+				local isPrimary = AddOn.db.profile.plans[planName].isPrimaryPlan
+				primaryPlanCheckBox:SetChecked(isPrimary)
+				primaryPlanCheckBox:SetEnabled(not isPrimary)
+			end
+		end
+	end
+
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
-	function InterfaceUpdater.UpdatePlanDropdown()
+	function InterfaceUpdater.UpdatePlanWidgets()
 		if Private.mainFrame then
 			local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 			local planDropdown = Private.mainFrame.planDropdown
@@ -502,6 +516,7 @@ do
 				local enabled = AddOn.db.profile.plans[lastOpenPlan].remindersEnabled
 				planReminderEnableCheckBox:SetChecked(enabled)
 			end
+			InterfaceUpdater.UpdatePrimaryPlanCheckBox(lastOpenPlan)
 		end
 	end
 
@@ -528,6 +543,7 @@ do
 					end
 				end
 			end
+			InterfaceUpdater.UpdatePrimaryPlanCheckBox(planName)
 		end
 	end
 
@@ -542,7 +558,6 @@ do
 		end
 	end
 
-	-- Removes a plan name from the plan dropdown.
 	---@param planName string
 	---@param enabled boolean
 	function InterfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, enabled)

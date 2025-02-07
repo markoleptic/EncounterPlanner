@@ -1958,3 +1958,41 @@ do
 		return cooldowns[spellID]
 	end
 end
+
+---@param plans table<string, Plan>
+---@param activePlan Plan
+---@return boolean -- True if another plan with the same dungeonEncounterID was the primary plan.
+function Utilities.SetPrimaryPlan(plans, activePlan)
+	local changedPrimaryPlan = false
+	for _, plan in pairs(plans) do
+		if plan.isPrimaryPlan and plan.dungeonEncounterID == activePlan.dungeonEncounterID then
+			plan.isPrimaryPlan = false
+			changedPrimaryPlan = true
+		end
+	end
+	activePlan.isPrimaryPlan = true
+	return changedPrimaryPlan
+end
+
+---@param plans table<string, Plan>
+---@param dungeonEncounterID integer
+---@return boolean -- True if a plan with the matching dungeonEncounterID is a primary plan.
+function Utilities.HasPrimaryPlan(plans, dungeonEncounterID)
+	for _, plan in pairs(plans) do
+		if plan.isPrimaryPlan and plan.dungeonEncounterID == dungeonEncounterID then
+			return true
+		end
+	end
+	return false
+end
+
+---@param plans table<string, Plan>
+---@param dungeonEncounterID integer
+function Utilities.SwapPrimaryPlan(plans, dungeonEncounterID)
+	for _, plan in pairs(plans) do
+		if plan.dungeonEncounterID == dungeonEncounterID then
+			plan.isPrimaryPlan = true
+			break
+		end
+	end
+end

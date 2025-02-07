@@ -367,8 +367,9 @@ end
 -- in the text.
 ---@param plan Plan Plan to repopulate
 ---@param text table<integer, string> content
+---@param test boolean?
 ---@return integer|nil
-function Private.ParseNote(plan, text)
+function Private.ParseNote(plan, text, test)
 	wipe(plan.assignments)
 	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, integer>, string: string}>
 	local lowerPriorityEncounterIDs = {} ---@type table<integer, integer>
@@ -439,13 +440,13 @@ function Private.ParseNote(plan, text)
 		end
 	end
 
-	if #failedOrReplaced > 0 then
+	if #failedOrReplaced > 0 and not test then
 		LogFailures(failedOrReplaced, failedCount, defaultedToTimedCount, defaultedSpellCount)
 	end
 
 	return determinedBossDungeonEncounterID
 end
-local ParseNote = Private.ParseNote
+
 do
 	---@param assignment CombatLogEventAssignment|TimedAssignment
 	---@return string
@@ -610,9 +611,12 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	end
 	local plan = plans[planName]
 
-	local bossDungeonEncounterID = ParseNote(plan, SplitStringIntoTable(content))
+	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
 	ChangePlanBoss(plan.dungeonEncounterID, plan)
+	if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, plan.dungeonEncounterID) then
+		utilities.SwapPrimaryPlan(AddOn.db.profile.plans, plan.dungeonEncounterID)
+	end
 
 	UpdateRosterFromAssignments(plan.assignments, plan.roster)
 	UpdateRosterDataFromGroup(plan.roster)
@@ -658,6 +662,7 @@ do
 	local TestContains = testUtilities.TestContains
 	local TestEqual = testUtilities.TestEqual
 	local RemoveTabs = testUtilities.RemoveTabs
+	local ParseNote = Private.ParseNote
 
 	do
 		local text = [[
@@ -686,7 +691,7 @@ do
 			local actualAssignmentCount, expectedAssignmentCount = 0, 17
 
 			for _, entry in ipairs(textTable) do
-				ParseNote(plan, { entry })
+				ParseNote(plan, { entry }, true)
 				for _, assignment in ipairs(plan.assignments) do
 					TestEqual(assignment.assignee, "Markoleptic", entry)
 					actualAssignmentCount = actualAssignmentCount + 1
@@ -708,7 +713,7 @@ do
 		function tests.TestSpellParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			ParseNote(plan, textTable)
+			ParseNote(plan, textTable, true)
 
 			TestEqual(plan.assignments[1].spellInfo.spellID, 235450, textTable[1])
 			TestEqual(plan.assignments[2].spellInfo.spellID, 0, textTable[2])
@@ -731,7 +736,7 @@ do
 		function tests.TestTextParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			ParseNote(plan, textTable)
+			ParseNote(plan, textTable, true)
 
 			TestEqual(plan.assignments[1].text, "Yo", textTable[1])
 			TestEqual(plan.assignments[2].text, "Y o", textTable[2])
@@ -761,7 +766,7 @@ do
 
 		function tests.TestTimeParsing()
 			local plan = Plan:New({}, "Test")
-			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)))
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)), true)
 
 			local valuesTable = CreateValuesTable({ 1, 5, 70, 15, 25, 35, 45 })
 			TestContains(plan.assignments, "time", valuesTable)
@@ -783,7 +788,7 @@ do
 			local actualAssignmentCount, expectedAssignmentCount = 0, 3
 
 			for _, entry in ipairs(textTable) do
-				ParseNote(plan, { entry })
+				ParseNote(plan, { entry }, true)
 				for _, assignment in ipairs(plan.assignments) do
 					TestEqual(assignment.assignee, "Markoleptic", entry)
 					TestEqual(assignment.targetName, "Markoleptic", entry)
@@ -815,7 +820,7 @@ do
 
 		function tests.TestAssignmentUnits()
 			local plan = Plan:New({}, "Test")
-			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)))
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)), true)
 			local valuesTable = CreateValuesTable({
 				"Markoleptic",
 				"class:Mage",
@@ -850,7 +855,7 @@ do
 		function tests.TestMultiValuedAssignmentUnits()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			ParseNote(plan, textTable)
+			ParseNote(plan, textTable, true)
 
 			TestEqual(plan.assignments[1].assignee, "Markoleptic", textTable[1])
 			TestEqual(plan.assignments[2].assignee, "Idk", textTable[1])
@@ -889,7 +894,7 @@ do
 		function tests.TestMultipleAssignmentsPerRow()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			ParseNote(plan, textTable)
+			ParseNote(plan, textTable, true)
 
 			local valuesTable = CreateValuesTable({
 				"Markoleptic",
@@ -922,7 +927,7 @@ do
 		function tests.TestBossParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			local bossDungeonEncounterID = ParseNote(plan, textTable)
+			local bossDungeonEncounterID = ParseNote(plan, textTable, true)
 
 			TestEqual(bossDungeonEncounterID, 2917, "Correct boss dungeon encounter ID")
 			for i = 1, 3 do
@@ -959,7 +964,7 @@ do
 		function tests.TestExport()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			local bossDungeonEncounterID = ParseNote(plan, textTable) --[[@as integer]]
+			local bossDungeonEncounterID = ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID or bossDungeonEncounterID
 			ChangePlanBoss(plan.dungeonEncounterID, plan)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)

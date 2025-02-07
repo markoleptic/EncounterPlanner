@@ -15,6 +15,7 @@ local kDistributeText = constants.communications.kDistributeText
 ---@class Utilities
 local utilities = Private.utilities
 local CreateUniquePlanName = utilities.CreateUniquePlanName
+local SetPrimaryPlan = utilities.SetPrimaryPlan
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
@@ -281,6 +282,13 @@ local function ImportPlan(plan, fullName)
 	LogMessage(format("%s '%s' %s %s", L["Received plan"], plan.name, L["from"], fullName))
 	LogMessage(importInfo)
 
+	if IsInRaid() then
+		local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
+		if changedPrimaryPlan then
+			LogMessage(format("%s '%s'", L["Changed the primary plan to"], plan.name))
+		end
+	end
+
 	if Private.mainFrame then
 		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
 			RemovePlanFromDropdown(existingPlanName)
@@ -491,9 +499,17 @@ do
 	end
 
 	function Private.SendPlanToGroup()
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local plans = AddOn.db.profile.plans
+		local plan = plans[AddOn.db.profile.lastOpenPlan]
 		local groupType = GetGroupType()
 		if groupType then
+			if groupType == "RAID" then
+				local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
+				if changedPrimaryPlan then
+					interfaceUpdater.UpdatePrimaryPlanCheckBox(plan.name)
+					LogMessage(format("%s '%s'", L["Changed the primary plan to"], plan.name))
+				end
+			end
 			if activePlanIDsBeingSent[plan.ID] then
 				activePlanIDsBeingSent[plan.ID].timer:Cancel()
 				activePlanIDsBeingSent[plan.ID].timer = nil
@@ -556,49 +572,49 @@ do
 	do
 		local text = [[
             {time:0:16,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
-            {time:0:23,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r -  {spell:421453}  Brockx {spell:97462}  Majablast {spell:108281}
+            {time:0:23,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r - Duck {spell:421453}  Brockx {spell:97462}  Majablast {spell:108281}
             {time:0:29,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Sephx {spell:1044}  {everyone} {text}Spread for Webs{/text}
-            {time:0:46,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Poglizard {spell:359816}
+            {time:0:46,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:451234}  Poglizard {spell:359816}
             {time:0:59,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:1:06,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374968}  Draugmentor {spell:374227}  Gun {spell:77764}  Vodkabro {spell:192077}
-            {time:1:13,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r -  {spell:451234}  Stranko {spell:97462}
-            {time:1:26,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}
+            {time:1:13,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r - Duck {spell:451234}  Stranko {spell:97462}
+            {time:1:26,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:451234}
             {time:1:29,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:1:56,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:374968}  Skorke {spell:77764}
             {time:1:59,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
-            {time:2:06,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Poglizard {spell:363534}
+            {time:2:06,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:451234}  Poglizard {spell:363534}
             {time:2:30,SCS:442432:1}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:2:30,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - class:Mage {spell:414660}
             {time:2:46,SCS:442432:1}{spell:442432}|cffFF6666Volatile Concoction|r - Poglizard {spell:359816}
-            {time:2:52,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r -  {spell:246287}
+            {time:2:52,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - Duck {spell:246287}
             {time:2:57,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - Vodkabro {spell:114049}
             {time:3:02,SCS:442432:1}{spell:442432}|cff8B4513Ingest Black Blood|r - Vodkabro {spell:108280}
             {time:0:16,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
             {time:0:23,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r - Majablast {spell:108281}
-            {time:0:26,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:421453}
+            {time:0:26,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:421453}
             {time:0:29,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:0:59,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
-            {time:1:06,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}
+            {time:1:06,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:451234}
             {time:1:06,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374227}  Draugmentor {spell:374968}  Gun {spell:77764}  Vodkabro {spell:192077}
             {time:1:13,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r - Brockx {spell:97462}  Vodkabro {spell:98008}
             {time:1:29,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:1:56,SCS:442432:2}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:374968}  Skorke {spell:77764}
             {time:2:00,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
-            {time:2:03,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:451234}  Stranko {spell:97462}
+            {time:2:03,SCS:442432:2}{spell:442432}|cffCC0000Dosage Hit|r - Duck {spell:451234}  Stranko {spell:97462}
             {time:2:30,SCS:442432:2}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:2:46,SCS:442432:2}{spell:442432}|cffFF6666Volatile Concoction|r - Poglizard {spell:359816}
-            {time:2:52,SCS:442432:2}{spell:442432}|cff8B4513Ingest Black Blood|r -  {spell:246287}  Vodkabro {spell:108280}  class:Mage {spell:414660}
+            {time:2:52,SCS:442432:2}{spell:442432}|cff8B4513Ingest Black Blood|r - Duck {spell:246287}  Vodkabro {spell:108280}  class:Mage {spell:414660}
             {time:3:02,SCS:442432:2}{spell:442432}|cff8B4513Ingest Black Blood|r - Poglizard {spell:363534}  Vodkabro {spell:114049}
             {time:0:16,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
-            {time:0:23,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:421453}  {everyone} {text}{Personals{/text}
+            {time:0:23,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r - Duck {spell:421453}  {everyone} {text}{Personals{/text}
             {time:0:29,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:0:59,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}
-            {time:1:06,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r -  {spell:451234}  Draugmentor {spell:374227}
+            {time:1:06,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r - Duck {spell:451234}  Draugmentor {spell:374227}
             {time:1:06,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Draugmentor {spell:374968}  Gun {spell:77764}  Vodkabro {spell:192077}  {everyone} {text}Spread for Webs{/text}
             {time:1:09,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:1:56,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:1:56,SCS:442432:3}{spell:442432}|cffFFFF00Experimental Dosage|r - Poglizard {spell:359816}  Poglizard {spell:374968}  Skorke {spell:77764}
-            {time:1:57,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r -  {spell:451234}  Brockx {spell:97462}
+            {time:1:57,SCS:442432:3}{spell:442432}|cffCC0000Dosage Hit|r - Duck {spell:451234}  Brockx {spell:97462}
             {time:2:26,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
             {time:2:27,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r - Stranko {spell:97462}
             {time:2:56,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
@@ -607,7 +623,7 @@ do
 		function tests.TestEncodeDecodePlan()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
-			local bossDungeonEncounterID = Private.ParseNote(plan, textTable) --[[@as integer]]
+			local bossDungeonEncounterID = Private.ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID
 			ChangePlanBoss(plan.dungeonEncounterID, plan)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)

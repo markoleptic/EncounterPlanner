@@ -226,7 +226,7 @@ do -- Profile updating and refreshing
 	end
 
 	local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
-	local UpdatePlanDropdown = interfaceUpdater.UpdatePlanDropdown
+	local UpdatePlanWidgets = interfaceUpdater.UpdatePlanWidgets
 
 	---@param db AceDBObject-3.0
 	---@param newProfile string|nil
@@ -249,7 +249,7 @@ do -- Profile updating and refreshing
 			if timeline then
 				timeline:SetPreferences(db.profile.preferences)
 			end
-			UpdatePlanDropdown()
+			UpdatePlanWidgets()
 			UpdateFromPlan(db.profile.lastOpenPlan)
 		end
 		if Private.optionsMenu then
