@@ -657,15 +657,7 @@ do
 	local CreateValuesTable = testUtilities.CreateValuesTable
 	local TestContains = testUtilities.TestContains
 	local TestEqual = testUtilities.TestEqual
-
-	---@param textTable table<integer, string>
-	---@return table<integer, string>
-	local function RemoveTabs(textTable)
-		for i, str in ipairs(textTable) do
-			textTable[i] = str:trim()
-		end
-		return textTable
-	end
+	local RemoveTabs = testUtilities.RemoveTabs
 
 	do
 		local text = [[
