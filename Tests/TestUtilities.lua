@@ -125,7 +125,6 @@ do
 	function TestUtilities.TestEqual(first, second, context)
 		currentTotalComparisons = currentTotalComparisons + 1
 		if type(first) == "table" and type(second) == "table" then
-			print("testing table")
 			local result, contextString = TestEqualTable(first, second)
 			if result == true then
 				currentPassedComparisons = currentPassedComparisons + 1
