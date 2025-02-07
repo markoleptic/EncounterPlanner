@@ -358,6 +358,7 @@ Private.classes.RosterEntry = {
 -- A plan for a boss encounter.
 ---@class Plan
 ---@field ID string Uniquely generated ID used when updating assignments received from other characters.
+---@field isPrimaryPlan boolean Whether the plan has priority over other plans for the same boss.
 ---@field name string Name of the plan.
 ---@field dungeonEncounterID integer Dungeon encounter ID for the boss the plan is associated with.
 ---@field instanceID integer Instance ID for the boss the plan is associated with.
@@ -745,6 +746,7 @@ local defaults = {
 	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
 	---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
+	---@field activeText string External text send by the group leader on encounter start.
 	---@field preferences Preferences Settings.
 	profile = {
 		activeBossAbilities = {},
@@ -754,6 +756,7 @@ local defaults = {
 		recentSpellAssignments = {},
 		trustedCharacters = {},
 		cooldownOverrides = {},
+		activeText = "",
 		preferences = {
 			lastOpenTab = Private.L["Cooldown Overrides"],
 			keyBindings = {
