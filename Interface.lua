@@ -1047,6 +1047,9 @@ local function HandlePlanDropdownValueChanged(_, _, value)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
+	if Private.externalTextEditor then
+		Private.externalTextEditor:Release()
+	end
 	AddOn.db.profile.lastOpenPlan = value
 	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
 	local bossDungeonEncounterID = plan.dungeonEncounterID
@@ -1567,6 +1570,29 @@ local function HandlePreferencesMenuButtonClicked(preferencesMenuButton, _, valu
 	end
 end
 
+local function HandleExternalTextButtonClicked()
+	if not Private.externalTextEditor then
+		local currentPlan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local currentPlanID = currentPlan.ID
+		Private.externalTextEditor = AceGUI:Create("EPEditBox")
+		Private.externalTextEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		Private.externalTextEditor.frame:SetFrameLevel(constants.frameLevels.kExternalTextEditorFrameLevel)
+		Private.externalTextEditor.frame:SetPoint("CENTER")
+		Private.externalTextEditor:SetTitle(L["External Text Editor"])
+		Private.externalTextEditor:SetCallback("OnRelease", function()
+			if AddOn.db and AddOn.db.profile then
+				local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+				if plan.ID == currentPlanID then
+					plan.content = utilities.SplitStringIntoTable(Private.externalTextEditor:GetText())
+				end
+			end
+			Private.externalTextEditor = nil
+		end)
+		Private.externalTextEditor:SetText(string.join("\n", unpack(currentPlan.content)))
+		Private.externalTextEditor:HighlightTextAndFocus()
+	end
+end
+
 ---@param simulateReminderButton EPButton
 local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 	local wasSimulatingBoss = Private.IsSimulatingBoss()
@@ -1754,6 +1780,9 @@ local function CloseDialogs()
 	if Private.newPlanDialog then
 		Private.newPlanDialog:Release()
 	end
+	if Private.externalTextEditor then
+		Private.externalTextEditor:Release()
+	end
 	interfaceUpdater.RemoveMessageBoxes(true)
 end
 
@@ -1938,6 +1967,12 @@ function Private:CreateInterface()
 	planReminderEnableCheckBox:SetFullHeight(true)
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", HandlePlanReminderEnableCheckBoxValueChanged)
 
+	local externalTextButton = AceGUI:Create("EPButton")
+	externalTextButton:SetText(L["External Text"])
+	externalTextButton:SetWidthFromText()
+	externalTextButton:SetFullHeight(true)
+	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
+
 	local simulateRemindersButton = AceGUI:Create("EPButton")
 	simulateRemindersButton:SetText(L["Simulate Reminders"])
 	simulateRemindersButton:SetWidthFromText()
@@ -1957,6 +1992,7 @@ function Private:CreateInterface()
 	reminderAndSendPlanButtonContainer:AddChildren(
 		primaryPlanCheckBox,
 		planReminderEnableCheckBox,
+		externalTextButton,
 		simulateRemindersButton,
 		sendPlanButton
 	)

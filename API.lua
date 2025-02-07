@@ -8,7 +8,9 @@ local utilities = Private.utilities
 local SplitStringIntoTable = utilities.SplitStringIntoTable
 
 local ipairs = ipairs
+local join = string.join
 local tinsert = tinsert
+local unpack = unpack
 
 -- Public facing API.
 ---@class EncounterPlannerAPI
@@ -16,8 +18,8 @@ local EncounterPlannerAPI = {}
 
 ---@return string
 function EncounterPlannerAPI.GetExternalTextAsString()
-	local externalText = Private.addOn.db.profile.activeText
-	return externalText
+	local profile = Private.addOn.db.profile ---@type DefaultProfile
+	return join("\n", unpack(profile.activeText))
 end
 
 ---@param strTable table<integer, string>
@@ -36,7 +38,7 @@ end
 ---@return table<integer, table<integer, string>>
 function EncounterPlannerAPI.GetExternalTextAsTable()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
-	return SplitStringTableByWhiteSpace(SplitStringIntoTable(profile.activeText))
+	return SplitStringTableByWhiteSpace(profile.activeText)
 end
 
 _G["EncounterPlannerAPI"] = EncounterPlannerAPI

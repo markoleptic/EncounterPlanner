@@ -350,3 +350,5 @@ L["Updated matching plan"] = true
 L["Imported plan as"] = true
 L["Changed the primary plan to"] = true
 L["Primary Plan"] = true
+L["External Text"] = true
+L["External Text Editor"] = true

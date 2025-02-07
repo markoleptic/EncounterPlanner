@@ -471,7 +471,7 @@ do
 				end
 			end
 		elseif prefix == kDistributeText then
-			local package = DecompressString(message, false)
+			local package = StringToTable(message, false)
 			self.db.profile.activeText = package
 		end
 	end
@@ -533,7 +533,7 @@ do
 		end
 		local groupType = GetGroupType()
 		if groupType then
-			local exportString = CompressString(primaryPlan.content, false)
+			local exportString = TableToString(primaryPlan.content, false)
 			AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
 		end
 	end

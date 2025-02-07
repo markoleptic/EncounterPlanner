@@ -763,7 +763,7 @@ local defaults = {
 	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
 	---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
-	---@field activeText string External text send by the group leader on encounter start.
+	---@field activeText table<integer, string> External text send by the group leader on encounter start.
 	---@field preferences Preferences Settings.
 	profile = {
 		activeBossAbilities = {},
@@ -773,7 +773,7 @@ local defaults = {
 		recentSpellAssignments = {},
 		trustedCharacters = {},
 		cooldownOverrides = {},
-		activeText = "",
+		activeText = {},
 		preferences = {
 			lastOpenTab = Private.L["Cooldown Overrides"],
 			keyBindings = {
@@ -890,6 +890,7 @@ Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
+Private.externalTextEditor = nil --[[@as EPEditBox]]
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 
 Private.tests = {}

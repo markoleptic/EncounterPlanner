@@ -14,6 +14,7 @@ Private.constants = {
 		kPhaseEditorFrameLevel = 60,
 		kImportEditBoxFrameLevel = 80,
 		kExportEditBoxFrameLevel = 100,
+		kExternalTextEditorFrameLevel = 110,
 		kNewPlanDialogFrameLevel = 120,
 		kOptionsMenuFrameLevel = 140,
 		kMessageBoxFrameLevel = 160,
