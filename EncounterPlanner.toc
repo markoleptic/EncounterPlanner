@@ -8,25 +8,29 @@
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, MRT, DevTool, WeakAuras
 ## IconTexture: Interface\AddOns\EncounterPlanner\Media\ep-logo.tga
 ## X-Flavor: Mainline
-## X-Localizations: enUS
+## X-Localizations: enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
 
 Embeds.xml
 Locales\Locales.xml
+
 Constants.lua
 Spells.lua
 Init.lua
-Tests\TestUtilities.lua
 Libs\Cbor.lua
 Widgets\Widgets.xml
+
+Tests\TestUtilities.lua
+
 NerubarPalace.lua
 BossUtilities.lua
 Utilities.lua
-API.lua
 Note.lua
 Reminder.lua
 InterfaceUpdater.lua
 Communications.lua
 Options.lua
 Interface.lua
+API.lua
 Core.lua
+
 Tests\TestRunner.lua
