@@ -155,7 +155,7 @@ do
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-			SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations, kMaxBossDuration)
+			SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations)
 			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
 			customPhaseCounts = SetPhaseCounts(bossDungeonEncounterID, customPhaseCounts, kMaxBossDuration)
 			GenerateBossTables(boss)

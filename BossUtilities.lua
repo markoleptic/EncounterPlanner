@@ -392,22 +392,17 @@ end
 function BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phaseDuration)
 	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 	if boss then
-		boss.phases[phaseIndex].duration = phaseDuration
+		if boss.phases[phaseIndex] then
+			boss.phases[phaseIndex].duration = phaseDuration
+		end
 	end
 end
 
 ---@param bossDungeonEncounterID integer
 ---@param phaseDurations table<integer, number>
----@param maxTotalDuration number
-function BossUtilities.SetPhaseDurations(bossDungeonEncounterID, phaseDurations, maxTotalDuration)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
-	if boss then
-		local phases = boss.phases
-		for phaseIndex, phaseDuration in pairs(phaseDurations) do
-			if phases[phaseIndex] then
-				phases[phaseIndex].duration = phaseDuration
-			end
-		end
+function BossUtilities.SetPhaseDurations(bossDungeonEncounterID, phaseDurations)
+	for phaseIndex, phaseDuration in pairs(phaseDurations) do
+		BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phaseDuration)
 	end
 end
 

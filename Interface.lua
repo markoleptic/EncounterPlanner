@@ -741,6 +741,7 @@ do -- Phase Length Editor
 	local CalculateMaxPhaseDuration = bossUtilities.CalculateMaxPhaseDuration
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local SetPhaseDuration = bossUtilities.SetPhaseDuration
+	local SetPhaseDurations = bossUtilities.SetPhaseDurations
 	local SetPhaseCount = bossUtilities.SetPhaseCount
 
 	local kPhaseEditorFrameLevel = constants.frameLevels.kPhaseEditorFrameLevel
@@ -783,8 +784,14 @@ do -- Phase Length Editor
 	local function HandlePhaseLengthEditorDataChanged(_, _, phaseIndex, minLineEdit, secLineEdit)
 		local boss = GetCurrentBoss()
 		if boss then
-			local previousDuration = boss.phases[phaseIndex].duration
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+
+			local previousDuration = boss.phases[phaseIndex].duration
+			if boss.treatAsSinglePhase then
+				local totalCustomTime, _ = GetTotalDurations(bossDungeonEncounterID)
+				previousDuration = totalCustomTime
+			end
+
 			local formatAndReturn = false
 			local newDuration = previousDuration
 			local timeMinutes = tonumber(minLineEdit:GetText())
@@ -793,9 +800,11 @@ do -- Phase Length Editor
 				local roundedMinutes = Round(timeMinutes, 0)
 				local roundedSeconds = Round(timeSeconds, 1)
 				newDuration = roundedMinutes * 60 + roundedSeconds
-
 				local maxPhaseDuration = CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration)
 				if maxPhaseDuration then
+					if boss.treatAsSinglePhase then
+						maxPhaseDuration = kMaxBossDuration
+					end
 					newDuration = Clamp(newDuration, kMinBossPhaseDuration, maxPhaseDuration)
 				end
 				if abs(newDuration - previousDuration) < 0.01 then
@@ -810,9 +819,31 @@ do -- Phase Length Editor
 			secLineEdit:SetText(seconds)
 
 			if not formatAndReturn then
-				SetPhaseDuration(bossDungeonEncounterID, phaseIndex, newDuration)
 				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-				customPhaseDurations[phaseIndex] = newDuration
+				if boss.treatAsSinglePhase then
+					local cumulativePhaseTime = 0.0
+					for index, phase in ipairs(boss.phases) do
+						if cumulativePhaseTime + phase.defaultDuration <= newDuration then
+							cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
+							customPhaseDurations[index] = phase.defaultDuration
+						elseif cumulativePhaseTime < newDuration then
+							customPhaseDurations[index] = newDuration - cumulativePhaseTime
+							cumulativePhaseTime = cumulativePhaseTime + phase.duration
+						else
+							customPhaseDurations[index] = 0.0
+						end
+					end
+					if cumulativePhaseTime < newDuration then
+						customPhaseDurations[#boss.phases] = (customPhaseDurations[#boss.phases] or 0)
+							+ newDuration
+							- cumulativePhaseTime
+					end
+					SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations)
+				else
+					SetPhaseDuration(bossDungeonEncounterID, phaseIndex, newDuration)
+					customPhaseDurations[phaseIndex] = newDuration
+				end
+
 				UpdateBoss(bossDungeonEncounterID, true)
 				UpdateAllAssignments(false, bossDungeonEncounterID)
 				UpdateTotalTime()
