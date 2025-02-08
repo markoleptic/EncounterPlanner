@@ -14,10 +14,10 @@ local unpack = unpack
 
 -- Public facing API.
 ---@class EncounterPlannerAPI
-local EncounterPlannerAPI = {}
+local API = {}
 
 ---@return string
-function EncounterPlannerAPI.GetExternalTextAsString()
+function API.GetExternalTextAsString()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return join("\n", unpack(profile.activeText))
 end
@@ -36,12 +36,12 @@ local function SplitStringTableByWhiteSpace(strTable)
 end
 
 ---@return table<integer, table<integer, string>>
-function EncounterPlannerAPI.GetExternalTextAsTable()
+function API.GetExternalTextAsTable()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return SplitStringTableByWhiteSpace(profile.activeText)
 end
 
-_G["EncounterPlannerAPI"] = EncounterPlannerAPI
+EncounterPlannerAPI = setmetatable({}, { __index = API, __newindex = function() end, __metatable = false })
 
 do
 	---@class Tests
@@ -51,6 +51,8 @@ do
 
 	local TestEqual = testUtilities.TestEqual
 	local RemoveTabs = testUtilities.RemoveTabs
+
+	-- cSpell:disable
 
 	do
 		local text = [[

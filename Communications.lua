@@ -570,6 +570,7 @@ do
 	local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 
 	do
+		-- cSpell:disable
 		local text = [[
             {time:0:16,SCS:442432:1}{spell:442432}|cffFFFF00Experimental Dosage|r - Majablast {spell:192077}  Skorke {spell:77764}
             {time:0:23,SCS:442432:1}{spell:442432}|cffAB0E0EDosage Hit|r - Duck {spell:421453}  Brockx {spell:97462}  Majablast {spell:108281}
@@ -619,6 +620,7 @@ do
             {time:2:27,SCS:442432:3}{spell:442432}|cffFF6666Volatile Concoction|r - Stranko {spell:97462}
             {time:2:56,SCS:442432:3}{spell:442432}|cff0000FFSticky Web|r - Pogdog @Lbkt {spell:1044}  Sarys @Poglizard {spell:1044}  {everyone} {text}Spread for Webs{/text}
         ]]
+		-- cSpell:enable
 
 		function tests.TestEncodeDecodePlan()
 			local plan = Plan:New({}, "Test")
