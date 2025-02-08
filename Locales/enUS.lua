@@ -352,3 +352,4 @@ L["Changed the primary plan to"] = true
 L["Primary Plan"] = true
 L["External Text"] = true
 L["External Text Editor"] = true
+L["Removed"] = true

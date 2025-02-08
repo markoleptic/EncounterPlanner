@@ -421,13 +421,15 @@ do -- Assignment Editor
 	local function HandleAssignmentEditorDeleteButtonClicked()
 		local assignmentID = Private.assignmentEditor:GetAssignmentID()
 		Private.assignmentEditor:Release()
-		for i, v in ipairs(GetCurrentAssignments()) do
+		local assignments = GetCurrentAssignments()
+		for i, v in ipairs(assignments) do
 			if v.uniqueID == assignmentID then
-				tremove(GetCurrentAssignments(), i)
+				tremove(assignments, i)
+				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed "], L["assignment"]))
 				break
 			end
 		end
-		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	end
 
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
@@ -660,7 +662,7 @@ do -- Assignment Editor
 			end
 		end
 		if updateAssignments then
-			UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+			UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 			if timeline then
 				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
 			end
@@ -696,7 +698,7 @@ do -- Assignment Editor
 		assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		assignmentEditor:SetCallback("CloseButtonClicked", function()
 			Private.assignmentEditor:Release()
-			UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+			UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 		end)
 		assignmentEditor.spellAssignmentDropdown:AddItems(
 			GetOrCreateSpellAssignmentDropdownItems(),
@@ -1131,88 +1133,60 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	local assignment = TimedAssignment:New()
 	assignment.assignee = value
 	tinsert(GetCurrentAssignments(), assignment)
-	UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(L["Add Assignee"])
 end
 
 ---@param abilityInstance BossAbilityInstance
----@param assigneesAndSpellIndex integer
+---@param assignee string
+---@param spellID integer|nil
 ---@param relativeAssignmentStartTime number
-local function HandleCreateNewAssignment(_, _, abilityInstance, assigneesAndSpellIndex, relativeAssignmentStartTime)
-	local sorted = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
-		AddOn.db.profile.preferences.assignmentSortType,
-		GetCurrentBossDungeonEncounterID()
-	)
-	local sortedAssigneesAndSpells =
-		SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed)
-	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
-	if nameAndSpell then
-		local assignment = Assignment:New()
-		assignment.assignee = nameAndSpell.assignee
-		if nameAndSpell.spellID then
-			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
-			if spellInfo then
-				assignment.spellInfo = spellInfo
-			else
-				assignment.spellInfo.spellID = nameAndSpell.spellID
-			end
+local function HandleCreateNewAssignment(_, _, abilityInstance, assignee, spellID, relativeAssignmentStartTime)
+	local assignment = Assignment:New()
+	assignment.assignee = assignee
+	if spellID and spellID > constants.kTextAssignmentSpellID then
+		local spellInfo = GetSpellInfo(spellID)
+		if spellInfo then
+			assignment.spellInfo = spellInfo
 		end
-		local createCombatLogAssignment = true -- TODO: Allow user to choose
-		if createCombatLogAssignment then
-			-- if abilityInstance.repeatInstance and abilityInstance.repeatCastIndex then
-			-- else
-			local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
-			combatLogEventAssignment.combatLogEventType = "SCS"
-			combatLogEventAssignment.time = Round(relativeAssignmentStartTime, 1)
-			combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
-			combatLogEventAssignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
-			combatLogEventAssignment.bossPhaseOrderIndex = abilityInstance.bossPhaseOrderIndex
-			combatLogEventAssignment.phase = abilityInstance.bossPhaseIndex
-			tinsert(GetCurrentAssignments(), combatLogEventAssignment)
-			-- end
-			-- elseif abilityInstance.repeatInstance then
-		else
-			local timedAssignment = TimedAssignment:New(assignment)
-			timedAssignment.time = abilityInstance.castStart
-			tinsert(GetCurrentAssignments(), timedAssignment)
-		end
-		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
+	local createCombatLogAssignment = true -- TODO: Allow user to choose
+	if createCombatLogAssignment then
+		local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
+		combatLogEventAssignment.combatLogEventType = "SCS"
+		combatLogEventAssignment.time = Round(relativeAssignmentStartTime, 1)
+		combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
+		combatLogEventAssignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+		combatLogEventAssignment.bossPhaseOrderIndex = abilityInstance.bossPhaseOrderIndex
+		combatLogEventAssignment.phase = abilityInstance.bossPhaseIndex
+		tinsert(GetCurrentAssignments(), combatLogEventAssignment)
+	else
+		local timedAssignment = TimedAssignment:New(assignment)
+		timedAssignment.time = abilityInstance.castStart
+		tinsert(GetCurrentAssignments(), timedAssignment)
+	end
+	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
----@param assigneesAndSpellIndex integer
+---@param assignee string
+---@param spellID integer|nil
 ---@param time number
-local function HandleCreateNewTimedAssignment(_, _, assigneesAndSpellIndex, time)
-	local sorted = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
-		AddOn.db.profile.preferences.assignmentSortType,
-		GetCurrentBossDungeonEncounterID()
-	)
-	local sortedAssigneesAndSpells =
-		SortAssigneesWithSpellID(sorted, AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed)
-	local nameAndSpell = sortedAssigneesAndSpells[assigneesAndSpellIndex]
-	if nameAndSpell then
-		local assignment = Assignment:New()
-		assignment.assignee = nameAndSpell.assignee
-		if nameAndSpell.spellID then
-			local spellInfo = GetSpellInfo(nameAndSpell.spellID)
-			if spellInfo then
-				assignment.spellInfo = spellInfo
-			else
-				assignment.spellInfo.spellID = nameAndSpell.spellID
-			end
+local function HandleCreateNewTimedAssignment(_, _, assignee, spellID, time)
+	local assignment = Assignment:New()
+	assignment.assignee = assignee
+	if spellID and spellID > constants.kTextAssignmentSpellID then
+		local spellInfo = GetSpellInfo(spellID)
+		if spellInfo then
+			assignment.spellInfo = spellInfo
 		end
-		local timedAssignment = TimedAssignment:New(assignment)
-		timedAssignment.time = Round(time, 1)
-		tinsert(GetCurrentAssignments(), timedAssignment)
-		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
+	local timedAssignment = TimedAssignment:New(assignment)
+	timedAssignment.time = Round(time, 1)
+	tinsert(GetCurrentAssignments(), timedAssignment)
+	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
 do -- Plan Menu Button Handlers
@@ -1358,7 +1332,6 @@ do -- Plan Menu Button Handlers
 			AddOn.db.profile.lastOpenPlan = newPlanName
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
-			AddPlanToDropdown(newPlanName, true)
 		end
 		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
 		AddPlanToDropdown(newLastOpenPlan, true)
@@ -1737,7 +1710,7 @@ local function HandleCollapseAllButtonClicked()
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 		collapsed[timelineAssignment.assignment.assignee] = true
 	end
-	UpdateAllAssignments(true, currentBossDungeonEncounterID)
+	UpdateAllAssignments(false, currentBossDungeonEncounterID)
 end
 
 local function HandleExpandAllButtonClicked()

@@ -1043,28 +1043,29 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 
 	local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
 	local totalAssignmentHeight = 0
-	local assigneeIndex = nil
+	local assignee, spellID = nil, nil
 	for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
 		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
 			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
 			if totalAssignmentHeight >= relativeDistanceFromTop then
-				assigneeIndex = index
+				assignee, spellID = assigneeAndSpell.assignee, assigneeAndSpell.spellID
 				break
 			end
 		end
 	end
 
-	if assigneeIndex then
+	if assignee then
 		if nearestBarIndex then
 			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castStart
 			self:Fire(
 				"CreateNewAssignment",
 				self.bossAbilityFrames[nearestBarIndex].abilityInstance,
-				assigneeIndex,
+				assignee,
+				spellID,
 				relativeAssignmentStartTime
 			)
 		else
-			self:Fire("CreateNewTimedAssignment", assigneeIndex, time)
+			self:Fire("CreateNewTimedAssignment", assignee, spellID, time)
 		end
 	end
 end
@@ -1700,7 +1701,7 @@ end
 ---@field thumb Button
 ---@field addAssigneeDropdown EPDropdown
 ---@field currentTimeLabel EPLabel
----@field assigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
+---@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
 ---@field assignmentFrames table<integer, AssignmentFrame>
 ---@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
 ---@field fakeAssignmentFrame FakeAssignmentFrame
