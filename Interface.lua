@@ -195,6 +195,11 @@ local function GetCurrentAssignments()
 	return plan.assignments
 end
 
+---@return Plan
+local function GetCurrentPlan()
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+end
+
 ---@return Boss|nil
 local function GetCurrentBoss()
 	return GetBoss(Private.mainFrame.bossLabel:GetValue())
@@ -1588,8 +1593,7 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 		end
 		simulateReminderButton:SetText(L["Stop Simulating"])
 		local sortedTimelineAssignments = SortAssignments(
-			GetCurrentAssignments(),
-			GetCurrentRoster(),
+			GetCurrentPlan(),
 			AddOn.db.profile.preferences.assignmentSortType,
 			GetCurrentBossDungeonEncounterID()
 		)
@@ -1673,8 +1677,7 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment)
 	tinsert(GetCurrentAssignments(), newAssignment)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
+		GetCurrentPlan(),
 		AddOn.db.profile.preferences.assignmentSortType,
 		GetCurrentBossDungeonEncounterID()
 	)
@@ -1701,8 +1704,7 @@ end
 local function HandleCollapseAllButtonClicked()
 	local currentBossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
+		GetCurrentPlan(),
 		AddOn.db.profile.preferences.assignmentSortType,
 		currentBossDungeonEncounterID
 	)
@@ -1716,8 +1718,7 @@ end
 local function HandleExpandAllButtonClicked()
 	local currentBossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
+		GetCurrentPlan(),
 		AddOn.db.profile.preferences.assignmentSortType,
 		currentBossDungeonEncounterID
 	)

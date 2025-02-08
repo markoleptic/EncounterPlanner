@@ -531,7 +531,7 @@ do
 	---@param bossDungeonEncounterID integer
 	---@return string
 	function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
-		local timelineAssignments = CreateTimelineAssignments(plan.assignments, bossDungeonEncounterID)
+		local timelineAssignments = CreateTimelineAssignments(plan, bossDungeonEncounterID)
 		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assignee < b.assignment.assignee

@@ -41,6 +41,11 @@ local function GetCurrentAssignments()
 	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].assignments
 end
 
+---@return Plan
+local function GetCurrentPlan()
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+end
+
 do
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
@@ -432,12 +437,8 @@ end
 ---@param bossDungeonEncounterID integer
 ---@param firstUpdate boolean|nil
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate)
-	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentAssignments(),
-		GetCurrentRoster(),
-		AddOn.db.profile.preferences.assignmentSortType,
-		bossDungeonEncounterID
-	)
+	local sortedTimelineAssignments =
+		SortAssignments(GetCurrentPlan(), AddOn.db.profile.preferences.assignmentSortType, bossDungeonEncounterID)
 	local sortedWithSpellID = SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed

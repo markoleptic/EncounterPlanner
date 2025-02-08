@@ -1042,6 +1042,10 @@ end
 do
 	local AddOn = Private.addOn
 	local tremove = table.remove
+	local GetTotalDurations = bossUtilities.GetTotalDurations
+	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
+
+	local loggedOverlappingOrNotVisiblePlans = {} ---@type table <string, {overlapCount: integer, pastDurationCount: integer}>
 
 	---@class FailedInfo
 	---@field bossName string|nil
@@ -1053,7 +1057,7 @@ do
 	---@return boolean
 	---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
 	function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
-		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local absoluteSpellCastStartTable = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		local bossName = GetBossName(bossDungeonEncounterID)
 		local failedTable = {
 			bossName = bossName,
@@ -1118,6 +1122,139 @@ do
 		end
 	end
 
+	---@param timelineAssignments table<integer, TimelineAssignment>
+	---@param plan Plan
+	---@param bossDungeonEncounterID integer
+	function Utilities.LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
+		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
+		if interfaceUpdater then
+			local totalCustomDuration, _ = GetTotalDurations(bossDungeonEncounterID)
+
+			local startTimesPastTotalDuration = {} ---@type table<integer, number>
+			local inStartTimesPastTotalDuration = {} ---@type table<number, boolean>
+			local pastDurationCount = 0
+
+			local overlappingAssignments = {} ---@type table<integer, table<integer, TimelineAssignment>>
+			local groupedAssignments = {} ---@type table<string, table<integer, TimelineAssignment>>
+
+			for _, timelineAssignment in ipairs(timelineAssignments) do
+				local assignee = timelineAssignment.assignment.assignee
+				local spellID = timelineAssignment.assignment.spellInfo.spellID
+				local key = assignee .. tostring(spellID)
+				groupedAssignments[key] = groupedAssignments[key] or {}
+				tinsert(groupedAssignments[key], timelineAssignment)
+				if timelineAssignment.startTime > totalCustomDuration then
+					if not inStartTimesPastTotalDuration[timelineAssignment.startTime] then
+						tinsert(startTimesPastTotalDuration, timelineAssignment.startTime)
+						inStartTimesPastTotalDuration[timelineAssignment.startTime] = true
+					end
+					pastDurationCount = pastDurationCount + 1
+				end
+			end
+
+			for _, timelineAssignmentTable in pairs(groupedAssignments) do
+				sort(timelineAssignmentTable, function(a, b)
+					return a.startTime < b.startTime
+				end)
+				for i = 2, #timelineAssignmentTable do
+					local previous = timelineAssignmentTable[i - 1]
+					local current = timelineAssignmentTable[i]
+					local timeDiff = current.startTime - previous.startTime
+					if timeDiff < constants.kMinimumTimeBetweenAssignmentsBeforeWarning then
+						tinsert(overlappingAssignments, { previous, current })
+					end
+				end
+			end
+
+			local overlapCount = #overlappingAssignments
+			local counts = loggedOverlappingOrNotVisiblePlans[plan.ID]
+
+			local shouldLogPastDurationCount = pastDurationCount > 0
+			if counts then
+				if shouldLogPastDurationCount and counts.pastDurationCount ~= pastDurationCount then
+					shouldLogPastDurationCount = true
+				elseif counts.pastDurationCount > pastDurationCount then
+					shouldLogPastDurationCount = true
+				else
+					shouldLogPastDurationCount = false
+				end
+			end
+
+			if shouldLogPastDurationCount then
+				if pastDurationCount == 0 then
+					interfaceUpdater.LogMessage(L["All assignments visible"], 1, 1)
+				else
+					local assignmentsString = pastDurationCount == 1 and L["assignment"] or L["assignments"]
+					local formattedCount = format(
+						"%d %s %s %s -> %s.",
+						pastDurationCount,
+						assignmentsString,
+						L["may be hidden due to starting after the encounter ends. Consider extending the duration in"],
+						L["Boss"],
+						L["Phase Timing Editor"]
+					)
+					interfaceUpdater.LogMessage(formattedCount, 2, 1)
+					sort(startTimesPastTotalDuration)
+					local stringTimes = ""
+					for _, duration in ipairs(startTimesPastTotalDuration) do
+						stringTimes = stringTimes .. format("%s:%s", Utilities.FormatTime(duration)) .. ", "
+					end
+					if stringTimes:len() > 1 then
+						stringTimes = stringTimes:sub(1, stringTimes:len() - 2)
+					end
+					interfaceUpdater.LogMessage(format("%s: %s.", L["Assignment times"], stringTimes), 2, 2)
+				end
+			end
+
+			local shouldLogOverlapCount = overlapCount > 0
+			if counts then
+				if shouldLogOverlapCount and counts.overlapCount ~= overlapCount then
+					shouldLogOverlapCount = true
+				elseif counts.overlapCount > overlapCount then
+					shouldLogOverlapCount = true
+				else
+					shouldLogOverlapCount = false
+				end
+			end
+
+			if shouldLogOverlapCount then
+				if overlapCount == 0 then
+					interfaceUpdater.LogMessage(L["No overlapping assignments"], 1, 1)
+				else
+					interfaceUpdater.LogMessage(format("%s:", L["Assignments might be overlapping"]), 2, 1)
+					for _, timelineAssignmentPair in ipairs(overlappingAssignments) do
+						local previous = timelineAssignmentPair[1]
+						local current = timelineAssignmentPair[2]
+						local assignee =
+							Utilities.ConvertAssigneeToLegibleString(previous.assignment.assignee, plan.roster)
+						local spell = L["Unknown"]
+						if previous.assignment.spellInfo.name:len() > 0 then
+							spell = previous.assignment.spellInfo.name
+						elseif previous.assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
+							spell = L["Text"]
+						end
+						local previousStartTime = format("%s:%s", Utilities.FormatTime(previous.startTime))
+						local currentStartTime = format("%s:%s", Utilities.FormatTime(current.startTime))
+						local message = format(
+							"%s: %s, %s: %s, %s: %s, %s.",
+							L["Assignee"],
+							assignee,
+							L["Spell"],
+							spell,
+							L["Start times"],
+							previousStartTime,
+							currentStartTime
+						)
+						interfaceUpdater.LogMessage(message, 2, 2)
+					end
+				end
+			end
+
+			loggedOverlappingOrNotVisiblePlans[plan.ID] =
+				{ overlapCount = overlapCount, pastDurationCount = pastDurationCount }
+		end
+	end
+
 	---@param count integer
 	---@param invalidSpellIDOnlyCount integer
 	---@param onlyFailedSpellIDsString string
@@ -1160,14 +1297,14 @@ do
 	end
 
 	-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
-	---@param assignments table<integer, Assignment> Assignments to create timeline assignments from
+	---@param plan Plan Plan containing assignments to create timeline assignments from
 	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
 	---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
-	function Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
+	function Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID)
 		local timelineAssignments = {}
 		if AddOn.db then
 			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
-			for _, assignment in pairs(assignments) do
+			for _, assignment in pairs(plan.assignments) do
 				local spellID = assignment.spellInfo.spellID
 				local overrideDuration = cooldownOverrides[spellID]
 				if overrideDuration then
@@ -1178,7 +1315,7 @@ do
 				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
 			end
 		else
-			for _, assignment in pairs(assignments) do
+			for _, assignment in pairs(plan.assignments) do
 				local spellID = assignment.spellInfo.spellID
 				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
 				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
@@ -1214,6 +1351,9 @@ do
 			local count = startCount - #timelineAssignments
 			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts)
 		end
+
+		Utilities.LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
+
 		return timelineAssignments
 	end
 end
@@ -1221,17 +1361,17 @@ end
 -- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@param collapsed table<string, boolean>
----@return table<integer, {assignee:string, spellID:number|nil}>
+---@return table<integer, {assignee:string, spellID:integer|nil}>
 function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 	local assigneeIndices = {}
 	local groupedByAssignee = {}
-	for _, entry in ipairs(sortedTimelineAssignments) do
-		local assignee = entry.assignment.assignee
+	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
+		local assignee = timelineAssignment.assignment.assignee
 		if not groupedByAssignee[assignee] then
 			groupedByAssignee[assignee] = {}
 			tinsert(assigneeIndices, assignee)
 		end
-		tinsert(groupedByAssignee[assignee], entry)
+		tinsert(groupedByAssignee[assignee], timelineAssignment)
 	end
 
 	local order = 0
@@ -1239,8 +1379,8 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 	local assigneeOrder = {}
 
 	for _, assignee in ipairs(assigneeIndices) do
-		for _, entry in ipairs(groupedByAssignee[assignee]) do
-			local spellID = entry.assignment.spellInfo.spellID
+		for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
+			local spellID = timelineAssignment.assignment.spellInfo.spellID
 			if not assigneeMap[assignee] then
 				assigneeMap[assignee] = {
 					order = order,
@@ -1256,18 +1396,14 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 				assigneeMap[assignee].spellIDs[spellID] = order
 				tinsert(assigneeOrder, { assignee = assignee, spellID = spellID })
 			end
-			entry.order = assigneeMap[assignee].spellIDs[spellID]
+			timelineAssignment.order = assigneeMap[assignee].spellIDs[spellID]
 		end
 	end
 
 	return assigneeOrder
 end
 
--- Creates a Timeline Assignment comparator function.
----@param roster table<string, RosterEntry> Roster associated with the assignments
----@param assignmentSortType AssignmentSortType Sort method
----@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
-local function CompareAssignments(roster, assignmentSortType)
+do
 	local function RolePriority(role)
 		if role == "role:healer" then
 			return 1
@@ -1280,64 +1416,70 @@ local function CompareAssignments(roster, assignmentSortType)
 		end
 	end
 
-	---@param a TimelineAssignment
-	---@param b TimelineAssignment
-	return function(a, b)
-		local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
-		local spellIDA, spellIDB = a.assignment.spellInfo.spellID, b.assignment.spellInfo.spellID
-		if assignmentSortType == "Alphabetical" then
-			if assigneeA == assigneeB then
-				return spellIDA < spellIDB
-			end
-			return assigneeA < assigneeB
-		elseif assignmentSortType == "First Appearance" then
-			if a.startTime == b.startTime then
+	-- Creates a Timeline Assignment comparator function.
+	---@param roster table<string, RosterEntry> Roster associated with the assignments.
+	---@param assignmentSortType AssignmentSortType Sort method.
+	---@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
+	local function CompareAssignments(roster, assignmentSortType)
+		---@param a TimelineAssignment
+		---@param b TimelineAssignment
+		return function(a, b)
+			local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
+			local spellIDA, spellIDB = a.assignment.spellInfo.spellID, b.assignment.spellInfo.spellID
+			if assignmentSortType == "Alphabetical" then
 				if assigneeA == assigneeB then
 					return spellIDA < spellIDB
 				end
 				return assigneeA < assigneeB
-			end
-			return a.startTime < b.startTime
-		elseif assignmentSortType:match("^Role") then
-			local roleA, roleB = roster[assigneeA], roster[assigneeB]
-			local rolePriorityA, rolePriorityB = RolePriority(roleA and roleA.role), RolePriority(roleB and roleB.role)
-			if rolePriorityA == rolePriorityB then
-				if assignmentSortType == "Role > Alphabetical" then
+			elseif assignmentSortType == "First Appearance" then
+				if a.startTime == b.startTime then
 					if assigneeA == assigneeB then
-						if spellIDA == spellIDB then
-							return a.startTime < b.startTime
-						end
 						return spellIDA < spellIDB
 					end
 					return assigneeA < assigneeB
-				elseif assignmentSortType == "Role > First Appearance" then
-					if a.startTime == b.startTime then
+				end
+				return a.startTime < b.startTime
+			elseif assignmentSortType:match("^Role") then
+				local roleA, roleB = roster[assigneeA], roster[assigneeB]
+				local rolePriorityA, rolePriorityB =
+					RolePriority(roleA and roleA.role), RolePriority(roleB and roleB.role)
+				if rolePriorityA == rolePriorityB then
+					if assignmentSortType == "Role > Alphabetical" then
 						if assigneeA == assigneeB then
+							if spellIDA == spellIDB then
+								return a.startTime < b.startTime
+							end
 							return spellIDA < spellIDB
 						end
 						return assigneeA < assigneeB
+					elseif assignmentSortType == "Role > First Appearance" then
+						if a.startTime == b.startTime then
+							if assigneeA == assigneeB then
+								return spellIDA < spellIDB
+							end
+							return assigneeA < assigneeB
+						end
+						return a.startTime < b.startTime
 					end
-					return a.startTime < b.startTime
 				end
+				return rolePriorityA < rolePriorityB
+			else
+				return false
 			end
-			return rolePriorityA < rolePriorityB
-		else
-			return false
 		end
 	end
-end
 
--- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
--- Sorts assignments based on the assignmentSortType.
----@param assignments table<integer, Assignment> Assignments to sort
----@param roster table<string, RosterEntry> Roster associated with the assignments
----@param assignmentSortType AssignmentSortType Sort method
----@param bossDungeonEncounterID integer Used to get boss timers to set the proper timeline assignment start time for combat log assignments
----@return table<integer, TimelineAssignment>
-function Utilities.SortAssignments(assignments, roster, assignmentSortType, bossDungeonEncounterID)
-	local timelineAssignments = Utilities.CreateTimelineAssignments(assignments, bossDungeonEncounterID)
-	sort(timelineAssignments, CompareAssignments(roster, assignmentSortType))
-	return timelineAssignments
+	-- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
+	-- Sorts assignments based on the assignmentSortType.
+	---@param plan Plan Plan containing assignments to sort.
+	---@param assignmentSortType AssignmentSortType Sort method.
+	---@param bossDungeonEncounterID integer Used to get boss timers to set the proper timeline assignment start time for combat log assignments.
+	---@return table<integer, TimelineAssignment>
+	function Utilities.SortAssignments(plan, assignmentSortType, bossDungeonEncounterID)
+		local timelineAssignments = Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID)
+		sort(timelineAssignments, CompareAssignments(plan.roster, assignmentSortType))
+		return timelineAssignments
+	end
 end
 
 -- Attempts to assign roles based on assignment spells. Currently only tries to assign healer roles.
