@@ -309,7 +309,7 @@ local function LogFailures(failedOrReplaced, failedCount, defaultedToTimedCount,
 
 		for _, value in ipairs(failedOrReplaced) do
 			if value.reason == 6 then
-				msg = format("%s: '%s'", L["Invalid assignee name or role"], value.string)
+				msg = format("%s: '%s'", L["Invalid assignee"], value.string)
 				interfaceUpdater.LogMessage(msg, 3, 2)
 			end
 		end

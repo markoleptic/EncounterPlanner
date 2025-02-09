@@ -208,7 +208,8 @@ do
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
-			InterfaceUpdater.LogMessage("Removed " .. removed .. " assignments.")
+			local assignmentString = removed == 1 and L["assignment"] or L["assignments"]
+			InterfaceUpdater.LogMessage(format("%s %d %s.", L["Removed"], removed, assignmentString))
 		end
 	end
 
@@ -467,8 +468,8 @@ function InterfaceUpdater.UpdateFromPlan(planName)
 			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
 		end
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
-		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.isPrimaryPlan)
-		Private.mainFrame.planReminderEnableCheckBox:SetEnabled(not plan.isPrimaryPlan)
+		Private.mainFrame.primaryPlanCheckBox:SetChecked(plan.isPrimaryPlan)
+		Private.mainFrame.primaryPlanCheckBox:SetEnabled(not plan.isPrimaryPlan)
 		Private.mainFrame:DoLayout()
 	end
 end

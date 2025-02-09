@@ -663,7 +663,7 @@ do
 			{
 				label = L["Message Visibility"],
 				type = "radioButtonGroup",
-				description = L["When to show Messages only at expiration or show them for the duration of the countdown."],
+				description = L["Whether to show Messages only at expiration or show them for the duration of the countdown."],
 				category = L["Messages"],
 				values = {
 					{ itemValue = "expirationOnly", text = L["Expiration Only"] },
@@ -701,7 +701,7 @@ do
 			{
 				label = L["Anchor Point"],
 				type = "dropdown",
-				description = L['Anchor point of the Message frame, or the "spot" on the Message frame that will be placed relative to another frame.'],
+				description = L['Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.'],
 				category = L["Messages"],
 				values = anchorPointValues,
 				updateIndices = { 0, 1, 2, 3 },
@@ -720,7 +720,7 @@ do
 			{
 				label = L["Anchor Frame"],
 				type = "frameChooser",
-				description = L["The frame that the Message frame is anchored to. Defaults to UIParent (screen)."],
+				description = L["The frame that the Messages frame is anchored to. Defaults to UIParent (screen)."],
 				category = L["Messages"],
 				updateIndices = { -1, 0, 1, 2 },
 				get = function()
@@ -738,7 +738,7 @@ do
 			{
 				label = L["Relative Anchor Point"],
 				type = "dropdown",
-				description = L["The anchor point on the frame that the Message frame is anchored to."],
+				description = L["The anchor point on the frame that the Messages frame is anchored to."],
 				category = L["Messages"],
 				values = anchorPointValues,
 				updateIndices = { -2, -1, 0, 1 },
@@ -1463,7 +1463,7 @@ do
 			{
 				label = L["Text to Speech Voice"],
 				type = "dropdown",
-				description = L["The voice to use for Text to Speech"],
+				description = L["The voice to use for Text to Speech."],
 				category = L["Text to Speech"],
 				values = voices,
 				get = function()
@@ -1484,7 +1484,7 @@ do
 			{
 				label = L["Text to Speech Volume"],
 				type = "lineEdit",
-				description = L["The volume to use for Text to Speech"],
+				description = L["The volume to use for Text to Speech."],
 				category = L["Text to Speech"],
 				get = function()
 					return tostring(GetReminderPreferences().textToSpeech.volume)
@@ -1709,7 +1709,7 @@ do
 			{
 				label = L["Show Spell Cooldown Duration"],
 				type = "checkBox",
-				description = L["Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key."],
+				description = L["Whether to show textures representing player spell cooldown durations."],
 				category = L["Assignment"],
 				get = function()
 					return GetPreferences().showSpellCooldownDuration
@@ -1749,7 +1749,7 @@ do
 					end
 				end,
 				buttonText = L["Reset Profile"],
-				buttonDescription = L["Reset the current profile to default."],
+				buttonDescription = L["Displays a confirmation dialog, and if confirmed, resets the Current Profile to default."],
 				buttonCallback = ResetProfile,
 				confirm = true,
 				confirmText = function()
@@ -1761,7 +1761,7 @@ do
 				label = L["New"],
 				type = "lineEdit",
 				category = L["Profile"],
-				description = L["Create a new empty profile."],
+				description = L["Creates a new empty profile and switches to it."],
 				get = function()
 					return ""
 				end,
@@ -1780,7 +1780,7 @@ do
 				type = "dropdown",
 				neverShowItemsAsSelected = true,
 				category = L["Profile"],
-				description = L["Copy the settings from an existing profile into the currently active profile."],
+				description = L["Copies the settings from an existing profile into the Current Profile."],
 				values = function()
 					return GetProfiles(true)
 				end,
@@ -1802,7 +1802,7 @@ do
 				type = "dropdown",
 				neverShowItemsAsSelected = true,
 				category = L["Profile"],
-				description = L["Delete a profile from the database."],
+				description = L["Displays a confirmation dialog, and if confirmed, deletes the selected profile from the database."],
 				values = function()
 					return GetProfiles(true)
 				end,
