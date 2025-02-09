@@ -1971,21 +1971,30 @@ end
 ---@return string
 function Utilities.CreateReminderText(assignment, roster, addIcon)
 	local reminderText = ""
-	local spellID = assignment.spellInfo.spellID
 	if assignment.text ~= nil and assignment.text ~= "" then
 		reminderText = Utilities.ReplaceGenericIconsOrSpells(assignment.text)
 		reminderText = reminderText:gsub("||", "|")
-	elseif assignment.targetName ~= nil and assignment.targetName ~= "" then
-		if spellID ~= nil and spellID > kTextAssignmentSpellID then
-			if assignment.spellInfo.name then
-				reminderText = assignment.spellInfo.name
-			else
-				local spellName = GetSpellName(spellID)
-				if spellName then
+		return reminderText
+	end
+
+	local spellID = assignment.spellInfo.spellID
+	if spellID ~= nil and spellID > kTextAssignmentSpellID then
+		local spellName = assignment.spellInfo.name:len() > 0 and assignment.spellInfo.name or GetSpellName(spellID)
+		if spellName then
+			if addIcon then
+				local spellTexture = GetSpellTexture(spellID)
+				if spellTexture then
+					reminderText = Utilities.AddIconBeforeText(spellTexture, spellName, 16)
+				else
 					reminderText = spellName
 				end
+			else
+				reminderText = spellName
 			end
 		end
+	end
+
+	if assignment.targetName ~= nil and assignment.targetName ~= "" then
 		local targetRosterEntry = roster[assignment.targetName] --[[@as RosterEntry]]
 		if targetRosterEntry and targetRosterEntry.classColoredName ~= "" then
 			if reminderText:len() > 0 then
@@ -1998,20 +2007,6 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 				reminderText = reminderText .. " " .. assignment.targetName
 			else
 				reminderText = assignment.targetName
-			end
-		end
-	elseif spellID ~= nil and spellID > kTextAssignmentSpellID then
-		local spellName = assignment.spellInfo.name:len() > 0 and assignment.spellInfo.name or GetSpellName(spellID)
-		if spellName then
-			if addIcon then
-				local spellTexture = GetSpellTexture(spellID)
-				if spellTexture then
-					reminderText = Utilities.AddIconBeforeText(spellTexture, spellName, 16)
-				else
-					reminderText = spellName
-				end
-			else
-				reminderText = spellName
 			end
 		end
 	end
