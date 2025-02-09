@@ -1,3 +1,4 @@
 .env
 .lua/*
 .vscode
+.release

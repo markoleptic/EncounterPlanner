@@ -1,0 +1,66 @@
+package-as: EncounterPlanner
+
+externals:
+    Libs/LibStub:
+        url: https://repos.curseforge.com/wow/libstub/trunk
+        tag: latest
+    Libs/CallbackHandler-1.0:
+        url: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
+        tag: latest
+    Libs/AceAddon-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceAddon-3.0
+        tag: latest
+    Libs/AceComm-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceComm-3.0
+        tag: latest
+    Libs/AceConfigDialog-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceConfig-3.0/AceConfigDialog-3.0
+        tag: latest
+    Libs/AceConfigRegistry-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceConfig-3.0/AceConfigRegistry-3.0
+        tag: latest
+    Libs/AceConsole-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceConsole-3.0
+        tag: latest
+    Libs/AceDB-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceDB-3.0
+        tag: latest
+    Libs/AceDBOptions-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceDBOptions-3.0
+        tag: latest
+    Libs/AceEvent-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceEvent-3.0
+        tag: latest
+    Libs/AceGUI-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceGUI-3.0
+        tag: latest
+    Libs/AceLocale-3.0:
+        url: https://repos.curseforge.com/wow/ace3/trunk/AceLocale-3.0
+        tag: latest
+    Libs/LibCustomGlow-1.0:
+        url: https://github.com/Stanzilla/LibCustomGlow
+        tag: latest
+    Libs/LibDataBroker-1.1:
+        url: https://repos.curseforge.com/wow/libdatabroker-1-1
+        tag: latest
+    Libs/LibDBIcon-1.0:
+        url: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
+        tag: latest
+    Libs/LibDeflate:
+        url: https://github.com/SafeteeWoW/LibDeflate
+        tag: latest
+    Libs/LibGetFrame-1.0:
+        url: https://github.com/mrbuds/LibGetFrame
+        tag: latest
+    Libs/LibSharedMedia-3.0:
+        url: https://repos.curseforge.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+        tag: latest
+
+tools-used:
+    - OmniCD
+
+ignore:
+    - README.md
+    - CONTRIBUTING.md
+    - Meta.lua
+    - Widgets/Meta.lua
