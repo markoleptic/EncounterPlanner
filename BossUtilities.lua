@@ -162,7 +162,8 @@ function BossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 	return absoluteSpellCastStartTables[bossDungeonEncounterID]
 end
 
--- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
+-- Returns a table that can be used to find the cast time of given the spellID and spell occurrence number. The table
+-- is created using the maximum allowed phase counts rather than the current phase counts.
 ---@param bossDungeonEncounterID integer
 ---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
 function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
@@ -424,7 +425,7 @@ do
 	---@param bossDungeonEncounterID integer
 	---@param maxTotalDuration number
 	---@return table<integer, integer> -- Ordered boss phase table
-	local function CreateMaxOrderedBossPhaseTable(bossDungeonEncounterID, maxTotalDuration)
+	local function GenerateMaxOrderedBossPhaseTable(bossDungeonEncounterID, maxTotalDuration)
 		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 		local orderedBossPhaseTable = {}
 		if boss then
@@ -449,7 +450,7 @@ do
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 	---@param bossDungeonEncounterID integer
 	---@return table<integer, integer> -- Ordered boss phase table
-	local function CreateOrderedBossPhaseTable(bossDungeonEncounterID)
+	local function GenerateOrderedBossPhaseTable(bossDungeonEncounterID)
 		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
 		local orderedBossPhaseTable = {}
 		if boss then
@@ -580,7 +581,7 @@ do
 		return spellCount
 	end
 
-	-- Creates instances for all abilities of a boss.
+	-- Creates BossAbilityInstances for all abilities of a boss.
 	---@param boss Boss
 	---@param orderedBossPhaseTable table<integer, integer>
 	---@return table<integer, BossAbilityInstance>
@@ -852,6 +853,7 @@ do
 		return abilityInstances
 	end
 
+	-- Creates a sorted table of boss spell IDs based on the their earliest cast times.
 	---@param absoluteSpellCastStartTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@return table<integer, integer>
 	local function GenerateSortedBossAbilities(absoluteSpellCastStartTable)
@@ -874,11 +876,11 @@ do
 		return sortedAbilityIDs
 	end
 
-	-- Creates spell cast time, sorted abilities, and ability instances tables for a boss.
+	-- Creates ordered boss phases, spell cast times, sorted abilities, and ability instances for a boss.
 	---@param boss Boss
 	function BossUtilities.GenerateBossTables(boss)
 		local ID = boss.dungeonEncounterID
-		orderedBossPhases[ID] = CreateOrderedBossPhaseTable(ID)
+		orderedBossPhases[ID] = GenerateOrderedBossPhaseTable(ID)
 		absoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[ID])
 		boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[ID])
 		boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[ID])
@@ -890,7 +892,7 @@ do
 		for _, boss in ipairs(raidInstance.bosses) do
 			BossUtilities.GenerateBossTables(boss)
 			maxOrderedBossPhases[boss.dungeonEncounterID] =
-				CreateMaxOrderedBossPhaseTable(boss.dungeonEncounterID, kMaxBossDuration)
+				GenerateMaxOrderedBossPhaseTable(boss.dungeonEncounterID, kMaxBossDuration)
 			maxAbsoluteSpellCastStartTables[boss.dungeonEncounterID] =
 				GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[boss.dungeonEncounterID])
 		end
