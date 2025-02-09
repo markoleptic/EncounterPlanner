@@ -756,8 +756,11 @@ do -- Phase Length Editor
 			local bossPhaseName = phase.name or index
 			if type(bossPhaseName) == "string" then
 				local intMatch = bossPhaseName:match("^Int(%d+)")
+				local pMatch = bossPhaseName:match("^P(%d+)")
 				if intMatch then
 					bossPhaseName = L["Intermission"] .. " " .. intMatch
+				elseif pMatch then
+					bossPhaseName = L["Phase"] .. " " .. pMatch
 				end
 			elseif type(bossPhaseName) == "number" then
 				bossPhaseName = L["Phase"] .. " " .. bossPhaseName
