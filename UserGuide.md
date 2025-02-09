@@ -56,7 +56,7 @@ The **Time** section determines what triggers an assignment and specifies one of
 -   A time relative to the start of the encounter
 -   A time relative to a combat log event
 
-> [!NOTE]
+> [!NOTE]  
 > Phase based assignments are not currently supported. However, combat log event assignments can accomplish the same thing.
 
 **Time Relative to the Start of the Encounter**
@@ -160,7 +160,8 @@ Selecting a boss from this dropdown menu will do one of the following:
     -   **Cancel**:
         No changes are made.
 
-> [!CAUTION] > **Convert to Timed Assignments** and **Replace Spells** are one-way actions, meaning that converting from boss A to boss B and converting back to boss A will not necessarily restore the original state.
+> [!CAUTION]  
+> **Convert to Timed Assignments** and **Replace Spells** are one-way actions, meaning that converting from boss A to boss B and converting back to boss A will not necessarily restore the original state.
 
 **Edit Phase Timings**:
 Displays the **Phase Timing Editor** window, which allows you customize the phase duration and counts of the boss encounter.
@@ -242,7 +243,7 @@ If unchecked, this setting will override any plans with **Enable Reminders for P
 **Only Show Reminders For Me**:
 Whether to only show assignment reminders that are relevant to you.
 
-> [!CAUTION]
+> [!CAUTION]  
 > You will see all reminders for everyone in the plan if this is not checked.
 
 **Hide or Cancel if Spell on Cooldown**:
@@ -274,7 +275,8 @@ Displays an example Message that can be moved by dragging.
 **Anchor Point**:
 Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.
 
-> [!NOTE] > `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Messages grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Messages grow upwards.
+> [!NOTE]  
+> `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Messages grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Messages grow upwards.
 
 **Anchor Frame**:
 The frame that the Messages frame is anchored to. Defaults to UIParent (screen).
@@ -318,7 +320,8 @@ Displays an example Progress Bar that can be moved by dragging.
 **Anchor Point**:
 Anchor point of the Progress Bar frame, or the "spot" on the Progress Bar frame that will be placed relative to another frame.
 
-> [!NOTE] > `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Progress Bars grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Progress Bars grow upwards.
+> [!NOTE]  
+> `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Progress Bars grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Progress Bars grow upwards.
 
 **Anchor Frame**:
 The frame that the Progress Bar frame is anchored to. Defaults to UIParent (screen).
