@@ -133,21 +133,6 @@ do -- Plan Menu Items
 	end
 end
 
-do -- Roster Menu Items
-	local rosterMenuItems = nil
-
-	---@return table<integer, DropdownItemData>
-	function Create.RosterMenuItems()
-		if not rosterMenuItems then
-			rosterMenuItems = {
-				{ itemValue = "Edit Current Plan Roster", text = L["Edit Current Plan Roster"] },
-				{ itemValue = "Edit Shared Roster", text = L["Edit Shared Roster"] },
-			}
-		end
-		return rosterMenuItems
-	end
-end
-
 do -- Boss Menu Items
 	local bossMenuItems = nil
 
@@ -430,7 +415,7 @@ do -- Assignment Editor
 		for i, v in ipairs(assignments) do
 			if v.uniqueID == assignmentID then
 				tremove(assignments, i)
-				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed "], L["assignment"]))
+				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed"], L["assignment"]))
 				break
 			end
 		end
@@ -1551,32 +1536,27 @@ local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, t
 	end
 end
 
----@param rosterMenuButton EPDropdown
----@param value any
-local function HandleRosterMenuButtonClicked(rosterMenuButton, _, value)
-	if value == "Roster" then
-		return
+local function HandleRosterMenuButtonClicked()
+	Create.RosterEditor("Current Plan Roster")
+	local menuButtonContainer = Private.menuButtonContainer
+	if menuButtonContainer then
+		for _, widget in ipairs(menuButtonContainer.children) do
+			if widget.type == "EPDropdown" then
+				widget:Close()
+			end
+		end
 	end
-	if value == "Edit Current Plan Roster" then
-		Create.RosterEditor("Current Plan Roster")
-	elseif value == "Edit Shared Roster" then
-		Create.RosterEditor("Shared Roster")
-	end
-	rosterMenuButton:SetValue("Roster")
-	rosterMenuButton:SetText(L["Roster"])
 end
 
----@param preferencesMenuButton EPDropdown
----@param value any
-local function HandlePreferencesMenuButtonClicked(preferencesMenuButton, _, value)
+local function HandlePreferencesMenuButtonClicked()
 	if not Private.optionsMenu then
 		Private:CreateOptionsMenu()
 	end
 	local menuButtonContainer = Private.menuButtonContainer
 	if menuButtonContainer then
-		for _, menuButton in ipairs(menuButtonContainer.children) do
-			if menuButton ~= preferencesMenuButton then
-				menuButton:Close()
+		for _, widget in ipairs(menuButtonContainer.children) do
+			if widget.type == "EPDropdown" then
+				widget:Close()
 			end
 		end
 	end
@@ -1895,14 +1875,24 @@ function Private:CreateInterface()
 	bossMenuButton:AddItems(Create.BossMenuItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
-	local rosterMenuButton = Create.MenuButton(L["Roster"])
-	rosterMenuButton:AddItems(Create.RosterMenuItems(), "EPDropdownItemToggle", true)
-	rosterMenuButton:SetCallback("OnValueChanged", HandleRosterMenuButtonClicked)
+	local rosterMenuButton = AceGUI:Create("EPButton")
+	rosterMenuButton:SetText(L["Roster"])
+	rosterMenuButton:SetFontSize(menuButtonFontSize)
+	local width = rosterMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
+	rosterMenuButton:SetWidth(width)
+	rosterMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
+	rosterMenuButton:SetBackdrop(
+		preferencesMenuButtonBackdrop,
+		preferencesMenuButtonBackdropColor,
+		preferencesMenuButtonBackdropBorderColor
+	)
+	rosterMenuButton:SetColor(unpack(preferencesMenuButtonColor))
+	rosterMenuButton:SetCallback("Clicked", HandlePreferencesMenuButtonClicked)
 
 	local preferencesMenuButton = AceGUI:Create("EPButton")
 	preferencesMenuButton:SetText(L["Preferences"])
 	preferencesMenuButton:SetFontSize(menuButtonFontSize)
-	local width = preferencesMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
+	width = preferencesMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
 	preferencesMenuButton:SetWidth(width)
 	preferencesMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
 	preferencesMenuButton:SetBackdrop(
