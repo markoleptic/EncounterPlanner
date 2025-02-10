@@ -44,7 +44,10 @@ One of the benefits of using Encounter Planner is not dealing with note syntax a
     -   **Overwrite Current Plan**: If checked, the current plan will be overwritten with the note assignment contents.
     -   **New Plan Name**: Unique name for the plan if not overwriting the current plan.
 
-Each line in a note is composed of a **Time** section, an **Assignments** section, and optionally an **Ignored Text** section.
+> [!NOTE]  
+> Non-assignment lines are saved as [External Text](#external-text) and are included with assignments when exporting.
+
+Each assignment line in a note is composed of a **Time** section, an **Assignments** section, and optionally an **Ignored Text** section.
 Text in the **Ignored Text** section must have a dash (`-`) at the end to be ignored.
 Both of the following are valid:
 
@@ -87,7 +90,7 @@ The **Time** section determines what triggers an assignment and specifies one of
 -   **\[SpellCount\]**:
     The number of times the combat log event must occur before the assignment is triggered.
     This can also be considered the occurrence number.
-    The first occurrence in an encounter will always be 1.
+    The first occurrence in an encounter is always 1.
 
 The **Assignments** section is list separated by double spaces (`  `), where each entry is composed of **Assignee(s)** and an **Assignment**.
 
@@ -99,7 +102,7 @@ This can be a character name, class, role, group, spec, or type. Multiple **Assi
     `[Name]`, where **\[Name\]** is the name of a character. If the realm name is included, there must be a dash (`-`) between the **Time** and **Assignments** sections.
     -   **Target**:
         `[Name]@[TargetName]`
-        If the **\[Name\]** has a `@` symbol at the end followed by a **\[TargetName\]**, the assignment will be considered a "targeted" assignment.
+        If the **\[Name\]** has a `@` symbol at the end followed by a **\[TargetName\]**, the assignment is considered a "targeted" assignment.
 -   **Class**:
     `class:[Class Name]` where **\[Class Name\]** is one of the 13 classes. Case insensitive with no spaces.
 -   **Role**:
@@ -176,8 +179,8 @@ These settings are unique to each plan.
     Resets the phase duration and counts to their default values.
 
 **Filter Spells**:
-Selecting a boss spell from this dropdown will hide it from the boss timeline.
-Assignments that rely on the boss spell will not be affected.
+Selecting a boss spell from this dropdown hides it from the boss timeline.
+Assignments that rely on the boss spell are not be affected.
 
 ### Roster
 
@@ -206,7 +209,7 @@ All of the settings in this menu are independent of plans.
 #### Cooldown Overrides
 
 If the cooldown durations obtained using the WoW API don't match reality, you can set custom spell cooldown durations using this menu.
-These durations will be used to draw the [Spell Cooldown Durations](#view), if enabled.
+These durations are used in place of the default to draw the [Spell Cooldown Durations](#view), if enabled.
 
 #### Keybindings
 
@@ -238,7 +241,7 @@ These durations will be used to draw the [Spell Cooldown Durations](#view), if e
 
 **Enable Reminders**:
 Whether to enable reminders for assignments.
-If unchecked, this setting will override any plans with **Enable Reminders for Plan** checked.
+If unchecked, this setting overrides any plans with **Enable Reminders for Plan** checked.
 
 **Only Show Reminders For Me**:
 Whether to only show assignment reminders that are relevant to you.
@@ -463,13 +466,11 @@ The currently active plan.
 Plans with reminders enabled will display a yellow bell icon next to their name in the dropdown, while plans with reminders disabled will show a desaturated bell icon.
 
 **Primary Plan**:
-Denotes whether this plan is used for external addon communication during an encounter.
+Denotes whether this plan has [External Text](#external-text) that other addons and WeakAuras should read.
 Only one plan can per boss can be the **Primary Plan**.
 
--   For example, if the plan contains **External Text** that a WeakAura should read, this designation says that this plan is the one to obtain the **External Text** from.
-
 -   Only the group leader needs to have the correct designation.
-    When the encounter starts, the group leader will automatically send an addon message to everyone in the group so that everyone has the same **External Text**.
+    When the encounter starts, the group leader will automatically send an addon message to everyone in the group so that everyone has the same [External Text](#external-text).
 
 **Enable Reminders for Plan**:
 Whether reminders are enabled for the **Current Plan**.
@@ -485,6 +486,11 @@ Sends the **Current Plan** to the party or raid group. Requires group leader or 
 
 -   The person receiving the plan must either approve the plan to receive it or have the sender saved as a trusted character to automatically receive it.
 -   If a receiver has not yet decided to accept or reject a plan and they are sent subsequent plans, they are placed in a queue.
+
+### External Text:
+
+Clicking this button displays the **External Text Editor**. Lines from an imported note that were not assignments are stored as **External Text**.
+**External Text** can be obtained by other addons and WeakAuras using the Encounter Planner API.
 
 ## Boss Timeline
 
@@ -550,25 +556,32 @@ If enabled, highlights the target's raid frame at assignment time.
 
 **Text**:
 Text to display on Reminders (Messages and Progress Bars).
-If left blank, text is filled by default:
 
--   If the assignment has a **Spell**, the spell icon and spell name are added.
--   If the assignment has a **Target**, the target's name is added.
+-   If left blank, text is filled by default:
 
-Icons can be inserted into text by using the syntax `{[icon]}`, where `[icon]` can be a raid marker name (English only), a class name, a spell ID, or a spell name (spotty):
+    -   If the assignment has a **Spell**, the spell icon and spell name are added.
+    -   If the assignment has a **Target**, the target's name is added.
 
--   `{Death Knight} go to {star}`
-    -   `{Death Knight}` replaced with class icon
-    -   `{star}` replaced with star icon
--   `{Mage} cast {31661}`
-    -   `{Mage}` replaced with class icon
-    -   `{31661}` replaced with spell icon for Dragon's Breath
--   `{Mage} cast {Dragon's Breath}`
-    -   `{Mage}` replaced with class icon
-    -   `{Dragon's Breath}` is not replaced for some reason
--   `{Mage} cast {Mass Barrier}` Works
-    -   `{Mage}` replaced with class icon
-    -   `{star}` replaced with Mass Barrier icon
+-   Icons can be inserted into text by using the syntax `{[icon]}`, where `[icon]` can be a raid marker name (English only), a class name, a spell ID, or a spell name (spotty):
+
+    -   `{Death Knight} go to {star}`
+        -   `{Death Knight}` replaced with class icon
+        -   `{star}` replaced with star icon
+    -   `{Mage} cast {31661}`
+        -   `{Mage}` replaced with class icon
+        -   `{31661}` replaced with spell icon for Dragon's Breath
+    -   `{Mage} cast {Dragon's Breath}`
+        -   `{Mage}` replaced with class icon
+        -   `{Dragon's Breath}` is not replaced for some reason
+    -   `{Mage} cast {Mass Barrier}` Works
+        -   `{Mage}` replaced with class icon
+        -   `{star}` replaced with Mass Barrier icon
+
+**Preview**:
+Displays a preview of the **Text** that will be shown on Reminders (Messages and Progress Bars).
+
+**Delete Assignment**:
+Deletes the assignment without confirmation.
 
 ## Status Bar
 
