@@ -190,8 +190,17 @@ do -- Profile updating and refreshing
 		end
 	end
 
+	---@class RosterEntry
+	local RosterEntry = Private.classes.RosterEntry
+
+	local GetClassColor = C_ClassColor.GetClassColor
 	local getmetatable = getmetatable
+	local GetSpecialization, GetSpecializationInfo = GetSpecialization, GetSpecializationInfo
+	local next = next
+	local select = select
 	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
+	local UnitClass = UnitClass
+	local UnitFullName = UnitFullName
 
 	-- Sets the metatables for assignments and performs a small amount of assignment validation.
 	---@param profile DefaultProfile
@@ -221,6 +230,30 @@ do -- Profile updating and refreshing
 						end
 					end
 				end
+			end
+			if not next(profile.sharedRoster) then
+				local role = select(5, GetSpecializationInfo(GetSpecialization()))
+				if role then
+					role = "role:" .. role:lower()
+				else
+					role = ""
+				end
+				local _, classFileName, _ = UnitClass("player")
+				local unitName, _ = UnitFullName("player")
+				local colorMixin = GetClassColor(classFileName)
+				local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+				if classFileName == "DEATHKNIGHT" then
+					classFileName = "DeathKnight"
+				elseif classFileName == "DEMONHUNTER" then
+					classFileName = "DemonHunter"
+				else
+					classFileName = classFileName:sub(1, 1):upper() .. classFileName:sub(2):lower()
+				end
+				profile.sharedRoster[unitName] = RosterEntry:New({
+					class = "class:" .. classFileName,
+					role = role,
+					classColoredName = classColoredName,
+				})
 			end
 		end
 	end
@@ -272,13 +305,13 @@ function AddOn:OnInitialize()
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
 
-	self.UpdateProfile(self.db.profile)
 	minimapIconObject.RegisterMinimapIcons(self)
 
 	self.OnInitialize = nil
 end
 
 function AddOn:OnEnable()
+	self.UpdateProfile(self.db.profile)
 	InitializeRaidInstances()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
