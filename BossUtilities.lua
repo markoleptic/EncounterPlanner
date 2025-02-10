@@ -518,9 +518,9 @@ do
 	---@param encounterID integer Boss dungeon encounter ID
 	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@param eventType CombatLogEventType
-	---@return integer|nil -- combat log event Spell ID
-	---@return integer|nil -- spell count
-	---@return number -- leftover time offset
+	---@return integer|nil spellID
+	---@return integer|nil spellCount
+	---@return number|nil leftoverTime
 	local function FindNearestCombatLogEventAllowingBefore(time, encounterID, castTimeTable, eventType)
 		local minTime, minTimeBefore = hugeNumber, hugeNumber
 		local spellIDForMinTime, spellCountForMinTime = nil, nil
@@ -566,9 +566,9 @@ do
 	---@param encounterID integer Boss dungeon encounter ID
 	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@param eventType CombatLogEventType
-	---@return integer|nil -- combat log event Spell ID
-	---@return integer|nil -- spell count
-	---@return number -- leftover time offset
+	---@return integer|nil spellID
+	---@return integer|nil spellCount
+	---@return number|nil leftoverTime
 	local function FindNearestCombatLogEventNoBefore(time, encounterID, castTimeTable, eventType)
 		local minTime = hugeNumber
 		local spellIDForMinTime, spellCountForMinTime = nil, nil
@@ -601,9 +601,9 @@ do
 	---@param encounterID integer Boss dungeon encounter ID
 	---@param eventType CombatLogEventType
 	---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
-	---@return integer|nil -- combat log event Spell ID
-	---@return integer|nil -- spell count
-	---@return number|nil -- leftover time offset
+	---@return integer|nil spellID
+	---@return integer|nil spellCount
+	---@return number|nil leftoverTime
 	function BossUtilities.FindNearestCombatLogEvent(time, encounterID, eventType, allowBefore)
 		local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
 		if castTimeTable then
@@ -622,8 +622,8 @@ do
 	---@param ability BossAbility
 	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
 	---@param currentEventType CombatLogEventType
-	---@return integer|nil -- spell count
-	---@return number -- leftover time offset
+	---@return integer|nil spellCount
+	---@return number leftoverTime
 	local function FindNearestSpellCountAllowingBefore(time, ability, castTimeTable, currentEventType)
 		local minTime, minTimeBefore = hugeNumber, hugeNumber
 		local spellCountForMinTime, spellCountForMinTimeBefore = nil, nil
@@ -662,8 +662,8 @@ do
 	---@param ability BossAbility
 	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
 	---@param currentEventType CombatLogEventType
-	---@return integer|nil -- spell count
-	---@return number -- leftover time offset
+	---@return integer|nil spellCount
+	---@return number leftoverTime
 	local function FindNearestSpellCountNoBefore(time, ability, castTimeTable, currentEventType)
 		local minTime = hugeNumber
 		local spellCountForMinTime = nil
@@ -695,8 +695,8 @@ do
 	---@param currentSpellCount integer Current combat log event spell count
 	---@param newSpellID integer New combat log event spell ID
 	---@param allowBefore boolean? If specified, spell will be chosen before the time if none can be found without doing so.
-	---@return integer|nil -- spell count
-	---@return number|nil -- leftover time offset
+	---@return integer|nil spellCount
+	---@return number|nil leftoverTime
 	function BossUtilities.FindNearestSpellCount(
 		relativeTime,
 		encounterID,
@@ -814,6 +814,33 @@ do
 			end
 		end
 	end
+end
+
+---@param time number Time from the start of the boss encounter
+---@return TimedAssignment|CombatLogEventAssignment|nil
+function BossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
+	local boss = BossUtilities.GetBoss(encounterID)
+	if boss then
+		local cumulativeTime = 0.0
+		if #boss.phases == 1 then
+			return Private.classes.TimedAssignment:New()
+		end
+		local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID)
+		if orderedBossPhaseTable then
+			for orderedPhaseIndex, phaseIndex in ipairs(orderedBossPhaseTable) do
+				local phase = boss.phases[phaseIndex]
+				if cumulativeTime + phase.duration > time then
+					if orderedPhaseIndex == 1 and phaseIndex == 1 then
+						return Private.classes.TimedAssignment:New()
+					else
+						return Private.classes.CombatLogEventAssignment:New()
+					end
+				end
+				cumulativeTime = cumulativeTime + phase.duration
+			end
+		end
+	end
+	return nil
 end
 
 do

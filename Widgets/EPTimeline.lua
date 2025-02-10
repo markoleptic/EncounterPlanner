@@ -1026,25 +1026,10 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 		return
 	end
 
-	local nearestBarIndex = nil
-	local minDistance = hugeNumber
-	for index, bar in ipairs(self.bossAbilityFrames) do
-		if bar:IsShown() then
-			local barStart = bar:GetLeft()
-			if barStart <= currentX then
-				local distance = currentX - barStart
-				if distance < minDistance then
-					minDistance = distance
-					nearestBarIndex = index
-				end
-			end
-		end
-	end
-
 	local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
 	local totalAssignmentHeight = 0
 	local assignee, spellID = nil, nil
-	for index, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
+	for _, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
 		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
 			totalAssignmentHeight = totalAssignmentHeight + (assignmentTextureSize.y + paddingBetweenAssignments)
 			if totalAssignmentHeight >= relativeDistanceFromTop then
@@ -1055,18 +1040,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 	end
 
 	if assignee then
-		if nearestBarIndex then
-			local relativeAssignmentStartTime = time - self.bossAbilityFrames[nearestBarIndex].abilityInstance.castStart
-			self:Fire(
-				"CreateNewAssignment",
-				self.bossAbilityFrames[nearestBarIndex].abilityInstance,
-				assignee,
-				spellID,
-				relativeAssignmentStartTime
-			)
-		else
-			self:Fire("CreateNewTimedAssignment", assignee, spellID, time)
-		end
+		self:Fire("CreateNewAssignment", assignee, spellID, time)
 	end
 end
 

@@ -1164,55 +1164,51 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	dropdown:SetText(L["Add Assignee"])
 end
 
----@param abilityInstance BossAbilityInstance
----@param assignee string
----@param spellID integer|nil
----@param relativeAssignmentStartTime number
-local function HandleCreateNewAssignment(_, _, abilityInstance, assignee, spellID, relativeAssignmentStartTime)
-	local assignment = Assignment:New()
-	assignment.assignee = assignee
-	if spellID and spellID > constants.kTextAssignmentSpellID then
-		local spellInfo = GetSpellInfo(spellID)
-		if spellInfo then
-			assignment.spellInfo = spellInfo
-		end
-	end
-	local createCombatLogAssignment = true -- TODO: Allow user to choose
-	if createCombatLogAssignment then
-		local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
-		combatLogEventAssignment.combatLogEventType = "SCS"
-		combatLogEventAssignment.time = Round(relativeAssignmentStartTime, 1)
-		combatLogEventAssignment.spellCount = abilityInstance.spellOccurrence
-		combatLogEventAssignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
-		combatLogEventAssignment.bossPhaseOrderIndex = abilityInstance.bossPhaseOrderIndex
-		combatLogEventAssignment.phase = abilityInstance.bossPhaseIndex
-		tinsert(GetCurrentAssignments(), combatLogEventAssignment)
-	else
-		local timedAssignment = TimedAssignment:New(assignment)
-		timedAssignment.time = abilityInstance.castStart
-		tinsert(GetCurrentAssignments(), timedAssignment)
-	end
-	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-end
-
 ---@param assignee string
 ---@param spellID integer|nil
 ---@param time number
-local function HandleCreateNewTimedAssignment(_, _, assignee, spellID, time)
-	local assignment = Assignment:New()
-	assignment.assignee = assignee
-	if spellID and spellID > constants.kTextAssignmentSpellID then
-		local spellInfo = GetSpellInfo(spellID)
-		if spellInfo then
-			assignment.spellInfo = spellInfo
+local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
+	print(assignee, spellID, time)
+	local encounterID = GetCurrentBossDungeonEncounterID()
+	local assignment = bossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
+	if assignment then
+		assignment.assignee = assignee
+		if spellID and spellID > constants.kTextAssignmentSpellID then
+			local spellInfo = GetSpellInfo(spellID)
+			if spellInfo then
+				assignment.spellInfo = spellInfo
+			end
 		end
+		if getmetatable(assignment) == CombatLogEventAssignment then
+			local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+			local bossPhaseTable = bossUtilities.GetOrderedBossPhases(encounterID)
+			print(castTimeTable, bossPhaseTable)
+			if castTimeTable and bossPhaseTable then
+				local newSpellID, newSpellCount, newTime =
+					bossUtilities.FindNearestCombatLogEvent(time, encounterID, "SCS", true)
+				print(newSpellID, newSpellCount, newTime)
+				if newSpellID and newSpellCount and newTime then
+					if newSpellID and newSpellCount and newTime then
+						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
+							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
+							assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+							assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+						end
+						assignment.time = utilities.Round(newTime, 1)
+						assignment.combatLogEventSpellID = newSpellID
+						assignment.spellCount = newSpellCount
+					end
+				end
+			end
+		elseif getmetatable(assignment) == TimedAssignment then
+			assignment.time = Round(time, 1)
+		else
+			return
+		end
+		tinsert(GetCurrentAssignments(), assignment)
+		UpdateAllAssignments(false, encounterID)
+		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	end
-	local timedAssignment = TimedAssignment:New(assignment)
-	timedAssignment.time = Round(time, 1)
-	tinsert(GetCurrentAssignments(), timedAssignment)
-	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 end
 
 do -- Plan Menu Button Handlers
@@ -2026,7 +2022,6 @@ function Private:CreateInterface()
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
-	timeline:SetCallback("CreateNewTimedAssignment", HandleCreateNewTimedAssignment)
 	timeline:SetCallback("DuplicateAssignment", HandleDuplicateAssignment)
 	timeline:SetCallback("ResizeBoundsCalculated", HandleResizeBoundsCalculated)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
