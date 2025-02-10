@@ -3,6 +3,9 @@ local AddOnName, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+---@class Utilities
+local Utilities = Private.utilities
+
 ---@class BossUtilities
 local BossUtilities = Private.bossUtilities
 
@@ -31,12 +34,24 @@ local orderedBossPhases = {}
 ---@type table<integer, table<integer, integer>>
 local maxOrderedBossPhases = {}
 
----@param dungeonEncounterID integer
+---@param value number
+---@param precision integer
+---@return number
+function Utilities.Round(value, precision)
+	local factor = 10 ^ precision
+	if value > 0 then
+		return floor(value * factor + 0.5) / factor
+	else
+		return ceil(value * factor - 0.5) / factor
+	end
+end
+
+---@param encounterID integer Boss dungeon encounter ID
 ---@return string|nil
-function BossUtilities.GetBossName(dungeonEncounterID)
+function BossUtilities.GetBossName(encounterID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.dungeonEncounterID == dungeonEncounterID then
+			if boss.dungeonEncounterID == encounterID then
 				if boss.name:len() == 0 then
 					EJ_SelectInstance(raidInstance.journalInstanceID)
 					EJ_SelectEncounter(boss.journalEncounterID)
@@ -50,12 +65,12 @@ function BossUtilities.GetBossName(dungeonEncounterID)
 	return nil
 end
 
----@param dungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return Boss|nil
-function BossUtilities.GetBoss(dungeonEncounterID)
+function BossUtilities.GetBoss(encounterID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.dungeonEncounterID == dungeonEncounterID then
+			if boss.dungeonEncounterID == encounterID then
 				return boss
 			end
 		end
@@ -76,13 +91,13 @@ function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
 	return nil
 end
 
----@param dungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID number
 ---@return BossAbility|nil
-function BossUtilities.FindBossAbility(dungeonEncounterID, spellID)
+function BossUtilities.FindBossAbility(encounterID, spellID)
 	for _, raidInstance in pairs(Private.raidInstances) do
 		for _, boss in ipairs(raidInstance.bosses) do
-			if boss.dungeonEncounterID == dungeonEncounterID then
+			if boss.dungeonEncounterID == encounterID then
 				if boss.abilities[spellID] then
 					return boss.abilities[spellID]
 				end
@@ -122,18 +137,18 @@ function BossUtilities.GetRelativeBossAbilityStartTime(ability, spellCount)
 end
 
 -- Returns the phase start time from boss pull to the specified phase number and occurrence.
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param bossPhaseTable table<integer, integer> A table of boss phases in the order in which they occur
 ---@param phaseNumber integer The boss phase number
 ---@param phaseCount integer? The current phase repeat instance (i.e. 2nd time occurring = 2)
 ---@return number -- Cumulative start time for a given boss phase and count/occurrence
-function BossUtilities.GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseNumber, phaseCount)
+function BossUtilities.GetCumulativePhaseStartTime(encounterID, bossPhaseTable, phaseNumber, phaseCount)
 	if not phaseCount then
 		phaseCount = 1
 	end
 	local cumulativePhaseStartTime = 0
 	local phaseNumberOccurrences = 0
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		for _, currentPhaseNumber in ipairs(bossPhaseTable) do
 			if currentPhaseNumber == phaseNumber then
@@ -149,40 +164,40 @@ function BossUtilities.GetCumulativePhaseStartTime(bossDungeonEncounterID, bossP
 end
 
 -- Returns a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return table<integer, integer>|nil -- [bossPhaseOrderIndex, bossPhaseIndex]
-function BossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
-	return orderedBossPhases[bossDungeonEncounterID]
+function BossUtilities.GetOrderedBossPhases(encounterID)
+	return orderedBossPhases[encounterID]
 end
 
 -- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
-function BossUtilities.GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
-	return absoluteSpellCastStartTables[bossDungeonEncounterID]
+function BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+	return absoluteSpellCastStartTables[encounterID]
 end
 
 -- Returns a table that can be used to find the cast time of given the spellID and spell occurrence number. The table
 -- is created using the maximum allowed phase counts rather than the current phase counts.
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
-function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
-	return maxAbsoluteSpellCastStartTables[bossDungeonEncounterID]
+function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(encounterID)
+	return maxAbsoluteSpellCastStartTables[encounterID]
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return table<integer, BossAbilityInstance>|nil
-function BossUtilities.GetBossAbilityInstances(bossDungeonEncounterID)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+function BossUtilities.GetBossAbilityInstances(encounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		return boss.abilityInstances
 	end
 	return nil
 end
 
----@param bossDungeonEncounterID integer
-function BossUtilities.ResetBossPhaseTimings(bossDungeonEncounterID)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+---@param encounterID integer Boss dungeon encounter ID
+function BossUtilities.ResetBossPhaseTimings(encounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		for _, phase in ipairs(boss.phases) do
 			phase.duration = phase.defaultDuration
@@ -190,9 +205,9 @@ function BossUtilities.ResetBossPhaseTimings(bossDungeonEncounterID)
 	end
 end
 
----@param bossDungeonEncounterID integer
-function BossUtilities.ResetBossPhaseCounts(bossDungeonEncounterID)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+---@param encounterID integer Boss dungeon encounter ID
+function BossUtilities.ResetBossPhaseCounts(encounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		for _, phase in ipairs(boss.phases) do
 			phase.count = phase.defaultCount
@@ -200,12 +215,12 @@ function BossUtilities.ResetBossPhaseCounts(bossDungeonEncounterID)
 	end
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
 ---@param count integer
 ---@return boolean
-function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
-	local spellCount = absoluteSpellCastStartTables[bossDungeonEncounterID]
+function BossUtilities.IsValidSpellCount(encounterID, spellID, count)
+	local spellCount = absoluteSpellCastStartTables[encounterID]
 	if spellCount then
 		local spellCountBySpellID = spellCount[spellID]
 		if spellCountBySpellID then
@@ -215,11 +230,11 @@ function BossUtilities.IsValidSpellCount(bossDungeonEncounterID, spellID, count)
 	return false
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
 ---@return integer|nil
-function BossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
-	local spellCount = absoluteSpellCastStartTables[bossDungeonEncounterID]
+function BossUtilities.GetMaxSpellCount(encounterID, spellID)
+	local spellCount = absoluteSpellCastStartTables[encounterID]
 	if spellCount then
 		local spellCountBySpellID = spellCount[spellID]
 		if spellCountBySpellID then
@@ -229,12 +244,12 @@ function BossUtilities.GetMaxSpellCount(bossDungeonEncounterID, spellID)
 	return nil
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
-function BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalDuration)
+function BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 	local counts = {}
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		local phases = boss.phases
 		local currentPhaseIndex, currentTotalDuration = 1, 0.0
@@ -254,14 +269,14 @@ function BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalD
 	return counts
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param changedPhase integer|nil
 ---@param newCount integer|nil
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
-function BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
+function BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, maxTotalDuration)
 	local validatedCounts = {}
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		local phases = boss.phases
 		if changedPhase and newCount then
@@ -294,7 +309,7 @@ function BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase,
 		end
 
 		-- Clamp phases to their min/maxes
-		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(bossDungeonEncounterID, maxTotalDuration)
+		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 		validatedCounts[1] = Clamp(validatedCounts[1], 1, maxCounts[1])
 		local lastPhaseIndexCount = validatedCounts[1]
 		for phaseIndex = 2, #validatedCounts do
@@ -308,15 +323,14 @@ function BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase,
 	return validatedCounts
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param changedPhase integer
 ---@param newCount integer
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
-function BossUtilities.SetPhaseCount(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
-	local validatedCounts =
-		BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, changedPhase, newCount, maxTotalDuration)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+function BossUtilities.SetPhaseCount(encounterID, changedPhase, newCount, maxTotalDuration)
+	local validatedCounts = BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, maxTotalDuration)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		local phases = boss.phases
 		for phaseIndex, phaseCount in ipairs(validatedCounts) do
@@ -328,13 +342,13 @@ function BossUtilities.SetPhaseCount(bossDungeonEncounterID, changedPhase, newCo
 	return validatedCounts
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param phaseCounts  table<integer, integer>
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
-function BossUtilities.SetPhaseCounts(bossDungeonEncounterID, phaseCounts, maxTotalDuration)
+function BossUtilities.SetPhaseCounts(encounterID, phaseCounts, maxTotalDuration)
 	local validatedCounts = {}
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		local phases = boss.phases
 		for phaseIndex, phaseCount in pairs(phaseCounts) do
@@ -342,7 +356,7 @@ function BossUtilities.SetPhaseCounts(bossDungeonEncounterID, phaseCounts, maxTo
 				phases[phaseIndex].count = phaseCount
 			end
 		end
-		validatedCounts = BossUtilities.ValidatePhaseCounts(bossDungeonEncounterID, nil, nil, maxTotalDuration)
+		validatedCounts = BossUtilities.ValidatePhaseCounts(encounterID, nil, nil, maxTotalDuration)
 		for phaseIndex, phaseCount in ipairs(validatedCounts) do
 			if phases[phaseIndex] then
 				phases[phaseIndex].count = phaseCount
@@ -352,13 +366,13 @@ function BossUtilities.SetPhaseCounts(bossDungeonEncounterID, phaseCounts, maxTo
 	return validatedCounts
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param phaseIndex integer
 ---@param maxTotalDuration number
 ---@return number|nil
-function BossUtilities.CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, maxTotalDuration)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
-	local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(bossDungeonEncounterID)
+function BossUtilities.CalculateMaxPhaseDuration(encounterID, phaseIndex, maxTotalDuration)
+	local boss = BossUtilities.GetBoss(encounterID)
+	local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID)
 	if boss and orderedBossPhaseTable then
 		local totalDurationWithoutPhaseDuration = 0.0
 		local phases = boss.phases
@@ -372,12 +386,12 @@ function BossUtilities.CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIn
 	end
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@return number totalCustomDuration
 ---@return number totalDefaultDuration
-function BossUtilities.GetTotalDurations(bossDungeonEncounterID)
+function BossUtilities.GetTotalDurations(encounterID)
 	local totalCustomDuration, totalDefaultDuration = 0.0, 0.0
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		for _, phase in pairs(boss.phases) do
 			totalCustomDuration = totalCustomDuration + (phase.duration * phase.count)
@@ -387,11 +401,11 @@ function BossUtilities.GetTotalDurations(bossDungeonEncounterID)
 	return totalCustomDuration, totalDefaultDuration
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param phaseIndex integer
 ---@param phaseDuration number
-function BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phaseDuration)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+function BossUtilities.SetPhaseDuration(encounterID, phaseIndex, phaseDuration)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		if boss.phases[phaseIndex] then
 			boss.phases[phaseIndex].duration = phaseDuration
@@ -399,18 +413,18 @@ function BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phas
 	end
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param phaseDurations table<integer, number>
-function BossUtilities.SetPhaseDurations(bossDungeonEncounterID, phaseDurations)
+function BossUtilities.SetPhaseDurations(encounterID, phaseDurations)
 	for phaseIndex, phaseDuration in pairs(phaseDurations) do
-		BossUtilities.SetPhaseDuration(bossDungeonEncounterID, phaseIndex, phaseDuration)
+		BossUtilities.SetPhaseDuration(encounterID, phaseIndex, phaseDuration)
 	end
 end
 
----@param bossDungeonEncounterID integer
+---@param encounterID integer Boss dungeon encounter ID
 ---@param plan Plan
-function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
-	local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+function BossUtilities.ChangePlanBoss(encounterID, plan)
+	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
 		plan.dungeonEncounterID = boss.dungeonEncounterID
 		plan.instanceID = boss.instanceID
@@ -419,14 +433,397 @@ function BossUtilities.ChangePlanBoss(bossDungeonEncounterID, plan)
 	end
 end
 
+---@param time number Time relative to the combat log event
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer Combat log event spell ID
+---@param spellCount integer
+---@param combatLogEventType CombatLogEventType
+---@return number|nil
+function BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+	time,
+	encounterID,
+	spellID,
+	spellCount,
+	combatLogEventType
+)
+	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+	if absoluteSpellCastStartTable then
+		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
+			local adjustedTime = absoluteSpellCastStartTable[spellID][spellCount].castStart + time
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			if ability then
+				if combatLogEventType == "SAR" then
+					adjustedTime = adjustedTime + ability.duration + ability.castTime
+				elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+					adjustedTime = adjustedTime + ability.castTime
+				end
+			end
+			return adjustedTime
+		end
+	end
+	return nil
+end
+
+---@param time number The time from the beginning of the boss encounter
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer Combat log event spell ID
+---@param spellCount integer Combat log event spell count
+---@param eventType CombatLogEventType
+---@return number|nil
+function BossUtilities.ConvertAbsoluteTimeToCombatLogEventTime(time, encounterID, spellID, spellCount, eventType)
+	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+	if absoluteSpellCastStartTable then
+		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
+			local adjustedTime = time - absoluteSpellCastStartTable[spellID][spellCount].castStart
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			if ability then
+				if eventType == "SAR" then
+					adjustedTime = adjustedTime - ability.duration - ability.castTime
+				elseif eventType == "SCC" or eventType == "SAA" then
+					adjustedTime = adjustedTime - ability.castTime
+				end
+			end
+			return adjustedTime
+		end
+	end
+	return nil
+end
+
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer Combat log event spell ID
+---@param spellCount integer Combat log event spell count
+---@param eventType CombatLogEventType
+---@return number|nil
+function BossUtilities.GetMinimumCombatLogEventTime(encounterID, spellID, spellCount, eventType)
+	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+	if absoluteSpellCastStartTable then
+		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
+			local time = absoluteSpellCastStartTable[spellID][spellCount].castStart
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			if ability then
+				if eventType == "SAR" then
+					time = time + ability.duration + ability.castTime
+				elseif eventType == "SCC" or eventType == "SAA" then
+					time = time + ability.castTime
+				end
+			end
+			return time
+		end
+	end
+	return nil
+end
+
+do
+	---@param time number The time from the beginning of the boss encounter
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param eventType CombatLogEventType
+	---@return integer|nil -- combat log event Spell ID
+	---@return integer|nil -- spell count
+	---@return number -- leftover time offset
+	local function FindNearestCombatLogEventAllowingBefore(time, encounterID, castTimeTable, eventType)
+		local minTime, minTimeBefore = hugeNumber, hugeNumber
+		local spellIDForMinTime, spellCountForMinTime = nil, nil
+		local spellIDForMinTimeBefore, spellCountForMinTimeBefore = nil, nil
+
+		for spellID, spellCountAndTime in pairs(castTimeTable) do
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+				local adjustedTime = indexAndCastStart.castStart
+				if ability then
+					if eventType == "SAR" then
+						adjustedTime = adjustedTime + ability.duration + ability.castTime
+					elseif eventType == "SCC" or eventType == "SAA" then
+						adjustedTime = adjustedTime + ability.castTime
+					end
+				end
+				if adjustedTime <= time then
+					local difference = time - adjustedTime
+					if difference < minTime then
+						minTime = difference
+						spellIDForMinTime = spellID
+						spellCountForMinTime = spellCount
+					end
+				else
+					local difference = adjustedTime - time
+					if difference < minTimeBefore then
+						minTimeBefore = difference
+						spellIDForMinTimeBefore = spellID
+						spellCountForMinTimeBefore = spellCount
+					end
+				end
+			end
+		end
+		if not spellIDForMinTime and not spellCountForMinTime then
+			minTime = minTimeBefore
+			spellIDForMinTime = spellIDForMinTimeBefore
+			spellCountForMinTime = spellCountForMinTimeBefore
+		end
+		return spellIDForMinTime, spellCountForMinTime, minTime
+	end
+
+	---@param time number The time from the beginning of the boss encounter
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param eventType CombatLogEventType
+	---@return integer|nil -- combat log event Spell ID
+	---@return integer|nil -- spell count
+	---@return number -- leftover time offset
+	local function FindNearestCombatLogEventNoBefore(time, encounterID, castTimeTable, eventType)
+		local minTime = hugeNumber
+		local spellIDForMinTime, spellCountForMinTime = nil, nil
+
+		for spellID, spellCountAndTime in pairs(castTimeTable) do
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+				local adjustedTime = indexAndCastStart.castStart
+				if ability then
+					if eventType == "SAR" then
+						adjustedTime = adjustedTime + ability.duration + ability.castTime
+					elseif eventType == "SCC" or eventType == "SAA" then
+						adjustedTime = adjustedTime + ability.castTime
+					end
+				end
+				if adjustedTime <= time then
+					local difference = time - adjustedTime
+					if difference < minTime then
+						minTime = difference
+						spellIDForMinTime = spellID
+						spellCountForMinTime = spellCount
+					end
+				end
+			end
+		end
+		return spellIDForMinTime, spellCountForMinTime, minTime
+	end
+
+	---@param time number The time from the beginning of the boss encounter
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param eventType CombatLogEventType
+	---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
+	---@return integer|nil -- combat log event Spell ID
+	---@return integer|nil -- spell count
+	---@return number|nil -- leftover time offset
+	function BossUtilities.FindNearestCombatLogEvent(time, encounterID, eventType, allowBefore)
+		local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+		if castTimeTable then
+			if allowBefore then
+				return FindNearestCombatLogEventAllowingBefore(time, encounterID, castTimeTable, eventType)
+			else
+				return FindNearestCombatLogEventNoBefore(time, encounterID, castTimeTable, eventType)
+			end
+		end
+		return nil
+	end
+end
+
+do
+	---@param time number
+	---@param ability BossAbility
+	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
+	---@param currentEventType CombatLogEventType
+	---@return integer|nil -- spell count
+	---@return number -- leftover time offset
+	local function FindNearestSpellCountAllowingBefore(time, ability, castTimeTable, currentEventType)
+		local minTime, minTimeBefore = hugeNumber, hugeNumber
+		local spellCountForMinTime, spellCountForMinTimeBefore = nil, nil
+
+		for spellCount, indexAndCastStart in pairs(castTimeTable) do
+			local adjustedTime = indexAndCastStart.castStart
+			if ability then
+				if currentEventType == "SAR" then
+					adjustedTime = adjustedTime + ability.duration + ability.castTime
+				elseif currentEventType == "SCC" or currentEventType == "SAA" then
+					adjustedTime = adjustedTime + ability.castTime
+				end
+			end
+			if adjustedTime <= time then
+				local difference = time - adjustedTime
+				if difference < minTime then
+					minTime = difference
+					spellCountForMinTime = spellCount
+				end
+			else
+				local difference = adjustedTime - time
+				if difference < minTimeBefore then
+					minTimeBefore = difference
+					spellCountForMinTimeBefore = spellCount
+				end
+			end
+		end
+		if not spellCountForMinTime then
+			minTime = minTimeBefore
+			spellCountForMinTime = spellCountForMinTimeBefore
+		end
+		return spellCountForMinTime, minTime
+	end
+
+	---@param time number
+	---@param ability BossAbility
+	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
+	---@param currentEventType CombatLogEventType
+	---@return integer|nil -- spell count
+	---@return number -- leftover time offset
+	local function FindNearestSpellCountNoBefore(time, ability, castTimeTable, currentEventType)
+		local minTime = hugeNumber
+		local spellCountForMinTime = nil
+
+		for spellCount, indexAndCastStart in pairs(castTimeTable) do
+			local adjustedTime = indexAndCastStart.castStart
+			if ability then
+				if currentEventType == "SAR" then
+					adjustedTime = adjustedTime + ability.duration + ability.castTime
+				elseif currentEventType == "SCC" or currentEventType == "SAA" then
+					adjustedTime = adjustedTime + ability.castTime
+				end
+			end
+			if adjustedTime <= time then
+				local difference = time - adjustedTime
+				if difference < minTime then
+					minTime = difference
+					spellCountForMinTime = spellCount
+				end
+			end
+		end
+		return spellCountForMinTime, minTime
+	end
+
+	---@param relativeTime number Time relative to the combat log event.
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param currentEventType CombatLogEventType Current combat log event type
+	---@param currentSpellID integer Current combat log event spell ID
+	---@param currentSpellCount integer Current combat log event spell count
+	---@param newSpellID integer New combat log event spell ID
+	---@param allowBefore boolean? If specified, spell will be chosen before the time if none can be found without doing so.
+	---@return integer|nil -- spell count
+	---@return number|nil -- leftover time offset
+	function BossUtilities.FindNearestSpellCount(
+		relativeTime,
+		encounterID,
+		currentEventType,
+		currentSpellID,
+		currentSpellCount,
+		newSpellID,
+		allowBefore
+	)
+		local absoluteTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+			relativeTime,
+			encounterID,
+			currentSpellID,
+			currentSpellCount,
+			currentEventType
+		)
+		if not absoluteTime then
+			return nil
+		end
+		local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+		if absoluteSpellCastStartTable and absoluteSpellCastStartTable[newSpellID] then
+			local spellCountAndTime = absoluteSpellCastStartTable[newSpellID]
+			local ability = BossUtilities.FindBossAbility(encounterID, newSpellID)
+			if not ability then
+				return nil
+			end
+			if allowBefore then
+				return FindNearestSpellCountAllowingBefore(absoluteTime, ability, spellCountAndTime, currentEventType)
+			else
+				return FindNearestSpellCountNoBefore(absoluteTime, ability, spellCountAndTime, currentEventType)
+			end
+		end
+		return nil
+	end
+end
+
+do
+	---@class CombatLogEventAssignment
+	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+	---@class TimedAssignment
+	local TimedAssignment = Private.classes.TimedAssignment
+
+	---@alias AssignmentConversionMethod
+	---| 1 # Convert combat log event assignments to timed assignments
+	---| 2 # Replace combat log event spells with those of the new boss, matching the closest timing
+
+	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
+	---@param oldEncounterID integer Old boss dungeon encounter ID
+	local function ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldEncounterID)
+		for _, assignment in ipairs(assignments) do
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				local convertedTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					oldEncounterID,
+					assignment.combatLogEventSpellID,
+					assignment.spellCount,
+					assignment.combatLogEventType
+				)
+				if convertedTime then
+					assignment = TimedAssignment:New(assignment, true)
+					assignment.time = Utilities.Round(convertedTime, 1)
+				end
+			end
+		end
+	end
+
+	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
+	---@param oldID integer Old boss dungeon encounter ID
+	---@param newID integer New boss dungeon encounter ID
+	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param bossPhaseTable table<integer, integer>
+	local function ReplaceCombatLogEventAssignmentSpells(assignments, oldID, newID, castTimeTable, bossPhaseTable)
+		for _, assignment in ipairs(assignments) do
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				local spellID, spellCount, eventType =
+					assignment.combatLogEventSpellID, assignment.spellCount, assignment.combatLogEventType
+				local absoluteTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					oldID,
+					spellID,
+					spellCount,
+					eventType
+				)
+				if absoluteTime then
+					local newSpellID, newSpellCount, newTime =
+						BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true)
+					if newSpellID and newSpellCount and newTime then
+						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
+							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
+							assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+							assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+						end
+						assignment.time = Utilities.Round(newTime, 1)
+						assignment.combatLogEventSpellID = newSpellID
+						assignment.spellCount = newSpellCount
+					end
+				end
+			end
+		end
+	end
+
+	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
+	---@param oldBoss Boss
+	---@param newBoss Boss
+	---@param conversionMethod AssignmentConversionMethod
+	function BossUtilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, conversionMethod)
+		local oldID, newID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
+		if conversionMethod == 1 then
+			ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldID)
+		elseif conversionMethod == 2 then
+			local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newID)
+			local bossPhaseTable = BossUtilities.GetOrderedBossPhases(newID)
+			if castTimeTable and bossPhaseTable then
+				ReplaceCombatLogEventAssignmentSpells(assignments, oldID, newID, castTimeTable, bossPhaseTable)
+			end
+		end
+	end
+end
+
 do
 	-- Creates a table of boss phases in the order in which they occur, using the maximum amount of phases until
 	-- reaching maxTotalDuration.
-	---@param bossDungeonEncounterID integer
+	---@param encounterID integer Boss dungeon encounter ID
 	---@param maxTotalDuration number
 	---@return table<integer, integer> -- Ordered boss phase table
-	local function GenerateMaxOrderedBossPhaseTable(bossDungeonEncounterID, maxTotalDuration)
-		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local function GenerateMaxOrderedBossPhaseTable(encounterID, maxTotalDuration)
+		local boss = BossUtilities.GetBoss(encounterID)
 		local orderedBossPhaseTable = {}
 		if boss then
 			local phases = boss.phases
@@ -448,10 +845,10 @@ do
 	end
 
 	-- Creates a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
-	---@param bossDungeonEncounterID integer
+	---@param encounterID integer Boss dungeon encounter ID
 	---@return table<integer, integer> -- Ordered boss phase table
-	local function GenerateOrderedBossPhaseTable(bossDungeonEncounterID)
-		local boss = BossUtilities.GetBoss(bossDungeonEncounterID)
+	local function GenerateOrderedBossPhaseTable(encounterID)
+		local boss = BossUtilities.GetBoss(encounterID)
 		local orderedBossPhaseTable = {}
 		if boss then
 			local totalPhaseOccurrences = 0

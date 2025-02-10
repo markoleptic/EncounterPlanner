@@ -25,15 +25,14 @@ local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
-local ConvertAbsoluteTimeToCombatLogEventTime = utilities.ConvertAbsoluteTimeToCombatLogEventTime
-local ConvertAssignmentsToNewBoss = utilities.ConvertAssignmentsToNewBoss
+
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
 local CreateReminderText = utilities.CreateReminderText
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
-local GetMinimumCombatLogEventTime = utilities.GetMinimumCombatLogEventTime
+
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
 local Round = utilities.Round
 local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
@@ -43,6 +42,9 @@ local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local GetMinimumCombatLogEventTime = bossUtilities.GetMinimumCombatLogEventTime
+local ConvertAbsoluteTimeToCombatLogEventTime = bossUtilities.ConvertAbsoluteTimeToCombatLogEventTime
+local ConvertAssignmentsToNewBoss = bossUtilities.ConvertAssignmentsToNewBoss
 local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetBoss = bossUtilities.GetBoss
 
@@ -398,10 +400,10 @@ do -- Roster Editor
 end
 
 do -- Assignment Editor
-	local ConvertCombatLogEventTimeToAbsoluteTime = utilities.ConvertCombatLogEventTimeToAbsoluteTime
+	local ConvertCombatLogEventTimeToAbsoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
-	local FindNearestCombatLogEvent = utilities.FindNearestCombatLogEvent
-	local FindNearestSpellCount = utilities.FindNearestSpellCount
+	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
+	local FindNearestSpellCount = bossUtilities.FindNearestSpellCount
 	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 	local UpdateTimelineAssignmentStartTime = utilities.UpdateTimelineAssignmentStartTime
 
