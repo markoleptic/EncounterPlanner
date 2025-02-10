@@ -1885,7 +1885,7 @@ function Private:CreateInterface()
 		preferencesMenuButtonBackdropBorderColor
 	)
 	rosterMenuButton:SetColor(unpack(preferencesMenuButtonColor))
-	rosterMenuButton:SetCallback("Clicked", HandlePreferencesMenuButtonClicked)
+	rosterMenuButton:SetCallback("Clicked", HandleRosterMenuButtonClicked)
 
 	local preferencesMenuButton = AceGUI:Create("EPButton")
 	preferencesMenuButton:SetText(L["Preferences"])
