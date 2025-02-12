@@ -14,7 +14,6 @@ local tremove = tremove
 local type = type
 local unpack = unpack
 
-local textOffsetX = 4
 local defaultHorizontalItemPadding = 4
 local fontSize = 14
 local defaultDropdownItemHeight = 24
@@ -1020,11 +1019,14 @@ do
 	---@param self EPDropdown
 	---@param visible boolean
 	local function SetButtonVisibility(self, visible)
+		self.text:ClearAllPoints()
 		if visible then
 			self.button:Show()
-			self.text:SetPoint("RIGHT", self.button, "LEFT", -textOffsetX / 2, 0)
+			self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
+			self.text:SetPoint("RIGHT", self.button, "LEFT", -self.textHorizontalPadding / 2, 0)
 		else
-			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -textOffsetX, 0)
+			self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.textHorizontalPadding, 0)
 			self.button:Hide()
 		end
 	end
@@ -1084,8 +1086,13 @@ do
 	---@param size integer
 	local function SetTextHorizontalPadding(self, size)
 		self.textHorizontalPadding = size
-		self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.textHorizontalPadding, 0)
+		if self.button:IsShown() then
+			self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
+			self.text:SetPoint("RIGHT", self.button, "LEFT", -self.textHorizontalPadding / 2, 0)
+		else
+			self.text:SetPoint("LEFT", self.frame, "LEFT", self.textHorizontalPadding, 0)
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.textHorizontalPadding, 0)
+		end
 	end
 
 	---@param self EPDropdown
@@ -1206,15 +1213,18 @@ do
 		fadeOut:SetDuration(0.3)
 		fadeOut:SetSmoothing("OUT")
 
-		local text = _G[dropdown:GetName() .. "Text"]
-		text:ClearAllPoints()
-		text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
-		text:SetPoint("RIGHT", frame, "RIGHT", -textOffsetX, 0)
+		local textHide = _G[dropdown:GetName() .. "Text"]
+		textHide:ClearAllPoints()
+		textHide:Hide()
+
+		local text = frame:CreateFontString(nil, "OVERLAY")
+		text:SetWordWrap(false)
+		text:SetPoint("LEFT", frame, "LEFT", defaultHorizontalItemPadding, 0)
+		text:SetPoint("RIGHT", frame, "RIGHT", -defaultHorizontalItemPadding, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		if fPath then
 			text:SetFont(fPath, fontSize)
 		end
-		text:SetWordWrap(false)
 
 		---@class EPDropdown
 		local widget = {
