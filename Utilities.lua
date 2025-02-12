@@ -34,8 +34,6 @@ local GetBossName = bossUtilities.GetBossName
 local GetCumulativePhaseStartTime = bossUtilities.GetCumulativePhaseStartTime
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
-local Ambiguate = Ambiguate
-local ceil = math.ceil
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
@@ -47,7 +45,6 @@ local GetSpellBaseCooldown = GetSpellBaseCooldown
 local GetSpellCharges = C_Spell.GetSpellCharges
 local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
-local hugeNumber = math.huge
 local ipairs = ipairs
 local IsInRaid = IsInRaid
 local pairs = pairs
@@ -60,8 +57,6 @@ local type = type
 local UnitClass = UnitClass
 local UnitFullName = UnitFullName
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
-
-local lineMatchRegex = "([^\r\n]+)"
 
 do
 	local GetClassInfo = GetClassInfo
@@ -1225,16 +1220,9 @@ function Utilities.IsValidAssignee(assignee)
 				return "type:" .. typeMatch
 			end
 		else
-			assignee = assignee:gsub("%s", "")
-			local characterMatch, realmMatch = assignee:match("^(%S+)%s*%-%s*(%S.+)$")
-			if characterMatch and realmMatch then
-				characterMatch = characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
-				return Ambiguate(characterMatch .. "-" .. realmMatch:gsub("%s", ""), "all")
-			else
-				characterMatch = assignee:match("^(%S+)$")
-				if characterMatch then
-					return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
-				end
+			local characterMatch, _ = assignee:gsub("%s*%-.*", ""):match("^(%S+)$")
+			if characterMatch then
+				return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
 			end
 		end
 	end
@@ -1397,15 +1385,13 @@ function Utilities.GetDataFromGroup()
 		if unit then
 			local role = UnitGroupRolesAssigned(unit)
 			local _, classFileName, _ = UnitClass(unit)
-			local unitName, unitServer = UnitFullName(unit)
-			unitName = Ambiguate(unitName .. "-" .. unitServer, "all")
+			local unitName, _ = UnitFullName(unit)
 			if classFileName then
 				groupData[unitName] = {}
 				groupData[unitName].class = classFileName
 				groupData[unitName].role = role
 				local colorMixin = GetClassColor(classFileName)
-				local classColoredName = colorMixin:WrapTextInColorCode(unitName:gsub("%-.*", ""))
-				groupData[unitName].classColoredName = classColoredName
+				groupData[unitName].classColoredName = colorMixin:WrapTextInColorCode(unitName)
 			end
 		end
 	end
@@ -1421,7 +1407,7 @@ local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
 			className = className:upper()
 			if Private.spellDB.classes[className] then
 				local colorMixin = GetClassColor(className)
-				rosterEntry.classColoredName = colorMixin:WrapTextInColorCode(unitName)
+				rosterEntry.classColoredName = colorMixin:WrapTextInColorCode(unitName:gsub("%s*%-.*", ""))
 			end
 		end
 	end
@@ -1521,25 +1507,29 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 	end
 end
 
--- Splits a string into table using new lines as separators.
----@param text string The text to use to create the table.
----@param removeEmptyLines boolean? If true, don't add empty lines.
----@return table<integer, string>
-function Utilities.SplitStringIntoTable(text, removeEmptyLines)
-	local stringTable = {}
-	if removeEmptyLines then
-		for line in text:gmatch(lineMatchRegex) do
-			if line:trim():len() > 0 then
+do
+	local lineMatchRegex = "([^\r\n]+)"
+
+	-- Splits a string into table using new lines as separators.
+	---@param text string The text to use to create the table.
+	---@param removeEmptyLines boolean? If true, don't add empty lines.
+	---@return table<integer, string>
+	function Utilities.SplitStringIntoTable(text, removeEmptyLines)
+		local stringTable = {}
+		if removeEmptyLines then
+			for line in text:gmatch(lineMatchRegex) do
+				if line:trim():len() > 0 then
+					tinsert(stringTable, line)
+				end
+			end
+		else
+			for line in text:gmatch(lineMatchRegex) do
 				tinsert(stringTable, line)
 			end
 		end
-	else
-		for line in text:gmatch(lineMatchRegex) do
-			tinsert(stringTable, line)
-		end
-	end
 
-	return stringTable
+		return stringTable
+	end
 end
 
 ---@param iconID integer|string

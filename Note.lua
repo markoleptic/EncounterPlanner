@@ -481,7 +481,7 @@ do
 	---@return string
 	---@return string
 	local function CreateAssignmentExportString(assignment, roster)
-		local assigneeString = assignment.assignee
+		local assigneeString = assignment.assignee:gsub("%s*%-.*", "")
 		local assignmentString = ""
 
 		if roster[assignment.assignee] then
