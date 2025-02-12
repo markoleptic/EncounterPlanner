@@ -891,13 +891,17 @@ Private.progressBarContainer = nil --[[@as EPContainer]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.externalTextEditor = nil --[[@as EPEditBox]]
-Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
-
 Private.tests = {}
 
-LSM:Register(
-	"font",
-	"PT Sans Narrow",
-	"Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
-	bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU)
-)
+Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
+
+-- Use font early so that it is available when InitializeInterface is called
+local fontInitializer = Private.tooltip:CreateFontString(nil, "OVERLAY")
+local obj = CreateFont("EPFontInitializerObject")
+local fontPath = [[Interface\Addons\EncounterPlanner\Media\Fonts\PTSansNarrow-Bold.ttf]]
+obj:SetFont(fontPath, 16, "")
+fontInitializer:SetFontObject(obj)
+fontInitializer:Hide()
+fontInitializer:SetParent(UIParent)
+
+LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))

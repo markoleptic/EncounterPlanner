@@ -10,7 +10,7 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local mainFrameWidth = 1125
+local mainFrameWidth = 1200
 local mainFrameHeight = 600
 local windowBarHeight = 30
 local defaultPadding = 10
@@ -279,6 +279,12 @@ local function HandleResizeBoundsCalculated(self, timelineFrameHeight, minHeight
 	minHeight = minHeight + heightDiff
 	maxHeight = maxHeight + heightDiff
 	self.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
+	if self.frame:GetWidth() < minWidth then
+		self:SetWidth(minWidth)
+	end
+	if self.frame:GetHeight() < minHeight then
+		self:SetHeight(minHeight)
+	end
 end
 
 ---@return {left:number, top:number, right:number, bottom:number}
