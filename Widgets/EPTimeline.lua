@@ -21,7 +21,6 @@ local GetCursorPosition = GetCursorPosition
 local GetTime = GetTime
 local geterrorhandler = geterrorhandler
 local GetSpellTexture = C_Spell.GetSpellTexture
-local hugeNumber = math.huge
 local ipairs = ipairs
 local IsAltKeyDown = IsAltKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
@@ -38,7 +37,7 @@ local xpcall = xpcall
 
 local frameWidth = 900
 local frameHeight = 400
-local paddingBetweenTimelines = 36
+local paddingBetweenTimelines = 44
 local paddingBetweenBossAbilityBars = 4
 local paddingBetweenTimelineAndScrollBar = 10
 local bossAbilityBarHeight = 30.0
