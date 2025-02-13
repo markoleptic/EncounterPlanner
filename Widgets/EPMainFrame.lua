@@ -262,28 +262,47 @@ local function SetMinimizeFramePosition(self, x, y)
 end
 
 ---@param self EPMainFrame
----@param timelineFrameHeight number
----@param minHeight number
----@param maxHeight number
-local function HandleResizeBoundsCalculated(self, timelineFrameHeight, minHeight, maxHeight)
+---@return number
+local function CalculateMinWidth(self)
 	local topContainer = self.children[1]
+	topContainer:DoLayout()
 	local topContainerSpacing = topContainer.content.spacing
-	local heightDiff = self.frame:GetHeight() - timelineFrameHeight
-	local minWidth, maxWidth = 0.0, nil
+	local minWidth = 0.0
 	for _, child in ipairs(topContainer.children) do
 		if child.type ~= "EPSpacer" then
 			minWidth = minWidth + child.frame:GetWidth() + topContainerSpacing.x
 		end
 	end
 	minWidth = minWidth + padding.left + padding.right - topContainerSpacing.x
+	minWidth = minWidth + topContainer.padding.left + topContainer.padding.right
+	return minWidth
+end
+
+---@param self EPMainFrame
+---@param timelineFrameHeight number
+---@param minHeight number
+---@param maxHeight number
+local function HandleResizeBoundsCalculated(self, timelineFrameHeight, minHeight, maxHeight)
+	local heightDiff = self.frame:GetHeight() - timelineFrameHeight
+	local minWidth = CalculateMinWidth(self)
 	minHeight = minHeight + heightDiff
 	maxHeight = maxHeight + heightDiff
-	self.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
+	self.frame:SetResizeBounds(minWidth, minHeight, nil, maxHeight)
 	if self.frame:GetWidth() < minWidth then
 		self:SetWidth(minWidth)
 	end
 	if self.frame:GetHeight() < minHeight then
 		self:SetHeight(minHeight)
+	end
+end
+
+---@param self EPMainFrame
+local function UpdateHorizontalResizeBounds(self)
+	local minWidth = CalculateMinWidth(self)
+	local _, minHeight, maxWidth, maxHeight = self.frame:GetResizeBounds()
+	self.frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
+	if self.frame:GetWidth() < minWidth then
+		self:SetWidth(minWidth)
 	end
 end
 
@@ -382,6 +401,7 @@ local function Constructor()
 		SetMinimizeFramePosition = SetMinimizeFramePosition,
 		GetPadding = GetPadding,
 		HandleResizeBoundsCalculated = HandleResizeBoundsCalculated,
+		UpdateHorizontalResizeBounds = UpdateHorizontalResizeBounds,
 		frame = frame,
 		type = Type,
 		content = contentFrame,

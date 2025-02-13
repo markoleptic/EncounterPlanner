@@ -70,18 +70,23 @@ do
 	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossLabel = Private.mainFrame.bossLabel
-		if bossAbilityContainer and bossLabel then
+		local instanceLabel = Private.mainFrame.instanceLabel
+		if bossAbilityContainer and bossLabel and instanceLabel then
 			if AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] == nil then
 				AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] = {}
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			local raidInstance = Private.raidInstances[boss.instanceID]
 
-			Private.mainFrame.instanceLabel:SetText(raidInstance.name, instanceAndBossPadding, raidInstance.instanceID)
-			Private.mainFrame.instanceLabel:SetIcon(raidInstance.icon, 0, 0, 0, 0, 0)
+			instanceLabel:SetText(raidInstance.name, instanceAndBossPadding, raidInstance.instanceID)
+			instanceLabel:SetIcon(raidInstance.icon, 0, 2, 0, 0, 2)
+			instanceLabel:SetFrameWidthFromText()
 
 			bossLabel:SetText(boss.name, instanceAndBossPadding, boss.dungeonEncounterID)
-			bossLabel:SetIcon(boss.icon, 0, 0, 0, 0, 0)
+			bossLabel:SetIcon(boss.icon, 0, 2, 0, 0, 2)
+			bossLabel:SetFrameWidthFromText()
+
+			Private.mainFrame:UpdateHorizontalResizeBounds()
 
 			bossAbilityContainer:ReleaseChildren()
 			local children = {}

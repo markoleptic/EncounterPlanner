@@ -1789,13 +1789,12 @@ end
 
 function Private:CreateInterface()
 	local defaultMaxVisibleDropdownItems = 8
-	local dropdownContainerLabelSpacing = 4
-	local dropdownContainerSpacing = { 0, 4 }
-	local instanceAndBossLabelContainerSpacing = { 0, 2 }
-	local instanceAndBossLabelFontSize = 16
-	local instanceAndBossLabelHeight = 18
+	local topContainerDropdownWidth = 200
+	local topContainerWidgetFontSize = 14
+	local topContainerWidgetHeight = 22
+	local topContainerSpacing = { 4, 4 }
 	local mainFramePadding = { 10, 10, 10, 10 }
-	local mainFrameSpacing = { 0, 10 }
+	local mainFrameSpacing = { 0, 22 }
 	local planAndReminderContainerSpacerHeight = 12
 	local preferencesMenuButtonBackdrop = {
 		bgFile = "Interface\\BUTTONS\\White8x8",
@@ -1804,12 +1803,16 @@ function Private:CreateInterface()
 		tileSize = 16,
 		edgeSize = 1,
 	}
+	local topContainerBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+	}
 	local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 	local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
 	local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
-	local topContainerDropdownWidth = 200
-	local topContainerWidgetFontSize = 14
-	local topContainerWidgetHeight = 26
 	local bossDungeonEncounterID = 2902
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
@@ -1903,116 +1906,144 @@ function Private:CreateInterface()
 
 	Private.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
+	local instanceLabelContainer = AceGUI:Create("EPContainer")
+	instanceLabelContainer:SetLayout("EPVerticalLayout")
+	instanceLabelContainer:SetSpacing(0, 0)
+	instanceLabelContainer:SetPadding(0, 2, 0, 2)
+
+	local instanceLabelLabel = AceGUI:Create("EPLabel")
+	instanceLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	instanceLabelLabel:SetHeight(topContainerWidgetHeight)
+	instanceLabelLabel:SetText(L["Instance"] .. ":", 0)
+	instanceLabelLabel:SetFrameWidthFromText()
+
+	local bossLabelLabel = AceGUI:Create("EPLabel")
+	bossLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	bossLabelLabel:SetHeight(topContainerWidgetHeight)
+	bossLabelLabel:SetText(L["Boss"] .. ":", 0)
+	bossLabelLabel:SetFrameWidthFromText()
+
+	width = max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth())
+	instanceLabelLabel:SetWidth(width)
+	bossLabelLabel:SetWidth(width)
+	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel)
+
 	local instanceBossContainer = AceGUI:Create("EPContainer")
 	instanceBossContainer:SetLayout("EPVerticalLayout")
-	instanceBossContainer:SetSpacing(unpack(instanceAndBossLabelContainerSpacing))
+	instanceBossContainer:SetSpacing(0, 0)
+	instanceBossContainer:SetPadding(0, 2, 0, 2)
 
 	local instanceLabel = AceGUI:Create("EPLabel")
-	instanceLabel:SetFontSize(instanceAndBossLabelFontSize)
+	instanceLabel:SetFontSize(topContainerWidgetFontSize)
 	instanceLabel:SetWidth(topContainerDropdownWidth)
-	instanceLabel:SetHeight(instanceAndBossLabelHeight)
+	instanceLabel:SetHeight(topContainerWidgetHeight)
 
 	local bossLabel = AceGUI:Create("EPLabel")
-	bossLabel:SetFontSize(instanceAndBossLabelFontSize)
+	bossLabel:SetFontSize(topContainerWidgetFontSize)
 	bossLabel:SetWidth(topContainerDropdownWidth)
-	bossLabel:SetHeight(instanceAndBossLabelHeight)
-
+	bossLabel:SetHeight(topContainerWidgetHeight)
 	instanceBossContainer:AddChildren(instanceLabel, bossLabel)
 
-	local planContainer = AceGUI:Create("EPContainer")
-	planContainer:SetLayout("EPHorizontalLayout")
-	planContainer:SetSpacing(unpack(dropdownContainerSpacing))
-
 	local planLabel = AceGUI:Create("EPLabel")
-	planLabel:SetText(L["Current Plan:"], dropdownContainerLabelSpacing)
+	planLabel:SetFontSize(topContainerWidgetFontSize)
+	planLabel:SetText(L["Current Plan:"], 0)
 	planLabel:SetHeight(topContainerWidgetHeight)
 	planLabel:SetFrameWidthFromText()
 
 	local planDropdown = AceGUI:Create("EPDropdown")
-	planDropdown:SetWidth(topContainerDropdownWidth)
+	planDropdown:SetWidth(topContainerDropdownWidth - 10)
 	planDropdown:SetAutoItemWidth(false)
 	planDropdown:SetTextFontSize(topContainerWidgetFontSize)
 	planDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
 	planDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
 	planDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
+	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
 	planDropdown:SetMaxVisibleItems(defaultMaxVisibleDropdownItems)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanTextSubmitted)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 
+	local planContainer = AceGUI:Create("EPContainer")
+	planContainer:SetLayout("EPVerticalLayout")
+	planContainer:SetSpacing(0, 0)
+	planContainer:SetPadding(0, 2, 0, 2)
 	planContainer:AddChildren(planLabel, planDropdown)
 
-	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
-	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
-	reminderAndSendPlanButtonContainer:SetFullHeight(true)
-	reminderAndSendPlanButtonContainer:SetSelfAlignment("topRight")
-
-	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
-	primaryPlanCheckBox:SetText(L["Primary Plan"])
-	primaryPlanCheckBox:SetHeight(topContainerWidgetHeight)
-	primaryPlanCheckBox:SetFrameWidthFromText()
-	primaryPlanCheckBox:SetFullHeight(true)
-	primaryPlanCheckBox:SetCallback("OnValueChanged", HandlePrimaryPlanCheckBoxValueChanged)
+	local reminderContainer = AceGUI:Create("EPContainer")
+	reminderContainer:SetLayout("EPVerticalLayout")
+	reminderContainer:SetSpacing(unpack(topContainerSpacing))
 
 	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
-	planReminderEnableCheckBox:SetText(L["Enable Reminders for Plan"])
+	planReminderEnableCheckBox:SetText(L["Plan Reminders"])
 	planReminderEnableCheckBox:SetHeight(topContainerWidgetHeight)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
-	planReminderEnableCheckBox:SetFullHeight(true)
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", HandlePlanReminderEnableCheckBoxValueChanged)
-
-	local externalTextButton = AceGUI:Create("EPButton")
-	externalTextButton:SetText(L["External Text"])
-	externalTextButton:SetWidthFromText()
-	externalTextButton:SetFullHeight(true)
-	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
 
 	local simulateRemindersButton = AceGUI:Create("EPButton")
 	simulateRemindersButton:SetText(L["Simulate Reminders"])
 	simulateRemindersButton:SetWidthFromText()
-	simulateRemindersButton:SetFullHeight(true)
+	simulateRemindersButton:SetHeight(topContainerWidgetHeight)
 	simulateRemindersButton:SetCallback("Clicked", HandleSimulateRemindersButtonClicked)
+
+	width = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
+	planReminderEnableCheckBox:SetWidth(width)
+	simulateRemindersButton:SetWidth(width)
+	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
 
 	Private.callbackTarget.RegisterCallback(self, "SimulationCompleted", function()
 		HandleSimulationCompleted(simulateRemindersButton)
 	end)
 
+	local sendPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
+	sendPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
+	sendPlanAndExternalTextContainer:SetSpacing(unpack(topContainerSpacing))
+
 	local sendPlanButton = AceGUI:Create("EPButton")
 	sendPlanButton:SetText(L["Send Plan to Group"])
 	sendPlanButton:SetWidthFromText()
-	sendPlanButton:SetFullHeight(true)
+	sendPlanButton:SetHeight(topContainerWidgetHeight)
 	sendPlanButton:SetCallback("Clicked", Private.SendPlanToGroup)
 
+	local externalTextButton = AceGUI:Create("EPButton")
+	externalTextButton:SetText(L["External Text"])
+	externalTextButton:SetWidthFromText()
+	externalTextButton:SetHeight(topContainerWidgetHeight)
+	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
+
+	width = max(sendPlanButton.frame:GetWidth(), externalTextButton.frame:GetWidth())
+	sendPlanButton:SetWidth(width)
+	externalTextButton:SetWidth(width)
+	sendPlanAndExternalTextContainer:AddChildren(sendPlanButton, externalTextButton)
+
+	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
+	primaryPlanCheckBox:SetText(L["Primary Plan"])
+	primaryPlanCheckBox:SetHeight(topContainerWidgetHeight)
+	primaryPlanCheckBox:SetFrameWidthFromText()
+	primaryPlanCheckBox:SetCallback("OnValueChanged", HandlePrimaryPlanCheckBoxValueChanged)
+
+	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
+	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
+	reminderAndSendPlanButtonContainer:SetFullHeight(true)
+	reminderAndSendPlanButtonContainer:SetSelfAlignment("topRight")
+	reminderAndSendPlanButtonContainer:SetSpacing(unpack(topContainerSpacing))
 	reminderAndSendPlanButtonContainer:AddChildren(
 		primaryPlanCheckBox,
-		planReminderEnableCheckBox,
-		externalTextButton,
-		simulateRemindersButton,
-		sendPlanButton
+		reminderContainer,
+		sendPlanAndExternalTextContainer
 	)
-
-	local planAndReminderContainer = AceGUI:Create("EPContainer")
-	planAndReminderContainer:SetLayout("EPHorizontalLayout")
-	planAndReminderContainer:SetFullWidth(true)
-	planAndReminderContainer:AddChildren(planContainer, reminderAndSendPlanButtonContainer)
-
-	local planAndReminderContainerWrapper = AceGUI:Create("EPContainer")
-	planAndReminderContainerWrapper:SetLayout("EPVerticalLayout")
-	planAndReminderContainerWrapper:SetSpacing(0, 0)
-	planAndReminderContainerWrapper:SetFullWidth(true)
-
-	local planAndReminderContainerSpacer = AceGUI:Create("EPSpacer")
-	planAndReminderContainerSpacer:SetHeight(planAndReminderContainerSpacerHeight)
-
-	planAndReminderContainerWrapper:AddChildren(planAndReminderContainer, planAndReminderContainerSpacer)
 
 	local topContainer = AceGUI:Create("EPContainer")
 	topContainer:SetLayout("EPHorizontalLayout")
 	topContainer:SetFullWidth(true)
-	topContainer:SetSpacing(0, 0)
-	topContainer:AddChildren(instanceBossContainer, planAndReminderContainerWrapper)
+	topContainer:AddChildren(
+		planContainer,
+		instanceLabelContainer,
+		instanceBossContainer,
+		reminderAndSendPlanButtonContainer
+	)
+	topContainer:SetPadding(10, 10, 10, 10)
+	topContainer:SetBackdrop(topContainerBackdrop, { 0, 0, 0, 0 }, preferencesMenuButtonBackdropBorderColor)
 
 	local timeline = AceGUI:Create("EPTimeline")
 	timeline:SetPreferences(AddOn.db.profile.preferences)
