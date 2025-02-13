@@ -16,6 +16,7 @@ local InterfaceUpdater = Private.interfaceUpdater
 
 ---@class Utilities
 local utilities = Private.utilities
+local AddIconBeforeText = utilities.AddIconBeforeText
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
 local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
@@ -428,7 +429,8 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 	local addAssigneeDropdown = Private.mainFrame.timeline:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
-		addAssigneeDropdown:SetText(L["Add Assignee"])
+		local text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
+		addAssigneeDropdown:SetText(text)
 		addAssigneeDropdown:AddItems(
 			CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
 			"EPDropdownItemToggle",

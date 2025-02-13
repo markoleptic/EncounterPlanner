@@ -77,6 +77,8 @@ local wipe = wipe
 local Create = {}
 local Handle = {}
 
+local addAssigneeText =
+	utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
 local maxNumberOfRecentItems = 10
 local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
@@ -1145,13 +1147,13 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 end
 
 local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
-	if value == "Add Assignee" then
+	if value == addAssigneeText then
 		return
 	end
 
 	for _, assignment in pairs(GetCurrentAssignments()) do
 		if assignment.assignee == value then
-			dropdown:SetText(L["Add Assignee"])
+			dropdown:SetText(addAssigneeText)
 			return
 		end
 	end
@@ -1161,7 +1163,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	tinsert(GetCurrentAssignments(), assignment)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-	dropdown:SetText(L["Add Assignee"])
+	dropdown:SetText(addAssigneeText)
 end
 
 ---@param assignee string
@@ -2057,7 +2059,7 @@ function Private:CreateInterface()
 	timeline:SetCallback("ResizeBoundsCalculated", HandleResizeBoundsCalculated)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
-	addAssigneeDropdown:SetText(L["Add Assignee"])
+	addAssigneeDropdown:SetText(addAssigneeText)
 	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
 
