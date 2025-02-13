@@ -365,3 +365,4 @@ L["Spell Cast Success"] = true
 L["Spell Cast Start"] = true
 L["Spell Aura Applied"] = true
 L["Spell Aura Removed"] = true
+L["Season 2 M+"] = true

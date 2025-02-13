@@ -1,0 +1,12 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.blizzard.com/wow/ui/">
+    <Script file="CinderbrewMeadery.lua" />
+    <Script file="DarkflameCleft.lua" />
+    <Script file="MechagonWorkshop.lua" />
+    <Script file="OperationFloodgate.lua" />
+    <Script file="PrioryOfTheSacredFlame.lua" />
+    <Script file="TheaterOfPain.lua" />
+    <Script file="TheMotherload.lua" />
+    <Script file="TheRookery.lua" />
+</Ui>

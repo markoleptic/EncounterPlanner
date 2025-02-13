@@ -21,7 +21,9 @@ Widgets\Widgets.xml
 
 Tests\TestUtilities.lua
 
-NerubarPalace.lua
+TheWarWithinSeasonOne\Modules.xml
+TheWarWithinSeasonTwo\Modules.xml
+
 BossUtilities.lua
 Utilities.lua
 Note.lua
