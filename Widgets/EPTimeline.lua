@@ -2014,6 +2014,11 @@ local function SetBossAbilities(self, bossAbilityInstances, abilityOrder, phases
 	self.bossAbilityTimeline.scrollFrame:SetVerticalScroll(bossNewVerticalScroll)
 	self.bossAbilityTimeline.listScrollFrame:SetVerticalScroll(bossNewVerticalScroll)
 	self.bossAbilityTimeline:UpdateVerticalScroll()
+
+	if #self.bossPhases == 0 then
+		UpdateBossAbilityBars(self)
+		UpdateTickMarks(self)
+	end
 end
 
 ---@param self EPTimeline
@@ -2306,6 +2311,7 @@ local function SelectAssignment(self, assignmentID, selectedByClicking)
 	end
 end
 
+-- Returns tables of selected assignments and optionally resets assignment frames.
 ---@param self EPTimeline
 ---@param clear boolean If true, assignment frames are reset
 ---@return table<integer>
