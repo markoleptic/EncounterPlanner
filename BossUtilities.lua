@@ -971,6 +971,10 @@ do
 									local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime
 									if eventTrigger.combatLogEventType == "SCC" then
 										cumulativeCastTime = cumulativeCastTime + bossAbilityTrigger.castTime
+									elseif eventTrigger.combatLogEventType == "SAR" then
+										cumulativeCastTime = cumulativeCastTime
+											+ bossAbilityTrigger.castTime
+											+ bossAbilityTrigger.duration
 									end
 									for _, castTime in ipairs(eventTrigger.castTimes) do
 										local castStart = cumulativeCastTime + castTime
@@ -1001,6 +1005,10 @@ do
 									cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
 									if eventTrigger.combatLogEventType == "SCC" then
 										cumulativeTriggerTime = cumulativeTriggerTime + bossAbilityTrigger.castTime
+									elseif eventTrigger.combatLogEventType == "SAR" then
+										cumulativeTriggerTime = cumulativeTriggerTime
+											+ bossAbilityTrigger.castTime
+											+ bossAbilityTrigger.duration
 									end
 								end
 							end
@@ -1084,16 +1092,16 @@ do
 								end
 							end
 
-							-- If phase duration is modified, update spells that depend on it
 							if bossAbilityPhase.signifiesPhaseEnd and castIndex == #bossAbilityPhase.castTimes then
 								if castEnd < phaseEndTime and bossAbility.duration > 0.0 then
-									effectEnd = phaseEndTime
+									effectEnd = phaseEndTime -- Extend duration until end of phase
 								else
 									if castTime == bossPhase.defaultDuration then -- "Phase transition" spells
 										castStart = phaseEndTime
 									end
+									-- Clamp duration to end of phase
 									castEnd = phaseEndTime
-									effectEnd = castEnd
+									effectEnd = phaseEndTime
 								end
 							end
 
@@ -1188,6 +1196,10 @@ do
 									local cumulativeCastTime = cumulativeTriggerTime + triggerCastTime
 									if eventTrigger.combatLogEventType == "SCC" then
 										cumulativeCastTime = cumulativeCastTime + bossAbilityTrigger.castTime
+									elseif eventTrigger.combatLogEventType == "SAR" then
+										cumulativeCastTime = cumulativeCastTime
+											+ bossAbilityTrigger.castTime
+											+ bossAbilityTrigger.duration
 									end
 									for _, castTime in ipairs(eventTrigger.castTimes) do
 										local castStart = cumulativeCastTime + castTime
@@ -1274,6 +1286,10 @@ do
 									cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
 									if eventTrigger.combatLogEventType == "SCC" then
 										cumulativeTriggerTime = cumulativeTriggerTime + bossAbilityTrigger.castTime
+									elseif eventTrigger.combatLogEventType == "SAR" then
+										cumulativeTriggerTime = cumulativeTriggerTime
+											+ bossAbilityTrigger.castTime
+											+ bossAbilityTrigger.duration
 									end
 								end
 							end
