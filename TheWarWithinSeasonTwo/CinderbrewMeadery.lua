@@ -145,7 +145,6 @@ Private.raidInstances[2661] = RaidInstance:New({
 					castTime = 3.0,
 				}),
 				[440147] = BossAbility:New({ -- Fill 'Er Up
-					-- TODO: Signify that this might not ever happen
 					phases = {},
 					duration = 0.0,
 					castTime = 0.0,
@@ -163,16 +162,98 @@ Private.raidInstances[2661] = RaidInstance:New({
 			journalEncounterID = 2588,
 			dungeonEncounterID = 2931,
 			instanceID = 2661,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[438025] = BossAbility:New({ -- Snack Time
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 3.0 },
+							repeatInterval = 33.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[440134] = BossAbility:New({ -- Honey Marinade
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.0 },
+							repeatInterval = 14.0,
+						}),
+					},
+					duration = 5.0,
+					castTime = 2.0,
+				}),
+				[439524] = BossAbility:New({ -- Fluttering Wing
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.0 },
+							repeatInterval = 23.0,
+						}),
+					},
+					duration = 2.0,
+					castTime = 1.5,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+				}),
+			},
 		}),
 		Boss:New({ -- Goldie Baronbottom
 			bossID = { 214661 },
 			journalEncounterID = 2589,
 			dungeonEncounterID = 2930,
 			instanceID = 2661,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[435560] = BossAbility:New({ -- Spread the Love!
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = 55.6,
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+				}),
+				[435622] = BossAbility:New({ -- Let It Hail!
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 40.9 },
+							repeatInterval = 55.8,
+						}),
+					},
+					duration = 5.0,
+					castTime = 4.5,
+				}),
+				[436644] = BossAbility:New({ -- Burning Ricochet
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 16.6 },
+							repeatInterval = { 14.6, 41.3 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 6.0,
+				}),
+				[436592] = BossAbility:New({ -- Cash Cannon
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 8.1 },
+							repeatInterval = { 14.6, 14.6, 26.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+				}),
+			},
 		}),
 	},
 })
