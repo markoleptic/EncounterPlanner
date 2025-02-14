@@ -28,8 +28,9 @@ Private.raidInstances[2661] = RaidInstance:New({
 			abilities = {
 				[442525] = BossAbility:New({ -- Happy Hour
 					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 27.8 },
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -45,7 +46,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 					eventTriggers = {
 						[442525] = EventTrigger:New({ -- Happy Hour over
 							combatLogEventType = "SAR",
-							castTimes = { 17.6, 23.1, 23.1 },
+							castTimes = { 17.6, 23.1 },
 						}),
 					},
 					duration = 0.0,
@@ -60,7 +61,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 					eventTriggers = {
 						[442525] = EventTrigger:New({ -- Happy Hour over
 							combatLogEventType = "SAR",
-							castTimes = { 14.0, 18.2, 18.2 },
+							castTimes = { 14.0, 18.2 },
 						}),
 					},
 					duration = 9.0,
@@ -75,7 +76,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 					eventTriggers = {
 						[442525] = EventTrigger:New({ -- Happy Hour over
 							combatLogEventType = "SAR",
-							castTimes = { 9.1, 14.5, 14.5, 14.5 },
+							castTimes = { 9.1, 14.5, 14.5 },
 						}),
 					},
 					duration = 0.0,
@@ -83,15 +84,9 @@ Private.raidInstances[2661] = RaidInstance:New({
 				}),
 			},
 			phases = {
-				-- TODO: Add option for fixed first phase duration
 				[1] = BossPhase:New({
-					firstPhaseDuration = 27.8,
-					fixedDurationFirstPhaseDuration = true,
-					duration = 50.9,
-					defaultDuration = 50.9,
-					count = 3,
-					defaultCount = 3,
-					repeatAfter = 2,
+					duration = 27.8,
+					defaultDuration = 27.8,
 					name = "P1",
 				}),
 				[2] = BossPhase:New({
@@ -99,8 +94,17 @@ Private.raidInstances[2661] = RaidInstance:New({
 					defaultDuration = 20.0,
 					count = 3,
 					defaultCount = 3,
-					repeatAfter = 1,
+					repeatAfter = 3,
 					name = "P2",
+				}),
+				[3] = BossPhase:New({
+					duration = 50.9,
+					defaultDuration = 50.9,
+					count = 2,
+					defaultCount = 2,
+					repeatAfter = 2,
+					fixedDuration = true,
+					name = "P1",
 				}),
 			},
 		}),
