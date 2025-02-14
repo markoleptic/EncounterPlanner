@@ -312,11 +312,18 @@ function BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, 
 		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 		if validatedCounts[1] then
 			validatedCounts[1] = Clamp(validatedCounts[1], 1, maxCounts[1])
-			local lastPhaseIndexCount = validatedCounts[1]
+			local lastPhaseIndex, lastPhaseIndexCount = 1, validatedCounts[1]
 			for phaseIndex = 2, #validatedCounts do
 				local phaseCount = validatedCounts[phaseIndex]
-				local minCount = max(0, lastPhaseIndexCount - 1)
-				local maxCount = min(lastPhaseIndexCount, maxCounts[phaseIndex])
+				local minCount, maxCount
+				if phases[lastPhaseIndex].repeatAfter == lastPhaseIndex then
+					minCount = max(0, lastPhaseIndexCount - 1)
+					maxCount = min(lastPhaseIndexCount, maxCounts[phaseIndex])
+				else
+					minCount = 0
+					maxCount = maxCounts[phaseIndex]
+				end
+
 				validatedCounts[phaseIndex] = Clamp(phaseCount, minCount, maxCount)
 				lastPhaseIndexCount = validatedCounts[phaseIndex]
 			end
