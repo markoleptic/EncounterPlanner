@@ -862,18 +862,8 @@ do
 
 			if shouldLogPastDurationCount then
 				if pastDurationCount == 0 then
-					interfaceUpdater.LogMessage(L["All assignments visible"], 1, 1)
+					interfaceUpdater.LogMessage(format("%s: %s.", plan.name, L["All assignments visible"]), 1, 1)
 				else
-					local assignmentsString = pastDurationCount == 1 and L["assignment"] or L["assignments"]
-					local formattedCount = format(
-						"%d %s %s %s -> %s.",
-						pastDurationCount,
-						assignmentsString,
-						L["may be hidden due to starting after the encounter ends. Consider extending the duration in"],
-						L["Boss"],
-						L["Phase Timing Editor"]
-					)
-					interfaceUpdater.LogMessage(formattedCount, 2, 1)
 					sort(startTimesPastTotalDuration)
 					local stringTimes = ""
 					for _, duration in ipairs(startTimesPastTotalDuration) do
@@ -882,7 +872,20 @@ do
 					if stringTimes:len() > 1 then
 						stringTimes = stringTimes:sub(1, stringTimes:len() - 2)
 					end
-					interfaceUpdater.LogMessage(format("%s: %s.", L["Assignment times"], stringTimes), 2, 2)
+
+					local assignmentsString = pastDurationCount == 1 and L["assignment"] or L["assignments"]
+					local message = format(
+						"%s: %d %s %s %s -> %s. %s: %s.",
+						plan.name,
+						pastDurationCount,
+						assignmentsString,
+						L["may be hidden due to starting after the encounter ends. Consider extending the duration in"],
+						L["Boss"],
+						L["Phase Timing Editor"],
+						L["Assignment times"],
+						stringTimes
+					)
+					interfaceUpdater.LogMessage(message, 2, 1)
 				end
 			end
 
@@ -899,9 +902,9 @@ do
 
 			if shouldLogOverlapCount then
 				if overlapCount == 0 then
-					interfaceUpdater.LogMessage(L["No overlapping assignments"], 1, 1)
+					interfaceUpdater.LogMessage(format("%s: %s.", plan.name, L["No overlapping assignments"]), 1, 1)
 				else
-					interfaceUpdater.LogMessage(format("%s:", L["Assignments might be overlapping"]), 2, 1)
+					interfaceUpdater.LogMessage(format("%s:", plan.name, L["Assignments might be overlapping"]), 2, 1)
 					for _, timelineAssignmentPair in ipairs(overlappingAssignments) do
 						local previous = timelineAssignmentPair[1]
 						local current = timelineAssignmentPair[2]
@@ -939,10 +942,11 @@ do
 	---@param invalidSpellIDOnlyCount integer
 	---@param onlyFailedSpellIDsString string
 	---@param spellCounts table<integer, table<integer, integer>>
-	local function LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts)
+	---@param planName string
+	local function LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, planName)
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
-			local countMsg = format("%s: %d %s.", AddOnName, count, L["assignment(s) failed to update"])
+			local countMsg = format("%s: %d %s.", planName, count, L["assignment(s) failed to update"])
 			interfaceUpdater.LogMessage(countMsg, 3, 1)
 
 			if onlyFailedSpellIDsString:len() > 1 then
@@ -1029,7 +1033,7 @@ do
 			end
 
 			local count = startCount - #timelineAssignments
-			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts)
+			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, plan.name)
 		end
 
 		Utilities.LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
