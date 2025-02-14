@@ -116,7 +116,7 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 	line:SetPoint("RIGHT", self.messageFrame, "RIGHT", -padding.right, 0)
 	lineNumber:SetPoint("RIGHT", line, "LEFT")
 
-	local textHeight = line:GetStringHeight()
+	local textHeight = line:GetHeight()
 	if #self.activeMessages > 0 then
 		local lastLine = self.activeMessages[#self.activeMessages].line
 		line:SetPoint("TOP", lastLine, "BOTTOM", 0, -textPadding)
@@ -169,6 +169,19 @@ local function ClearMessages(self)
 	self.lineNumber = 1
 end
 
+---@param self EPStatusBar
+local function OnWidthSet(self)
+	local height = 0.0
+	for _, obj in ipairs(self.activeMessages) do
+		height = height + obj.line:GetHeight() + textPadding
+	end
+	if height > 0.0 then
+		height = height + padding.top
+	end
+	self.messageFrame:SetHeight(height + padding.bottom)
+	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -187,6 +200,7 @@ local function Constructor()
 		ClearMessages = ClearMessages,
 		AddMessage = AddMessage,
 		AddMessages = AddMessages,
+		OnWidthSet = OnWidthSet,
 		frame = frame,
 		messageFrame = messageFrame,
 		type = Type,
