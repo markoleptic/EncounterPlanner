@@ -117,7 +117,8 @@ Private.raidInstances[2661] = RaidInstance:New({
 				[439365] = BossAbility:New({ -- Spouting Stout
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.6, 47.3, 47.3, 47.3 },
+							castTimes = { 10.6 },
+							repeatInterval = 47.3,
 						}),
 					},
 					duration = 8.0,
@@ -126,7 +127,8 @@ Private.raidInstances[2661] = RaidInstance:New({
 				[439202] = BossAbility:New({ -- Burning Fermentation
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 35.0, 47.3, 47.3, 47.3 },
+							castTimes = { 35.0 },
+							repeatInterval = 47.3,
 						}),
 					},
 					duration = 16.0,
@@ -135,7 +137,8 @@ Private.raidInstances[2661] = RaidInstance:New({
 				[439031] = BossAbility:New({ -- Bottoms Uppercut
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 26.3, 47.3, 47.3, 47.3 },
+							castTimes = { 26.3 },
+							repeatInterval = 47.3,
 						}),
 					},
 					duration = 0.0,
@@ -148,10 +151,12 @@ Private.raidInstances[2661] = RaidInstance:New({
 					castTime = 0.0,
 				}),
 			},
-			[1] = BossPhase:New({
-				duration = 180.0,
-				defaultDuration = 180.0,
-			}),
+			phases = {
+				[1] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+				}),
+			},
 		}),
 		Boss:New({ -- Benk Buzzbee
 			bossID = { 218002 },
