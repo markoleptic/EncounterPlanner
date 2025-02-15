@@ -1170,7 +1170,6 @@ end
 ---@param spellID integer|nil
 ---@param time number
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
-	print(assignee, spellID, time)
 	local encounterID = GetCurrentBossDungeonEncounterID()
 	local assignment = bossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
 	if assignment then
@@ -1184,11 +1183,9 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 		if getmetatable(assignment) == CombatLogEventAssignment then
 			local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
 			local bossPhaseTable = bossUtilities.GetOrderedBossPhases(encounterID)
-			print(castTimeTable, bossPhaseTable)
 			if castTimeTable and bossPhaseTable then
 				local newSpellID, newSpellCount, newTime =
 					bossUtilities.FindNearestCombatLogEvent(time, encounterID, "SCS", true)
-				print(newSpellID, newSpellCount, newTime)
 				if newSpellID and newSpellCount and newTime then
 					if newSpellID and newSpellCount and newTime then
 						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
