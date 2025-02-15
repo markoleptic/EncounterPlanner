@@ -942,39 +942,39 @@ do
 									spellCount[bossAbilitySpellID],
 									{ castStart = castStart, bossPhaseOrderIndex = bossPhaseOrderIndex }
 								)
-
-								if bossAbilityPhase.repeatInterval then
-									if type(bossAbilityPhase.repeatInterval) == "table" then
-										local repeatIndex = 1
-										local repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
-										local nextRepeatStart = castStart + repeatInterval
-										while nextRepeatStart < phaseEndTime do
-											tinsert(spellCount[bossAbilitySpellID], {
-												castStart = nextRepeatStart,
-												bossPhaseOrderIndex = bossPhaseOrderIndex,
-											})
-											if bossAbilityPhase.repeatInterval[repeatIndex + 1] then
-												repeatIndex = repeatIndex + 1
-											else
-												repeatIndex = 1
-											end
-											repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
-											nextRepeatStart = nextRepeatStart + repeatInterval
-										end
-									elseif type(bossAbilityPhase.repeatInterval) == "number" then
-										local repeatInterval = bossAbilityPhase.repeatInterval
-										local nextRepeatStart = castStart + repeatInterval
-										while nextRepeatStart < phaseEndTime do
-											tinsert(spellCount[bossAbilitySpellID], {
-												castStart = nextRepeatStart,
-												bossPhaseOrderIndex = bossPhaseOrderIndex,
-											})
-											nextRepeatStart = nextRepeatStart + repeatInterval
-										end
-									end
-								end
-
 								cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
+							end
+						end
+						if bossAbilityPhase.repeatInterval then
+							if type(bossAbilityPhase.repeatInterval) == "table" then
+								local repeatIndex = 1
+								local repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
+								local nextRepeatStart = cumulativePhaseCastTime + repeatInterval
+								while nextRepeatStart < phaseEndTime do
+									tinsert(spellCount[bossAbilitySpellID], {
+										castStart = nextRepeatStart,
+										bossPhaseOrderIndex = bossPhaseOrderIndex,
+									})
+									if bossAbilityPhase.repeatInterval[repeatIndex + 1] then
+										repeatIndex = repeatIndex + 1
+									else
+										repeatIndex = 1
+									end
+									repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
+									nextRepeatStart = nextRepeatStart + repeatInterval
+									cumulativePhaseCastTime = cumulativePhaseCastTime + repeatInterval
+								end
+							elseif type(bossAbilityPhase.repeatInterval) == "number" then
+								local repeatInterval = bossAbilityPhase.repeatInterval
+								local nextRepeatStart = cumulativePhaseCastTime + repeatInterval
+								while nextRepeatStart < phaseEndTime do
+									tinsert(spellCount[bossAbilitySpellID], {
+										castStart = nextRepeatStart,
+										bossPhaseOrderIndex = bossPhaseOrderIndex,
+									})
+									nextRepeatStart = nextRepeatStart + repeatInterval
+									cumulativePhaseCastTime = cumulativePhaseCastTime + repeatInterval
+								end
 							end
 						end
 					end
@@ -1072,10 +1072,10 @@ do
 					end
 					local bossAbility = boss.abilities[bossAbilitySpellID]
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
+					local frameLevel = 1
 					if bossAbilityPhase then
 						local cumulativePhaseCastTime = cumulativePhaseStartTime
 
-						local frameLevel = 1
 						local overlaps = {}
 
 						local consecutivePerfectOverlaps = 0
@@ -1157,103 +1157,105 @@ do
 
 								frameLevel = frameLevel + 1
 								bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
-
-								if bossAbilityPhase.repeatInterval then
-									if type(bossAbilityPhase.repeatInterval) == "table" then
-										local repeatIndex = 1
-										local repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
-										local nextRepeatStart = castStart + repeatInterval
-										local repeatInstance = 1
-										while nextRepeatStart < phaseEndTime do
-											local repeatEnd = nextRepeatStart + bossAbility.castTime
-											local repeatEffectEnd = repeatEnd + bossAbility.duration
-
-											tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
-											tinsert(abilityInstances, {
-												bossAbilitySpellID = bossAbilitySpellID,
-												bossAbilityInstanceIndex = bossAbilityInstanceIndex,
-												bossAbilityOrderIndex = bossAbilityOrderIndex,
-												bossPhaseIndex = bossPhaseIndex,
-												bossPhaseOrderIndex = bossPhaseOrderIndex,
-												bossPhaseDuration = bossPhase.duration,
-												bossPhaseName = bossPhaseName,
-												nextBossPhaseName = nextBossPhaseName,
-												spellOccurrence = #spellCount[bossAbilitySpellID],
-												castStart = nextRepeatStart,
-												castEnd = repeatEnd,
-												effectEnd = repeatEffectEnd,
-												frameLevel = frameLevel,
-												relativeCastTime = nil,
-												combatLogEventType = nil,
-												triggerSpellID = nil,
-												spellCount = nil,
-												repeatInstance = repeatInstance,
-												repeatCastIndex = nil,
-												signifiesPhaseStart = nil,
-												signifiesPhaseEnd = nil,
-												overlaps = nil,
-											} --[[@as BossAbilityInstance]])
-
-											frameLevel = frameLevel + 1
-											bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
-											if bossAbilityPhase.repeatInterval[repeatIndex + 1] then
-												repeatIndex = repeatIndex + 1
-											else
-												repeatIndex = 1
-											end
-											repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
-											nextRepeatStart = nextRepeatStart + repeatInterval
-											repeatInstance = repeatInstance + 1
-										end
-									elseif type(bossAbilityPhase.repeatInterval) == "number" then
-										local repeatInterval = bossAbilityPhase.repeatInterval
-										local nextRepeatStart = castStart + repeatInterval
-										local repeatInstance = 1
-										while nextRepeatStart < phaseEndTime do
-											local repeatEnd = nextRepeatStart + bossAbility.castTime
-											local repeatEffectEnd = repeatEnd + bossAbility.duration
-
-											tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
-											tinsert(abilityInstances, {
-												bossAbilitySpellID = bossAbilitySpellID,
-												bossAbilityInstanceIndex = bossAbilityInstanceIndex,
-												bossAbilityOrderIndex = bossAbilityOrderIndex,
-												bossPhaseIndex = bossPhaseIndex,
-												bossPhaseOrderIndex = bossPhaseOrderIndex,
-												bossPhaseDuration = bossPhase.duration,
-												bossPhaseName = bossPhaseName,
-												nextBossPhaseName = nextBossPhaseName,
-												spellOccurrence = #spellCount[bossAbilitySpellID],
-												castStart = nextRepeatStart,
-												castEnd = repeatEnd,
-												effectEnd = repeatEffectEnd,
-												frameLevel = frameLevel,
-												relativeCastTime = nil,
-												combatLogEventType = nil,
-												triggerSpellID = nil,
-												spellCount = nil,
-												repeatInstance = repeatInstance,
-												repeatCastIndex = nil,
-												signifiesPhaseStart = nil,
-												signifiesPhaseEnd = nil,
-												overlaps = nil,
-											} --[[@as BossAbilityInstance]])
-
-											frameLevel = frameLevel + 1
-											bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
-											nextRepeatStart = nextRepeatStart + repeatInterval
-											repeatInstance = repeatInstance + 1
-										end
-									end
-								end
-
 								cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
+							end
+						end
+
+						if bossAbilityPhase.repeatInterval then
+							if type(bossAbilityPhase.repeatInterval) == "table" then
+								local repeatIndex = 1
+								local repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
+								local nextRepeatStart = cumulativePhaseCastTime + repeatInterval
+								local repeatInstance = 1
+								while nextRepeatStart < phaseEndTime do
+									local repeatEnd = nextRepeatStart + bossAbility.castTime
+									local repeatEffectEnd = repeatEnd + bossAbility.duration
+									if boss.dungeonEncounterID == 2258 then
+										print(repeatIndex, repeatInterval, nextRepeatStart)
+									end
+									tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
+									tinsert(abilityInstances, {
+										bossAbilitySpellID = bossAbilitySpellID,
+										bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+										bossAbilityOrderIndex = bossAbilityOrderIndex,
+										bossPhaseIndex = bossPhaseIndex,
+										bossPhaseOrderIndex = bossPhaseOrderIndex,
+										bossPhaseDuration = bossPhase.duration,
+										bossPhaseName = bossPhaseName,
+										nextBossPhaseName = nextBossPhaseName,
+										spellOccurrence = #spellCount[bossAbilitySpellID],
+										castStart = nextRepeatStart,
+										castEnd = repeatEnd,
+										effectEnd = repeatEffectEnd,
+										frameLevel = frameLevel,
+										relativeCastTime = nil,
+										combatLogEventType = nil,
+										triggerSpellID = nil,
+										spellCount = nil,
+										repeatInstance = repeatInstance,
+										repeatCastIndex = nil,
+										signifiesPhaseStart = nil,
+										signifiesPhaseEnd = nil,
+										overlaps = nil,
+									} --[[@as BossAbilityInstance]])
+
+									frameLevel = frameLevel + 1
+									bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+									if bossAbilityPhase.repeatInterval[repeatIndex + 1] then
+										repeatIndex = repeatIndex + 1
+									else
+										repeatIndex = 1
+									end
+									repeatInterval = bossAbilityPhase.repeatInterval[repeatIndex]
+									nextRepeatStart = nextRepeatStart + repeatInterval
+									repeatInstance = repeatInstance + 1
+									cumulativePhaseCastTime = cumulativePhaseCastTime + repeatInterval
+								end
+							elseif type(bossAbilityPhase.repeatInterval) == "number" then
+								local repeatInterval = bossAbilityPhase.repeatInterval
+								local nextRepeatStart = cumulativePhaseCastTime + repeatInterval
+								local repeatInstance = 1
+								while nextRepeatStart < phaseEndTime do
+									local repeatEnd = nextRepeatStart + bossAbility.castTime
+									local repeatEffectEnd = repeatEnd + bossAbility.duration
+
+									tinsert(spellCount[bossAbilitySpellID], nextRepeatStart)
+									tinsert(abilityInstances, {
+										bossAbilitySpellID = bossAbilitySpellID,
+										bossAbilityInstanceIndex = bossAbilityInstanceIndex,
+										bossAbilityOrderIndex = bossAbilityOrderIndex,
+										bossPhaseIndex = bossPhaseIndex,
+										bossPhaseOrderIndex = bossPhaseOrderIndex,
+										bossPhaseDuration = bossPhase.duration,
+										bossPhaseName = bossPhaseName,
+										nextBossPhaseName = nextBossPhaseName,
+										spellOccurrence = #spellCount[bossAbilitySpellID],
+										castStart = nextRepeatStart,
+										castEnd = repeatEnd,
+										effectEnd = repeatEffectEnd,
+										frameLevel = frameLevel,
+										relativeCastTime = nil,
+										combatLogEventType = nil,
+										triggerSpellID = nil,
+										spellCount = nil,
+										repeatInstance = repeatInstance,
+										repeatCastIndex = nil,
+										signifiesPhaseStart = nil,
+										signifiesPhaseEnd = nil,
+										overlaps = nil,
+									} --[[@as BossAbilityInstance]])
+
+									frameLevel = frameLevel + 1
+									bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
+									nextRepeatStart = nextRepeatStart + repeatInterval
+									repeatInstance = repeatInstance + 1
+									cumulativePhaseCastTime = cumulativePhaseCastTime + repeatInterval
+								end
 							end
 						end
 					end
 
 					if bossAbility.eventTriggers then
-						local frameLevel = 1
 						for triggerSpellID, eventTrigger in pairs(bossAbility.eventTriggers) do
 							local bossAbilityTrigger = boss.abilities[triggerSpellID]
 							if bossAbilityTrigger and bossAbilityTrigger.phases[bossPhaseIndex] then
@@ -1273,6 +1275,9 @@ do
 										local castStart = cumulativeCastTime + castTime
 										local castEnd = castStart + bossAbility.castTime
 										local effectEnd = castEnd + bossAbility.duration
+										if triggerSpellID == 283551 then
+											print(castStart)
+										end
 
 										tinsert(spellCount[bossAbilitySpellID], castStart)
 										tinsert(abilityInstances, {
