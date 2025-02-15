@@ -721,7 +721,9 @@ end
 
 do
 	local AddOn = Private.addOn
-	local tremove = table.remove
+	local concat = table.concat
+	local next = next
+
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
 
@@ -768,11 +770,11 @@ do
 						end
 						timelineAssignment.startTime = startTime
 					else
-						failedSpellIDs[spellID] = failedSpellIDs or {}
+						failedSpellIDs[spellID] = failedSpellIDs[spellID] or {}
 						failedSpellIDs[spellID][spellCount] = true
 					end
 				else
-					failedSpellIDs[spellID] = failedSpellIDs or {}
+					failedSpellIDs[spellID] = failedSpellIDs[spellID] or {}
 				end
 			elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
 				timelineAssignment.startTime = timelineAssignment
@@ -795,10 +797,10 @@ do
 				end
 			end
 		end
-		if #failedTable.combatLogEventSpellIDs == 0 then
-			return true
-		else
+		if next(failedSpellIDs) then
 			return false, failedTable
+		else
+			return true
 		end
 	end
 
@@ -904,7 +906,11 @@ do
 				if overlapCount == 0 then
 					interfaceUpdater.LogMessage(format("%s: %s.", plan.name, L["No overlapping assignments"]), 1, 1)
 				else
-					interfaceUpdater.LogMessage(format("%s:", plan.name, L["Assignments might be overlapping"]), 2, 1)
+					interfaceUpdater.LogMessage(
+						format("%s: %s:", plan.name, L["Assignments might be overlapping"]),
+						2,
+						1
+					)
 					for _, timelineAssignmentPair in ipairs(overlappingAssignments) do
 						local previous = timelineAssignmentPair[1]
 						local current = timelineAssignmentPair[2]
@@ -951,11 +957,11 @@ do
 
 			if onlyFailedSpellIDsString:len() > 1 then
 				local spellString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
-				local msg = format("%d %s: %s", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], spellString)
+				local msg = format("%d %s: %s.", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], spellString)
 				interfaceUpdater.LogMessage(msg, 3, 2)
 			end
 
-			if #spellCounts > 0 then
+			if next(spellCounts) then
 				local total = 0
 				local delayedMsgs = {}
 				sort(spellCounts)
@@ -971,10 +977,8 @@ do
 					end
 				end
 				if total > 0 then
-					interfaceUpdater.LogMessage(format("%d %s:", total, L["Invalid Boss Spell Count(s)"]), 3, 1)
-					for _, msg in ipairs(delayedMsgs) do
-						interfaceUpdater.LogMessage(msg, 3, 2)
-					end
+					local msg = format("%d %s: %s.", total, L["Invalid Boss Spell Count(s)"], concat(delayedMsgs, ","))
+					interfaceUpdater.LogMessage(msg, 3, 2)
 				end
 			end
 		end
@@ -1009,14 +1013,15 @@ do
 		local success, failTable =
 			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
 
-		local invalidSpellIDOnlyCount = 0
-		local spellCounts = {}
 		if not success and failTable then
+			local invalidSpellIDOnlyCount = 0
+			local spellCounts = {}
 			local startCount = #timelineAssignments
+			local failedSpellCountCount = 0
 			local failedSpellIDs = failTable.combatLogEventSpellIDs
 			local onlyFailedSpellIDsString = ""
 
-			for i = #timelineAssignments, 1, -1 do
+			for i = startCount, 1, -1 do
 				local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
 				local spellID = assignment.combatLogEventSpellID
 				if spellID and failedSpellIDs[spellID] then
@@ -1024,15 +1029,15 @@ do
 					if failedSpellIDs[spellID][spellCount] then
 						spellCounts[spellID] = spellCounts[spellID] or {}
 						tinsert(spellCounts[spellID], spellCount)
-					else
+						failedSpellCountCount = failedSpellCountCount + 1
+					elseif not next(failedSpellIDs[spellID]) then
 						onlyFailedSpellIDsString = onlyFailedSpellIDsString .. spellID .. ", "
 						invalidSpellIDOnlyCount = invalidSpellIDOnlyCount + 1
 					end
-					tremove(timelineAssignments, i)
 				end
 			end
 
-			local count = startCount - #timelineAssignments
+			local count = failedSpellCountCount + invalidSpellIDOnlyCount
 			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, plan.name)
 		end
 
