@@ -264,7 +264,7 @@ Private.classes.BossAbility = {
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.
 ---@class BossAbilityPhase
 ---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
----@field repeatInterval number|nil If defined, the ability will repeat at this interval starting from the last cast time.
+---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 Private.classes.BossAbilityPhase = {
