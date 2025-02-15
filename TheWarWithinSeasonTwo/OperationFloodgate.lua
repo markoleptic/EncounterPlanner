@@ -30,8 +30,61 @@ Private.raidInstances[2773] = RaidInstance:New({
 			journalEncounterID = 2648,
 			dungeonEncounterID = 3020,
 			instanceID = 2773,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[460156] = BossAbility:New({ -- Jumpstart
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 12.0,
+					castTime = 1.5,
+				}),
+				[473351] = BossAbility:New({ -- Electrocrush
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 5.7 },
+							repeatInterval = 20.6,
+						}),
+					},
+					duration = 10.0,
+					castTime = 1.5,
+				}),
+				[473220] = BossAbility:New({ -- Sonic Boom
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.9 },
+							repeatInterval = 21.7,
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[469981] = BossAbility:New({ -- Kill-o-Block Barrier
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 51.0 },
+						}),
+					},
+					duration = math.huge,
+					castTime = 1.5,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					name = "P1",
+				}),
+				[2] = BossPhase:New({
+					duration = 13.5,
+					defaultDuration = 13.5,
+					fixedDuration = true,
+					name = "P2",
+				}),
+			},
 		}),
 		Boss:New({ -- Demolition Duo
 			bossID = {
