@@ -366,3 +366,6 @@ L["Spell Cast Start"] = true
 L["Spell Aura Applied"] = true
 L["Spell Aura Removed"] = true
 L["Season 2 M+"] = true
+L["Platinum Pummel"] = true
+L["Ground Pound"] = true
+L["B.4.T.T.L.3. Mine"] = true
