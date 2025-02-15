@@ -255,6 +255,16 @@ do -- Profile updating and refreshing
 					classColoredName = classColoredName,
 				})
 			end
+			for dungeonEncounterID, activeBossAbilities in pairs(profile.activeBossAbilities) do
+				local boss = GetBoss(dungeonEncounterID)
+				if boss then
+					for bossAbilityID, _ in pairs(activeBossAbilities) do
+						if not boss.abilities[bossAbilityID] then
+							activeBossAbilities[bossAbilityID] = nil
+						end
+					end
+				end
+			end
 		end
 	end
 
