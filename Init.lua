@@ -298,25 +298,20 @@ Private.classes.EventTriggerRepeatCriteria = {
 -- a different castStart, castEnd, or effectEnd if the boss phase duration or boss phase count are different from
 -- default.
 ---@class BossAbilityInstance
----@field bossAbilitySpellID integer The SpellID of the boss ability.
+---@field bossAbilitySpellID integer The spell ID of the boss ability.
 ---@field bossAbilityInstanceIndex integer The occurrence number of this instance out of all boss ability instances.
 ---@field bossAbilityOrderIndex integer The index of the ability in the boss's sortedAbilityIDs.
+---@field bossPhaseIndex integer The phase the ability instance is cast in.
 ---@field bossPhaseOrderIndex integer The index of boss phase in the boss phase order (not the boss phase).
 ---@field bossPhaseDuration number The duration of the boss phase.
 ---@field bossPhaseName string|nil If defined, the name of the start of the phase.
 ---@field nextBossPhaseName string|nil If defined, the name of the start of the next phase.
----@field spellOccurrence integer The number of times the spell has already been cast prior to this instance (+1).
----@field bossPhaseIndex integer The phase the ability instance is cast in.
+---@field spellCount integer The occurrence number of the boss spell ID.
 ---@field castStart number The cast time from the start of the encounter.
 ---@field castEnd number The cast start plus the cast time.
 ---@field effectEnd number The cast end plus the ability duration.
 ---@field frameLevel integer Frame level to use for the ability instance on the timeline.
 ---@field relativeCastTime number|nil If defined, the cast time from the trigger cast time.
----@field combatLogEventType CombatLogEventType|nil If defined, the combat log event type that acts as a trigger.
----@field triggerSpellID number|nil If defined, the spellID of the boss ability that triggers the event trigger.
----@field spellCount number|nil If defined, the spell count of the boss ability that triggers the event trigger.
----@field repeatInstance number|nil If defined, the number of times the set of repeat criteria cast times has been completed.
----@field repeatCastIndex number|nil If defined, the index of the cast time in the repeat criteria.
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
 ---@field overlaps {heightMultiplier:number, offset:number}|nil A height and offset multiplier to use if perfectly overlapping with another cast of the same ability.
@@ -329,17 +324,12 @@ Private.classes.BossAbilityInstance = {
 	bossPhaseDuration = 0.0,
 	bossPhaseName = nil,
 	nextBossPhaseName = nil,
-	spellOccurrence = 0,
+	spellCount = 0,
 	castStart = 0.0,
 	castEnd = 0.0,
 	effectEnd = 0.0,
 	frameLevel = 0,
 	relativeCastTime = nil,
-	combatLogEventType = nil,
-	triggerSpellID = nil,
-	spellCount = nil,
-	repeatInstance = nil,
-	repeatCastIndex = nil,
 	signifiesPhaseStart = nil,
 	signifiesPhaseEnd = nil,
 	overlaps = nil,

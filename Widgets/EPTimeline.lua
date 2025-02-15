@@ -236,14 +236,11 @@ end
 
 ---@param bossAbilityFrames table<integer, BossAbilityFrame>
 ---@param spellID integer
----@param spellOccurrence integer
+---@param spellCount integer
 ---@return BossAbilityFrame|nil
-local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellOccurrence)
+local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
 	for _, frame in ipairs(bossAbilityFrames) do
-		if
-			frame.abilityInstance.bossAbilitySpellID == spellID
-			and frame.abilityInstance.spellOccurrence == spellOccurrence
-		then
+		if frame.abilityInstance.bossAbilitySpellID == spellID and frame.abilityInstance.spellCount == spellCount then
 			return frame
 		end
 	end
@@ -574,7 +571,7 @@ end
 ---@param frame BossAbilityFrame
 local function HandleBossAbilityBarEnter(self, frame)
 	local spellID = frame.abilityInstance.bossAbilitySpellID
-	local spellCount = frame.abilityInstance.spellOccurrence
+	local spellCount = frame.abilityInstance.spellCount
 	if #selectedAssignmentIDsFromBossAbilityFrameEnter > 0 then
 		ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 	end
@@ -608,10 +605,14 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 	if not frame then
 		frame = CreateFrame("Frame", nil, timelineFrame) --[[@as BossAbilityFrame]]
 		frame:SetScript("OnEnter", function(f)
-			HandleBossAbilityBarEnter(self, f)
+			HandleBossAbilityBarEnter(self, f --[[@as BossAbilityFrame]])
 		end)
 		frame:SetScript("OnLeave", function(f)
-			self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellOccurrence, true)
+			self:ClearSelectedBossAbility(
+				f--[[@as BossAbilityFrame]].abilityInstance.bossAbilitySpellID,
+				f--[[@as BossAbilityFrame]].abilityInstance.spellCount,
+				true
+			)
 			ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 		end)
 		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
@@ -2364,10 +2365,10 @@ end
 
 ---@param self EPTimeline
 ---@param spellID integer
----@param spellOccurrence integer
+---@param spellCount integer
 ---@param selectedByClicking boolean|nil
-local function SelectBossAbility(self, spellID, spellOccurrence, selectedByClicking)
-	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellOccurrence)
+local function SelectBossAbility(self, spellID, spellCount, selectedByClicking)
+	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
 		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 		if selectedByClicking then
@@ -2380,10 +2381,10 @@ end
 
 ---@param self EPTimeline
 ---@param spellID integer
----@param spellOccurrence integer
+---@param spellCount integer
 ---@param onlyClearIfNotSelectedByClicking boolean|nil
-local function ClearSelectedBossAbility(self, spellID, spellOccurrence, onlyClearIfNotSelectedByClicking)
-	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellOccurrence)
+local function ClearSelectedBossAbility(self, spellID, spellCount, onlyClearIfNotSelectedByClicking)
+	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
 		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
 			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
