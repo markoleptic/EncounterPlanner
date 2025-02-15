@@ -865,15 +865,47 @@ function callbackTarget.RegisterCallback(target, name, func) end
 ---@param name string
 function callbackTarget.UnregisterCallback(target, name) end
 
+do
+	local currentPlaceholderBossSpellIDIndex = -1
+	local placeholderBossSpellIDs = {} ---@type table<integer, {placeholderID: integer, placeholderName: string}>
+
+	---@param actualSpellID integer
+	---@param placeholderName string
+	---@return integer placeholderBossSpellID
+	function Private:RegisterPlaceholderBossSpellID(actualSpellID, placeholderName)
+		if not placeholderBossSpellIDs[actualSpellID] then
+			placeholderBossSpellIDs[actualSpellID] = {
+				placeholderID = currentPlaceholderBossSpellIDIndex,
+				placeholderName = placeholderName,
+			}
+			currentPlaceholderBossSpellIDIndex = currentPlaceholderBossSpellIDIndex - 1
+		end
+		return placeholderBossSpellIDs[actualSpellID].placeholderID
+	end
+
+	---@param actualSpellID integer
+	---@return boolean
+	function Private:HasPlaceholderBossSpellID(actualSpellID)
+		return placeholderBossSpellIDs[actualSpellID] ~= nil
+	end
+
+	---@param actualSpellID integer
+	---@return string|nil placeholderName
+	function Private:GetPlaceholderBossName(actualSpellID)
+		if placeholderBossSpellIDs[actualSpellID] then
+			return placeholderBossSpellIDs[actualSpellID].placeholderName
+		end
+	end
+end
+
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
----@type AceDBObject-3.0
-Private.addOn.db = nil
+Private.addOn.db = nil ---@type AceDBObject-3.0
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
 Private.callbackTarget = callbackTarget
 Private.callbackHandler = CallbackHandler:New(Private.callbackTarget)
 
-Private.raidInstances = {} --[[@as table<integer, RaidInstance>]]
+Private.raidInstances = {} ---@type table<integer, RaidInstance>
 Private.customRaidInstanceGroups = {
 	["TheWarWithinSeasonTwo"] = {
 		instanceIDToUseForIcon = 2661,

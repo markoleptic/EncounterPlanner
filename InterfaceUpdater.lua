@@ -61,6 +61,7 @@ do
 	local instanceAndBossPadding = 4
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
+	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 
 	local GetSpellInfo = C_Spell.GetSpellInfo
 
@@ -96,19 +97,34 @@ do
 				if activeBossAbilities[abilityID] == nil then
 					activeBossAbilities[abilityID] = true
 				end
+				local placeholderName = nil
+				if Private:HasPlaceholderBossSpellID(abilityID) then
+					placeholderName = Private:GetPlaceholderBossName(abilityID)
+				end
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
-					abilityEntry:SetAbility(abilityID, tostring(abilityID))
+					if placeholderName then
+						abilityEntry:SetNullAbility(tostring(abilityID), placeholderName)
+					else
+						abilityEntry:SetAbility(abilityID, tostring(abilityID))
+					end
 					abilityEntry:HideCheckBox()
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then
-					local spellInfo = GetSpellInfo(abilityID)
-					if spellInfo then
-						local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-						tinsert(bossAbilitySelectItems, { itemValue = abilityID, text = iconText })
+					local iconText
+					if placeholderName then
+						iconText = format("|T%s:16|t %s", unknownIcon, placeholderName)
+					else
+						local spellInfo = GetSpellInfo(abilityID)
+						if spellInfo then
+							iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+						else
+							iconText = format("|T%s:16|t %s", unknownIcon, L["Unknown"])
+						end
 					end
+					tinsert(bossAbilitySelectItems, { itemValue = abilityID, text = iconText })
 				end
 			end
 
