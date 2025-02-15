@@ -181,8 +181,9 @@ end
 
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
-local function SetNullAbility(self, key)
-	self.label:SetText(L["Unknown"], padding.x * 2)
+---@param text string|nil
+local function SetNullAbility(self, key, text)
+	self.label:SetText(text or L["Unknown"], padding.x * 2)
 	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", padding.x, padding.y, 0)
 	self.key = key
 end
