@@ -209,11 +209,20 @@ do -- Profile updating and refreshing
 			for _, plan in pairs(profile.plans) do
 				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 				plan = Plan:New(plan, plan.name, plan.ID)
-				if not GetBoss(plan.dungeonEncounterID) then
+				local boss = GetBoss(plan.dungeonEncounterID)
+				if not boss then
 					ChangePlanBoss(2902, plan)
 				end
-				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(plan.dungeonEncounterID)
-				local orderedBossPhaseTable = GetOrderedBossPhases(plan.dungeonEncounterID)
+				local dungeonEncounterID = plan.dungeonEncounterID
+				boss = GetBoss(plan.dungeonEncounterID) --[[@as Boss]]
+				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
+				bossUtilities.SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
+				local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
+				customPhaseCounts =
+					bossUtilities.SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
+				bossUtilities.GenerateBossTables(boss)
+				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
+				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
 				if absoluteSpellCastTimeTable and orderedBossPhaseTable then
 					for _, assignment in ipairs(plan.assignments) do
 						if assignment.spellInfo.spellID == kInvalidAssignmentSpellID then

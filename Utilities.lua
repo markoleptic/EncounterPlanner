@@ -726,6 +726,7 @@ do
 
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
+	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 
 	local loggedOverlappingOrNotVisiblePlans = {} ---@type table <string, {overlapCount: integer, pastDurationCount: integer}>
 
@@ -739,14 +740,15 @@ do
 	---@return boolean
 	---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
 	function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
-		local absoluteSpellCastStartTable = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local maxAbsoluteSpellCastStartTable = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		local bossName = GetBossName(bossDungeonEncounterID)
 		local failedTable = {
 			bossName = bossName,
 			combatLogEventSpellIDs = {},
 		}
 
-		if not absoluteSpellCastStartTable or not bossName then
+		if not maxAbsoluteSpellCastStartTable or not absoluteSpellCastStartTable or not bossName then
 			return false, failedTable
 		end
 
@@ -755,10 +757,17 @@ do
 			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
 				local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 				local spellID = assignment.combatLogEventSpellID
+				local maxSpellIDSpellCastStartTable = maxAbsoluteSpellCastStartTable[spellID]
 				local spellIDSpellCastStartTable = absoluteSpellCastStartTable[spellID]
-				if spellIDSpellCastStartTable then
+				if maxSpellIDSpellCastStartTable or spellIDSpellCastStartTable then
 					local spellCount = assignment.spellCount
-					local spellCastStartTable = spellIDSpellCastStartTable[spellCount]
+					local spellCastStartTable
+					if maxSpellIDSpellCastStartTable then
+						spellCastStartTable = maxSpellIDSpellCastStartTable[spellCount]
+					end
+					if not spellCastStartTable and spellIDSpellCastStartTable then
+						spellCastStartTable = spellIDSpellCastStartTable[spellCount]
+					end
 					if spellCastStartTable then
 						local startTime = spellCastStartTable.castStart + assignment.time
 						local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
