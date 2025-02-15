@@ -1138,9 +1138,10 @@ do
 	-- Creates BossAbilityInstances for all abilities of a boss.
 	---@param boss Boss
 	---@param orderedBossPhaseTable table<integer, integer>
+	---@param spellCount table|nil
 	---@return table<integer, BossAbilityInstance>
-	local function GenerateBossAbilityInstances(boss, orderedBossPhaseTable)
-		local spellCount = {}
+	local function GenerateBossAbilityInstances(boss, orderedBossPhaseTable, spellCount)
+		spellCount = spellCount or {}
 		local abilityInstances = {}
 
 		local cumulativePhaseStartTime = 0
@@ -1474,6 +1475,35 @@ do
 				GenerateMaxOrderedBossPhaseTable(boss.dungeonEncounterID, kMaxBossDuration)
 			maxAbsoluteSpellCastStartTables[boss.dungeonEncounterID] =
 				GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[boss.dungeonEncounterID])
+		end
+	end
+
+	do
+		---@class Tests
+		local tests = Private.tests
+		---@class TestUtilities
+		local testUtilities = Private.testUtilities
+
+		local TestEqual = testUtilities.TestEqual
+
+		do
+			function tests.CompareSpellCastTimeTables()
+				for _, raidInstance in pairs(Private.raidInstances) do
+					for _, boss in ipairs(raidInstance.bosses) do
+						local castTimeTable = {}
+						local ID = boss.dungeonEncounterID
+						GenerateBossAbilityInstances(boss, orderedBossPhases[ID], castTimeTable)
+						TestEqual(#absoluteSpellCastStartTables[ID], #castTimeTable, "Cast Time Table Size Equal")
+						for bossAbilitySpellID, spellCount in pairs(absoluteSpellCastStartTables[ID]) do
+							for spellOccurrence, castStartAndOrder in ipairs(spellCount) do
+								local castStart = castTimeTable[bossAbilitySpellID][spellOccurrence]
+								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal")
+							end
+						end
+					end
+				end
+				return "CompareSpellCastTimeTables"
+			end
 		end
 	end
 end
