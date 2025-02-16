@@ -456,7 +456,7 @@ local function UpdateTickMarks(self)
 		local seconds = time % 60
 
 		label:SetText(format("%d:%02d", minutes, seconds))
-		label:SetPoint("LEFT", self.splitterFrame, "LEFT", position + label:GetWidth() / 2.0, 0)
+		label:SetPoint("CENTER", self.splitterFrame, "LEFT", tickPosition, 0)
 		label:Show()
 		label.wantsToShow = true
 	end
