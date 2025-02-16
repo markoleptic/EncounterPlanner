@@ -330,11 +330,11 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
+	Private.testRunner.RunTests()
 	self.UpdateProfile(self.db.profile)
 	InitializeRaidInstances()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
-	Private.testRunner.RunTests()
 end
 
 function AddOn:OnDisable()
