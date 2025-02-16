@@ -1,4 +1,4 @@
-## Interface: 110007
+## Interface: 110007, 110010
 ## Version: 0.0.1
 ## Title: Encounter Planner
 ## Notes: Planner of mythic encounters /ep
