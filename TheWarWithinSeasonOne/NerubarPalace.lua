@@ -55,7 +55,7 @@ Private.raidInstances[2657] = RaidInstance:New({
 				[445123] = BossAbility:New({ -- Hulking Crash
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 90.0 },
+							castTimes = { 85.0 },
 						}),
 					},
 					duration = 0.0,
