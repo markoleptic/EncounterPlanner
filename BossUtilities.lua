@@ -947,14 +947,26 @@ do
 
 			if castStart <= endTime then
 				local castEnd = castStart + ability.castTime
-				if abilityPhase.signifiesPhaseEnd and castIndex == #abilityPhase.castTimes then
-					if not (castEnd < endTime and ability.duration > 0.0) then
-						if castTime == phase.defaultDuration then
-							castStart = endTime
-						end
+				local effectEnd = castEnd + ability.duration
+
+				if abilityPhase.signifiesPhaseStart and castIndex == 1 then
+					castEnd = min(castEnd, endTime)
+					if effectEnd >= endTime then
+						local newDuration = endTime - castEnd
+						effectEnd = castEnd + newDuration
 					end
 				end
-				castCallback(castStart, castEnd, castEnd + ability.duration)
+
+				if abilityPhase.signifiesPhaseEnd and castIndex == #abilityPhase.castTimes then
+					if castEnd < endTime then
+						effectEnd = endTime -- Extend duration until end of phase
+					else
+						castEnd = endTime -- Clamp cast time to end of phase
+					end
+				end
+
+				effectEnd = min(effectEnd, endTime)
+				castCallback(castStart, castEnd, effectEnd)
 				cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
 			end
 		end
@@ -1033,8 +1045,9 @@ do
 						local castStart = cumulativeCastTime + castTime
 						local castEnd = castStart + bossAbilityCastTime
 						local effectEnd = castEnd + bossAbilityDuration
-						-- TODO: May surround with castEnd if block
-						castCallback(castStart, castEnd, effectEnd)
+						if castEnd + bossAbilityDuration < endTime then
+							castCallback(castStart, castEnd, effectEnd) -- TODO: Maybe do same thing IterateAbilityCastTimes does
+						end
 						cumulativeCastTime = cumulativeCastTime + castTime
 					end
 					if eventTrigger.repeatCriteria and eventTrigger.repeatCriteria.spellCount == triggerCastIndex then
