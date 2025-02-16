@@ -75,15 +75,21 @@ Private.raidInstances[2773] = RaidInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 180.0,
-					defaultDuration = 180.0,
+					duration = 60.0,
+					defaultDuration = 60.0,
 					name = "P1",
+					count = 3,
+					defaultCount = 3,
+					repeatAfter = 2,
 				}),
 				[2] = BossPhase:New({
 					duration = 13.5,
 					defaultDuration = 13.5,
 					fixedDuration = true,
 					name = "P2",
+					count = 2,
+					defaultCount = 2,
+					repeatAfter = 1,
 				}),
 			},
 		}),
