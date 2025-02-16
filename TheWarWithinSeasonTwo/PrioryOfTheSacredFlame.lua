@@ -187,13 +187,16 @@ Private.raidInstances[2649] = RaidInstance:New({
 					},
 					duration = 50.0,
 					castTime = 0.0,
-					-- TODO: Enforce allowed types
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventType = { "SCC", "SCS" }, -- TODO: Enforce allowed types
 				}),
 				[444546] = BossAbility:New({ -- Purify
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 13.1 },
+							repeatInterval = 28.8,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 6.3 },
 							repeatInterval = 28.8,
 						}),
 					},
@@ -206,18 +209,11 @@ Private.raidInstances[2649] = RaidInstance:New({
 							castTimes = { 15.6 },
 							repeatInterval = 22.6,
 						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 6.4 },
+							repeatInterval = 22.6,
+						}),
 					},
-					-- TODO: Create way to override phase 1 cast times or ignore phase 1 cast times and use event trigger repeatInterval instead
-					-- eventTriggers = {
-					-- 	[423588] = EventTrigger:New({ -- Barrier of Light
-					-- 		combatLogEventType = "SAR",
-					-- 		castTimes = { 6.4 },
-					-- 		repeatCriteria = {
-					-- 			spellCount = 1,
-					-- 			castTimes = { 22.6 },
-					-- 		},
-					-- 	}),
-					-- },
 					duration = 5.2,
 					castTime = 2.0,
 				}),
@@ -227,18 +223,11 @@ Private.raidInstances[2649] = RaidInstance:New({
 							castTimes = { 6.3 },
 							repeatInterval = 12.1,
 						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 12.3 },
+							repeatInterval = 12.1,
+						}),
 					},
-					-- TODO: Create way to override phase 1 cast times or ignore phase 1 cast times and use event trigger repeatInterval instead
-					-- eventTriggers = {
-					-- 	[423588] = EventTrigger:New({ -- Barrier of Light
-					-- 		combatLogEventType = "SAR",
-					-- 		castTimes = { 12.3 },
-					-- 		repeatCriteria = {
-					-- 			spellCount = 1,
-					-- 			castTimes = { 12.1 },
-					-- 		},
-					-- 	}),
-					-- },
 					duration = 1.0,
 					castTime = 3.0,
 				}),
@@ -248,39 +237,39 @@ Private.raidInstances[2649] = RaidInstance:New({
 							castTimes = { 14.5 },
 							repeatInterval = 24.2,
 						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 5.7 },
+							repeatInterval = 24.2,
+						}),
 					},
-					-- TODO: Create way to override phase 1 cast times or ignore phase 1 cast times and use event trigger repeatInterval instead
-					-- eventTriggers = {
-					-- 	[423588] = EventTrigger:New({ -- Barrier of Light
-					-- 		combatLogEventType = "SAR",
-					-- 		castTimes = { 5.7 },
-					-- 		repeatCriteria = {
-					-- 			spellCount = 1,
-					-- 			castTimes = { 24.2 },
-					-- 		},
-					-- 	}),
-					-- },
 					duration = 4.0,
 					castTime = 4.0,
 				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 180.0,
-					defaultDuration = 180.0,
-					count = 2,
-					defaultCount = 2,
+					duration = 70.0,
+					defaultDuration = 70.0,
+					count = 1,
+					defaultCount = 1,
 					name = "P1",
-					repeatAfter = 2,
 					fixedCount = true,
 				}),
 				[2] = BossPhase:New({
-					duration = 50.0,
-					defaultDuration = 50.0,
+					duration = 40.0,
+					defaultDuration = 40.0,
+					count = 1,
+					defaultCount = 1,
 					name = "P2",
+					fixedCount = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 70.0,
+					defaultDuration = 70.0,
 					count = 1,
 					defaultCount = 1,
 					repeatAfter = 1,
+					name = "P1",
 					fixedCount = true,
 				}),
 			},

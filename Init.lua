@@ -268,31 +268,26 @@ Private.classes.BossAbility = {
 ---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
+---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 	repeatInterval = nil,
 	signifiesPhaseStart = nil,
 	signifiesPhaseEnd = nil,
+	skipFirst = nil,
 }
 
 -- Defines a boss ability that triggers another boss ability. May also repeat.
 ---@class EventTrigger
+---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
 ---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger.
----@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
----@field repeatCriteria EventTriggerRepeatCriteria|nil Describes criteria for the ability to repeat.
+---@field combatLogEventSpellCount integer The number of times the other ability must have been cast before the ability begins repeating.
+---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
 Private.classes.EventTrigger = {
+	castTimes = {},
 	combatLogEventType = "SCS",
-	castTimes = {},
-	repeatCriteria = nil,
-}
-
--- A set of cast times to repeat until the phase ends. The triggering boss ability must be defined in the phase to trigger the repeat.
----@class EventTriggerRepeatCriteria
----@field spellCount integer The number of times the other ability must have been cast before the ability begins repeating.
----@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
-Private.classes.EventTriggerRepeatCriteria = {
-	spellCount = 0,
-	castTimes = {},
+	combatLogEventSpellCount = 0,
+	repeatInterval = nil,
 }
 
 -- Data about a single instance of a boss ability stored in a boss ability frame in the timeline. The instance may have

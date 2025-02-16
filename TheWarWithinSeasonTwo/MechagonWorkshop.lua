@@ -244,10 +244,7 @@ Private.raidInstances[2097] = RaidInstance:New({
 						[291974] = EventTrigger:New({ -- Obnoxious monologue
 							combatLogEventType = "SAR",
 							castTimes = { 14.8 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 3.5, 3.5, 23 },
-							},
+							repeatInterval = { 3.5, 3.5, 23 },
 						}),
 					},
 					duration = 0.0,

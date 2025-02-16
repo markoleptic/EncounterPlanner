@@ -42,10 +42,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 						[1] = BossAbilityPhase:New({
 							castTimes = { 14.4 },
 						}),
-					},
-					eventTriggers = {
-						[442525] = EventTrigger:New({ -- Happy Hour over
-							combatLogEventType = "SAR",
+						[3] = BossAbilityPhase:New({
 							castTimes = { 17.6, 23.1 },
 						}),
 					},
@@ -57,10 +54,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 						[1] = BossAbilityPhase:New({
 							castTimes = { 10.0 },
 						}),
-					},
-					eventTriggers = {
-						[442525] = EventTrigger:New({ -- Happy Hour over
-							combatLogEventType = "SAR",
+						[3] = BossAbilityPhase:New({
 							castTimes = { 14.0, 18.2 },
 						}),
 					},
@@ -72,10 +66,7 @@ Private.raidInstances[2661] = RaidInstance:New({
 						[1] = BossAbilityPhase:New({
 							castTimes = { 5.1 },
 						}),
-					},
-					eventTriggers = {
-						[442525] = EventTrigger:New({ -- Happy Hour over
-							combatLogEventType = "SAR",
+						[3] = BossAbilityPhase:New({
 							castTimes = { 9.1, 14.5, 14.5 },
 						}),
 					},
@@ -87,6 +78,9 @@ Private.raidInstances[2661] = RaidInstance:New({
 				[1] = BossPhase:New({
 					duration = 27.8,
 					defaultDuration = 27.8,
+					count = 1,
+					defaultCount = 1,
+					fixedDuration = true,
 					name = "P1",
 				}),
 				[2] = BossPhase:New({
@@ -97,11 +91,11 @@ Private.raidInstances[2661] = RaidInstance:New({
 					repeatAfter = 3,
 					name = "P2",
 				}),
-				[3] = BossPhase:New({
+				[3] = BossPhase:New({ -- TODO: Scuffed
 					duration = 50.9,
 					defaultDuration = 50.9,
-					count = 2,
-					defaultCount = 2,
+					count = 3,
+					defaultCount = 3,
 					repeatAfter = 2,
 					fixedDuration = true,
 					name = "P1",

@@ -933,14 +933,13 @@ do
 		return orderedBossPhaseTable
 	end
 
-	---@param phase BossPhase
 	---@param ability BossAbility
 	---@param abilityPhase BossAbilityPhase|EventTrigger
 	---@param startTime number Cumulative phase start time.
 	---@param endTime number Phase end time.
 	---@param castCallback fun(castStart: number, castEnd: number, effectEnd: number)
 	---@return number cumulativePhaseCastTime
-	local function IterateAbilityCastTimes(phase, ability, abilityPhase, startTime, endTime, castCallback)
+	local function IterateAbilityCastTimes(ability, abilityPhase, startTime, endTime, castCallback)
 		local cumulativePhaseCastTime = startTime
 		for castIndex, castTime in ipairs(abilityPhase.castTimes) do
 			local castStart = cumulativePhaseCastTime + castTime
@@ -964,7 +963,7 @@ do
 						castEnd = endTime -- Clamp cast time to end of phase
 					end
 				end
-
+				castEnd = min(castEnd, endTime)
 				effectEnd = min(effectEnd, endTime)
 				castCallback(castStart, castEnd, effectEnd)
 				cumulativePhaseCastTime = cumulativePhaseCastTime + castTime
@@ -996,6 +995,8 @@ do
 		while nextRepeatStart < endTime do
 			local castEnd = nextRepeatStart + ability.castTime
 			local effectEnd = castEnd + ability.duration
+			castEnd = min(castEnd, endTime)
+			effectEnd = min(effectEnd, endTime)
 			castCallback(nextRepeatStart, castEnd, effectEnd)
 			if isTable then
 				if repeatInterval[repeatIndex + 1] then
@@ -1045,22 +1046,23 @@ do
 						local castStart = cumulativeCastTime + castTime
 						local castEnd = castStart + bossAbilityCastTime
 						local effectEnd = castEnd + bossAbilityDuration
-						if castEnd + bossAbilityDuration < endTime then
+						if castStart < endTime then
+							castEnd = min(castEnd, endTime)
+							effectEnd = min(effectEnd, endTime)
 							castCallback(castStart, castEnd, effectEnd) -- TODO: Maybe do same thing IterateAbilityCastTimes does
 						end
 						cumulativeCastTime = cumulativeCastTime + castTime
 					end
-					if eventTrigger.repeatCriteria and eventTrigger.repeatCriteria.spellCount == triggerCastIndex then
-						while cumulativeCastTime < endTime do
-							for _, castTime in ipairs(eventTrigger.repeatCriteria.castTimes) do
-								local castStart = cumulativeCastTime + castTime
-								local castEnd = castStart + bossAbilityCastTime
-								local effectEnd = castEnd + bossAbilityDuration
-								if castEnd + bossAbilityDuration < endTime then
-									castCallback(castStart, castEnd, effectEnd)
-								end
-								cumulativeCastTime = cumulativeCastTime + castTime
-							end
+					if eventTrigger.repeatInterval then
+						local spellCount = eventTrigger.combatLogEventSpellCount
+						if not spellCount or spellCount == triggerCastIndex then
+							cumulativeCastTime = IterateRepeatingAbility(
+								ability,
+								eventTrigger.repeatInterval,
+								cumulativeCastTime,
+								endTime,
+								castCallback
+							)
 						end
 					end
 					cumulativeTriggerTime = cumulativeTriggerTime + triggerCastTime
@@ -1097,11 +1099,13 @@ do
 	local function GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhaseTable)
 		---@type table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
 		local spellCount = {}
+		local visitedPhaseCounts = {}
 
 		local cumulativePhaseStartTime = 0
 		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(orderedBossPhaseTable) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
+				visitedPhaseCounts[bossPhaseIndex] = (visitedPhaseCounts[bossPhaseIndex] or 0) + 1
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 				for bossAbilitySpellID, bossAbility in pairs(boss.abilities) do
 					spellCount[bossAbilitySpellID] = spellCount[bossAbilitySpellID] or {}
@@ -1114,14 +1118,16 @@ do
 
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					if bossAbilityPhase then
-						local cumulativePhaseCastTime = IterateAbilityCastTimes(
-							bossPhase,
-							bossAbility,
-							bossAbilityPhase,
-							cumulativePhaseStartTime,
-							phaseEndTime,
-							castCallback
-						)
+						local cumulativePhaseCastTime = cumulativePhaseStartTime
+						if not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1 then
+							cumulativePhaseCastTime = IterateAbilityCastTimes(
+								bossAbility,
+								bossAbilityPhase,
+								cumulativePhaseStartTime,
+								phaseEndTime,
+								castCallback
+							)
+						end
 						cumulativePhaseCastTime = IterateRepeatingAbility(
 							bossAbility,
 							bossAbilityPhase.repeatInterval,
@@ -1154,14 +1160,15 @@ do
 	---@return table<integer, BossAbilityInstance>
 	local function GenerateBossAbilityInstances(boss, orderedBossPhaseTable, spellCount)
 		spellCount = spellCount or {}
+		local visitedPhaseCounts = {}
 		local abilityInstances = {}
-
 		local cumulativePhaseStartTime = 0.0
 		local bossAbilityInstanceIndex = 1
 
 		for bossPhaseOrderIndex, bossPhaseIndex in ipairs(orderedBossPhaseTable) do
 			local bossPhase = boss.phases[bossPhaseIndex]
 			if bossPhase then
+				visitedPhaseCounts[bossPhaseIndex] = (visitedPhaseCounts[bossPhaseIndex] or 0) + 1
 				local bossPhaseName = bossPhase.name
 				local nextBossPhaseName
 				local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
@@ -1231,15 +1238,16 @@ do
 								end
 							end
 						end
-
-						local cumulativePhaseCastTime = IterateAbilityCastTimes(
-							bossPhase,
-							bossAbility,
-							bossAbilityPhase,
-							cumulativePhaseStartTime,
-							phaseEndTime,
-							castCallback
-						)
+						local cumulativePhaseCastTime = cumulativePhaseStartTime
+						if not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1 then
+							cumulativePhaseCastTime = IterateAbilityCastTimes(
+								bossAbility,
+								bossAbilityPhase,
+								cumulativePhaseStartTime,
+								phaseEndTime,
+								castCallback
+							)
+						end
 						cumulativePhaseCastTime = IterateRepeatingAbility(
 							bossAbility,
 							bossAbilityPhase.repeatInterval,

@@ -203,16 +203,6 @@ Private.raidInstances[2293] = RaidInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 				}),
-				[320729] = BossAbility:New({ -- Massive Cleave
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 22.5 },
-							repeatInterval = 30.3,
-						}),
-					},
-					duration = 0.0,
-					castTime = 3.0,
-				}),
 				[317231] = BossAbility:New({ -- Crushing Slam
 					phases = {
 						[1] = BossAbilityPhase:New({
@@ -223,6 +213,16 @@ Private.raidInstances[2293] = RaidInstance:New({
 					duration = 0.0,
 					castTime = 2.5,
 				}),
+				[320729] = BossAbility:New({ -- Massive Cleave
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.5 },
+							repeatInterval = 30.3,
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
 				[339415] = BossAbility:New({ -- Deafening Crash
 					phases = {
 						[1] = BossAbilityPhase:New({
@@ -231,7 +231,7 @@ Private.raidInstances[2293] = RaidInstance:New({
 						}),
 					},
 					duration = 2.0,
-					castTime = 2.5,
+					castTime = 1.5,
 				}),
 			},
 			phases = {
@@ -309,15 +309,9 @@ Private.raidInstances[2293] = RaidInstance:New({
 							castTimes = { 8.2 },
 							repeatInterval = 16.9,
 						}),
-					},
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+						[2] = BossAbilityPhase:New({
 							castTimes = { 6.9 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 16.9 },
-							},
+							repeatInterval = 16.9,
 						}),
 					},
 					duration = 0.0,
@@ -329,15 +323,9 @@ Private.raidInstances[2293] = RaidInstance:New({
 							castTimes = { 15.5 },
 							repeatInterval = 26.7,
 						}),
-					},
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+						[2] = BossAbilityPhase:New({
 							castTimes = { 14.6 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 26.7 },
-							},
+							repeatInterval = 26.7,
 						}),
 					},
 					duration = 0.0,
@@ -349,15 +337,9 @@ Private.raidInstances[2293] = RaidInstance:New({
 							castTimes = { 24.2 },
 							repeatInterval = 31.5,
 						}),
-					},
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+						[2] = BossAbilityPhase:New({
 							castTimes = { 22.5 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 31.5 },
-							},
+							repeatInterval = 31.5,
 						}),
 					},
 					duration = 6.0,
@@ -369,15 +351,9 @@ Private.raidInstances[2293] = RaidInstance:New({
 							castTimes = { 25.4 },
 							repeatInterval = 53.3,
 						}),
-					},
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+						[2] = BossAbilityPhase:New({
 							castTimes = { 21.0 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 53.3 },
-							},
+							repeatInterval = 53.3,
 						}),
 					},
 					duration = 6.0,
@@ -394,28 +370,20 @@ Private.raidInstances[2293] = RaidInstance:New({
 					castTime = 4.0,
 				}),
 				[339706] = BossAbility:New({ -- Ghostly Charge
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+					phases = {
+						[2] = BossAbilityPhase:New({
 							castTimes = { 13.5 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 24.3 },
-							},
+							repeatInterval = 24.3,
 						}),
 					},
 					duration = 5.0,
 					castTime = 3.5,
 				}),
 				[339550] = BossAbility:New({ -- Echo of Battle
-					eventTriggers = {
-						[339573] = EventTrigger:New({ -- Echoes of Carnage
-							combatLogEventType = "SCC",
+					phases = {
+						[2] = BossAbilityPhase:New({
 							castTimes = { 3.2 },
-							repeatCriteria = {
-								spellCount = 1,
-								castTimes = { 24.3 },
-							},
+							repeatInterval = 24.3,
 						}),
 					},
 					duration = 0.0,

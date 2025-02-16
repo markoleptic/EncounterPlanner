@@ -92,12 +92,13 @@ Private.raidInstances[2657] = RaidInstance:New({
 				[441425] = BossAbility:New({ -- Phase Transition
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 90.0 },
-							signifiesPhaseEnd = true,
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							skipFirst = true,
 						}),
 						[2] = BossAbilityPhase:New({
-							castTimes = { 80.0 },
-							signifiesPhaseEnd = true,
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
 					duration = 0.0,
@@ -509,10 +510,8 @@ Private.raidInstances[2657] = RaidInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
-							repeatCriteria = {
-								spellCount = 3,
-								castTimes = { 20.0 },
-							},
+							combatLogEventSpellCount = 3,
+							repeatInterval = 20.0,
 						}),
 					},
 					duration = 0.0,
@@ -528,10 +527,8 @@ Private.raidInstances[2657] = RaidInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 30.0, 30.0, 30.0, 30.0 },
-							repeatCriteria = {
-								spellCount = 3,
-								castTimes = { 30.0 },
-							},
+							combatLogEventSpellCount = 3,
+							repeatInterval = 30.0,
 						}),
 					},
 					duration = 6.0,
@@ -556,10 +553,8 @@ Private.raidInstances[2657] = RaidInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 16.0, 50.0, 50.0 },
-							repeatCriteria = {
-								spellCount = 3,
-								castTimes = { 50.0 },
-							},
+							combatLogEventSpellCount = 3,
+							repeatInterval = 50.0,
 						}),
 					},
 					duration = 8.0,
