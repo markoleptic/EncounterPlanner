@@ -261,7 +261,6 @@ Private.raidInstances[2773] = RaidInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							repeatInterval = 0.0,
 						}),
 					},
 					duration = 4.0,
