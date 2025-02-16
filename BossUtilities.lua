@@ -244,6 +244,15 @@ function BossUtilities.GetMaxSpellCount(encounterID, spellID)
 	return nil
 end
 
+local function CheckFixedCountsSatisfied(phases, counts)
+	for phaseIndex, phase in ipairs(phases) do
+		if not counts[phaseIndex] or counts[phaseIndex] < phase.defaultCount then
+			return false
+		end
+	end
+	return true
+end
+
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
@@ -254,15 +263,20 @@ function BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 		local phases = boss.phases
 		local currentPhaseIndex, currentTotalDuration = 1, 0.0
 		while phases[currentPhaseIndex] do
-			currentTotalDuration = currentTotalDuration + phases[currentPhaseIndex].duration
+			local phase = phases[currentPhaseIndex]
+			currentTotalDuration = currentTotalDuration + phase.duration
 			if currentTotalDuration > maxTotalDuration then
 				break
 			end
 			counts[currentPhaseIndex] = (counts[currentPhaseIndex] or 0) + 1
-			if phases[currentPhaseIndex].repeatAfter == nil then
+			if phase.repeatAfter == nil then
 				currentPhaseIndex = currentPhaseIndex + 1
 			else
-				currentPhaseIndex = phases[currentPhaseIndex].repeatAfter
+				if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
+					break
+				else
+					currentPhaseIndex = phase.repeatAfter
+				end
 			end
 		end
 	end
@@ -861,30 +875,27 @@ do
 	local function GenerateMaxOrderedBossPhaseTable(encounterID, maxTotalDuration)
 		local boss = BossUtilities.GetBoss(encounterID)
 		local orderedBossPhaseTable = {}
+		local counts = {}
 		if boss then
 			local phases = boss.phases
 			local currentPhaseIndex, currentTotalDuration = 1, 0.0
-			local hasRepeat = false
-			for _, phase in pairs(boss.phases) do
-				if phase.repeatAfter then
-					hasRepeat = true
+			while phases[currentPhaseIndex] do
+				local phase = phases[currentPhaseIndex]
+				currentTotalDuration = currentTotalDuration + phase.defaultDuration
+				if currentTotalDuration > maxTotalDuration then
 					break
 				end
-			end
-			if hasRepeat then
-				while phases[currentPhaseIndex] do
-					currentTotalDuration = currentTotalDuration + phases[currentPhaseIndex].defaultDuration
-					if currentTotalDuration > maxTotalDuration then
+				counts[currentPhaseIndex] = (counts[currentPhaseIndex] or 0) + 1
+				tinsert(orderedBossPhaseTable, currentPhaseIndex)
+				if phase.repeatAfter == nil then
+					currentPhaseIndex = currentPhaseIndex + 1
+				else
+					if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
 						break
-					end
-					tinsert(orderedBossPhaseTable, currentPhaseIndex)
-					if phases[currentPhaseIndex].repeatAfter == nil then
-						currentPhaseIndex = currentPhaseIndex + 1
 					else
-						currentPhaseIndex = phases[currentPhaseIndex].repeatAfter
+						currentPhaseIndex = phase.repeatAfter
 					end
 				end
-			else
 			end
 		end
 		return orderedBossPhaseTable
@@ -896,18 +907,26 @@ do
 	local function GenerateOrderedBossPhaseTable(encounterID)
 		local boss = BossUtilities.GetBoss(encounterID)
 		local orderedBossPhaseTable = {}
+		local counts = {}
 		if boss then
+			local phases = boss.phases
 			local totalPhaseOccurrences = 0
-			for _, phase in pairs(boss.phases) do
+			for _, phase in pairs(phases) do
 				totalPhaseOccurrences = totalPhaseOccurrences + phase.count
 			end
 			local currentPhaseIndex = 1
-			while #orderedBossPhaseTable < totalPhaseOccurrences and currentPhaseIndex ~= nil do
+			while #orderedBossPhaseTable < totalPhaseOccurrences and phases[currentPhaseIndex] do
+				local phase = phases[currentPhaseIndex]
+				counts[currentPhaseIndex] = (counts[currentPhaseIndex] or 0) + 1
 				tinsert(orderedBossPhaseTable, currentPhaseIndex)
-				if boss.phases[currentPhaseIndex].repeatAfter == nil and boss.phases[currentPhaseIndex + 1] then
+				if phase.repeatAfter == nil then
 					currentPhaseIndex = currentPhaseIndex + 1
 				else
-					currentPhaseIndex = boss.phases[currentPhaseIndex].repeatAfter
+					if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
+						break
+					else
+						currentPhaseIndex = phase.repeatAfter
+					end
 				end
 			end
 		end
@@ -1263,9 +1282,6 @@ do
 		absoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[ID])
 		boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[ID])
 		boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[ID])
-		if ID == 2260 then
-			DevTool:AddData(absoluteSpellCastStartTables[ID])
-		end
 	end
 
 	local kMaxBossDuration = Private.constants.kMaxBossDuration

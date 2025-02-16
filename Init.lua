@@ -238,6 +238,7 @@ Private.classes.Boss = {
 ---@field repeatAfter number|nil Which phase this phase repeats after.
 ---@field name string|nil If specified, the phase will be displayed on the timeline under this name. Otherwise hidden.
 ---@field fixedDuration boolean|nil If specified, the duration is not editable.
+---@field fixedCount boolean|nil If specified, the number of phases will not be editable.
 Private.classes.BossPhase = {
 	duration = 0.0,
 	defaultDuration = 0.0,

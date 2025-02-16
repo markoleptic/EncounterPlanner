@@ -290,7 +290,7 @@ local function AddEntries(self, entries)
 		countLineEdit:SetCallback("OnTextSubmitted", function(widget, _, text)
 			self:Fire("CountChanged", index, text, widget)
 		end)
-		countLineEdit:SetEnabled(phase.repeatAfter ~= nil)
+		countLineEdit:SetEnabled(phase.repeatAfter ~= nil and not phase.fixedCount)
 
 		defaultContainer:AddChildren(defaultLabel)
 		currentContainer:AddChildren(minuteLineEdit, separatorLabel, secondLineEdit)

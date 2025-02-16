@@ -917,6 +917,7 @@ do -- Phase Length Editor
 							count = phase.count,
 							defaultCount = phase.defaultCount,
 							repeatAfter = phase.repeatAfter,
+							fixedCount = phase.fixedCount,
 						})
 					end
 				end
