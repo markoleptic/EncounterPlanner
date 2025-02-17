@@ -268,7 +268,6 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					defaultDuration = 70.0,
 					count = 1,
 					defaultCount = 1,
-					repeatAfter = 1,
 					name = "P1",
 					fixedCount = true,
 				}),
