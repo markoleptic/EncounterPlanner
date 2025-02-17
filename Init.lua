@@ -187,14 +187,14 @@ Private.classes.TimelineAssignment = {}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
 -- A raid or dungeon with a specific instanceID.
----@class RaidInstance
+---@class DungeonInstance
 ---@field name string The name of the raid or dungeon.
 ---@field journalInstanceID number The journal instance ID of the raid or dungeon. All bosses share the same JournalInstanceID.
 ---@field instanceID number The instance ID for the zone. All bosses share the same instanceID.
 ---@field customGroup string? Custom group to use when populating dropdowns.
 ---@field bosses table<integer, Boss> List of bosses for the instance.
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
-Private.classes.RaidInstance = {
+Private.classes.DungeonInstance = {
 	name = "",
 	journalInstanceID = 0,
 	instanceID = 0,
@@ -556,8 +556,8 @@ function Private.classes.TimelineAssignment:New(assignment)
 end
 
 ---@param o any
----@return RaidInstance
-function Private.classes.RaidInstance:New(o)
+---@return DungeonInstance
+function Private.classes.DungeonInstance:New(o)
 	return CreateNewInstance(self, o)
 end
 
@@ -891,8 +891,8 @@ Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as Options
 Private.callbackTarget = callbackTarget
 Private.callbackHandler = CallbackHandler:New(Private.callbackTarget)
 
-Private.raidInstances = {} ---@type table<integer, RaidInstance>
-Private.customRaidInstanceGroups = {
+Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
+Private.customDungeonInstanceGroups = {
 	["TheWarWithinSeasonTwo"] = {
 		instanceIDToUseForIcon = 2661,
 		instanceName = Private.L["Season 2 M+"],

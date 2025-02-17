@@ -21,7 +21,7 @@ Widgets\Widgets.xml
 
 Tests\TestUtilities.lua
 
-TheWarWithinSeasonOne\Modules.xml
+Raids\Modules.xml
 TheWarWithinSeasonTwo\Modules.xml
 
 BossUtilities.lua

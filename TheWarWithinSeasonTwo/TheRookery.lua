@@ -12,8 +12,8 @@ local BossAbility = Private.classes.BossAbility
 local BossAbilityPhase = Private.classes.BossAbilityPhase
 ---@class BossPhase
 local BossPhase = Private.classes.BossPhase
----@class RaidInstance
-local RaidInstance = Private.classes.RaidInstance
+---@class DungeonInstance
+local DungeonInstance = Private.classes.DungeonInstance
 
 local isElevenDotOne = select(4, GetBuildInfo()) >= 110100 -- Remove when 11.1 is live
 if not isElevenDotOne then
@@ -22,7 +22,7 @@ if not isElevenDotOne then
 	Private:RegisterPlaceholderBossSpellID(474018, L["Wild Lightning"])
 end
 
-Private.raidInstances[2648] = RaidInstance:New({
+Private.dungeonInstances[2648] = DungeonInstance:New({
 	journalInstanceID = 1268,
 	instanceID = 2648,
 	customGroup = "TheWarWithinSeasonTwo",

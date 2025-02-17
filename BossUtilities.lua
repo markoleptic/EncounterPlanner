@@ -49,11 +49,11 @@ end
 ---@param encounterID integer Boss dungeon encounter ID
 ---@return string|nil
 function BossUtilities.GetBossName(encounterID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
+	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				if boss.name:len() == 0 then
-					EJ_SelectInstance(raidInstance.journalInstanceID)
+					EJ_SelectInstance(dungeonInstance.journalInstanceID)
 					EJ_SelectEncounter(boss.journalEncounterID)
 					local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
 					boss.name = bossName
@@ -68,8 +68,8 @@ end
 ---@param encounterID integer Boss dungeon encounter ID
 ---@return Boss|nil
 function BossUtilities.GetBoss(encounterID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
+	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				return boss
 			end
@@ -81,8 +81,8 @@ end
 ---@param spellID integer
 ---@return integer|nil
 function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
+	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.abilities[spellID] then
 				return boss.dungeonEncounterID
 			end
@@ -95,8 +95,8 @@ end
 ---@param spellID number
 ---@return BossAbility|nil
 function BossUtilities.FindBossAbility(encounterID, spellID)
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
+	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				if boss.abilities[spellID] then
 					return boss.abilities[spellID]
@@ -1307,8 +1307,8 @@ do
 
 	local kMaxBossDuration = Private.constants.kMaxBossDuration
 
-	for _, raidInstance in pairs(Private.raidInstances) do
-		for _, boss in ipairs(raidInstance.bosses) do
+	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for _, boss in ipairs(dungeonInstance.bosses) do
 			BossUtilities.GenerateBossTables(boss)
 			maxOrderedBossPhases[boss.dungeonEncounterID] =
 				GenerateMaxOrderedBossPhaseTable(boss.dungeonEncounterID, kMaxBossDuration)
@@ -1327,8 +1327,8 @@ do
 
 		do
 			function tests.CompareSpellCastTimeTables()
-				for _, raidInstance in pairs(Private.raidInstances) do
-					for _, boss in ipairs(raidInstance.bosses) do
+				for _, dungeonInstance in pairs(Private.dungeonInstances) do
+					for _, boss in ipairs(dungeonInstance.bosses) do
 						local castTimeTable = {}
 						local ID = boss.dungeonEncounterID
 						GenerateBossAbilityInstances(boss, orderedBossPhases[ID], castTimeTable)

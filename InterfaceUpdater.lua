@@ -78,10 +78,10 @@ do
 				AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] = {}
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
-			local raidInstance = Private.raidInstances[boss.instanceID]
+			local dungeonInstance = Private.dungeonInstances[boss.instanceID]
 
-			instanceLabel:SetText(raidInstance.name, instanceAndBossPadding, raidInstance.instanceID)
-			instanceLabel:SetIcon(raidInstance.icon, 0, 2, 0, 0, 2)
+			instanceLabel:SetText(dungeonInstance.name, instanceAndBossPadding, dungeonInstance.instanceID)
+			instanceLabel:SetIcon(dungeonInstance.icon, 0, 2, 0, 0, 2)
 			instanceLabel:SetFrameWidthFromText()
 
 			bossLabel:SetText(boss.name, instanceAndBossPadding, boss.dungeonEncounterID)

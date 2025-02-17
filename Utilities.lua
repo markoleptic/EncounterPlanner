@@ -392,15 +392,19 @@ do
 						spellTypeIndex = spellTypeIndex + 1
 					end
 					local name = GetSpellName(spell["spellID"])
-					local iconText = format("|T%s:16|t %s", spell["icon"], name)
-					local spellID = spell["commonSpellID"] or spell["spellID"]
-					tinsert(
-						classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
-						{
-							itemValue = spellID,
-							text = iconText,
-						}
-					)
+					if name then
+						local iconText = format("|T%s:16|t %s", spell["icon"], name)
+						local spellID = spell["commonSpellID"] or spell["spellID"]
+						tinsert(
+							classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
+							{
+								itemValue = spellID,
+								text = iconText,
+							}
+						)
+					else
+						print(format("%s: %s spell not found.", AddOnName .. ":" .. spell["name"]))
+					end
 				end
 				tinsert(dropdownItems, classDropdownData)
 			end
@@ -574,24 +578,24 @@ do
 	function Utilities.GetOrCreateBossDropdownItems()
 		if not bossDropdownItems then
 			bossDropdownItems = {}
-			local customRaidInstanceGroups = Private.customRaidInstanceGroups
+			local customDungeonInstanceGroups = Private.customDungeonInstanceGroups
 			local customInstancesDropdownData = {}
-			for _, raidInstance in pairs(Private.raidInstances) do
-				if raidInstance.customGroup and customRaidInstanceGroups[raidInstance.customGroup] then
-					if not customInstancesDropdownData[raidInstance.customGroup] then
+			for _, dungeonInstance in pairs(Private.dungeonInstances) do
+				if dungeonInstance.customGroup and customDungeonInstanceGroups[dungeonInstance.customGroup] then
+					if not customInstancesDropdownData[dungeonInstance.customGroup] then
 						local instanceIDToUseForIcon =
-							customRaidInstanceGroups[raidInstance.customGroup].instanceIDToUseForIcon
-						local instanceName = customRaidInstanceGroups[raidInstance.customGroup].instanceName
-						local instanceToUseForIcon = Private.raidInstances[instanceIDToUseForIcon]
+							customDungeonInstanceGroups[dungeonInstance.customGroup].instanceIDToUseForIcon
+						local instanceName = customDungeonInstanceGroups[dungeonInstance.customGroup].instanceName
+						local instanceToUseForIcon = Private.dungeonInstances[instanceIDToUseForIcon]
 						local instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
 						local instanceDropdownData =
 							{ itemValue = instanceName, text = instanceIconText, dropdownItemMenuData = {} }
-						customInstancesDropdownData[raidInstance.customGroup] = instanceDropdownData
+						customInstancesDropdownData[dungeonInstance.customGroup] = instanceDropdownData
 					end
-					local instanceIconText = format("|T%s:16|t %s", raidInstance.icon, raidInstance.name)
+					local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
 					local instanceDropdownData =
-						{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-					for _, boss in ipairs(raidInstance.bosses) do
+						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+					for _, boss in ipairs(dungeonInstance.bosses) do
 						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
 						tinsert(
 							instanceDropdownData.dropdownItemMenuData,
@@ -599,14 +603,14 @@ do
 						)
 					end
 					tinsert(
-						customInstancesDropdownData[raidInstance.customGroup].dropdownItemMenuData,
+						customInstancesDropdownData[dungeonInstance.customGroup].dropdownItemMenuData,
 						instanceDropdownData
 					)
 				else
-					local instanceIconText = format("|T%s:16|t %s", raidInstance.icon, raidInstance.name)
+					local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
 					local instanceDropdownData =
-						{ itemValue = raidInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-					for _, boss in ipairs(raidInstance.bosses) do
+						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+					for _, boss in ipairs(dungeonInstance.bosses) do
 						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
 						tinsert(
 							instanceDropdownData.dropdownItemMenuData,
@@ -616,8 +620,8 @@ do
 					tinsert(bossDropdownItems, instanceDropdownData)
 				end
 			end
-			for _, customRaidInstanceGroup in pairs(customInstancesDropdownData) do
-				tinsert(bossDropdownItems, customRaidInstanceGroup)
+			for _, customDungeonInstanceGroup in pairs(customInstancesDropdownData) do
+				tinsert(bossDropdownItems, customDungeonInstanceGroup)
 			end
 		end
 		return bossDropdownItems

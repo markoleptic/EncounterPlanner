@@ -12,10 +12,10 @@ local BossAbility = Private.classes.BossAbility
 local BossAbilityPhase = Private.classes.BossAbilityPhase
 ---@class BossPhase
 local BossPhase = Private.classes.BossPhase
----@class RaidInstance
-local RaidInstance = Private.classes.RaidInstance
+---@class DungeonInstance
+local DungeonInstance = Private.classes.DungeonInstance
 
-Private.raidInstances[2651] = RaidInstance:New({
+Private.dungeonInstances[2651] = DungeonInstance:New({
 	journalInstanceID = 1210,
 	instanceID = 2651,
 	customGroup = "TheWarWithinSeasonTwo",

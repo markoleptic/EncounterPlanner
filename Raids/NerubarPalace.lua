@@ -12,10 +12,10 @@ local BossAbility = Private.classes.BossAbility
 local BossAbilityPhase = Private.classes.BossAbilityPhase
 ---@class BossPhase
 local BossPhase = Private.classes.BossPhase
----@class RaidInstance
-local RaidInstance = Private.classes.RaidInstance
+---@class DungeonInstance
+local DungeonInstance = Private.classes.DungeonInstance
 
-Private.raidInstances[2657] = RaidInstance:New({
+Private.dungeonInstances[2657] = DungeonInstance:New({
 	journalInstanceID = 1273,
 	instanceID = 2657,
 	bosses = {

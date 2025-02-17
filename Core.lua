@@ -143,13 +143,13 @@ do -- Raid instance initialization
 	local EJ_GetInstanceInfo, EJ_SelectInstance = EJ_GetInstanceInfo, EJ_SelectInstance
 
 	-- Initializes names and icons for raid instances.
-	function InitializeRaidInstances()
-		for _, raidInstance in pairs(Private.raidInstances) do
-			EJ_SelectInstance(raidInstance.journalInstanceID)
+	function InitializeDungeonInstances()
+		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			EJ_SelectInstance(dungeonInstance.journalInstanceID)
 			local instanceName, _, _, _, _, buttonImage2, _, _, _, _ =
-				EJ_GetInstanceInfo(raidInstance.journalInstanceID)
-			raidInstance.name, raidInstance.icon = instanceName, buttonImage2
-			for _, boss in ipairs(raidInstance.bosses) do
+				EJ_GetInstanceInfo(dungeonInstance.journalInstanceID)
+			dungeonInstance.name, dungeonInstance.icon = instanceName, buttonImage2
+			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
 				local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
@@ -332,7 +332,7 @@ end
 function AddOn:OnEnable()
 	Private.testRunner.RunTests()
 	self.UpdateProfile(self.db.profile)
-	InitializeRaidInstances()
+	InitializeDungeonInstances()
 	Private:RegisterCommunications()
 	Private:RegisterReminderEvents()
 end
