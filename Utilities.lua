@@ -965,9 +965,13 @@ do
 	---@param spellCounts table<integer, table<integer, integer>>
 	---@param planName string
 	local function LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, planName)
+		if count == 0 then
+			return
+		end
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
-			local countMsg = format("%s: %d %s.", planName, count, L["assignment(s) failed to update"])
+			local assignmentsString = count == 1 and L["assignment"] or L["assignments"]
+			local countMsg = format("%s: %d %s %s.", planName, count, assignmentsString)
 			interfaceUpdater.LogMessage(countMsg, 3, 1)
 
 			if onlyFailedSpellIDsString:len() > 1 then
