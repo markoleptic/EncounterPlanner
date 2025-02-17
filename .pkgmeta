@@ -58,8 +58,12 @@ externals:
 
 tools-used:
     - OmniCD
+    - BigWigs
+    - LittleWigs
+    - WeakAuras
 
 ignore:
+    - Tests
     - README.md
     - CONTRIBUTING.md
     - Meta.lua

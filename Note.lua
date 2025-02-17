@@ -652,6 +652,7 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	return bossDungeonEncounterID
 end
 
+--@debug@
 do
 	---@class Tests
 	local tests = Private.tests
@@ -979,3 +980,4 @@ do
 		end
 	end
 end
+--@end-debug@

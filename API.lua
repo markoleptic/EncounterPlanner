@@ -43,6 +43,7 @@ end
 
 EncounterPlannerAPI = setmetatable({}, { __index = API, __newindex = function() end, __metatable = false })
 
+--@debug@
 do
 	---@class Tests
 	local tests = Private.tests
@@ -107,3 +108,4 @@ do
 		end
 	end
 end
+--@end-debug@

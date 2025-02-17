@@ -386,6 +386,15 @@ function AddOn:SlashCommand(input)
 				Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 				Private.mainFrame:DoLayout()
 			end
+		elseif trimmed == "minimap" then
+			self.db.profile.preferences.minimap.show = not self.db.profile.preferences.minimap.show
+			if not self.db.profile.preferences.minimap.show then
+				LDBIcon:Hide(AddOnName)
+				print(AddOnName .. ": " .. L["Use /ep minimap to show the minimap icon again."])
+			else
+				LDBIcon:Show(AddOnName)
+			end
+		--@debug@
 		elseif trimmed == "dolayout" then
 			if Private.mainFrame then
 				Private.mainFrame:DoLayout()
@@ -397,16 +406,9 @@ function AddOn:SlashCommand(input)
 					timeline:UpdateTimeline()
 				end
 			end
-		elseif trimmed == "minimap" then
-			self.db.profile.preferences.minimap.show = not self.db.profile.preferences.minimap.show
-			if not self.db.profile.preferences.minimap.show then
-				LDBIcon:Hide(AddOnName)
-				print(AddOnName .. ": " .. L["Use /ep minimap to show the minimap icon again."])
-			else
-				LDBIcon:Show(AddOnName)
-			end
 		elseif trimmed == "runtests" then
 			Private.testRunner.RunTests()
+			--@end-debug@
 		end
 	end
 end

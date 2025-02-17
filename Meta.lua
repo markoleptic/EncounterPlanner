@@ -40,3 +40,19 @@ function C_Timer.NewTimer(seconds, callback) end
 ---@param obj any
 ---@return string
 function Private.Encode(obj) end
+
+---@param obj any
+---@return string
+function Private.Decode(obj) end
+
+---@class CallbackTarget
+local CallbackTarget = {}
+
+---@param target table
+---@param name string
+---@param func fun()
+function CallbackTarget.RegisterCallback(target, name, func) end
+
+---@param target table
+---@param name string
+function CallbackTarget.UnregisterCallback(target, name) end

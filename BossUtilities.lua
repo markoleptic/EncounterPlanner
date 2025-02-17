@@ -866,6 +866,7 @@ function BossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
 	return nil
 end
 
+--@debug@
 do
 	-- Creates a table of boss phases in the order in which they occur, using the maximum amount of phases until
 	-- reaching maxTotalDuration.
@@ -1353,3 +1354,4 @@ do
 		end
 	end
 end
+--@end-debug@

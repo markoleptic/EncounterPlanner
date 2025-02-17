@@ -660,23 +660,28 @@ local function SetupReminders(plans, preferences, startTime)
 	end
 
 	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
-	-- print("Timers active:", #timers, "combatLogEventReminders", #combatLogEventReminders)
 end
 
 -- Cancels active timers and releases active widgets associated with an ordered boss phase index.
 ---@param orderedBossPhaseIndex integer
 local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 	if cancelTimerIfPhased[orderedBossPhaseIndex] then
+		--@debug@
 		local removedTimerCount = #cancelTimerIfPhased[orderedBossPhaseIndex]
+		--@end-debug@
 		for _, timer in pairs(cancelTimerIfPhased[orderedBossPhaseIndex]) do
 			timer:Cancel()
 			timer.RemoveTimerRef(timer)
 		end
+		--@debug@
 		print(format("Removed %d timers from Phase %d", removedTimerCount, orderedBossPhaseIndex))
+		--@end-debug@
 		cancelTimerIfPhased[orderedBossPhaseIndex] = nil
 	end
 	if hideWidgetIfPhased[orderedBossPhaseIndex] then
+		--@debug@
 		local removedWidgetCount = #hideWidgetIfPhased[orderedBossPhaseIndex]
+		--@end-debug@
 		for _, widget in pairs(hideWidgetIfPhased[orderedBossPhaseIndex]) do
 			if widget and widget.parent then
 				widget.parent:RemoveChildNoDoLayout(widget)
@@ -688,7 +693,9 @@ local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
 		if Private.progressBarContainer then
 			Private.progressBarContainer:DoLayout()
 		end
+		--@debug@
 		print(format("Removed %d widgets from Phase %d", removedWidgetCount, orderedBossPhaseIndex))
+		--@end-debug@
 		hideWidgetIfPhased[orderedBossPhaseIndex] = nil
 	end
 	if stopGlowIfPhased[orderedBossPhaseIndex] then
@@ -702,7 +709,9 @@ end
 
 -- Increments the current estimated phase number by using the next entry in the ordered boss phase table.
 local function UpdatePhase()
+	--@debug@
 	local previousPhaseNumber = currentEstimatedPhaseNumber
+	--@end-debug@
 
 	if not orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex + 1] then
 		return
@@ -712,6 +721,7 @@ local function UpdatePhase()
 	currentEstimatedOrderedBossPhaseIndex = currentEstimatedOrderedBossPhaseIndex + 1
 	currentEstimatedPhaseNumber = orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex]
 
+	--@debug@
 	print(format("Update Phase from %d to %d", previousPhaseNumber, currentEstimatedPhaseNumber))
 	print(
 		format(
@@ -720,6 +730,7 @@ local function UpdatePhase()
 			currentEstimatedOrderedBossPhaseIndex
 		)
 	)
+	--@end-debug@
 end
 
 -- Searches the phaseStartSpells, phaseEndSpells, and phaseLimitedSpells to see if the phase can be updated.
@@ -896,35 +907,34 @@ local function HandleEncounterEnd(_, encounterID, encounterName, difficultyID, g
 	ResetLocalVariables()
 end
 
--- Registers callbacks from BigWigs, Encounter start/end.
+-- Registers callbacks from Encounter start/end.
 function Private:RegisterReminderEvents()
-	if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
-		BigWigsLoader.RegisterMessage(self, "BigWigs_SetStage", HandleBigWigsEvent)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage", HandleBigWigsEvent)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin", HandleBigWigsEvent)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe", HandleBigWigsEvent)
-		BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable", HandleBigWigsEvent)
-	end
-
 	Private:RegisterEvent("ENCOUNTER_START", HandleEncounterStart)
 	Private:RegisterEvent("ENCOUNTER_END", HandleEncounterEnd)
+
+	-- if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
+	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_SetStage", HandleBigWigsEvent)
+	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossEngage", HandleBigWigsEvent)
+	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWin", HandleBigWigsEvent)
+	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossWipe", HandleBigWigsEvent)
+	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_OnBossDisable", HandleBigWigsEvent)
+	-- end
 end
 
--- Unregisters callbacks from BigWigs, Encounter start/end, and CombatLogEventUnfiltered.
+-- Unregisters callbacks from Encounter start/end and CombatLogEventUnfiltered.
 function Private:UnregisterReminderEvents()
 	ResetLocalVariables()
-
-	if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
-		BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
-		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossEngage")
-		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWin")
-		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWipe")
-		BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossDisable")
-	end
-
 	Private:UnregisterEvent("ENCOUNTER_START")
 	Private:UnregisterEvent("ENCOUNTER_END")
 	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+
+	-- if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
+	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
+	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossEngage")
+	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWin")
+	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossWipe")
+	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_OnBossDisable")
+	-- end
 end
 
 ---@param timelineAssignment TimelineAssignment

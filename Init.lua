@@ -842,15 +842,6 @@ local defaults = {
 	},
 }
 
-local callbackTarget = {}
-
----@param name string
----@param func function
-function callbackTarget.RegisterCallback(target, name, func) end
-
----@param name string
-function callbackTarget.UnregisterCallback(target, name) end
-
 do
 	local currentPlaceholderBossSpellIDIndex = -1
 	local placeholderBossSpellIDs = {} ---@type table<integer, {placeholderID: integer, placeholderName: string}>
@@ -888,8 +879,10 @@ Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "
 Private.addOn.defaults = defaults
 Private.addOn.db = nil ---@type AceDBObject-3.0
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
-Private.callbackTarget = callbackTarget
-Private.callbackHandler = CallbackHandler:New(Private.callbackTarget)
+
+local callbackTarget = {}
+Private.callbackHandler = CallbackHandler:New(callbackTarget)
+Private.callbackTarget = callbackTarget ---@type CallbackTarget
 
 Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
 Private.customDungeonInstanceGroups = {
@@ -916,7 +909,6 @@ Private.progressBarContainer = nil --[[@as EPContainer]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.externalTextEditor = nil --[[@as EPEditBox]]
-Private.tests = {}
 
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 
@@ -930,3 +922,7 @@ fontInitializer:Hide()
 fontInitializer:SetParent(UIParent)
 
 LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))
+
+--@debug@
+Private.tests = {}
+--@end-debug@

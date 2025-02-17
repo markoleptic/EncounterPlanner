@@ -4,7 +4,7 @@ local AddOnName, Namespace = ...
 local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
-local Encode = Private.Encode
+local Encode, Decode = Private.Encode, Private.Decode
 
 ---@class Constants
 local constants = Private.constants
@@ -218,7 +218,6 @@ end
 ---@param level integer|nil
 ---@return string
 local function TableToString(inTable, forChat, level)
-	---@diagnostic disable-next-line: undefined-field
 	local serialized = Encode(inTable)
 	local compressed = LibDeflate:CompressZlib(serialized, configForDeflate[level] or nil)
 
@@ -450,9 +449,13 @@ do
 			realm = playerRealm
 		end
 		local fullName = format("%s-%s", name, realm)
-		-- if fullName == playerName .. "-" .. playerRealm then
-		-- 	return
-		-- end
+
+		--[===[@non-debug@
+		if fullName == playerName .. "-" .. playerRealm then
+			return
+		end
+        --@end-non-debug@]===]
+
 		if prefix == kDistributePlan then
 			local package = StringToTable(message, false)
 			if type(package == "table") then
@@ -555,6 +558,7 @@ function Private:UnregisterCommunications()
 	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
 end
 
+--@debug@
 do
 	---@class Plan
 	local Plan = Private.classes.Plan
@@ -639,3 +643,4 @@ do
 		end
 	end
 end
+--@end-debug@
