@@ -345,8 +345,134 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2641,
 			dungeonEncounterID = 3011,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[473748] = BossAbility:New({ -- Amplification!
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.8, 39.0, 39.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 10.8, 39.0, 39.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.3,
+				}),
+				[466866] = BossAbility:New({ -- Echoing Chant
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.0, 57.5, 29.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 22.0, 57.5, 29.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.5,
+				}),
+				[467606] = BossAbility:New({ -- Sound Cannon
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.0, 30.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 30.0, 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+				}),
+				[464584] = BossAbility:New({ -- Sound Cloud
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+						-- [1] = BossAbilityPhase:New({
+						-- 	castTimes = { 116.0 },
+						-- 	doNotClipDuration = true, -- TODO
+						-- 	castCompletionSignifiesPhaseStart = true, -- TODO
+						-- 	auraRemovedSignifiesNextPhaseEnd = true, -- TODO
+						-- }),
+					},
+					duration = 28.0,
+					castTime = 0.0, -- 5.0 sec but is casted in previous phase
+				}),
+				[466979] = BossAbility:New({ -- Faulty Zap
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 38, 37, 24 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 38, 37, 24 },
+						}),
+					},
+					duration = 12.0,
+					castTime = 2.125,
+				}),
+				[472306] = BossAbility:New({ -- Sparkblast Ignition
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.0, 82.5, 65.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 15.0, 82.5, 65.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[472293] = BossAbility:New({ -- Grand Finale
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.0 + 15.0, 82.5 + 15.0, 65.0 + 15.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 15.0 + 15.0, 82.5 + 15.0, 65.0 + 15.0 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 0.0,
+				}),
+				[473260] = BossAbility:New({ -- Blaring Drop
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.2, 7.0, 7.0, 7.0 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 5.0,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 121.0,
+					defaultDuration = 121.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 28.0,
+					defaultDuration = 28.0,
+					count = 3,
+					defaultCount = 3,
+					name = "P2",
+					repeatAfter = 3,
+					fixedDuration = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 121.0,
+					defaultDuration = 121.0,
+					count = 3,
+					defaultCount = 3,
+					name = "P1",
+					repeatAfter = 2,
+					fixedDuration = true,
+				}),
+			},
 		}),
 		Boss:New({ -- Stix Bunkjunker
 			bossID = {
