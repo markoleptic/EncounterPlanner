@@ -904,8 +904,256 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2645,
 			dungeonEncounterID = 3015,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[466385] = BossAbility:New({ -- Moxie (Both)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+							repeatInterval = 5.0,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+							repeatInterval = 5.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[466459] = BossAbility:New({ -- Head Honcho: Mug
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0, 120.0, 240.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[468658] = BossAbility:New({ -- Elemental Carnage (Mug)
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Head Honcho: Mug
+							combatLogEventType = "SAA",
+							castTimes = { 0.1 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 0.1 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 0.0,
+				}),
+				[472631] = BossAbility:New({ -- Earthshaker Gaol (Mug)
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Head Honcho: Mug
+							combatLogEventType = "SAA",
+							castTimes = { 17.4 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 17.4 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+				}),
+				[466476] = BossAbility:New({ -- Frostshatter Boots (Mug)
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Head Honcho: Mug
+							combatLogEventType = "SAA",
+							castTimes = { 34.8 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 34.8 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[466509] = BossAbility:New({ -- Stormfury Finger Gun (Mug)
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Head Honcho: Mug
+							combatLogEventType = "SAA",
+							castTimes = { 50.0 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 34.8 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 4.0,
+					castTime = 3.0,
+				}),
+				[466518] = BossAbility:New({ -- Molten Gold Knuckles (Mug)
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Head Honcho: Mug
+							combatLogEventType = "SAA",
+							castTimes = { 30.3 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 30.3 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+				}),
+				[466460] = BossAbility:New({ -- Head Honcho: Zee
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 60.0, 180.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[468694] = BossAbility:New({ -- Uncontrolled Destruction (Zee)
+					eventTriggers = {
+						[466460] = EventTrigger:New({ -- Head Honcho: Zee
+							combatLogEventType = "SAA",
+							castTimes = { 0.1 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 0.1 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 0.0,
+				}),
+				[466539] = BossAbility:New({ -- Unstable Crawler Mines (Zee)
+					eventTriggers = {
+						[466460] = EventTrigger:New({ -- Head Honcho: Zee
+							combatLogEventType = "SAA",
+							castTimes = { 14.0 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 14.0 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+				}),
+				[467380] = BossAbility:New({ -- Goblin-guided Rocket (Zee)
+					eventTriggers = {
+						[466460] = EventTrigger:New({ -- Head Honcho: Zee
+							combatLogEventType = "SAA",
+							castTimes = { 27.9 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 27.9 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 9.0, -- Unconfirmed
+					castTime = 2.0,
+				}),
+				[466545] = BossAbility:New({ -- Spray and Pray (Zee)
+					eventTriggers = {
+						[466460] = EventTrigger:New({ -- Head Honcho: Zee
+							combatLogEventType = "SAA",
+							castTimes = { 50.1 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 50.1 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 3.0,
+					castTime = 3.5,
+				}),
+				[469491] = BossAbility:New({ -- Double Whammy Shot (Zee)
+					eventTriggers = {
+						[466460] = EventTrigger:New({ -- Head Honcho: Zee
+							combatLogEventType = "SAA",
+							castTimes = { 45.0 },
+						}),
+						[1222408] = EventTrigger:New({ -- Head Honcho: Mug'Zee
+							combatLogEventType = "SAA",
+							castTimes = { 45.0 },
+							repeatInterval = 60.0, -- Unconfirmed
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[471574] = BossAbility:New({ -- Bulletstorm (Intermission)
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0, 15.8, 15.8 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 8.0,
+					castTime = 0.0,
+				}),
+				[1215898] = BossAbility:New({ -- Static Charge (Intermission)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 300.0 - 5.7 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 10.3, 16.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+				}),
+				[463967] = BossAbility:New({ -- Bloodlust (Intermission)
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 15.8 + 15.8 + 10.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[1222408] = BossAbility:New({ -- Head Honcho: Mug'Zee (Phase 2)
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 300.0,
+					defaultDuration = 300.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedCount = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 47.2,
+					defaultDuration = 47.2,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedCount = true,
+					fixedDuration = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+					fixedCount = true,
+				}),
+			},
 		}),
 		Boss:New({ -- Chrome King Gallywix
 			bossID = {

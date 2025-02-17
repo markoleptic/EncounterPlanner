@@ -281,12 +281,12 @@ Private.classes.BossAbilityPhase = {
 ---@class EventTrigger
 ---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
 ---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger.
----@field combatLogEventSpellCount integer The number of times the other ability must have been cast before the ability begins repeating.
+---@field combatLogEventSpellCount integer|nil The number of times the other ability must have been cast before the ability begins repeating.
 ---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
 Private.classes.EventTrigger = {
 	castTimes = {},
 	combatLogEventType = "SCS",
-	combatLogEventSpellCount = 0,
+	combatLogEventSpellCount = nil,
 	repeatInterval = nil,
 }
 
