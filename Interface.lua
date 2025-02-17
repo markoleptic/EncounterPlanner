@@ -25,14 +25,12 @@ local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
-
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
 local CreateReminderText = utilities.CreateReminderText
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
-
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
 local Round = utilities.Round
 local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
@@ -42,11 +40,11 @@ local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
-local GetMinimumCombatLogEventTime = bossUtilities.GetMinimumCombatLogEventTime
+local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local ConvertAbsoluteTimeToCombatLogEventTime = bossUtilities.ConvertAbsoluteTimeToCombatLogEventTime
 local ConvertAssignmentsToNewBoss = bossUtilities.ConvertAssignmentsToNewBoss
-local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetBoss = bossUtilities.GetBoss
+local GetMinimumCombatLogEventTime = bossUtilities.GetMinimumCombatLogEventTime
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
@@ -54,8 +52,8 @@ local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
 local CreateMessageBox = interfaceUpdater.CreateMessageBox
 local UpdateAllAssignments = interfaceUpdater.UpdateAllAssignments
 local UpdateBoss = interfaceUpdater.UpdateBoss
-local UpdatePlanWidgets = interfaceUpdater.UpdatePlanWidgets
 local UpdatePlanDropdownItemCustomTexture = interfaceUpdater.UpdatePlanDropdownItemCustomTexture
+local UpdatePlanWidgets = interfaceUpdater.UpdatePlanWidgets
 
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
@@ -197,6 +195,22 @@ end
 ---@return integer
 local function GetCurrentBossDungeonEncounterID()
 	return Private.mainFrame.bossLabel:GetValue()
+end
+
+local function ClosePlanDependentWidgets()
+	if Private.assignmentEditor then
+		Private.assignmentEditor:Release()
+	end
+	if Private.rosterEditor then
+		Private.rosterEditor:Release()
+	end
+	if Private.phaseLengthEditor then
+		Private.phaseLengthEditor:Release()
+	end
+	if Private.externalTextEditor then
+		Private.externalTextEditor:Release()
+	end
+	interfaceUpdater.RemoveMessageBoxes(true)
 end
 
 do -- Menu Button
@@ -940,6 +954,31 @@ do -- Phase Length Editor
 	end
 end
 
+---@param plan Plan
+---@param newBossDungeonEncounterID integer
+---@param conversionMethod integer|nil
+local function HandleConvertAssignments(plan, newBossDungeonEncounterID, conversionMethod)
+	local currentBossDungeonEncounterID = plan.dungeonEncounterID
+	local currentBoss = GetBoss(currentBossDungeonEncounterID)
+	local newBoss = GetBoss(newBossDungeonEncounterID)
+	local currentAssignments = plan.assignments
+	if currentBoss and newBoss then
+		ClosePlanDependentWidgets()
+		if conversionMethod then
+			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod)
+		end
+		ChangePlanBoss(newBossDungeonEncounterID, plan)
+		if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID) then
+			utilities.SwapPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
+		end
+		if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, newBossDungeonEncounterID) then
+			utilities.SwapPrimaryPlan(AddOn.db.profile.plans, newBossDungeonEncounterID)
+		end
+		UpdateBoss(newBossDungeonEncounterID, true)
+		UpdateAllAssignments(false, newBossDungeonEncounterID)
+	end
+end
+
 ---@param value number|string
 local function HandleChangeBossDropdownValueChanged(value)
 	local bossDungeonEncounterID = tonumber(value)
@@ -967,28 +1006,7 @@ local function HandleChangeBossDropdownValueChanged(value)
 				),
 				acceptButtonText = L["Convert to Timed Assignments"],
 				acceptButtonCallback = function()
-					if Private.assignmentEditor then
-						Private.assignmentEditor:Release()
-					end
-					if Private.phaseLengthEditor then
-						Private.phaseLengthEditor:Release()
-					end
-					local currentBossDungeonEncounterID = plan.dungeonEncounterID
-					local currentBoss = GetBoss(currentBossDungeonEncounterID)
-					local newBoss = GetBoss(bossDungeonEncounterID)
-					local currentAssignments = plan.assignments
-					if currentBoss and newBoss then
-						ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 1)
-						ChangePlanBoss(bossDungeonEncounterID, plan)
-						if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID) then
-							utilities.SwapPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
-						end
-						if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID) then
-							utilities.SwapPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID)
-						end
-						UpdateBoss(bossDungeonEncounterID, true)
-						UpdateAllAssignments(false, bossDungeonEncounterID)
-					end
+					HandleConvertAssignments(plan, bossDungeonEncounterID, 1)
 				end,
 				rejectButtonText = L["Cancel"],
 				rejectButtonCallback = nil,
@@ -997,52 +1015,14 @@ local function HandleChangeBossDropdownValueChanged(value)
 						beforeButtonIndex = 2,
 						buttonText = L["Replace Spells"],
 						callback = function()
-							if Private.assignmentEditor then
-								Private.assignmentEditor:Release()
-							end
-							if Private.phaseLengthEditor then
-								Private.phaseLengthEditor:Release()
-							end
-							local currentBossDungeonEncounterID = plan.dungeonEncounterID
-							local currentBoss = GetBoss(currentBossDungeonEncounterID)
-							local newBoss = GetBoss(bossDungeonEncounterID)
-							local currentAssignments = plan.assignments
-							if currentBoss and newBoss then
-								ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, 2)
-								ChangePlanBoss(bossDungeonEncounterID, plan)
-								if
-									not utilities.HasPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
-								then
-									utilities.SwapPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
-								end
-								if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID) then
-									utilities.SwapPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID)
-								end
-								UpdateBoss(bossDungeonEncounterID, true)
-								UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
+							HandleConvertAssignments(plan, bossDungeonEncounterID, 2)
 						end,
 					},
 				},
 			} --[[@as MessageBoxData]]
 			CreateMessageBox(messageBoxData, false)
 		else
-			if Private.assignmentEditor then
-				Private.assignmentEditor:Release()
-			end
-			if Private.phaseLengthEditor then
-				Private.phaseLengthEditor:Release()
-			end
-			local currentBossDungeonEncounterID = plan.dungeonEncounterID
-			ChangePlanBoss(bossDungeonEncounterID, plan)
-			if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID) then
-				utilities.SwapPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
-			end
-			if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID) then
-				utilities.SwapPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID)
-			end
-			UpdateBoss(bossDungeonEncounterID, true)
-			UpdateAllAssignments(false, bossDungeonEncounterID)
+			HandleConvertAssignments(plan, bossDungeonEncounterID, nil)
 		end
 	end
 end
@@ -1075,12 +1055,7 @@ end
 
 ---@param value string
 local function HandlePlanDropdownValueChanged(_, _, value)
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.externalTextEditor then
-		Private.externalTextEditor:Release()
-	end
+	ClosePlanDependentWidgets()
 	AddOn.db.profile.lastOpenPlan = value
 	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
 	local bossDungeonEncounterID = plan.dungeonEncounterID
@@ -1219,13 +1194,7 @@ do -- Plan Menu Button Handlers
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
 
 	local function HandleImportPlanFromString(newPlanName)
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.phaseLengthEditor then
-			Private.phaseLengthEditor:Release()
-		end
-
+		ClosePlanDependentWidgets()
 		local text = Private.importEditBox:GetText()
 		Private.importEditBox:Release()
 		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -1292,9 +1261,7 @@ do -- Plan Menu Button Handlers
 	end
 
 	local function HandleDuplicatePlanButtonClicked()
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
+		ClosePlanDependentWidgets()
 		local plans = AddOn.db.profile.plans
 		local planToDuplicateName = AddOn.db.profile.lastOpenPlan
 		local planToDuplicate = plans[planToDuplicateName]
@@ -1313,12 +1280,7 @@ do -- Plan Menu Button Handlers
 	local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 
 	local function HandleDeleteCurrentPlanButtonClicked()
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.rosterEditor then
-			Private.rosterEditor:Release()
-		end
+		ClosePlanDependentWidgets()
 		local beforeRemovalCount = 0
 		local plans = AddOn.db.profile.plans ---@type table<string, Plan>
 		for _, _ in pairs(plans) do
@@ -1364,14 +1326,8 @@ do -- Plan Menu Button Handlers
 	local function ImportPlan(importType)
 		if not Private.importEditBox then
 			if importType == "FromMRT" then
-				if Private.assignmentEditor then
-					Private.assignmentEditor:Release()
-				end
-				if Private.phaseLengthEditor then
-					Private.phaseLengthEditor:Release()
-				end
-
 				if VMRT and VMRT.Note and VMRT.Note.Text1 then
+					ClosePlanDependentWidgets()
 					local text = VMRT.Note.Text1
 					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 					local bossName = GetBossName(bossDungeonEncounterID)
@@ -1430,12 +1386,7 @@ do -- Plan Menu Button Handlers
 				if planName == "" or AddOn.db.profile.plans[planName] then
 					widget:SetCreateButtonEnabled(false)
 				else
-					if Private.assignmentEditor then
-						Private.assignmentEditor:Release()
-					end
-					if Private.rosterEditor then
-						Private.rosterEditor:Release()
-					end
+					ClosePlanDependentWidgets()
 					widget:Release()
 					local plans = AddOn.db.profile.plans
 					plans[planName] = Plan:New(nil, planName)
@@ -1591,18 +1542,7 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 		Private:StopSimulatingBoss()
 		simulateReminderButton:SetText(L["Simulate Reminders"])
 	else
-		if Private.assignmentEditor then
-			Private.assignmentEditor:Release()
-		end
-		if Private.rosterEditor then
-			Private.rosterEditor:Release()
-		end
-		if Private.optionsMenu then
-			Private.optionsMenu:Release()
-		end
-		if Private.phaseLengthEditor then
-			Private.phaseLengthEditor:Release()
-		end
+		ClosePlanDependentWidgets()
 		simulateReminderButton:SetText(L["Stop Simulating"])
 		local sortedTimelineAssignments = SortAssignments(
 			GetCurrentPlan(),
@@ -1748,28 +1688,16 @@ local function HandleMinimizeFramePointChanged(_, _, x, y)
 end
 
 local function CloseDialogs()
-	if Private.assignmentEditor then
-		Private.assignmentEditor:Release()
-	end
-	if Private.rosterEditor then
-		Private.rosterEditor:Release()
-	end
+	ClosePlanDependentWidgets()
 	if Private.importEditBox then
 		Private.importEditBox:Release()
 	end
 	if Private.exportEditBox then
 		Private.exportEditBox:Release()
 	end
-	if Private.phaseLengthEditor then
-		Private.phaseLengthEditor:Release()
-	end
 	if Private.newPlanDialog then
 		Private.newPlanDialog:Release()
 	end
-	if Private.externalTextEditor then
-		Private.externalTextEditor:Release()
-	end
-	interfaceUpdater.RemoveMessageBoxes(true)
 end
 
 local function HandleMainFrameReleased()
@@ -1795,7 +1723,6 @@ function Private:CreateInterface()
 	local topContainerSpacing = { 4, 4 }
 	local mainFramePadding = { 10, 10, 10, 10 }
 	local mainFrameSpacing = { 0, 22 }
-	local planAndReminderContainerSpacerHeight = 12
 	local preferencesMenuButtonBackdrop = {
 		bgFile = "Interface\\BUTTONS\\White8x8",
 		edgeFile = "Interface\\BUTTONS\\White8x8",
