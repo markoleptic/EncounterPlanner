@@ -474,15 +474,80 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Stix Bunkjunker
+		Boss:New({ -- Stix Bunkjunker  -- TODO: Nothing confirmed
 			bossID = {
 				230322, -- Stix
 			},
 			journalEncounterID = 2642,
 			dungeonEncounterID = 3012,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[464399] = BossAbility:New({ -- Electromagnetic Sorting
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.2 },
+							repeatInterval = { 80.5, 51.1 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 1.0,
+				}),
+				[464149] = BossAbility:New({ -- Incinerator
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 11.1, 25.0, 25.0, 29.4 },
+							repeatInterval = 25.0,
+						}),
+					},
+					duration = 4.5,
+					castTime = 3.0,
+				}),
+				[464112] = BossAbility:New({ -- Demolish
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.8, 80.5, 51.1 },
+						}),
+					},
+					duration = 50.0,
+					castTime = 0.0,
+				}),
+				[1217954] = BossAbility:New({ -- Meltdown
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 44.5, 80.5, 51.1 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 1.0,
+				}),
+				[467117] = BossAbility:New({ -- Overdrive
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 76.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+				}),
+				[467109] = BossAbility:New({ -- Trash Compactor
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 76.7 + 9.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.75,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 480.0,
+					defaultDuration = 480.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+			},
 		}),
 		Boss:New({ -- Sprocketmonger Lockenstock
 			bossID = {
@@ -491,8 +556,155 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2653,
 			dungeonEncounterID = 3013,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[473276] = BossAbility:New({ -- Activate Inventions!
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.0 },
+							repeatInterval = 30.0,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 30.0 },
+							repeatInterval = 30.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+				}),
+				[466765] = BossAbility:New({ -- Beta Launch
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 127.4 },
+						}),
+						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 127.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[466860] = BossAbility:New({ -- Bleeding Edge
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 20.0,
+				}),
+				[1218319] = BossAbility:New({ -- Voidsplosion
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 1.0, 5.0, 5.0, 5.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1214872] = BossAbility:New({ -- Pyro Party Pack
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 23.0, 32.9, 30.0 },
+						}),
+						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 23.0, 32.9, 30.0 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 3.0,
+				}),
+				[465232] = BossAbility:New({ -- Sonic Ba-Boom
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 9.0, 25.0, 27.0, 32.0, 18 },
+						}),
+						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
+							castTimes = { 9.0, 25.0, 27.0, 32.0, 18 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[1217231] = BossAbility:New({ -- Foot-Blasters
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 12.0, 33.0, 30.0, 30.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 12.0, 33.0, 30.0, 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+				}),
+				[1218418] = BossAbility:New({ -- Wire Transfer
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0, 41.0, 60.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.0, 41.0, 60.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+				}),
+				[1217355] = BossAbility:New({ -- Polarization Generator
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 4.0, 67.0, 43.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 4.0, 67.0, 43.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1216509] = BossAbility:New({ -- Screw Up
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.0, 30.0, 32.0, 27.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 18.0, 30.0, 32.0, 27.0 },
+						}),
+					},
+					duration = 4.5,
+					castTime = 2.0,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 129.4,
+					defaultDuration = 129.4,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedCount = true,
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 20.0,
+					defaultDuration = 20.0,
+					count = 3,
+					defaultCount = 3,
+					fixedDuration = true,
+					name = "P2",
+					repeatAfter = 3,
+				}),
+				[3] = BossPhase:New({
+					duration = 129.4,
+					defaultDuration = 129.4,
+					count = 3,
+					defaultCount = 3,
+					name = "P1",
+					fixedDuration = true,
+					repeatAfter = 2,
+				}),
+			},
 		}),
 		Boss:New({ -- The One-Armed Bandit
 			bossID = {
@@ -501,8 +713,189 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2644,
 			dungeonEncounterID = 3014,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[460181] = BossAbility:New({ -- Pay-Line
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 3.3, 26.7, 40.1, 34.0, 25.9, 24.3, 26.7 },
+							repeatInterval = 26.7,
+						}),
+						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 7.0 },
+							repeatInterval = 30.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+				}),
+				[460444] = BossAbility:New({ -- High Roller!
+					eventTriggers = {
+						[460181] = EventTrigger:New({ -- Pay-Line
+							combatLogEventType = "SCS",
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 0.0,
+				}),
+				[469993] = BossAbility:New({ -- Foul Exhaust
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 8.2 },
+							repeatInterval = { 34, 15.8 },
+						}),
+						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 1.0 },
+							repeatInterval = { 31.6, 25.5 },
+						}),
+					},
+					duration = 1.5,
+					castTime = 0.5,
+				}),
+				[460472] = BossAbility:New({ -- The Big Hit
+					phases = {
+						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 17.9, 18.2, 39.0, 20.6, 19.4, 20.6 },
+						}),
+						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+							castTimes = { 11.0 },
+							repeatInterval = 19.4,
+						}),
+					},
+					duration = 30.0,
+					castTime = 2.5,
+				}),
+				[461060] = BossAbility:New({ -- Spin To Win!
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 14.2 },
+							repeatInterval = 53.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[465761] = BossAbility:New({ -- Rig the Game!
+					phases = {
+						[2] = BossAbilityPhase:New({ -- TODO: Actually cast in P1
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[465432] = BossAbility:New({ -- Linked Machines
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[465322] = BossAbility:New({ -- Hot Hot Heat
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 2.0 + 31.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[465580] = BossAbility:New({ -- Scattered Payout
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 2.0 + 31.5 + 31.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[465587] = BossAbility:New({ -- Explosive Jackpot
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 2.0 + 31.5 + 31.5 + 31.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+				}),
+				-- [461083] = BossAbility:New({ -- Reward: Shock and Flame
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+				-- [461091] = BossAbility:New({ -- Reward: Shock and Bomb
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+				-- [461176] = BossAbility:New({ -- Reward: Flame and Bomb
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+				-- [461389] = BossAbility:New({ -- Reward: Flame and Coin
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+				-- [461101] = BossAbility:New({ -- Reward: Coin and Shock
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+				-- [461395] = BossAbility:New({ -- Reward: Coin and Bomb
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- }),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 285.2,
+					defaultDuration = 285.2,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedCount = true,
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 106.5,
+					defaultDuration = 106.5,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					fixedDuration = true,
+					name = "P2",
+				}),
+			},
 		}),
 		Boss:New({ -- Mug'Zee, Heads of Security
 			bossID = {
