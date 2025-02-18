@@ -1155,15 +1155,333 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Chrome King Gallywix
+		Boss:New({ -- Chrome King Gallywix -- TODO: Completely made up timings
 			bossID = {
 				237194, -- Gallywix
 			},
 			journalEncounterID = 2646,
 			dungeonEncounterID = 3016,
 			instanceID = 2769,
-			abilities = {},
-			phases = {},
+			abilities = {
+				[466340] = BossAbility:New({ -- Scatterblast Canisters
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = { 45.0 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = { 45.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[465952] = BossAbility:New({ -- Big Bad Buncha Bombs
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.0 },
+							repeatInterval = { 60.0 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 10.0 },
+							repeatInterval = { 60.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+				}),
+				[466158] = BossAbility:New({ -- Sapper's Satchel
+					eventTriggers = {
+						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+				}),
+				[466165] = BossAbility:New({ -- 1500-Pound "Dud"
+					eventTriggers = {
+						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 15.0,
+				}),
+				[466338] = BossAbility:New({ -- Zagging Zizzler
+					eventTriggers = {
+						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 15.0,
+				}),
+				[467182] = BossAbility:New({ -- Suppression
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.0 },
+							repeatInterval = { 30.0 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 15.0 },
+							repeatInterval = { 30.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 15.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 1.5,
+				}),
+				[466751] = BossAbility:New({ -- Venting Heat
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 25.0 },
+							repeatInterval = { 30.0 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 25.0 },
+							repeatInterval = { 30.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 25.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 1.0,
+				}),
+				[469327] = BossAbility:New({ -- Giga Blast
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 8.0 },
+							repeatInterval = { 30.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 8.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 3.0,
+				}),
+				[469404] = BossAbility:New({ -- Giga BOOM!
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 35 },
+							repeatInterval = { 30.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 35 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[469297] = BossAbility:New({ -- Sabotaged Controls
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 30 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 15.0,
+				}),
+				[1220846] = BossAbility:New({ -- Control Meltdown
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 35 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 9.0,
+					castTime = 0.0,
+				}),
+				[466341] = BossAbility:New({ -- Fused Canisters
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 40 },
+							repeatInterval = { 60.0 },
+						}),
+					},
+					eventTriggers = {
+						[1217987] = EventTrigger:New({ -- Combination Canisters
+							combatLogEventType = "SCC",
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.0,
+				}),
+				[1220761] = BossAbility:New({ -- Mechengineer's Canisters
+					eventTriggers = {
+						[466341] = EventTrigger:New({ -- Fused Canisters
+							combatLogEventType = "SCC",
+							castTimes = { 2.0 },
+						}),
+					},
+					duration = 30.0,
+					castTime = 0.0,
+				}),
+				[469362] = BossAbility:New({ -- Charged Giga Bomb
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 45.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1218992] = BossAbility:New({ -- Discharged Giga Bomb
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 45.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1216845] = BossAbility:New({ -- Wrench
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 1.0 },
+							repeatInterval = { 5.0 },
+							signifiesPhaseStart = true,
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 1.0 },
+							repeatInterval = { 5.0 },
+						}),
+					},
+					duration = 9.0,
+					castTime = 1.0,
+				}),
+				[1214226] = BossAbility:New({ -- Cratering
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1219319] = BossAbility:New({ -- Radiant Electricity
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+							repeatInterval = { 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1219278] = BossAbility:New({ -- Gallybux Pest Eliminator
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 10.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+				}),
+				[1214369] = BossAbility:New({ -- TOTAL DESTRUCTION!!!
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 33.0 },
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 25.0,
+					castTime = 2.0,
+				}),
+				[1214607] = BossAbility:New({ -- Bigger Badder Bomb Blast
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 30.0 },
+							repeatInterval = { 60.0 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 4.0,
+				}),
+				[1217987] = BossAbility:New({ -- Combination Canisters
+					eventTriggers = {
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCC",
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+				}),
+				[466342] = BossAbility:New({ -- Tick-Tock Canisters
+					eventTriggers = {
+						[1217987] = EventTrigger:New({ -- Combination Canisters
+							combatLogEventType = "SCC",
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 120.0,
+					defaultDuration = 120.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedCount = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 120.0,
+					defaultDuration = 120.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+					fixedCount = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedCount = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 240.0,
+					defaultDuration = 240.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P3",
+					fixedCount = true,
+				}),
+			},
 		}),
 	},
 })
