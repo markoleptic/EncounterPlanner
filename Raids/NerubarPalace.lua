@@ -544,11 +544,6 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					castTime = 1.0,
 				}),
 				[442526] = BossAbility:New({ -- Experimental Dosage
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = nil,
-						}),
-					},
 					eventTriggers = {
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",

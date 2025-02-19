@@ -404,7 +404,7 @@ do
 						)
 					--@debug@
 					else
-						print(format("%s: %s spell not found.", AddOnName .. ":" .. spell["name"]))
+						print(format("%s: %s spell not found.", AddOnName, spell["name"]))
 						--@end-debug@
 					end
 				end
