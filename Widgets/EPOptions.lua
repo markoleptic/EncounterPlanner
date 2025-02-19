@@ -734,6 +734,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 		if not valid and valueToRevertTo and valueToRevertToB then
 			lineEditX:SetText(valueToRevertTo)
 			lineEditY:SetText(valueToRevertToB)
+			option.set(valueToRevertTo, valueToRevertToB)
 		else
 			option.set(valueX, valueY)
 		end
@@ -1174,9 +1175,14 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 			end
 			if type(option.validate) == "function" then
 				widget:SetCallback(callbackName, function(_, _, ...)
-					local valid, valueToRevertTo, _ = option.validate(...)
+					local valid, valueToRevertTo, valueToRevertToB = option.validate(...)
 					if not valid and valueToRevertTo then
 						setWidgetValue(widget, valueToRevertTo)
+						if valueToRevertToB then
+							option.set(valueToRevertTo, valueToRevertToB)
+						else
+							option.set(valueToRevertTo)
+						end
 					else
 						option.set(...)
 					end
@@ -1227,8 +1233,14 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 		else
 			widget:SetCallback(callbackName, function(_, _, ...)
 				if type(option.validate) == "function" then
-					local valid, _, _ = option.validate(...)
-					if valid then
+					local valid, valueToRevertTo, valueToRevertToB = option.validate(...)
+					if not valid and valueToRevertTo then
+						if valueToRevertToB then
+							option.set(valueToRevertTo, valueToRevertToB)
+						else
+							option.set(valueToRevertTo)
+						end
+					else
 						option.set(...)
 					end
 				else

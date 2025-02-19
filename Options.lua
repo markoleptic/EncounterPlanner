@@ -1126,6 +1126,7 @@ do
 				end,
 				enabled = enableProgressBarOption,
 				validate = function(key)
+					print(key)
 					local value = tonumber(key)
 					if value then
 						if value < 8 or value > 48 then
@@ -1236,6 +1237,7 @@ do
 				set = function(key)
 					local value = tonumber(key)
 					if value then
+						print(value)
 						GetProgressBarPreferences().width = value
 						Private.progressBarAnchor:SetProgressBarWidth(value)
 					end
@@ -1244,7 +1246,7 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < 0.0 or value < 500.0 then
+						if value < 0.0 or value > 500.0 then
 							return false, Clamp(value, 0.0, 500.0)
 						else
 							return true

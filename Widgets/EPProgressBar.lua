@@ -496,7 +496,7 @@ end
 ---@param self EPProgressBar
 ---@param width number
 local function SetProgressBarWidth(self, width)
-	self:SetWidth(width)
+	self.frame:SetWidth(width)
 	if self.running then
 		RestyleBar(self)
 	end
