@@ -221,11 +221,11 @@ do
 		local result, _ = text:gsub("{(.-)}", function(match)
 			local genericIcon = genericIcons[match]
 			if genericIcon then
-				return genericIcon
+				return genericIcon:gsub(":16|t", ":0|t")
 			else
 				local texture = GetSpellTexture(match)
 				if texture then
-					return format("|T%s:16|t", texture)
+					return format("|T%s:0|t", texture)
 				end
 			end
 			return "{" .. match .. "}"
