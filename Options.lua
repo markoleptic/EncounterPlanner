@@ -813,6 +813,7 @@ do
 				type = "dropdown",
 				description = L["Font to use for Message text."],
 				category = L["Messages"],
+				itemsAreFonts = true,
 				values = fonts,
 				get = function()
 					return GetMessagePreferences().font
@@ -1085,6 +1086,7 @@ do
 			{
 				label = L["Font"],
 				type = "dropdown",
+				itemsAreFonts = true,
 				description = L["Font to use for Progress Bar text."],
 				category = L["Progress Bars"],
 				values = fonts,

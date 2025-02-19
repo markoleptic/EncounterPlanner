@@ -45,6 +45,7 @@ end
 ---@field enabled boolean
 ---@field parent table|Frame
 ---@field specialOnEnter function
+---@field changedFont boolean|nil
 
 local EPItemBase = {
 	version = 1000,
@@ -100,6 +101,14 @@ function EPItemBase.OnRelease(self)
 	self.frame:Hide()
 	self.customTexture:SetTexture(nil)
 	self.customTexture:Hide()
+	if self.changedFont then
+		local fPath = LSM:Fetch("font", "PT Sans Narrow")
+		local _, size, _ = self.text:GetFont()
+		if fPath and size then
+			self.text:SetFont(fPath, fontSize)
+		end
+	end
+	self.changedFont = nil
 end
 
 ---@param self EPItemBase

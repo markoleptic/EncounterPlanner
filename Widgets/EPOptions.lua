@@ -513,12 +513,25 @@ end
 
 ---@param dropdown EPDropdown
 ---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
----@param neverShowItemsAsSelected boolean?
-local function AddDropdownValues(dropdown, values, neverShowItemsAsSelected)
+---@param option EPSettingOption
+local function AddDropdownValues(dropdown, values, option)
 	if type(values) == "table" then
-		dropdown:AddItems(values, "EPDropdownItemToggle", neverShowItemsAsSelected)
+		dropdown:AddItems(values, "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+		if option.itemsAreFonts then
+			for _, value in pairs(values) do
+				local item, _ = dropdown:FindItemAndText(value.itemValue)
+				if item then
+					local fPath = LSM:Fetch("font", value.itemValue --[[@as string]])
+					if fPath then
+						local _, fontSize, _ = item.text:GetFont()
+						item.text:SetFont(fPath, fontSize)
+						item.changedFont = true
+					end
+				end
+			end
+		end
 	elseif type(values) == "function" then
-		dropdown:AddItems(values(), "EPDropdownItemToggle", neverShowItemsAsSelected)
+		dropdown:AddItems(values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
 	end
 end
 
@@ -930,7 +943,7 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 
 	local dropdown = AceGUI:Create("EPDropdown")
 	dropdown:SetRelativeWidth(0.5)
-	AddDropdownValues(dropdown, option.values, option.neverShowItemsAsSelected)
+	AddDropdownValues(dropdown, option.values, option)
 	dropdown:SetValue(option.get[2]())
 
 	if
@@ -1303,7 +1316,7 @@ local function CreateOptionWidget(self, option, index)
 		if option.type == "dropdown" then
 			local widget = AceGUI:Create("EPDropdown")
 			widget:SetFullWidth(true)
-			AddDropdownValues(widget, option.values, option.neverShowItemsAsSelected)
+			AddDropdownValues(widget, option.values, option)
 			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetValue, label)
 			tinsert(containerChildren, widget)
 		elseif option.type == "lineEdit" then
@@ -1577,6 +1590,7 @@ end
 ---@field confirm? boolean
 ---@field confirmText? string|fun(arg: string|boolean|number):string
 ---@field neverShowItemsAsSelected? boolean
+---@field itemsAreFonts? boolean
 
 ---@class EPOptions : AceGUIWidget
 ---@field type string
