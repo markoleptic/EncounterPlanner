@@ -578,20 +578,20 @@ do
 					end
 				end,
 			} --[[@as EPSettingOption]],
-			{
-				label = L["Hide or Cancel on Phase Change"],
-				type = "checkBox",
-				description = L["Reminders associated with combat log events in a certain phase will be cancelled or hidden when the phase transitions."],
-				enabled = enableReminderOption,
-				get = function()
-					return GetReminderPreferences().removeDueToPhaseChange
-				end,
-				set = function(key)
-					if type(key) == "boolean" then
-						GetReminderPreferences().removeDueToPhaseChange = key
-					end
-				end,
-			} --[[@as EPSettingOption]],
+			-- {
+			-- 	label = L["Hide or Cancel on Phase Change"],
+			-- 	type = "checkBox",
+			-- 	description = L["Reminders associated with combat log events in a certain phase will be cancelled or hidden when the phase transitions."],
+			-- 	enabled = enableReminderOption,
+			-- 	get = function()
+			-- 		return GetReminderPreferences().removeDueToPhaseChange
+			-- 	end,
+			-- 	set = function(key)
+			-- 		if type(key) == "boolean" then
+			-- 			GetReminderPreferences().removeDueToPhaseChange = key
+			-- 		end
+			-- 	end,
+			-- } --[[@as EPSettingOption]],
 			{
 				label = L["Glow Frame for Targeted Spells"],
 				type = "checkBox",

@@ -17,8 +17,8 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 local GetBoss = bossUtilities.GetBoss
-local GenerateBossTables = bossUtilities.GenerateBossTables
-local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+-- local GenerateBossTables = bossUtilities.GenerateBossTables
+-- local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 ---@class Utilities
 local utilities = Private.utilities
@@ -822,7 +822,7 @@ local function HandleCombatLogEventUnfiltered()
 			-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
 		end
 
-		MaybeUpdatePhase(spellID, subEvent)
+		-- MaybeUpdatePhase(spellID, subEvent)
 		if playerGUID == sourceGUID then
 			MaybeCancelStuff(spellID, destGUID, subEvent)
 		end
@@ -871,25 +871,26 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			local boss = GetBoss(encounterID)
 			if boss then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-				GenerateBossTables(boss)
-				local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
-				if bossPhaseTable then
-					orderedBossPhaseTable = bossPhaseTable
-				end
-				for spellID, ability in pairs(boss.abilities) do
-					if #ability.phases == 1 then
-						phaseLimitedSpells[spellID] = next(ability.phases)
-					end
+				hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
+				-- GenerateBossTables(boss)
+				-- local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
+				-- if bossPhaseTable then
+				-- 	orderedBossPhaseTable = bossPhaseTable
+				-- end
+				-- for spellID, ability in pairs(boss.abilities) do
+				-- 	if #ability.phases == 1 then
+				-- 		phaseLimitedSpells[spellID] = next(ability.phases)
+				-- 	end
 
-					for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
-						if bossAbilityPhase.signifiesPhaseStart then
-							phaseStartSpells[spellID] = phaseNumber
-						end
-						if bossAbilityPhase.signifiesPhaseEnd then
-							phaseEndSpells[spellID] = phaseNumber
-						end
-					end
-				end
+				-- 	for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
+				-- 		if bossAbilityPhase.signifiesPhaseStart then
+				-- 			phaseStartSpells[spellID] = phaseNumber
+				-- 		end
+				-- 		if bossAbilityPhase.signifiesPhaseEnd then
+				-- 			phaseEndSpells[spellID] = phaseNumber
+				-- 		end
+				-- 	end
+				-- end
 				SetupReminders(activePlans, reminderPreferences, startTime)
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 			end
@@ -987,25 +988,25 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 	if boss then
 		hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
 		hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
-		GenerateBossTables(boss)
-		local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
-		if bossPhaseTable then
-			orderedBossPhaseTable = bossPhaseTable
-		end
-		for spellID, ability in pairs(boss.abilities) do
-			if #ability.phases == 1 then
-				phaseLimitedSpells[spellID] = next(ability.phases)
-			end
+		-- GenerateBossTables(boss)
+		-- local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
+		-- if bossPhaseTable then
+		-- 	orderedBossPhaseTable = bossPhaseTable
+		-- end
+		-- for spellID, ability in pairs(boss.abilities) do
+		-- 	if #ability.phases == 1 then
+		-- 		phaseLimitedSpells[spellID] = next(ability.phases)
+		-- 	end
 
-			for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
-				if bossAbilityPhase.signifiesPhaseStart then
-					phaseStartSpells[spellID] = phaseNumber
-				end
-				if bossAbilityPhase.signifiesPhaseEnd then
-					phaseEndSpells[spellID] = phaseNumber
-				end
-			end
-		end
+		-- 	for phaseNumber, bossAbilityPhase in pairs(ability.phases) do
+		-- 		if bossAbilityPhase.signifiesPhaseStart then
+		-- 			phaseStartSpells[spellID] = phaseNumber
+		-- 		end
+		-- 		if bossAbilityPhase.signifiesPhaseEnd then
+		-- 			phaseEndSpells[spellID] = phaseNumber
+		-- 		end
+		-- 	end
+		-- end
 
 		local totalDuration = 0.0
 		for _, phaseData in pairs(boss.phases) do
