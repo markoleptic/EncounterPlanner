@@ -69,10 +69,10 @@ local assignmentTriggers = {
 		text = L["Combat Log Event"],
 		itemValue = "Combat Log Event",
 		dropdownItemMenuData = {
-			{ text = "SPELL_CAST_SUCCESS", itemValue = "SCC" },
-			{ text = "SPELL_CAST_START", itemValue = "SCS" },
-			{ text = "SPELL_AURA_APPLIED", itemValue = "SAA" },
-			{ text = "SPELL_AURA_REMOVED", itemValue = "SAR" },
+			{ text = L["Spell Cast Start"], itemValue = "SCS" },
+			{ text = L["Spell Cast Success"], itemValue = "SCC" },
+			{ text = L["Spell Aura Applied"], itemValue = "SAA" },
+			{ text = L["Spell Aura Removed"], itemValue = "SAR" },
 		},
 	},
 	{ text = L["Fixed Time"], itemValue = "Fixed Time" },
@@ -572,7 +572,8 @@ end
 ---@param assignment Assignment
 ---@param previewText string
 ---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
-local function PopulateFields(self, assignment, previewText, metaTables)
+---@param allowedCombatLogEventTypes table<integer, CombatLogEventType>|nil
+local function PopulateFields(self, assignment, previewText, metaTables, allowedCombatLogEventTypes)
 	self:SetAssignmentID(assignment.uniqueID)
 	local assignee = assignment.assignee
 	self.assigneeTypeDropdown:SetValue(assignee)
@@ -590,6 +591,35 @@ local function PopulateFields(self, assignment, previewText, metaTables)
 	self.enableSpellAssignmentCheckBox:SetChecked(enableSpellAssignmentCheckBox)
 	self.spellAssignmentDropdown:SetEnabled(enableSpellAssignmentCheckBox)
 	self.spellAssignmentDropdown:SetValue(enableSpellAssignmentCheckBox and spellID or nil)
+
+	local enableCombatLogEvents = not allowedCombatLogEventTypes
+		or (allowedCombatLogEventTypes and #allowedCombatLogEventTypes > 0)
+	local combatLogEventItem, _ = self.assignmentTypeDropdown:FindItemAndText("Combat Log Event")
+	if combatLogEventItem then
+		combatLogEventItem:SetEnabled(enableCombatLogEvents)
+	end
+
+	local types = { ["SCS"] = true, ["SCC"] = true, ["SAA"] = true, ["SAR"] = true }
+	local disableTypes = false
+	if allowedCombatLogEventTypes then
+		for _, combatLogEventType in ipairs(allowedCombatLogEventTypes) do
+			local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
+			if item then
+				item:SetEnabled(true)
+			end
+			types[combatLogEventType] = nil
+		end
+		disableTypes = true
+	end
+
+	for combatLogEventType, value in pairs(types) do
+		if value then
+			local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
+			if item then
+				item:SetEnabled(not disableTypes)
+			end
+		end
+	end
 
 	if getmetatable(assignment) == metaTables.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]

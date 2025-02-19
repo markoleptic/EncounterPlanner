@@ -527,6 +527,14 @@ do -- Assignment Editor
 					if IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
 						assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
 						assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
+						local valid, validType = bossUtilities.IsValidCombatLogEventType(
+							bossDungeonEncounterID,
+							spellID,
+							assignment.combatLogEventType
+						)
+						if not valid and validType then
+							assignment--[[@as CombatLogEventAssignment]].combatLogEventType = validType
+						end
 					else
 						local newSpellCount, newMinTime = FindNearestSpellCount(
 							assignment.time,
@@ -642,7 +650,15 @@ do -- Assignment Editor
 
 		if updateFields or updatePreviewText then
 			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-			assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+			local allowedCombatLogEventTypes = nil
+			local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+			if combatLogEventSpellID then
+				local ability = bossUtilities.FindBossAbility(GetCurrentBossDungeonEncounterID(), combatLogEventSpellID)
+				if ability and ability.allowedCombatLogEventTypes then
+					allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+				end
+			end
+			assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables, allowedCombatLogEventTypes)
 		elseif updatePreviewText then
 			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
 			assignmentEditor.previewLabel:SetText(previewText, 0)
@@ -1102,7 +1118,20 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			Private.assignmentEditor = Create.AssignmentEditor()
 		end
 		local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-		Private.assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+		local allowedCombatLogEventTypes = nil
+		local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+		if combatLogEventSpellID then
+			local ability = bossUtilities.FindBossAbility(GetCurrentBossDungeonEncounterID(), combatLogEventSpellID)
+			if ability and ability.allowedCombatLogEventTypes then
+				allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+			end
+		end
+		Private.assignmentEditor:PopulateFields(
+			assignment,
+			previewText,
+			assignmentMetaTables,
+			allowedCombatLogEventTypes
+		)
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			timeline:ClearSelectedAssignments()

@@ -284,7 +284,21 @@ do
 					local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 					if assignment then
 						local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-						assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables)
+						local allowedCombatLogEventTypes = nil
+						local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+						if combatLogEventSpellID then
+							local ability =
+								Private.bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+							if ability and ability.allowedCombatLogEventTypes then
+								allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+							end
+						end
+						assignmentEditor:PopulateFields(
+							assignment,
+							previewText,
+							assignmentMetaTables,
+							allowedCombatLogEventTypes
+						)
 					else
 						assignmentEditor:Release()
 					end

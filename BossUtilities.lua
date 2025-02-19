@@ -232,6 +232,45 @@ end
 
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
+---@param combatLogEventType CombatLogEventType
+---@return boolean valid
+---@return CombatLogEventType|nil suggestedCombatLogEventType
+function BossUtilities.IsValidCombatLogEventType(encounterID, spellID, combatLogEventType)
+	local bossAbility = BossUtilities.FindBossAbility(encounterID, spellID)
+	if bossAbility then
+		if bossAbility.allowedCombatLogEventTypes then
+			if #bossAbility.allowedCombatLogEventTypes == 0 then
+				return false
+			else
+				local allowed = {}
+				for _, eventType in ipairs(bossAbility.allowedCombatLogEventTypes) do
+					if eventType == combatLogEventType then
+						return true
+					end
+					allowed[eventType] = true
+				end
+				local suggested = {
+					["SCS"] = { "SAA", "SCC", "SAR" },
+					["SCC"] = { "SAR", "SCS", "SAA" },
+					["SAA"] = { "SCS", "SAR", "SCC" },
+					["SAR"] = { "SCC", "SAA", "SCS" },
+				}
+				for _, eventType in ipairs(suggested[combatLogEventType]) do
+					if allowed[eventType] then
+						return false, eventType
+					end
+				end
+				return false
+			end
+		else
+			return true
+		end
+	end
+	return false
+end
+
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer
 ---@return integer|nil
 function BossUtilities.GetMaxSpellCount(encounterID, spellID)
 	local spellCount = absoluteSpellCastStartTables[encounterID]
@@ -551,28 +590,30 @@ do
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
-			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-				local adjustedTime = indexAndCastStart.castStart
-				if ability then
-					if eventType == "SAR" then
-						adjustedTime = adjustedTime + ability.duration + ability.castTime
-					elseif eventType == "SCC" or eventType == "SAA" then
-						adjustedTime = adjustedTime + ability.castTime
+			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
+				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+					local adjustedTime = indexAndCastStart.castStart
+					if ability then
+						if eventType == "SAR" then
+							adjustedTime = adjustedTime + ability.duration + ability.castTime
+						elseif eventType == "SCC" or eventType == "SAA" then
+							adjustedTime = adjustedTime + ability.castTime
+						end
 					end
-				end
-				if adjustedTime <= time then
-					local difference = time - adjustedTime
-					if difference < minTime then
-						minTime = difference
-						spellIDForMinTime = spellID
-						spellCountForMinTime = spellCount
-					end
-				else
-					local difference = adjustedTime - time
-					if difference < minTimeBefore then
-						minTimeBefore = difference
-						spellIDForMinTimeBefore = spellID
-						spellCountForMinTimeBefore = spellCount
+					if adjustedTime <= time then
+						local difference = time - adjustedTime
+						if difference < minTime then
+							minTime = difference
+							spellIDForMinTime = spellID
+							spellCountForMinTime = spellCount
+						end
+					else
+						local difference = adjustedTime - time
+						if difference < minTimeBefore then
+							minTimeBefore = difference
+							spellIDForMinTimeBefore = spellID
+							spellCountForMinTimeBefore = spellCount
+						end
 					end
 				end
 			end
@@ -598,21 +639,23 @@ do
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
-			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-				local adjustedTime = indexAndCastStart.castStart
-				if ability then
-					if eventType == "SAR" then
-						adjustedTime = adjustedTime + ability.duration + ability.castTime
-					elseif eventType == "SCC" or eventType == "SAA" then
-						adjustedTime = adjustedTime + ability.castTime
+			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
+				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+					local adjustedTime = indexAndCastStart.castStart
+					if ability then
+						if eventType == "SAR" then
+							adjustedTime = adjustedTime + ability.duration + ability.castTime
+						elseif eventType == "SCC" or eventType == "SAA" then
+							adjustedTime = adjustedTime + ability.castTime
+						end
 					end
-				end
-				if adjustedTime <= time then
-					local difference = time - adjustedTime
-					if difference < minTime then
-						minTime = difference
-						spellIDForMinTime = spellID
-						spellCountForMinTime = spellCount
+					if adjustedTime <= time then
+						local difference = time - adjustedTime
+						if difference < minTime then
+							minTime = difference
+							spellIDForMinTime = spellID
+							spellCountForMinTime = spellCount
+						end
 					end
 				end
 			end
@@ -933,13 +976,16 @@ do
 		return orderedBossPhaseTable
 	end
 
+	---@param eventType CombatLogEventType
+	---@param ability BossAbility
+	---@return number
 	local function GetCombatLogEventTimeOffset(eventType, ability)
-		if eventType == "SCC" then
-			return ability.castTime
-		elseif eventType == "SAR" then
+		if eventType == "SAR" then
 			return ability.castTime + ability.duration
+		elseif eventType == "SCC" or eventType == "SAA" then
+			return ability.castTime
 		end
-		return 0
+		return 0.0
 	end
 
 	local abilityIterator = {}

@@ -36,16 +36,15 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							allowedCombatLogEventType = { "SAA", "SAR" }, -- TODO: Enforce allowed types
 						}),
 						[3] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							allowedCombatLogEventType = { "SAA", "SAR" }, -- TODO: Enforce allowed types
 							signifiesPhaseStart = true,
 						}),
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[471403] = BossAbility:New({ -- Unrelenting CAR-nage
 					phases = {

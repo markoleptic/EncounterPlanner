@@ -380,3 +380,7 @@ L["Shocking Claw"] = true
 L["Shocking Claw"] = true
 L["Crashing Thunder"] = true
 L["Wild Lightning"] = true
+L["Spell Cast Start"] = true
+L["Spell Cast Success"] = true
+L["Spell Aura Applied"] = true
+L["Spell Aura Removed"] = true

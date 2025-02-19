@@ -255,11 +255,13 @@ Private.classes.BossPhase = {
 ---@field eventTriggers table<SpellIDIndex, EventTrigger>|nil Other boss abilities that trigger the ability.
 ---@field duration number Usually how long the ability effect lasts.
 ---@field castTime number The actual cast time of the ability.
+---@field allowedCombatLogEventTypes table<integer, CombatLogEventType>|nil If defined, restrict creating combat log event assignments to only these types.
 Private.classes.BossAbility = {
 	phases = {},
 	eventTriggers = nil,
 	duration = 0.0,
 	castTime = 0.0,
+	allowedCombatLogEventTypes = nil,
 }
 
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.

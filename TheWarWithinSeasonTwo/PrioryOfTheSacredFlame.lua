@@ -140,7 +140,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 				}),
-				-- TODO: Only allow SAA or SAR, take into account if Castigator's Shield is active, might only be needed during reminders
+				-- TODO: Take into account if Castigator's Shield is active, might only be needed during reminders
 				-- [446403] = BossAbility:New({ -- Sacrificial Flame
 				-- 	eventTriggers = {
 				-- 		[446368] = EventTrigger:New({ -- Sacrificial Pyre
@@ -150,6 +150,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 				-- 	},
 				-- 	duration = 12.0,
 				-- 	castTime = 0.0,
+				-- 	allowedCombatLogEventType = { "SAA", "SAR" },
 				-- }),
 			},
 			phases = {
@@ -187,7 +188,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 50.0,
 					castTime = 0.0,
-					allowedCombatLogEventType = { "SCC", "SCS" }, -- TODO: Enforce allowed types
+					allowedCombatLogEventType = { "SCC", "SCS" },
 				}),
 				[444546] = BossAbility:New({ -- Purify
 					phases = {
