@@ -2176,6 +2176,7 @@ local function UpdateHeightFromAssignments(self)
 		+ self.bossAbilityTimeline.frame:GetHeight()
 
 	local assignmentFrameHeight = self.assignmentTimeline.frame:GetHeight()
+	print(self.preferences.timelineRows.numberOfAssignmentsToShow)
 	local numberToShow = self.preferences.timelineRows.numberOfAssignmentsToShow
 	local preferredAssignmentHeight = numberToShow * self.assignmentDimensions.step
 	if numberToShow > 1 then
