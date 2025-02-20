@@ -2,6 +2,7 @@ local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 
 local Type = "EPLabel"
 local Version = 1
@@ -29,6 +30,7 @@ local function HandleIconEnter(epLabel)
 		tooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
 		tooltip:SetSpellByID(epLabel.spellID)
 		tooltip:RefreshData()
+		tooltip:AddLine("|r|cFFFFFFFF" .. L["Spell ID"] .. ":|r " .. "|cFFFFD200" .. epLabel.spellID .. "|r")
 		tooltip:Show()
 	end
 end
