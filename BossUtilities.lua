@@ -232,6 +232,17 @@ end
 
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
+---@return table <integer, CombatLogEventType>
+function BossUtilities.GetValidCombatLogEventTypes(encounterID, spellID)
+	local bossAbility = BossUtilities.FindBossAbility(encounterID, spellID)
+	if bossAbility then
+		return bossAbility.allowedCombatLogEventTypes
+	end
+	return {}
+end
+
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer
 ---@param combatLogEventType CombatLogEventType
 ---@return boolean valid
 ---@return CombatLogEventType|nil suggestedCombatLogEventType
@@ -254,6 +265,7 @@ function BossUtilities.IsValidCombatLogEventType(encounterID, spellID, combatLog
 					["SCC"] = { "SAR", "SCS", "SAA" },
 					["SAA"] = { "SCS", "SAR", "SCC" },
 					["SAR"] = { "SCC", "SAA", "SCS" },
+					["UD"] = {},
 				}
 				for _, eventType in ipairs(suggested[combatLogEventType]) do
 					if allowed[eventType] then
@@ -579,7 +591,7 @@ do
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
 	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@param eventType CombatLogEventType
+	---@param eventType CombatLogEventType|nil
 	---@return integer|nil spellID
 	---@return integer|nil spellCount
 	---@return number|nil leftoverTime
@@ -590,7 +602,7 @@ do
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
-			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
+			if not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
 				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
 					local adjustedTime = indexAndCastStart.castStart
 					if ability then
@@ -629,7 +641,7 @@ do
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
 	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@param eventType CombatLogEventType
+	---@param eventType CombatLogEventType|nil
 	---@return integer|nil spellID
 	---@return integer|nil spellCount
 	---@return number|nil leftoverTime
@@ -639,7 +651,7 @@ do
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
-			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
+			if not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType) then
 				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
 					local adjustedTime = indexAndCastStart.castStart
 					if ability then
@@ -665,7 +677,7 @@ do
 
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
-	---@param eventType CombatLogEventType
+	---@param eventType CombatLogEventType|nil
 	---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
 	---@return integer|nil spellID
 	---@return integer|nil spellCount
@@ -1484,22 +1496,16 @@ do
 						for bossAbilitySpellID, spellCount in pairs(absoluteSpellCastStartTables[ID]) do
 							for spellOccurrence, castStartAndOrder in ipairs(spellCount) do
 								local castStart = castTimeTable[bossAbilitySpellID][spellOccurrence]
-								TestEqual(
-									castStart,
-									castStartAndOrder.castStart,
-									"Cast Time Equal " .. C_Spell.GetSpellName(bossAbilitySpellID)
-								)
+								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
+								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
 						end
 						for bossAbilitySpellID, spellCount in pairs(castTimeTable) do
 							for spellOccurrence, castStart in ipairs(spellCount) do
 								local castStartAndOrder =
 									absoluteSpellCastStartTables[ID][bossAbilitySpellID][spellOccurrence]
-								TestEqual(
-									castStart,
-									castStartAndOrder.castStart,
-									"Cast Time Equal " .. C_Spell.GetSpellName(bossAbilitySpellID)
-								)
+								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
+								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
 						end
 					end

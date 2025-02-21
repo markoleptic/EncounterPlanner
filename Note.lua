@@ -440,6 +440,21 @@ function Private.ParseNote(plan, text, test)
 		end
 	end
 
+	if determinedBossDungeonEncounterID then
+		local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(determinedBossDungeonEncounterID)
+		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(determinedBossDungeonEncounterID)
+		if castTimeTable and bossPhaseTable then
+			for _, assignment in ipairs(plan.assignments) do
+				if getmetatable(assignment) == CombatLogEventAssignment then
+					utilities.UpdateAssignmentBossPhase(
+						assignment --[[@as CombatLogEventAssignment]],
+						determinedBossDungeonEncounterID
+					)
+				end
+			end
+		end
+	end
+
 	if #failedOrReplaced > 0 and not test then
 		LogFailures(failedOrReplaced, failedCount, defaultedToTimedCount, defaultedSpellCount)
 	end

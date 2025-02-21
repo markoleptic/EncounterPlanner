@@ -1195,7 +1195,7 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 			local bossPhaseTable = bossUtilities.GetOrderedBossPhases(encounterID)
 			if castTimeTable and bossPhaseTable then
 				local newSpellID, newSpellCount, newTime =
-					bossUtilities.FindNearestCombatLogEvent(time, encounterID, "SCS", true)
+					bossUtilities.FindNearestCombatLogEvent(time, encounterID, nil, true)
 				if newSpellID and newSpellCount and newTime then
 					if newSpellID and newSpellCount and newTime then
 						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then

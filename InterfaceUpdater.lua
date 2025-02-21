@@ -62,8 +62,10 @@ do
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
 	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
 
 	local GetSpellInfo = C_Spell.GetSpellInfo
+	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
@@ -97,15 +99,23 @@ do
 				if activeBossAbilities[abilityID] == nil then
 					activeBossAbilities[abilityID] = true
 				end
-				local placeholderName = nil
+				local placeholderName, bossDeathName = nil, nil
 				if Private:HasPlaceholderBossSpellID(abilityID) then
 					placeholderName = Private:GetPlaceholderBossName(abilityID)
+				end
+				if abilityID == -1 then
+					local bossNpcID = boss.abilities[abilityID].bossNpcID
+					bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
 				end
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
 					if placeholderName then
 						abilityEntry:SetNullAbility(tostring(abilityID), placeholderName)
+					elseif bossDeathName then
+						abilityEntry:SetText(bossDeathName, tostring(abilityID))
+						abilityEntry.label:SetText(bossDeathName, 4)
+						abilityEntry.label:SetIcon(deathIcon, 2, 2, 0)
 					else
 						abilityEntry:SetAbility(abilityID, tostring(abilityID))
 					end
@@ -113,18 +123,7 @@ do
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then
-					local iconText
-					if placeholderName then
-						iconText = format("|T%s:16|t %s", unknownIcon, placeholderName)
-					else
-						local spellInfo = GetSpellInfo(abilityID)
-						if spellInfo then
-							iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-						else
-							iconText = format("|T%s:16|t %s", unknownIcon, L["Unknown"])
-						end
-					end
-					tinsert(bossAbilitySelectItems, { itemValue = abilityID, text = iconText })
+					tinsert(bossAbilitySelectItems, CreateAbilityDropdownItemData(boss, abilityID))
 				end
 			end
 

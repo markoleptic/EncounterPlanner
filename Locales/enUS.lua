@@ -384,3 +384,5 @@ L["Spell Cast Start"] = true
 L["Spell Cast Success"] = true
 L["Spell Aura Applied"] = true
 L["Spell Aura Removed"] = true
+L["Unit Died"] = true
+L["Death"] = true

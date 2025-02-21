@@ -671,6 +671,40 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 	return assignmentTypes
 end
 
+do
+	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
+	local GetSpellInfo = C_Spell.GetSpellInfo
+
+	---@param boss Boss
+	---@param abilityID integer
+	---@return DropdownItemData
+	function Utilities.CreateAbilityDropdownItemData(boss, abilityID)
+		local placeholderName, bossDeathName = nil, nil
+		if Private:HasPlaceholderBossSpellID(abilityID) then
+			placeholderName = Private:GetPlaceholderBossName(abilityID)
+		end
+		if abilityID == -1 then
+			local bossNpcID = boss.abilities[abilityID].bossNpcID
+			bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
+		end
+		local iconText
+		if placeholderName then
+			iconText = format("|T%s:16|t %s", unknownIcon, placeholderName)
+		elseif bossDeathName then
+			iconText = format("|T%s:16|t %s", deathIcon, bossDeathName)
+		else
+			local spellInfo = GetSpellInfo(abilityID)
+			if spellInfo then
+				iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+			else
+				iconText = format("|T%s:16|t %s", unknownIcon, L["Unknown"])
+			end
+		end
+		return { itemValue = abilityID, text = iconText }
+	end
+end
+
 -- Updates a timeline assignment's start time.
 ---@param timelineAssignment TimelineAssignment
 ---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
@@ -732,7 +766,6 @@ do
 
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
-	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 
 	local loggedOverlappingOrNotVisiblePlans = {} ---@type table <string, {overlapCount: integer, pastDurationCount: integer}>
 
@@ -1725,15 +1758,10 @@ function Utilities.SetAssignmentMetaTables(assignments)
 			assignment.combatLogEventType
 			---@diagnostic disable-next-line: undefined-field
 			and assignment.combatLogEventSpellID
-			---@diagnostic disable-next-line: undefined-field
-			and assignment.combatLogEventSpellID > 0
 		then
 			assignment = CombatLogEventAssignment:New(assignment)
 			---@diagnostic disable-next-line: undefined-field
-		elseif assignment.phase then
-			assignment = PhasedAssignment:New(assignment)
-			---@diagnostic disable-next-line: undefined-field
-		elseif assignment.time then
+		else
 			assignment = TimedAssignment:New(assignment)
 		end
 	end
@@ -1836,3 +1864,20 @@ function Utilities.SwapPrimaryPlan(plans, dungeonEncounterID)
 		end
 	end
 end
+
+---@param assignment CombatLogEventAssignment
+---@param dungeonEncounterID integer
+function Utilities.UpdateAssignmentBossPhase(assignment, dungeonEncounterID)
+	local castTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
+	local bossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
+	if castTimeTable and bossPhaseTable then
+		local combatLogEventSpellID = assignment.combatLogEventSpellID
+		local spellCount = assignment.spellCount
+		if castTimeTable[combatLogEventSpellID] and castTimeTable[combatLogEventSpellID][spellCount] then
+			local orderedBossPhaseIndex = castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
+			assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+			assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+		end
+	end
+end
+

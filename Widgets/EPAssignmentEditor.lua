@@ -73,6 +73,7 @@ local assignmentTriggers = {
 			{ text = L["Spell Cast Success"], itemValue = "SCC" },
 			{ text = L["Spell Aura Applied"], itemValue = "SAA" },
 			{ text = L["Spell Aura Removed"], itemValue = "SAR" },
+			{ text = L["Unit Died"], itemValue = "UD" },
 		},
 	},
 	{ text = L["Fixed Time"], itemValue = "Fixed Time" },
@@ -133,12 +134,13 @@ end
 
 ---@param self EPAssignmentEditor
 local function HandleAssignmentTypeDropdownValueChanged(self, value)
-	if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
+	if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" or value == "UD" then -- Combat Log Event
 		SetEnabled(self.combatLogEventContainer.children, true)
-	elseif value == "Fixed Time" or value == "Boss Phase" then
+		self:Fire("DataChanged", "AssignmentType", value)
+	elseif value == "Fixed Time" then
 		SetEnabled(self.combatLogEventContainer.children, false)
+		self:Fire("DataChanged", "AssignmentType", value)
 	end
-	self:Fire("DataChanged", "AssignmentType", value)
 end
 
 ---@param self EPAssignmentEditor

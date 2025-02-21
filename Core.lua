@@ -152,8 +152,19 @@ do -- Raid instance initialization
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
-				local _, _, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
+				local creatureID, bossName, _, _, iconImage, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
 				boss.name, boss.icon = encounterName, iconImage
+				local index = 2
+				if boss.journalEncounterCreatureIDsToBossIDs[creatureID] then
+					while creatureID and bossName do
+						local npcID = boss.journalEncounterCreatureIDsToBossIDs[creatureID]
+						if npcID then
+							boss.bossNames[npcID] = bossName
+						end
+						creatureID, bossName, _, _, _, _ = EJ_GetCreatureInfo(index, boss.journalEncounterID)
+						index = index + 1
+					end
+				end
 			end
 		end
 	end
@@ -181,7 +192,7 @@ do -- Profile updating and refreshing
 				if not spellIDSpellCastStartTable[assignment.spellCount] then
 					assignment.spellCount = 1
 				end
-				if assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
+				if not assignment.phase or assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
 					local orderIndex = spellIDSpellCastStartTable[assignment.spellCount].bossPhaseOrderIndex
 					assignment.bossPhaseOrderIndex = orderIndex
 					assignment.phase = orderedBossPhaseTable[orderIndex]
