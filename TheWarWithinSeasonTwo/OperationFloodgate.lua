@@ -111,8 +111,12 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 6.1 },
-							repeatInterval = 17.0,
+							repeatInterval = 37.0,
 						}),
+					},
+					cancelOn = {
+						bossNpcID = 226403,
+						combatLogEventType = "UD",
 					},
 					duration = 0.0,
 					castTime = 1.5,
@@ -121,8 +125,18 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 22.8 },
-							repeatInterval = 17.0,
+							repeatInterval = { 5.3, 5.3, 24.6 },
 						}),
+					},
+					cancelOn = {
+						{
+							bossNpcID = 226402,
+							combatLogEventType = "UD",
+						},
+						{
+							bossNpcID = 226403,
+							combatLogEventType = "UD",
+						},
 					},
 					duration = 2.0,
 					castTime = 3.5,
@@ -134,6 +148,16 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 34.2,
 						}),
 					},
+					cancelOn = {
+						{
+							bossNpcID = 226402,
+							combatLogEventType = "UD",
+						},
+						{
+							bossNpcID = 226403,
+							combatLogEventType = "UD",
+						},
+					},
 					duration = 2.0,
 					castTime = 3.5,
 				}),
@@ -144,6 +168,12 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 17.7,
 						}),
 					},
+					cancelOn = {
+						{
+							bossNpcID = 226402,
+							combatLogEventType = "UD",
+						},
+					},
 					duration = 0.0,
 					castTime = 3.5,
 				}),
@@ -153,6 +183,12 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							castTimes = { 17.7 },
 							repeatInterval = 17.7,
 						}),
+					},
+					cancelOn = {
+						{
+							bossNpcID = 226402,
+							combatLogEventType = "UD",
+						},
 					},
 					duration = 0.0,
 					castTime = 2.0,
@@ -169,7 +205,6 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 			},
-			-- TODO: Add option for phase 2 when one of the bosses dies
 			phases = {
 				[1] = BossPhase:New({
 					duration = 180.0,
