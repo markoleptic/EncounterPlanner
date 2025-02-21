@@ -52,12 +52,6 @@ function BossUtilities.GetBossName(encounterID)
 	for _, dungeonInstance in pairs(Private.dungeonInstances) do
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
-				if boss.name:len() == 0 then
-					EJ_SelectInstance(dungeonInstance.journalInstanceID)
-					EJ_SelectEncounter(boss.journalEncounterID)
-					local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, boss.journalEncounterID)
-					boss.name = bossName
-				end
 				return boss.name
 			end
 		end
@@ -81,10 +75,12 @@ end
 ---@param spellID integer
 ---@return integer|nil
 function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
-	for _, dungeonInstance in pairs(Private.dungeonInstances) do
-		for _, boss in ipairs(dungeonInstance.bosses) do
-			if boss.abilities[spellID] then
-				return boss.dungeonEncounterID
+	if spellID > 0 then
+		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			for _, boss in ipairs(dungeonInstance.bosses) do
+				if boss.abilities[spellID] then
+					return boss.dungeonEncounterID
+				end
 			end
 		end
 	end
@@ -631,7 +627,7 @@ do
 			end
 		end
 		if not spellIDForMinTime and not spellCountForMinTime then
-			minTime = minTimeBefore
+			minTime = 0.0
 			spellIDForMinTime = spellIDForMinTimeBefore
 			spellCountForMinTime = spellCountForMinTimeBefore
 		end

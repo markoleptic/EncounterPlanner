@@ -440,8 +440,9 @@ do -- Assignment Editor
 		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	end
 
-	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local UpdateAssignmentBossPhase = utilities.UpdateAssignmentBossPhase
 	local IsValidSpellCount = bossUtilities.IsValidSpellCount
+	local ChangeAssignmentType = utilities.ChangeAssignmentType
 
 	---@param assignmentEditor EPAssignmentEditor
 	---@param dataType string
@@ -457,100 +458,27 @@ do -- Assignment Editor
 			return
 		end
 
+		local dungeonEncounterID = GetCurrentBossDungeonEncounterID()
 		local updateFields = false
 		local updatePreviewText = false
 		local updateAssignments = false
 
 		if dataType == "AssignmentType" then
-			if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" then -- Combat Log Event
-				if getmetatable(assignment) ~= CombatLogEventAssignment then
-					local combatLogEventSpellID, spellCount, minTime = nil, nil, nil
-					if getmetatable(assignment) == TimedAssignment then
-						combatLogEventSpellID, spellCount, minTime =
-							FindNearestCombatLogEvent(assignment.time, GetCurrentBossDungeonEncounterID(), value, true)
-					end
-					local boss = GetCurrentBoss()
-					if boss then
-						assignment = CombatLogEventAssignment:New(assignment, true)
-						if combatLogEventSpellID and spellCount and minTime then
-							local castTimeTable = GetAbsoluteSpellCastTimeTable(boss.dungeonEncounterID)
-							local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
-							if castTimeTable and bossPhaseTable then
-								if
-									castTimeTable[combatLogEventSpellID]
-									and castTimeTable[combatLogEventSpellID][spellCount]
-								then
-									local orderedBossPhaseIndex =
-										castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
-									assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-									assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
-								end
-							end
-							assignment.time = Round(minTime, 1)
-							assignment.combatLogEventSpellID = combatLogEventSpellID
-							assignment.spellCount = spellCount
-						end
-						updateFields = true
-					end
-				end
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventType = value
-			elseif value == "Fixed Time" then
-				if getmetatable(assignment) ~= TimedAssignment then
-					local convertedTime = nil
-					if getmetatable(assignment) == CombatLogEventAssignment then
-						convertedTime = ConvertCombatLogEventTimeToAbsoluteTime(
-							assignment.time,
-							GetCurrentBossDungeonEncounterID(),
-							assignment.combatLogEventSpellID,
-							assignment.spellCount,
-							assignment.combatLogEventType
-						)
-					end
-					assignment = TimedAssignment:New(assignment, true)
-					if convertedTime then
-						assignment.time = Round(convertedTime, 1)
-					end
-					updateFields = true
-				end
-			elseif value == "Boss Phase" then
-				if getmetatable(assignment) ~= PhasedAssignment then
-					assignment = PhasedAssignment:New(assignment, true)
-					updateFields = true
-				end
-			end
+			ChangeAssignmentType(
+				assignment --[[@as CombatLogEventAssignment|TimedAssignment]],
+				dungeonEncounterID,
+				value
+			)
+			updateFields = true
 		elseif dataType == "CombatLogEventSpellID" then
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				local spellID = tonumber(value)
 				if spellID then
-					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-					local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
-					if IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
-						assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
-						assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
-						local valid, validType = bossUtilities.IsValidCombatLogEventType(
-							bossDungeonEncounterID,
-							spellID,
-							assignment.combatLogEventType
-						)
-						if not valid and validType then
-							assignment--[[@as CombatLogEventAssignment]].combatLogEventType = validType
-						end
-					else
-						local newSpellCount, newMinTime = FindNearestSpellCount(
-							assignment.time,
-							bossDungeonEncounterID,
-							assignment.combatLogEventType,
-							assignment.combatLogEventSpellID,
-							spellCount,
-							spellID,
-							true
-						)
-						if newSpellCount and newMinTime then
-							assignment--[[@as CombatLogEventAssignment]].time = newMinTime
-							assignment--[[@as CombatLogEventAssignment]].spellCount = newSpellCount
-							assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID = spellID
-						end
-					end
+					utilities.ChangeAssignmentCombatLogEventSpellID(
+						assignment --[[@as CombatLogEventAssignment]],
+						dungeonEncounterID,
+						spellID
+					)
 				end
 				updateFields = true
 			end
@@ -558,9 +486,10 @@ do -- Assignment Editor
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				local spellCount = tonumber(value)
 				if spellCount then
-					local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-					if IsValidSpellCount(GetCurrentBossDungeonEncounterID(), spellID, spellCount) then
-						assignment--[[@as CombatLogEventAssignment]].spellCount = spellCount
+					local spellID = assignment.combatLogEventSpellID
+					if IsValidSpellCount(dungeonEncounterID, spellID, spellCount) then
+						assignment.spellCount = spellCount
+						UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], dungeonEncounterID)
 					end
 				end
 				updateFields = true
@@ -650,11 +579,15 @@ do -- Assignment Editor
 
 		if updateFields or updatePreviewText then
 			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-			local allowedCombatLogEventTypes = nil
-			local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+			local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
+			local combatLogEventSpellID = assignment.combatLogEventSpellID
+			local boss = GetBoss(dungeonEncounterID)
+			if boss and boss.hasBossDeath then
+				tinsert(allowedCombatLogEventTypes, "UD")
+			end
 			if combatLogEventSpellID then
-				local ability = bossUtilities.FindBossAbility(GetCurrentBossDungeonEncounterID(), combatLogEventSpellID)
-				if ability and ability.allowedCombatLogEventTypes then
+				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
+				if ability then
 					allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
 				end
 			end
@@ -668,30 +601,25 @@ do -- Assignment Editor
 		if timeline then
 			for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 				if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-					UpdateTimelineAssignmentStartTime(timelineAssignment, GetCurrentBossDungeonEncounterID())
+					UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
 					break
 				end
 			end
 			timeline:UpdateTimeline()
 			timeline:ClearSelectedBossAbilities()
-			if
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-				and assignment--[[@as CombatLogEventAssignment]].spellCount
-			then
-				timeline:SelectBossAbility(
-					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-					assignment--[[@as CombatLogEventAssignment]].spellCount,
-					true
-				)
+			if assignment.combatLogEventSpellID and assignment.spellCount then
+				timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
 			end
 		end
 		if updateAssignments then
-			UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+			UpdateAllAssignments(false, dungeonEncounterID)
 			if timeline then
 				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
 			end
 		end
 	end
+
+	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 
 	---@return EPAssignmentEditor
 	function Create.AssignmentEditor()
@@ -741,12 +669,8 @@ do -- Assignment Editor
 		local dropdownItems = {}
 		local boss = GetCurrentBoss()
 		if boss then
-			for _, ID in pairs(boss.sortedAbilityIDs) do
-				local spellInfo = GetSpellInfo(ID)
-				if spellInfo then
-					local iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
-					tinsert(dropdownItems, { itemValue = ID, text = iconText })
-				end
+			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
+				tinsert(dropdownItems, CreateAbilityDropdownItemData(boss, abilityID))
 			end
 		end
 		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
@@ -1118,11 +1042,15 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			Private.assignmentEditor = Create.AssignmentEditor()
 		end
 		local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-		local allowedCombatLogEventTypes = nil
-		local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+		local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
+		local boss = GetBoss(GetCurrentBossDungeonEncounterID())
+		if boss and boss.hasBossDeath then
+			tinsert(allowedCombatLogEventTypes, "UD")
+		end
+		local combatLogEventSpellID = assignment.combatLogEventSpellID
 		if combatLogEventSpellID then
 			local ability = bossUtilities.FindBossAbility(GetCurrentBossDungeonEncounterID(), combatLogEventSpellID)
-			if ability and ability.allowedCombatLogEventTypes then
+			if ability then
 				allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
 			end
 		end
@@ -1137,15 +1065,8 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			timeline:ClearSelectedAssignments()
 			timeline:ClearSelectedBossAbilities()
 			timeline:SelectAssignment(uniqueID, true)
-			if
-				assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-				and assignment--[[@as CombatLogEventAssignment]].spellCount
-			then
-				timeline:SelectBossAbility(
-					assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID,
-					assignment--[[@as CombatLogEventAssignment]].spellCount,
-					true
-				)
+			if assignment.combatLogEventSpellID and assignment.spellCount then
+				timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
 			end
 		end
 	end

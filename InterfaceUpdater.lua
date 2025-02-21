@@ -283,12 +283,18 @@ do
 					local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 					if assignment then
 						local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-						local allowedCombatLogEventTypes = nil
+						local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
+						if bossDungeonEncounterID then
+							local boss = Private.bossUtilities.GetBoss(bossDungeonEncounterID)
+							if boss and boss.hasBossDeath then
+								tinsert(allowedCombatLogEventTypes, "UD")
+							end
+						end
 						local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 						if combatLogEventSpellID then
 							local ability =
 								Private.bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
-							if ability and ability.allowedCombatLogEventTypes then
+							if ability then
 								allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
 							end
 						end
