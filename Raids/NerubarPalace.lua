@@ -20,7 +20,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 	instanceID = 2657,
 	bosses = {
 		Boss:New({ -- Ulgrax the Devourer
-			bossID = 215657,
+			bossIDs = { 215657 },
 			journalEncounterID = 2607,
 			dungeonEncounterID = 2902,
 			instanceID = 2657,
@@ -126,7 +126,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- The Bloodbound Horror
-			bossID = 214502,
+			bossIDs = { 214502 },
 			journalEncounterID = 2611,
 			dungeonEncounterID = 2917,
 			instanceID = 2657,
@@ -217,7 +217,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Sikran, Captain of the Sureki
-			bossID = 214503,
+			bossIDs = { 214503 },
 			journalEncounterID = 2599,
 			dungeonEncounterID = 2898,
 			instanceID = 2657,
@@ -328,7 +328,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Rasha'nan
-			bossID = 214504,
+			bossIDs = { 214504 },
 			journalEncounterID = 2609,
 			dungeonEncounterID = 2918,
 			instanceID = 2657,
@@ -495,7 +495,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			treatAsSinglePhase = true,
 		}),
 		Boss:New({ -- Broodtwister Ovi'nax
-			bossID = 214506,
+			bossIDs = { 214506 },
 			journalEncounterID = 2612,
 			dungeonEncounterID = 2919,
 			instanceID = 2657,
@@ -564,7 +564,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Nexus-Princess Ky'veza
-			bossID = 217748,
+			bossIDs = { 217748 },
 			journalEncounterID = 2601,
 			dungeonEncounterID = 2920,
 			instanceID = 2657,
@@ -641,7 +641,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- The Silken Court
-			bossID = { 217489, 217491 },
+			bossIDs = { 217489, 217491 },
 			journalEncounterID = 2608,
 			dungeonEncounterID = 2921,
 			instanceID = 2657,
@@ -874,7 +874,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Queen Ansurek
-			bossID = 218370,
+			bossIDs = { 218370 },
 			journalEncounterID = 2602,
 			dungeonEncounterID = 2922,
 			instanceID = 2657,

@@ -28,7 +28,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Kyrioss
-			bossID = { 209230 },
+			bossIDs = { 209230 },
 			journalEncounterID = 2566,
 			dungeonEncounterID = 2816,
 			instanceID = 2648,
@@ -83,7 +83,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Stormguard Gorren
-			bossID = { 207205 },
+			bossIDs = { 207205 },
 			journalEncounterID = 2567,
 			dungeonEncounterID = 2861,
 			instanceID = 2648,
@@ -128,7 +128,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Voidstone Monstrosity
-			bossID = { 207207 },
+			bossIDs = { 207207 },
 			journalEncounterID = 2568,
 			dungeonEncounterID = 2836,
 			instanceID = 2648,

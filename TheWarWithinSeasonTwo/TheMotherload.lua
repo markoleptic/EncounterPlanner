@@ -27,7 +27,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Crowd Pummeler
-			bossID = { 129214 },
+			bossIDs = { 129214 },
 			journalEncounterID = 2109,
 			dungeonEncounterID = 2105,
 			instanceID = 1594,
@@ -101,7 +101,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Azerokk
-			bossID = {
+			bossIDs = {
 				129227, -- Azerokk
 				129802, -- Earthrager
 			},
@@ -159,7 +159,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Rixxa Fluxflame
-			bossID = { 129231 },
+			bossIDs = { 129231 },
 			journalEncounterID = 2115,
 			dungeonEncounterID = 2107,
 			instanceID = 1594,
@@ -214,7 +214,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Mogul Razdunk
-			bossID = { 129232 },
+			bossIDs = { 129232 },
 			journalEncounterID = 2116,
 			dungeonEncounterID = 2108,
 			instanceID = 1594,

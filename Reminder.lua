@@ -61,12 +61,14 @@ local combatLogEventMap = {
 	["SCS"] = "SPELL_CAST_START",
 	["SAA"] = "SPELL_AURA_APPLIED",
 	["SAR"] = "SPELL_AURA_REMOVED",
+	["UD"] = "UNIT_DIED",
 }
 ---@alias FullCombatLogEventType
 ---| "SPELL_AURA_APPLIED"
 ---| "SPELL_AURA_REMOVED"
 ---| "SPELL_CAST_START"
 ---| "SPELL_CAST_SUCCESS"
+---| "UNIT_DIED"
 
 ---@class CombatLogEventAssignmentData
 ---@field preferences ReminderPreferences
@@ -604,7 +606,7 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 end
 
 -- Creates an empty table entry so that a CombatLogEventAssignment can be inserted into it.
----@param combatLogEventType "SPELL_AURA_APPLIED"|"SPELL_AURA_REMOVED"|"SPELL_CAST_START"|"SPELL_CAST_SUCCESS"
+---@param combatLogEventType FullCombatLogEventType
 ---@param spellID integer
 ---@param spellCount integer
 local function CreateSpellCountEntry(combatLogEventType, spellID, spellCount)

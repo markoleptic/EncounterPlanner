@@ -21,7 +21,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Ol' Waxbeard
-			bossID = {
+			bossIDs = {
 				210149, -- Ol' Waxbeard (boss)
 				210153, -- Ol' Waxbeard (mount)
 			},
@@ -79,7 +79,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Blazikon
-			bossID = { 208743 },
+			bossIDs = { 208743 },
 			journalEncounterID = 2559,
 			dungeonEncounterID = 2826,
 			instanceID = 2651,
@@ -144,7 +144,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- The Candle King
-			bossID = { 208745 },
+			bossIDs = { 208745 },
 			journalEncounterID = 2560,
 			dungeonEncounterID = 2787,
 			instanceID = 2651,
@@ -199,7 +199,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- The Darkness
-			bossID = {
+			bossIDs = {
 				212777, -- Massive Candle
 				208747, -- The Darkness
 			},

@@ -25,7 +25,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 	instanceID = 2769,
 	bosses = {
 		Boss:New({ -- Vexie and the Geargrinders
-			bossID = {
+			bossIDs = {
 				225821, -- The Geargrinder
 			},
 			journalEncounterID = 2639,
@@ -168,7 +168,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Cauldron of Carnage
-			bossID = {
+			bossIDs = {
 				229181, -- Flarendo
 				229177, -- Torque
 			},
@@ -338,7 +338,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Rik Reverb
-			bossID = {
+			bossIDss = {
 				228648, -- Rik
 			},
 			journalEncounterID = 2641,
@@ -474,7 +474,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Stix Bunkjunker  -- TODO: Nothing confirmed
-			bossID = {
+			bossIDss = {
 				230322, -- Stix
 			},
 			journalEncounterID = 2642,
@@ -549,7 +549,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Sprocketmonger Lockenstock
-			bossID = {
+			bossIDs = {
 				230583, -- Sprocketmonger
 			},
 			journalEncounterID = 2653,
@@ -706,7 +706,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- The One-Armed Bandit
-			bossID = {
+			bossIDs = {
 				228458, -- Bandit
 			},
 			journalEncounterID = 2644,
@@ -897,7 +897,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Mug'Zee, Heads of Security
-			bossID = {
+			bossIDs = {
 				229953, -- Mug'Zee
 			},
 			journalEncounterID = 2645,
@@ -1155,7 +1155,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Chrome King Gallywix -- TODO: Completely made up timings
-			bossID = {
+			bossIDs = {
 				237194, -- Gallywix
 			},
 			journalEncounterID = 2646,

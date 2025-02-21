@@ -29,7 +29,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Tussle Tonks
-			bossID = {
+			bossIDs = {
 				144244, -- The Platinum Pummeler
 				145185, -- Gnomercy 4.U.
 			},
@@ -116,7 +116,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- K.U.-J.0.
-			bossID = { 144246 },
+			bossIDs = { 144246 },
 			journalEncounterID = 2339,
 			dungeonEncounterID = 2258,
 			instanceID = 2097,
@@ -170,7 +170,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Machinist's Garden
-			bossID = { 144248 },
+			bossIDs = { 144248 },
 			journalEncounterID = 2348,
 			dungeonEncounterID = 2259,
 			instanceID = 2097,
@@ -214,7 +214,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- King Mechagon
-			bossID = { 150396, 150397, 144249 },
+			bossIDs = { 150396, 150397, 144249 },
 			journalEncounterID = 2331,
 			dungeonEncounterID = 2260,
 			instanceID = 2097,

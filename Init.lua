@@ -21,6 +21,7 @@ Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
 ---| "SCS" SPELL_CAST_START
 ---| "SAA" SPELL_AURA_APPLIED
 ---| "SAR" SPELL_AURA_REMOVED
+---| "UD" UNIT_DIED
 
 ---@alias AssignmentType
 ---| "CombatLogEventAssignment"
@@ -205,7 +206,9 @@ Private.classes.DungeonInstance = {
 -- A raid or dungeon boss containing abilities, phases, etc.
 ---@class Boss
 ---@field name string Name of the boss.
----@field bossID table<integer,integer> ID of the boss or bosses.
+---@field bossIDs table<integer, integer> ID of the boss or bosses.
+---@field journalEncounterCreatureIDsToBossIDs table<integer, integer> Maps journal encounter creature IDs to boss Npc IDs.
+---@field bossNames table<integer, string> Maps boss Npc IDs to individual boss names.
 ---@field journalEncounterID integer Journal encounter ID of the boss encounter.
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter.
 ---@field instanceID number The instance ID for the zone the boss is located in.
@@ -215,9 +218,13 @@ Private.classes.DungeonInstance = {
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.
 ---@field icon integer Icon image from EJ_GetCreatureInfo.
+---@field preferredCombatLogEventAbilities table<integer, integer> Preferred abilities to use for each boss phase.
+---@field hasBossDeath boolean|nil If specified, at least one ability corresponds to a boss death.
 Private.classes.Boss = {
 	name = "",
-	bossID = {},
+	bossIDs = {},
+	journalEncounterCreatureIDsToBossIDs = {},
+	bossNames = {},
 	journalEncounterID = 0,
 	dungeonEncounterID = 0,
 	instanceID = 0,
@@ -227,6 +234,7 @@ Private.classes.Boss = {
 	abilityInstances = {},
 	treatAsSinglePhase = nil,
 	icon = 0,
+	preferredCombatLogEventAbilities = {},
 }
 
 -- A stage/phase in a boss encounter.
@@ -255,13 +263,18 @@ Private.classes.BossPhase = {
 ---@field eventTriggers table<SpellIDIndex, EventTrigger>|nil Other boss abilities that trigger the ability.
 ---@field duration number Usually how long the ability effect lasts.
 ---@field castTime number The actual cast time of the ability.
----@field allowedCombatLogEventTypes table<integer, CombatLogEventType>|nil If defined, restrict creating combat log event assignments to only these types.
+---@field allowedCombatLogEventTypes table<integer, CombatLogEventType> Restrict creating combat log event assignments to only these types.
+---@field additionalContext string Additional context to append to boss ability names.
+---@field onlyRelevantForTanks boolean|nil If true, is a tank buster or similar.
+---@field bossNpcID integer|nil If defined, the ability represents a boss's death with the given npc ID.
 Private.classes.BossAbility = {
 	phases = {},
 	eventTriggers = nil,
 	duration = 0.0,
 	castTime = 0.0,
-	allowedCombatLogEventTypes = nil,
+	allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
+	additionalContext = "",
+	bossNpcID = nil,
 }
 
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.

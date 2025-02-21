@@ -34,7 +34,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- An Affront of Challengers
-			bossID = {
+			bossIDs = {
 				164451, -- Dessia the Decapitator
 				164463, -- Paceran the Virulent
 				164461, -- Sathel the Accursed
@@ -113,7 +113,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Gorechop
-			bossID = { 162317 },
+			bossIDs = { 162317 },
 			journalEncounterID = 2401,
 			dungeonEncounterID = 2365,
 			instanceID = 2293,
@@ -158,7 +158,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Xav the Unfallen
-			bossID = { 162329 },
+			bossIDs = { 162329 },
 			journalEncounterID = 2390,
 			dungeonEncounterID = 2366,
 			instanceID = 2293,
@@ -243,7 +243,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Kul'tharok
-			bossID = { 162309 },
+			bossIDs = { 162309 },
 			journalEncounterID = 2389,
 			dungeonEncounterID = 2364,
 			instanceID = 2293,
@@ -298,7 +298,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Mordretha
-			bossID = { 165946 },
+			bossIDs = { 165946 },
 			journalEncounterID = 2417,
 			dungeonEncounterID = 2404,
 			instanceID = 2293,

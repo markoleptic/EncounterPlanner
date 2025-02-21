@@ -26,7 +26,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Big M.O.M.M.A.
-			bossID = { 226398 },
+			bossIDs = { 226398 },
 			journalEncounterID = 2648,
 			dungeonEncounterID = 3020,
 			instanceID = 2773,
@@ -94,13 +94,18 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Demolition Duo
-			bossID = {
-				226403, -- Keeza Quickfuse
-				226402, -- Bront
+			bossIDs = {
+				226402, -- Keeza Quickfuse
+				226403, -- Bront
+			},
+			journalEncounterCreatureIDsToBossIDs = {
+				[5752] = 226402, -- Keeza Quickfuse
+				[5753] = 226403, -- Bront
 			},
 			journalEncounterID = 2649,
 			dungeonEncounterID = 3019,
 			instanceID = 2773,
+			hasBossDeath = true,
 			abilities = {
 				[459799] = BossAbility:New({ -- Wallop
 					phases = {
@@ -152,6 +157,17 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 				}),
+				[-1] = BossAbility:New({ -- Bront or Keeza Quickfuse Died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 226403,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
 			},
 			-- TODO: Add option for phase 2 when one of the bosses dies
 			phases = {
@@ -163,7 +179,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Swampface
-			bossID = { 226396 },
+			bossIDs = { 226396 },
 			journalEncounterID = 2650,
 			dungeonEncounterID = 3053,
 			instanceID = 2773,
@@ -218,7 +234,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Geezle Gigazap
-			bossID = { 226404 },
+			bossIDs = { 226404 },
 			journalEncounterID = 2651,
 			dungeonEncounterID = 3054,
 			instanceID = 2773,

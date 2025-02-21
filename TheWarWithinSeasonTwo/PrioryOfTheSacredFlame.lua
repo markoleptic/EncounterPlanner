@@ -21,7 +21,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Captain Dailcry
-			bossID = { 207946 },
+			bossIDs = { 207946 },
 			journalEncounterID = 2571,
 			dungeonEncounterID = 2847,
 			instanceID = 2649,
@@ -75,7 +75,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Baron Braunpyke
-			bossID = { 207939 },
+			bossIDs = { 207939 },
 			journalEncounterID = 2570,
 			dungeonEncounterID = 2835,
 			instanceID = 2649,
@@ -162,7 +162,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Prioress Murrpray
-			bossID = { 207940 },
+			bossIDs = { 207940 },
 			journalEncounterID = 2573,
 			dungeonEncounterID = 2848,
 			instanceID = 2649,

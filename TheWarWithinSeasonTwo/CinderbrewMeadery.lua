@@ -21,7 +21,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 	customGroup = "TheWarWithinSeasonTwo",
 	bosses = {
 		Boss:New({ -- Brew Master Aldryr
-			bossID = { 210271 },
+			bossIDs = { 210271 },
 			journalEncounterID = 2586,
 			dungeonEncounterID = 2900,
 			instanceID = 2661,
@@ -103,7 +103,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- I'pa
-			bossID = { 210267 },
+			bossIDs = { 210267 },
 			journalEncounterID = 2587,
 			dungeonEncounterID = 2929,
 			instanceID = 2661,
@@ -152,7 +152,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Benk Buzzbee
-			bossID = { 218002 },
+			bossIDs = { 218002 },
 			journalEncounterID = 2588,
 			dungeonEncounterID = 2931,
 			instanceID = 2661,
@@ -196,7 +196,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 			},
 		}),
 		Boss:New({ -- Goldie Baronbottom
-			bossID = { 214661 },
+			bossIDs = { 214661 },
 			journalEncounterID = 2589,
 			dungeonEncounterID = 2930,
 			instanceID = 2661,
