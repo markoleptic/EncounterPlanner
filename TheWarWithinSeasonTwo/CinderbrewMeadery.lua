@@ -25,10 +25,15 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 			journalEncounterID = 2586,
 			dungeonEncounterID = 2900,
 			instanceID = 2661,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 442525, combatLogEventType = "SCC" },
+				[3] = { combatLogEventSpellID = 442525, combatLogEventType = "SAR" },
+			},
 			abilities = {
-				[442525] = BossAbility:New({ -- Happy Hour
+				[442525] = BossAbility:New({ -- Happy Hour (33% and 66% health)
 					phases = {
-						[2] = BossAbilityPhase:New({
+						[2] = BossAbilityPhase:New({ -- Not a true phase
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
@@ -36,68 +41,81 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 20.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[432198] = BossAbility:New({ -- Blazing Belch
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 14.4 },
+							castTimes = { 13.4 },
+							repeatInterval = { 23.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 17.6, 23.1 },
+							castTimes = { 17.4 },
+							repeatInterval = { 23.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[432179] = BossAbility:New({ -- Throw Cinderbrew
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.0 },
+							castTimes = { 9.8 },
+							repeatInterval = { 18.2 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 14.0, 18.2 },
+							castTimes = { 13.8 },
+							repeatInterval = { 18.2 },
 						}),
 					},
+					durationHurts = true,
+					durationIsPlayerDebuff = true,
 					duration = 9.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[432229] = BossAbility:New({ -- Keg Smash
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 5.1 },
+							castTimes = { 4.9 },
+							repeatInterval = { 14.5 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 9.1, 14.5, 14.5 },
+							castTimes = { 8.9 },
+							repeatInterval = { 14.5 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 27.8,
-					defaultDuration = 27.8,
+					duration = 60.0,
+					defaultDuration = 60.0,
 					count = 1,
 					defaultCount = 1,
-					fixedDuration = true,
+					fixedCount = true,
 					name = "P1",
 				}),
 				[2] = BossPhase:New({
 					duration = 20.0,
 					defaultDuration = 20.0,
-					count = 3,
-					defaultCount = 3,
+					count = 2,
+					defaultCount = 2,
 					repeatAfter = 3,
+					fixedCount = true,
 					name = "P2",
 				}),
-				[3] = BossPhase:New({ -- TODO: Scuffed
-					duration = 50.9,
-					defaultDuration = 50.9,
-					count = 3,
-					defaultCount = 3,
+				[3] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 2,
+					defaultCount = 2,
 					repeatAfter = 2,
-					fixedDuration = true,
+					fixedCount = true,
 					name = "P1",
 				}),
 			},
@@ -111,37 +129,39 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 				[439365] = BossAbility:New({ -- Spouting Stout
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.6 },
+							castTimes = { 11.1 },
 							repeatInterval = 47.3,
 						}),
 					},
+					durationIsChannel = true,
+					durationHurts = true,
 					duration = 8.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[439202] = BossAbility:New({ -- Burning Fermentation
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 35.0 },
+							castTimes = { 35.4 },
 							repeatInterval = 47.3,
 						}),
 					},
+					durationHurts = true,
+					durationIsPlayerDebuff = true,
 					duration = 16.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[439031] = BossAbility:New({ -- Bottoms Uppercut
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 26.3 },
+							castTimes = { 26.9 },
 							repeatInterval = 47.3,
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
-				}),
-				[440147] = BossAbility:New({ -- Fill 'Er Up
-					phases = {},
-					duration = 0.0,
-					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 			},
 			phases = {
@@ -166,26 +186,33 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[440134] = BossAbility:New({ -- Honey Marinade
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 10.0 },
-							repeatInterval = 14.0,
+							repeatInterval = 16.0,
 						}),
 					},
+					durationHurts = true,
+					durationIsPlayerDebuff = true,
 					duration = 5.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[439524] = BossAbility:New({ -- Fluttering Wing
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 22.0 },
-							repeatInterval = 23.0,
+							repeatInterval = 25.0,
 						}),
 					},
+					durationHurts = true,
+					durationIsBossBuff = true,
 					duration = 2.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 			},
 			phases = {
@@ -210,6 +237,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[435622] = BossAbility:New({ -- Let It Hail!
 					phases = {
@@ -218,10 +246,13 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 							repeatInterval = 55.8,
 						}),
 					},
+					durationHurts = true,
+					durationIsPlayerDebuff = true,
 					duration = 5.0,
 					castTime = 4.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[436644] = BossAbility:New({ -- Burning Ricochet
+				[436637] = BossAbility:New({ -- Burning Ricochet
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 16.6 },
@@ -230,6 +261,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 4.0,
 					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[436592] = BossAbility:New({ -- Cash Cannon
 					phases = {
@@ -240,6 +272,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 			},
 			phases = {
