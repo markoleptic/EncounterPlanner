@@ -386,3 +386,5 @@ L["Spell Aura Applied"] = true
 L["Spell Aura Removed"] = true
 L["Unit Died"] = true
 L["Death"] = true
+L["Animation"] = true
+L["Whether to show a bounce animation when the message first appears."] = true

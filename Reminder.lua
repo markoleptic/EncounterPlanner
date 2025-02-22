@@ -373,6 +373,7 @@ local function CreateMessage(preferences, text, duration, icon)
 	message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
 	message:SetAlpha(preferences.alpha)
 	message:SetTextColor(unpack(preferences.textColor))
+	message:SetShowAnimation(preferences.showAnimation)
 	if duration then
 		message:SetDuration(duration)
 	end
@@ -398,19 +399,26 @@ end
 ---@param widget EPReminderMessage|EPProgressBar
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
-local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex)
+---@param isProgressBar boolean
+local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex, isProgressBar)
 	local uniqueID = GenerateUniqueID()
 
 	widget:SetCallback("Completed", function()
 		if hideWidgetIfCasted[spellID] then
 			hideWidgetIfCasted[spellID][uniqueID] = nil
 		end
-		if hideWidgetIfPhased[bossPhaseOrderIndex] then
-			hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = nil
+		-- if hideWidgetIfPhased[bossPhaseOrderIndex] then
+		-- 	hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = nil
+		-- end
+		if isProgressBar then
+			tinsert(operationQueue, function()
+				Private.progressBarContainer:RemoveChildNoDoLayout(widget)
+			end)
+		else
+			tinsert(operationQueue, function()
+				Private.messageContainer:RemoveChildNoDoLayout(widget)
+			end)
 		end
-		tinsert(operationQueue, function()
-			Private.progressBarContainer:RemoveChildNoDoLayout(widget)
-		end)
 	end)
 
 	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
@@ -418,10 +426,10 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 		hideWidgetIfCasted[spellID][uniqueID] = widget
 	end
 
-	if hideIfAlreadyPhased and bossPhaseOrderIndex then
-		hideWidgetIfPhased[bossPhaseOrderIndex] = hideWidgetIfPhased[bossPhaseOrderIndex] or {}
-		hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = widget
-	end
+	-- if hideIfAlreadyPhased and bossPhaseOrderIndex then
+	-- 	hideWidgetIfPhased[bossPhaseOrderIndex] = hideWidgetIfPhased[bossPhaseOrderIndex] or {}
+	-- 	hideWidgetIfPhased[bossPhaseOrderIndex][uniqueID] = widget
+	-- end
 end
 
 -- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
@@ -435,7 +443,7 @@ local function AddProgressBar(assignment, duration, reminderText, progressBarPre
 		local spellID = assignment.spellInfo.spellID
 		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 		local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
-		CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex)
+		CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
 		Private.progressBarContainer:AddChildNoDoLayout(progressBar)
 		progressBar:Start()
 	end)
@@ -452,7 +460,7 @@ local function AddMessage(assignment, duration, reminderText, messagePreferences
 		local spellID = assignment.spellInfo.spellID
 		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 		local message = CreateMessage(messagePreferences, reminderText, duration, icon)
-		CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex)
+		CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
 		Private.messageContainer:AddChildNoDoLayout(message)
 		if duration then
 			message:Start(true)

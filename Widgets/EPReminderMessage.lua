@@ -297,10 +297,12 @@ local function Start(self, showCountdown)
 	local _, minSize, _ = self.text:GetFont()
 	local maxSize = minSize + 10
 	local minIconSize = self.icon:GetWidth()
-	self.textAnimationGroup:SetScript("OnUpdate", function(_, elapsed)
-		totalElapsed = totalElapsed + elapsed
-		BounceAnimation(self, totalElapsed, minSize, maxSize, 10, minIconSize)
-	end)
+	if self.showAnimation then
+		self.textAnimationGroup:SetScript("OnUpdate", function(_, elapsed)
+			totalElapsed = totalElapsed + elapsed
+			BounceAnimation(self, totalElapsed, minSize, maxSize, 10, minIconSize)
+		end)
+	end
 
 	if not showCountdown then
 		self.textFade:SetStartDelay(defaultDisplayTime)
@@ -342,7 +344,7 @@ local function Start(self, showCountdown)
 		self.duration:SetFormattedText(fallbackFormat, time)
 	end
 
-	local iterations = ceil(time / timerTickRate) + 1
+	local iterations = ceil(time / timerTickRate) + 10
 	self.durationTicker = NewTicker(timerTickRate, function()
 		TextUpdate(self)
 	end, iterations)
@@ -366,7 +368,7 @@ local function Resume(self)
 		local time = GetTime()
 		if self.expirationTime > 0 then
 			self.expirationTime = time + self.remaining
-			local iterations = ceil(self.remaining / timerTickRate) + 1
+			local iterations = ceil(self.remaining / timerTickRate) + 10
 			self.durationTicker = NewTicker(timerTickRate, function()
 				TextUpdate(self)
 			end, iterations)
@@ -428,6 +430,12 @@ local function SetAnchorMode(self, anchorMode)
 	end
 end
 
+---@param self EPReminderMessage
+---@param show boolean
+local function SetShowAnimation(self, show)
+	self.showAnimation = show
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -475,6 +483,7 @@ local function Constructor()
 		Pause = Pause,
 		Resume = Resume,
 		SetTextColor = SetTextColor,
+		SetShowAnimation = SetShowAnimation,
 		SetAlpha = SetAlpha,
 		frame = frame,
 		type = Type,
@@ -491,6 +500,7 @@ local function Constructor()
 		iconFade = iconFade,
 		textAnimationGroup = textAnimationGroup,
 		iconAnimationGroup = iconAnimationGroup,
+		showAnimation = true,
 	}
 
 	textAnimationGroup:SetScript("OnFinished", function()

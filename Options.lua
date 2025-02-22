@@ -239,6 +239,7 @@ local function CreateMessageAnchor()
 		messageAnchor:SetIcon([[Interface\Icons\INV_MISC_QUESTIONMARK]])
 		messageAnchor:SetAlpha(preferences.alpha)
 		messageAnchor:SetTextColor(unpack(preferences.textColor))
+		messageAnchor:SetShowAnimation(preferences.showAnimation)
 	end
 
 	messageAnchor:SetCallback("OnRelease", function()
@@ -694,6 +695,36 @@ do
 							end
 						end
 						preferences.showOnlyAtExpiration = false
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Animation"],
+				type = "checkBox",
+				description = L["Whether to show a bounce animation when the message first appears."],
+				category = L["Messages"],
+				get = function()
+					return GetMessagePreferences().showAnimation
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetMessagePreferences()
+						if key ~= preferences.showAnimation then
+							if Private.messageAnchor.frame:IsShown() then
+								Private.messageAnchor:Pause()
+								Private.messageAnchor:SetFont(
+									preferences.font,
+									preferences.fontSize,
+									preferences.fontOutline
+								)
+								Private.messageAnchor:SetShowAnimation(key)
+								Private.messageAnchor:Start(not preferences.showOnlyAtExpiration)
+							else
+								Private.messageAnchor:SetShowAnimation(key)
+							end
+						end
+						preferences.showAnimation = key
 					end
 				end,
 				enabled = enableMessageOption,
