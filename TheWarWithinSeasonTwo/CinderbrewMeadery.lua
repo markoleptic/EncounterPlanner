@@ -89,6 +89,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					onlyRelevantForTanks = true,
 				}),
 			},
 			phases = {
@@ -133,7 +134,6 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 							repeatInterval = 47.3,
 						}),
 					},
-					durationIsChannel = true,
 					durationHurts = true,
 					duration = 8.0,
 					castTime = 2.0,
@@ -162,6 +162,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					onlyRelevantForTanks = true,
 				}),
 			},
 			phases = {
