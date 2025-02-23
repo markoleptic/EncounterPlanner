@@ -296,7 +296,7 @@ do -- Profile updating and refreshing
 	function AddOn:Refresh(_, db, newProfile)
 		self.UpdateProfile(db.profile)
 		LDBIcon:Refresh(AddOnName, db.profile.preferences.minimap)
-		Private.callbackHandler:Fire("ProfileRefreshed")
+		Private.callbacks:Fire("ProfileRefreshed")
 		interfaceUpdater.RemoveMessageBoxes(false)
 		if Private.mainFrame then
 			local bossDungeonEncounterID = 2902

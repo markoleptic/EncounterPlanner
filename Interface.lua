@@ -1483,7 +1483,8 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 	Private.mainFrame.planDropdown:SetEnabled(not isSimulatingBoss)
 end
 
-local function HandleSimulationCompleted(simulateRemindersButton)
+local simulationCompletedObject = {}
+function simulationCompletedObject.HandleSimulationCompleted(simulateRemindersButton)
 	simulateRemindersButton:SetText(L["Simulate Reminders"])
 	local timeline = Private.mainFrame.timeline
 	if timeline then
@@ -1623,7 +1624,7 @@ local function CloseDialogs()
 end
 
 local function HandleMainFrameReleased()
-	Private.callbackTarget.UnregisterCallback(Private, "SimulationCompleted")
+	Private.UnregisterCallback(simulationCompletedObject, "SimulationCompleted")
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
@@ -1840,9 +1841,7 @@ function Private:CreateInterface()
 	simulateRemindersButton:SetWidth(width)
 	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
 
-	Private.callbackTarget.RegisterCallback(self, "SimulationCompleted", function()
-		HandleSimulationCompleted(simulateRemindersButton)
-	end)
+	Private.RegisterCallback(simulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
 
 	local sendPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
 	sendPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")

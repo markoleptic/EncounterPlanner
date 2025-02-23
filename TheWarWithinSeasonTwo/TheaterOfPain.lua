@@ -465,7 +465,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					duration = 5.0,
 					castTime = 3.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					-- TODO: Needs tiny buffer for both SCS and SCC, 4 casts each time at same time
+					buffer = 0.2,
 				}),
 				[339550] = BossAbility:New({ -- Echo of Battle
 					phases = {
@@ -477,7 +477,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					-- TODO: Needs 1-2 sec buffer for both SCS and SCC, 6 casts in quick succession
+					buffer = 2.0,
 				}),
 			},
 			phases = {

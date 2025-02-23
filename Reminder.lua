@@ -83,8 +83,6 @@ local simulationTimer = nil
 ---@type table<string,FunctionContainer>
 local timers = {} -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
 
----@type table<integer, integer> -- [Ordered boss phase index -> boss phase index]
-local orderedBossPhaseTable = {}
 ---@type table<FullCombatLogEventType, table<integer, integer>> -- FullCombatLogEventType -> SpellID -> Count \
 local spellCounts = {} -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events.
 ---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
@@ -94,26 +92,33 @@ local combatLogEventReminders = {} -- Table of active reminders for responding t
 local cancelTimerIfCasted = {}
 ---@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Spell ID -> Timer ID -> Widget
 local hideWidgetIfCasted = {}
-
----@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
-local cancelTimerIfPhased = {}
----@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Ordered boss phase index -> Timer ID -> Widget
-local hideWidgetIfPhased = {}
-
 ---@type table<integer, table<string, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
 local stopGlowIfCasted = {}
----@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
-local stopGlowIfPhased = {}
+
 ---@type table<integer, Frame> -- [Frame]
 local noSpellIDGlowFrames = {}
 ---@type table<string, FunctionContainer> -- All timers used to glow frames [timers]
 local frameGlowTimers = {}
 
-local currentEstimatedPhaseNumber = 1
-local currentEstimatedOrderedBossPhaseIndex = 1
-local phaseStartSpells, phaseEndSpells, phaseLimitedSpells = {}, {}, {}
+---@type table<integer, number> -- Buffers to use to prevent successive combat log events from retriggering.
+local buffers = {}
+---@type table<integer, boolean> -- Active buffers preventing successive combat log events from retriggering.
+local activeBuffers = {}
+
+---@type table<integer, integer> -- [Ordered boss phase index -> boss phase index]
+-- local orderedBossPhaseTable = {}
+---@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
+-- local cancelTimerIfPhased = {}
+---@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Ordered boss phase index -> Timer ID -> Widget
+-- local hideWidgetIfPhased = {}
+---@type table<integer, table<string, FunctionContainer>> -- Ordered boss phase index -> Timer ID -> Timer
+-- local stopGlowIfPhased = {}
+
+-- local currentEstimatedPhaseNumber = 1
+-- local currentEstimatedOrderedBossPhaseIndex = 1
+-- local phaseStartSpells, phaseEndSpells, phaseLimitedSpells = {}, {}, {}
+-- local hideIfAlreadyPhased = false
 local hideIfAlreadyCasted = false
-local hideIfAlreadyPhased = false
 
 local operationQueue = {} -- Queue holding pending message or progress bar operations.
 local isLocked = false -- Operation Queue lock state.
@@ -134,7 +139,7 @@ local function ResetLocalVariables()
 	end
 	wipe(timers)
 	wipe(cancelTimerIfCasted)
-	wipe(cancelTimerIfPhased)
+	-- wipe(cancelTimerIfPhased)
 
 	if simulationTimer then
 		simulationTimer:Cancel()
@@ -148,7 +153,7 @@ local function ResetLocalVariables()
 		end
 	end
 	wipe(frameGlowTimers)
-	wipe(stopGlowIfPhased)
+	-- wipe(stopGlowIfPhased)
 
 	for _, targetFrames in pairs(stopGlowIfCasted) do
 		for _, targetFrame in pairs(targetFrames) do
@@ -168,13 +173,15 @@ local function ResetLocalVariables()
 
 	wipe(operationQueue)
 	wipe(hideWidgetIfCasted)
-	wipe(hideWidgetIfPhased)
-	wipe(orderedBossPhaseTable)
-	wipe(phaseStartSpells)
-	wipe(phaseEndSpells)
-	wipe(phaseLimitedSpells)
+	-- wipe(orderedBossPhaseTable)
+	-- wipe(hideWidgetIfPhased)
+	-- wipe(phaseStartSpells)
+	-- wipe(phaseEndSpells)
+	-- wipe(phaseLimitedSpells)
 	wipe(combatLogEventReminders)
 	wipe(spellCounts)
+	wipe(buffers)
+	wipe(activeBuffers)
 
 	if Private.messageContainer then
 		Private.messageContainer:Release()
@@ -188,8 +195,8 @@ local function ResetLocalVariables()
 	isLocked = false
 	isSimulating = false
 	hideIfAlreadyCasted = false
-	currentEstimatedPhaseNumber = 1
-	currentEstimatedOrderedBossPhaseIndex = 1
+	-- currentEstimatedPhaseNumber = 1
+	-- currentEstimatedOrderedBossPhaseIndex = 1
 end
 
 ---@param ... unknown
@@ -256,49 +263,6 @@ local function HandleFrameUpdate(_, elapsed)
 	end
 	lastExecutionTime = currentTime
 	ProcessNextOperation()
-end
-
-do
-	local eventMap = {}
-	local eventFrame = CreateFrame("Frame")
-
-	eventFrame:SetScript("OnEvent", function(_, event, ...)
-		for k, v in pairs(eventMap[event]) do
-			if type(v) == "function" then
-				v(event, ...)
-			else
-				k[v](k, event, ...)
-			end
-		end
-	end)
-
-	function Private:RegisterEvent(event, func)
-		if type(event) == "string" then
-			eventMap[event] = eventMap[event] or {}
-			eventMap[event][self] = func or event
-			eventFrame:RegisterEvent(event)
-		end
-	end
-
-	function Private:UnregisterEvent(event)
-		if type(event) == "string" then
-			if eventMap[event] then
-				eventMap[event][self] = nil
-				if not next(eventMap[event]) then
-					eventFrame:UnregisterEvent(event)
-					eventMap[event] = nil
-				end
-			end
-		end
-	end
-
-	function Private:UnregisterAllEvents()
-		for k, v in pairs(eventMap) do
-			for _, j in pairs(v) do
-				j:UnregisterEvent(k)
-			end
-		end
-	end
 end
 
 -- Creates a container for adding progress bars or messages to.
@@ -478,10 +442,10 @@ end
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 local function GlowFrameAndCreateTimer(unit, frame, assignment)
 	local spellID = assignment.spellInfo.spellID
-	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-	if hideIfAlreadyPhased and bossPhaseOrderIndex then
-		stopGlowIfPhased[bossPhaseOrderIndex] = stopGlowIfPhased[bossPhaseOrderIndex] or {}
-	end
+	-- local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+	-- if hideIfAlreadyPhased and bossPhaseOrderIndex then
+	-- 	stopGlowIfPhased[bossPhaseOrderIndex] = stopGlowIfPhased[bossPhaseOrderIndex] or {}
+	-- end
 	local timer
 	if spellID > kTextAssignmentSpellID then
 		local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
@@ -491,13 +455,13 @@ local function GlowFrameAndCreateTimer(unit, frame, assignment)
 			if stopGlowIfCasted[spellID] then
 				stopGlowIfCasted[spellID][timerObject.ID] = nil
 			end
-		end, frameGlowTimers, stopGlowIfPhased[bossPhaseOrderIndex])
+		end, frameGlowTimers) --, stopGlowIfPhased[bossPhaseOrderIndex])
 		stopGlowIfCasted[spellID][timer.ID] = targetFrameObject
 	else
 		timer = CreateTimerWithCleanup(defaultNoSpellIDGlowDuration, function(timerObject)
 			LCG.PixelGlow_Stop(frame)
 			noSpellIDGlowFrames[timerObject.ID] = nil
-		end, frameGlowTimers, stopGlowIfPhased[bossPhaseOrderIndex])
+		end, frameGlowTimers) -- stopGlowIfPhased[bossPhaseOrderIndex])
 		noSpellIDGlowFrames[timer.ID] = frame
 	end
 	LCG.PixelGlow_Start(frame)
@@ -513,10 +477,10 @@ local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
 		args[#args + 1] = cancelTimerIfCasted[spellID]
 	end
 
-	if hideIfAlreadyPhased and bossPhaseOrderIndex then
-		cancelTimerIfPhased[bossPhaseOrderIndex] = cancelTimerIfPhased[bossPhaseOrderIndex] or {}
-		args[#args + 1] = cancelTimerIfPhased[bossPhaseOrderIndex]
-	end
+	-- if hideIfAlreadyPhased and bossPhaseOrderIndex then
+	-- 	cancelTimerIfPhased[bossPhaseOrderIndex] = cancelTimerIfPhased[bossPhaseOrderIndex] or {}
+	-- 	args[#args + 1] = cancelTimerIfPhased[bossPhaseOrderIndex]
+	-- end
 	return args
 end
 
@@ -675,103 +639,98 @@ local function SetupReminders(plans, preferences, startTime)
 end
 
 -- Cancels active timers and releases active widgets associated with an ordered boss phase index.
----@param orderedBossPhaseIndex integer
-local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
-	if cancelTimerIfPhased[orderedBossPhaseIndex] then
-		--@debug@
-		local removedTimerCount = #cancelTimerIfPhased[orderedBossPhaseIndex]
-		--@end-debug@
-		for _, timer in pairs(cancelTimerIfPhased[orderedBossPhaseIndex]) do
-			timer:Cancel()
-			timer.RemoveTimerRef(timer)
-		end
-		--@debug@
-		print(format("Removed %d timers from Phase %d", removedTimerCount, orderedBossPhaseIndex))
-		--@end-debug@
-		cancelTimerIfPhased[orderedBossPhaseIndex] = nil
-	end
-	if hideWidgetIfPhased[orderedBossPhaseIndex] then
-		--@debug@
-		local removedWidgetCount = #hideWidgetIfPhased[orderedBossPhaseIndex]
-		--@end-debug@
-		for _, widget in pairs(hideWidgetIfPhased[orderedBossPhaseIndex]) do
-			if widget and widget.parent then
-				widget.parent:RemoveChildNoDoLayout(widget)
-			end
-		end
-		if Private.messageContainer then
-			Private.messageContainer:DoLayout()
-		end
-		if Private.progressBarContainer then
-			Private.progressBarContainer:DoLayout()
-		end
-		--@debug@
-		print(format("Removed %d widgets from Phase %d", removedWidgetCount, orderedBossPhaseIndex))
-		--@end-debug@
-		hideWidgetIfPhased[orderedBossPhaseIndex] = nil
-	end
-	if stopGlowIfPhased[orderedBossPhaseIndex] then
-		for _, timer in pairs(stopGlowIfPhased[orderedBossPhaseIndex]) do
-			timer:Cancel()
-			timer.RemoveTimerRef(timer)
-		end
-		stopGlowIfPhased[orderedBossPhaseIndex] = nil
-	end
-end
+----@param orderedBossPhaseIndex integer
+-- local function CancelRemindersDueToPhaseUpdate(orderedBossPhaseIndex)
+-- 	if cancelTimerIfPhased[orderedBossPhaseIndex] then
+-- 		--@debug@
+-- 		local removedTimerCount = #cancelTimerIfPhased[orderedBossPhaseIndex]
+-- 		--@end-debug@
+-- 		for _, timer in pairs(cancelTimerIfPhased[orderedBossPhaseIndex]) do
+-- 			timer:Cancel()
+-- 			timer.RemoveTimerRef(timer)
+-- 		end
+-- 		--@debug@
+-- 		print(format("Removed %d timers from Phase %d", removedTimerCount, orderedBossPhaseIndex))
+-- 		--@end-debug@
+-- 		cancelTimerIfPhased[orderedBossPhaseIndex] = nil
+-- 	end
+-- 	if hideWidgetIfPhased[orderedBossPhaseIndex] then
+-- 		--@debug@
+-- 		local removedWidgetCount = #hideWidgetIfPhased[orderedBossPhaseIndex]
+-- 		--@end-debug@
+-- 		for _, widget in pairs(hideWidgetIfPhased[orderedBossPhaseIndex]) do
+-- 			if widget and widget.parent then
+-- 				widget.parent:RemoveChildNoDoLayout(widget)
+-- 			end
+-- 		end
+-- 		if Private.messageContainer then
+-- 			Private.messageContainer:DoLayout()
+-- 		end
+-- 		if Private.progressBarContainer then
+-- 			Private.progressBarContainer:DoLayout()
+-- 		end
+-- 		--@debug@
+-- 		print(format("Removed %d widgets from Phase %d", removedWidgetCount, orderedBossPhaseIndex))
+-- 		--@end-debug@
+-- 		hideWidgetIfPhased[orderedBossPhaseIndex] = nil
+-- 	end
+-- 	if stopGlowIfPhased[orderedBossPhaseIndex] then
+-- 		for _, timer in pairs(stopGlowIfPhased[orderedBossPhaseIndex]) do
+-- 			timer:Cancel()
+-- 			timer.RemoveTimerRef(timer)
+-- 		end
+-- 		stopGlowIfPhased[orderedBossPhaseIndex] = nil
+-- 	end
+-- end
 
 -- Increments the current estimated phase number by using the next entry in the ordered boss phase table.
-local function UpdatePhase()
-	--@debug@
-	local previousPhaseNumber = currentEstimatedPhaseNumber
-	--@end-debug@
-
-	if not orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex + 1] then
-		return
-	end
-
-	CancelRemindersDueToPhaseUpdate(currentEstimatedOrderedBossPhaseIndex)
-	currentEstimatedOrderedBossPhaseIndex = currentEstimatedOrderedBossPhaseIndex + 1
-	currentEstimatedPhaseNumber = orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex]
-
-	--@debug@
-	print(format("Update Phase from %d to %d", previousPhaseNumber, currentEstimatedPhaseNumber))
-	print(
-		format(
-			"Update OrderedBossPhaseIndex from %d to %d",
-			currentEstimatedOrderedBossPhaseIndex - 1,
-			currentEstimatedOrderedBossPhaseIndex
-		)
-	)
-	--@end-debug@
-end
+-- local function UpdatePhase()
+-- 	--@debug@
+-- 	local previousPhaseNumber = currentEstimatedPhaseNumber
+-- 	--@end-debug@
+-- 	if not orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex + 1] then
+-- 		return
+-- 	end
+-- 	CancelRemindersDueToPhaseUpdate(currentEstimatedOrderedBossPhaseIndex)
+-- 	currentEstimatedOrderedBossPhaseIndex = currentEstimatedOrderedBossPhaseIndex + 1
+-- 	currentEstimatedPhaseNumber = orderedBossPhaseTable[currentEstimatedOrderedBossPhaseIndex]
+-- 	--@debug@
+-- 	print(format("Update Phase from %d to %d", previousPhaseNumber, currentEstimatedPhaseNumber))
+-- 	print(
+-- 		format(
+-- 			"Update OrderedBossPhaseIndex from %d to %d",
+-- 			currentEstimatedOrderedBossPhaseIndex - 1,
+-- 			currentEstimatedOrderedBossPhaseIndex
+-- 		)
+-- 	)
+-- 	--@end-debug@
+-- end
 
 -- Searches the phaseStartSpells, phaseEndSpells, and phaseLimitedSpells to see if the phase can be updated.
----@param spellID integer
----@param subEvent string
-local function MaybeUpdatePhase(spellID, subEvent)
-	local maybeNewPhaseNumber = phaseStartSpells[spellID]
-	if maybeNewPhaseNumber and (subEvent == combatLogEventMap["SCS"] or subEvent == combatLogEventMap["SAA"]) then
-		UpdatePhase()
-		phaseStartSpells[spellID] = nil
-		return
-	end
-
-	maybeNewPhaseNumber = phaseEndSpells[spellID]
-	if maybeNewPhaseNumber and currentEstimatedPhaseNumber == maybeNewPhaseNumber then
-		if subEvent == combatLogEventMap["SCC"] or subEvent == combatLogEventMap["SAR"] then
-			UpdatePhase()
-			phaseEndSpells[spellID] = nil
-			return
-		end
-	end
-
-	maybeNewPhaseNumber = phaseLimitedSpells[spellID]
-	if maybeNewPhaseNumber and maybeNewPhaseNumber > currentEstimatedPhaseNumber then
-		UpdatePhase()
-		phaseLimitedSpells[spellID] = nil
-		return
-	end
-end
+----@param spellID integer
+----@param subEvent string
+-- local function MaybeUpdatePhase(spellID, subEvent)
+-- 	local maybeNewPhaseNumber = phaseStartSpells[spellID]
+-- 	if maybeNewPhaseNumber and (subEvent == combatLogEventMap["SCS"] or subEvent == combatLogEventMap["SAA"]) then
+-- 		UpdatePhase()
+-- 		phaseStartSpells[spellID] = nil
+-- 		return
+-- 	end
+-- 	maybeNewPhaseNumber = phaseEndSpells[spellID]
+-- 	if maybeNewPhaseNumber and currentEstimatedPhaseNumber == maybeNewPhaseNumber then
+-- 		if subEvent == combatLogEventMap["SCC"] or subEvent == combatLogEventMap["SAR"] then
+-- 			UpdatePhase()
+-- 			phaseEndSpells[spellID] = nil
+-- 			return
+-- 		end
+-- 	end
+-- 	maybeNewPhaseNumber = phaseLimitedSpells[spellID]
+-- 	if maybeNewPhaseNumber and maybeNewPhaseNumber > currentEstimatedPhaseNumber then
+-- 		UpdatePhase()
+-- 		phaseLimitedSpells[spellID] = nil
+-- 		return
+-- 	end
+-- end
 
 -- Cancels active timers and releases active widgets associated with a spellID.
 ---@param spellID integer
@@ -897,7 +856,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			local boss = GetBoss(encounterID)
 			if boss then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-				hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
+				-- hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
 				-- GenerateBossTables(boss)
 				-- local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
 				-- if bossPhaseTable then
@@ -978,7 +937,7 @@ end
 
 local function HandleSimulationCompleted()
 	Private:StopSimulatingBoss()
-	Private.callbackHandler:Fire("SimulationCompleted")
+	Private.callbacks:Fire("SimulationCompleted")
 end
 
 -- Sets up reminders to simulate a boss encounter using static timings.
@@ -1013,7 +972,7 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 	local boss = GetBoss(bossDungeonEncounterID)
 	if boss then
 		hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-		hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
+		-- hideIfAlreadyPhased = reminderPreferences.removeDueToPhaseChange
 		-- GenerateBossTables(boss)
 		-- local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
 		-- if bossPhaseTable then

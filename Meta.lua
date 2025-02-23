@@ -45,14 +45,11 @@ function Private.Encode(obj) end
 ---@return string
 function Private.Decode(obj) end
 
----@class CallbackTarget
-local CallbackTarget = {}
+---@param target table
+---@param name string
+---@param func fun()|string
+function Private.RegisterCallback(target, name, func) end
 
 ---@param target table
 ---@param name string
----@param func fun()
-function CallbackTarget.RegisterCallback(target, name, func) end
-
----@param target table
----@param name string
-function CallbackTarget.UnregisterCallback(target, name) end
+function Private.UnregisterCallback(target, name) end

@@ -547,14 +547,14 @@ function Private:RegisterCommunications()
 	AddOn:RegisterComm(kDistributePlan)
 	AddOn:RegisterComm(kPlanReceived)
 	AddOn:RegisterComm(kDistributeText)
-	Private.callbackTarget.RegisterCallback(self, "ProfileRefreshed", commObject.Reset)
+	self.RegisterCallback(commObject, "ProfileRefreshed", "Reset")
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", commObject.HandleGroupRosterUpdate)
 end
 
 function Private:UnregisterCommunications()
 	commObject.Reset()
 	AddOn:UnregisterAllComm()
-	Private.callbackTarget.UnregisterCallback(self, "ProfileRefreshed")
+	self.UnregisterCallback(commObject, "ProfileRefreshed")
 	self:UnregisterEvent("GROUP_ROSTER_UPDATE")
 end
 

@@ -6,7 +6,6 @@ local Private = Namespace
 local LibStub = LibStub
 local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
-local CallbackHandler = LibStub("CallbackHandler-1.0")
 local concat = table.concat
 local CreateFrame = CreateFrame
 local getmetatable, setmetatable = getmetatable, setmetatable
@@ -270,6 +269,7 @@ Private.classes.BossPhase = {
 ---@field additionalContext string Additional context to append to boss ability names.
 ---@field onlyRelevantForTanks boolean|nil If true, is a tank buster or similar.
 ---@field bossNpcID integer|nil If defined, the ability represents a boss's death with the given npc ID.
+---@field buffer number|nil If true, a buffer will be applied after the each combat log event to prevent successive events from triggering it again.
 Private.classes.BossAbility = {
 	phases = {},
 	eventTriggers = nil,
@@ -281,6 +281,7 @@ Private.classes.BossAbility = {
 	allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 	additionalContext = "",
 	bossNpcID = nil,
+	buffer = nil,
 }
 
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.
@@ -898,14 +899,57 @@ do
 	end
 end
 
-Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
+Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
 Private.addOn.db = nil ---@type AceDBObject-3.0
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
+Private.callbacks = LibStub("CallbackHandler-1.0"):New(Private)
 
-local callbackTarget = {}
-Private.callbackHandler = CallbackHandler:New(callbackTarget)
-Private.callbackTarget = callbackTarget ---@type CallbackTarget
+do
+	local eventMap = {}
+	local eventFrame = CreateFrame("Frame")
+
+	eventFrame:SetScript("OnEvent", function(_, event, ...)
+		for k, v in pairs(eventMap[event]) do
+			if type(v) == "function" then
+				v(event, ...)
+			else
+				k[v](k, event, ...)
+			end
+		end
+	end)
+
+	---@param event string
+	---@param func fun()|string
+	function Private:RegisterEvent(event, func)
+		if type(event) == "string" then
+			eventMap[event] = eventMap[event] or {}
+			eventMap[event][self] = func or event
+			eventFrame:RegisterEvent(event)
+		end
+	end
+
+	---@param event string
+	function Private:UnregisterEvent(event)
+		if type(event) == "string" then
+			if eventMap[event] then
+				eventMap[event][self] = nil
+				if not next(eventMap[event]) then
+					eventFrame:UnregisterEvent(event)
+					eventMap[event] = nil
+				end
+			end
+		end
+	end
+
+	function Private:UnregisterAllEvents()
+		for k, v in pairs(eventMap) do
+			for _, j in pairs(v) do
+				j:UnregisterEvent(k)
+			end
+		end
+	end
+end
 
 Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
 Private.customDungeonInstanceGroups = {
