@@ -238,6 +238,25 @@ function BossUtilities.GetValidCombatLogEventTypes(encounterID, spellID)
 end
 
 ---@param encounterID integer Boss dungeon encounter ID
+---@return table <integer, CombatLogEventType>
+function BossUtilities.GetAvailableCombatLogEventTypes(encounterID)
+	local available = {}
+	local boss = BossUtilities.GetBoss(encounterID)
+	if boss then
+		for _, ability in pairs(boss.abilities) do
+			for _, allowed in ipairs(ability.allowedCombatLogEventTypes) do
+				available[allowed] = true
+			end
+		end
+	end
+	local returnTable = {}
+	for eventType, _ in pairs(available) do
+		tinsert(returnTable, eventType)
+	end
+	return returnTable
+end
+
+---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
 ---@param combatLogEventType CombatLogEventType
 ---@return boolean valid

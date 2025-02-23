@@ -248,6 +248,10 @@ do
 	end
 
 	local CreateReminderText = utilities.CreateReminderText
+	---@class BossUtilities
+	local bossUtilities = Private.bossUtilities
+	local FindBossAbility = bossUtilities.FindBossAbility
+	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapAssignee(abilityEntry, _, newAssignee)
@@ -280,26 +284,21 @@ do
 					local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 					if assignment then
 						local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-						local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
-						if bossDungeonEncounterID then
-							local boss = Private.bossUtilities.GetBoss(bossDungeonEncounterID)
-							if boss and boss.hasBossDeath then
-								tinsert(allowedCombatLogEventTypes, "UD")
-							end
-						end
-						local combatLogEventSpellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
+						local availableCombatLogEventTypes = GetAvailableCombatLogEventTypes(bossDungeonEncounterID)
+						local spellSpecificCombatLogEventTypes = nil
+						local combatLogEventSpellID = assignment.combatLogEventSpellID
 						if combatLogEventSpellID then
-							local ability =
-								Private.bossUtilities.FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+							local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
 							if ability then
-								allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+								spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 							end
 						end
 						assignmentEditor:PopulateFields(
 							assignment,
 							previewText,
 							assignmentMetaTables,
-							allowedCombatLogEventTypes
+							availableCombatLogEventTypes,
+							spellSpecificCombatLogEventTypes
 						)
 					else
 						assignmentEditor:Release()

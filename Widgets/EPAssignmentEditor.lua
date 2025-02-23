@@ -28,6 +28,8 @@ local contentFramePadding = { x = 15, y = 15 }
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local buttonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 }
+local disabledTextColor = { 0.33, 0.33, 0.33, 1 }
+local halfDisabledTextColor = { 0.66, 0.66, 0.66, 1 }
 local labelWidgetSpacing = { 2, 2 }
 local containerContainerSpacing = { 0, 4 }
 local closeButtonIconPadding = { 2, 2 }
@@ -574,8 +576,16 @@ end
 ---@param assignment Assignment
 ---@param previewText string
 ---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
----@param allowedCombatLogEventTypes table<integer, CombatLogEventType>
-local function PopulateFields(self, assignment, previewText, metaTables, allowedCombatLogEventTypes)
+---@param availableCombatLogEventTypes table<integer, CombatLogEventType>
+---@param spellSpecificCombatLogEventTypes table<integer, CombatLogEventType>|nil
+local function PopulateFields(
+	self,
+	assignment,
+	previewText,
+	metaTables,
+	availableCombatLogEventTypes,
+	spellSpecificCombatLogEventTypes
+)
 	self:SetAssignmentID(assignment.uniqueID)
 	local assignee = assignment.assignee
 	self.assigneeTypeDropdown:SetValue(assignee)
@@ -594,30 +604,42 @@ local function PopulateFields(self, assignment, previewText, metaTables, allowed
 	self.spellAssignmentDropdown:SetEnabled(enableSpellAssignmentCheckBox)
 	self.spellAssignmentDropdown:SetValue(enableSpellAssignmentCheckBox and spellID or nil)
 
-	-- local enableCombatLogEvents = not allowedCombatLogEventTypes
-	-- 	or (allowedCombatLogEventTypes and #allowedCombatLogEventTypes > 0)
-	-- local combatLogEventItem, _ = self.assignmentTypeDropdown:FindItemAndText("Combat Log Event")
-	-- if combatLogEventItem then
-	-- 	combatLogEventItem:SetEnabled(enableCombatLogEvents)
-	-- end
+	local enableCombatLogEvents = #availableCombatLogEventTypes > 0
+	local combatLogEventItem, _ = self.assignmentTypeDropdown:FindItemAndText("Combat Log Event")
+	if combatLogEventItem then
+		combatLogEventItem:SetEnabled(enableCombatLogEvents)
+	end
 
-	-- local types = { ["SCS"] = true, ["SCC"] = true, ["SAA"] = true, ["SAR"] = true, ["UD"] = false }
-	-- local disableTypes = false
-	-- for _, combatLogEventType in ipairs(allowedCombatLogEventTypes) do
-	-- 	local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
-	-- 	if item then
-	-- 		item:SetEnabled(true)
-	-- 	end
-	-- 	types[combatLogEventType] = nil
-	-- end
-	-- disableTypes = true
+	local types = { ["SCS"] = 0, ["SCC"] = 0, ["SAA"] = 0, ["SAR"] = 0, ["UD"] = 0 }
+	for _, combatLogEventType in ipairs(availableCombatLogEventTypes) do
+		types[combatLogEventType] = 1
+	end
 
-	-- for combatLogEventType, value in pairs(types) do
-	-- 	local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
-	-- 	if item then
-	-- 		item:SetEnabled(not disableTypes and value == true)
-	-- 	end
-	-- end
+	if spellSpecificCombatLogEventTypes then
+		for _, combatLogEventType in ipairs(spellSpecificCombatLogEventTypes) do
+			types[combatLogEventType] = types[combatLogEventType] + 1
+		end
+	end
+
+	local isTimedAssignment = getmetatable(assignment) == metaTables.TimedAssignment
+
+	-- Regular enabled event types
+	for combatLogEventType, count in pairs(types) do
+		local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
+		if item then
+			if count == 0 then -- Fully disabled
+				item:SetEnabled(false)
+				item:SetTextColor(disabledTextColor)
+			elseif count == 1 then -- Indicate that the current spell isn't compatible
+				item:SetEnabled(true)
+				if not isTimedAssignment then
+					item:SetTextColor(halfDisabledTextColor)
+				end
+			elseif count == 2 then -- Compatible with current spell
+				item:SetEnabled(true)
+			end
+		end
+	end
 
 	if getmetatable(assignment) == metaTables.CombatLogEventAssignment then
 		assignment = assignment --[[@as CombatLogEventAssignment]]
@@ -628,23 +650,13 @@ local function PopulateFields(self, assignment, previewText, metaTables, allowed
 		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
-	elseif getmetatable(assignment) == metaTables.TimedAssignment then
+	elseif isTimedAssignment then
 		assignment = assignment --[[@as TimedAssignment]]
 		self:SetAssignmentType("TimedAssignment")
 		self.assignmentTypeDropdown:SetValue(nil)
 		self.combatLogEventSpellIDDropdown:SetValue(nil)
 		self.combatLogEventSpellCountLineEdit:SetText()
 		self.assignmentTypeDropdown:SetValue("Fixed Time")
-		local minutes, seconds = self.FormatTime(assignment.time)
-		self.timeMinuteLineEdit:SetText(minutes)
-		self.timeSecondLineEdit:SetText(seconds)
-	elseif getmetatable(assignment) == metaTables.TimedAssignment then
-		assignment = assignment --[[@as PhasedAssignment]]
-		self:SetAssignmentType("PhasedAssignment")
-		self.assignmentTypeDropdown:SetValue(nil)
-		self.combatLogEventSpellIDDropdown:SetValue(nil)
-		self.combatLogEventSpellCountLineEdit:SetText()
-		self.assignmentTypeDropdown:SetValue("Boss Phase")
 		local minutes, seconds = self.FormatTime(assignment.time)
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)

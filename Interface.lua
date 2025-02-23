@@ -575,19 +575,22 @@ do -- Assignment Editor
 
 		if updateFields or updatePreviewText then
 			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-			local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
+			local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
+			local spellSpecificCombatLogEventTypes = nil
 			local combatLogEventSpellID = assignment.combatLogEventSpellID
-			local boss = GetBoss(dungeonEncounterID)
-			if boss and boss.hasBossDeath then
-				tinsert(allowedCombatLogEventTypes, "UD")
-			end
 			if combatLogEventSpellID then
 				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
 				if ability then
-					allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+					spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 				end
 			end
-			assignmentEditor:PopulateFields(assignment, previewText, assignmentMetaTables, allowedCombatLogEventTypes)
+			assignmentEditor:PopulateFields(
+				assignment,
+				previewText,
+				assignmentMetaTables,
+				availableCombatLogEventTypes,
+				spellSpecificCombatLogEventTypes
+			)
 		elseif updatePreviewText then
 			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
 			assignmentEditor.previewLabel:SetText(previewText, 0)
@@ -1038,23 +1041,22 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			Private.assignmentEditor = Create.AssignmentEditor()
 		end
 		local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-		local allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" }
-		local boss = GetBoss(GetCurrentBossDungeonEncounterID())
-		if boss and boss.hasBossDeath then
-			tinsert(allowedCombatLogEventTypes, "UD")
-		end
+		local encounterID = GetCurrentBossDungeonEncounterID()
+		local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(encounterID)
+		local spellSpecificCombatLogEventTypes = nil
 		local combatLogEventSpellID = assignment.combatLogEventSpellID
 		if combatLogEventSpellID then
-			local ability = bossUtilities.FindBossAbility(GetCurrentBossDungeonEncounterID(), combatLogEventSpellID)
+			local ability = bossUtilities.FindBossAbility(encounterID, combatLogEventSpellID)
 			if ability then
-				allowedCombatLogEventTypes = ability.allowedCombatLogEventTypes
+				spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 			end
 		end
 		Private.assignmentEditor:PopulateFields(
 			assignment,
 			previewText,
 			assignmentMetaTables,
-			allowedCombatLogEventTypes
+			availableCombatLogEventTypes,
+			spellSpecificCombatLogEventTypes
 		)
 		local timeline = Private.mainFrame.timeline
 		if timeline then

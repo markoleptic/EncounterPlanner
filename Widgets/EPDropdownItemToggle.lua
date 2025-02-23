@@ -73,6 +73,12 @@ local function HandleItemBaseFrameLeave(frame)
 end
 
 ---@param self EPItemBase
+---@param color [integer]
+function EPItemBase.SetTextColor(self, color)
+	self.text:SetTextColor(unpack(color))
+end
+
+---@param self EPItemBase
 ---@param enabled boolean
 function EPItemBase.SetEnabled(self, enabled)
 	self.enabled = enabled
@@ -265,6 +271,7 @@ function EPItemBase.Create(type)
 		SetFontSize = EPItemBase.SetFontSize,
 		SetHorizontalPadding = EPItemBase.SetHorizontalPadding,
 		SetCustomTexture = EPItemBase.SetCustomTexture,
+		SetTextColor = EPItemBase.SetTextColor,
 		textOffsetX = textOffsetX,
 		checkOffsetX = checkOffsetX,
 		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
