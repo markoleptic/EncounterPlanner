@@ -30,6 +30,10 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			journalEncounterID = 2648,
 			dungeonEncounterID = 3020,
 			instanceID = 2773,
+			preferredCombatLogEventAbilities = {
+				[1] = { combatLogEventSpellID = 460156, combatLogEventType = "SAR" },
+				[2] = { combatLogEventSpellID = 291974, combatLogEventType = "SCS" },
+			},
 			abilities = {
 				[460156] = BossAbility:New({ -- Jumpstart
 					phases = {
@@ -41,36 +45,42 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 12.0,
 					castTime = 1.5,
+					durationHurts = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[473351] = BossAbility:New({ -- Electrocrush
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 5.7 },
-							repeatInterval = 20.6,
+							repeatInterval = { 20.6, 21.8 },
 						}),
 					},
 					duration = 10.0,
 					castTime = 1.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[473220] = BossAbility:New({ -- Sonic Boom
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 18.9 },
+							castTimes = { 16.1 },
 							repeatInterval = 21.7,
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[469981] = BossAbility:New({ -- Kill-o-Block Barrier
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 51.0 },
+							castTimes = { 50.0 },
 						}),
 					},
-					-- TODO: Implement support for lasting until end of phase
-					duration = 60,
+					duration = 0.0,
+					durationLastsUntilEndOfPhase = true,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 			},
 			phases = {
@@ -109,9 +119,9 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			abilities = {
 				[459799] = BossAbility:New({ -- Wallop
 					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 6.1 },
-							repeatInterval = 37.0,
+						[1] = BossAbilityPhase:New({ -- Inconsistent
+							castTimes = { 4.3, 34.0, 17.0, 19.4, 35.2, 34.7 },
+							repeatInterval = 34.7,
 						}),
 					},
 					cancelTriggers = {
@@ -120,11 +130,13 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[459779] = BossAbility:New({ -- Barreling Charge
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 22.8 },
+							castTimes = { 21.3 },
 							repeatInterval = { 5.3, 5.3, 24.6 },
 						}),
 					},
@@ -140,12 +152,13 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 2.0,
 					castTime = 3.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[460867] = BossAbility:New({ -- Big Bada Boom
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 13.9 },
-							repeatInterval = 34.2,
+							castTimes = { 12.3 },
+							repeatInterval = 34.4,
 						}),
 					},
 					cancelTriggers = {
@@ -158,13 +171,14 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							combatLogEventType = "UD",
 						},
 					},
-					duration = 2.0,
-					castTime = 3.5,
+					duration = 30.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[1217653] = BossAbility:New({ -- B.B.B.F.G.
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.5 },
+							castTimes = { 5.0 },
 							repeatInterval = 17.7,
 						}),
 					},
@@ -176,11 +190,12 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.5,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[473690] = BossAbility:New({ -- Kinetic Explosive Gel
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 17.7 },
+							castTimes = { 16.2 },
 							repeatInterval = 17.7,
 						}),
 					},
@@ -192,6 +207,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[-1] = BossAbility:New({ -- Bront or Keeza Quickfuse Died
 					phases = {
@@ -229,6 +245,8 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 4.0,
 					castTime = 4.0,
+					durationHurts = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[473114] = BossAbility:New({ -- Mudslide
 					phases = {
@@ -238,17 +256,20 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[469478] = BossAbility:New({ -- Sludge Claws
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 3.0 },
+							castTimes = { 2.0 },
 							repeatInterval = 30.0,
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[470039] = BossAbility:New({ -- Razorchoke Vines
 					phases = {
@@ -259,6 +280,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 24.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 			},
 			phases = {
@@ -279,50 +301,49 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 1.6 },
-							repeatInterval = 60.0,
+							repeatInterval = 64.0,
 						}),
 					},
 					duration = 10.0,
-					castTime = 0.0,
+					castTime = 4.0,
+					durationHurts = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[468841] = BossAbility:New({ -- Leaping Sparks
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 38.0 },
-							repeatInterval = 60.0,
+							repeatInterval = 64.0,
 						}),
 					},
 					duration = 8.0,
-					castTime = 0.0,
+					castTime = 4.0,
+					durationHurts = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[468813] = BossAbility:New({ -- Gigazap
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 28.0 },
-							repeatInterval = { 26.0, 34.0 },
+							repeatInterval = { 28.0, 36.0 },
 						}),
 					},
 					duration = 8.0,
-					castTime = 0.0,
+					castTime = 3.0,
+					durationHurts = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[466190] = BossAbility:New({ -- Thunder Punch
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 24.0 },
-							repeatInterval = { 26.0, 34.0 },
+							repeatInterval = { 28.0, 36.0 },
 						}),
 					},
 					duration = 4.0,
-					castTime = 0.0,
-				}),
-				[468723] = BossAbility:New({ -- Shock Water
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-						}),
-					},
-					duration = 4.0,
-					castTime = 0.0,
+					castTime = 2.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 			},
 			phases = {
