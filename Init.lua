@@ -261,7 +261,9 @@ Private.classes.BossPhase = {
 ---@class BossAbility
 ---@field phases table<number, BossAbilityPhase> Describes at which times in which phases the ability occurs in.
 ---@field eventTriggers table<SpellIDIndex, EventTrigger>|nil Other boss abilities that trigger the ability.
+---@field cancelTriggers table<integer, {bossNpcID: integer, combatLogEventType: CombatLogEventType}>|nil Boss deaths that cancel this ability.
 ---@field duration number Usually how long the ability effect lasts.
+---@field infiniteDuration boolean|nil, If true, duration lasts until end of encounter.
 ---@field castTime number The actual cast time of the ability.
 ---@field allowedCombatLogEventTypes table<integer, CombatLogEventType> Restrict creating combat log event assignments to only these types.
 ---@field additionalContext string Additional context to append to boss ability names.
@@ -270,7 +272,9 @@ Private.classes.BossPhase = {
 Private.classes.BossAbility = {
 	phases = {},
 	eventTriggers = nil,
+	cancelTriggers = nil,
 	duration = 0.0,
+	infiniteDuration = nil,
 	castTime = 0.0,
 	allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 	additionalContext = "",

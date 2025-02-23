@@ -114,7 +114,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 37.0,
 						}),
 					},
-					cancelOn = {
+					cancelTriggers = {
 						bossNpcID = 226403,
 						combatLogEventType = "UD",
 					},
@@ -128,7 +128,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = { 5.3, 5.3, 24.6 },
 						}),
 					},
-					cancelOn = {
+					cancelTriggers = {
 						{
 							bossNpcID = 226402,
 							combatLogEventType = "UD",
@@ -148,7 +148,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 34.2,
 						}),
 					},
-					cancelOn = {
+					cancelTriggers = {
 						{
 							bossNpcID = 226402,
 							combatLogEventType = "UD",
@@ -168,7 +168,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 17.7,
 						}),
 					},
-					cancelOn = {
+					cancelTriggers = {
 						{
 							bossNpcID = 226402,
 							combatLogEventType = "UD",
@@ -184,7 +184,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 							repeatInterval = 17.7,
 						}),
 					},
-					cancelOn = {
+					cancelTriggers = {
 						{
 							bossNpcID = 226402,
 							combatLogEventType = "UD",
@@ -202,6 +202,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					bossNpcID = 226403,
+					defaultBossNpcID = 226403,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 			},
