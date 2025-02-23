@@ -121,6 +121,7 @@ local function SetIcon(self, iconID, paddingXOrLeft, paddingYOrTop, spellID, pad
 	self.iconPadding.top = paddingYOrTop or self.iconPadding.top
 	self.iconPadding.bottom = paddingBottom or paddingYOrTop or self.iconPadding.bottom
 	self.icon:SetTexture(iconID)
+	self.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 	self.spellID = spellID
 	if iconID then
 		self.showIcon = true

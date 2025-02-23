@@ -356,7 +356,7 @@ local function SetIconAndText(self, icon, text)
 	self.iconTexture = icon
 	self.label:SetText(text)
 	self.icon:SetTexture(icon)
-	--self.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+	self.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 end
 
 ---@param self EPProgressBar

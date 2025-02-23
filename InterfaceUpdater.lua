@@ -348,7 +348,7 @@ do
 						if specIDMatch then
 							local _, _, _, icon, _ = GetSpecializationInfoByID(specIDMatch)
 							specIconID = icon
-							coloredAssignee = coloredAssignee:gsub("|T[^:]+:16|t ", "")
+							coloredAssignee = coloredAssignee:gsub("|T[^|]+|t%s*", "")
 						end
 					end
 

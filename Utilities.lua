@@ -154,7 +154,7 @@ do
 
 	for specID, _ in pairs(specIDToType) do
 		local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
-		specIDToIconAndName[specID] = format("|T%s:16|t %s", icon, name)
+		specIDToIconAndName[specID] = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", icon, name)
 		specIDToName[specID] = name
 	end
 
@@ -393,7 +393,7 @@ do
 					end
 					local name = GetSpellName(spell["spellID"])
 					if name then
-						local iconText = format("|T%s:16|t %s", spell["icon"], name)
+						local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", spell["icon"], name)
 						local spellID = spell["commonSpellID"] or spell["spellID"]
 						tinsert(
 							classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
@@ -422,7 +422,7 @@ do
 			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
 				local name = GetSpellName(racialInfo["spellID"])
-				local iconText = format("|T%s:16|t %s", racialInfo["icon"], name)
+				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", racialInfo["icon"], name)
 				tinsert(dropdownItems, {
 					itemValue = racialInfo["spellID"],
 					text = iconText,
@@ -440,7 +440,7 @@ do
 			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
 			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
 				local name = GetSpellName(trinketInfo["spellID"])
-				local iconText = format("|T%s:16|t %s", trinketInfo["icon"], name)
+				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", trinketInfo["icon"], name)
 				tinsert(dropdownItems, {
 					itemValue = trinketInfo["spellID"],
 					text = iconText,
@@ -690,15 +690,15 @@ do
 		end
 		local iconText
 		if placeholderName then
-			iconText = format("|T%s:16|t %s", unknownIcon, placeholderName)
+			iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", unknownIcon, placeholderName)
 		elseif bossDeathName then
-			iconText = format("|T%s:16|t %s", deathIcon, bossDeathName)
+			iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", deathIcon, bossDeathName)
 		else
 			local spellInfo = GetSpellInfo(abilityID)
 			if spellInfo then
-				iconText = format("|T%s:16|t %s", spellInfo.iconID, spellInfo.name)
+				iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", spellInfo.iconID, spellInfo.name)
 			else
-				iconText = format("|T%s:16|t %s", unknownIcon, L["Unknown"])
+				iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", unknownIcon, L["Unknown"])
 			end
 		end
 		return { itemValue = abilityID, text = iconText }

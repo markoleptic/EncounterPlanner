@@ -1169,6 +1169,7 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 			end
 		end
 	end
+	assignment.spellTexture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 end
 
 -- Updates the rendering of assignments on the timeline.
