@@ -32,7 +32,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 			instanceID = 2773,
 			preferredCombatLogEventAbilities = {
 				[1] = { combatLogEventSpellID = 460156, combatLogEventType = "SAR" },
-				[2] = { combatLogEventSpellID = 291974, combatLogEventType = "SCS" },
+				[2] = { combatLogEventSpellID = 460156, combatLogEventType = "SCS" },
 			},
 			abilities = {
 				[460156] = BossAbility:New({ -- Jumpstart
@@ -209,7 +209,18 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[-1] = BossAbility:New({ -- Bront or Keeza Quickfuse Died
+				[226402] = BossAbility:New({ -- Keeza Quickfuse Died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 226402,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
+				[226403] = BossAbility:New({ -- Bront Died
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 160 },
@@ -218,7 +229,6 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					bossNpcID = 226403,
-					defaultBossNpcID = 226403,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 			},

@@ -44,7 +44,11 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 			abilities = {
 				[1216443] = BossAbility:New({ -- Electrical Storm
 					eventTriggers = {
-						[-1] = EventTrigger:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
+						[144244] = EventTrigger:New({ -- Platinum Pummeler ded
+							combatLogEventType = "UD",
+							castTimes = { 0.0 },
+						}),
+						[145185] = EventTrigger:New({ -- Gnomercy 4.U. ded
 							combatLogEventType = "UD",
 							castTimes = { 0.0 },
 						}),
@@ -157,7 +161,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS" },
 				}),
-				[-1] = BossAbility:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
+				[144244] = BossAbility:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 160.0 },
@@ -165,8 +169,18 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
-					defaultBossNpcID = 144244,
 					bossNpcID = 144244,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
+				[145185] = BossAbility:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 145185,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 			},

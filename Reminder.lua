@@ -45,7 +45,9 @@ local next = next
 local pairs = pairs
 local PlaySoundFile = PlaySoundFile
 local SpeakText = C_VoiceChat.SpeakText
+local split = string.split
 local tinsert = tinsert
+local tonumber = tonumber
 local tremove = tremove
 local type = type
 local UnitGUID = UnitGUID
@@ -819,22 +821,36 @@ end
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
 	local _, subEvent, _, sourceGUID, _, _, _, destGUID, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
-	if spellID then
-		if spellCounts[subEvent] and spellCounts[subEvent][spellID] then
-			local spellCount = spellCounts[subEvent][spellID] + 1
-			spellCounts[subEvent][spellID] = spellCount
-			local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
-			if reminders then
-				for _, reminder in ipairs(reminders) do
-					CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+	if spellCounts[subEvent] then
+		if subEvent == "UNIT_DIED" then
+			local _, _, _, _, _, id = split("-", destGUID)
+			local mobID = tonumber(id)
+			if mobID then
+				local spellCount = spellCounts[subEvent][mobID] + 1
+				spellCounts[subEvent][mobID] = spellCount
+				local reminders = combatLogEventReminders[subEvent][mobID][spellCount]
+				if reminders then
+					for _, reminder in ipairs(reminders) do
+						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+					end
 				end
 			end
-			-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
-		end
-
-		-- MaybeUpdatePhase(spellID, subEvent)
-		if playerGUID == sourceGUID then
-			MaybeCancelStuff(spellID, destGUID, subEvent)
+		elseif spellID then
+			if spellCounts[subEvent][spellID] then
+				local spellCount = spellCounts[subEvent][spellID] + 1
+				spellCounts[subEvent][spellID] = spellCount
+				local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
+				if reminders then
+					for _, reminder in ipairs(reminders) do
+						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+					end
+				end
+				-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
+			end
+			-- MaybeUpdatePhase(spellID, subEvent)
+			if playerGUID == sourceGUID then
+				MaybeCancelStuff(spellID, destGUID, subEvent)
+			end
 		end
 	end
 end

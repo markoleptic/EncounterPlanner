@@ -684,7 +684,7 @@ do
 		if Private:HasPlaceholderBossSpellID(abilityID) then
 			placeholderName = Private:GetPlaceholderBossName(abilityID)
 		end
-		if abilityID == -1 then
+		if boss.hasBossDeath and boss.abilities[abilityID].bossNpcID then
 			local bossNpcID = boss.abilities[abilityID].bossNpcID
 			bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
 		end
