@@ -416,11 +416,7 @@ do -- Roster Editor
 end
 
 do -- Assignment Editor
-	local ConvertCombatLogEventTimeToAbsoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
-	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
-	local FindNearestSpellCount = bossUtilities.FindNearestSpellCount
-	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 	local UpdateTimelineAssignmentStartTime = utilities.UpdateTimelineAssignmentStartTime
 
 	local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
