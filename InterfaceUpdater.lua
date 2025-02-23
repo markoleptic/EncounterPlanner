@@ -63,6 +63,7 @@ do
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
 	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
+	local tankIcon = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":14:14:0:0:64:64:0:19:22:41|t"
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
@@ -99,11 +100,15 @@ do
 				local placeholderName, bossDeathName = nil, nil
 				if Private:HasPlaceholderBossSpellID(abilityID) then
 					placeholderName = Private:GetPlaceholderBossName(abilityID)
+					if boss.abilities[abilityID].onlyRelevantForTanks then
+						placeholderName = placeholderName .. " " .. tankIcon
+					end
 				end
 				if boss.hasBossDeath and boss.abilities[abilityID].bossNpcID then
 					local bossNpcID = boss.abilities[abilityID].bossNpcID
 					bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
 				end
+
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
@@ -114,7 +119,11 @@ do
 						abilityEntry.label:SetText(bossDeathName, 4)
 						abilityEntry.label:SetIcon(deathIcon, 2, 2, 0)
 					else
-						abilityEntry:SetAbility(abilityID, tostring(abilityID))
+						if boss.abilities[abilityID].onlyRelevantForTanks then
+							abilityEntry:SetAbility(abilityID, tostring(abilityID), tankIcon)
+						else
+							abilityEntry:SetAbility(abilityID, tostring(abilityID))
+						end
 					end
 					abilityEntry:HideCheckBox()
 					tinsert(children, abilityEntry)

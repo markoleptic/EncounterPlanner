@@ -168,10 +168,15 @@ end
 ---@param self EPAbilityEntry
 ---@param spellID number
 ---@param key string|table|nil
-local function SetAbility(self, spellID, key)
+---@param textToAppend string|nil
+local function SetAbility(self, spellID, key, textToAppend)
 	local spellInfo = GetSpellInfo(spellID)
 	if spellInfo then
-		self.label:SetText(spellInfo.name, padding.x * 2)
+		if textToAppend then
+			self.label:SetText(spellInfo.name .. " " .. textToAppend, padding.x * 2)
+		else
+			self.label:SetText(spellInfo.name, padding.x * 2)
+		end
 		self.label:SetIcon(spellInfo.iconID, padding.x, padding.y, spellInfo.spellID)
 	else
 		self.label:SetIcon(nil)
