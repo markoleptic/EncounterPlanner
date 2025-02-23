@@ -80,7 +80,7 @@ local combatLogEventMap = {
 ---@type FunctionContainer|nil
 local simulationTimer = nil
 
----@type table<string,FunctionContainer>
+---@type table<string, FunctionContainer>
 local timers = {} -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
 
 ---@type table<FullCombatLogEventType, table<integer, integer>> -- FullCombatLogEventType -> SpellID -> Count \
@@ -102,8 +102,10 @@ local frameGlowTimers = {}
 
 ---@type table<integer, number> -- Buffers to use to prevent successive combat log events from retriggering.
 local buffers = {}
----@type table<integer, boolean> -- Active buffers preventing successive combat log events from retriggering.
+---@type table<integer, table<FullCombatLogEventType, boolean>> -- Active buffers preventing successive combat log events from retriggering.
 local activeBuffers = {}
+---@type table<string, FunctionContainer> -- Active buffers preventing successive combat log events from retriggering.
+local bufferTimers = {}
 
 ---@type table<integer, integer> -- [Ordered boss phase index -> boss phase index]
 -- local orderedBossPhaseTable = {}
@@ -180,6 +182,13 @@ local function ResetLocalVariables()
 	-- wipe(phaseLimitedSpells)
 	wipe(combatLogEventReminders)
 	wipe(spellCounts)
+
+	for _, timer in pairs(bufferTimers) do
+		if timer.Cancel then
+			timer:Cancel()
+		end
+	end
+	wipe(bufferTimers)
 	wipe(buffers)
 	wipe(activeBuffers)
 
@@ -203,6 +212,23 @@ end
 ---@return table
 local function pack(...)
 	return { n = select("#", ...), ... }
+end
+
+---@param spellID integer
+---@param bossPhaseOrderIndex integer|nil
+---@return table
+local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
+	local args = {}
+	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
+		cancelTimerIfCasted[spellID] = cancelTimerIfCasted[spellID] or {}
+		args[#args + 1] = cancelTimerIfCasted[spellID]
+	end
+
+	-- if hideIfAlreadyPhased and bossPhaseOrderIndex then
+	-- 	cancelTimerIfPhased[bossPhaseOrderIndex] = cancelTimerIfPhased[bossPhaseOrderIndex] or {}
+	-- 	args[#args + 1] = cancelTimerIfPhased[bossPhaseOrderIndex]
+	-- end
+	return args
 end
 
 ---@param duration number
@@ -467,23 +493,6 @@ local function GlowFrameAndCreateTimer(unit, frame, assignment)
 	LCG.PixelGlow_Start(frame)
 end
 
----@param spellID integer
----@param bossPhaseOrderIndex integer|nil
----@return table
-local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
-	local args = {}
-	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
-		cancelTimerIfCasted[spellID] = cancelTimerIfCasted[spellID] or {}
-		args[#args + 1] = cancelTimerIfCasted[spellID]
-	end
-
-	-- if hideIfAlreadyPhased and bossPhaseOrderIndex then
-	-- 	cancelTimerIfPhased[bossPhaseOrderIndex] = cancelTimerIfPhased[bossPhaseOrderIndex] or {}
-	-- 	args[#args + 1] = cancelTimerIfPhased[bossPhaseOrderIndex]
-	-- end
-	return args
-end
-
 -- Executes the actions that occur at the time in which reminders are first displayed. This is usually at advance notice
 -- time before the assignment, but can also be sooner if towards the start of the encounter. Creates timers for actions
 -- that occur at assignment time.
@@ -600,7 +609,8 @@ end
 ---@param plans table<string, Plan>
 ---@param preferences ReminderPreferences
 ---@param startTime number
-local function SetupReminders(plans, preferences, startTime)
+---@param abilities table<integer, BossAbility>
+local function SetupReminders(plans, preferences, startTime, abilities)
 	if not Private.messageContainer then
 		CreateMessageContainer(preferences.messages)
 	end
@@ -621,6 +631,9 @@ local function SetupReminders(plans, preferences, startTime)
 				local fullCombatLogEventType = combatLogEventMap[abbreviatedCombatLogEventType]
 				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
+				if abilities[spellID] and abilities[spellID].buffer then
+					buffers[spellID] = abilities[spellID].buffer
+				end
 				CreateSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
 
 				local currentSize = #combatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
@@ -732,6 +745,19 @@ end
 -- 	end
 -- end
 
+---@param combatLogEventType FullCombatLogEventType
+---@param spellID integer
+local function ApplyBuffer(combatLogEventType, spellID)
+	activeBuffers[spellID] = activeBuffers[spellID] or {}
+	activeBuffers[spellID][combatLogEventType] = true
+	CreateTimerWithCleanup(buffers[spellID], function()
+		activeBuffers[spellID][combatLogEventType] = nil
+		if not next(activeBuffers[spellID]) then
+			activeBuffers[spellID] = nil
+		end
+	end, bufferTimers)
+end
+
 -- Cancels active timers and releases active widgets associated with a spellID.
 ---@param spellID integer
 local function CancelRemindersDueToSpellAlreadyCast(spellID)
@@ -784,27 +810,36 @@ local function HandleCombatLogEventUnfiltered()
 		if subEvent == "UNIT_DIED" then
 			local _, _, _, _, _, id = split("-", destGUID)
 			local mobID = tonumber(id)
-			if mobID then
-				local spellCount = spellCounts[subEvent][mobID] + 1
-				spellCounts[subEvent][mobID] = spellCount
-				local reminders = combatLogEventReminders[subEvent][mobID][spellCount]
-				if reminders then
-					for _, reminder in ipairs(reminders) do
-						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+			if mobID and spellCounts[subEvent][mobID] then
+				if not activeBuffers[mobID][subEvent] then
+					if buffers[mobID] then
+						ApplyBuffer(subEvent, mobID)
+					end
+					local spellCount = spellCounts[subEvent][mobID] + 1
+					spellCounts[subEvent][mobID] = spellCount
+					local reminders = combatLogEventReminders[subEvent][mobID][spellCount]
+					if reminders then
+						for _, reminder in ipairs(reminders) do
+							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+						end
 					end
 				end
 			end
 		elseif spellID then
 			if spellCounts[subEvent][spellID] then
-				local spellCount = spellCounts[subEvent][spellID] + 1
-				spellCounts[subEvent][spellID] = spellCount
-				local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
-				if reminders then
-					for _, reminder in ipairs(reminders) do
-						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+				if not activeBuffers[spellID][subEvent] then
+					if buffers[spellID] then
+						ApplyBuffer(subEvent, spellID)
+					end
+					local spellCount = spellCounts[subEvent][spellID] + 1
+					spellCounts[subEvent][spellID] = spellCount
+					local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
+					if reminders then
+						for _, reminder in ipairs(reminders) do
+							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+						end
 					end
 				end
-				-- combatLogEventReminders[subEvent][spellID][spellCount] = nil
 			end
 			-- MaybeUpdatePhase(spellID, subEvent)
 			if playerGUID == sourceGUID then
@@ -876,8 +911,9 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 				-- 		end
 				-- 	end
 				-- end
-				SetupReminders(activePlans, reminderPreferences, startTime)
+				SetupReminders(activePlans, reminderPreferences, startTime, boss.abilities)
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+				LGF:ScanForUnitFrames()
 			end
 		end
 	end
