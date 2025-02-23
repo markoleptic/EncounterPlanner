@@ -161,7 +161,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS" },
 				}),
-				[144244] = BossAbility:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
+				[144244] = BossAbility:New({ -- The Platinum Pummeler died
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 160.0 },
@@ -172,7 +172,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					bossNpcID = 144244,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
-				[145185] = BossAbility:New({ -- The Platinum Pummeler or Gnomercy 4.U. died
+				[145185] = BossAbility:New({ -- Gnomercy 4.U. died
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 160.0 },

@@ -22,6 +22,7 @@ if not isElevenDotOne then
 	Private:RegisterPlaceholderBossSpellID(320182, L["Noxious Spores"])
 	Private:RegisterPlaceholderBossSpellID(1215738, L["Decaying Breath"])
 	Private:RegisterPlaceholderBossSpellID(1215600, L["Withering Touch"])
+	Private:RegisterPlaceholderBossSpellID(1215747, L["Final Will"])
 
 	Private:RegisterPlaceholderBossSpellID(1223803, L["Well of Darkness"])
 	Private:RegisterPlaceholderBossSpellID(474298, L["Draw Soul"])
@@ -39,49 +40,60 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 				164463, -- Paceran the Virulent
 				164461, -- Sathel the Accursed
 			},
+			journalEncounterCreatureIDsToBossIDs = {
+				[5144] = 164451, -- Dessia the Decapitator
+				[5145] = 164463, -- Paceran the Virulent
+				[5146] = 164461, -- Sathel the Accursed
+			},
 			journalEncounterID = 2397,
 			dungeonEncounterID = 2391,
 			instanceID = 2293,
+			hasBossDeath = true,
 			abilities = {
 				[1215741] = BossAbility:New({ -- Mighty Smash
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.5 },
-							repeatInterval = 42.5, -- 29.2 stage 2, 14.5 stage 3
+							castTimes = { 10.7 },
+							repeatInterval = 43.7, -- 29.2 stage 2, 14.5 stage 3
 						}),
 					},
 					duration = 10.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[320069] = BossAbility:New({ -- Mortal Strike (Dessia)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 3.5 },
-							repeatInterval = 21.9,
+							castTimes = { 3.4 },
+							repeatInterval = 17.0,
 						}),
 					},
 					duration = 5.0,
 					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[320182] = BossAbility:New({ -- Noxious Spores (Paceran)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 20.3 },
-							repeatInterval = 42.5, -- 29.2 stage 2, 14.5 stage 3
+							castTimes = { 20.4 },
+							repeatInterval = 43.7, -- 29.2 stage 2, 14.5 stage 3
 						}),
 					},
 					duration = 6.0,
-					castTime = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[1215738] = BossAbility:New({ -- Decaying Breath (Paceran)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.9 },
+							castTimes = { 5.8 },
 							repeatInterval = { 29.1, 14.6 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[333231] = BossAbility:New({ -- Searing Death (Sathel)
 					phases = {
@@ -92,16 +104,70 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 9.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1215600] = BossAbility:New({ -- Withering Touch (Sathel)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 5.7 },
-							repeatInterval = 17.0,
+							castTimes = { 9.5 },
+							repeatInterval = 18.2,
 						}),
 					},
 					duration = 12.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[164451] = BossAbility:New({ -- Dessia died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 164451,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
+				[164463] = BossAbility:New({ -- Paceran died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 145185,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
+				[164461] = BossAbility:New({ -- Sathel died
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 160.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					bossNpcID = 145185,
+					allowedCombatLogEventTypes = { "UD" },
+				}),
+				[1215747] = BossAbility:New({ -- Final Will
+					EventTriggers = {
+						[164451] = EventTrigger:New({ -- Dessia ded
+							combatLogEventType = "UD",
+							castTimes = { 0.0 },
+						}),
+						[164463] = EventTrigger:New({ -- Paceran ded
+							combatLogEventType = "UD",
+							castTimes = { 0.0 },
+						}),
+						[164461] = EventTrigger:New({ -- Sathel ded
+							combatLogEventType = "UD",
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA" },
 				}),
 			},
 			phases = {
@@ -121,32 +187,36 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 				[322795] = BossAbility:New({ -- Meat Hooks
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.2, 10.2 },
+							castTimes = { 6.5, 10.2 },
 							repeatInterval = 20.6,
 						}),
 					},
 					duration = 5.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[323515] = BossAbility:New({ -- Hateful Strike
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 2.6 },
+							castTimes = { 9.7 },
 							repeatInterval = 14.6,
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[318406] = BossAbility:New({ -- Tenderizing Smash
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 13.1 },
+							castTimes = { 14.5 },
 							repeatInterval = 19.4,
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -171,7 +241,8 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[331618] = BossAbility:New({ -- Oppressive Banner
 					phases = {
@@ -182,6 +253,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[320644] = BossAbility:New({ -- Brutal Combo
 					phases = {
@@ -191,7 +263,8 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 0.75,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[320050] = BossAbility:New({ -- Might of Maldraxxus
 					phases = {
@@ -202,6 +275,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[317231] = BossAbility:New({ -- Crushing Slam
 					phases = {
@@ -212,6 +286,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[320729] = BossAbility:New({ -- Massive Cleave
 					phases = {
@@ -222,6 +297,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[339415] = BossAbility:New({ -- Deafening Crash
 					phases = {
@@ -232,6 +308,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 2.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -251,42 +328,46 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 				[1223803] = BossAbility:New({ -- Well of Darkness
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 10.9 },
-							repeatInterval = 23.0,
+							castTimes = { 10.1 },
+							repeatInterval = { 23.1, 32.8 },
 						}),
 					},
 					duration = 6.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474298] = BossAbility:New({ -- Draw Soul
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 48.6 },
-							repeatInterval = 50.6,
+							castTimes = { 51.4 },
+							repeatInterval = 54.6,
 						}),
 					},
 					duration = 8.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1215787] = BossAbility:New({ -- Death Spiral
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.1 },
-							repeatInterval = 48.5,
+							castTimes = { 8.4 },
+							repeatInterval = 54.6,
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474087] = BossAbility:New({ -- Necrotic Eruption
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 17.0 },
-							repeatInterval = { 34.0, 23.0 },
+							castTimes = { 17.4, 23.1, 31.6, 20.8, 36.2, 20.9, 35.0, 22.1 },
+							repeatInterval = { 20.9, 35.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -316,6 +397,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[323608] = BossAbility:New({ -- Dark Devastation
 					phases = {
@@ -330,6 +412,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[323825] = BossAbility:New({ -- Grasping Rift
 					phases = {
@@ -344,6 +427,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[324449] = BossAbility:New({ -- Manifest Death
 					phases = {
@@ -358,6 +442,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[339573] = BossAbility:New({ -- Echoes of Carnage
 					phases = {
@@ -368,6 +453,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA" },
 				}),
 				[339706] = BossAbility:New({ -- Ghostly Charge
 					phases = {
@@ -378,6 +464,8 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 5.0,
 					castTime = 3.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					-- TODO: Needs tiny buffer for both SCS and SCC, 4 casts each time at same time
 				}),
 				[339550] = BossAbility:New({ -- Echo of Battle
 					phases = {
@@ -388,6 +476,8 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					-- TODO: Needs 1-2 sec buffer for both SCS and SCC, 6 casts in quick succession
 				}),
 			},
 			phases = {
