@@ -673,7 +673,7 @@ do
 
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
-	---@param eventType CombatLogEventType|nil
+	---@param eventType CombatLogEventType
 	---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
 	---@return integer|nil spellID
 	---@return integer|nil spellCount
@@ -807,6 +807,45 @@ do
 	end
 end
 
+---@param absoluteTime number
+---@param encounterID integer
+---@param spellID integer
+---@param eventType CombatLogEventType
+---@return integer|nil spellCount
+---@return number|nil leftoverTime
+function BossUtilities.FindNearestPreferredCombatLogEventAbility(absoluteTime, encounterID, spellID, eventType)
+	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
+	if absoluteSpellCastStartTable and absoluteSpellCastStartTable[spellID] then
+		local spellCountAndTime = absoluteSpellCastStartTable[spellID]
+		local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+		if not ability then
+			return nil
+		end
+		local minTime = hugeNumber
+		local spellCountForMinTime = nil
+
+		for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+			local adjustedTime = indexAndCastStart.castStart
+			if ability then
+				if eventType == "SAR" then
+					adjustedTime = adjustedTime + ability.duration + ability.castTime
+				elseif eventType == "SCC" or eventType == "SAA" then
+					adjustedTime = adjustedTime + ability.castTime
+				end
+			end
+			if adjustedTime <= absoluteTime then
+				local difference = absoluteTime - adjustedTime
+				if difference < minTime then
+					minTime = difference
+					spellCountForMinTime = spellCount
+				end
+			end
+		end
+		return spellCountForMinTime, minTime
+	end
+	return nil
+end
+
 do
 	---@class CombatLogEventAssignment
 	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
@@ -888,33 +927,6 @@ do
 			end
 		end
 	end
-end
-
----@param time number Time from the start of the boss encounter
----@return TimedAssignment|CombatLogEventAssignment|nil
-function BossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
-	local boss = BossUtilities.GetBoss(encounterID)
-	if boss then
-		local cumulativeTime = 0.0
-		if #boss.phases == 1 then
-			return Private.classes.TimedAssignment:New()
-		end
-		local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID)
-		if orderedBossPhaseTable then
-			for orderedPhaseIndex, phaseIndex in ipairs(orderedBossPhaseTable) do
-				local phase = boss.phases[phaseIndex]
-				if cumulativeTime + phase.duration > time then
-					if orderedPhaseIndex == 1 and phaseIndex == 1 then
-						return Private.classes.TimedAssignment:New()
-					else
-						return Private.classes.CombatLogEventAssignment:New()
-					end
-				end
-				cumulativeTime = cumulativeTime + phase.duration
-			end
-		end
-	end
-	return nil
 end
 
 do
@@ -1466,8 +1478,6 @@ do
 				GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[boss.dungeonEncounterID])
 		end
 	end
-
-	DevTool:AddData(absoluteSpellCastStartTables[3016])
 
 	--@debug@
 	do

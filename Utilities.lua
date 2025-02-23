@@ -2005,3 +2005,101 @@ do
 		end
 	end
 end
+
+do
+	local GetSpellInfo = C_Spell.GetSpellInfo
+	local FindNearestPreferredCombatLogEventAbility = bossUtilities.FindNearestPreferredCombatLogEventAbility
+	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
+
+	---@param encounterID integer
+	---@param time number Time from the start of the boss encounter
+	---@param assignment CombatLogEventAssignment
+	---@param phaseIndex integer
+	---@param preferred table<integer, { combatLogEventSpellID: integer, combatLogEventType: CombatLogEventType }|nil>
+	local function HandlePreferredCombatLogEventAbilities(encounterID, time, assignment, phaseIndex, preferred)
+		if preferred[phaseIndex] then
+			local eventType = preferred[phaseIndex].combatLogEventType
+			local spellID = preferred[phaseIndex].combatLogEventSpellID
+			local spellCount, newTime = FindNearestPreferredCombatLogEventAbility(time, encounterID, spellID, eventType)
+			if spellCount and newTime then
+				assignment.time = Utilities.Round(newTime, 1)
+				assignment.combatLogEventSpellID = spellID
+				assignment.spellCount = spellCount
+				assignment.combatLogEventType = eventType
+			end
+		end
+	end
+
+	---@param encounterID integer
+	---@param time number Time from the start of the boss encounter
+	---@param assignment CombatLogEventAssignment
+	local function HandleNoPreferredCombatLogEventAbilities(encounterID, time, assignment)
+		local newSpellID, newSpellCount, newTime = FindNearestCombatLogEvent(time, encounterID, "SCS", true)
+		if newSpellID and newSpellCount and newTime then
+			if newSpellID and newSpellCount and newTime then
+				assignment.time = Utilities.Round(newTime, 1)
+				assignment.combatLogEventSpellID = newSpellID
+				assignment.spellCount = newSpellCount
+				assignment.combatLogEventType = "SCS"
+			end
+		end
+	end
+
+	---@param encounterID integer
+	---@param time number Time from the start of the boss encounter
+	---@param assignee string
+	---@param spellID integer|nil Assignment spell ID
+	---@return TimedAssignment|CombatLogEventAssignment|nil
+	function Utilities.CreateNewAssignment(encounterID, time, assignee, spellID)
+		local assignment = nil
+		local boss = GetBoss(encounterID)
+		if boss then
+			local cumulativeTime = 0.0
+			if #boss.phases == 1 then
+				assignment = Private.classes.TimedAssignment:New()
+			else
+				local orderedBossPhaseTable = GetOrderedBossPhases(encounterID)
+				if orderedBossPhaseTable then
+					for orderedPhaseIndex, phaseIndex in ipairs(orderedBossPhaseTable) do
+						local phase = boss.phases[phaseIndex]
+						if cumulativeTime + phase.duration > time then
+							if orderedPhaseIndex == 1 and phaseIndex == 1 then
+								assignment = Private.classes.TimedAssignment:New()
+							else
+								assignment = Private.classes.CombatLogEventAssignment:New()
+								if boss.preferredCombatLogEventAbilities then
+									HandlePreferredCombatLogEventAbilities(
+										encounterID,
+										time,
+										assignment,
+										phaseIndex,
+										boss.preferredCombatLogEventAbilities
+									)
+								else
+									HandleNoPreferredCombatLogEventAbilities(encounterID, time, assignment)
+								end
+							end
+							break
+						end
+						cumulativeTime = cumulativeTime + phase.duration
+					end
+				end
+			end
+		end
+		if assignment then
+			assignment.assignee = assignee
+			if spellID and spellID > constants.kTextAssignmentSpellID then
+				local spellInfo = GetSpellInfo(spellID)
+				if spellInfo then
+					assignment.spellInfo = spellInfo
+				end
+			end
+		end
+		if getmetatable(assignment) == CombatLogEventAssignment then
+			Utilities.UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], encounterID)
+		elseif getmetatable(assignment) == TimedAssignment then
+			assignment.time = Utilities.Round(time, 1)
+		end
+		return assignment
+	end
+end

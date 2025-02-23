@@ -1102,39 +1102,8 @@ end
 ---@param time number
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local encounterID = GetCurrentBossDungeonEncounterID()
-	local assignment = bossUtilities.DetermineAssignmentTypeToCreate(encounterID, time)
+	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID)
 	if assignment then
-		assignment.assignee = assignee
-		if spellID and spellID > constants.kTextAssignmentSpellID then
-			local spellInfo = GetSpellInfo(spellID)
-			if spellInfo then
-				assignment.spellInfo = spellInfo
-			end
-		end
-		if getmetatable(assignment) == CombatLogEventAssignment then
-			local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
-			local bossPhaseTable = bossUtilities.GetOrderedBossPhases(encounterID)
-			if castTimeTable and bossPhaseTable then
-				local newSpellID, newSpellCount, newTime =
-					bossUtilities.FindNearestCombatLogEvent(time, encounterID, nil, true)
-				if newSpellID and newSpellCount and newTime then
-					if newSpellID and newSpellCount and newTime then
-						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
-							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-							assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-							assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
-						end
-						assignment.time = utilities.Round(newTime, 1)
-						assignment.combatLogEventSpellID = newSpellID
-						assignment.spellCount = newSpellCount
-					end
-				end
-			end
-		elseif getmetatable(assignment) == TimedAssignment then
-			assignment.time = Round(time, 1)
-		else
-			return
-		end
 		tinsert(GetCurrentAssignments(), assignment)
 		UpdateAllAssignments(false, encounterID)
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)

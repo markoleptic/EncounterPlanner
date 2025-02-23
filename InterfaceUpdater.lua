@@ -48,6 +48,7 @@ local function GetCurrentPlan()
 end
 
 do
+	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
 	local GenerateBossTables = bossUtilities.GenerateBossTables
@@ -61,11 +62,7 @@ do
 	local instanceAndBossPadding = 4
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
-	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
-
-	local GetSpellInfo = C_Spell.GetSpellInfo
-	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss

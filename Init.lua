@@ -218,7 +218,7 @@ Private.classes.DungeonInstance = {
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.
 ---@field icon integer Icon image from EJ_GetCreatureInfo.
----@field preferredCombatLogEventAbilities table<integer, integer> Preferred abilities to use for each boss phase.
+---@field preferredCombatLogEventAbilities table<integer, {combatLogEventSpellID: integer, combatLogEventType:CombatLogEventType }|nil>|nil Preferred abilities to use for each boss phase.
 ---@field hasBossDeath boolean|nil If specified, at least one ability corresponds to a boss death.
 Private.classes.Boss = {
 	name = "",
@@ -234,7 +234,7 @@ Private.classes.Boss = {
 	abilityInstances = {},
 	treatAsSinglePhase = nil,
 	icon = 0,
-	preferredCombatLogEventAbilities = {},
+	preferredCombatLogEventAbilities = nil,
 }
 
 -- A stage/phase in a boss encounter.
