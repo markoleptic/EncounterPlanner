@@ -1042,7 +1042,7 @@ do
 				local spellCountIrrelevant = not castIndex or not spellCount
 
 				if spellCountIrrelevant or spellCount ~= castIndex then
-					self:IterateAbilityCastTimes(
+					triggerTime = self:IterateAbilityCastTimes(
 						dependencyID,
 						dependencyAbility,
 						dependencyTrigger,
