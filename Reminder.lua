@@ -327,18 +327,14 @@ end
 -- Creates an EPReminderMessage widget using preferences.
 ---@param preferences MessagePreferences
 ---@param text string
----@param duration number|nil
 ---@param icon string|number|nil
 ---@return EPReminderMessage
-local function CreateMessage(preferences, text, duration, icon)
+local function CreateMessage(preferences, text, icon)
 	local message = AceGUI:Create("EPReminderMessage")
 	message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
 	message:SetAlpha(preferences.alpha)
 	message:SetTextColor(unpack(preferences.textColor))
 	message:SetShowAnimation(preferences.showAnimation)
-	if duration then
-		message:SetDuration(duration)
-	end
 	if icon then
 		message:SetIcon(icon)
 	end
@@ -405,7 +401,7 @@ end
 
 -- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
----@param duration number|nil
+---@param duration number
 ---@param reminderText string
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, duration, reminderText, messagePreferences)
@@ -413,14 +409,10 @@ local function AddMessage(assignment, duration, reminderText, messagePreferences
 		local icon = GetAssignmentIcon(assignment.spellInfo)
 		local spellID = assignment.spellInfo.spellID
 		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-		local message = CreateMessage(messagePreferences, reminderText, duration, icon)
+		local message = CreateMessage(messagePreferences, reminderText, icon)
 		CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
 		Private.messageContainer:AddChildNoDoLayout(message)
-		if duration then
-			message:Start(true)
-		else
-			message:Start(false)
-		end
+		message:Start(duration)
 	end)
 end
 
@@ -486,7 +478,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 
 	if reminderPreferences.messages.enabled and reminderPreferences.messages.showOnlyAtExpiration then
 		deferredFunctions[#deferredFunctions + 1] = function()
-			AddMessage(assignment, nil, reminderText, reminderPreferences.messages)
+			AddMessage(assignment, 0, reminderText, reminderPreferences.messages)
 		end
 	end
 	if ttsPreferences.enableAtTime then

@@ -35,8 +35,6 @@ local tostring = tostring
 local type = type
 local unpack = unpack
 
-local previewDuration = 15.0
-
 ---@param left number
 ---@param top number
 ---@param width number
@@ -186,7 +184,8 @@ local function CreateProgressBarAnchor()
 	progressBarAnchor.frame:SetParent(UIParent)
 
 	do
-		local preferences = GetProgressBarPreferences()
+		local reminderPreferences = GetReminderPreferences()
+		local preferences = reminderPreferences.progressBars
 		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
 		regionName = IsValidRegionName(regionName) and regionName or "UIParent"
 		progressBarAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
@@ -202,7 +201,7 @@ local function CreateProgressBarAnchor()
 		progressBarAnchor:SetProgressBarWidth(preferences.width)
 		progressBarAnchor:SetFill(preferences.fill)
 		progressBarAnchor:SetAlpha(preferences.alpha)
-		progressBarAnchor:SetDuration(previewDuration)
+		progressBarAnchor:SetDuration(reminderPreferences.advanceNotice)
 	end
 
 	progressBarAnchor:SetCallback("OnRelease", function()
@@ -217,7 +216,7 @@ local function CreateProgressBarAnchor()
 		end
 	end)
 	progressBarAnchor:SetCallback("Completed", function()
-		progressBarAnchor:SetDuration(previewDuration)
+		progressBarAnchor:SetDuration(GetReminderPreferences().advanceNotice)
 		progressBarAnchor:Start()
 	end)
 
@@ -254,8 +253,8 @@ local function CreateMessageAnchor()
 		end
 	end)
 	messageAnchor:SetCallback("Completed", function()
-		messageAnchor:SetDuration(previewDuration)
-		messageAnchor:Start(true)
+		local preferences = GetReminderPreferences()
+		messageAnchor:Start(preferences.messages.showOnlyAtExpiration and 0 or preferences.advanceNotice)
 	end)
 
 	return messageAnchor
@@ -653,10 +652,10 @@ do
 						Private.messageAnchor:Pause()
 						Private.messageAnchor.frame:Hide()
 					else
-						if not GetMessagePreferences().showOnlyAtExpiration then
-							Private.messageAnchor:SetDuration(previewDuration)
-							Private.messageAnchor:Start(true)
-						end
+						local preferences = GetReminderPreferences()
+						Private.messageAnchor:Start(
+							preferences.messages.showOnlyAtExpiration and 0 or preferences.advanceNotice
+						)
 						Private.messageAnchor.frame:Show()
 					end
 				end,
@@ -678,23 +677,23 @@ do
 					end
 				end,
 				set = function(key)
-					local preferences = GetMessagePreferences()
+					local preferences = GetReminderPreferences()
 					if key == "expirationOnly" then
-						if preferences.showOnlyAtExpiration ~= true then
+						if preferences.messages.showOnlyAtExpiration ~= true then
 							if Private.messageAnchor.frame:IsShown() then
 								Private.messageAnchor:Pause()
+								Private.messageAnchor:Start(0)
 							end
-							Private.messageAnchor:SetDuration(0)
 						end
-						preferences.showOnlyAtExpiration = true
+						preferences.messages.showOnlyAtExpiration = true
 					else -- if key == "fullCountdown" then
-						if preferences.showOnlyAtExpiration ~= false then
-							Private.messageAnchor:SetDuration(previewDuration)
+						if preferences.messages.showOnlyAtExpiration ~= false then
 							if Private.messageAnchor.frame:IsShown() then
-								Private.messageAnchor:Start(true)
+								Private.messageAnchor:Pause()
+								Private.messageAnchor:Start(preferences.advanceNotice)
 							end
 						end
-						preferences.showOnlyAtExpiration = false
+						preferences.messages.showOnlyAtExpiration = false
 					end
 				end,
 				enabled = enableMessageOption,
@@ -709,22 +708,24 @@ do
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						local preferences = GetMessagePreferences()
-						if key ~= preferences.showAnimation then
+						local preferences = GetReminderPreferences()
+						if key ~= preferences.messages.showAnimation then
 							if Private.messageAnchor.frame:IsShown() then
 								Private.messageAnchor:Pause()
 								Private.messageAnchor:SetFont(
-									preferences.font,
-									preferences.fontSize,
-									preferences.fontOutline
+									preferences.messages.font,
+									preferences.messages.fontSize,
+									preferences.messages.fontOutline
 								)
 								Private.messageAnchor:SetShowAnimation(key)
-								Private.messageAnchor:Start(not preferences.showOnlyAtExpiration)
+								Private.messageAnchor:Start(
+									preferences.messages.showOnlyAtExpiration and 0 or preferences.advanceNotice
+								)
 							else
 								Private.messageAnchor:SetShowAnimation(key)
 							end
 						end
-						preferences.showAnimation = key
+						preferences.messages.showAnimation = key
 					end
 				end,
 				enabled = enableMessageOption,
@@ -980,7 +981,7 @@ do
 						Private.progressBarAnchor:Pause()
 						Private.progressBarAnchor.frame:Hide()
 					else
-						Private.progressBarAnchor:SetDuration(previewDuration)
+						Private.progressBarAnchor:SetDuration(GetReminderPreferences().advanceNotice)
 						Private.progressBarAnchor:Start()
 						Private.progressBarAnchor.frame:Show()
 					end

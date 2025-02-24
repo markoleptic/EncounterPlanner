@@ -17,13 +17,12 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
-	local totalHeight = 0
-	local contentWidth = content.width or content:GetWidth() or 0
-	local maxWidth = 0
+	local maxWidth = 0.0
 	local paddingY = defaultSpacing
 	if content.spacing then
 		paddingY = content.spacing.y
 	end
+	local cumulativeHeight = 0.0
 
 	for i = 1, #children do
 		local child = children[i]
@@ -31,25 +30,13 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		frame:ClearAllPoints()
 		frame:Show()
 
-		if i > 1 then
-			frame:SetPoint("TOP", children[i - 1].frame, "BOTTOM", 0, -paddingY)
-		else
-			frame:SetPoint("TOP", content, "TOP")
-		end
+		frame:SetPoint("BOTTOM", content, "BOTTOM", 0, cumulativeHeight)
 
-		if child.width == "fill" then
-			frame:SetPoint("RIGHT", content)
-		elseif child.width == "relative" then
-			child:SetWidth(contentWidth * child.relWidth)
-		end
-
-		if totalHeight > 0 then
-			totalHeight = totalHeight + paddingY
-		end
-		totalHeight = totalHeight + frame:GetHeight()
+		cumulativeHeight = cumulativeHeight + frame:GetHeight() + paddingY
 		maxWidth = max(maxWidth, frame:GetWidth())
 	end
 
+	local totalHeight = cumulativeHeight - paddingY
 	content:SetHeight(totalHeight)
 	content:SetWidth(maxWidth)
 
