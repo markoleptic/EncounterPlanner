@@ -18,6 +18,7 @@ local DungeonInstance = Private.classes.DungeonInstance
 local isElevenDotOne = select(4, GetBuildInfo()) >= 110100 -- Remove when 11.1 is live
 if not isElevenDotOne then
 	local L = Private.L
+	Private:RegisterPlaceholderBossSpellID(1214315, L["Lightning Torrent"])
 	Private:RegisterPlaceholderBossSpellID(1214325, L["Crashing Thunder"])
 	Private:RegisterPlaceholderBossSpellID(474018, L["Wild Lightning"])
 end
@@ -33,7 +34,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 			dungeonEncounterID = 2816,
 			instanceID = 2648,
 			abilities = {
-				[444123] = BossAbility:New({ -- Lightning Torrent
+				[1214315] = BossAbility:New({ -- Lightning Torrent
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 16.0 },
@@ -41,7 +42,8 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 						}),
 					},
 					duration = 15.0,
-					castTime = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[1214325] = BossAbility:New({ -- Crashing Thunder
 					phases = {
@@ -51,17 +53,19 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474018] = BossAbility:New({ -- Wild Lightning
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 9.5, 41.3 },
+							castTimes = { 8.7, 41.3 },
 							repeatInterval = { 15.8, 40.1 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[419870] = BossAbility:New({ -- Lightning Dash
 					phases = {
@@ -72,6 +76,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -91,32 +96,35 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 				[424737] = BossAbility:New({ -- Chaotic Corruption
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 5.8 },
-							repeatInterval = 32.7,
+							castTimes = { 5.8, 36.4, 36.4 },
+							repeatInterval = 33.2,
 						}),
 					},
 					duration = 5.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[425048] = BossAbility:New({ -- Dark Gravity
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 30.1 },
-							repeatInterval = 32.7,
+							castTimes = { 32.8 },
+							repeatInterval = 32.8,
 						}),
 					},
 					duration = 6.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[424958] = BossAbility:New({ -- Crush Reality
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 9.5 },
-							repeatInterval = 15.7,
+							repeatInterval = { 20.6, 20.6, 24.3 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -132,16 +140,20 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 			journalEncounterID = 2568,
 			dungeonEncounterID = 2836,
 			instanceID = 2648,
+			preferredCombatLogEventAbilities = {
+				[1] = { combatLogEventSpellID = 423839, combatLogEventType = "SAR" },
+				[2] = nil,
+			},
 			abilities = {
 				[423305] = BossAbility:New({ -- Null Upheaval
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 16.7 },
-							repeatInterval = 32.8,
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[445262] = BossAbility:New({ -- Void Shell
 					phases = {
@@ -152,26 +164,28 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 					},
 					duration = 60.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
 				[429487] = BossAbility:New({ -- Unleash Corruption
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 12.7 },
+							castTimes = { 10.6 },
 							repeatInterval = 17.0,
 						}),
 					},
 					duration = 15.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = {}, -- Unreliable cast counts
 				}),
 				[445457] = BossAbility:New({ -- Oblivion Wave
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 5.8 },
-							repeatInterval = 13.3,
+							castTimes = { 5.8, 13.4, 13.4 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[458082] = BossAbility:New({ -- Stormrider's Charge (Stormrider Vokmar)
 					phases = {
@@ -182,8 +196,10 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					buffer = 1.0,
 				}),
-				[424371] = BossAbility:New({ -- Storm's Vengeance
+				[423839] = BossAbility:New({ -- Storm's Vengeance
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 4.5 },
@@ -192,6 +208,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 					},
 					duration = 20.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 			},
 			phases = {
