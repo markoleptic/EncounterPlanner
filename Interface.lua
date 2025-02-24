@@ -1546,10 +1546,30 @@ end
 
 ---@param timeline EPTimeline
 ---@param timelineAssignment TimelineAssignment
----@return integer
-local function HandleDuplicateAssignment(timeline, _, timelineAssignment)
-	local newAssignment = Private.DuplicateAssignment(timelineAssignment.assignment)
+---@param absoluteTime number
+local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absoluteTime)
+	local assignment = timelineAssignment.assignment
+	local newAssignment = Private.DuplicateAssignment(assignment)
 	tinsert(GetCurrentAssignments(), newAssignment)
+
+	local newAssignmentTime = utilities.Round(absoluteTime, 1)
+	local relativeTime = nil
+
+	if getmetatable(assignment) == CombatLogEventAssignment then
+		relativeTime = ConvertAbsoluteTimeToCombatLogEventTime(
+			absoluteTime,
+			GetCurrentBossDungeonEncounterID(),
+			assignment.combatLogEventSpellID --[[@as integer]],
+			assignment.spellCount --[[@as integer]],
+			assignment.combatLogEventType --[[@as CombatLogEventType]]
+		)
+	end
+	if relativeTime then
+		newAssignment--[[@as CombatLogEventAssignment]].time = relativeTime
+	else
+		newAssignment--[[@as TimedAssignment]].time = newAssignmentTime
+	end
+
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	local sortedTimelineAssignments = SortAssignments(
 		GetCurrentPlan(),
@@ -1558,7 +1578,8 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment)
 	)
 	local sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 	timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
-	return newAssignment.uniqueID
+	timeline:UpdateAssignmentsAndTickMarks()
+	HandleTimelineAssignmentClicked(_, _, newAssignment.uniqueID)
 end
 
 ---@param timeline EPTimeline

@@ -732,21 +732,8 @@ local function StopMovingAssignment(self, assignmentFrame)
 				end
 			end
 
-			if time and timelineAssignment then
-				local newAssignmentID = self:Fire("DuplicateAssignment", timelineAssignment) --[[@as integer]]
-				local newTimelineAssignment = FindTimelineAssignment(self.timelineAssignments, newAssignmentID)
-				if newTimelineAssignment then
-					newTimelineAssignment.startTime = Round(time, 1)
-					local relativeTime = self.CalculateAssignmentTimeFromStart(newTimelineAssignment)
-					local assignment = newTimelineAssignment.assignment
-					if relativeTime then
-						assignment--[[@as CombatLogEventAssignment]].time = relativeTime
-					else
-						assignment--[[@as TimedAssignment]].time = newTimelineAssignment.startTime
-					end
-					self:UpdateAssignmentsAndTickMarks()
-					self:Fire("AssignmentClicked", newTimelineAssignment.assignment.uniqueID)
-				end
+			if time then
+				self:Fire("DuplicateAssignment", timelineAssignment, time)
 			end
 		end
 		self.fakeAssignmentFrame:SetWidth(assignmentTextureSize.x)
