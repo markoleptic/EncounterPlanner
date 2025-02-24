@@ -1003,14 +1003,16 @@ do
 		end
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
-			local assignmentsString = count == 1 and L["assignment"] or L["assignments"]
-			local countMsg = format("%s: %d %s %s.", planName, count, assignmentsString)
-			interfaceUpdater.LogMessage(countMsg, 3, 1)
-
 			if onlyFailedSpellIDsString:len() > 1 then
 				local spellString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
-				local msg = format("%d %s: %s.", invalidSpellIDOnlyCount, L["Invalid Boss Spell ID(s)"], spellString)
-				interfaceUpdater.LogMessage(msg, 3, 2)
+				local msg = format(
+					"%s: %d %s: %s.",
+					planName,
+					invalidSpellIDOnlyCount,
+					L["Invalid Boss Spell ID(s)"],
+					spellString
+				)
+				interfaceUpdater.LogMessage(msg, 3, 1)
 			end
 
 			if next(spellCounts) then
@@ -1029,8 +1031,14 @@ do
 					end
 				end
 				if total > 0 then
-					local msg = format("%d %s: %s.", total, L["Invalid Boss Spell Count(s)"], concat(delayedMsgs, ","))
-					interfaceUpdater.LogMessage(msg, 3, 2)
+					local msg = format(
+						"%s: %d %s: %s.",
+						planName,
+						total,
+						L["Invalid Boss Spell Count(s)"],
+						concat(delayedMsgs, ",")
+					)
+					interfaceUpdater.LogMessage(msg, 3, 1)
 				end
 			end
 		end
