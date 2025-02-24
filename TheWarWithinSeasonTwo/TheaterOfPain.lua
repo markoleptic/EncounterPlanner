@@ -383,6 +383,10 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 			journalEncounterID = 2417,
 			dungeonEncounterID = 2404,
 			instanceID = 2293,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 339573, combatLogEventType = "SCS" },
+			},
 			abilities = {
 				[324079] = BossAbility:New({ -- Reaping Scythe
 					phases = {
@@ -397,7 +401,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[323608] = BossAbility:New({ -- Dark Devastation
 					phases = {
@@ -412,7 +416,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[323825] = BossAbility:New({ -- Grasping Rift
 					phases = {
@@ -427,7 +431,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 2.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[324449] = BossAbility:New({ -- Manifest Death
 					phases = {
@@ -442,7 +446,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[339573] = BossAbility:New({ -- Echoes of Carnage
 					phases = {

@@ -2024,6 +2024,7 @@ do
 	---@param assignment CombatLogEventAssignment
 	---@param phaseIndex integer
 	---@param preferred table<integer, { combatLogEventSpellID: integer, combatLogEventType: CombatLogEventType }|nil>
+	---@return boolean
 	local function HandlePreferredCombatLogEventAbilities(encounterID, time, assignment, phaseIndex, preferred)
 		if preferred[phaseIndex] then
 			local eventType = preferred[phaseIndex].combatLogEventType
@@ -2034,8 +2035,10 @@ do
 				assignment.combatLogEventSpellID = spellID
 				assignment.spellCount = spellCount
 				assignment.combatLogEventType = eventType
+				return true
 			end
 		end
+		return false
 	end
 
 	---@param encounterID integer
@@ -2076,13 +2079,16 @@ do
 							else
 								assignment = Private.classes.CombatLogEventAssignment:New()
 								if boss.preferredCombatLogEventAbilities then
-									HandlePreferredCombatLogEventAbilities(
+									local success = HandlePreferredCombatLogEventAbilities(
 										encounterID,
 										time,
 										assignment,
 										phaseIndex,
 										boss.preferredCombatLogEventAbilities
 									)
+									if not success then
+										assignment = Private.classes.TimedAssignment:New()
+									end
 								else
 									HandleNoPreferredCombatLogEventAbilities(encounterID, time, assignment)
 								end

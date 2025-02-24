@@ -56,7 +56,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[432179] = BossAbility:New({ -- Throw Cinderbrew
 					phases = {
@@ -73,7 +73,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					durationIsPlayerDebuff = true,
 					duration = 9.0,
 					castTime = 1.5,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[432229] = BossAbility:New({ -- Keg Smash
 					phases = {
@@ -88,7 +88,7 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 					onlyRelevantForTanks = true,
 				}),
 			},

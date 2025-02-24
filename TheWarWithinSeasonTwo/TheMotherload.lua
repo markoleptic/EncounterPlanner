@@ -231,7 +231,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 					},
 					duration = 8.0,
 					castTime = 3.0,
-					allowedCombatLogEventTypes = {}, -- P3 cast times could be different depending on phase timings
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[260829] = BossAbility:New({ -- Homing Missile
 					phases = {
@@ -246,7 +246,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 3.0,
-					allowedCombatLogEventTypes = {}, -- P3 cast times could be different depending on phase timings
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[276229] = BossAbility:New({ -- Micro Missiles
 					phases = {
@@ -261,7 +261,7 @@ Private.dungeonInstances[1594] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 5.0,
-					allowedCombatLogEventTypes = {}, -- P3 cast times could be different depending on phase timings
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 					buffer = 1.0,
 				}),
 				[271456] = BossAbility:New({ -- Drill Smash

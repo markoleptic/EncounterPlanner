@@ -202,8 +202,8 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 			instanceID = 2649,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 460156, combatLogEventType = "SAA" },
-				[3] = { combatLogEventSpellID = 460156, combatLogEventType = "SAR" },
+				[2] = { combatLogEventSpellID = 423588, combatLogEventType = "SAA" },
+				[3] = { combatLogEventSpellID = 423588, combatLogEventType = "SAR" },
 			},
 			abilities = {
 				[423588] = BossAbility:New({ -- Barrier of Light
@@ -214,8 +214,9 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					duration = 50.0,
+					duration = 0.0,
 					castTime = 0.0,
+					durationLastsUntilEndOfPhase = true,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[423664] = BossAbility:New({ -- Embrace the Light
@@ -226,8 +227,9 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					duration = 50.0,
+					duration = 0.0,
 					castTime = 0.0,
+					durationLastsUntilEndOfPhase = true,
 					allowedCombatLogEventType = { "SCC", "SCS" },
 				}),
 				[444546] = BossAbility:New({ -- Purify
@@ -243,7 +245,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[444608] = BossAbility:New({ -- Inner Fire
 					phases = {
@@ -258,7 +260,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 5.2,
 					castTime = 2.0,
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[451605] = BossAbility:New({ -- Holy Flame
 					phases = {
@@ -273,7 +275,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 1.0,
 					castTime = 3.0,
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[428169] = BossAbility:New({ -- Blinding Light
 					phases = {
@@ -288,7 +290,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 4.0,
 					castTime = 4.0,
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 			},
 			phases = {

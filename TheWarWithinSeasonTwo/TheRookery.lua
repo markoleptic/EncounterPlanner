@@ -142,7 +142,7 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 			instanceID = 2648,
 			preferredCombatLogEventAbilities = {
 				[1] = { combatLogEventSpellID = 423839, combatLogEventType = "SAR" },
-				[2] = nil,
+				[2] = { combatLogEventSpellID = 423839, combatLogEventType = "SAA" },
 			},
 			abilities = {
 				[423305] = BossAbility:New({ -- Null Upheaval

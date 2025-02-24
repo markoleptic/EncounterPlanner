@@ -58,7 +58,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					duration = 10.0,
 					castTime = 1.5,
 					onlyRelevantForTanks = true,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[473220] = BossAbility:New({ -- Sonic Boom
 					phases = {
@@ -69,7 +69,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[469981] = BossAbility:New({ -- Kill-o-Block Barrier
 					phases = {
