@@ -342,10 +342,15 @@ function BossUtilities.GetMaxSpellCount(encounterID, spellID)
 	return nil
 end
 
-local function CheckFixedCountsSatisfied(phases, counts)
+---@param phases table<integer, BossPhase>
+---@param counts table<integer, integer>
+---@return boolean
+local function FixedCountsSatisfied(phases, counts)
 	for phaseIndex, phase in ipairs(phases) do
-		if not counts[phaseIndex] or counts[phaseIndex] < phase.defaultCount then
-			return false
+		if phase.fixedCount then
+			if not counts[phaseIndex] or counts[phaseIndex] < phase.defaultCount then
+				return false
+			end
 		end
 	end
 	return true
@@ -354,7 +359,7 @@ end
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
-function BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
+local function CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 	local counts = {}
 	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
@@ -370,7 +375,7 @@ function BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 			if phase.repeatAfter == nil then
 				currentPhaseIndex = currentPhaseIndex + 1
 			else
-				if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
+				if phase.fixedCount and FixedCountsSatisfied(phases, counts) then
 					break
 				else
 					currentPhaseIndex = phase.repeatAfter
@@ -421,7 +426,7 @@ function BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, 
 		end
 
 		-- Clamp phases to their min/maxes
-		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
+		local maxCounts = CalculateMaxPhaseCounts(encounterID, maxTotalDuration)
 		if validatedCounts[1] then
 			validatedCounts[1] = Clamp(validatedCounts[1], 1, maxCounts[1])
 			local lastPhaseIndex, lastPhaseIndexCount = 1, validatedCounts[1]
@@ -1004,7 +1009,7 @@ do
 				if phase.repeatAfter == nil then
 					currentPhaseIndex = currentPhaseIndex + 1
 				else
-					if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
+					if phase.fixedCount and FixedCountsSatisfied(phases, counts) then
 						break
 					else
 						currentPhaseIndex = phase.repeatAfter
@@ -1036,7 +1041,7 @@ do
 				if phase.repeatAfter == nil then
 					currentPhaseIndex = currentPhaseIndex + 1
 				else
-					if phase.fixedCount and CheckFixedCountsSatisfied(phases, counts) then
+					if phase.fixedCount and FixedCountsSatisfied(phases, counts) then
 						break
 					else
 						currentPhaseIndex = phase.repeatAfter
@@ -1574,6 +1579,34 @@ do
 					end
 				end
 				return "CompareSpellCastTimeTables"
+			end
+		end
+
+		do
+			function tests.ValidateMaxPhaseCounts()
+				for _, dungeonInstance in pairs(Private.dungeonInstances) do
+					for _, boss in ipairs(dungeonInstance.bosses) do
+						local encounterID = boss.dungeonEncounterID
+						local maxPhaseCounts = CalculateMaxPhaseCounts(encounterID, kMaxBossDuration)
+						local validatedPhaseCounts =
+							BossUtilities.SetPhaseCounts(encounterID, maxPhaseCounts, kMaxBossDuration)
+						TestEqual(maxPhaseCounts, validatedPhaseCounts, "Max Phase Counts Equal Validated Phase Counts")
+
+						local maxPhaseCountsFromOrderedPhases = {}
+						for _, phaseIndex in ipairs(maxOrderedBossPhases[encounterID]) do
+							maxPhaseCountsFromOrderedPhases[phaseIndex] = (
+								maxPhaseCountsFromOrderedPhases[phaseIndex] or 0
+							) + 1
+						end
+
+						TestEqual(
+							maxPhaseCounts,
+							maxPhaseCountsFromOrderedPhases,
+							"Max Phase Counts Equal Max Phase Counts From Ordered Phases"
+						)
+					end
+				end
+				return "ValidateMaxPhaseCounts"
 			end
 		end
 	end

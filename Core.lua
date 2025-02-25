@@ -217,18 +217,18 @@ do -- Profile updating and refreshing
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
 		if profile then
-			for _, plan in pairs(profile.plans) do
+			for planName, plan in pairs(profile.plans) do
 				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
-				plan = Plan:New(plan, plan.name, plan.ID)
+				plan = Plan:New(plan, planName, plan.ID)
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then
 					ChangePlanBoss(2902, plan)
 				end
 				local dungeonEncounterID = plan.dungeonEncounterID
 				boss = GetBoss(plan.dungeonEncounterID) --[[@as Boss]]
-				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
+				local customPhaseDurations = AddOn.db.profile.plans[planName].customPhaseDurations
 				bossUtilities.SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
-				local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
+				local customPhaseCounts = AddOn.db.profile.plans[planName].customPhaseCounts
 				customPhaseCounts =
 					bossUtilities.SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
 				bossUtilities.GenerateBossTables(boss)
