@@ -773,21 +773,43 @@ do
 	---@field bossName string|nil
 	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
 
+	---@param spellID integer
+	---@param spellCount integer
+	---@param absolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param maxAbsolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@return number|nil
+	local function FindCastStart(spellID, spellCount, absolute, maxAbsolute)
+		local castStartTable = absolute[spellID]
+		if castStartTable then
+			local spellCastInfoTable = castStartTable[spellCount]
+			if spellCastInfoTable then
+				return spellCastInfoTable.castStart
+			end
+		end
+		castStartTable = maxAbsolute[spellID]
+		if castStartTable then
+			local spellCastInfoTable = castStartTable[spellCount]
+			if spellCastInfoTable then
+				return spellCastInfoTable.castStart
+			end
+		end
+	end
+
 	-- Updates multiple timeline assignments' start times.
 	---@param timelineAssignments table<integer, TimelineAssignment>
 	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
 	---@return boolean
 	---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
 	function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
-		local maxAbsoluteSpellCastStartTable = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
-		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local absolute = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
+		local maxAbsolute = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		local bossName = GetBossName(bossDungeonEncounterID)
 		local failedTable = {
 			bossName = bossName,
 			combatLogEventSpellIDs = {},
 		}
 
-		if not maxAbsoluteSpellCastStartTable or not absoluteSpellCastStartTable or not bossName then
+		if not absolute or not maxAbsolute or not bossName then
 			return false, failedTable
 		end
 
@@ -796,19 +818,11 @@ do
 			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
 				local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 				local spellID = assignment.combatLogEventSpellID
-				local maxSpellIDSpellCastStartTable = maxAbsoluteSpellCastStartTable[spellID]
-				local spellIDSpellCastStartTable = absoluteSpellCastStartTable[spellID]
-				if maxSpellIDSpellCastStartTable or spellIDSpellCastStartTable then
+				if absolute[spellID] and maxAbsolute[spellID] then
 					local spellCount = assignment.spellCount
-					local spellCastStartTable
-					if maxSpellIDSpellCastStartTable then
-						spellCastStartTable = maxSpellIDSpellCastStartTable[spellCount]
-					end
-					if not spellCastStartTable and spellIDSpellCastStartTable then
-						spellCastStartTable = spellIDSpellCastStartTable[spellCount]
-					end
-					if spellCastStartTable then
-						local startTime = spellCastStartTable.castStart + assignment.time
+					local castStart = FindCastStart(spellID, spellCount, absolute, maxAbsolute)
+					if castStart then
+						local startTime = castStart + assignment.time
 						local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
 						local combatLogEventType = assignment.combatLogEventType
 						if combatLogEventType == "SAR" then
@@ -828,21 +842,6 @@ do
 				timelineAssignment.startTime = timelineAssignment
 					.assignment--[[@as TimedAssignment]]
 					.time
-			elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
-				-- local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
-				-- local boss = GetBoss(bossDungeonEncounterID)
-				-- if boss then
-				-- 	local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
-				-- 	local phase = boss.phases[assignment.phase]
-				-- 	if bossPhaseTable and phase then
-				-- 		for phaseCount = 1, phase.count do
-				-- 			local phaseStartTime =
-				-- 				GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
-				-- 			timelineAssignment.startTime = phaseStartTime
-				-- 			break -- TODO: Only first phase appearance implemented
-				-- 		end
-				-- 	end
-				-- end
 			end
 		end
 		if next(failedSpellIDs) then
@@ -855,7 +854,7 @@ do
 	---@param timelineAssignments table<integer, TimelineAssignment>
 	---@param plan Plan
 	---@param bossDungeonEncounterID integer
-	function Utilities.LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
+	local function LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
 			local totalCustomDuration, _ = GetTotalDurations(bossDungeonEncounterID)
@@ -1101,7 +1100,7 @@ do
 			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, plan.name)
 		end
 
-		Utilities.LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
+		LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
 
 		return timelineAssignments
 	end

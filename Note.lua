@@ -24,7 +24,7 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 local bossUtilities = Private.bossUtilities
 local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetBossDungeonEncounterIDFromSpellID = bossUtilities.GetBossDungeonEncounterIDFromSpellID
-local GetMaxSpellCount = bossUtilities.GetMaxSpellCount
+local ClampSpellCount = bossUtilities.ClampSpellCount
 local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
 ---@class Utilities
@@ -168,14 +168,16 @@ local function ProcessCombatEventLogEventOption(option, time, assignments, deriv
 					or { assignmentIDs = {}, string = option }
 				local replacedInvalidSpellCount = false
 				if spellCount then
-					if not IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount) then
-						spellCount = GetMaxSpellCount(bossDungeonEncounterID, spellID)
-						tinsert(replaced, {
-							reason = 4,
-							string = option,
-							replacedSpellCount = spellCount,
-						})
-						replacedInvalidSpellCount = true
+					if not IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount, true) then
+						spellCount = ClampSpellCount(bossDungeonEncounterID, spellID, spellCount)
+						if spellCount then
+							tinsert(replaced, {
+								reason = 4,
+								string = option,
+								replacedSpellCount = spellCount,
+							})
+							replacedInvalidSpellCount = true
+						end
 					end
 				else
 					tinsert(replaced, { reason = 5, string = option })

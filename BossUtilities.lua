@@ -10,9 +10,6 @@ local Utilities = Private.utilities
 local BossUtilities = Private.bossUtilities
 
 local Clamp = Clamp
-local EJ_GetCreatureInfo = EJ_GetCreatureInfo
-local EJ_SelectEncounter = EJ_SelectEncounter
-local EJ_SelectInstance = EJ_SelectInstance
 local hugeNumber = math.huge
 local ipairs = ipairs
 local min = math.min
@@ -34,15 +31,20 @@ local orderedBossPhases = {}
 ---@type table<integer, table<integer, integer>>
 local maxOrderedBossPhases = {}
 
----@param value number
----@param precision integer
----@return number
-function Utilities.Round(value, precision)
-	local factor = 10 ^ precision
-	if value > 0 then
-		return floor(value * factor + 0.5) / factor
-	else
-		return ceil(value * factor - 0.5) / factor
+do
+	local floor = math.floor
+	local ceil = math.ceil
+
+	---@param value number
+	---@param precision integer
+	---@return number
+	function Utilities.Round(value, precision)
+		local factor = 10 ^ precision
+		if value > 0 then
+			return floor(value * factor + 0.5) / factor
+		else
+			return ceil(value * factor - 0.5) / factor
+		end
 	end
 end
 
@@ -211,19 +213,48 @@ function BossUtilities.ResetBossPhaseCounts(encounterID)
 	end
 end
 
+-- Returns true if the spell count exists in the current boss phase timing configuration.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
 ---@param count integer
+---@param useMaxSpellCount boolean|nil If specified, the maxAbsoluteSpellCastStartTable will also be searched.
 ---@return boolean
-function BossUtilities.IsValidSpellCount(encounterID, spellID, count)
+function BossUtilities.IsValidSpellCount(encounterID, spellID, count, useMaxSpellCount)
+	local spellCount = absoluteSpellCastStartTables[encounterID]
+	if spellCount then
+		local spellCountBySpellID = spellCount[spellID]
+		if spellCountBySpellID and spellCountBySpellID[count] then
+			return true
+		elseif useMaxSpellCount then
+			spellCount = maxAbsoluteSpellCastStartTables[encounterID]
+			if spellCount then
+				spellCountBySpellID = spellCount[spellID]
+				if spellCountBySpellID and spellCountBySpellID[count] then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+-- Clamps the spell count based on the current boss phase timing configuration.
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellID integer
+---@param count integer
+---@return integer|nil
+function BossUtilities.ClampSpellCount(encounterID, spellID, count)
 	local spellCount = absoluteSpellCastStartTables[encounterID]
 	if spellCount then
 		local spellCountBySpellID = spellCount[spellID]
 		if spellCountBySpellID then
-			return spellCountBySpellID[count] ~= nil
+			local length = #spellCountBySpellID
+			if length > 0 then
+				return Clamp(count, 1, #spellCountBySpellID)
+			end
 		end
 	end
-	return false
+	return nil
 end
 
 ---@param encounterID integer Boss dungeon encounter ID
@@ -296,6 +327,7 @@ function BossUtilities.IsValidCombatLogEventType(encounterID, spellID, combatLog
 	return false
 end
 
+-- Returns the max spell count according to the current boss phase timing configuration.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer
 ---@return integer|nil

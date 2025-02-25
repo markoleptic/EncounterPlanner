@@ -436,9 +436,10 @@ do -- Assignment Editor
 		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	end
 
-	local UpdateAssignmentBossPhase = utilities.UpdateAssignmentBossPhase
-	local IsValidSpellCount = bossUtilities.IsValidSpellCount
 	local ChangeAssignmentType = utilities.ChangeAssignmentType
+	local ClampSpellCount = bossUtilities.ClampSpellCount
+	local IsValidSpellCount = bossUtilities.IsValidSpellCount
+	local UpdateAssignmentBossPhase = utilities.UpdateAssignmentBossPhase
 
 	---@param assignmentEditor EPAssignmentEditor
 	---@param dataType string
@@ -486,6 +487,11 @@ do -- Assignment Editor
 					if IsValidSpellCount(dungeonEncounterID, spellID, spellCount) then
 						assignment.spellCount = spellCount
 						UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], dungeonEncounterID)
+					else
+						local clamped = ClampSpellCount(dungeonEncounterID, spellID, spellCount)
+						if clamped then
+							assignment.spellCount = clamped
+						end
 					end
 				end
 				updateFields = true
