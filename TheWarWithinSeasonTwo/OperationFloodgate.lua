@@ -46,6 +46,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					duration = 12.0,
 					castTime = 1.5,
 					durationHurts = true,
+					durationLastsUntilEndOfPhase = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 				}),
 				[473351] = BossAbility:New({ -- Electrocrush

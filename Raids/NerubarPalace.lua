@@ -1019,6 +1019,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					castTime = 40.0,
 					duration = 0.0,
+					castTimeLastsUntilEndOfPhase = true,
 				}),
 			},
 			phases = {

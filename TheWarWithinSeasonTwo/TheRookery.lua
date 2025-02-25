@@ -162,9 +162,10 @@ Private.dungeonInstances[2648] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					duration = 60.0,
+					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+					durationLastsUntilEndOfPhase = true,
 				}),
 				[429487] = BossAbility:New({ -- Unleash Corruption
 					phases = {

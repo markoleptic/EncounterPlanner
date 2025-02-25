@@ -55,7 +55,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
-					infiniteDuration = true,
+					durationLastsUntilEndOfPhase = true,
 					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[282801] = BossAbility:New({ -- Platinum Plating
