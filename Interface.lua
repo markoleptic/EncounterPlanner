@@ -672,13 +672,20 @@ do -- Assignment Editor
 			AddOn.db.profile.recentSpellAssignments
 		)
 		local dropdownItems = {}
+		local itemsToDisable = {}
 		local boss = GetCurrentBoss()
 		if boss then
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
 				tinsert(dropdownItems, CreateAbilityDropdownItemData(boss, abilityID))
+				if #boss.abilities[abilityID].allowedCombatLogEventTypes == 0 then
+					tinsert(itemsToDisable, abilityID)
+				end
 			end
 		end
 		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+		for _, abilityID in ipairs(itemsToDisable) do
+			assignmentEditor.combatLogEventSpellIDDropdown:SetItemEnabled(abilityID, false)
+		end
 		assignmentEditor:SetWidth(assignmentEditorWidth)
 		assignmentEditor:DoLayout()
 		return assignmentEditor
