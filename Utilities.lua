@@ -404,7 +404,7 @@ do
 						)
 					--@debug@
 					else
-						print(format("%s: %s spell not found.", AddOnName, spell["name"]))
+						print(format("%s: %s spell not found.", AddOnName, spell["name"], spell["spellID"]))
 						--@end-debug@
 					end
 				end
@@ -991,55 +991,51 @@ do
 		end
 	end
 
-	---@param count integer
-	---@param invalidSpellIDOnlyCount integer
-	---@param onlyFailedSpellIDsString string
-	---@param spellCounts table<integer, table<integer, integer>>
-	---@param planName string
-	local function LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, planName)
-		if count == 0 then
-			return
-		end
+	local loggedPlanFailures = {} ---@type table<string, {spellIDs: string, spellCounts: string}>}>
+
+	---@param spellIDsCount integer
+	---@param spellIDs string
+	---@param spellCountsCount integer
+	---@param spellCounts string
+	---@param plan Plan
+	local function LogCombatLogEventAssignmentFailures(spellIDsCount, spellIDs, spellCountsCount, spellCounts, plan)
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
-			if onlyFailedSpellIDsString:len() > 1 then
-				local spellString = onlyFailedSpellIDsString:sub(1, onlyFailedSpellIDsString:len() - 2)
-				local msg = format(
-					"%s: %d %s: %s.",
-					planName,
-					invalidSpellIDOnlyCount,
-					L["Invalid Boss Spell ID(s)"],
-					spellString
-				)
-				interfaceUpdater.LogMessage(msg, 3, 1)
+			local loggedPlanData = loggedPlanFailures[plan.ID]
+			local shouldLogFailedSpellIDs = spellIDsCount > 0
+
+			if loggedPlanData then
+				if shouldLogFailedSpellIDs and loggedPlanData.spellIDs ~= spellIDs then
+					shouldLogFailedSpellIDs = true
+				else
+					shouldLogFailedSpellIDs = false
+				end
 			end
 
-			if next(spellCounts) then
-				local total = 0
-				local delayedMsgs = {}
-				sort(spellCounts)
-				for spellID, counts in pairs(spellCounts) do
-					local invalidSpellCounts = tostring(spellID) .. ":"
-					for _, spellCount in pairs(counts) do
-						invalidSpellCounts = invalidSpellCounts .. " " .. spellCount .. ", "
-						total = total + 1
-					end
-					if invalidSpellCounts:len() > 1 then
-						invalidSpellCounts = invalidSpellCounts:sub(1, invalidSpellCounts:len() - 2)
-						tinsert(delayedMsgs, invalidSpellCounts)
-					end
-				end
-				if total > 0 then
-					local msg = format(
-						"%s: %d %s: %s.",
-						planName,
-						total,
-						L["Invalid Boss Spell Count(s)"],
-						concat(delayedMsgs, ",")
-					)
-					interfaceUpdater.LogMessage(msg, 3, 1)
+			if shouldLogFailedSpellIDs then
+				local descriptor = spellIDsCount == 1 and L["Spell ID"] or L["Spell IDs"]
+				local msg =
+					format("%s: %d %s %s: %s.", plan.name, spellIDsCount, L["Invalid Boss"], descriptor, spellIDs)
+				interfaceUpdater.LogMessage(msg, 2, 1)
+			end
+
+			local shouldLogFailedSpellCounts = spellCountsCount > 0
+			if loggedPlanData then
+				if shouldLogFailedSpellCounts and loggedPlanData.spellCounts ~= spellCounts then
+					shouldLogFailedSpellCounts = true
+				else
+					shouldLogFailedSpellCounts = false
 				end
 			end
+
+			if shouldLogFailedSpellCounts then
+				local descriptor = spellCountsCount == 1 and L["Spell Count"] or L["Spell Counts"]
+				local msg =
+					format("%s: %d %s %s: %s.", plan.name, spellCountsCount, L["Invalid Boss"], descriptor, spellCounts)
+				interfaceUpdater.LogMessage(msg, 2, 1)
+			end
+
+			loggedPlanFailures[plan.ID] = { spellIDs = spellIDs, spellCounts = spellCounts }
 		end
 	end
 
@@ -1072,13 +1068,13 @@ do
 		local success, failTable =
 			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
 
+		local spellIDsString, spellCountsString = "", ""
+		local invalidSpellIDsCount, invalidSpellCountsCount = 0, 0
+
 		if not success and failTable then
-			local invalidSpellIDOnlyCount = 0
-			local spellCounts = {}
-			local startCount = #timelineAssignments
-			local failedSpellCountCount = 0
 			local failedSpellIDs = failTable.combatLogEventSpellIDs
-			local onlyFailedSpellIDsString = ""
+			local spellIDs, spellCounts = {}, {}
+			local startCount = #timelineAssignments
 
 			for i = startCount, 1, -1 do
 				local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
@@ -1088,18 +1084,45 @@ do
 					if failedSpellIDs[spellID][spellCount] then
 						spellCounts[spellID] = spellCounts[spellID] or {}
 						tinsert(spellCounts[spellID], spellCount)
-						failedSpellCountCount = failedSpellCountCount + 1
+						invalidSpellCountsCount = invalidSpellCountsCount + 1
 					elseif not next(failedSpellIDs[spellID]) then
-						onlyFailedSpellIDsString = onlyFailedSpellIDsString .. spellID .. ", "
-						invalidSpellIDOnlyCount = invalidSpellIDOnlyCount + 1
+						tinsert(spellIDs, spellID)
+						invalidSpellIDsCount = invalidSpellIDsCount + 1
 					end
 				end
 			end
 
-			local count = failedSpellCountCount + invalidSpellIDOnlyCount
-			LogFailures(count, invalidSpellIDOnlyCount, onlyFailedSpellIDsString, spellCounts, plan.name)
+			if #spellIDs > 0 then
+				sort(spellIDs)
+				spellIDsString = concat(spellIDs, ", ")
+			end
+
+			if next(spellCounts) then
+				local spellIDKeys = {}
+				for spellID, _ in pairs(spellCounts) do
+					tinsert(spellIDKeys, spellID)
+				end
+				sort(spellIDKeys)
+				local countsBySpellID = {}
+				for _, spellID in ipairs(spellIDKeys) do
+					sort(spellCounts[spellID])
+					if #spellCounts[spellID] > 0 then
+						tinsert(countsBySpellID, tostring(spellID) .. ": " .. concat(spellCounts[spellID], ","))
+					end
+				end
+				if #countsBySpellID > 0 then
+					spellCountsString = concat(countsBySpellID, ", ")
+				end
+			end
 		end
 
+		LogCombatLogEventAssignmentFailures(
+			invalidSpellIDsCount,
+			spellIDsString,
+			invalidSpellCountsCount,
+			spellCountsString,
+			plan
+		)
 		LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
 
 		return timelineAssignments
