@@ -129,7 +129,7 @@ local function OnAcquire(self)
 	planNameLabel:SetFrameWidthFromText()
 
 	self.planNameLineEdit = AceGUI:Create("EPLineEdit")
-	self.planNameLineEdit:SetMaxLetters(24)
+	self.planNameLineEdit:SetMaxLetters(36)
 	local font, _, flags = self.planNameLineEdit.editBox:GetFont()
 	if font then
 		self.planNameLineEdit:SetFont(font, defaultFontSize, flags)
