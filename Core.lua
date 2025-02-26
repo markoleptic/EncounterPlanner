@@ -217,6 +217,7 @@ do -- Profile updating and refreshing
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
 		if profile then
+			local remappings = Private.spellDB.GetSpellRemappings()
 			for planName, plan in pairs(profile.plans) do
 				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 				plan = Plan:New(plan, planName, plan.ID)
@@ -240,6 +241,8 @@ do -- Profile updating and refreshing
 							if assignment.text:len() > 0 then
 								assignment.spellInfo.spellID = kTextAssignmentSpellID
 							end
+						elseif remappings[assignment.spellInfo.spellID] then
+							assignment.spellInfo.spellID = remappings[assignment.spellInfo.spellID]
 						end
 						if getmetatable(assignment) == CombatLogEventAssignment then
 							UpdateCombatLogEventAssignment(

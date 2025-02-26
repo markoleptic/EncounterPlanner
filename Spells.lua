@@ -7158,3 +7158,11 @@ function Private.spellDB.FindCooldownDuration(spellID)
 	end
 	return nil
 end
+
+---@return table<integer, integer>
+function Private.spellDB.GetSpellRemappings()
+	return {
+		[430703] = 468037, -- Black Arrow
+		[246287] = 472433, -- Evangelism
+	}
+end
