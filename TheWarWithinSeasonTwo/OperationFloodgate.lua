@@ -1,8 +1,3 @@
-local isElevenDotOne = select(4, GetBuildInfo()) >= 110100 -- Remove when 11.1 is live
-if not isElevenDotOne then
-	return
-end
-
 local AddOnName, Namespace = ...
 
 ---@class Private

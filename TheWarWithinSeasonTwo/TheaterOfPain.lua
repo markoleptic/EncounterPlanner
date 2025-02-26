@@ -15,20 +15,6 @@ local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
 
-local isElevenDotOne = select(4, GetBuildInfo()) >= 110100 -- Remove when 11.1 is live
-if not isElevenDotOne then
-	local L = Private.L
-	Private:RegisterPlaceholderBossSpellID(1215741, L["Mighty Smash"])
-	Private:RegisterPlaceholderBossSpellID(320182, L["Noxious Spores"])
-	Private:RegisterPlaceholderBossSpellID(1215738, L["Decaying Breath"])
-	Private:RegisterPlaceholderBossSpellID(1215600, L["Withering Touch"])
-	Private:RegisterPlaceholderBossSpellID(1215747, L["Final Will"])
-
-	Private:RegisterPlaceholderBossSpellID(1223803, L["Well of Darkness"])
-	Private:RegisterPlaceholderBossSpellID(474298, L["Draw Soul"])
-	Private:RegisterPlaceholderBossSpellID(1215787, L["Death Spiral"])
-end
-
 Private.dungeonInstances[2293] = DungeonInstance:New({
 	journalInstanceID = 1187,
 	instanceID = 2293,
@@ -136,7 +122,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
-					bossNpcID = 145185,
+					bossNpcID = 164463,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 				[164461] = BossAbility:New({ -- Sathel died
@@ -147,7 +133,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
-					bossNpcID = 145185,
+					bossNpcID = 164461,
 					allowedCombatLogEventTypes = { "UD" },
 				}),
 				[1215747] = BossAbility:New({ -- Final Will

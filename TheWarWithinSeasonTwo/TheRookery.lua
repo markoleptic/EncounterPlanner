@@ -15,14 +15,6 @@ local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
 
-local isElevenDotOne = select(4, GetBuildInfo()) >= 110100 -- Remove when 11.1 is live
-if not isElevenDotOne then
-	local L = Private.L
-	Private:RegisterPlaceholderBossSpellID(1214315, L["Lightning Torrent"])
-	Private:RegisterPlaceholderBossSpellID(1214325, L["Crashing Thunder"])
-	Private:RegisterPlaceholderBossSpellID(474018, L["Wild Lightning"])
-end
-
 Private.dungeonInstances[2648] = DungeonInstance:New({
 	journalInstanceID = 1268,
 	instanceID = 2648,

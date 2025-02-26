@@ -484,16 +484,6 @@ Private.spellDB = {
 			{
 				["class"] = "WARRIOR",
 				["type"] = "offensive",
-				["buff"] = 401150,
-				["spec"] = true,
-				["name"] = "Avatar",
-				["duration"] = 90,
-				["icon"] = 613534,
-				["spellID"] = 401150,
-			},
-			{
-				["class"] = "WARRIOR",
-				["type"] = "offensive",
 				["buff"] = 436358,
 				["spec"] = true,
 				["name"] = "Demolish",
@@ -2795,12 +2785,12 @@ Private.spellDB = {
 			{
 				["class"] = "HUNTER",
 				["type"] = "offensive",
-				["buff"] = 430703,
+				["buff"] = 468037,
 				["spec"] = true,
 				["name"] = "Black Arrow",
 				["duration"] = 30,
 				["icon"] = 5927620,
-				["spellID"] = 430703,
+				["spellID"] = 468037,
 			},
 			{
 				["class"] = "HUNTER",
@@ -4462,12 +4452,12 @@ Private.spellDB = {
 			{
 				["class"] = "PRIEST",
 				["type"] = "heal",
-				["buff"] = 246287,
+				["buff"] = 472433,
 				["spec"] = true,
 				["name"] = "Evangelism",
 				["duration"] = 90,
 				["icon"] = 135895,
-				["spellID"] = 246287,
+				["spellID"] = 472433,
 			},
 			{
 				["class"] = "PRIEST",
