@@ -338,15 +338,13 @@ function Utilities.CreateUniquePlanName(plans, bossName, existingName)
 
 		if plans[newPlanName] then
 			num = suffix ~= "" and (num + 1) or 2
-			newPlanName = baseName .. " " .. num
 		end
 
 		while plans[newPlanName] do
-			if #baseName > 0 then
-				newPlanName = baseName .. " " .. num
-			else
-				newPlanName = tostring(num)
-			end
+			local suffixStr = " " .. num
+			local maxBaseLength = 36 - #suffixStr
+			local truncatedBase = #baseName > 0 and baseName:sub(1, maxBaseLength) or tostring(num)
+			newPlanName = truncatedBase .. suffixStr
 			num = num + 1
 		end
 	end
@@ -2139,3 +2137,49 @@ do
 		return assignment
 	end
 end
+
+--@debug@
+do
+	---@class Tests
+	local tests = Private.tests
+	---@class TestUtilities
+	local testUtilities = Private.testUtilities
+
+	do
+		function tests.TestCreateUniquePlanName()
+			local planName, newName = "", ""
+			for i = 1, 36 do
+				planName = planName .. "H"
+			end
+			local plans = {}
+			plans[planName] = Plan:New({}, planName)
+			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
+			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
+
+			planName = ""
+			for i = 1, 34 do
+				planName = planName .. "H"
+			end
+			planName = planName .. "99"
+			plans[planName] = Plan:New({}, planName)
+			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
+			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
+			testUtilities.TestEqual(newName:sub(34, 36), "100", "Correct number appended")
+
+			planName = "Plan Name"
+			plans[planName] = Plan:New({}, planName)
+			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			testUtilities.TestEqual("Plan Name 2", newName, "Plan name appended with number")
+
+			planName = "Plan Name 3"
+			plans[planName] = Plan:New({}, planName)
+			newName = Utilities.CreateUniquePlanName(plans, "boss", "Plan Name 4")
+			testUtilities.TestEqual("Plan Name 4", newName, "Plan name available and used")
+
+			return "TestCreateUniquePlanName"
+		end
+	end
+end
+--@end-debug@

@@ -145,6 +145,22 @@ do
 		end
 	end
 
+	---@param first any
+	---@param second any
+	---@param context string|number
+	function TestUtilities.TestNotEqual(first, second, context)
+		currentTotalComparisons = currentTotalComparisons + 1
+		if first ~= second then
+			currentPassedComparisons = currentPassedComparisons + 1
+		else
+			tinsert(
+				currentFailedComparisonsContexts,
+				tostring(context) .. ": " .. tostring(first) .. " == " .. tostring(second)
+			)
+			currentFailedComparisons = currentFailedComparisons + 1
+		end
+	end
+
 	---@param lookupTable table
 	---@param key string
 	---@param values table<any, boolean>
