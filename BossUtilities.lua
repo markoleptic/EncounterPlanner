@@ -356,6 +356,7 @@ local function FixedCountsSatisfied(phases, counts)
 	return true
 end
 
+-- Calculates the maximum amount number of each boss phase based on their durations compared to the max total duration.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param maxTotalDuration number
 ---@return table<integer, integer>
@@ -434,10 +435,10 @@ function BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, 
 				local phaseCount = validatedCounts[phaseIndex]
 				local minCount, maxCount
 				if phases[lastPhaseIndex].repeatAfter == lastPhaseIndex then
-					minCount = max(0, lastPhaseIndexCount - 1)
+					minCount = max(1, lastPhaseIndexCount - 1)
 					maxCount = min(lastPhaseIndexCount, maxCounts[phaseIndex])
 				else
-					minCount = 0
+					minCount = 1
 					maxCount = maxCounts[phaseIndex]
 				end
 
@@ -1604,6 +1605,9 @@ do
 							maxPhaseCountsFromOrderedPhases,
 							"Max Phase Counts Equal Max Phase Counts From Ordered Phases"
 						)
+						for _, phase in ipairs(boss.phases) do
+							phase.count = phase.defaultCount
+						end
 					end
 				end
 				return "ValidateMaxPhaseCounts"
