@@ -319,9 +319,62 @@ do
 		end
 	end
 
+	---@param widget EPAbilityEntry
+	local function HandleAssigneeRowDeleteButtonClicked(widget)
+		local messageBoxData = {
+			ID = Private.GenerateUniqueID(),
+			isCommunication = false,
+			title = L["Delete Assignments Confirmation"],
+			message = format(
+				"%s %s %s?",
+				L["Are you sure you want to delete all"],
+				L["assignments for"],
+				widget:GetText()
+			),
+			acceptButtonText = L["Okay"],
+			acceptButtonCallback = function()
+				if Private.mainFrame then
+					HandleDeleteAssigneeRowClicked(widget)
+				end
+			end,
+			rejectButtonText = L["Cancel"],
+			rejectButtonCallback = nil,
+			buttonsToAdd = {},
+		} --[[@as MessageBoxData]]
+		InterfaceUpdater.CreateMessageBox(messageBoxData, false)
+	end
+
+	local GetSpellName = C_Spell.GetSpellName
+
+	local function HandleAssigneeSpellRowDeleteButtonClicked(widget)
+		local spellEntryKey = widget:GetKey()
+		local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
+		local messageBoxData = {
+			ID = Private.GenerateUniqueID(),
+			isCommunication = false,
+			title = L["Delete Assignments Confirmation"],
+			message = format(
+				"%s %s %s %s?",
+				L["Are you sure you want to delete all"],
+				spellName,
+				L["assignments for"],
+				widget:GetText()
+			),
+			acceptButtonText = L["Okay"],
+			acceptButtonCallback = function()
+				if Private.mainFrame then
+					HandleDeleteAssigneeRowClicked(widget)
+				end
+			end,
+			rejectButtonText = L["Cancel"],
+			rejectButtonCallback = nil,
+			buttonsToAdd = {},
+		} --[[@as MessageBoxData]]
+		InterfaceUpdater.CreateMessageBox(messageBoxData, false)
+	end
+
 	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
 	local GetSpecializationInfoByID = GetSpecializationInfoByID
-	local GetSpellName = C_Spell.GetSpellName
 
 	-- Clears and repopulates the list of assignments and spells.
 	---@param sortedAssigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
@@ -364,29 +417,7 @@ do
 					assigneeEntry:SetCallback("SwapButtonClicked", HandleSwapButtonClicked)
 					assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 					assigneeEntry:SetCallback("AssigneeSwapped", HandleSwapAssignee)
-					assigneeEntry:SetCallback("OnValueChanged", function(widget, _)
-						local messageBoxData = {
-							ID = Private.GenerateUniqueID(),
-							isCommunication = false,
-							title = L["Delete Assignments Confirmation"],
-							message = format(
-								"%s %s %s?",
-								L["Are you sure you want to delete all"],
-								L["assignments for"],
-								coloredAssignee
-							),
-							acceptButtonText = L["Okay"],
-							acceptButtonCallback = function()
-								if Private.mainFrame then
-									HandleDeleteAssigneeRowClicked(widget)
-								end
-							end,
-							rejectButtonText = L["Cancel"],
-							rejectButtonCallback = nil,
-							buttonsToAdd = {},
-						} --[[@as MessageBoxData]]
-						InterfaceUpdater.CreateMessageBox(messageBoxData, false)
-					end)
+					assigneeEntry:SetCallback("OnValueChanged", HandleAssigneeRowDeleteButtonClicked)
 					tinsert(children, assigneeEntry)
 
 					if not assigneeCollapsed then
@@ -404,32 +435,7 @@ do
 							spellEntry:SetLeftIndent(15 - 2)
 							spellEntry:SetHeight(30)
 							spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-							spellEntry:SetCallback("OnValueChanged", function(widget, _)
-								local spellEntryKey = widget:GetKey()
-								local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
-								local messageBoxData = {
-									ID = Private.GenerateUniqueID(),
-									isCommunication = false,
-									title = L["Delete Assignments Confirmation"],
-									message = format(
-										"%s %s %s %s?",
-										L["Are you sure you want to delete all"],
-										spellName,
-										L["assignments for"],
-										coloredAssignee
-									),
-									acceptButtonText = L["Okay"],
-									acceptButtonCallback = function()
-										if Private.mainFrame then
-											HandleDeleteAssigneeRowClicked(widget)
-										end
-									end,
-									rejectButtonText = L["Cancel"],
-									rejectButtonCallback = nil,
-									buttonsToAdd = {},
-								} --[[@as MessageBoxData]]
-								InterfaceUpdater.CreateMessageBox(messageBoxData, false)
-							end)
+							spellEntry:SetCallback("OnValueChanged", HandleAssigneeSpellRowDeleteButtonClicked)
 							tinsert(children, spellEntry)
 						end
 					end
@@ -628,67 +634,52 @@ do
 	local InCombatLockdown = InCombatLockdown
 	local messageBox = nil ---@type  EPMessageBox|nil
 	local messageQueue = {} ---@type table<integer, MessageBoxData>
-	local activeMessageBoxData = nil ---@type MessageBoxData|nil
+	local isExecutingCallbacks = false
+
+	local function Enqueue(messageBoxData)
+		tinsert(messageQueue, messageBoxData)
+	end
+
+	---@return MessageBoxData|nil
+	local function Dequeue()
+		if #messageQueue > 0 then
+			return tremove(messageQueue, 1)
+		end
+	end
+
+	---@param onlyNonCommunication boolean
+	local function ClearQueue(onlyNonCommunication)
+		local newQueue = {}
+		for _, messageBoxData in ipairs(messageQueue) do
+			if onlyNonCommunication and messageBoxData.isCommunication then
+				tinsert(newQueue, messageBoxData)
+			end
+		end
+		messageQueue = newQueue
+	end
 
 	local function ProcessMessageQueue()
 		Private:UnregisterEvent("PLAYER_REGEN_ENABLED")
-		if #messageQueue > 0 then
-			local messageBoxData = messageQueue[1]
+		if not messageBox and #messageQueue > 0 then
+			local messageBoxData = Dequeue()
 			if messageBoxData then
-				local success = InterfaceUpdater.CreateMessageBox(messageBoxData, false)
-				if success then
-					tremove(messageQueue, 1)
-				end
+				InterfaceUpdater.CreateMessageBox(messageBoxData, false)
 			end
 		end
 	end
 
-	---@param ID string
-	function InterfaceUpdater.RemoveFromMessageQueue(ID)
-		for index, messageBoxData in ipairs(messageQueue) do
-			if messageBoxData.ID == ID then
-				tremove(messageQueue, index)
-				break
-			end
-		end
-	end
-
-	---@param onlyNonCommunicationMessageBoxes boolean
-	function InterfaceUpdater.RemoveMessageBoxes(onlyNonCommunicationMessageBoxes)
-		if onlyNonCommunicationMessageBoxes then
-			for index = #messageQueue, -1, 1 do
-				if messageQueue[index].isCommunication then
-					tremove(messageQueue, index)
-				end
-			end
-
-			if activeMessageBoxData and not activeMessageBoxData.isCommunication then
-				activeMessageBoxData = nil
-				if messageBox then
-					messageBox:Release()
-				end
-			elseif not activeMessageBoxData and not messageBox then
-				ProcessMessageQueue()
-			end
-		else
-			Private:UnregisterEvent("PLAYER_REGEN_ENABLED")
-			wipe(messageQueue)
-			activeMessageBoxData = nil
-			if messageBox then
-				messageBox:Release()
-			end
+	---@param callback fun()
+	local function ExecuteCallback(callback)
+		if callback then
+			isExecutingCallbacks = true
+			callback()
+			isExecutingCallbacks = false
 		end
 	end
 
 	local function HandleMessageBoxReleased()
 		messageBox = nil
-		if activeMessageBoxData then
-			InterfaceUpdater.RemoveFromMessageQueue(activeMessageBoxData.ID)
-			activeMessageBoxData = nil
-		end
-		if #messageQueue > 0 then
-			ProcessMessageQueue()
-		end
+		ProcessMessageQueue()
 	end
 
 	---@param messageBoxData MessageBoxData
@@ -697,7 +688,7 @@ do
 	function InterfaceUpdater.CreateMessageBox(messageBoxData, queueIfNotCreated)
 		if InCombatLockdown() then
 			if queueIfNotCreated then
-				tinsert(messageQueue, messageBoxData)
+				Enqueue(messageBoxData)
 				Private:RegisterEvent("PLAYER_REGEN_ENABLED", ProcessMessageQueue)
 			end
 			return false
@@ -713,27 +704,50 @@ do
 				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 				messageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
 				messageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
-				messageBox:SetCallback("Accepted", messageBoxData.acceptButtonCallback)
+
+				messageBox:SetCallback("Accepted", function()
+					ExecuteCallback(messageBoxData.acceptButtonCallback)
+				end)
 				if messageBoxData.rejectButtonCallback then
-					messageBox:SetCallback("Rejected", messageBoxData.rejectButtonCallback)
+					messageBox:SetCallback("Rejected", function()
+						ExecuteCallback(messageBoxData.rejectButtonCallback)
+					end)
 				end
 				for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
 					local button = messageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
 					if button then
 						messageBox:AddButton(buttonToAdd.buttonText, button)
 						if buttonToAdd.callback then
-							messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", buttonToAdd.callback)
+							messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
+								ExecuteCallback(buttonToAdd.callback)
+							end)
 						end
 					else
 						error("Invalid button index")
 					end
 				end
-				activeMessageBoxData = messageBoxData
+				messageBox.isCommunicationsMessage = messageBoxData.isCommunication
 				return true
 			elseif queueIfNotCreated then
-				tinsert(messageQueue, messageBoxData)
+				Enqueue(messageBoxData)
 			end
 			return false
+		end
+	end
+
+	---@param onlyNonCommunication boolean
+	function InterfaceUpdater.RemoveMessageBoxes(onlyNonCommunication)
+		ClearQueue(onlyNonCommunication)
+
+		if not isExecutingCallbacks and messageBox then
+			local isCurrentCommunication = messageBox.isCommunicationsMessage
+			if not onlyNonCommunication or isCurrentCommunication then
+				messageBox:Release()
+			end
+		end
+
+		if not onlyNonCommunication then
+			Private:UnregisterEvent("PLAYER_REGEN_ENABLED")
 		end
 	end
 end

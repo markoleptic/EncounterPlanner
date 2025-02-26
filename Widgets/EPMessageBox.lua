@@ -54,6 +54,7 @@ end
 ---@field text FontString
 ---@field buttonContainer EPContainer
 ---@field windowBar Frame|table
+---@field isCommunicationsMessage boolean|nil
 
 ---@param self EPMessageBox
 local function OnAcquire(self)
@@ -103,6 +104,7 @@ end
 local function OnRelease(self)
 	self.buttonContainer:Release()
 	self.buttonContainer = nil
+	self.isCommunicationsMessage = nil
 end
 
 ---@param self EPMessageBox
