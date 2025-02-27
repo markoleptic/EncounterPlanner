@@ -10,17 +10,49 @@ local select = select
 local tinsert = tinsert
 local unpack = unpack
 
+local anchorBackdrop = {
+	bgFile = "Interface\\BUTTONS\\White8x8",
+	edgeFile = nil,
+	tile = false,
+}
 local defaultSpacing = { x = 10, y = 10 }
 local defaultHeight = 100
 local defaultWidth = 100
 
+local previousPointDetails = {}
+
+---@param self EPContainer
+local function HandleFrameMouseDown(self, button)
+	if button == "LeftButton" then
+		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
+		previousPointDetails = {
+			point = point,
+			relativeTo = relativeTo:GetName(),
+			relativePoint = relativePoint,
+		}
+		self.frame:StartMoving()
+	end
+end
+
+---@param self EPContainer
+local function HandleFrameMouseUp(self, button)
+	if button == "LeftButton" then
+		self.frame:StopMovingOrSizing()
+		local point = previousPointDetails.point
+		local relativeFrame = previousPointDetails.relativeTo
+		local relativePoint = previousPointDetails.relativePoint
+		self:Fire("NewPoint", point, relativeFrame, relativePoint)
+	end
+end
+
 ---@class EPContainer : AceGUIContainer
----@field frame table|BackdropTemplate|Frame
+---@field frame table|Frame
 ---@field type string
 ---@field content table|Frame
 ---@field children table<AceGUIWidget>
 ---@field selfAlignment string|nil
 ---@field padding {left: number, top: number, right: number, bottom: number}
+---@field anchorMode boolean|nil
 
 ---@param self EPContainer
 local function OnAcquire(self)
@@ -33,9 +65,14 @@ local function OnAcquire(self)
 	self.frame:SetScript("OnSizeChanged", nil)
 end
 
+---@param self EPContainer
 local function OnRelease(self)
+	if self.anchorMode then
+		self:SetAnchorMode(false)
+	end
 	self.frame:ClearBackdrop()
 	self.content.alignment = nil
+	self.content.sortAscending = nil
 	self.selfAlignment = nil
 end
 
@@ -158,6 +195,66 @@ local function RemoveChild(self, child)
 	self:DoLayout()
 end
 
+---@param self EPContainer
+---@param point AnchorPoint
+local function SetAnchorPoint(self, point)
+	local x, y = 0, 0
+	if point == "TOP" then
+		y = 16
+	elseif point == "TOPLEFT" then
+		x, y = -16, 16
+	elseif point == "TOPRIGHT" then
+		x, y = 16, 16
+	elseif point == "RIGHT" then
+		x = 16
+	elseif point == "BOTTOMRIGHT" then
+		x, y = 16, -16
+	elseif point == "BOTTOM" then
+		y = -16
+	elseif point == "LEFT" then
+		x = -16
+	elseif point == "BOTTOMLEFT" then
+		x, y = -16, -16
+	end
+	self.anchorFrame:ClearAllPoints()
+	self.anchorFrame:SetPoint(point, self.frame, point, x, y)
+end
+
+---@param self EPContainer
+---@param anchorMode boolean
+---@param point AnchorPoint|nil
+local function SetAnchorMode(self, anchorMode, point)
+	if anchorMode then
+		self.anchorMode = true
+		self.frame:SetMovable(true)
+		self.frame:SetScript("OnMouseDown", function(_, button)
+			HandleFrameMouseDown(self, button)
+		end)
+		self.frame:SetScript("OnMouseUp", function(_, button)
+			HandleFrameMouseUp(self, button)
+		end)
+		self.anchorFrame:SetScript("OnMouseDown", function(_, button)
+			HandleFrameMouseDown(self, button)
+		end)
+		self.anchorFrame:SetScript("OnMouseUp", function(_, button)
+			HandleFrameMouseUp(self, button)
+		end)
+		if point then
+			SetAnchorPoint(self, point)
+			self.anchorFrame:Show()
+		end
+	else
+		self.anchorMode = nil
+		self.frame:SetMovable(true)
+		self.frame:SetScript("OnMouseDown", nil)
+		self.frame:SetScript("OnMouseUp", nil)
+		self.anchorFrame:SetScript("OnMouseDown", nil)
+		self.anchorFrame:SetScript("OnMouseUp", nil)
+		self.anchorFrame:ClearAllPoints()
+		self.anchorFrame:Hide()
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -168,6 +265,16 @@ local function Constructor()
 	local content = CreateFrame("Frame", Type .. "Content" .. count, frame)
 	content:SetPoint("TOPLEFT")
 	content:SetPoint("BOTTOMRIGHT")
+
+	local anchorFrame = CreateFrame("Frame", Type .. "Anchor" .. count, frame, "BackdropTemplate")
+	anchorFrame:SetBackdrop(anchorBackdrop)
+	anchorFrame:SetBackdropColor(20.0 / 255.0, 20.0 / 255.0, 20.0 / 255.0, 0.25)
+	anchorFrame:SetSize(16, 16)
+	local resizer = anchorFrame:CreateTexture(nil, "OVERLAY")
+	resizer:SetAllPoints()
+	resizer:SetTexture("Interface\\AddOns\\EncounterPlanner\\Media\\icons8-anchor-32")
+	resizer:SetVertexColor(1, 0.82, 0, 1)
+	anchorFrame:Hide()
 
 	---@class EPContainer
 	local widget = {
@@ -183,9 +290,12 @@ local function Constructor()
 		RemoveChildNoDoLayout = RemoveChildNoDoLayout,
 		SetBackdrop = SetBackdrop,
 		SetPadding = SetPadding,
+		SetAnchorPoint = SetAnchorPoint,
+		SetAnchorMode = SetAnchorMode,
 		frame = frame,
 		type = Type,
 		content = content,
+		anchorFrame = anchorFrame,
 	}
 
 	return AceGUI:RegisterAsContainer(widget)

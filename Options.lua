@@ -178,55 +178,176 @@ local function DeleteProfile(name)
 	AddOn.db:DeleteProfile(name)
 end
 
----@return EPProgressBar
+local progressBarManager = {}
+do
+	local NewTimer = C_Timer.NewTimer
+	local timers = {}
+
+	function progressBarManager:CheckIfShouldAddProgressBar()
+		if Private.progressBarAnchor then
+			local count = #Private.progressBarAnchor.children
+			if count == 1 then
+				local timer = NewTimer(GetReminderPreferences().advanceNotice / 3.0, function()
+					self:AddProgressBarsOnTimer()
+					tremove(timers, 1)
+				end)
+				tinsert(timers, timer)
+			end
+		end
+	end
+
+	function progressBarManager:AddProgressBar()
+		if Private.progressBarAnchor then
+			local reminderPreferences = GetReminderPreferences()
+			local preferences = reminderPreferences.progressBars
+			local progressBar = AceGUI:Create("EPProgressBar")
+			progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+			progressBar:SetShowBorder(preferences.showBorder)
+			progressBar:SetShowIconBorder(preferences.showIconBorder)
+			progressBar:SetHorizontalTextAlignment(preferences.textAlignment)
+			progressBar:SetDurationTextAlignment(preferences.durationAlignment)
+			progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
+			progressBar:SetIconPosition(preferences.iconPosition)
+			progressBar:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], L["Progress Bar Text"])
+			progressBar:SetProgressBarWidth(preferences.width)
+			progressBar:SetFill(preferences.fill)
+			progressBar:SetAlpha(preferences.alpha)
+			progressBar:SetDuration(reminderPreferences.advanceNotice)
+			progressBar:SetCallback("Completed", function()
+				Private.progressBarAnchor:RemoveChild(progressBar)
+				self:CheckIfShouldAddProgressBar()
+			end)
+			Private.progressBarAnchor:AddChild(progressBar)
+			progressBar:Start()
+		end
+	end
+
+	function progressBarManager:AddProgressBarsOnTimer()
+		if Private.progressBarAnchor then
+			Private.progressBarAnchor:ReleaseChildren()
+			self:AddProgressBar()
+			local reminderPreferences = GetReminderPreferences()
+			local thirdOfAdvanceNotice = reminderPreferences.advanceNotice / 3.0
+
+			local timer = NewTimer(thirdOfAdvanceNotice, function()
+				self:AddProgressBar()
+				tremove(timers, 1)
+			end)
+			tinsert(timers, timer)
+
+			local timer2 = NewTimer(thirdOfAdvanceNotice * 2.0, function()
+				self:AddProgressBar()
+				tremove(timers, 1)
+			end)
+			tinsert(timers, timer2)
+		end
+	end
+
+	function progressBarManager:CancelTimers()
+		for _, timer in ipairs(timers) do
+			if timer and timer.Cancel then
+				timer:Cancel()
+			end
+		end
+		wipe(timers)
+	end
+end
+
+---@return EPContainer
 local function CreateProgressBarAnchor()
-	local progressBarAnchor = AceGUI:Create("EPProgressBar")
+	local progressBarAnchor = AceGUI:Create("EPContainer")
 	progressBarAnchor.frame:SetParent(UIParent)
+	progressBarAnchor:SetLayout("EPProgressBarLayout")
+	progressBarAnchor.frame:SetParent(UIParent)
+	progressBarAnchor.frame:SetFrameStrata("MEDIUM")
+	progressBarAnchor.frame:SetFrameLevel(constants.frameLevels.kReminderContainerFrameLevel)
 
 	do
 		local reminderPreferences = GetReminderPreferences()
 		local preferences = reminderPreferences.progressBars
-		local point, regionName, relativePoint = preferences.point, preferences.relativeTo, preferences.relativePoint
-		regionName = IsValidRegionName(regionName) and regionName or "UIParent"
+		progressBarAnchor:SetSpacing(0, preferences.spacing)
+		progressBarAnchor.content.sortAscending = preferences.soonestExpirationOnBottom
+		local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
+		local point, relativePoint = preferences.point, preferences.relativePoint
 		progressBarAnchor.frame:SetPoint(point, regionName, relativePoint, preferences.x, preferences.y)
-		progressBarAnchor:SetAnchorMode(true)
-		progressBarAnchor:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-		progressBarAnchor:SetShowBorder(preferences.showBorder)
-		progressBarAnchor:SetShowIconBorder(preferences.showIconBorder)
-		progressBarAnchor:SetHorizontalTextAlignment(preferences.textAlignment)
-		progressBarAnchor:SetDurationTextAlignment(preferences.durationAlignment)
-		progressBarAnchor:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
-		progressBarAnchor:SetIconPosition(preferences.iconPosition)
-		progressBarAnchor:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], L["Progress Bar Text"])
-		progressBarAnchor:SetProgressBarWidth(preferences.width)
-		progressBarAnchor:SetFill(preferences.fill)
-		progressBarAnchor:SetAlpha(preferences.alpha)
-		progressBarAnchor:SetDuration(reminderPreferences.advanceNotice)
+		progressBarAnchor:SetAnchorMode(true, point)
+		progressBarManager:AddProgressBarsOnTimer()
 	end
 
 	progressBarAnchor:SetCallback("OnRelease", function()
+		progressBarManager:CancelTimers()
 		Private.progressBarAnchor = nil
 	end)
 	progressBarAnchor:SetCallback("NewPoint", function(_, _, point, regionName, relativePoint)
 		local preferences = GetProgressBarPreferences()
+		if Private.progressBarAnchor.frame:GetName() == regionName then
+			regionName = preferences.relativeTo
+		end
 		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
 			ApplyPoint(Private.progressBarAnchor.frame, point, regionName, relativePoint)
 		if Private.optionsMenu then
 			Private.optionsMenu:UpdateOptions()
 		end
 	end)
-	progressBarAnchor:SetCallback("Completed", function()
-		progressBarAnchor:SetDuration(GetReminderPreferences().advanceNotice)
-		progressBarAnchor:Start()
-	end)
 
 	return progressBarAnchor
+end
+
+---@param point AnchorPoint|nil
+---@param relativeTo string|nil
+---@param relativePoint AnchorPoint|nil
+local function ApplyPointToProgressBarAnchor(point, relativeTo, relativePoint)
+	local x, y
+	point, relativeTo, relativePoint, x, y =
+		ApplyPoint(Private.progressBarAnchor.frame, point, relativeTo, relativePoint)
+
+	Private.progressBarAnchor:SetAnchorPoint(point)
+	local preferences = GetProgressBarPreferences()
+	preferences.point = point
+	preferences.relativeTo = relativeTo
+	preferences.relativePoint = relativePoint
+	preferences.x, preferences.y = x, y
+end
+
+---@param func fun(progressBar: EPProgressBar)
+local function CallProgressBarFunction(func)
+	if Private.progressBarAnchor then
+		for _, child in ipairs(Private.progressBarAnchor.children) do
+			func(child)
+		end
+		Private.progressBarAnchor:DoLayout()
+	end
+end
+
+local function PauseProgressBars()
+	if Private.progressBarAnchor then
+		for _, child in ipairs(Private.progressBarAnchor.children) do
+			child:Pause()
+		end
+	end
+end
+
+local function HideProgressBars()
+	if Private.progressBarAnchor then
+		Private.progressBarAnchor.frame:Hide()
+		progressBarManager:CancelTimers()
+		Private.progressBarAnchor:ReleaseChildren()
+	end
+end
+
+local function ShowProgressBars()
+	if Private.progressBarAnchor then
+		Private.progressBarAnchor.frame:Show()
+		progressBarManager:CancelTimers()
+		progressBarManager:AddProgressBarsOnTimer()
+	end
 end
 
 ---@return EPReminderMessage
 local function CreateMessageAnchor()
 	local messageAnchor = AceGUI:Create("EPReminderMessage")
 	messageAnchor.frame:SetParent(UIParent)
+	messageAnchor.frame:SetClampedToScreen(true)
 
 	do
 		local preferences = GetMessagePreferences()
@@ -242,10 +363,14 @@ local function CreateMessageAnchor()
 	end
 
 	messageAnchor:SetCallback("OnRelease", function()
+		Private.messageAnchor.frame:SetClampedToScreen(false)
 		Private.messageAnchor = nil
 	end)
 	messageAnchor:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
 		local preferences = GetMessagePreferences()
+		if Private.messageAnchor.frame:GetName() == relativeFrame then
+			relativeFrame = preferences.relativeTo
+		end
 		preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
 			ApplyPoint(Private.messageAnchor.frame, point, relativeFrame, relativePoint)
 		if Private.optionsMenu then
@@ -299,6 +424,11 @@ do
 		{ itemValue = "LEFT", text = L["Left"] },
 		{ itemValue = "CENTER", text = L["Center"] },
 		{ itemValue = "RIGHT", text = L["Right"] },
+	}
+
+	local sortingValues = {
+		{ itemValue = false, text = L["Soonest Expiration on Top"] },
+		{ itemValue = true, text = L["Soonest Expiration on Bottom"] },
 	}
 
 	local anchorPointValues = {
@@ -541,8 +671,8 @@ do
 									Private.messageAnchor.frame:Hide()
 								end
 								if Private.progressBarAnchor.frame:IsShown() then
-									Private.progressBarAnchor:Pause()
-									Private.progressBarAnchor.frame:Hide()
+									PauseProgressBars()
+									HideProgressBars()
 								end
 							end
 						end
@@ -617,6 +747,19 @@ do
 					local value = tonumber(key)
 					if value then
 						GetReminderPreferences().advanceNotice = value
+						progressBarManager:AddProgressBarsOnTimer()
+					end
+				end,
+				validate = function(value)
+					local numericValue = tonumber(value)
+					if numericValue then
+						if numericValue > 2.0 and numericValue < 30.0 then
+							return true
+						else
+							return false, Clamp(numericValue, 2.0, 30.0)
+						end
+					else
+						return false, GetReminderPreferences().advanceNotice
 					end
 				end,
 				enabled = enableReminderOption,
@@ -731,62 +874,6 @@ do
 				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Anchor Point"],
-				type = "dropdown",
-				description = L['Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.'],
-				category = L["Messages"],
-				values = anchorPointValues,
-				updateIndices = { 0, 1, 2, 3 },
-				get = function()
-					return GetMessagePreferences().point
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
-							ApplyPoint(Private.messageAnchor.frame, key, messages.relativeTo, messages.relativePoint)
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Frame"],
-				type = "frameChooser",
-				description = L["The frame that the Messages frame is anchored to. Defaults to UIParent (screen)."],
-				category = L["Messages"],
-				updateIndices = { -1, 0, 1, 2 },
-				get = function()
-					return GetMessagePreferences().relativeTo
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
-							ApplyPoint(Private.messageAnchor.frame, messages.point, key, messages.relativePoint)
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Relative Anchor Point"],
-				type = "dropdown",
-				description = L["The anchor point on the frame that the Messages frame is anchored to."],
-				category = L["Messages"],
-				values = anchorPointValues,
-				updateIndices = { -2, -1, 0, 1 },
-				get = function()
-					return GetMessagePreferences().relativePoint
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
-							ApplyPoint(Private.messageAnchor.frame, messages.point, messages.relativeTo, key)
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
 				label = L["Position"],
 				labels = { L["X"], L["Y"] },
 				type = "doubleLineEdit",
@@ -796,7 +883,7 @@ do
 				},
 				category = L["Messages"],
 				values = anchorPointValues,
-				updateIndices = { -3, -2, -1, 0 },
+				updateIndices = { 0, 1, 2, 3 },
 				get = function()
 					local preferences = GetMessagePreferences()
 					return preferences.x, preferences.y
@@ -830,6 +917,65 @@ do
 						return false, preferences.x, preferences.y
 					end
 				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L['Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.'],
+				category = L["Messages"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetMessagePreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+							ApplyPoint(Private.messageAnchor.frame, key, messages.relativeTo, messages.relativePoint)
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Messages frame is anchored to. Defaults to UIParent (screen)."],
+				category = L["Messages"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetMessagePreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						if Private.messageAnchor.frame:GetName() == key then
+							key = messages.relativeTo
+						end
+						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+							ApplyPoint(Private.messageAnchor.frame, messages.point, key, messages.relativePoint)
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Messages frame is anchored to."],
+				category = L["Messages"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetMessagePreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						messages.point, messages.relativeTo, messages.relativePoint, messages.x, messages.y =
+							ApplyPoint(Private.messageAnchor.frame, messages.point, messages.relativeTo, key)
+					end
+				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = "",
@@ -966,8 +1112,8 @@ do
 						local preferences = GetProgressBarPreferences()
 						if key ~= preferences.enabled and key == false then
 							if Private.progressBarAnchor.frame:IsShown() then
-								Private.progressBarAnchor:Pause()
-								Private.progressBarAnchor.frame:Hide()
+								PauseProgressBars()
+								HideProgressBars()
 							end
 						end
 						preferences.enabled = key
@@ -978,90 +1124,16 @@ do
 				buttonEnabled = enableProgressBarOption,
 				buttonCallback = function()
 					if Private.progressBarAnchor.frame:IsShown() then
-						Private.progressBarAnchor:Pause()
-						Private.progressBarAnchor.frame:Hide()
+						PauseProgressBars()
+						HideProgressBars()
 					else
-						Private.progressBarAnchor:SetDuration(GetReminderPreferences().advanceNotice)
-						Private.progressBarAnchor:Start()
-						Private.progressBarAnchor.frame:Show()
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetDuration(GetReminderPreferences().advanceNotice)
+							progressBar:Start()
+						end)
+						ShowProgressBars()
 					end
 				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Point"],
-				type = "dropdown",
-				description = L['Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.'],
-				category = L["Progress Bars"],
-				values = anchorPointValues,
-				updateIndices = { 0, 1, 2, 3 },
-				get = function()
-					return GetProgressBarPreferences().point
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						local point, relativeTo, relativePoint, x, y = ApplyPoint(
-							Private.progressBarAnchor.frame,
-							key,
-							preferences.relativeTo,
-							preferences.relativePoint
-						)
-						preferences.point = point
-						preferences.relativeTo = relativeTo
-						preferences.relativePoint = relativePoint
-						preferences.x, preferences.y = x, y
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Frame"],
-				type = "frameChooser",
-				description = L["The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen)."],
-				category = L["Progress Bars"],
-				updateIndices = { -1, 0, 1, 2 },
-				get = function()
-					return GetProgressBarPreferences().relativeTo
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						local point, relativeTo, relativePoint, x, y = ApplyPoint(
-							Private.progressBarAnchor.frame,
-							preferences.point,
-							key,
-							preferences.relativePoint
-						)
-						preferences.point = point
-						preferences.relativeTo = relativeTo
-						preferences.relativePoint = relativePoint
-						preferences.x, preferences.y = x, y
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Relative Anchor Point"],
-				type = "dropdown",
-				description = L["The anchor point on the frame that the Progress Bars frame is anchored to."],
-				category = L["Progress Bars"],
-				values = anchorPointValues,
-				updateIndices = { -2, -1, 0, 1 },
-				get = function()
-					return GetProgressBarPreferences().relativePoint
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						local point, relativeTo, relativePoint, x, y =
-							ApplyPoint(Private.progressBarAnchor.frame, preferences.point, preferences.relativeTo, key)
-						preferences.point = point
-						preferences.relativeTo = relativeTo
-						preferences.relativePoint = relativePoint
-						preferences.x, preferences.y = x, y
-					end
-				end,
-				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Position"],
@@ -1073,7 +1145,7 @@ do
 				},
 				category = L["Progress Bars"],
 				values = anchorPointValues,
-				updateIndices = { -3, -2, -1, 0 },
+				updateIndices = { 0, 1, 2, 3 },
 				get = function()
 					return GetProgressBarPreferences().x, GetProgressBarPreferences().y
 				end,
@@ -1107,6 +1179,82 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Bar Order"],
+				type = "radioButtonGroup",
+				description = L["How to sort progress bars."],
+				category = L["Progress Bars"],
+				values = sortingValues,
+				get = function()
+					return GetProgressBarPreferences().soonestExpirationOnBottom
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetProgressBarPreferences().soonestExpirationOnBottom = key
+						if Private.progressBarAnchor then
+							Private.progressBarAnchor.content.sortAscending = key
+							Private.progressBarAnchor:DoLayout()
+						end
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L['Anchor point of the Progress Bars frame, or the "spot" on the Progress Bars frame that will be placed relative to another frame.'],
+				category = L["Progress Bars"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetProgressBarPreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						ApplyPointToProgressBarAnchor(key, preferences.relativeTo, preferences.relativePoint)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Progress Bars frame is anchored to. Defaults to UIParent (screen)."],
+				category = L["Progress Bars"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetProgressBarPreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						if Private.progressBarAnchor.frame:GetName() == key then
+							key = preferences.relativeTo
+						end
+						ApplyPointToProgressBarAnchor(preferences.point, key, preferences.relativePoint)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Progress Bars frame is anchored to."],
+				category = L["Progress Bars"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetProgressBarPreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						ApplyPointToProgressBarAnchor(preferences.point, preferences.relativeTo, key)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
 				label = "",
 				get = function()
 					return ""
@@ -1129,11 +1277,9 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.font = key
-						Private.progressBarAnchor:SetFont(
-							preferences.font,
-							preferences.fontSize,
-							preferences.fontOutline
-						)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1151,11 +1297,9 @@ do
 					if value then
 						local preferences = GetProgressBarPreferences()
 						preferences.fontSize = value
-						Private.progressBarAnchor:SetFont(
-							preferences.font,
-							preferences.fontSize,
-							preferences.fontOutline
-						)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1185,11 +1329,9 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.fontOutline = key
-						Private.progressBarAnchor:SetFont(
-							preferences.font,
-							preferences.fontSize,
-							preferences.fontOutline
-						)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1206,7 +1348,9 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().textAlignment = key
-						Private.progressBarAnchor:SetHorizontalTextAlignment(key)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetHorizontalTextAlignment(key)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1223,7 +1367,9 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().durationAlignment = key
-						Private.progressBarAnchor:SetDurationTextAlignment(key)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetDurationTextAlignment(key)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1250,11 +1396,9 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.texture = key
-						Private.progressBarAnchor:SetTexture(
-							preferences.texture,
-							preferences.color,
-							preferences.backgroundColor
-						)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1271,7 +1415,9 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().width = value
-						Private.progressBarAnchor:SetProgressBarWidth(value)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetProgressBarWidth(value)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1309,7 +1455,9 @@ do
 						else
 							preferences.fill = false
 						end
-						Private.progressBarAnchor:SetFill(preferences.fill)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetFill(preferences.fill)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1326,7 +1474,9 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().iconPosition = key
-						Private.progressBarAnchor:SetIconPosition(key)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetIconPosition(key)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1343,7 +1493,9 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().alpha = value
-						Private.progressBarAnchor:SetAlpha(value)
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetAlpha(value)
+						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1387,7 +1539,9 @@ do
 							and type(a) == "number"
 						then
 							GetProgressBarPreferences().color = { r, g, b, a }
-							Private.progressBarAnchor:SetColor(r, g, b, a)
+							CallProgressBarFunction(function(progressBar)
+								progressBar:SetColor(r, g, b, a)
+							end)
 						end
 					end,
 					function(r, g, b, a)
@@ -1398,7 +1552,9 @@ do
 							and type(a) == "number"
 						then
 							GetProgressBarPreferences().backgroundColor = { r, g, b, a }
-							Private.progressBarAnchor:SetBackgroundColor(r, g, b, a)
+							CallProgressBarFunction(function(progressBar)
+								progressBar:SetBackgroundColor(r, g, b, a)
+							end)
 						end
 					end,
 				},
@@ -1425,13 +1581,17 @@ do
 					function(key)
 						if type(key) == "boolean" then
 							GetProgressBarPreferences().showBorder = key
-							Private.progressBarAnchor:SetShowBorder(key)
+							CallProgressBarFunction(function(progressBar)
+								progressBar:SetShowBorder(key)
+							end)
 						end
 					end,
 					function(key)
 						if type(key) == "boolean" then
 							GetProgressBarPreferences().showIconBorder = key
-							Private.progressBarAnchor:SetShowIconBorder(key)
+							CallProgressBarFunction(function(progressBar)
+								progressBar:SetShowIconBorder(key)
+							end)
 						end
 					end,
 				},
@@ -1449,6 +1609,7 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().spacing = value
+						-- TODO Update spacing
 					end
 				end,
 				enabled = enableProgressBarOption,

@@ -272,6 +272,7 @@ local function CreateReminderContainer(preferences, spacing)
 	container.frame:SetFrameStrata("MEDIUM")
 	container.frame:SetFrameLevel(kReminderContainerFrameLevel)
 	container:SetSpacing(0, spacing or 0)
+	container.content.sortAscending = preferences.soonestExpirationOnBottom
 	local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 	local point, relativePoint = preferences.point, preferences.relativePoint
 	local x, y = preferences.x, preferences.y

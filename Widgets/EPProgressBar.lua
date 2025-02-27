@@ -46,32 +46,6 @@ local iconFrameBackdrop = {
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
-local previousPointDetails = {}
-
----@param self EPProgressBar
-local function HandleFrameMouseDown(self, button)
-	if button == "LeftButton" then
-		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
-		previousPointDetails = {
-			point = point,
-			relativeTo = relativeTo:GetName(),
-			relativePoint = relativePoint,
-		}
-		self.frame:StartMoving()
-	end
-end
-
----@param self EPProgressBar
-local function HandleFrameMouseUp(self, button)
-	if button == "LeftButton" then
-		self.frame:StopMovingOrSizing()
-		local point = previousPointDetails.point
-		local relativeFrame = previousPointDetails.relativeTo
-		local relativePoint = previousPointDetails.relativePoint
-		self:Fire("NewPoint", point, relativeFrame, relativePoint)
-	end
-end
-
 ---@param self EPProgressBar
 local function RestyleBar(self)
 	self.iconBackdrop:ClearAllPoints()
@@ -246,7 +220,6 @@ local function OnRelease(self)
 	self.duration:SetJustifyH("RIGHT")
 	self.duration:SetJustifyV("MIDDLE")
 	self:SetAlpha(1.0)
-	self:SetAnchorMode(false)
 end
 
 ---@param self EPProgressBar
@@ -476,24 +449,6 @@ local function Resume(self)
 end
 
 ---@param self EPProgressBar
----@param anchorMode boolean
-local function SetAnchorMode(self, anchorMode)
-	if anchorMode then
-		self.frame:SetMovable(true)
-		self.frame:SetScript("OnMouseDown", function(_, button)
-			HandleFrameMouseDown(self, button)
-		end)
-		self.frame:SetScript("OnMouseUp", function(_, button)
-			HandleFrameMouseUp(self, button)
-		end)
-	else
-		self.frame:SetMovable(true)
-		self.frame:SetScript("OnMouseDown", nil)
-		self.frame:SetScript("OnMouseUp", nil)
-	end
-end
-
----@param self EPProgressBar
 ---@param width number
 local function SetProgressBarWidth(self, width)
 	self.frame:SetWidth(width)
@@ -566,7 +521,6 @@ local function Constructor()
 		Start = Start,
 		Pause = Pause,
 		Resume = Resume,
-		SetAnchorMode = SetAnchorMode,
 		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		SetDurationTextAlignment = SetDurationTextAlignment,
 		SetIconPosition = SetIconPosition,

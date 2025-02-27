@@ -728,6 +728,7 @@ end
 ---@field x number
 ---@field y number
 ---@field alpha number
+---@field soonestExpirationOnBottom boolean
 
 ---@class ProgressBarPreferences : GenericReminderPreferences
 ---@field textAlignment "LEFT"|"CENTER"|"RIGHT"
@@ -825,6 +826,7 @@ local defaults = {
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
 					showAnimation = true,
+					soonestExpirationOnBottom = true,
 				},
 				progressBars = {
 					enabled = true,
@@ -848,6 +850,7 @@ local defaults = {
 					color = { ccA, ccR, ccB, 0.90 },
 					backgroundColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 },
 					spacing = 0,
+					soonestExpirationOnBottom = true,
 				},
 				textToSpeech = {
 					enableAtAdvanceNotice = false,
@@ -968,8 +971,8 @@ Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
-Private.messageAnchor = nil --[[@as EPReminderMessage]]
-Private.progressBarAnchor = nil --[[@as EPProgressBar]]
+Private.messageAnchor = nil --[[@as EPContainer]]
+Private.progressBarAnchor = nil --[[@as EPContainer]]
 Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.messageContainer = nil --[[@as EPContainer]]
 Private.progressBarContainer = nil --[[@as EPContainer]]
