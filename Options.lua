@@ -922,6 +922,22 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Message Order"],
+				type = "radioButtonGroup",
+				description = L["Whether to sort Messages by ascending or descending expiration time."],
+				category = L["Messages"],
+				values = sortingValues,
+				get = function()
+					return GetMessagePreferences().soonestExpirationOnBottom
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetMessagePreferences().soonestExpirationOnBottom = key
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Anchor Point"],
 				type = "dropdown",
 				description = L['Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.'],
@@ -1183,7 +1199,7 @@ do
 			{
 				label = L["Bar Order"],
 				type = "radioButtonGroup",
-				description = L["How to sort progress bars."],
+				description = L["Whether to sort Messages by ascending or descending expiration time."],
 				category = L["Progress Bars"],
 				values = sortingValues,
 				get = function()
