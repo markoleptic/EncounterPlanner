@@ -6,11 +6,9 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 local floor = math.floor
-local ceil = math.ceil
 
 local defaultHeight = 24
 local defaultWidth = 200
-local defaultVerticalTextPadding = 2
 local defaultBackgroundColor = { 0.05, 0.05, 0.05, 0.3 }
 local defaultColor = { 0.5, 0.5, 0.5, 1 }
 local timeThreshold = 0.1
@@ -52,7 +50,6 @@ local function RestyleBar(self)
 	self.statusBar:ClearAllPoints()
 
 	local edgeSize = frameBackdrop.edgeSize
-	self:SetHeight(ceil(self.label:GetLineHeight()) + 2 * defaultVerticalTextPadding + 2 * edgeSize)
 
 	if self.iconTexture then
 		self.iconBackdrop:SetWidth(self.frame:GetHeight())
@@ -333,18 +330,14 @@ local function SetIconAndText(self, icon, text)
 end
 
 ---@param self EPProgressBar
----@param alignment "CENTER"|"LEFT"|"RIGHT"
-local function SetHorizontalTextAlignment(self, alignment)
-	self.label:SetJustifyH(alignment)
-	if self.running then
-		RestyleBar(self)
-	end
-end
-
----@param self EPProgressBar
----@param alignment "CENTER"|"LEFT"|"RIGHT"
+---@param alignment "LEFT"|"RIGHT"
 local function SetDurationTextAlignment(self, alignment)
 	self.duration:SetJustifyH(alignment)
+	if alignment == "LEFT" then
+		self.label:SetJustifyH("RIGHT")
+	else
+		self.label:SetJustifyH("LEFT")
+	end
 	if self.running then
 		RestyleBar(self)
 	end
@@ -450,8 +443,8 @@ end
 
 ---@param self EPProgressBar
 ---@param width number
-local function SetProgressBarWidth(self, width)
-	self.frame:SetWidth(width)
+local function SetProgressBarSize(self, width, height)
+	self.frame:SetSize(width, height)
 	if self.running then
 		RestyleBar(self)
 	end
@@ -521,11 +514,10 @@ local function Constructor()
 		Start = Start,
 		Pause = Pause,
 		Resume = Resume,
-		SetHorizontalTextAlignment = SetHorizontalTextAlignment,
 		SetDurationTextAlignment = SetDurationTextAlignment,
 		SetIconPosition = SetIconPosition,
 		SetFill = SetFill,
-		SetProgressBarWidth = SetProgressBarWidth,
+		SetProgressBarSize = SetProgressBarSize,
 		SetShowBorder = SetShowBorder,
 		SetShowIconBorder = SetShowIconBorder,
 		SetAlpha = SetAlpha,

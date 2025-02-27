@@ -303,7 +303,7 @@ The anchor point on the frame that the Messages frame is anchored to.
 Font to use for Message text.
 
 **Font Size**:
-Font size to use for Message text (8 - 48).
+Font size to use for Message text (8 - 64).
 
 **Font Outline**:
 Font outline to use for Message text.
@@ -311,7 +311,7 @@ Font outline to use for Message text.
 **Text Color**:
 Text Color to use for Message text.
 
-**Alpha**:
+**Message Transparency**:
 Transparency of Messages (0.0 - 1.0).
 
 **Enable Progress Bars**:
@@ -348,22 +348,19 @@ The anchor point on the frame that the Progress Bar frame is anchored to.
 Font to use for Progress Bar text.
 
 **Font Size**:
-Font size to use for Progress Bar text (8 - 48).
+Font size to use for Progress Bar text (8 - 64).
 
 **Font Outline**:
 Font outline to use for Progress Bar text.
 
-**Text Alignment**:
-Alignment of Progress Bar text.
-
-**Duration Alignment**:
-Alignment of Progress Bar duration text.
+**Duration Position**:
+Position of Progress Bar duration text.
 
 **Bar Texture**:
 The texture to use for the Progress Bar foreground and background.
 
-**Bar Width**:
-The width of Progress Bars.
+**Bar Size**:
+The width and height of Progress Bars.
 
 **Bar Progress Type**
 Whether to fill or drain Progress Bars.
@@ -371,17 +368,17 @@ Whether to fill or drain Progress Bars.
 **Icon Position**
 Which side to place the icon for Progress Bars.
 
-**Alpha**:
+**Bar Transparency**:
 Transparency of Progress Bars (0.0 - 1.0).
 
-**Color**:
+**Bar Color**:
 
 -   **Foreground Color**:
     Foreground color for Progress Bars.
 -   **Background Color**:
     Background color for Progress Bars.
 
-**Border**:
+**Bar Border**:
 
 -   **Show Border**:
     Whether to show a 1px border around Progress Bars.

@@ -731,21 +731,28 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	doubleLineEditContainer:SetLayout("EPHorizontalLayout")
 	doubleLineEditContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
 
+	local labelRelativeWidth = 0.05
+	local lineEditRelativeWidth = 0.45
+
 	local labelX = AceGUI:Create("EPLabel")
 	labelX:SetText(option.labels[1] .. ":", 0)
-	labelX:SetRelativeWidth(0.05)
+	if labelX:GetText():len() > 5 then
+		labelRelativeWidth = 0.10
+		lineEditRelativeWidth = 0.40
+	end
+	labelX:SetRelativeWidth(labelRelativeWidth)
 	labelX:SetFullHeight(true)
 
 	local lineEditX = AceGUI:Create("EPLineEdit")
-	lineEditX:SetRelativeWidth(0.45)
+	lineEditX:SetRelativeWidth(lineEditRelativeWidth)
 
 	local labelY = AceGUI:Create("EPLabel")
 	labelY:SetText(option.labels[2] .. ":", 0)
-	labelY:SetRelativeWidth(0.05)
+	labelY:SetRelativeWidth(labelRelativeWidth)
 	labelY:SetFullHeight(true)
 
 	local lineEditY = AceGUI:Create("EPLineEdit")
-	lineEditY:SetRelativeWidth(0.45)
+	lineEditY:SetRelativeWidth(lineEditRelativeWidth)
 
 	if option.enabled then
 		tinsert(self.refreshMap, { widget = labelX, enabled = option.enabled })

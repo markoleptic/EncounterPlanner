@@ -310,8 +310,7 @@ end
 ---@return EPProgressBar
 local function CreateProgressBar(preferences, text, duration, icon)
 	local progressBar = AceGUI:Create("EPProgressBar")
-	progressBar:SetProgressBarWidth(preferences.width)
-	progressBar:SetHorizontalTextAlignment(preferences.textAlignment)
+	progressBar:SetProgressBarSize(preferences.width, preferences.height)
 	progressBar:SetDurationTextAlignment(preferences.durationAlignment)
 	progressBar:SetShowBorder(preferences.showBorder)
 	progressBar:SetShowIconBorder(preferences.showIconBorder)

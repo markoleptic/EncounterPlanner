@@ -731,11 +731,11 @@ end
 ---@field soonestExpirationOnBottom boolean
 
 ---@class ProgressBarPreferences : GenericReminderPreferences
----@field textAlignment "LEFT"|"CENTER"|"RIGHT"
 ---@field texture string
 ---@field iconPosition "LEFT"|"RIGHT"
 ---@field width number
----@field durationAlignment "LEFT"|"CENTER"|"RIGHT"
+---@field height number
+---@field durationAlignment "LEFT"|"RIGHT"
 ---@field fill boolean
 ---@field showBorder boolean
 ---@field showIconBorder boolean
@@ -830,7 +830,6 @@ local defaults = {
 				},
 				progressBars = {
 					enabled = true,
-					textAlignment = "LEFT",
 					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
 					fontSize = 16,
 					fontOutline = "",
@@ -842,6 +841,7 @@ local defaults = {
 					alpha = 0.90,
 					texture = "Interface\\AddOns\\WeakAuras\\Media\\Textures\\Statusbar_Clean",
 					iconPosition = "LEFT",
+					height = 24,
 					width = 200,
 					durationAlignment = "RIGHT",
 					fill = false,

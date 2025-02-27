@@ -204,12 +204,11 @@ do
 			progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 			progressBar:SetShowBorder(preferences.showBorder)
 			progressBar:SetShowIconBorder(preferences.showIconBorder)
-			progressBar:SetHorizontalTextAlignment(preferences.textAlignment)
 			progressBar:SetDurationTextAlignment(preferences.durationAlignment)
 			progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
 			progressBar:SetIconPosition(preferences.iconPosition)
 			progressBar:SetIconAndText([[Interface\Icons\INV_MISC_QUESTIONMARK]], L["Progress Bar Text"])
-			progressBar:SetProgressBarWidth(preferences.width)
+			progressBar:SetProgressBarSize(preferences.width, preferences.height)
 			progressBar:SetFill(preferences.fill)
 			progressBar:SetAlpha(preferences.alpha)
 			progressBar:SetDuration(reminderPreferences.advanceNotice)
@@ -418,12 +417,6 @@ do
 		{ itemValue = 10, text = "10" },
 		{ itemValue = 11, text = "11" },
 		{ itemValue = 12, text = "12" },
-	}
-
-	local textAlignmentValues = {
-		{ itemValue = "LEFT", text = L["Left"] },
-		{ itemValue = "CENTER", text = L["Center"] },
-		{ itemValue = "RIGHT", text = L["Right"] },
 	}
 
 	local sortingValues = {
@@ -650,6 +643,17 @@ do
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.progressBars.enabled == true
 		end
+		local kMaxProgressBarWidth = 1000.0
+		local kMaxProgressBarHeight = 100.0
+		local kMinSpacing = -1
+		local kMaxSpacing = 100
+		local kMinAdvanceNotice = 2.0
+		local kMaxAdvanceNotice = 30.0
+		local kMinFontSize = 8
+		local kMaxFontSize = 64
+		local kMaxVolume = 100.0
+		local kOne = 1.0
+		local kZero = 0.0
 		return {
 			{
 				label = L["Enable Reminders"],
@@ -753,10 +757,10 @@ do
 				validate = function(value)
 					local numericValue = tonumber(value)
 					if numericValue then
-						if numericValue > 2.0 and numericValue < 30.0 then
+						if numericValue > kMinAdvanceNotice and numericValue < kMaxAdvanceNotice then
 							return true
 						else
-							return false, Clamp(numericValue, 2.0, 30.0)
+							return false, Clamp(numericValue, kMinAdvanceNotice, kMaxAdvanceNotice)
 						end
 					else
 						return false, GetReminderPreferences().advanceNotice
@@ -882,7 +886,6 @@ do
 					L["The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
 				},
 				category = L["Messages"],
-				values = anchorPointValues,
 				updateIndices = { 0, 1, 2, 3 },
 				get = function()
 					local preferences = GetMessagePreferences()
@@ -1008,7 +1011,7 @@ do
 			{
 				label = L["Font Size"],
 				type = "lineEdit",
-				description = L["Font size to use for Message text (8 - 48)."],
+				description = L["Font size to use for Message text (8 - 64)."],
 				category = L["Messages"],
 				get = function()
 					return GetMessagePreferences().fontSize
@@ -1025,8 +1028,8 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < 8 or value > 48 then
-							return false, Clamp(value, 8, 48)
+						if value < kMinFontSize or value > kMaxFontSize then
+							return false, Clamp(value, kMinFontSize, kMaxFontSize)
 						else
 							return true
 						end
@@ -1071,7 +1074,7 @@ do
 				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Alpha"],
+				label = L["Message Transparency"],
 				type = "lineEdit",
 				description = L["Transparency of Messages (0.0 - 1.0)."],
 				category = L["Messages"],
@@ -1089,8 +1092,8 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < 0.0 or value > 1.0 then
-							return false, Clamp(value, 0.0, 1.0)
+						if value < kZero or value > kOne then
+							return false, Clamp(value, kZero, kOne)
 						else
 							return true
 						end
@@ -1144,7 +1147,6 @@ do
 					L["The vertical offset from the Relative Anchor Point on the Anchor Frame to the Anchor Point."],
 				},
 				category = L["Progress Bars"],
-				values = anchorPointValues,
 				updateIndices = { 0, 1, 2, 3 },
 				get = function()
 					return GetProgressBarPreferences().x, GetProgressBarPreferences().y
@@ -1279,6 +1281,10 @@ do
 						preferences.font = key
 						CallProgressBarFunction(function(progressBar)
 							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							progressBar:SetIconAndText(
+								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
+								L["Progress Bar Text"]
+							)
 						end)
 					end
 				end,
@@ -1287,7 +1293,7 @@ do
 			{
 				label = L["Font Size"],
 				type = "lineEdit",
-				description = L["Font size to use for Progress Bar text."],
+				description = L["Font size to use for Progress Bar text (8 - 64)."],
 				category = L["Progress Bars"],
 				get = function()
 					return GetProgressBarPreferences().fontSize
@@ -1306,8 +1312,8 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < 8 or value > 48 then
-							return false, Clamp(value, 8, 48)
+						if value < kMinFontSize or value > kMaxFontSize then
+							return false, Clamp(value, kMinFontSize, kMaxFontSize)
 						else
 							return true
 						end
@@ -1337,30 +1343,42 @@ do
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Text Alignment"],
-				type = "radioButtonGroup",
-				description = L["Alignment of Progress Bar text."],
-				category = L["Progress Bars"],
-				values = textAlignmentValues,
+				label = "",
 				get = function()
-					return GetProgressBarPreferences().textAlignment
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Progress Bars"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Position"],
+				type = "radioButtonGroup",
+				description = L["Which side to place the icon for Progress Bars."],
+				category = L["Progress Bars"],
+				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
+				get = function()
+					return GetProgressBarPreferences().iconPosition
 				end,
 				set = function(key)
 					if type(key) == "string" then
-						GetProgressBarPreferences().textAlignment = key
+						GetProgressBarPreferences().iconPosition = key
 						CallProgressBarFunction(function(progressBar)
-							progressBar:SetHorizontalTextAlignment(key)
+							progressBar:SetIconPosition(key)
 						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Duration Alignment"],
+				label = L["Duration Position"],
 				type = "radioButtonGroup",
-				description = L["Alignment of Progress Bar duration text."],
+				description = L["Position of Progress Bar duration text."],
 				category = L["Progress Bars"],
-				values = textAlignmentValues,
+				values = {
+					{ itemValue = "LEFT", text = L["Left"] },
+					{ itemValue = "RIGHT", text = L["Right"] },
+				},
 				get = function()
 					return GetProgressBarPreferences().durationAlignment
 				end,
@@ -1373,66 +1391,6 @@ do
 					end
 				end,
 				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = "",
-				get = function()
-					return ""
-				end,
-				set = function() end,
-				type = "horizontalLine",
-				category = L["Progress Bars"],
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Bar Texture"],
-				type = "dropdown",
-				description = L["The texture to use for the Progress Bar foreground and background."],
-				category = L["Progress Bars"],
-				values = statusBarTextures,
-				get = function()
-					return GetProgressBarPreferences().texture
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						preferences.texture = key
-						CallProgressBarFunction(function(progressBar)
-							progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Bar Width"],
-				type = "lineEdit",
-				description = L["The width of Progress Bars."],
-				category = L["Progress Bars"],
-				get = function()
-					return GetProgressBarPreferences().width
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetProgressBarPreferences().width = value
-						CallProgressBarFunction(function(progressBar)
-							progressBar:SetProgressBarWidth(value)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < 0.0 or value > 500.0 then
-							return false, Clamp(value, 0.0, 500.0)
-						else
-							return true
-						end
-					else
-						return false, GetProgressBarPreferences().width
-					end
-				end,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Bar Progress Type"],
@@ -1463,56 +1421,85 @@ do
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Icon Position"],
-				type = "radioButtonGroup",
-				description = L["Which side to place the icon for Progress Bars."],
-				category = L["Progress Bars"],
-				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
+				label = "",
 				get = function()
-					return GetProgressBarPreferences().iconPosition
+					return ""
 				end,
-				set = function(key)
-					if type(key) == "string" then
-						GetProgressBarPreferences().iconPosition = key
-						CallProgressBarFunction(function(progressBar)
-							progressBar:SetIconPosition(key)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Progress Bars"],
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Alpha"],
-				type = "lineEdit",
-				description = L["Transparency of Progress Bars (0.0 - 1.0)."],
+				label = L["Bar Size"],
+				labels = { L["Width"], L["Height"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The width of Progress Bars."],
+					L["The height of Progress Bars."],
+				},
 				category = L["Progress Bars"],
 				get = function()
-					return GetProgressBarPreferences().alpha
+					local preferences = GetProgressBarPreferences()
+					return preferences.width, preferences.height
 				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetProgressBarPreferences().alpha = value
+				set = function(key, key2)
+					local width = tonumber(key)
+					local height = tonumber(key2)
+					if width and height then
+						local preferences = GetProgressBarPreferences()
+						preferences.width = width
+						preferences.height = height
 						CallProgressBarFunction(function(progressBar)
-							progressBar:SetAlpha(value)
+							progressBar:SetProgressBarSize(preferences.width, preferences.height)
 						end)
 					end
 				end,
 				enabled = enableProgressBarOption,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < 0.0 or value > 1.0 then
-							return false, Clamp(value, 0.0, 1.0)
+				validate = function(key, key2)
+					local preferences = GetProgressBarPreferences()
+					local width = tonumber(key)
+					local height = tonumber(key2)
+					if width and height then
+						local minProgressBarHeight = preferences.fontSize
+						if
+							width < 0.0
+							or width > kMaxProgressBarWidth
+							or height < minProgressBarHeight
+							or height > kMaxProgressBarHeight
+						then
+							return false,
+								Clamp(width, 0.0, kMaxProgressBarWidth),
+								Clamp(height, minProgressBarHeight, kMaxProgressBarHeight)
 						else
 							return true
 						end
+					else
+						return false, preferences.width, preferences.height
 					end
-					return false, GetProgressBarPreferences().alpha
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Color"],
+				label = L["Bar Texture"],
+				type = "dropdown",
+				description = L["The texture to use for the Progress Bar foreground and background."],
+				category = L["Progress Bars"],
+				values = statusBarTextures,
+				get = function()
+					return GetProgressBarPreferences().texture
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						preferences.texture = key
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Bar Color"],
 				labels = { L["Foreground"], L["Background"] },
 				type = "doubleColorPicker",
 				descriptions = {
@@ -1561,7 +1548,37 @@ do
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Border"],
+				label = L["Bar Transparency"],
+				type = "lineEdit",
+				description = L["Transparency of Progress Bars (0.0 - 1.0)."],
+				category = L["Progress Bars"],
+				get = function()
+					return GetProgressBarPreferences().alpha
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetProgressBarPreferences().alpha = value
+						CallProgressBarFunction(function(progressBar)
+							progressBar:SetAlpha(value)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kZero or value > kOne then
+							return false, Clamp(value, kZero, kOne)
+						else
+							return true
+						end
+					end
+					return false, GetProgressBarPreferences().alpha
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Bar Border"],
 				labels = { L["Show Border"], L["Show Icon Border"] },
 				type = "doubleCheckBox",
 				descriptions = {
@@ -1598,7 +1615,7 @@ do
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Spacing"],
+				label = L["Bar Spacing"],
 				type = "lineEdit",
 				description = L["Spacing between Progress Bars (-1 - 100)."],
 				category = L["Progress Bars"],
@@ -1609,15 +1626,18 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().spacing = value
-						-- TODO Update spacing
+						if Private.progressBarAnchor then
+							Private.progressBarAnchor:SetSpacing(0, value)
+							Private.progressBarAnchor:DoLayout()
+						end
 					end
 				end,
 				enabled = enableProgressBarOption,
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < -1 or value > 100 then
-							return false, Clamp(value, -1, 100)
+						if value < kMinSpacing or value > kMaxSpacing then
+							return false, Clamp(value, kMinSpacing, kMaxSpacing)
 						else
 							return true
 						end
@@ -1698,8 +1718,8 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						if value < 0.0 or value > 100.0 then
-							return false, Clamp(value, 0.0, 100.0)
+						if value < kZero or value > kMaxVolume then
+							return false, Clamp(value, kZero, kMaxVolume)
 						else
 							return true
 						end
