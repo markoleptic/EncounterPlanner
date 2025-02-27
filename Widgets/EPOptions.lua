@@ -105,60 +105,74 @@ local function GetName(frame)
 	return nil
 end
 
+---@param frameChooserFrame Frame
+---@param frameChooserBox table|BackdropTemplate|Frame
+---@param focusName string|nil
+---@param setFunc fun(value: string|nil)|nil
 local function StopChoosingFrame(frameChooserFrame, frameChooserBox, focusName, setFunc)
 	isChoosingFrame = false
-	if frameChooserFrame then
-		frameChooserFrame:SetScript("OnUpdate", nil)
-		frameChooserBox:Hide()
-	end
+	frameChooserFrame:SetScript("OnUpdate", nil)
+	frameChooserFrame:Hide()
+	frameChooserBox:ClearAllPoints()
+	frameChooserBox:Hide()
 	ResetCursor()
 	if setFunc then
 		setFunc(focusName)
 	end
 end
 
+---@param frameChooserFrame Frame
+---@param frameChooserBox table|BackdropTemplate|Frame
+---@param setFunc fun(value: string|nil)
 local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
+	frameChooserFrame:Show()
 	isChoosingFrame = true
 	local oldFocus = nil
 	local oldFocusName = nil
-	local focusName = nil
+	local cursorIsSet = false
 	SetCursor("CAST_CURSOR")
+
 	frameChooserFrame:SetScript("OnUpdate", function()
 		if IsMouseButtonDown("RightButton") then
-			StopChoosingFrame(frameChooserFrame, frameChooserBox, nil)
+			StopChoosingFrame(frameChooserFrame, frameChooserBox, nil, setFunc)
 			return
 		elseif IsMouseButtonDown("LeftButton") then
-			if oldFocusName then
-				StopChoosingFrame(frameChooserFrame, frameChooserBox, oldFocusName, setFunc)
-			else
+			if oldFocusName == nil or oldFocusName == "WorldFrame" then
 				StopChoosingFrame(frameChooserFrame, frameChooserBox, "UIParent", setFunc)
-			end
-		else
-			local foci = GetMouseFoci()
-			local focus = foci[1] or nil
-			if focus then
-				focusName = GetName(focus)
-				if focusName == "WorldFrame" or not focusName then
-					focusName = nil
-				end
-				if focus ~= oldFocus then
-					if focusName then
-						frameChooserBox:ClearAllPoints()
-						frameChooserBox:SetPoint("BOTTOMLEFT", focus, "BOTTOMLEFT", 4, -4)
-						frameChooserBox:SetPoint("TOPRIGHT", focus, "TOPRIGHT", -4, 4)
-						frameChooserBox:Show()
-					end
-					if focusName ~= oldFocusName then
-						oldFocusName = focusName
-					end
-					oldFocus = focus
-				end
-			end
-			if not focusName then
-				frameChooserBox:Hide()
 			else
-				SetCursor("CAST_CURSOR")
+				StopChoosingFrame(frameChooserFrame, frameChooserBox, oldFocusName, setFunc)
 			end
+			return
+		end
+
+		local foci = GetMouseFoci()
+		local focus = foci and foci[1] or nil
+		local focusName = focus and GetName(focus) or nil
+
+		if focusName == "WorldFrame" or (focusName and focusName:match("^EP")) then
+			focusName = nil
+		end
+
+		if focusName and not cursorIsSet then
+			SetCursor("CAST_CURSOR")
+			cursorIsSet = true
+		elseif not focusName and cursorIsSet then
+			ResetCursor()
+			cursorIsSet = false
+		end
+
+		if focus ~= oldFocus then
+			if focusName then
+				frameChooserBox:ClearAllPoints()
+				frameChooserBox:SetPoint("BOTTOMLEFT", focus, "BOTTOMLEFT", 2, 2)
+				frameChooserBox:SetPoint("TOPRIGHT", focus, "TOPRIGHT", -2, -2)
+				frameChooserBox:Show()
+			else
+				frameChooserBox:Hide()
+			end
+
+			oldFocus = focus
+			oldFocusName = focusName
 		end
 	end)
 end
@@ -597,7 +611,7 @@ local function CreateFrameChooser(self, option, index, label)
 
 	local valueLineEdit = AceGUI:Create("EPLineEdit")
 	valueLineEdit:SetText(option.get() --[[@as string]])
-	valueLineEdit:SetRelativeWidth(0.75)
+	valueLineEdit:SetRelativeWidth(0.6)
 	valueLineEdit:SetFullHeight(true)
 	valueLineEdit:SetReadOnly(true)
 
@@ -608,19 +622,25 @@ local function CreateFrameChooser(self, option, index, label)
 	end
 
 	local button = AceGUI:Create("EPButton")
-	button:SetText("Choose")
-	button:SetRelativeWidth(0.25)
+	button:SetText(L["Choose"])
+	button:SetRelativeWidth(0.4)
 	button:SetCallback("Clicked", function()
-		if not isChoosingFrame then
-			self.frameChooserFrame:Show()
+		if isChoosingFrame then
+			StopChoosingFrame(self.frameChooserFrame, self.frameChooserBox, nil, nil)
+			button:SetText(L["Choose"])
+		else
 			StartChoosingFrame(self.frameChooserFrame, self.frameChooserBox, function(value)
-				option.set(value)
-				valueLineEdit:SetText(value)
-				RefreshEnabledStates(self.refreshMap)
-				if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-					Update(self.updateIndices[option.category][index])
+				if value then
+					option.set(value)
+					valueLineEdit:SetText(value)
+					RefreshEnabledStates(self.refreshMap)
+					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
+						Update(self.updateIndices[option.category][index])
+					end
 				end
+				button:SetText(L["Choose"])
 			end)
+			button:SetText(L["Right Click to Cancel"])
 		end
 	end)
 	button:SetCallback("OnEnter", function()
