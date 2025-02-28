@@ -186,16 +186,12 @@ end
 ---@field durationTicker FunctionContainer|nil
 ---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
 ---@field running boolean
----@field paused number|nil
 ---@field parent EPContainer
 ---@field isAnimating boolean
 
 ---@param self EPReminderMessage
 local function OnAcquire(self)
-	self.frame:SetFrameStrata("MEDIUM")
-	self.frame:SetFrameLevel(100)
 	self.frame:Show()
-	self.text:Show()
 	self.isAnimating = false
 end
 
@@ -212,10 +208,9 @@ local function OnRelease(self)
 	self.expirationTime = 0
 	self.currentThreshold = ""
 	self.running = false
-	self.paused = nil
 	self:SetAnchorMode(false)
-	self:SetIcon(nil)
-	self:SetAlpha(1.0)
+	self.icon:SetTexture(nil)
+	self.showIcon = false
 	self.horizontalTextPadding = defaultTextPadding
 	self.isAnimating = false
 end
@@ -224,7 +219,6 @@ end
 ---@param iconID number|string|nil
 local function SetIcon(self, iconID)
 	self.icon:SetTexture(iconID)
-	self.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 	if iconID then
 		self.showIcon = true
 	else
@@ -281,7 +275,7 @@ end
 ---@param self EPReminderMessage
 ---@param duration number
 local function Start(self, duration)
-	if self.running and not self.paused then
+	if self.running then
 		return
 	end
 
@@ -289,7 +283,6 @@ local function Start(self, duration)
 	self.textAnimationGroup:Stop()
 
 	self.text:Show()
-
 	SetDuration(self, duration)
 
 	local totalElapsed = 0
@@ -321,36 +314,6 @@ local function Start(self, duration)
 	end
 
 	self.running = true
-	self.paused = nil
-end
-
----@param self EPReminderMessage
-local function Pause(self)
-	if not self.paused then
-		if self.durationTicker then
-			self.durationTicker:Cancel()
-		end
-		self.iconAnimationGroup:Pause()
-		self.textAnimationGroup:Pause()
-		self.paused = GetTime()
-	end
-end
-
----@param self EPReminderMessage
-local function Resume(self)
-	if self.paused then
-		local time = GetTime()
-		if self.expirationTime > 0 then
-			self.expirationTime = time + self.remaining
-			local iterations = ceil(self.remaining / timerTickRate) + 10
-			self.durationTicker = NewTicker(timerTickRate, function()
-				TextUpdate(self)
-			end, iterations)
-		end
-		self.iconAnimationGroup:Play(false, self.iconAnimationGroup:GetElapsed())
-		self.textAnimationGroup:Play(false, self.textAnimationGroup:GetElapsed())
-		self.paused = nil
-	end
 end
 
 ---@param self EPReminderMessage
@@ -397,6 +360,29 @@ local function SetShowAnimation(self, show)
 	self.showAnimation = show
 end
 
+---@param self EPReminderMessage
+---@param preferences MessagePreferences
+---@param text string
+---@param icon string|number|nil
+local function Set(self, preferences, text, icon)
+	self.text:SetText(text or "")
+	if preferences.font and preferences.fontSize then
+		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		self.duration:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+	end
+	self.frame:SetAlpha(preferences.alpha)
+	local r, g, b, a = unpack(preferences.textColor)
+	self.text:SetTextColor(r, g, b, a)
+	self.duration:SetTextColor(r, g, b, a)
+	self.showAnimation = preferences.showAnimation
+	if icon then
+		self.showIcon = true
+		self.icon:SetTexture(icon)
+	else
+		self.showIcon = false
+	end
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -407,6 +393,7 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(defaultBackdropColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
+	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	text:SetJustifyH("CENTER")
@@ -441,11 +428,10 @@ local function Constructor()
 		SetAnchorMode = SetAnchorMode,
 		SetDuration = SetDuration,
 		Start = Start,
-		Pause = Pause,
-		Resume = Resume,
 		SetTextColor = SetTextColor,
 		SetShowAnimation = SetShowAnimation,
 		SetAlpha = SetAlpha,
+		Set = Set,
 		frame = frame,
 		type = Type,
 		icon = icon,
@@ -465,6 +451,7 @@ local function Constructor()
 	}
 
 	textAnimationGroup:SetScript("OnFinished", function()
+		widget.frame:Hide()
 		widget.running = false
 		widget:Fire("Completed")
 	end)

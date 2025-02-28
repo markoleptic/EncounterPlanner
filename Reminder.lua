@@ -22,12 +22,11 @@ local GetBoss = bossUtilities.GetBoss
 local utilities = Private.utilities
 local CreateReminderContainer = utilities.CreateReminderContainer
 local CreateReminderText = utilities.CreateReminderText
-local CreateProgressBar = utilities.CreateProgressBar
-local CreateMessage = utilities.CreateMessage
 local FindGroupMemberUnit = utilities.FindGroupMemberUnit
 local FilterSelf = utilities.FilterSelf
 
 local LibStub = LibStub
+local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
 local LGF = LibStub("LibGetFrame-1.0")
 
@@ -62,12 +61,6 @@ local combatLogEventMap = {
 	["SAR"] = "SPELL_AURA_REMOVED",
 	["UD"] = "UNIT_DIED",
 }
----@alias FullCombatLogEventType
----| "SPELL_AURA_APPLIED"
----| "SPELL_AURA_REMOVED"
----| "SPELL_CAST_START"
----| "SPELL_CAST_SUCCESS"
----| "UNIT_DIED"
 
 ---@class CombatLogEventAssignmentData
 ---@field preferences ReminderPreferences
@@ -110,7 +103,6 @@ local activeBuffers = {}
 local bufferTimers = {}
 
 local hideIfAlreadyCasted = false
-local operationQueue = {} -- Queue holding pending message or progress bar operations.
 local isLocked = false -- Operation Queue lock state.
 local isSimulating = false
 local lastExecutionTime = 0.0
@@ -118,6 +110,10 @@ local updateFrameTickRate = 0.04
 local defaultNoSpellIDGlowDuration = 5.0
 local maxGlowDuration = 10.0
 local updateFrame = CreateFrame("Frame")
+local messagesToAdd = {}
+local progressBarsToAdd = {}
+local messagesToRemove = {}
+local progressBarsToRemove = {}
 
 local function ResetLocalVariables()
 	updateFrame:SetScript("OnUpdate", nil)
@@ -159,7 +155,6 @@ local function ResetLocalVariables()
 	end
 	wipe(noSpellIDGlowFrames)
 
-	wipe(operationQueue)
 	wipe(hideWidgetIfCasted)
 	wipe(combatLogEventReminders)
 	wipe(spellCounts)
@@ -173,10 +168,14 @@ local function ResetLocalVariables()
 	wipe(buffers)
 	wipe(activeBuffers)
 
+	wipe(messagesToAdd)
+	wipe(progressBarsToAdd)
+	wipe(messagesToRemove)
+	wipe(progressBarsToRemove)
+
 	if messageContainer then
 		messageContainer:Release()
 	end
-
 	if progressBarContainer then
 		progressBarContainer:Release()
 	end
@@ -235,22 +234,20 @@ local function CreateTimerWithCleanup(duration, func, ...)
 	return timer
 end
 
--- Locks the Operation Queue and dequeues until empty. Updates Message container and Progress Bar Container at end.
 local function ProcessNextOperation()
 	if not isLocked then
 		isLocked = true
-		while #operationQueue > 0 do
-			local nextOperation = table.remove(operationQueue, 1)
-			if not nextOperation then
-				break
-			end
-			nextOperation()
-		end
 		if messageContainer then
-			messageContainer:DoLayout()
+			messageContainer:RemoveChildren(unpack(messagesToRemove))
+			wipe(messagesToRemove)
+			messageContainer:AddChildren(unpack(messagesToAdd))
+			wipe(messagesToAdd)
 		end
 		if progressBarContainer then
-			progressBarContainer:DoLayout()
+			progressBarContainer:RemoveChildren(unpack(progressBarsToRemove))
+			wipe(progressBarsToRemove)
+			progressBarContainer:AddChildren(unpack(progressBarsToAdd))
+			wipe(progressBarsToAdd)
 		end
 	end
 	isLocked = false
@@ -307,22 +304,14 @@ end
 local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex, isProgressBar)
 	local uniqueID = GenerateUniqueID()
 
-	widget:SetCallback("Completed", function()
+	widget:SetCallback("Completed", function(w)
 		if hideWidgetIfCasted[spellID] then
 			hideWidgetIfCasted[spellID][uniqueID] = nil
 		end
 		if isProgressBar then
-			tinsert(operationQueue, function()
-				if progressBarContainer then
-					progressBarContainer:RemoveChildNoDoLayout(widget)
-				end
-			end)
+			tinsert(progressBarsToRemove, w)
 		else
-			tinsert(operationQueue, function()
-				if messageContainer then
-					messageContainer:RemoveChildNoDoLayout(widget)
-				end
-			end)
+			tinsert(messagesToRemove, w)
 		end
 	end)
 
@@ -338,17 +327,14 @@ end
 ---@param reminderText string
 ---@param progressBarPreferences ProgressBarPreferences
 local function AddProgressBar(assignment, duration, reminderText, progressBarPreferences)
-	tinsert(operationQueue, function()
-		if progressBarContainer then
-			local icon = GetAssignmentIcon(assignment.spellInfo)
-			local spellID = assignment.spellInfo.spellID
-			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-			local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
-			CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
-			progressBarContainer:AddChildNoDoLayout(progressBar)
-			progressBar:Start()
-		end
-	end)
+	local icon = GetAssignmentIcon(assignment.spellInfo)
+	local spellID = assignment.spellInfo.spellID
+	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+	local progressBar = AceGUI:Create("EPProgressBar")
+	progressBar:Set(progressBarPreferences, reminderText, duration, icon)
+	CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
+	tinsert(progressBarsToAdd, progressBar)
+	progressBar:Start()
 end
 
 -- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
@@ -357,17 +343,14 @@ end
 ---@param reminderText string
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, duration, reminderText, messagePreferences)
-	tinsert(operationQueue, function()
-		if messageContainer then
-			local icon = GetAssignmentIcon(assignment.spellInfo)
-			local spellID = assignment.spellInfo.spellID
-			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-			local message = CreateMessage(messagePreferences, reminderText, icon)
-			CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
-			messageContainer:AddChildNoDoLayout(message)
-			message:Start(duration)
-		end
-	end)
+	local icon = GetAssignmentIcon(assignment.spellInfo)
+	local spellID = assignment.spellInfo.spellID
+	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+	local message = AceGUI:Create("EPReminderMessage")
+	message:Set(messagePreferences, reminderText, icon)
+	CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
+	tinsert(messagesToAdd, message)
+	message:Start(duration)
 end
 
 -- Starts glowing the frame for the unit and creates a timer to stop the glowing of the frame.

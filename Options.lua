@@ -211,7 +211,8 @@ do
 		if progressBarAnchor then
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.progressBars
-			local progressBar = utilities.CreateProgressBar(
+			local progressBar = AceGUI:Create("EPProgressBar")
+			progressBar:Set(
 				preferences,
 				L["Progress Bar Text"],
 				reminderPreferences.advanceNotice,
@@ -312,11 +313,8 @@ do
 		if messageAnchor then
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.messages
-			local message = utilities.CreateMessage(
-				preferences,
-				L["Cast spell or something"],
-				[[Interface\Icons\INV_MISC_QUESTIONMARK]]
-			)
+			local message = AceGUI:Create("EPReminderMessage")
+			message:Set(preferences, L["Cast spell or something"], [[Interface\Icons\INV_MISC_QUESTIONMARK]])
 			message:SetAnchorMode(true)
 			message:SetCallback("Completed", function(widget)
 				if messageAnchor then

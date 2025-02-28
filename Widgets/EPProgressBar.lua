@@ -24,10 +24,10 @@ local greaterThanMinuteFormat = "%d:%02d"
 local greaterThanTenSecondsFormat = "%.0f"
 local fallbackFormat = "%.1f"
 
-local greaterThanHourFormatApproximate = "~%d:%02d:%02d"
-local greaterThanMinuteFormatApproximate = "~%d:%02d"
-local greaterThanTenSecondsFormatApproximate = "~%.1f"
-local fallbackFormatApproximate = "~%.0f"
+-- local greaterThanHourFormatApproximate = "~%d:%02d:%02d"
+-- local greaterThanMinuteFormatApproximate = "~%d:%02d"
+-- local greaterThanTenSecondsFormatApproximate = "~%.1f"
+-- local fallbackFormatApproximate = "~%.0f"
 
 local backdropColor = { 0, 0, 0, 0 }
 local backdropBorderColor = { 0, 0, 0, 1 }
@@ -43,6 +43,51 @@ local iconFrameBackdrop = {
 	edgeSize = 1,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
+
+local activeBars = {}
+
+local sharedUpdater = CreateFrame("Frame"):CreateAnimationGroup()
+sharedUpdater:SetLooping("REPEAT")
+
+local repeater = sharedUpdater:CreateAnimation()
+repeater:SetDuration(animationTickRate)
+
+local function SharedBarUpdate()
+	local currentTime = GetTime()
+	for bar in pairs(activeBars) do
+		if currentTime >= bar.expirationTime then
+			activeBars[bar] = nil
+			bar.running = false
+			bar.frame:Hide()
+			bar:Fire("Completed")
+		else
+			local relativeTime = bar.expirationTime - currentTime
+			bar.remaining = relativeTime
+			bar.statusBar:SetValue(bar.fill and (currentTime - bar.startTime) + bar.gap or relativeTime)
+
+			if relativeTime > slightlyUnderSecondsInHour then
+				local h = floor(relativeTime / secondsInHour)
+				local m = floor((relativeTime - (h * secondsInHour)) / secondsInMinute)
+				local s = (relativeTime - (m * secondsInMinute)) - (h * secondsInHour)
+				bar.duration:SetFormattedText(greaterThanHourFormat, h, m, s)
+			elseif relativeTime > slightlyUnderSecondsInMinute then
+				local m = floor(relativeTime / secondsInMinute)
+				local s = relativeTime - (m * secondsInMinute)
+				bar.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
+			elseif relativeTime > slightlyUnderTenSeconds then
+				bar.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
+			else
+				bar.duration:SetFormattedText(fallbackFormat, relativeTime)
+			end
+		end
+	end
+
+	if not next(activeBars) then
+		sharedUpdater:Stop()
+	end
+end
+
+sharedUpdater:SetScript("OnLoop", SharedBarUpdate)
 
 ---@param self EPProgressBar
 local function RestyleBar(self)
@@ -76,19 +121,6 @@ local function RestyleBar(self)
 		self.iconBackdrop:Hide()
 	end
 
-	local text = self.label:GetText()
-	if self.showLabel and text then
-		self.label:Show()
-	else
-		self.label:Hide()
-	end
-
-	if self.showTime then
-		self.duration:Show()
-	else
-		self.duration:Hide()
-	end
-
 	self.label:ClearAllPoints()
 	self.duration:ClearAllPoints()
 	if self.label:GetJustifyH() == "LEFT" and self.duration:GetJustifyH() == "RIGHT" then
@@ -111,61 +143,6 @@ local function RestyleBar(self)
 	end
 end
 
----@param self EPProgressBar
-local function BarUpdate(self)
-	local currentTime = GetTime()
-	if currentTime >= self.expirationTime then
-		self.updater:SetScript("OnLoop", nil)
-		self.running = false
-		self:Fire("Completed")
-	else
-		local relativeTime = self.expirationTime - currentTime
-		self.remaining = relativeTime
-		self.statusBar:SetValue(self.fill and (currentTime - self.startTime) + self.gap or relativeTime)
-		if relativeTime > slightlyUnderSecondsInHour then
-			local h = floor(relativeTime / secondsInHour)
-			local m = floor((relativeTime - (h * secondsInHour)) / secondsInMinute)
-			local s = (relativeTime - (m * secondsInMinute)) - (h * secondsInHour)
-			self.duration:SetFormattedText(greaterThanHourFormat, h, m, s)
-		elseif relativeTime > slightlyUnderSecondsInMinute then
-			local m = floor(relativeTime / secondsInMinute)
-			local s = relativeTime - (m * secondsInMinute)
-			self.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
-		elseif relativeTime > slightlyUnderTenSeconds then
-			self.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
-		else
-			self.duration:SetFormattedText(fallbackFormat, relativeTime)
-		end
-	end
-end
-
----@param self EPProgressBar
-local function BarUpdateApproximate(self)
-	local currentTime = GetTime()
-	if currentTime >= self.expirationTime then
-		self.updater:SetScript("OnLoop", nil)
-		self:Fire("Completed")
-	else
-		local relativeTime = self.expirationTime - currentTime
-		self.remaining = relativeTime
-		self.statusBar:SetValue(self.fill and (currentTime - self.startTime) + self.gap or relativeTime)
-		if relativeTime > slightlyUnderSecondsInHour then
-			local h = floor(relativeTime / secondsInHour)
-			local m = floor((relativeTime - (h * secondsInHour)) / secondsInMinute)
-			local s = (relativeTime - (m * secondsInMinute)) - (h * secondsInHour)
-			self.duration:SetFormattedText(greaterThanHourFormatApproximate, h, m, s)
-		elseif relativeTime > slightlyUnderSecondsInMinute then
-			local m = floor(relativeTime / secondsInMinute)
-			local s = relativeTime - (m * secondsInMinute)
-			self.duration:SetFormattedText(greaterThanMinuteFormatApproximate, m, s)
-		elseif relativeTime > slightlyUnderTenSeconds then
-			self.duration:SetFormattedText(greaterThanTenSecondsFormatApproximate, relativeTime)
-		else
-			self.duration:SetFormattedText(fallbackFormatApproximate, relativeTime)
-		end
-	end
-end
-
 ---@class EPProgressBar : AceGUIWidget
 ---@field frame table|Frame
 ---@field type string
@@ -174,14 +151,8 @@ end
 ---@field iconBackdrop table|Frame|BackdropTemplate
 ---@field duration FontString
 ---@field label FontString
----@field updater AnimationGroup
----@field repeater table
 ---@field fill boolean
----@field showTime boolean
----@field showLabel boolean
 ---@field remaining number
----@field isApproximate boolean
----@field paused number|nil
 ---@field expirationTime number
 ---@field startTime number
 ---@field running boolean
@@ -192,31 +163,19 @@ end
 
 ---@param self EPProgressBar
 local function OnAcquire(self)
-	self.frame:SetFrameStrata("MEDIUM")
-	self.frame:SetFrameLevel(100)
 	self.frame:Show()
 end
 
 ---@param self EPProgressBar
 local function OnRelease(self)
-	self.updater:SetScript("OnLoop", nil)
 	self.fill = false
-	self.showTime = true
-	self.showLabel = true
 	self.remaining = 0
-	self.isApproximate = false
-	self.paused = nil
 	self.expirationTime = 0
 	self.startTime = 0
 	self.running = false
 	self.gap = 0
 	self.iconPosition = "LEFT"
 	self.iconTexture = nil
-	self.label:SetJustifyH("LEFT")
-	self.label:SetJustifyV("MIDDLE")
-	self.duration:SetJustifyH("RIGHT")
-	self.duration:SetJustifyV("MIDDLE")
-	self:SetAlpha(1.0)
 end
 
 ---@param self EPProgressBar
@@ -290,33 +249,9 @@ local function SetShowIconBorder(self, show)
 end
 
 ---@param self EPProgressBar
----@param show boolean
-local function SetTimeVisibility(self, show)
-	self.showTime = show
-	if show then
-		self.duration:Show()
-	else
-		self.duration:Hide()
-	end
-end
-
----@param self EPProgressBar
----@param show boolean
-local function SetLabelVisibility(self, show)
-	self.showLabel = show
-	if show then
-		self.label:Show()
-	else
-		self.label:Hide()
-	end
-end
-
----@param self EPProgressBar
 ---@param duration number
----@param isApprox? boolean
-local function SetDuration(self, duration, isApprox)
+local function SetDuration(self, duration)
 	self.remaining = duration
-	self.isApproximate = isApprox or false
 end
 
 ---@param self EPProgressBar
@@ -365,15 +300,58 @@ local function SetAlpha(self, alpha)
 end
 
 ---@param self EPProgressBar
+---@param preferences ProgressBarPreferences
+---@param text string
+---@param duration number
+---@param icon string|number|nil
+local function Set(self, preferences, text, duration, icon)
+	self.frame:SetSize(preferences.width, preferences.height)
+	self.duration:SetJustifyH(preferences.durationAlignment)
+	if preferences.durationAlignment == "LEFT" then
+		self.label:SetJustifyH("RIGHT")
+	else
+		self.label:SetJustifyH("LEFT")
+	end
+	self.frame:ClearBackdrop()
+	if preferences.showBorder then
+		frameBackdrop.edgeSize = 1
+		self.frame:SetBackdrop(frameBackdrop)
+		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	else
+		frameBackdrop.edgeSize = 0
+	end
+	self.iconBackdrop:ClearBackdrop()
+	if preferences.showIconBorder then
+		iconFrameBackdrop.edgeSize = 1
+		self.iconBackdrop:SetBackdrop(iconFrameBackdrop)
+		self.iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+	else
+		iconFrameBackdrop.edgeSize = 0
+	end
+	self.statusBar:SetStatusBarTexture(preferences.texture)
+	self.background:SetTexture(preferences.texture)
+	self:SetColor(unpack(preferences.color))
+	self:SetBackgroundColor(unpack(preferences.backgroundColor))
+	self.iconPosition = preferences.iconPosition
+	self.fill = preferences.fill
+	self.frame:SetAlpha(preferences.alpha)
+	self.label:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+	self.duration:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+	self.remaining = duration
+	self.iconTexture = icon
+	self.label:SetText(text)
+	self.icon:SetTexture(icon)
+end
+
+---@param self EPProgressBar
 ---@param maxValue? number
 local function Start(self, maxValue)
-	if self.running and not self.paused then
+	if self.running then
 		return
 	end
 	RestyleBar(self)
 
 	self.running = true
-	self.paused = nil
 	local time = self.remaining
 	self.gap = maxValue and maxValue - time or 0
 	self.startTime = GetTime()
@@ -382,62 +360,10 @@ local function Start(self, maxValue)
 	self.statusBar:SetMinMaxValues(0, maxValue or time)
 	self.statusBar:SetValue(self.fill and 0 or time)
 
-	if self.isApproximate then
-		if time > slightlyUnderSecondsInHour then
-			local h = floor(time / secondsInHour)
-			local m = floor((time - (h * secondsInHour)) / secondsInMinute)
-			local s = (time - (m * secondsInMinute)) - (h * secondsInHour)
-			self.duration:SetFormattedText(greaterThanHourFormatApproximate, h, m, s)
-		elseif time > slightlyUnderSecondsInMinute then
-			local m = floor(time / secondsInMinute)
-			local s = time - (m * secondsInMinute)
-			self.duration:SetFormattedText(greaterThanMinuteFormatApproximate, m, s)
-		elseif time > slightlyUnderTenSeconds then
-			self.duration:SetFormattedText(greaterThanTenSecondsFormatApproximate, time)
-		else
-			self.duration:SetFormattedText(fallbackFormatApproximate, time)
-		end
-		self.updater:SetScript("OnLoop", function()
-			BarUpdateApproximate(self)
-		end)
-	else
-		if time > slightlyUnderSecondsInHour then
-			local h = floor(time / secondsInHour)
-			local m = floor((time - (h * secondsInHour)) / secondsInMinute)
-			local s = (time - (m * secondsInMinute)) - (h * secondsInHour)
-			self.duration:SetFormattedText(greaterThanHourFormat, h, m, s)
-		elseif time > slightlyUnderSecondsInMinute then
-			local m = floor(time / secondsInMinute)
-			local s = time - (m * secondsInMinute)
-			self.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
-		elseif time > slightlyUnderTenSeconds then
-			self.duration:SetFormattedText(fallbackFormat, time)
-		else
-			self.duration:SetFormattedText(greaterThanTenSecondsFormat, time)
-		end
-		self.updater:SetScript("OnLoop", function()
-			BarUpdate(self)
-		end)
-	end
-	self.updater:Play()
-end
+	activeBars[self] = true
 
----@param self EPProgressBar
-local function Pause(self)
-	if not self.paused then
-		self.updater:Pause()
-		self.paused = GetTime()
-	end
-end
-
----@param self EPProgressBar
-local function Resume(self)
-	if self.paused then
-		local time = GetTime()
-		self.expirationTime = time + self.remaining
-		self.startTime = self.startTime + (time - self.paused)
-		self.updater:Play()
-		self.paused = nil
+	if not sharedUpdater:IsPlaying() then
+		sharedUpdater:Play()
 	end
 end
 
@@ -476,12 +402,12 @@ local function Constructor()
 	local icon = iconBackdrop:CreateTexture()
 	icon:SetPoint("TOPLEFT")
 	icon:SetPoint("BOTTOMRIGHT")
+	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 	local label = statusBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmallOutline")
 	label:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
 	label:SetPoint("RIGHT", statusBar, "RIGHT", -2, 0)
 	label:SetWordWrap(false)
-
 	label:SetJustifyH("LEFT")
 	label:SetJustifyV("MIDDLE")
 
@@ -489,15 +415,8 @@ local function Constructor()
 	duration:SetPoint("LEFT", statusBar, "LEFT", 2, 0)
 	duration:SetPoint("RIGHT", statusBar, "RIGHT", -2, 0)
 	duration:SetWordWrap(false)
-
 	duration:SetJustifyH("RIGHT")
 	duration:SetJustifyV("MIDDLE")
-
-	local updater = frame:CreateAnimationGroup()
-	updater:SetLooping("REPEAT")
-
-	local repeater = updater:CreateAnimation()
-	repeater:SetDuration(animationTickRate)
 
 	---@class EPProgressBar
 	local widget = {
@@ -507,13 +426,9 @@ local function Constructor()
 		SetTexture = SetTexture,
 		SetColor = SetColor,
 		SetBackgroundColor = SetBackgroundColor,
-		SetTimeVisibility = SetTimeVisibility,
-		SetLabelVisibility = SetLabelVisibility,
 		SetDuration = SetDuration,
 		SetIconAndText = SetIconAndText,
 		Start = Start,
-		Pause = Pause,
-		Resume = Resume,
 		SetDurationTextAlignment = SetDurationTextAlignment,
 		SetIconPosition = SetIconPosition,
 		SetFill = SetFill,
@@ -521,6 +436,7 @@ local function Constructor()
 		SetShowBorder = SetShowBorder,
 		SetShowIconBorder = SetShowIconBorder,
 		SetAlpha = SetAlpha,
+		Set = Set,
 		frame = frame,
 		type = Type,
 		statusBar = statusBar,
@@ -529,14 +445,8 @@ local function Constructor()
 		iconBackdrop = iconBackdrop,
 		duration = duration,
 		label = label,
-		updater = updater,
-		repeater = repeater,
 		fill = false,
-		showTime = true,
-		showLabel = true,
 		remaining = 0,
-		isApproximate = false,
-		paused = nil,
 		expirationTime = 0,
 		startTime = 0,
 		running = false,

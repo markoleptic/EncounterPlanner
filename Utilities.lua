@@ -2160,45 +2160,6 @@ do
 		container.frame:SetPoint(point, regionName, relativePoint, x, y)
 		return container
 	end
-
-	-- Creates an EPProgressBar widget using preferences.
-	---@param preferences ProgressBarPreferences
-	---@param text string
-	---@param duration number
-	---@param icon string|number|nil
-	---@return EPProgressBar
-	function Utilities.CreateProgressBar(preferences, text, duration, icon)
-		local progressBar = AceGUI:Create("EPProgressBar")
-		progressBar:SetProgressBarSize(preferences.width, preferences.height)
-		progressBar:SetDurationTextAlignment(preferences.durationAlignment)
-		progressBar:SetShowBorder(preferences.showBorder)
-		progressBar:SetShowIconBorder(preferences.showIconBorder)
-		progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
-		progressBar:SetIconPosition(preferences.iconPosition)
-		progressBar:SetFill(preferences.fill)
-		progressBar:SetAlpha(preferences.alpha)
-		progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-		progressBar:SetDuration(duration)
-		progressBar:SetIconAndText(icon, text)
-		return progressBar
-	end
-
-	-- Creates an EPReminderMessage widget using preferences.
-	---@param preferences MessagePreferences
-	---@param text string
-	---@param icon string|number|nil
-	---@return EPReminderMessage
-	function Utilities.CreateMessage(preferences, text, icon)
-		local message = AceGUI:Create("EPReminderMessage")
-		message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
-		message:SetAlpha(preferences.alpha)
-		message:SetTextColor(unpack(preferences.textColor))
-		message:SetShowAnimation(preferences.showAnimation)
-		if icon then
-			message:SetIcon(icon)
-		end
-		return message
-	end
 end
 
 --@debug@
