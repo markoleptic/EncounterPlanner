@@ -197,6 +197,22 @@ local function RemoveChild(self, child)
 end
 
 ---@param self EPContainer
+---@param ... AceGUIWidget
+local function RemoveChildren(self, ...)
+	local map = {}
+	for i = 1, select("#", ...) do
+		map[select(i, ...)] = true
+	end
+	for i = #self.children, 1, -1 do
+		if map[self.children[i]] then
+			self.children[i]:Release()
+			tremove(self.children, i)
+		end
+	end
+	self:DoLayout()
+end
+
+---@param self EPContainer
 ---@param point AnchorPoint
 local function SetAnchorPoint(self, point)
 	local x, y = 0, 0
@@ -288,6 +304,7 @@ local function Constructor()
 		InsertChildren = InsertChildren,
 		AddChildNoDoLayout = AddChildNoDoLayout,
 		RemoveChild = RemoveChild,
+		RemoveChildren = RemoveChildren,
 		RemoveChildNoDoLayout = RemoveChildNoDoLayout,
 		SetBackdrop = SetBackdrop,
 		SetPadding = SetPadding,
