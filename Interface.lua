@@ -1501,15 +1501,20 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 end
 
 local simulationCompletedObject = {}
-function simulationCompletedObject.HandleSimulationCompleted(simulateRemindersButton)
-	simulateRemindersButton:SetText(L["Simulate Reminders"])
-	local timeline = Private.mainFrame.timeline
-	if timeline then
-		timeline:SetIsSimulating(false)
-		local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
-		addAssigneeDropdown:SetEnabled(true)
+function simulationCompletedObject.HandleSimulationCompleted()
+	if Private.mainFrame then
+		local simulateRemindersButton = Private.mainFrame.simulateRemindersButton
+		if simulateRemindersButton then
+			simulateRemindersButton:SetText(L["Simulate Reminders"])
+			local timeline = Private.mainFrame.timeline
+			if timeline then
+				timeline:SetIsSimulating(false)
+				local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
+				addAssigneeDropdown:SetEnabled(true)
+			end
+			Private.mainFrame.planDropdown:SetEnabled(true)
+		end
 	end
-	Private.mainFrame.planDropdown:SetEnabled(true)
 end
 
 ---@param value boolean
@@ -1947,6 +1952,7 @@ function Private:CreateInterface()
 	Private.mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
 	Private.mainFrame.timeline = timeline
 	Private.mainFrame.sendPlanButton = sendPlanButton
+	Private.mainFrame.simulateRemindersButton = simulateRemindersButton
 
 	Private.HandleSendPlanButtonConstructed()
 	interfaceUpdater.RestoreMessageLog()

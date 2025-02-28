@@ -49,6 +49,7 @@ local lastExecutionTime = 0
 ---@field closeButtonMinimizeFrame EPButton
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
+---@field simulateRemindersButton EPButton
 ---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
 ---@field bossLabel EPLabel
@@ -218,6 +219,7 @@ local function OnRelease(self)
 	self.planReminderEnableCheckBox = nil
 	self.sendPlanButton = nil
 	self.primaryPlanCheckBox = nil
+	self.simulateRemindersButton = nil
 end
 
 ---@param self EPMainFrame
