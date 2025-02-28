@@ -750,6 +750,16 @@ do
 			Private:UnregisterEvent("PLAYER_REGEN_ENABLED")
 		end
 	end
+
+	---@param messageBoxDataID string
+	function InterfaceUpdater.RemoveFromMessageQueue(messageBoxDataID)
+		for index, messageBoxData in ipairs(messageQueue) do
+			if messageBoxData.ID == messageBoxDataID then
+				tremove(messageQueue, index)
+				break
+			end
+		end
+	end
 end
 
 do

@@ -284,7 +284,7 @@ local function ImportPlan(plan, fullName)
 	if IsInRaid() then
 		local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
 		if changedPrimaryPlan then
-			LogMessage(format("%s '%s'", L["Changed the primary plan to"], plan.name))
+			LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
 		end
 	end
 
@@ -378,7 +378,7 @@ do
 				sender,
 				L["has sent you the plan"],
 				plan.name,
-				L["Do you wish to accept the plan?"],
+				L["Do you want to accept the plan?"],
 				L["Trusting this character will allow them to send you new plans and update plans they have previously sent you without showing this message."]
 			),
 			acceptButtonText = L["Accept and Trust"],
@@ -510,7 +510,7 @@ do
 				local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
 				if changedPrimaryPlan then
 					interfaceUpdater.UpdatePrimaryPlanCheckBox(plan.name)
-					LogMessage(format("%s '%s'", L["Changed the primary plan to"], plan.name))
+					LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
 				end
 			end
 			if activePlanIDsBeingSent[plan.ID] then
