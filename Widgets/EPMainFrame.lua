@@ -58,6 +58,7 @@ local lastExecutionTime = 0
 ---@field planReminderEnableCheckBox EPCheckBox
 ---@field sendPlanButton EPButton
 ---@field primaryPlanCheckBox EPCheckBox
+---@field menuButtonContainer EPContainer
 ---@field children table<integer, EPContainer>
 
 ---@param self EPMainFrame
@@ -153,6 +154,13 @@ local function OnAcquire(self)
 		self:Fire("ExpandAllButtonClicked")
 	end)
 
+	self.menuButtonContainer = AceGUI:Create("EPContainer")
+	self.menuButtonContainer:SetLayout("EPHorizontalLayout")
+	self.menuButtonContainer:SetSpacing(0, 0)
+	self.menuButtonContainer.frame:SetParent(self.windowBar)
+	self.menuButtonContainer.frame:SetPoint("TOPLEFT", self.windowBar, "TOPLEFT", 1, -1)
+	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar, "BOTTOMLEFT", 1, 1)
+
 	self.statusBar = AceGUI:Create("EPStatusBar")
 	self.statusBar.frame:SetParent(self.frame)
 	self.statusBar.frame:SetHeight(statusBarHeight)
@@ -168,6 +176,9 @@ end
 
 ---@param self EPMainFrame
 local function OnRelease(self)
+	if self.menuButtonContainer then
+		self.menuButtonContainer:Release()
+	end
 	if self.closeButton then
 		self.closeButton:Release()
 	end
@@ -190,6 +201,8 @@ local function OnRelease(self)
 		self.statusBar:Release()
 	end
 	self.minimizeFrame:Hide()
+
+	self.menuButtonContainer = nil
 	self.closeButton = nil
 	self.minimizeButton = nil
 	self.maximizeButton = nil
@@ -311,6 +324,12 @@ local function GetPadding()
 	return padding
 end
 
+---@param self EPMainFrame
+local function Maximize(self)
+	self.minimizeFrame:Hide()
+	self.frame:Show()
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -402,6 +421,7 @@ local function Constructor()
 		GetPadding = GetPadding,
 		HandleResizeBoundsCalculated = HandleResizeBoundsCalculated,
 		UpdateHorizontalResizeBounds = UpdateHorizontalResizeBounds,
+		Maximize = Maximize,
 		frame = frame,
 		type = Type,
 		content = contentFrame,

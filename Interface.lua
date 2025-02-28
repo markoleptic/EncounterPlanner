@@ -1422,11 +1422,13 @@ end
 
 local function HandleRosterMenuButtonClicked()
 	Create.RosterEditor("Current Plan Roster")
-	local menuButtonContainer = Private.menuButtonContainer
-	if menuButtonContainer then
-		for _, widget in ipairs(menuButtonContainer.children) do
-			if widget.type == "EPDropdown" then
-				widget:Close()
+	if Private.mainFrame then
+		local menuButtonContainer = Private.mainFrame.menuButtonContainer
+		if menuButtonContainer then
+			for _, widget in ipairs(menuButtonContainer.children) do
+				if widget.type == "EPDropdown" then
+					widget:Close()
+				end
 			end
 		end
 	end
@@ -1436,11 +1438,13 @@ local function HandlePreferencesMenuButtonClicked()
 	if not Private.optionsMenu then
 		Private:CreateOptionsMenu()
 	end
-	local menuButtonContainer = Private.menuButtonContainer
-	if menuButtonContainer then
-		for _, widget in ipairs(menuButtonContainer.children) do
-			if widget.type == "EPDropdown" then
-				widget:Close()
+	if Private.mainFrame then
+		local menuButtonContainer = Private.mainFrame.menuButtonContainer
+		if menuButtonContainer then
+			for _, widget in ipairs(menuButtonContainer.children) do
+				if widget.type == "EPDropdown" then
+					widget:Close()
+				end
 			end
 		end
 	end
@@ -1667,9 +1671,6 @@ local function HandleMainFrameReleased()
 	if Private.optionsMenu then -- Takes care of messageAnchor and progressBarAnchor
 		Private.optionsMenu:Release()
 	end
-	if Private.menuButtonContainer then
-		Private.menuButtonContainer:Release()
-	end
 end
 
 function Private:CreateInterface()
@@ -1740,16 +1741,6 @@ function Private:CreateInterface()
 	Private.mainFrame:SetCallback("MinimizeFramePointChanged", HandleMinimizeFramePointChanged)
 	Private.mainFrame:SetCallback("OnRelease", HandleMainFrameReleased)
 
-	Private.menuButtonContainer = AceGUI:Create("EPContainer")
-	Private.menuButtonContainer:SetLayout("EPHorizontalLayout")
-	Private.menuButtonContainer:SetSpacing(0, 0)
-	Private.menuButtonContainer.frame:SetParent(Private.mainFrame.windowBar)
-	Private.menuButtonContainer.frame:SetPoint("TOPLEFT", Private.mainFrame.windowBar, "TOPLEFT", 1, -1)
-	Private.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", Private.mainFrame.windowBar, "BOTTOMLEFT", 1, 1)
-	Private.menuButtonContainer:SetCallback("OnRelease", function()
-		Private.menuButtonContainer = nil
-	end)
-
 	local planMenuButton = Create.MenuButton(L["Plan"])
 	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
@@ -1788,7 +1779,12 @@ function Private:CreateInterface()
 	preferencesMenuButton:SetColor(unpack(preferencesMenuButtonColor))
 	preferencesMenuButton:SetCallback("Clicked", HandlePreferencesMenuButtonClicked)
 
-	Private.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
+	Private.mainFrame.menuButtonContainer:AddChildren(
+		planMenuButton,
+		bossMenuButton,
+		rosterMenuButton,
+		preferencesMenuButton
+	)
 
 	local instanceLabelContainer = AceGUI:Create("EPContainer")
 	instanceLabelContainer:SetLayout("EPVerticalLayout")
@@ -1955,7 +1951,7 @@ function Private:CreateInterface()
 	Private.HandleSendPlanButtonConstructed()
 	interfaceUpdater.RestoreMessageLog()
 	Private.mainFrame:AddChildren(topContainer, timeline)
-	Private.menuButtonContainer:DoLayout()
+	Private.mainFrame.menuButtonContainer:DoLayout()
 
 	UpdatePlanWidgets()
 	UpdateBoss(bossDungeonEncounterID, true)

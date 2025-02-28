@@ -23,10 +23,11 @@ local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
 local print = print
 
-local versionStringFromToc = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
-
 local minimapIconObject = {}
 do -- Minimap icon initialization and handling
+	local GetAddOnMetric = C_AddOnProfiler.GetAddOnMetric
+	local version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
+
 	-- Function copied from LibDBIcon-1.0.lua
 	---@param frame Frame
 	local function GetAnchors(frame)
@@ -60,13 +61,52 @@ do -- Minimap icon initialization and handling
 		end
 		if tooltip then
 			tooltip:ClearLines()
-			tooltip:AddDoubleLine(AddOnName, versionStringFromToc)
+			tooltip:AddDoubleLine(AddOnName, version)
 			tooltip:AddLine(" ")
 			tooltip:AddLine("|cffeda55f" .. L["Left-Click|r to toggle showing the main window."], 0.2, 1, 0.2)
 			tooltip:AddLine("|cffeda55f" .. L["Right-Click|r to open the options menu."], 0.2, 1, 0.2)
+			tooltip:AddLine(" ")
+
+			local sessionAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.SessionAverageTime)
+			local recentAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.RecentAverageTime)
+			local encounterAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.EncounterAverageTime)
+			local lastTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.LastTime)
+			local peakTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.PeakTime)
+			local countTimeOver1Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver1Ms)
+			local countTimeOver5Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver5Ms)
+			local countTimeOver10Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver10Ms)
+			local countTimeOver50Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver50Ms)
+			local countTimeOver100Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver100Ms)
+
+			local r, g, b = 237.0 / 255.0, 165.0 / 255.0, 95.0 / 255.0
+			local str = format("%s:", L["Average Time Since Login/Reload"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", sessionAverageTime, L["ms"]), r, g, b)
+			str = format("%s:", L["Highest Time Since Login/Reload"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", peakTime, L["ms"]), r, g, b)
+			str = format("%s:", L["Total Time In Most Recent Tick"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", lastTime, L["ms"]), r, g, b)
+
+			str = format("%s:", L["Average Time Over Last 60 Ticks"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", recentAverageTime, L["ms"]), r, g, b)
+			str = format("%s:", L["Average Time Over Boss Encounter"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", encounterAverageTime, L["ms"]), r, g, b)
+
+			str = format("%s %d %s:", L["Count Time Over"], 1, L["ms"])
+			tooltip:AddDoubleLine(str, format("%d", countTimeOver1Ms), r, g, b)
+			str = format("%s %d %s:", L["Count Time Over"], 5, L["ms"])
+			tooltip:AddDoubleLine(str, format("%d", countTimeOver5Ms), r, g, b)
+			str = format("%s %d %s:", L["Count Time Over"], 10, L["ms"])
+			tooltip:AddDoubleLine(str, format("%d", countTimeOver10Ms), r, g, b)
+			str = format("%s %d %s:", L["Count Time Over"], 50, L["ms"])
+			tooltip:AddDoubleLine(str, format("%d", countTimeOver50Ms), r, g, b)
+			str = format("%s %d %s:", L["Count Time Over"], 100, L["ms"])
+			tooltip:AddDoubleLine(str, format("%d", countTimeOver100Ms), r, g, b)
+
 			if not isAddonCompartment then
-				tooltip:AddLine("|cffeda55f" .. L["Middle-Click|r to hide this icon."], 0.2, 1, 0.2)
+				tooltip:AddLine(" ")
+				tooltip:AddLine("|cffeda55f" .. L["Middle-Click|r to hide this icon."], r, g, b)
 			end
+
 			tooltip:Show()
 		end
 	end
@@ -82,6 +122,8 @@ do -- Minimap icon initialization and handling
 		if mouseButton == "LeftButton" then
 			if not Private.mainFrame then
 				Private:CreateInterface()
+			elseif not Private.mainFrame.frame:IsVisible() then
+				Private.mainFrame:Maximize()
 			end
 		elseif mouseButton == "MiddleButton" then
 			ToggleMinimap()
