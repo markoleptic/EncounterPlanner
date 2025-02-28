@@ -31,6 +31,7 @@ local function HandleFrameMouseDown(self, button)
 			relativePoint = relativePoint,
 		}
 		self.frame:StartMoving()
+		self:Fire("MouseDown")
 	end
 end
 

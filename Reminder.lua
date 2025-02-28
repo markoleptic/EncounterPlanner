@@ -20,17 +20,17 @@ local GetBoss = bossUtilities.GetBoss
 
 ---@class Utilities
 local utilities = Private.utilities
-local IsValidRegionName = utilities.IsValidRegionName
+local CreateReminderContainer = utilities.CreateReminderContainer
 local CreateReminderText = utilities.CreateReminderText
+local CreateProgressBar = utilities.CreateProgressBar
+local CreateMessage = utilities.CreateMessage
 local FindGroupMemberUnit = utilities.FindGroupMemberUnit
 local FilterSelf = utilities.FilterSelf
 
 local LibStub = LibStub
-local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
 local LGF = LibStub("LibGetFrame-1.0")
 
-local UIParent = UIParent
 local floor = math.floor
 local getmetatable = getmetatable
 local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
@@ -53,7 +53,6 @@ local UnitIsGroupLeader = UnitIsGroupLeader
 local unpack = unpack
 local wipe = wipe
 
-local kReminderContainerFrameLevel = constants.frameLevels.kReminderContainerFrameLevel
 local playerGUID = UnitGUID("player")
 
 local combatLogEventMap = {
@@ -74,6 +73,11 @@ local combatLogEventMap = {
 ---@field preferences ReminderPreferences
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
+
+---@type EPContainer|nil
+local messageContainer = nil
+---@type EPContainer|nil
+local progressBarContainer = nil
 
 ---@type FunctionContainer|nil
 local simulationTimer = nil
@@ -169,12 +173,12 @@ local function ResetLocalVariables()
 	wipe(buffers)
 	wipe(activeBuffers)
 
-	if Private.messageContainer then
-		Private.messageContainer:Release()
+	if messageContainer then
+		messageContainer:Release()
 	end
 
-	if Private.progressBarContainer then
-		Private.progressBarContainer:Release()
+	if progressBarContainer then
+		progressBarContainer:Release()
 	end
 
 	lastExecutionTime = 0.0
@@ -242,11 +246,11 @@ local function ProcessNextOperation()
 			end
 			nextOperation()
 		end
-		if Private.messageContainer then
-			Private.messageContainer:DoLayout()
+		if messageContainer then
+			messageContainer:DoLayout()
 		end
-		if Private.progressBarContainer then
-			Private.progressBarContainer:DoLayout()
+		if progressBarContainer then
+			progressBarContainer:DoLayout()
 		end
 	end
 	isLocked = false
@@ -261,32 +265,13 @@ local function HandleFrameUpdate(_, elapsed)
 	ProcessNextOperation()
 end
 
--- Creates a container for adding progress bars or messages to.
----@param preferences GenericReminderPreferences
----@param spacing number|nil
----@return EPContainer
-local function CreateReminderContainer(preferences, spacing)
-	local container = AceGUI:Create("EPContainer")
-	container:SetLayout("EPProgressBarLayout")
-	container.frame:SetParent(UIParent)
-	container.frame:SetFrameStrata("MEDIUM")
-	container.frame:SetFrameLevel(kReminderContainerFrameLevel)
-	container:SetSpacing(0, spacing or 0)
-	container.content.sortAscending = preferences.soonestExpirationOnBottom
-	local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
-	local point, relativePoint = preferences.point, preferences.relativePoint
-	local x, y = preferences.x, preferences.y
-	container.frame:SetPoint(point, regionName, relativePoint, x, y)
-	return container
-end
-
 -- Creates a container for adding progress bars to using preferences.
 ---@param preferences MessagePreferences
 local function CreateMessageContainer(preferences)
-	if not Private.messageContainer then
-		Private.messageContainer = CreateReminderContainer(preferences)
-		Private.messageContainer:SetCallback("OnRelease", function()
-			Private.messageContainer = nil
+	if not messageContainer then
+		messageContainer = CreateReminderContainer(preferences)
+		messageContainer:SetCallback("OnRelease", function()
+			messageContainer = nil
 		end)
 	end
 end
@@ -294,51 +279,12 @@ end
 -- Creates a container for adding progress bars to using preferences.
 ---@param preferences ProgressBarPreferences
 local function CreateProgressBarContainer(preferences)
-	if not Private.progressBarContainer then
-		Private.progressBarContainer = CreateReminderContainer(preferences, preferences.spacing)
-		Private.progressBarContainer:SetCallback("OnRelease", function()
-			Private.progressBarContainer = nil
+	if not progressBarContainer then
+		progressBarContainer = CreateReminderContainer(preferences, preferences.spacing)
+		progressBarContainer:SetCallback("OnRelease", function()
+			progressBarContainer = nil
 		end)
 	end
-end
-
--- Creates an EPProgressBar widget using preferences.
----@param preferences ProgressBarPreferences
----@param text string
----@param duration number
----@param icon string|number|nil
----@return EPProgressBar
-local function CreateProgressBar(preferences, text, duration, icon)
-	local progressBar = AceGUI:Create("EPProgressBar")
-	progressBar:SetProgressBarSize(preferences.width, preferences.height)
-	progressBar:SetDurationTextAlignment(preferences.durationAlignment)
-	progressBar:SetShowBorder(preferences.showBorder)
-	progressBar:SetShowIconBorder(preferences.showIconBorder)
-	progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
-	progressBar:SetIconPosition(preferences.iconPosition)
-	progressBar:SetFill(preferences.fill)
-	progressBar:SetAlpha(preferences.alpha)
-	progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-	progressBar:SetDuration(duration)
-	progressBar:SetIconAndText(icon, text)
-	return progressBar
-end
-
--- Creates an EPReminderMessage widget using preferences.
----@param preferences MessagePreferences
----@param text string
----@param icon string|number|nil
----@return EPReminderMessage
-local function CreateMessage(preferences, text, icon)
-	local message = AceGUI:Create("EPReminderMessage")
-	message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
-	message:SetAlpha(preferences.alpha)
-	message:SetTextColor(unpack(preferences.textColor))
-	message:SetShowAnimation(preferences.showAnimation)
-	if icon then
-		message:SetIcon(icon)
-	end
-	return message
 end
 
 ---@param spellInfo SpellInfo
@@ -367,11 +313,15 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 		end
 		if isProgressBar then
 			tinsert(operationQueue, function()
-				Private.progressBarContainer:RemoveChildNoDoLayout(widget)
+				if progressBarContainer then
+					progressBarContainer:RemoveChildNoDoLayout(widget)
+				end
 			end)
 		else
 			tinsert(operationQueue, function()
-				Private.messageContainer:RemoveChildNoDoLayout(widget)
+				if messageContainer then
+					messageContainer:RemoveChildNoDoLayout(widget)
+				end
 			end)
 		end
 	end)
@@ -389,13 +339,15 @@ end
 ---@param progressBarPreferences ProgressBarPreferences
 local function AddProgressBar(assignment, duration, reminderText, progressBarPreferences)
 	tinsert(operationQueue, function()
-		local icon = GetAssignmentIcon(assignment.spellInfo)
-		local spellID = assignment.spellInfo.spellID
-		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-		local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
-		CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
-		Private.progressBarContainer:AddChildNoDoLayout(progressBar)
-		progressBar:Start()
+		if progressBarContainer then
+			local icon = GetAssignmentIcon(assignment.spellInfo)
+			local spellID = assignment.spellInfo.spellID
+			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+			local progressBar = CreateProgressBar(progressBarPreferences, reminderText, duration, icon)
+			CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
+			progressBarContainer:AddChildNoDoLayout(progressBar)
+			progressBar:Start()
+		end
 	end)
 end
 
@@ -406,13 +358,15 @@ end
 ---@param messagePreferences MessagePreferences
 local function AddMessage(assignment, duration, reminderText, messagePreferences)
 	tinsert(operationQueue, function()
-		local icon = GetAssignmentIcon(assignment.spellInfo)
-		local spellID = assignment.spellInfo.spellID
-		local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
-		local message = CreateMessage(messagePreferences, reminderText, icon)
-		CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
-		Private.messageContainer:AddChildNoDoLayout(message)
-		message:Start(duration)
+		if messageContainer then
+			local icon = GetAssignmentIcon(assignment.spellInfo)
+			local spellID = assignment.spellInfo.spellID
+			local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+			local message = CreateMessage(messagePreferences, reminderText, icon)
+			CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
+			messageContainer:AddChildNoDoLayout(message)
+			message:Start(duration)
+		end
 	end)
 end
 
@@ -560,10 +514,10 @@ end
 ---@param startTime number
 ---@param abilities table<integer, BossAbility>
 local function SetupReminders(plans, preferences, startTime, abilities)
-	if not Private.messageContainer then
+	if not messageContainer then
 		CreateMessageContainer(preferences.messages)
 	end
-	if not Private.progressBarContainer then
+	if not progressBarContainer then
 		CreateProgressBarContainer(preferences.progressBars)
 	end
 
@@ -806,14 +760,13 @@ end
 ---@param timelineAssignments table<integer, TimelineAssignment>
 ---@param roster table<string, RosterEntry>
 function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
-	LGF:ScanForUnitFrames()
 	isSimulating = true
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	if reminderPreferences.enabled then
-		if not Private.messageContainer then
+		if not messageContainer then
 			CreateMessageContainer(reminderPreferences.messages)
 		end
-		if not Private.progressBarContainer then
+		if not progressBarContainer then
 			CreateProgressBarContainer(reminderPreferences.progressBars)
 		end
 

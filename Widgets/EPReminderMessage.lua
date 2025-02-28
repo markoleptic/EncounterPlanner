@@ -1,6 +1,3 @@
-local _, Namespace = ...
-local L = Namespace.L
-
 local Type = "EPReminderMessage"
 local Version = 1
 
@@ -18,7 +15,7 @@ local defaultFrameHeight = 24
 local defaultFrameWidth = 200
 local defaultTextPadding = 4
 local defaultBackdropColor = { 0, 0, 0, 0 }
-local anchorModeBackdropColor = { 0.1, 0.1, 0.1, 0.25 }
+local anchorModeBackdropColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 }
 local defaultDisplayTime = 2
 local defaultFadeDuration = 1.2
 local timerTickRate = 0.1
@@ -40,31 +37,6 @@ local frameBackdrop = {
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local previousPointDetails = {}
-
----@param self EPReminderMessage
-local function HandleFrameMouseDown(self, button)
-	if button == "LeftButton" then
-		local point, relativeTo, relativePoint, _, _ = self.frame:GetPoint()
-		previousPointDetails = {
-			point = point,
-			relativeTo = relativeTo:GetName(),
-			relativePoint = relativePoint,
-		}
-		self.frame:StartMoving()
-	end
-end
-
----@param self EPReminderMessage
-local function HandleFrameMouseUp(self, button)
-	if button == "LeftButton" then
-		self.frame:StopMovingOrSizing()
-		local point = previousPointDetails.point
-		local relativeFrame = previousPointDetails.relativeTo
-		local relativePoint = previousPointDetails.relativePoint
-		self:Fire("NewPoint", point, relativeFrame, relativePoint)
-	end
-end
 
 ---@param self EPReminderMessage
 local function UpdateFrameWidth(self)
@@ -413,22 +385,9 @@ end
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
-		self:SetText(L["Cast spell or something"])
 		self.frame:SetBackdropColor(unpack(anchorModeBackdropColor))
-		self.frame:SetMovable(true)
-		self.frame:SetScript("OnMouseDown", function(_, button)
-			HandleFrameMouseDown(self, button)
-		end)
-		self.frame:SetScript("OnMouseUp", function(_, button)
-			HandleFrameMouseUp(self, button)
-		end)
-		UpdateIconAndTextAnchors(self)
 	else
-		self:SetText("")
 		self.frame:SetBackdropColor(unpack(defaultBackdropColor))
-		self.frame:SetMovable(false)
-		self.frame:SetScript("OnMouseDown", nil)
-		self.frame:SetScript("OnMouseUp", nil)
 	end
 end
 
@@ -506,12 +465,8 @@ local function Constructor()
 	}
 
 	textAnimationGroup:SetScript("OnFinished", function()
-		widget.text:Hide()
-		widget.icon:Hide()
-		if widget.expirationTime == 0 then
-			widget.running = false
-			widget:Fire("Completed")
-		end
+		widget.running = false
+		widget:Fire("Completed")
 	end)
 
 	return AceGUI:RegisterAsWidget(widget)

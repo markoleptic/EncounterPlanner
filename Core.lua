@@ -369,7 +369,8 @@ function AddOn:OnProfileShutdown()
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
-	Private:CloseAnchorsAndDialogs()
+	Private:CloseDialogs()
+	Private:CloseAnchors()
 	interfaceUpdater.ClearMessageLog()
 	interfaceUpdater.RemoveMessageBoxes(false)
 end

@@ -1857,7 +1857,7 @@ end
 
 ---@param plans table<string, Plan>
 ---@param activePlan Plan
----@return boolean -- True if another plan with the same dungeonEncounterID was the primary plan.
+---@return boolean -- True if another plan with the same dungeonEncounterID was the Designated External Plan.
 function Utilities.SetPrimaryPlan(plans, activePlan)
 	local changedPrimaryPlan = false
 	for _, plan in pairs(plans) do
@@ -1872,7 +1872,7 @@ end
 
 ---@param plans table<string, Plan>
 ---@param dungeonEncounterID integer
----@return boolean -- True if a plan with the matching dungeonEncounterID is a primary plan.
+---@return boolean -- True if a plan with the matching dungeonEncounterID is a Designated External Plan.
 function Utilities.HasPrimaryPlan(plans, dungeonEncounterID)
 	for _, plan in pairs(plans) do
 		if plan.isPrimaryPlan and plan.dungeonEncounterID == dungeonEncounterID then
@@ -2135,6 +2135,69 @@ do
 			assignment.time = Utilities.Round(time, 1)
 		end
 		return assignment
+	end
+end
+
+do
+	local AceGUI = LibStub("AceGUI-3.0")
+	local kReminderContainerFrameLevel = constants.frameLevels.kReminderContainerFrameLevel
+
+	-- Creates a container for adding progress bars or messages to.
+	---@param preferences GenericReminderPreferences
+	---@param spacing number|nil
+	---@return EPContainer
+	function Utilities.CreateReminderContainer(preferences, spacing)
+		local container = AceGUI:Create("EPContainer")
+		container:SetLayout("EPProgressBarLayout")
+		container.frame:SetParent(UIParent)
+		container.frame:SetFrameStrata("MEDIUM")
+		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
+		container:SetSpacing(0, spacing or 0)
+		container.content.sortAscending = preferences.soonestExpirationOnBottom
+		local regionName = Utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
+		local point, relativePoint = preferences.point, preferences.relativePoint
+		local x, y = preferences.x, preferences.y
+		container.frame:SetPoint(point, regionName, relativePoint, x, y)
+		return container
+	end
+
+	-- Creates an EPProgressBar widget using preferences.
+	---@param preferences ProgressBarPreferences
+	---@param text string
+	---@param duration number
+	---@param icon string|number|nil
+	---@return EPProgressBar
+	function Utilities.CreateProgressBar(preferences, text, duration, icon)
+		local progressBar = AceGUI:Create("EPProgressBar")
+		progressBar:SetProgressBarSize(preferences.width, preferences.height)
+		progressBar:SetDurationTextAlignment(preferences.durationAlignment)
+		progressBar:SetShowBorder(preferences.showBorder)
+		progressBar:SetShowIconBorder(preferences.showIconBorder)
+		progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
+		progressBar:SetIconPosition(preferences.iconPosition)
+		progressBar:SetFill(preferences.fill)
+		progressBar:SetAlpha(preferences.alpha)
+		progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		progressBar:SetDuration(duration)
+		progressBar:SetIconAndText(icon, text)
+		return progressBar
+	end
+
+	-- Creates an EPReminderMessage widget using preferences.
+	---@param preferences MessagePreferences
+	---@param text string
+	---@param icon string|number|nil
+	---@return EPReminderMessage
+	function Utilities.CreateMessage(preferences, text, icon)
+		local message = AceGUI:Create("EPReminderMessage")
+		message:SetText(text, nil, preferences.font, preferences.fontSize, preferences.fontOutline)
+		message:SetAlpha(preferences.alpha)
+		message:SetTextColor(unpack(preferences.textColor))
+		message:SetShowAnimation(preferences.showAnimation)
+		if icon then
+			message:SetIcon(icon)
+		end
+		return message
 	end
 end
 

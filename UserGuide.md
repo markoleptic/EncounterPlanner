@@ -253,9 +253,6 @@ Whether to only show assignment reminders that are relevant to you.
 If an assignment is a spell and it already on cooldown, the reminder will not be shown.
 If the spell is cast during the reminder countdown, it will be cancelled.
 
-**Hide or Cancel on Phase Change**:
-Reminders associated with combat log events in a certain phase will be cancelled or hidden when the phase transitions.
-
 **Glow Frame for Targeted Spells**:
 Glows the unit frame of the target at assignment time.
 If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds.
@@ -268,21 +265,35 @@ How far ahead of assignment time to begin showing reminders.
 Whether to show Messages for assignments.
 
 **Toggle Message Anchor**:
-Displays an example Message that can be moved by dragging.
+Displays example Messages that can be moved by dragging.
 
 **Message Visibility**:
 
 -   **Expiration Only**: Only shows Messages at expiration time. Messages are displayed for 2 seconds before fading for 1.2 seconds.
 -   **With Countdown**: Messages are displayed for the duration of the countdown, including countdown text, before fading for 1.2 seconds.
 
-**Anchor Point**:
-Anchor point of the Messages frame, or the "spot" on the Messages frame that will be placed relative to another frame.
+**Animation**:
+Whether to show a bounce animation when a Message first appears.
 
-> [!NOTE]  
-> `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Messages grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Messages grow upwards.
+**Position**:
+
+-   **X**:
+    The horizontal offset from the **Relative Anchor Point** to the **Anchor Point**.
+-   **Y**:
+    The vertical offset from the **Relative Anchor Point** to the **Anchor Point**.
+
+**Message Order**:
+
+-   **Soonest Expiration on Top**:
+    Messages are displayed in ascending order, with the message expiring the soonest on top.
+-   **Soonest Expiration on Bottom**:
+    Messages are displayed in descending order, with the message expiring the soonest on bottom.
+
+**Anchor Point**:
+Which spot on the Message container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center.
 
 **Anchor Frame**:
-The frame that the Messages frame is anchored to. Defaults to UIParent (screen).
+The frame that the Message container is anchored to. Defaults to UIParent (screen).
 
 -   **Choose**:
     Clicking this button will highlight frames you hover over.
@@ -290,14 +301,7 @@ The frame that the Messages frame is anchored to. Defaults to UIParent (screen).
     `Right Click` to cancel.
 
 **Relative Anchor Point**:
-The anchor point on the frame that the Messages frame is anchored to.
-
-**Position**:
-
--   **X**:
-    The horizontal offset from the **Relative Anchor Point** on the **Anchor Frame** to the **Anchor Point**.
--   **Y**:
-    The vertical offset from the **Relative Anchor Point** on the **Anchor Frame** to the **Anchor Point**.
+The anchor point on the frame that the Message container is anchored to.
 
 **Font**:
 Font to use for Message text.
@@ -318,16 +322,27 @@ Transparency of Messages (0.0 - 1.0).
 Whether to show Progress Bars for assignments.
 
 **Toggle Progress Bar Anchor**:
-Displays an example Progress Bar that can be moved by dragging.
+Displays example Progress Bars that can be moved by dragging.
 
 **Anchor Point**:
-Anchor point of the Progress Bar frame, or the "spot" on the Progress Bar frame that will be placed relative to another frame.
+Which spot on the Progress Bar container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center.
 
-> [!NOTE]  
-> `Right`, `Bottom Right`, `Bottom`, `Left`, and `Bottom Left` will make Progress Bars grow downwards. `Top Left`, `Top`, `Top Right`, and `Center` will make Progress Bars grow upwards.
+**Position**:
+
+-   **X**:
+    The horizontal offset from the **Relative Anchor Point** to the **Anchor Point**.
+-   **Y**:
+    The vertical offset from the **Relative Anchor Point** to the **Anchor Point**.
+
+**Bar Order**:
+
+-   **Soonest Expiration on Top**:
+    Messages are displayed in ascending order, with the message expiring the soonest on top.
+-   **Soonest Expiration on Bottom**:
+    Messages are displayed in descending order, with the message expiring the soonest on bottom.
 
 **Anchor Frame**:
-The frame that the Progress Bar frame is anchored to. Defaults to UIParent (screen).
+The frame that the Progress Bar container is anchored to. Defaults to UIParent (screen).
 
 -   **Choose**:
     Clicking this button will highlight frames you hover over.
@@ -335,14 +350,7 @@ The frame that the Progress Bar frame is anchored to. Defaults to UIParent (scre
     `Right Click` to cancel.
 
 **Relative Anchor Point**:
-The anchor point on the frame that the Progress Bar frame is anchored to.
-
-**Position**:
-
--   **X**:
-    The horizontal offset from the **Relative Anchor Point** on the **Anchor Frame** to the **Anchor Point**.
--   **Y**:
-    The vertical offset from the **Relative Anchor Point** on the **Anchor Frame** to the **Anchor Point**.
+The anchor point on the frame that the Progress Bar container is anchored to.
 
 **Font**:
 Font to use for Progress Bar text.
@@ -353,23 +361,20 @@ Font size to use for Progress Bar text (8 - 64).
 **Font Outline**:
 Font outline to use for Progress Bar text.
 
+**Icon Position**
+Which side to place the icon for Progress Bars.
+
 **Duration Position**:
 Position of Progress Bar duration text.
-
-**Bar Texture**:
-The texture to use for the Progress Bar foreground and background.
-
-**Bar Size**:
-The width and height of Progress Bars.
 
 **Bar Progress Type**
 Whether to fill or drain Progress Bars.
 
-**Icon Position**
-Which side to place the icon for Progress Bars.
+**Bar Size**:
+The width and height of Progress Bars.
 
-**Bar Transparency**:
-Transparency of Progress Bars (0.0 - 1.0).
+**Bar Texture**:
+The texture to use for the foreground and background of Progress Bars.
 
 **Bar Color**:
 
@@ -378,6 +383,9 @@ Transparency of Progress Bars (0.0 - 1.0).
 -   **Background Color**:
     Background color for Progress Bars.
 
+**Bar Transparency**:
+Transparency of Progress Bars (0.0 - 1.0).
+
 **Bar Border**:
 
 -   **Show Border**:
@@ -385,7 +393,7 @@ Transparency of Progress Bars (0.0 - 1.0).
 -   **Show Icon Border**:
     Whether to show a 1px border around Progress Bar icons.
 
-**Spacing**:
+**Bar Spacing**:
 Spacing between Progress Bars (-1 - 100).
 
 **Play Text to Speech at Advance Notice**:
@@ -462,14 +470,14 @@ Displays a confirmation dialog, and if confirmed, deletes the selected profile f
 The currently active plan.
 Plans with reminders enabled will display a yellow bell icon next to their name in the dropdown, while plans with reminders disabled will show a desaturated bell icon.
 
-**Primary Plan**:
-Denotes whether this plan has [External Text](#external-text) that other addons and WeakAuras should read.
-Only one plan can per boss can be the **Primary Plan**.
+**Designated External Plan**:
+Denotes whether the [External Text](#external-text) of the plan should be made available to other addons or WeakAuras.
+Each boss must have a unique **Designated External Plan**.
 
 -   Only the group leader needs to have the correct designation.
     When the encounter starts, the group leader will automatically send an addon message to everyone in the group so that everyone has the same [External Text](#external-text).
 
-**Enable Reminders for Plan**:
+**Plan Reminders**:
 Whether reminders are enabled for the **Current Plan**.
 [Preferences -> Reminders -> Enable Reminders](#reminder) must be checked for this to have an effect.
 
@@ -484,7 +492,7 @@ Sends the **Current Plan** to the party or raid group. Requires group leader or 
 -   The person receiving the plan must either approve the plan to receive it or have the sender saved as a trusted character to automatically receive it.
 -   If a receiver has not yet decided to accept or reject a plan and they are sent subsequent plans, they are placed in a queue.
 
-### External Text:
+### External Text
 
 Clicking this button displays the **External Text Editor**. Lines from an imported note that were not assignments are stored as **External Text**.
 **External Text** can be obtained by other addons and WeakAuras using the Encounter Planner API.
@@ -591,7 +599,7 @@ The **Status Bar** communicates major changes and warnings.
     -   Confirmed plan receipt by # players.
     -   Updated a matching plan after receiving one from another player.
     -   Imported a plan as unique due to a name conflict after receiving it from another player.
-    -   Changed the primary plan after receiving one from another player while in a raid group.
+    -   Changed the Designated External Plan after receiving one from another player while in a raid group.
 
 -   **Assignment Importing**:
 

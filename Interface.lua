@@ -1899,7 +1899,7 @@ function Private:CreateInterface()
 	sendPlanAndExternalTextContainer:AddChildren(sendPlanButton, externalTextButton)
 
 	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
-	primaryPlanCheckBox:SetText(L["Primary Plan"])
+	primaryPlanCheckBox:SetText(L["Designated External Plan"])
 	primaryPlanCheckBox:SetHeight(topContainerWidgetHeight)
 	primaryPlanCheckBox:SetFrameWidthFromText()
 	primaryPlanCheckBox:SetCallback("OnValueChanged", HandlePrimaryPlanCheckBoxValueChanged)
@@ -1978,12 +1978,6 @@ function Private:CreateInterface()
 	timeline:UpdateTimeline()
 end
 
-function Private:CloseAnchorsAndDialogs()
-	if self.messageAnchor then
-		self.messageAnchor:Release()
-	end
-	if self.progressBarAnchor then
-		self.progressBarAnchor:Release()
-	end
+function Private:CloseDialogs()
 	CloseDialogs()
 end
