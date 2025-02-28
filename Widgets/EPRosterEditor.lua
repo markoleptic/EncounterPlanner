@@ -357,11 +357,6 @@ end
 ---@field dbEntry RosterEntry
 ---@field widgetEntry EPRosterEntry
 
----@alias EPRosterEditorTab
----| "Shared Roster"
----| "Current Plan Roster"
----| ""
-
 ---@class EPRosterEditor : AceGUIWidget
 ---@field frame Frame|table
 ---@field type string

@@ -73,15 +73,6 @@ local combatLogEventFromAbbreviation = {
 	["SAR"] = "SPELL_AURA_REMOVED",
 }
 
----@alias OptionFailureReason
----|1 Invalid assignment type
----|2 Invalid combat log event type
----|3 Invalid combat log event spell ID
----|4 Invalid combat log event spell count
----|5 No spell count
----|6 Invalid assignee name or role
----|7 Invalid boss
-
 ---@class FailureTableEntry
 ---@field reason OptionFailureReason
 ---@field string string

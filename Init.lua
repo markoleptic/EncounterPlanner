@@ -15,37 +15,6 @@ local type = type
 
 Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
 
----@alias CombatLogEventType
----| "SCC" SPELL_CAST_SUCCESS
----| "SCS" SPELL_CAST_START
----| "SAA" SPELL_AURA_APPLIED
----| "SAR" SPELL_AURA_REMOVED
----| "UD" UNIT_DIED
-
----@alias AssignmentType
----| "CombatLogEventAssignment"
----| "TimedAssignment"
----| "PhasedAssignment"
-
----@alias AssigneeType
----| "Everyone"
----| "Role"
----| "GroupNumber"
----| "Tanks"
----| "Class"
----| "Individual"
----| "Spec"
----| "Type"
-
----@alias AssignmentSortType
----| "Alphabetical"
----| "First Appearance"
----| "Role > Alphabetical"
----| "Role > First Appearance"
-
----@alias SpellIDIndex
----| integer
-
 local byteToBase64 = {
 	[0] = "a",
 	"b",
@@ -113,16 +82,28 @@ local byteToBase64 = {
 	")",
 }
 
-local function GenerateUniqueID()
-	local s = {}
-	for i = 1, 16 do
-		s[i] = byteToBase64[random(0, 63)]
+---@param num number
+---@param length integer
+---@return string
+local function ToBase64(num, length)
+	local result = {}
+	for i = 1, length do
+		result[i] = byteToBase64[bit.band(num, 63)] -- Last 6 bits
+		num = bit.rshift(num, length)
 	end
-	return concat(s)
+	return concat(result)
 end
-Private.GenerateUniqueID = GenerateUniqueID
 
-local assignmentIDCounter = 0
+local version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
+
+local function GenerateUniqueID()
+	local timePart = ToBase64(GetTime() * 1000, 6)
+	local randomPart1 = ToBase64(random(0, 0xFFFFFFF), 5) -- 5 chars = 30 bits
+	local randomPart2 = ToBase64(random(0, 0xFFFFFFF), 5)
+	return format("%s-%s-%s%s", version, timePart, randomPart1, randomPart2)
+end
+
+Private.GenerateUniqueID = GenerateUniqueID
 
 Private.classes = {}
 
@@ -212,7 +193,7 @@ Private.classes.DungeonInstance = {
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter.
 ---@field instanceID number The instance ID for the zone the boss is located in.
 ---@field phases table<integer, BossPhase> A list of phases and their durations.
----@field abilities table<SpellIDIndex, BossAbility> A list of abilities where the keys are spell IDs.
+---@field abilities table<integer, BossAbility> A list of abilities where the keys are spell IDs.
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.
 ---@field abilityInstances table<integer, BossAbilityInstance> Data about a single instance of a boss ability stored in a boss ability frame in the timeline.
 ---@field treatAsSinglePhase boolean|nil If specified, the boss phases will be merged into one phase.
@@ -259,7 +240,7 @@ Private.classes.BossPhase = {
 -- A spell that a boss casts including when the spell is cast.
 ---@class BossAbility
 ---@field phases table<number, BossAbilityPhase> Describes at which times in which phases the ability occurs in.
----@field eventTriggers table<SpellIDIndex, EventTrigger>|nil Other boss abilities that trigger the ability.
+---@field eventTriggers table<integer, EventTrigger>|nil Other boss abilities that trigger the ability.
 ---@field cancelTriggers table<integer, {bossNpcID: integer, combatLogEventType: CombatLogEventType}>|nil Boss deaths that cancel this ability.
 ---@field duration number Usually how long the ability effect lasts.
 ---@field durationLastsUntilEndOfPhase boolean|nil, If true, duration lasts until end of phase.
@@ -504,6 +485,8 @@ local function CreateNewInstance(classTable, o)
 	return o
 end
 
+local assignmentIDCounter = 0
+
 ---@param o any
 ---@return Assignment
 function Private.classes.Assignment:New(o)
@@ -649,43 +632,6 @@ end
 function Private.classes.RosterEntry:New(o)
 	return CreateNewInstance(self, o)
 end
-
----@alias RaidGroupRole
----| "role:damager"
----| "role:healer"
----| "role:tank"
----| ""
-
----@alias ScrollKeyBinding
----| "MouseScroll"
----| "Alt-MouseScroll"
----| "Ctrl-MouseScroll"
----| "Shift-MouseScroll"
-
----@alias MouseButtonKeyBinding
----| "LeftButton"
----| "Alt-LeftButton"
----| "Ctrl-LeftButton"
----| "Shift-LeftButton"
----| "MiddleButton"
----| "Alt-MiddleButton"
----| "Ctrl-MiddleButton"
----| "Shift-MiddleButton"
----| "RightButton"
----| "Alt-RightButton"
----| "Ctrl-RightButton"
----| "Shift-RightButton"
-
----@alias AnchorPoint
----| "TOPLEFT"
----| "TOP"
----| "TOPRIGHT"
----| "RIGHT"
----| "BOTTOMRIGHT"
----| "BOTTOM"
----| "LEFT"
----| "BOTTOMLEFT"
----| "CENTER"
 
 ---@class KeyBindings
 ---@field pan MouseButtonKeyBinding
@@ -971,7 +917,6 @@ Private.rosterEditor = nil --[[@as EPRosterEditor]]
 Private.importEditBox = nil --[[@as EPEditBox]]
 Private.exportEditBox = nil --[[@as EPEditBox]]
 Private.optionsMenu = nil --[[@as EPOptions]]
-Private.menuButtonContainer = nil --[[@as EPContainer]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.externalTextEditor = nil --[[@as EPEditBox]]

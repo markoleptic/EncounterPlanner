@@ -27,16 +27,6 @@ local padding = { left = 2, top = 2, right = 2, bottom = 2 }
 ---@field type string
 ---@field lineNumber integer
 
----@alias SeverityLevel
----|1
----|2
----|3
-
----@alias IndentLevel
----|1
----|2
----|3
-
 ---@param self EPStatusBar
 local function OnAcquire(self)
 	self.lineNumber = 1

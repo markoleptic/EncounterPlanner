@@ -126,6 +126,7 @@
 		"resizer",
 		"Rixxa",
 		"Roarcannon",
+		"rshift",
 		"runtests",
 		"Sathel",
 		"Scatterblast",
@@ -186,6 +187,6 @@
 	],
 	// flagWords - list of words to be always considered incorrect
 	"flagWords": [],
-	"ignorePaths": ["./Libs", "./Spells.lua", ".luarc.json", "cspell.json"],
+	"ignorePaths": ["./Libs", "./Spells.lua", ".luarc.json", "cspell.json", "EncounterPlanner.toc"],
 	"enableFiletypes": ["lua", "toc"]
 }

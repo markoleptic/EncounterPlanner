@@ -909,10 +909,6 @@ do
 	---@class TimedAssignment
 	local TimedAssignment = Private.classes.TimedAssignment
 
-	---@alias AssignmentConversionMethod
-	---| 1 # Convert combat log event assignments to timed assignments
-	---| 2 # Replace combat log event spells with those of the new boss, matching the closest timing
-
 	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
 	---@param oldEncounterID integer Old boss dungeon encounter ID
 	local function ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldEncounterID)

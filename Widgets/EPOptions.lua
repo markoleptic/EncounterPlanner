@@ -1560,35 +1560,6 @@ local function PopulateActiveTab(self, tab)
 	end
 end
 
----@alias EPSettingOptionType
----| "dropdown"
----| "radioButtonGroup"
----| "lineEdit"
----| "checkBox"
----| "frameChooser"
----| "doubleLineEdit"
----| "horizontalLine"
----| "checkBoxBesideButton"
----| "colorPicker"
----| "doubleColorPicker"
----| "doubleCheckBox"
----| "checkBoxWithDropdown"
----| "centeredButton"
----| "dropdownBesideButton"
----| "cooldownOverrides"
-
----@alias GetFunction
----| fun(): string|boolean|table<integer, number>|number,number?,number?,number?
-
----@alias SetFunction
----| fun(value: string|boolean|number|table<integer, number>, value2?: string|boolean|number, value3?:number, value4?:number)
-
----@alias ValidateFunction
----| fun(value: string|number, value2?: string): boolean, string|number?,number?
-
----@alias EnabledFunction
----| fun(): boolean
-
 ---@class FourNumbers
 ---@field [1] number
 ---@field [2] number

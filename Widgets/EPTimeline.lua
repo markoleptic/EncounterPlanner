@@ -330,11 +330,6 @@ local function SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, fr
 	end)
 end
 
----@alias AssignmentFrameOverlapType
---- | 0 NoOverlap
---- | 1 PartialOverlap - Last frame is partially overlapping current frame
---- | 2 FullOverlap - Last frame left is greater than current frame left
-
 ---@param cdLeft number
 ---@param lastCdLeft number
 ---@param lastCdRight number
