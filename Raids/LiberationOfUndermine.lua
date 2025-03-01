@@ -2,6 +2,7 @@ local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 ---@class EventTrigger
 local EventTrigger = Private.classes.EventTrigger
 ---@class Boss
@@ -693,7 +694,6 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					castTime = 1.5,
 					allowedCombatLogEventTypes = {}, -- Spam
 				}),
-
 				[1216699] = BossAbility:New({ -- Void Barrage
 					eventTriggers = {
 						[473276] = EventTrigger:New({ -- Activate Inventions!
@@ -881,6 +881,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2644,
 			dungeonEncounterID = 3014,
 			instanceID = 2769,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 465761, combatLogEventType = "SCS" },
+			},
 			abilities = {
 				[460181] = BossAbility:New({ -- Pay-Line
 					phases = {
@@ -889,12 +893,12 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							repeatInterval = 26.7,
 						}),
 						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
-							castTimes = { 7.0 },
-							repeatInterval = 30.0,
+							castTimes = { 7.0, 31.7, 29.2 }, -- Heroic timers
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[460444] = BossAbility:New({ -- High Roller!
 					eventTriggers = {
@@ -905,158 +909,205 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 15.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Buff that players can get
+					defaultHidden = true,
 				}),
 				[469993] = BossAbility:New({ -- Foul Exhaust
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
-							castTimes = { 8.2 },
-							repeatInterval = { 34, 15.8 },
+						[1] = BossAbilityPhase:New({ -- TODO: Mildly inconsistent
+							castTimes = { 8.2, 34.0, 15.8, 31.6, 19.4, 32.8, 18.2, 32.8 },
+							repeatInterval = { 18.2, 32.8 },
 						}),
 						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
-							castTimes = { 1.0 },
-							repeatInterval = { 31.6, 25.5 },
+							castTimes = { 1.1, 25.7, 25.7, 25.7 }, -- Heroic timers
 						}),
 					},
 					duration = 1.5,
 					castTime = 0.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[460472] = BossAbility:New({ -- The Big Hit
 					phases = {
 						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
 							castTimes = { 17.9, 18.2, 39.0, 20.6, 19.4, 20.6 },
+							repeatInterval = { 39.0, 20.6, 19.4, 20.6 },
+							halfHeight = true,
 						}),
 						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
-							castTimes = { 11.0 },
-							repeatInterval = 19.4,
+							castTimes = { 11.0, 19.4, 19.4, 19.4 },
+							halfHeight = true,
 						}),
 					},
 					duration = 30.0,
 					castTime = 2.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[461060] = BossAbility:New({ -- Spin To Win!
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 14.2 },
-							repeatInterval = 53.0,
+							castTimes = { 14.2, 53.0, 53.0, 53.0, 53.0, 53.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465761] = BossAbility:New({ -- Rig the Game!
 					phases = {
-						[2] = BossAbilityPhase:New({ -- TODO: Actually cast in P1
+						[2] = BossAbilityPhase:New({ -- Cast completion triggers phase change
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 0.0, -- Actually 4s cast
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[465309] = BossAbility:New({ -- Cheat to Win!
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 1.3, 25.7, 24.4, 27.8 }, -- Heroic timers
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[465432] = BossAbility:New({ -- Linked Machines
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 2.0 },
+					eventTriggers = {
+						[465309] = EventTrigger:New({ -- Cheat to Win!
+							combatLogEventType = "SCC",
+							combatLogEventSpellCount = 1,
+							castTimes = { 0.3 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465322] = BossAbility:New({ -- Hot Hot Heat
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 2.0 + 31.5 },
+					eventTriggers = {
+						[465309] = EventTrigger:New({ -- Cheat to Win!
+							combatLogEventType = "SCC",
+							combatLogEventSpellCount = 2,
+							castTimes = { 0.3 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465580] = BossAbility:New({ -- Scattered Payout
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 2.0 + 31.5 + 31.5 },
+					eventTriggers = {
+						[465309] = EventTrigger:New({ -- Cheat to Win!
+							combatLogEventType = "SCC",
+							combatLogEventSpellCount = 3,
+							castTimes = { 0.3 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465587] = BossAbility:New({ -- Explosive Jackpot
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 2.0 + 31.5 + 31.5 + 31.5 },
+					eventTriggers = {
+						[465309] = EventTrigger:New({ -- Cheat to Win!
+							combatLogEventType = "SCC",
+							combatLogEventSpellCount = 4,
+							castTimes = { 0.3 },
+							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 0.0,
 					castTime = 10.0,
+					allowedCombatLogEventTypes = { "SCS" },
 				}),
-				-- [461083] = BossAbility:New({ -- Reward: Shock and Flame
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
-				-- [461091] = BossAbility:New({ -- Reward: Shock and Bomb
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
-				-- [461176] = BossAbility:New({ -- Reward: Flame and Bomb
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
-				-- [461389] = BossAbility:New({ -- Reward: Flame and Coin
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
-				-- [461101] = BossAbility:New({ -- Reward: Coin and Shock
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
-				-- [461395] = BossAbility:New({ -- Reward: Coin and Bomb
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- }),
+				[464772] = BossAbility:New({ -- Reward: Shock and Flame
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 1,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[464801] = BossAbility:New({ -- Reward: Shock and Bomb
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 2,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[464804] = BossAbility:New({ -- Reward: Flame and Bomb
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 3,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[464806] = BossAbility:New({ -- Reward: Flame and Coin
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 4,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[464809] = BossAbility:New({ -- Reward: Coin and Shock
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 5,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[464810] = BossAbility:New({ -- Reward: Coin and Bomb
+					eventTriggers = {
+						[461060] = EventTrigger:New({ -- Spin to Win!
+							combatLogEventType = "SCS",
+							combatLogEventSpellCount = 6,
+							castTimes = { 30.0 }, -- Estimate, could vary depending on depositing
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 285.2,
-					defaultDuration = 285.2,
+					duration = 360.0,
+					defaultDuration = 360.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedCount = true,
-					fixedDuration = true,
 				}),
-				[2] = BossPhase:New({
-					duration = 106.5,
-					defaultDuration = 106.5,
+				[2] = BossPhase:New({ -- TODO: Not sure what actual mythic duration is
+					duration = 93.0,
+					defaultDuration = 93.0,
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
