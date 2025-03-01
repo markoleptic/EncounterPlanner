@@ -296,6 +296,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					onlyRelevantForTanks = true, -- Also affects players
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474159] = BossAbility:New({ -- Static Charge
@@ -370,6 +371,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					name = "P2",
 					repeatAfter = 3,
 					fixedDuration = true,
+					fixedCount = true,
 				}),
 				[3] = BossPhase:New({
 					duration = 95.0,
@@ -379,6 +381,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					name = "P1",
 					repeatAfter = 2,
 					fixedDuration = true,
+					fixedCount = true,
 				}),
 			},
 		}),
@@ -389,6 +392,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2641,
 			dungeonEncounterID = 3011,
 			instanceID = 2769,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 464584, combatLogEventType = "SAA" },
+				[3] = { combatLogEventSpellID = 464584, combatLogEventType = "SAR" },
+			},
 			abilities = {
 				[473748] = BossAbility:New({ -- Amplification!
 					phases = {
@@ -401,30 +409,33 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.3,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[466866] = BossAbility:New({ -- Echoing Chant
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 22.0, 57.5, 29.0 },
+							castTimes = { 22.0, 29.0, 57.5 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 22.0, 57.5, 29.0 },
+							castTimes = { 22.0, 29.0, 57.5 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[467606] = BossAbility:New({ -- Sound Cannon
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 30.0, 30.0 },
+							castTimes = { 30.0, 37.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 30.0, 30.0 },
+							castTimes = { 30.0, 37.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[464584] = BossAbility:New({ -- Sound Cloud
 					phases = {
@@ -432,52 +443,51 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
+							phaseOccurrences = { [1] = true, [2] = true },
 						}),
-						-- [1] = BossAbilityPhase:New({
-						-- 	castTimes = { 116.0 },
-						-- 	doNotClipDuration = true, -- TODO
-						-- 	castCompletionSignifiesPhaseStart = true, -- TODO
-						-- 	auraRemovedSignifiesNextPhaseEnd = true, -- TODO
-						-- }),
 					},
 					duration = 28.0,
 					castTime = 0.0, -- 5.0 sec but is casted in previous phase
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[466979] = BossAbility:New({ -- Faulty Zap
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 38, 37, 24 },
+							castTimes = { 40.5, 34.5, 26.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 38, 37, 24 },
+							castTimes = { 40.5, 34.5, 26.0 },
 						}),
 					},
 					duration = 12.0,
 					castTime = 2.125,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[472306] = BossAbility:New({ -- Sparkblast Ignition
+				[472306] = BossAbility:New({ -- Sparkblast Ignition (Pyrotechnics)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 15.0, 82.5, 65.0 },
+							castTimes = { 20.8, 82.4 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 15.0, 82.5, 65.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-				}),
-				[472293] = BossAbility:New({ -- Grand Finale
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 15.0 + 15.0, 82.5 + 15.0, 65.0 + 15.0 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 15.0 + 15.0, 82.5 + 15.0, 65.0 + 15.0 },
+							castTimes = { 20.8, 82.4 },
 						}),
 					},
 					duration = 15.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Don't see in PTR logs
+				}),
+				[472293] = BossAbility:New({ -- Grand Finale (death of Pyrotechnics)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 20.8, 82.4 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 20.8, 82.4 },
+						}),
+					},
+					duration = 14.5,
+					castTime = 0.5,
+					allowedCombatLogEventTypes = {}, -- 5 simultaneous casts
 				}),
 				[473260] = BossAbility:New({ -- Blaring Drop
 					phases = {
@@ -487,6 +497,20 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 3.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[473655] = BossAbility:New({ -- Hype Fever!
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							phaseOccurrences = { [3] = true },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					durationLastsUntilEndOfPhase = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -506,15 +530,17 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					name = "P2",
 					repeatAfter = 3,
 					fixedDuration = true,
+					fixedCount = true,
 				}),
 				[3] = BossPhase:New({
 					duration = 121.0,
 					defaultDuration = 121.0,
-					count = 3,
-					defaultCount = 3,
+					count = 2,
+					defaultCount = 2,
 					name = "P1",
 					repeatAfter = 2,
 					fixedDuration = true,
+					fixedCount = true,
 				}),
 			},
 		}),

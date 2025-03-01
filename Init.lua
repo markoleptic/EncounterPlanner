@@ -263,6 +263,7 @@ Private.classes.BossAbility = {
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 ---@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
 ---@field durationLastsUntilEndOfNextPhase boolean|nil Not currently used, implementation commented out.
+---@field phaseOccurrences table<integer, boolean>|nil If specified, casts will only be created if the phase occurrence number is in the table.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 }

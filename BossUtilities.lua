@@ -1303,7 +1303,12 @@ do
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					if bossAbilityPhase then
 						local cumulativePhaseCastTime = cumulativePhaseStartTime
-						if not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1 then
+						local phaseOccurrence = not bossAbilityPhase.phaseOccurrences
+							or bossAbilityPhase.phaseOccurrences[visitedPhaseCounts[bossPhaseIndex]]
+						if
+							phaseOccurrence
+							and (not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1)
+						then
 							if bossAbility.durationLastsUntilEndOfPhase then
 								bossAbility.duration = bossPhase.duration - bossAbilityPhase.castTimes[1]
 							elseif bossAbility.castTimeLastsUntilEndOfPhase then
@@ -1449,7 +1454,12 @@ do
 						end
 
 						local cumulativePhaseCastTime = cumulativePhaseStartTime
-						if not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1 then
+						local phaseOccurrence = not bossAbilityPhase.phaseOccurrences
+							or bossAbilityPhase.phaseOccurrences[visitedPhaseCounts[bossPhaseIndex]]
+						if
+							phaseOccurrence
+							and (not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1)
+						then
 							cumulativePhaseCastTime = abilityIterator:IterateAbilityCastTimes(
 								bossAbilitySpellID,
 								bossAbility,
