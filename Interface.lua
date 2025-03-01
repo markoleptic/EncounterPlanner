@@ -703,28 +703,6 @@ do -- Phase Length Editor
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local kMinBossPhaseDuration = constants.kMinBossPhaseDuration
 
-	---@param boss Boss
-	---@return table<integer, string>
-	local function GetLongPhaseNames(boss)
-		local longPhaseNames = {}
-		for index, phase in ipairs(boss.phases) do
-			local bossPhaseName = phase.name or index
-			if type(bossPhaseName) == "string" then
-				local intMatch = bossPhaseName:match("^Int(%d+)")
-				local pMatch = bossPhaseName:match("^P(%d+)")
-				if intMatch then
-					bossPhaseName = L["Intermission"] .. " " .. intMatch
-				elseif pMatch then
-					bossPhaseName = L["Phase"] .. " " .. pMatch
-				end
-			elseif type(bossPhaseName) == "number" then
-				bossPhaseName = L["Phase"] .. " " .. bossPhaseName
-			end
-			tinsert(longPhaseNames, bossPhaseName)
-		end
-		return longPhaseNames
-	end
-
 	local function UpdateTotalTime()
 		if Private.phaseLengthEditor then
 			local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
@@ -860,9 +838,9 @@ do -- Phase Length Editor
 
 			local boss = GetCurrentBoss()
 			if boss then
-				local phaseData = {}
 				local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
 				if boss.treatAsSinglePhase then
+					local phaseData = {}
 					tinsert(phaseData, {
 						name = L["Phase"] .. " 1",
 						defaultDuration = totalDefaultTime,
@@ -872,22 +850,11 @@ do -- Phase Length Editor
 						defaultCount = 1,
 						repeatAfter = nil,
 					})
+					phaseLengthEditor:AddEntries(phaseData)
 				else
-					local longPhaseNames = GetLongPhaseNames(boss)
-					for phaseIndex, phase in ipairs(boss.phases) do
-						tinsert(phaseData, {
-							name = longPhaseNames[phaseIndex],
-							defaultDuration = phase.defaultDuration,
-							fixedDuration = phase.fixedDuration,
-							duration = phase.duration,
-							count = phase.count,
-							defaultCount = phase.defaultCount,
-							repeatAfter = phase.repeatAfter,
-							fixedCount = phase.fixedCount,
-						})
-					end
+					phaseLengthEditor:AddEntries(boss.phases)
 				end
-				phaseLengthEditor:AddEntries(phaseData)
+
 				local totalCustomMinutes, totalCustomSeconds = FormatTime(totalCustomTime)
 				local totalCustomTimeString = totalCustomMinutes .. ":" .. totalCustomSeconds
 				local totalDefaultMinutes, totalDefaultSeconds = FormatTime(totalDefaultTime)

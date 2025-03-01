@@ -17,11 +17,13 @@ local interfaceUpdater = Private.interfaceUpdater
 local utilities = Private.utilities
 
 local AceDB = LibStub("AceDB-3.0")
+local format = string.format
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
 local print = print
+local type = type
 
 local minimapIconObject = {}
 do -- Minimap icon initialization and handling
@@ -184,6 +186,41 @@ do -- Raid instance initialization
 	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
 	local EJ_GetInstanceInfo, EJ_SelectInstance = EJ_GetInstanceInfo, EJ_SelectInstance
 
+	---@param nameOrNumber string|integer
+	---@return string longName
+	---@return string shortName
+	local function CreatePhaseName(nameOrNumber)
+		if type(nameOrNumber) == "string" then
+			-- Match "Int" or "P" followed by a number, optional content in parenthesis
+			local phaseType, number, value = nameOrNumber:match("^(%a+)(%d+)%s*%(([^)]+)%)$")
+			if not phaseType then
+				phaseType, number = nameOrNumber:match("^(%a+)(%d+)$")
+			end
+
+			local phaseName, shortName = "", ""
+			if phaseType == "Int" then
+				phaseName = format("%s %d", L["Intermission"], number)
+				shortName = format("%s%d", L["I"], number)
+			else
+				phaseName = format("%s %d", L["Phase"], number)
+				shortName = format("%s%d", L["P"], number)
+			end
+
+			if value then
+				local energy = value:match("^(%d+) Energy$")
+				if energy then
+					phaseName = format("%s (%d %s)", phaseName, energy, L["Energy"])
+				else
+					phaseName = format("%s (%s)", phaseName, value)
+				end
+			end
+
+			return phaseName, shortName
+		else
+			return format("%s %d", L["Phase"], nameOrNumber), format("%s%d", L["P"], nameOrNumber)
+		end
+	end
+
 	-- Initializes names and icons for raid instances.
 	function InitializeDungeonInstances()
 		for _, dungeonInstance in pairs(Private.dungeonInstances) do
@@ -210,6 +247,11 @@ do -- Raid instance initialization
 						creatureID, bossName, _, _, _, _ = EJ_GetCreatureInfo(index, boss.journalEncounterID)
 						index = index + 1
 					end
+				end
+				for phaseIndex, phase in ipairs(boss.phases) do
+					local long, short = CreatePhaseName(phase.name or phaseIndex)
+					phase.name = long
+					phase.shortName = short
 				end
 			end
 		end

@@ -1432,13 +1432,13 @@ do
 				visitedPhaseCounts[bossPhaseIndex] = (visitedPhaseCounts[bossPhaseIndex] or 0) + 1
 				local phaseEndTime = cumulativePhaseStartTime + bossPhase.duration
 
-				local bossPhaseName = bossPhase.name
-				local nextBossPhaseName
+				local nextBossPhaseName, nextBossPhaseShortName
 				local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
 				if nextBossPhaseIndex then
 					local nextBossPhase = boss.phases[nextBossPhaseIndex]
 					if nextBossPhase then
 						nextBossPhaseName = nextBossPhase.name
+						nextBossPhaseShortName = nextBossPhase.shortName
 					end
 				end
 
@@ -1463,8 +1463,10 @@ do
 							bossPhaseIndex = bossPhaseIndex,
 							bossPhaseOrderIndex = bossPhaseOrderIndex,
 							bossPhaseDuration = bossPhase.duration,
-							bossPhaseName = bossPhaseName,
+							bossPhaseName = bossPhase.name,
+							bossPhaseShortName = bossPhase.shortName,
 							nextBossPhaseName = nextBossPhaseName,
+							nextBossPhaseShortName = nextBossPhaseShortName,
 							spellCount = #spellCount[spellID],
 							castStart = castStart,
 							castEnd = castEnd,
@@ -1472,7 +1474,6 @@ do
 							frameLevel = 1,
 							signifiesPhaseStart = bossAbilityPhase
 								and bossAbilityPhase.signifiesPhaseStart
-								and bossPhaseName
 								and currentCastIndex == 1,
 							signifiesPhaseEnd = bossAbilityPhase
 								and bossAbilityPhase.signifiesPhaseEnd
@@ -1571,7 +1572,7 @@ do
 		return abilityInstances
 	end
 
-	-- Creates a sorted table of boss spell IDs based on the their earliest cast times.
+	-- Creates a sorted table of boss spell IDs based on their earliest cast times.
 	---@param absoluteSpellCastStartTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@return table<integer, integer>
 	local function GenerateSortedBossAbilities(absoluteSpellCastStartTable)

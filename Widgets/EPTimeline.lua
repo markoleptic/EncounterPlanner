@@ -522,12 +522,20 @@ end
 -- 	return horizontalOffset, verticalOffset
 -- end
 
+---@class LastInfo
+---@field right number
+---@field shortName	string
+---@field partialLeft number
+---@field label FontString|nil
+
 ---@param self EPTimeline
 ---@param index integer
----@param name string
+---@param longName string
+---@param shortName string
 ---@param offset number
 ---@param width number
-local function DrawBossPhaseIndicator(self, phaseStart, index, name, offset, width)
+---@param lastInfo LastInfo
+local function DrawBossPhaseIndicator(self, phaseStart, index, longName, shortName, offset, width, lastInfo)
 	local indicator = self.bossPhaseIndicators[index][phaseStart and 1 or 2]
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
 
@@ -541,13 +549,35 @@ local function DrawBossPhaseIndicator(self, phaseStart, index, name, offset, wid
 	indicator:SetPoint("TOP", timelineFrame, "TOPLEFT", startHorizontalOffset, 0)
 	indicator:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", startHorizontalOffset, 0)
 	indicator:Show()
+
 	local label = indicator.label
-	label:SetText(name)
+	label:SetText(longName)
 	label:SetPoint("TOP", self.phaseNameFrame, "TOP")
 	label:SetPoint("BOTTOM", self.phaseNameFrame, "BOTTOM")
-	local left = startHorizontalOffset - label:GetWidth() / 2.0 + phaseIndicatorWidth / 2.0
+
+	local labelWidth = label:GetWidth()
+	local partialLeft = startHorizontalOffset + phaseIndicatorWidth / 2.0
+	local left = partialLeft - labelWidth / 2.0
+
+	if left <= lastInfo.right then
+		label:SetText(shortName)
+		labelWidth = label:GetWidth()
+		left = partialLeft - labelWidth / 2.0
+	end
+
+	if lastInfo.label and left <= lastInfo.right then
+		lastInfo.label:SetText(lastInfo.shortName)
+		local lastLeft = lastInfo.partialLeft - lastInfo.label:GetWidth() / 2.0
+		lastInfo.label:SetPoint("LEFT", timelineFrame, "LEFT", lastLeft, 0)
+	end
+
 	label:SetPoint("LEFT", timelineFrame, "LEFT", left, 0)
 	label:Show()
+
+	lastInfo.shortName = shortName
+	lastInfo.partialLeft = partialLeft
+	lastInfo.right = left + labelWidth
+	lastInfo.label = label
 end
 
 ---@param self EPTimeline
@@ -662,18 +692,30 @@ local function UpdateBossAbilityBars(self)
 	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
 	local baseFrameLevel = timelineFrame:GetFrameLevel()
 
+	local lastInfo = {
+		right = 0.0,
+		short = "",
+		partialLeft = 0.0,
+	}
 	for _, entry in ipairs(self.bossAbilityInstances) do
 		local timelineStartPosition = (entry.castStart / totalTimelineDuration) * timelineWidth
 		local timelineEndPosition = (entry.effectEnd / totalTimelineDuration) * timelineWidth
 		local horizontalOffset = timelineStartPosition + padding.x
 		local width = max(minimumBossAbilityWidth, timelineEndPosition - timelineStartPosition)
 
-		local bossPhaseOrderIndex = entry.bossPhaseOrderIndex
-		if entry.signifiesPhaseStart then
-			DrawBossPhaseIndicator(self, true, bossPhaseOrderIndex, entry.bossPhaseName, horizontalOffset, width)
+		local index = entry.bossPhaseOrderIndex
+
+		if entry.signifiesPhaseStart and entry.bossPhaseName and entry.bossPhaseShortName then
+			local long, short = entry.bossPhaseName, entry.bossPhaseShortName
+			if long and short then
+				DrawBossPhaseIndicator(self, true, index, long, short, horizontalOffset, width, lastInfo)
+			end
 		end
 		if entry.signifiesPhaseEnd then
-			DrawBossPhaseIndicator(self, false, bossPhaseOrderIndex, entry.nextBossPhaseName, horizontalOffset, width)
+			local long, short = entry.nextBossPhaseName, entry.nextBossPhaseShortName
+			if long and short then
+				DrawBossPhaseIndicator(self, false, index, long, short, horizontalOffset, width, lastInfo)
+			end
 		end
 
 		if self.bossAbilityVisibility[entry.bossAbilitySpellID] == true then

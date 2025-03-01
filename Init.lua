@@ -224,6 +224,7 @@ Private.classes.Boss = {
 ---@field defaultCount number The default number of times the boss phase occurs.
 ---@field repeatAfter number|nil Which phase this phase repeats after.
 ---@field name string|nil If specified, the phase will be displayed on the timeline under this name. Otherwise hidden.
+---@field shortName string Short name to use if limited on space in timeline.
 ---@field fixedDuration boolean|nil If specified, the duration is not editable.
 ---@field fixedCount boolean|nil If specified, the number of phases will not be editable.
 Private.classes.BossPhase = {
@@ -292,8 +293,10 @@ Private.classes.EventTrigger = {
 ---@field bossPhaseIndex integer The phase the ability instance is cast in.
 ---@field bossPhaseOrderIndex integer The index of boss phase in the boss phase order (not the boss phase).
 ---@field bossPhaseDuration number The duration of the boss phase.
----@field bossPhaseName string|nil If defined, the name of the start of the phase.
----@field nextBossPhaseName string|nil If defined, the name of the start of the next phase.
+---@field bossPhaseName string|nil If defined, the name of the phase.
+---@field bossPhaseShortName string|nil If defined, the short name of the phase.
+---@field nextBossPhaseName string|nil If defined, the name of the next phase.
+---@field nextBossPhaseShortName string|nil If defined, the short name of the next phase.
 ---@field spellCount integer The occurrence number of the boss spell ID.
 ---@field castStart number The cast time from the start of the encounter.
 ---@field castEnd number The cast start plus the cast time.

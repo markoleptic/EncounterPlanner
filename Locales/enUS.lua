@@ -392,3 +392,6 @@ L["Total Time In Most Recent Tick"] = true
 L["Highest Time Since Login/Reload"] = true
 L["Count Time Over"] = true
 L["ms"] = true
+L["Energy"] = true
+L["I"] = true
+L["P"] = true
