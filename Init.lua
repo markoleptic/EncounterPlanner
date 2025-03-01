@@ -248,6 +248,7 @@ Private.classes.BossPhase = {
 ---@field bossNpcID integer|nil If defined, the ability represents a boss's death with the given npc ID.
 ---@field buffer number|nil If true, a buffer will be applied after the each combat log event to prevent successive events from triggering it again.
 ---@field defaultHidden boolean|nil If true, the ability is hidden by default.
+---@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
 Private.classes.BossAbility = {
 	phases = {},
 	duration = 0.0,
@@ -262,7 +263,6 @@ Private.classes.BossAbility = {
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
----@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
 ---@field durationLastsUntilEndOfNextPhase boolean|nil Not currently used, implementation commented out.
 ---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil If specified, casts will only be created if the phase occurrence number is in the table.
 Private.classes.BossAbilityPhase = {

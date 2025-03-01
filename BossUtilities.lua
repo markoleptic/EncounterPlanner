@@ -1132,9 +1132,6 @@ do
 				local spellCountIrrelevant = not castIndex or not spellCount
 				local validSpellCount = spellCountIrrelevant or spellCount == castIndex
 
-				if spellID == 461060 then
-					print(castIndex)
-				end
 				local validPhase = not dependencyTrigger.phaseOccurrences
 				if not validPhase then
 					local phaseCount, index = GetCurrentPhaseCountAndIndex(startTime)
@@ -1449,12 +1446,11 @@ do
 					local bossAbility = boss.abilities[bossAbilitySpellID]
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					local overlaps = {}
-					local useHalfHeight = bossAbilityPhase and bossAbilityPhase.halfHeight or nil
 					local currentCastIndex = 1
 					local function castCallback(spellID, castStart, castEnd, effectEnd)
 						spellCount[spellID] = spellCount[spellID] or {}
 						tinsert(spellCount[spellID], castStart)
-						if useHalfHeight and not overlaps[currentCastIndex] then
+						if boss.abilities[spellID].halfHeight and not overlaps[currentCastIndex] then
 							overlaps[currentCastIndex] = {
 								heightMultiplier = 0.5,
 								offset = ((currentCastIndex + 1) % 2) * 0.5,
