@@ -14,7 +14,6 @@ local UIParent = UIParent
 
 local abs = math.abs
 local ceil, floor = math.ceil, math.floor
-local cos, sin = math.cos, math.sin
 local CreateFrame = CreateFrame
 local format = string.format
 local GetCursorPosition = GetCursorPosition
@@ -27,7 +26,6 @@ local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShift
 local max, min = math.max, math.min
 local next = next
 local pairs = pairs
-local rad = math.rad
 local select = select
 local sort = sort
 local split = string.split
@@ -64,8 +62,7 @@ local tickLabelColor = { 1, 1, 1, 1 }
 local assignmentOutlineColor = { 0.25, 0.25, 0.25, 1 }
 local phaseIndicatorColor = { 1, 0.82, 0, 1 }
 local phaseIndicatorWidth = 2
-local phaseIndicatorFontSize = 11
-local phaseIndicatorRotationRad = rad(45)
+local phaseIndicatorFontSize = 12
 local phaseIndicatorTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]]
 local assignmentSelectOutlineColor = { 1, 0.82, 0, 1 }
 local invalidTextureColor = { 0.8, 0.1, 0.1, 0.4 }
@@ -501,7 +498,6 @@ local function CreatePhaseIndicatorTexture(self)
 	phaseIndicator:Hide()
 
 	local phaseIndicatorLabel = self.phaseNameFrame:CreateFontString(nil, "OVERLAY")
-	phaseIndicatorLabel:SetRotation(phaseIndicatorRotationRad)
 	if fontPath then
 		phaseIndicatorLabel:SetFont(fontPath, phaseIndicatorFontSize)
 		phaseIndicatorLabel:SetTextColor(unpack(phaseIndicatorColor))
@@ -512,19 +508,19 @@ local function CreatePhaseIndicatorTexture(self)
 	return phaseIndicator
 end
 
----@param width number
----@param height number
----@param rotationInRadians number
----@return number, number
-local function CalculateRotatedOffset(width, height, rotationInRadians)
-	local cosRotation, sinRotation = cos(rotationInRadians), sin(rotationInRadians)
-	local widthRotated = width * cosRotation + height * sinRotation
-	local heightRotated = height * cosRotation + width * sinRotation
-	local additionalHorizontalOffset = height * sinRotation
-	local horizontalOffset = abs(width - widthRotated) / 2.0 + additionalHorizontalOffset
-	local verticalOffset = abs(height - heightRotated) / 2.0
-	return horizontalOffset, verticalOffset
-end
+-- ---@param width number
+-- ---@param height number
+-- ---@param rotationInRadians number
+-- ---@return number, number
+-- local function CalculateRotatedOffset(width, height, rotationInRadians)
+-- 	local cosRotation, sinRotation = cos(rotationInRadians), sin(rotationInRadians)
+-- 	local widthRotated = width * cosRotation + height * sinRotation
+-- 	local heightRotated = height * cosRotation + width * sinRotation
+-- 	local additionalHorizontalOffset = height * sinRotation
+-- 	local horizontalOffset = abs(width - widthRotated) / 2.0 + additionalHorizontalOffset
+-- 	local verticalOffset = abs(height - heightRotated) / 2.0
+-- 	return horizontalOffset, verticalOffset
+-- end
 
 ---@param self EPTimeline
 ---@param index integer
@@ -547,10 +543,10 @@ local function DrawBossPhaseIndicator(self, phaseStart, index, name, offset, wid
 	indicator:Show()
 	local label = indicator.label
 	label:SetText(name)
-	local w, h = label:GetStringWidth(), label:GetStringHeight()
-	local horizontal, vertical = CalculateRotatedOffset(w, h, phaseIndicatorRotationRad)
-	label:SetPoint("BOTTOM", self.phaseNameFrame, "BOTTOM", 0, vertical)
-	label:SetPoint("LEFT", timelineFrame, "LEFT", startHorizontalOffset - horizontal + phaseIndicatorWidth / 2.0, 0)
+	label:SetPoint("TOP", self.phaseNameFrame, "TOP")
+	label:SetPoint("BOTTOM", self.phaseNameFrame, "BOTTOM")
+	local left = startHorizontalOffset - label:GetWidth() / 2.0 + phaseIndicatorWidth / 2.0
+	label:SetPoint("LEFT", timelineFrame, "LEFT", left, 0)
 	label:Show()
 end
 
@@ -1780,7 +1776,7 @@ local function OnAcquire(self)
 	self.phaseNameFrame:SetParent(self.frame)
 	self.phaseNameFrame:SetPoint("BOTTOMLEFT", self.frame, "TOPLEFT", 210, 0)
 	self.phaseNameFrame:SetPoint("BOTTOMRIGHT", self.frame, "TOPRIGHT")
-	self.phaseNameFrame:SetHeight(40)
+	self.phaseNameFrame:SetHeight(22)
 	self.phaseNameFrame:Show()
 
 	local label = self.timelineLabels[1]
