@@ -1379,11 +1379,17 @@ do
 					local bossAbility = boss.abilities[bossAbilitySpellID]
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
 					local overlaps = {}
-
+					local useHalfHeight = bossAbilityPhase and bossAbilityPhase.halfHeight or nil
 					local currentCastIndex = 1
 					local function castCallback(spellID, castStart, castEnd, effectEnd)
 						spellCount[spellID] = spellCount[spellID] or {}
 						tinsert(spellCount[spellID], castStart)
+						if useHalfHeight and not overlaps[currentCastIndex] then
+							overlaps[currentCastIndex] = {
+								heightMultiplier = 0.5,
+								offset = ((currentCastIndex + 1) % 2) * 0.5,
+							}
+						end
 						tinsert(abilityInstances, {
 							bossAbilitySpellID = spellID,
 							bossAbilityInstanceIndex = bossAbilityInstanceIndex,
@@ -1412,14 +1418,14 @@ do
 						currentCastIndex = currentCastIndex + 1
 					end
 					if bossAbilityPhase then
-						local consecutivePerfectOverlaps = 0
+						local consecutiveOverlaps = 0
 						for castIndex, castTime in ipairs(bossAbilityPhase.castTimes) do
 							if cumulativePhaseStartTime + castTime < phaseEndTime then
 								if castIndex > 1 and castTime == 0.0 then
-									consecutivePerfectOverlaps = consecutivePerfectOverlaps + 1
-									local currentOffset = consecutivePerfectOverlaps
-									local heightMultiplier = 1.0 / (consecutivePerfectOverlaps + 1)
-									for i = castIndex, castIndex - consecutivePerfectOverlaps, -1 do
+									consecutiveOverlaps = consecutiveOverlaps + 1
+									local currentOffset = consecutiveOverlaps
+									local heightMultiplier = 1.0 / (consecutiveOverlaps + 1)
+									for i = castIndex, castIndex - consecutiveOverlaps, -1 do
 										overlaps[i] = {
 											heightMultiplier = heightMultiplier,
 											offset = currentOffset * heightMultiplier,
@@ -1427,7 +1433,7 @@ do
 										currentOffset = currentOffset - 1
 									end
 								else
-									consecutivePerfectOverlaps = 0
+									consecutiveOverlaps = 0
 								end
 							end
 						end

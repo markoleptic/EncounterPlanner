@@ -212,9 +212,7 @@ Private.classes.Boss = {
 	abilities = {},
 	sortedAbilityIDs = {},
 	abilityInstances = {},
-	treatAsSinglePhase = nil,
 	icon = 0,
-	preferredCombatLogEventAbilities = nil,
 }
 
 -- A stage/phase in a boss encounter.
@@ -232,9 +230,6 @@ Private.classes.BossPhase = {
 	defaultDuration = 0.0,
 	count = 1,
 	defaultCount = 1,
-	repeatAfter = nil,
-	name = nil,
-	fixedDuration = nil,
 }
 
 -- A spell that a boss casts including when the spell is cast.
@@ -253,16 +248,10 @@ Private.classes.BossPhase = {
 ---@field buffer number|nil If true, a buffer will be applied after the each combat log event to prevent successive events from triggering it again.
 Private.classes.BossAbility = {
 	phases = {},
-	eventTriggers = nil,
-	cancelTriggers = nil,
 	duration = 0.0,
-	durationLastsUntilEndOfPhase = nil,
 	castTime = 0.0,
-	castTimeLastsUntilEndOfPhase = nil,
 	allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
 	additionalContext = "",
-	bossNpcID = nil,
-	buffer = nil,
 }
 
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.
@@ -272,12 +261,9 @@ Private.classes.BossAbility = {
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
+---@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
-	repeatInterval = nil,
-	signifiesPhaseStart = nil,
-	signifiesPhaseEnd = nil,
-	skipFirst = nil,
 }
 
 -- Defines a boss ability that triggers another boss ability. May also repeat.
@@ -289,8 +275,6 @@ Private.classes.BossAbilityPhase = {
 Private.classes.EventTrigger = {
 	castTimes = {},
 	combatLogEventType = "SCS",
-	combatLogEventSpellCount = nil,
-	repeatInterval = nil,
 }
 
 -- Data about a single instance of a boss ability stored in a boss ability frame in the timeline. The instance may have
@@ -321,17 +305,11 @@ Private.classes.BossAbilityInstance = {
 	bossPhaseIndex = 0,
 	bossPhaseOrderIndex = 0,
 	bossPhaseDuration = 0.0,
-	bossPhaseName = nil,
-	nextBossPhaseName = nil,
 	spellCount = 0,
 	castStart = 0.0,
 	castEnd = 0.0,
 	effectEnd = 0.0,
 	frameLevel = 0,
-	relativeCastTime = nil,
-	signifiesPhaseStart = nil,
-	signifiesPhaseEnd = nil,
-	overlaps = nil,
 }
 
 -- An entry in a roster, only used in gui.
