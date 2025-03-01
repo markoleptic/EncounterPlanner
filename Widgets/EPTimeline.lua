@@ -632,6 +632,7 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 	frame:SetSize(width, height)
 	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", hOffset, -vOffset)
 	frame:SetFrameLevel(frameLevel)
+	-- frame:SetAlpha(abilityInstance.alpha)
 	frame:Show()
 end
 

@@ -95,9 +95,9 @@ do
 			local bossAbilitySelectItems = {}
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
 				if activeBossAbilities[abilityID] == nil then
-					activeBossAbilities[abilityID] = true
+					activeBossAbilities[abilityID] = not boss.abilities[abilityID].defaultHidden
 				end
-				local placeholderName, bossDeathName = nil, nil
+				local placeholderName, bossDeathName, context = nil, nil, nil
 				if Private:HasPlaceholderBossSpellID(abilityID) then
 					placeholderName = Private:GetPlaceholderBossName(abilityID)
 					if boss.abilities[abilityID].onlyRelevantForTanks then
@@ -109,20 +109,33 @@ do
 					bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
 				end
 
+				if boss.abilities[abilityID].additionalContext then
+					context = format("(%s)", boss.abilities[abilityID].additionalContext)
+				end
+
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
 					if placeholderName then
+						if context then
+							placeholderName = format("%s (%s)", placeholderName, context)
+						end
 						abilityEntry:SetNullAbility(tostring(abilityID), placeholderName)
 					elseif bossDeathName then
+						if context then
+							bossDeathName = format("%s (%s)", bossDeathName, context)
+						end
 						abilityEntry:SetText(bossDeathName, tostring(abilityID))
 						abilityEntry.label:SetText(bossDeathName, 4)
 						abilityEntry.label:SetIcon(deathIcon, 2, 2, 0)
 					else
 						if boss.abilities[abilityID].onlyRelevantForTanks then
+							if context then
+								tankIcon = tankIcon .. " " .. context
+							end
 							abilityEntry:SetAbility(abilityID, tostring(abilityID), tankIcon)
 						else
-							abilityEntry:SetAbility(abilityID, tostring(abilityID))
+							abilityEntry:SetAbility(abilityID, tostring(abilityID), context)
 						end
 					end
 					abilityEntry:HideCheckBox()

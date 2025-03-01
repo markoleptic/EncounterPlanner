@@ -1229,6 +1229,7 @@ do
 					end
 				end
 				castEnd = min(castEnd, endTime)
+				-- if not abilityPhase.durationLastsUntilEndOfNextPhase then end
 				effectEnd = min(effectEnd, endTime)
 				castCallback(spellID, castStart, castEnd, effectEnd)
 
@@ -1307,6 +1308,14 @@ do
 								bossAbility.duration = bossPhase.duration - bossAbilityPhase.castTimes[1]
 							elseif bossAbility.castTimeLastsUntilEndOfPhase then
 								bossAbility.castTime = bossPhase.duration - bossAbilityPhase.castTimes[1]
+								-- elseif bossAbilityPhase.durationLastsUntilEndOfNextPhase then
+								-- 	local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
+								-- 	if nextBossPhaseIndex then
+								-- 		local nextPhaseDuration = boss.phases[nextBossPhaseIndex].duration
+								-- 		bossAbility.duration = bossPhase.duration
+								-- 			+ nextPhaseDuration
+								-- 			- bossAbilityPhase.castTimes[1]
+								-- 	end
 							end
 
 							cumulativePhaseCastTime = abilityIterator:IterateAbilityCastTimes(
@@ -1413,6 +1422,7 @@ do
 								and nextBossPhaseName
 								and currentCastIndex == #bossAbilityPhase.castTimes,
 							overlaps = overlaps[currentCastIndex],
+							-- alpha = bossAbilityPhase.durationLastsUntilEndOfNextPhase and 0.5 or 1.0,
 						} --[[@as BossAbilityInstance]])
 						bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 						currentCastIndex = currentCastIndex + 1

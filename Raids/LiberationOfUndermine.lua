@@ -185,58 +185,79 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 		Boss:New({ -- Cauldron of Carnage
 			bossIDs = {
 				229181, -- Flarendo
-				229177, -- Torque
+				229177, -- Torq
 			},
 			journalEncounterID = 2640,
 			dungeonEncounterID = 3010,
 			instanceID = 2769,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 465872, combatLogEventType = "SCS" },
+				[3] = { combatLogEventSpellID = 465872, combatLogEventType = "SAR" },
+			},
 			abilities = {
-				[465863 --[[465833]]] = BossAbility:New({ -- Colossal Clash
+				[465872] = BossAbility:New({ -- Colossal Clash (Torq)
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0, 0.0 },
+							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 20.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[465863] = BossAbility:New({ -- Colossal Clash (Flarendo)
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 20.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[472222] = BossAbility:New({ -- Blistering Spite
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
-						[3] = BossAbilityPhase:New({
+						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
 					},
 					duration = 15.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Spell Aura Refresh not implemented
+					defaultHidden = true,
 				}),
 				[472225] = BossAbility:New({ -- Galvanized Spite
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
-						[3] = BossAbilityPhase:New({
+						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
 					},
 					duration = 15.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Spell Aura Refresh not implemented
+					defaultHidden = true,
 				}),
 				[473650] = BossAbility:New({ -- Scrapbomb
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 8.9, 24.0, 23.0 },
+							castTimes = { 9.0, 24.0, 23.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 8.9, 24.0, 23.0 },
+							castTimes = { 9.0, 24.0, 23.0 },
 						}),
 					},
 					duration = 10.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[472233] = BossAbility:New({ -- Blastburn Roarcannon
 					phases = {
@@ -249,6 +270,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 3.0,
 					castTime = 3.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1213690] = BossAbility:New({ -- Molten Phlegm
 					phases = {
@@ -261,18 +283,20 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 10.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- No cast, only applies debuffs
 				}),
 				[1214190] = BossAbility:New({ -- Eruption Stomp
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 27.0, 24.0, 23.0 },
+							castTimes = { 27.0, 24.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 27.0, 24.0, 23.0 },
+							castTimes = { 27.0, 24.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474159] = BossAbility:New({ -- Static Charge
 					phases = {
@@ -285,6 +309,8 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					durationLastsUntilEndOfPhase = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[463900] = BossAbility:New({ -- Thunderdrum Salvo
 					phases = {
@@ -297,6 +323,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 8.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1213994] = BossAbility:New({ -- Voltaic Image
 					phases = {
@@ -309,6 +336,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 12.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[466178] = BossAbility:New({ -- Lightning Bash
 					phases = {
@@ -321,6 +349,8 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
 			phases = {
@@ -1499,3 +1529,14 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 		}),
 	},
 })
+
+do
+	EJ_SelectInstance(Private.dungeonInstances[2769].journalInstanceID)
+	local journalEncounterID = Private.dungeonInstances[2769].bosses[2].journalEncounterID
+	EJ_SelectEncounter(journalEncounterID)
+	local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, journalEncounterID)
+	Private.dungeonInstances[2769].bosses[2].abilities[465863].additionalContext = bossName:match("^(%S+)")
+	_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
+
+	Private.dungeonInstances[2769].bosses[2].abilities[465872].additionalContext = bossName:match("^(%S+)")
+end

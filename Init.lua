@@ -238,20 +238,20 @@ Private.classes.BossPhase = {
 ---@field eventTriggers table<integer, EventTrigger>|nil Other boss abilities that trigger the ability.
 ---@field cancelTriggers table<integer, {bossNpcID: integer, combatLogEventType: CombatLogEventType}>|nil Boss deaths that cancel this ability.
 ---@field duration number Usually how long the ability effect lasts.
----@field durationLastsUntilEndOfPhase boolean|nil, If true, duration lasts until end of phase.
----@field castTimeLastsUntilEndOfPhase boolean|nil, If true, castTime lasts until end of phase.
+---@field durationLastsUntilEndOfPhase boolean|nil If true, duration lasts until end of phase.
+---@field castTimeLastsUntilEndOfPhase boolean|nil If true, castTime lasts until end of phase.
 ---@field castTime number The actual cast time of the ability.
 ---@field allowedCombatLogEventTypes table<integer, CombatLogEventType> Restrict creating combat log event assignments to only these types.
----@field additionalContext string Additional context to append to boss ability names.
+---@field additionalContext string|nil Additional context to append to boss ability names.
 ---@field onlyRelevantForTanks boolean|nil If true, is a tank buster or similar.
 ---@field bossNpcID integer|nil If defined, the ability represents a boss's death with the given npc ID.
 ---@field buffer number|nil If true, a buffer will be applied after the each combat log event to prevent successive events from triggering it again.
+---@field defaultHidden boolean|nil If true, the ability is hidden by default.
 Private.classes.BossAbility = {
 	phases = {},
 	duration = 0.0,
 	castTime = 0.0,
 	allowedCombatLogEventTypes = { "SCC", "SCS", "SAA", "SAR" },
-	additionalContext = "",
 }
 
 -- A phase in which a boss ability is triggered/cast at least once. May also repeat.
@@ -262,6 +262,7 @@ Private.classes.BossAbility = {
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 ---@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
+---@field durationLastsUntilEndOfNextPhase boolean|nil Not currently used, implementation commented out.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 }
