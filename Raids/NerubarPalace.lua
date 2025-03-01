@@ -510,8 +510,8 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 18.5, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 },
-							combatLogEventSpellCount = 3,
 							repeatInterval = 20.0,
+							onlyRepeatOn = 3,
 						}),
 					},
 					duration = 0.0,
@@ -527,8 +527,8 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 30.0, 30.0, 30.0, 30.0 },
-							combatLogEventSpellCount = 3,
 							repeatInterval = 30.0,
+							onlyRepeatOn = 3,
 						}),
 					},
 					duration = 6.0,
@@ -548,8 +548,8 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 						[442432] = EventTrigger:New({ -- Ingest Black Blood
 							combatLogEventType = "SCS",
 							castTimes = { 16.0, 50.0, 50.0 },
-							combatLogEventSpellCount = 3,
 							repeatInterval = 50.0,
+							onlyRepeatOn = 3,
 						}),
 					},
 					duration = 8.0,

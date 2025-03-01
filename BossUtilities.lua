@@ -1153,7 +1153,9 @@ do
 						dependencies,
 						abilities
 					)
-					if dependencyTrigger.repeatInterval then
+					local shouldRepeat = dependencyTrigger.repeatInterval
+						and (not dependencyTrigger.onlyRepeatOn or dependencyTrigger.onlyRepeatOn == castIndex)
+					if shouldRepeat then
 						self:IterateRepeatingAbility(
 							dependencyID,
 							dependencyAbility,

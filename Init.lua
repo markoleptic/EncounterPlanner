@@ -274,6 +274,7 @@ Private.classes.BossAbilityPhase = {
 ---@class EventTrigger
 ---@field castTimes table<integer, number> An ordered list of cast times, where the actual cast time is the running sum.
 ---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger.
+---@field onlyRepeatOn integer|nil If defined, casts will only be repeated on this combat log event spell count number.
 ---@field combatLogEventSpellCount integer|nil The number of times the other ability must have been cast before the ability begins repeating.
 ---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
 ---@field phaseOccurrences table<integer, boolean>|{min: number, max: number}|nil If specified, casts will only be created if the phase occurrence number is in the table.
