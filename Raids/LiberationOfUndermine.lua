@@ -626,32 +626,111 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2653,
 			dungeonEncounterID = 3013,
 			instanceID = 2769,
+			-- No preferred combat log events bc everything is time-based
 			abilities = {
 				[473276] = BossAbility:New({ -- Activate Inventions!
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 30.0 },
-							repeatInterval = 30.0,
+							castTimes = { 30.0, 30.0, 30.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 30.0 },
-							repeatInterval = 30.0,
+							castTimes = { 30.0, 30.0, 30.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1216414] = BossAbility:New({ -- Blazing Beam
+					eventTriggers = {
+						[473276] = EventTrigger:New({ -- Activate Inventions!
+							combatLogEventType = "SCS",
+							castTimes = { 2.0 },
+							phaseOccurrences = {
+								[1] = { [1] = true },
+							},
+						}),
+					},
+					duration = 5.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {}, -- Spam
+				}),
+				[1216674] = BossAbility:New({ -- Jumbo Void Beam
+					eventTriggers = {
+						[473276] = EventTrigger:New({ -- Activate Inventions!
+							combatLogEventType = "SCS",
+							castTimes = { 2.0 },
+							phaseOccurrences = {
+								[3] = {
+									[1] = true,
+									[2] = true,
+									[3] = true,
+									[4] = true,
+									[5] = true,
+									[6] = true,
+									[7] = true,
+									[8] = true,
+								},
+							},
+						}),
+					},
+					duration = 6.5,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {}, -- Spam
+				}),
+				[1216525] = BossAbility:New({ -- Rocket Barrage
+					eventTriggers = {
+						[473276] = EventTrigger:New({ -- Activate Inventions!
+							combatLogEventType = "SCS",
+							castTimes = { 2.0 },
+							phaseOccurrences = { [1] = { [1] = true }, [3] = { [1] = true } },
+							cast = function(spellCount)
+								return (spellCount - 1) % 3 ~= 0
+							end,
+						}),
+					},
+					duration = 6.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {}, -- Spam
+				}),
+
+				[1216699] = BossAbility:New({ -- Void Barrage
+					eventTriggers = {
+						[473276] = EventTrigger:New({ -- Activate Inventions!
+							combatLogEventType = "SCS",
+							castTimes = { 2.0 },
+							phaseOccurrences = {
+								[3] = {
+									[2] = true,
+									[3] = true,
+									[4] = true,
+									[5] = true,
+									[6] = true,
+									[7] = true,
+									[8] = true,
+								},
+							},
+							cast = function(spellCount)
+								return (spellCount - 1) % 3 ~= 0
+							end,
+						}),
+					},
+					duration = 6.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {}, -- Spam
 				}),
 				[466765] = BossAbility:New({ -- Beta Launch
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 127.4 },
+						[1] = BossAbilityPhase:New({
+							castTimes = { 121.8 },
 						}),
-						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 127.4 },
+						[3] = BossAbilityPhase:New({
+							castTimes = { 121.8 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[466860] = BossAbility:New({ -- Bleeding Edge
 					phases = {
@@ -663,6 +742,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 20.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[1218319] = BossAbility:New({ -- Voidsplosion
 					phases = {
@@ -672,30 +752,34 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- No logged casts
 				}),
 				[1214872] = BossAbility:New({ -- Pyro Party Pack
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 23.0, 32.9, 30.0 },
+						[1] = BossAbilityPhase:New({
+							castTimes = { 23.0, 33.0, 30.0 },
 						}),
-						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 23.0, 32.9, 30.0 },
+						[3] = BossAbilityPhase:New({
+							castTimes = { 23.0, 33.0, 30.0 },
 						}),
 					},
 					duration = 6.0,
 					castTime = 3.0,
+					onlyRelevantForTanks = true, -- Also relevant for everyone else
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465232] = BossAbility:New({ -- Sonic Ba-Boom
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 9.0, 25.0, 27.0, 32.0, 18 },
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.0, 25.0, 27.0, 32.0, 18.0 },
 						}),
-						[3] = BossAbilityPhase:New({ -- TODO: Not confirmed
-							castTimes = { 9.0, 25.0, 27.0, 32.0, 18 },
+						[3] = BossAbilityPhase:New({
+							castTimes = { 9.0, 25.0, 27.0, 32.0, 18.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1217231] = BossAbility:New({ -- Foot-Blasters
 					phases = {
@@ -708,6 +792,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1218418] = BossAbility:New({ -- Wire Transfer
 					phases = {
@@ -720,6 +805,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1217355] = BossAbility:New({ -- Polarization Generator
 					phases = {
@@ -731,7 +817,8 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[1216509] = BossAbility:New({ -- Screw Up
 					phases = {
@@ -744,12 +831,23 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 4.5,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1218344] = BossAbility:New({ -- Upgraded Bloodtech
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Stacking buff, no casts
 				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 129.4,
-					defaultDuration = 129.4,
+					duration = 126.6,
+					defaultDuration = 126.6,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
@@ -766,8 +864,8 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					repeatAfter = 3,
 				}),
 				[3] = BossPhase:New({
-					duration = 129.4,
-					defaultDuration = 129.4,
+					duration = 126.6,
+					defaultDuration = 126.6,
 					count = 3,
 					defaultCount = 3,
 					name = "P1",
@@ -963,7 +1061,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					defaultCount = 1,
 					fixedCount = true,
 					fixedDuration = true,
-					name = "P2",
+					name = "P2 (30%)",
 				}),
 			},
 		}),
@@ -1554,15 +1652,13 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 		}),
 	},
+	executeAndNil = function()
+		EJ_SelectInstance(Private.dungeonInstances[2769].journalInstanceID)
+		local journalEncounterID = Private.dungeonInstances[2769].bosses[2].journalEncounterID
+		EJ_SelectEncounter(journalEncounterID)
+		local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, journalEncounterID)
+		Private.dungeonInstances[2769].bosses[2].abilities[465863].additionalContext = bossName:match("^(%S+)")
+		_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
+		Private.dungeonInstances[2769].bosses[2].abilities[465872].additionalContext = bossName:match("^(%S+)")
+	end,
 })
-
-do
-	EJ_SelectInstance(Private.dungeonInstances[2769].journalInstanceID)
-	local journalEncounterID = Private.dungeonInstances[2769].bosses[2].journalEncounterID
-	EJ_SelectEncounter(journalEncounterID)
-	local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, journalEncounterID)
-	Private.dungeonInstances[2769].bosses[2].abilities[465863].additionalContext = bossName:match("^(%S+)")
-	_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
-
-	Private.dungeonInstances[2769].bosses[2].abilities[465872].additionalContext = bossName:match("^(%S+)")
-end

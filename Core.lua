@@ -187,6 +187,10 @@ do -- Raid instance initialization
 	-- Initializes names and icons for raid instances.
 	function InitializeDungeonInstances()
 		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			if dungeonInstance.executeAndNil then
+				dungeonInstance.executeAndNil()
+				dungeonInstance.executeAndNil = nil
+			end
 			EJ_SelectInstance(dungeonInstance.journalInstanceID)
 			local instanceName, _, _, _, _, buttonImage2, _, _, _, _ =
 				EJ_GetInstanceInfo(dungeonInstance.journalInstanceID)

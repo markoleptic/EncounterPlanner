@@ -175,6 +175,7 @@ Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 ---@field customGroup string? Custom group to use when populating dropdowns.
 ---@field bosses table<integer, Boss> List of bosses for the instance.
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
+---@field executeAndNil fun()|nil
 Private.classes.DungeonInstance = {
 	name = "",
 	journalInstanceID = 0,
@@ -263,7 +264,7 @@ Private.classes.BossAbility = {
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 ---@field halfHeight boolean|nil If defined, boss ability bars will be half height and alternate vertical offset on each cast.
 ---@field durationLastsUntilEndOfNextPhase boolean|nil Not currently used, implementation commented out.
----@field phaseOccurrences table<integer, boolean>|nil If specified, casts will only be created if the phase occurrence number is in the table.
+---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil If specified, casts will only be created if the phase occurrence number is in the table.
 Private.classes.BossAbilityPhase = {
 	castTimes = {},
 }
@@ -274,6 +275,8 @@ Private.classes.BossAbilityPhase = {
 ---@field combatLogEventType CombatLogEventType The combat log event type that acts as a trigger.
 ---@field combatLogEventSpellCount integer|nil The number of times the other ability must have been cast before the ability begins repeating.
 ---@field repeatInterval number|table<integer, number>|nil If defined, the ability will repeat at this interval starting from the last cast time.
+---@field phaseOccurrences table<integer, boolean>|{min: number, max: number}|nil If specified, casts will only be created if the phase occurrence number is in the table.
+---@field cast nil|fun(count:integer):boolean Same as combat log event spell count but takes it as a parameter
 Private.classes.EventTrigger = {
 	castTimes = {},
 	combatLogEventType = "SCS",

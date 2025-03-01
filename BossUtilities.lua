@@ -10,6 +10,7 @@ local Utilities = Private.utilities
 local BossUtilities = Private.bossUtilities
 
 local Clamp = Clamp
+local floor = math.floor
 local hugeNumber = math.huge
 local ipairs = ipairs
 local min = math.min
@@ -32,7 +33,6 @@ local orderedBossPhases = {}
 local maxOrderedBossPhases = {}
 
 do
-	local floor = math.floor
 	local ceil = math.ceil
 
 	---@param value number
@@ -1061,6 +1061,43 @@ do
 		return 0.0
 	end
 
+	---@param boss Boss
+	---@param useMax boolean|nil
+	---@return table<integer, {startTime: number, endTime: number, count: integer}>
+	local function GeneratePhaseCountDurationMap(boss, useMax)
+		local phases = boss.phases
+		local counts = {}
+		local map = {}
+		local currentTotalDuration = 0.0
+		local tbl = useMax and maxOrderedBossPhases[boss.dungeonEncounterID]
+			or orderedBossPhases[boss.dungeonEncounterID]
+		for _, bossPhaseIndex in ipairs(tbl) do
+			local phase = phases[bossPhaseIndex]
+			counts[bossPhaseIndex] = (counts[bossPhaseIndex] or 0) + 1
+			tinsert(map, {
+				startTime = currentTotalDuration,
+				endTime = currentTotalDuration + phase.duration,
+				count = counts[bossPhaseIndex],
+				index = bossPhaseIndex,
+			})
+			currentTotalDuration = currentTotalDuration + phase.duration
+		end
+		return map
+	end
+
+	local phaseCountDurationMap = {} ---@type table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
+
+	---@param time number
+	---@return integer,integer count
+	local function GetCurrentPhaseCountAndIndex(time)
+		for _, tbl in ipairs(phaseCountDurationMap) do
+			if tbl.endTime > time and tbl.startTime <= time then
+				return tbl.count, tbl.index
+			end
+		end
+		return 0, 0
+	end
+
 	local abilityIterator = {}
 
 	---@param spellID integer
@@ -1094,7 +1131,17 @@ do
 				local spellCount = dependencyTrigger.combatLogEventSpellCount
 				local spellCountIrrelevant = not castIndex or not spellCount
 
-				if spellCountIrrelevant or spellCount ~= castIndex then
+				local validPhase = not dependencyTrigger.phaseOccurrences
+				if not validPhase then
+					local phaseCount, index = GetCurrentPhaseCountAndIndex(startTime)
+					validPhase = dependencyTrigger.phaseOccurrences[index]
+						and dependencyTrigger.phaseOccurrences[index][phaseCount]
+					if castIndex and validPhase and dependencyTrigger.cast then
+						validPhase = validPhase and dependencyTrigger.cast(castIndex)
+					end
+				end
+
+				if (spellCountIrrelevant or spellCount ~= castIndex) and validPhase then
 					triggerTime = self:IterateAbilityCastTimes(
 						dependencyID,
 						dependencyAbility,
@@ -1108,16 +1155,18 @@ do
 				end
 
 				if dependencyTrigger.repeatInterval and (spellCountIrrelevant or spellCount == castIndex) then
-					self:IterateRepeatingAbility(
-						dependencyID,
-						dependencyAbility,
-						dependencyTrigger.repeatInterval,
-						triggerTime,
-						endTime,
-						castCallback,
-						dependencies,
-						abilities
-					)
+					if validPhase then
+						self:IterateRepeatingAbility(
+							dependencyID,
+							dependencyAbility,
+							dependencyTrigger.repeatInterval,
+							triggerTime,
+							endTime,
+							castCallback,
+							dependencies,
+							abilities
+						)
+					end
 				end
 			end
 		end
@@ -1547,20 +1596,23 @@ do
 	function BossUtilities.GenerateBossTables(boss)
 		local ID = boss.dungeonEncounterID
 		orderedBossPhases[ID] = GenerateOrderedBossPhaseTable(ID)
+		phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
 		absoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[ID])
 		boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[ID])
 		boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[ID])
+		wipe(phaseCountDurationMap)
 	end
 
 	local kMaxBossDuration = Private.constants.kMaxBossDuration
 
 	for _, dungeonInstance in pairs(Private.dungeonInstances) do
 		for _, boss in ipairs(dungeonInstance.bosses) do
+			local ID = boss.dungeonEncounterID
 			BossUtilities.GenerateBossTables(boss)
-			maxOrderedBossPhases[boss.dungeonEncounterID] =
-				GenerateMaxOrderedBossPhaseTable(boss.dungeonEncounterID, kMaxBossDuration)
-			maxAbsoluteSpellCastStartTables[boss.dungeonEncounterID] =
-				GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[boss.dungeonEncounterID])
+			maxOrderedBossPhases[ID] = GenerateMaxOrderedBossPhaseTable(ID, kMaxBossDuration)
+			phaseCountDurationMap = GeneratePhaseCountDurationMap(boss, true)
+			maxAbsoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[ID])
+			wipe(phaseCountDurationMap)
 		end
 	end
 
@@ -1577,6 +1629,7 @@ do
 			function tests.CompareSpellCastTimeTables()
 				for _, dungeonInstance in pairs(Private.dungeonInstances) do
 					for _, boss in ipairs(dungeonInstance.bosses) do
+						phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
 						local castTimeTable = {}
 						local ID = boss.dungeonEncounterID
 						GenerateBossAbilityInstances(boss, orderedBossPhases[ID], castTimeTable)
@@ -1599,6 +1652,7 @@ do
 								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
 						end
+						wipe(phaseCountDurationMap)
 					end
 				end
 				return "CompareSpellCastTimeTables"
