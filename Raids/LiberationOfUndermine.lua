@@ -26,6 +26,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			journalEncounterID = 2639,
 			dungeonEncounterID = 3009,
 			instanceID = 2769,
+			preferredCombatLogEventAbilities = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 460603, combatLogEventType = "SCC" },
+				[3] = { combatLogEventSpellID = 460116, combatLogEventType = "SAR" },
+			},
 			abilities = {
 				[466615] = BossAbility:New({ -- Protective Plating
 					phases = {
@@ -33,13 +38,12 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							castTimes = { 0.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
+							castTimes = { 3.5 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					allowedCombatLogEventTypes = { "SCC" }, -- Stacking buff, instant cast on first application
 				}),
 				[471403] = BossAbility:New({ -- Unrelenting CAR-nage
 					phases = {
@@ -52,96 +56,111 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 30.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = {}, -- May or may not happen
 				}),
 				[459943] = BossAbility:New({ -- Call Bikers
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 20.4 },
-							repeatInterval = 28.2,
+							castTimes = { 20.4, 28.2, 28.2, 28.2 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 20.4 },
-							repeatInterval = 28.2,
+							castTimes = { 24.2, 28.2, 28.2, 28.2 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[459678] = BossAbility:New({ -- Spew Oil
+				[459671] = BossAbility:New({ -- Spew Oil
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 13.5 },
-							repeatInterval = 41.3,
+							castTimes = { 13.5, 41.3, 41.3 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 12.2 },
-							repeatInterval = 20.7,
+							castTimes = { 12.2, 20.7, 20.7, 20.7, 20.7, 20.7 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[468216] = BossAbility:New({ -- Incendiary Fire
+				[468487] = BossAbility:New({ -- Incendiary Fire
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 25.7 },
-							repeatInterval = 25.7,
+							castTimes = { 25.7, 25.6, 25.6, 25.6 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 25.7 },
-							repeatInterval = 35.0,
+							castTimes = { 25.7, 35.0, 35.0 },
 						}),
 					},
-					duration = 0.0,
-					castTime = 0.0,
+					duration = 6.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[465865] = BossAbility:New({ -- Tank Buster
-					-- TODO: Alternate half height boss ability bars
+				[459627] = BossAbility:New({ -- Tank Buster
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.2 },
-							repeatInterval = 17.0,
+							castTimes = { 6.05, 23.3, 27.2, 21.9, 21.9 },
+							halfHeight = true,
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 6.2 },
-							repeatInterval = 17.0,
+							castTimes = { 10.3, 17.4, 16.6, 19.9, 21.8, 21.9 },
+							halfHeight = true,
 						}),
 					},
 					duration = 25.0,
-					castTime = 0.0,
+					castTime = 1.5,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
-				[468147] = BossAbility:New({ -- Exhaust Fumes (DPS / Healers)
+				[468149] = BossAbility:New({ -- Exhaust Fumes (DPS / Healers)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.2 + 1.5 },
-							repeatInterval = 17.0,
+							castTimes = { 8.0, 23.3, 23.3, 23.3, 23.3 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 6.2 + 1.5 },
-							repeatInterval = 17.0,
+							castTimes = { 12.0, 19.5, 19.5, 19.5, 19.5, 19.5 },
 						}),
 					},
 					duration = 6.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- Stacking buff, no cast
 				}),
 				[460116] = BossAbility:New({ -- Tune-Up
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 0.0,
 					castTime = 45.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[460603] = BossAbility:New({ -- Mechanical Breakdown
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 125.0 },
+							signifiesPhaseEnd = true,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 125.0 },
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" }, -- Inconsistent/spam SAA/SAR
 				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 125.0,
-					defaultDuration = 125.0,
+					duration = 129.0,
+					defaultDuration = 129.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
+					fixedDuration = true,
 				}),
 				[2] = BossPhase:New({
 					duration = 45.0,
@@ -153,12 +172,13 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[3] = BossPhase:New({
-					duration = 125.0,
-					defaultDuration = 125.0,
+					duration = 129.0,
+					defaultDuration = 129.0,
 					count = 2,
 					defaultCount = 2,
 					name = "P1",
 					repeatAfter = 2,
+					fixedDuration = true,
 				}),
 			},
 		}),
