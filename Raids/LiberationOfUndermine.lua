@@ -544,7 +544,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Stix Bunkjunker  -- TODO: Nothing confirmed
+		Boss:New({ -- Stix Bunkjunker
 			bossIDss = {
 				230322, -- Stix
 			},
@@ -555,58 +555,58 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[464399] = BossAbility:New({ -- Electromagnetic Sorting
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 22.2 },
-							repeatInterval = { 80.5, 51.1 },
+							castTimes = { 22.3, 80.2 },
+							repeatInterval = 51.1,
 						}),
 					},
 					duration = 5.0,
 					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[464149] = BossAbility:New({ -- Incinerator
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 11.1, 25.0, 25.0, 29.4 },
-							repeatInterval = 25.0,
+							castTimes = { 11.1, 25.0, 25.0, 29.1 },
+							repeatInterval = 25.55,
 						}),
 					},
 					duration = 4.5,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[464112] = BossAbility:New({ -- Demolish
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 17.8, 80.5, 51.1 },
+							castTimes = { 17.8, 80.2, 51.1 },
+							repeatInterval = 51.1,
 						}),
 					},
 					duration = 50.0,
 					castTime = 0.0,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1217954] = BossAbility:New({ -- Meltdown
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 44.5, 80.5, 51.1 },
+							castTimes = { 44.5, 80.2, 51.1 },
+							repeatInterval = 51.1,
 						}),
 					},
 					duration = 3.0,
 					castTime = 1.0,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[467117] = BossAbility:New({ -- Overdrive
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 76.7 },
+							castTimes = { 66.7 },
 						}),
 					},
-					duration = 0.0,
+					duration = 9.0,
 					castTime = 1.0,
-				}),
-				[467109] = BossAbility:New({ -- Trash Compactor
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 76.7 + 9.7 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 3.75,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 			},
 			phases = {
