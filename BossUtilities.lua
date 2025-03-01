@@ -1102,7 +1102,7 @@ do
 
 	---@param spellID integer
 	---@param ability BossAbility
-	---@param castIndex integer|nil
+	---@param castIndex integer
 	---@param startTime number
 	---@param endTime number Phase end time.
 	---@param castCallback fun(spellID: integer, castStart: number, castEnd: number, effectEnd: number)
@@ -1130,7 +1130,11 @@ do
 				local triggerTime = startTime + timeOffset
 				local spellCount = dependencyTrigger.combatLogEventSpellCount
 				local spellCountIrrelevant = not castIndex or not spellCount
+				local validSpellCount = spellCountIrrelevant or spellCount == castIndex
 
+				if spellID == 461060 then
+					print(castIndex)
+				end
 				local validPhase = not dependencyTrigger.phaseOccurrences
 				if not validPhase then
 					local phaseCount, index = GetCurrentPhaseCountAndIndex(startTime)
@@ -1141,7 +1145,7 @@ do
 					end
 				end
 
-				if (spellCountIrrelevant or spellCount ~= castIndex) and validPhase then
+				if validSpellCount and validPhase then
 					triggerTime = self:IterateAbilityCastTimes(
 						dependencyID,
 						dependencyAbility,
@@ -1152,13 +1156,11 @@ do
 						dependencies,
 						abilities
 					)
-				end
-
-				if dependencyTrigger.repeatInterval and (spellCountIrrelevant or spellCount == castIndex) then
-					if validPhase then
+					if dependencyTrigger.repeatInterval then
 						self:IterateRepeatingAbility(
 							dependencyID,
 							dependencyAbility,
+							castIndex,
 							dependencyTrigger.repeatInterval,
 							triggerTime,
 							endTime,
@@ -1174,6 +1176,7 @@ do
 
 	---@param spellID integer
 	---@param ability BossAbility
+	---@param castIndex integer
 	---@param repeatInterval number|table<integer, number>|nil
 	---@param startTime number Cumulative phase start time.
 	---@param endTime number Phase end time.
@@ -1183,6 +1186,7 @@ do
 	function abilityIterator:IterateRepeatingAbility(
 		spellID,
 		ability,
+		castIndex,
 		repeatInterval,
 		startTime,
 		endTime,
@@ -1205,6 +1209,8 @@ do
 		end
 		local nextRepeatStart = cumulativePhaseCastTime + currentRepeatInterval
 		while nextRepeatStart < endTime do
+			castIndex = castIndex + 1 -- Will be the value of the last cast
+
 			local castEnd = nextRepeatStart + ability.castTime
 			local effectEnd = castEnd + ability.duration
 			castEnd = min(castEnd, endTime)
@@ -1214,7 +1220,7 @@ do
 			self:HandleDependencies(
 				spellID,
 				ability,
-				nil,
+				castIndex,
 				nextRepeatStart,
 				endTime,
 				castCallback,
@@ -1386,6 +1392,7 @@ do
 						abilityIterator:IterateRepeatingAbility(
 							bossAbilitySpellID,
 							bossAbility,
+							#bossAbilityPhase.castTimes,
 							bossAbilityPhase.repeatInterval,
 							cumulativePhaseCastTime,
 							phaseEndTime,
@@ -1523,6 +1530,7 @@ do
 						abilityIterator:IterateRepeatingAbility(
 							bossAbilitySpellID,
 							bossAbility,
+							#bossAbilityPhase.castTimes,
 							bossAbilityPhase.repeatInterval,
 							cumulativePhaseCastTime,
 							phaseEndTime,
