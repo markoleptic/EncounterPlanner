@@ -274,16 +274,16 @@ do -- Profile updating and refreshing
 	---@param absoluteSpellCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@param orderedBossPhaseTable table<integer, integer>
 	local function UpdateCombatLogEventAssignment(assignment, absoluteSpellCastTimeTable, orderedBossPhaseTable)
-		if absoluteSpellCastTimeTable and orderedBossPhaseTable then
-			local spellIDSpellCastStartTable = absoluteSpellCastTimeTable[assignment.combatLogEventSpellID]
-			if spellIDSpellCastStartTable then
-				if not spellIDSpellCastStartTable[assignment.spellCount] then
-					assignment.spellCount = 1
-				end
-				if not assignment.phase or assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
-					local orderIndex = spellIDSpellCastStartTable[assignment.spellCount].bossPhaseOrderIndex
-					assignment.bossPhaseOrderIndex = orderIndex
-					assignment.phase = orderedBossPhaseTable[orderIndex]
+		local spellIDSpellCastStartTable = absoluteSpellCastTimeTable[assignment.combatLogEventSpellID]
+		if spellIDSpellCastStartTable then
+			if not spellIDSpellCastStartTable[assignment.spellCount] then
+				assignment.spellCount = 1
+			end
+			if not assignment.phase or assignment.phase == 0 or assignment.bossPhaseOrderIndex == 0 then
+				local spellInfo = spellIDSpellCastStartTable[assignment.spellCount]
+				if spellInfo and spellInfo.bossPhaseOrderIndex then
+					assignment.bossPhaseOrderIndex = spellInfo.bossPhaseOrderIndex
+					assignment.phase = orderedBossPhaseTable[spellInfo.bossPhaseOrderIndex]
 				end
 			end
 		end
@@ -291,15 +291,40 @@ do -- Profile updating and refreshing
 
 	---@class RosterEntry
 	local RosterEntry = Private.classes.RosterEntry
-
 	local GetClassColor = C_ClassColor.GetClassColor
-	local getmetatable = getmetatable
 	local GetSpecialization, GetSpecializationInfo = GetSpecialization, GetSpecializationInfo
-	local next = next
 	local select = select
-	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
 	local UnitClass = UnitClass
 	local UnitFullName = UnitFullName
+
+	local function AddSelfToSharedRoster(sharedRoster)
+		local role = select(5, GetSpecializationInfo(GetSpecialization()))
+		if role then
+			role = "role:" .. role:lower()
+		else
+			role = ""
+		end
+		local _, classFileName, _ = UnitClass("player")
+		local unitName, _ = UnitFullName("player")
+		local colorMixin = GetClassColor(classFileName)
+		local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+		if classFileName == "DEATHKNIGHT" then
+			classFileName = "DeathKnight"
+		elseif classFileName == "DEMONHUNTER" then
+			classFileName = "DemonHunter"
+		else
+			classFileName = classFileName:sub(1, 1):upper() .. classFileName:sub(2):lower()
+		end
+		sharedRoster[unitName] = RosterEntry:New({
+			class = "class:" .. classFileName,
+			role = role,
+			classColoredName = classColoredName,
+		})
+	end
+
+	local getmetatable = getmetatable
+	local next = next
+	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
 
 	-- Sets the metatables for assignments and performs a small amount of assignment validation.
 	---@param profile DefaultProfile
@@ -309,34 +334,30 @@ do -- Profile updating and refreshing
 			for planName, plan in pairs(profile.plans) do
 				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 				plan = Plan:New(plan, planName, plan.ID)
+
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then
-					ChangePlanBoss(2902, plan)
+					ChangePlanBoss(constants.kDefaultBossDungeonEncounterID, plan)
 				end
+
 				local dungeonEncounterID = plan.dungeonEncounterID
-				boss = GetBoss(plan.dungeonEncounterID) --[[@as Boss]]
+				boss = GetBoss(dungeonEncounterID) --[[@as Boss]]
 				local customPhaseDurations = AddOn.db.profile.plans[planName].customPhaseDurations
-				bossUtilities.SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
 				local customPhaseCounts = AddOn.db.profile.plans[planName].customPhaseCounts
+
+				bossUtilities.SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
 				customPhaseCounts =
 					bossUtilities.SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
+
 				bossUtilities.GenerateBossTables(boss)
 				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
 				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
+
 				if absoluteSpellCastTimeTable and orderedBossPhaseTable then
 					for _, assignment in ipairs(plan.assignments) do
-						---@diagnostic disable-next-line: undefined-field
-						if assignment.spellInfo then
-							---@diagnostic disable-next-line: undefined-field
-							assignment.spellID = assignment.spellID
+						if remappings[assignment.spellID] then
+							assignment.spellID = remappings[assignment.spellID]
 						end
-						-- if assignment.spellID == kInvalidAssignmentSpellID then
-						-- 	if assignment.text:len() > 0 then
-						-- 		assignment.spellID = kTextAssignmentSpellID
-						-- 	end
-						-- elseif remappings[assignment.spellID] then
-						-- 	assignment.spellID = remappings[assignment.spellID]
-						-- end
 						if getmetatable(assignment) == CombatLogEventAssignment then
 							UpdateCombatLogEventAssignment(
 								assignment --[[@as CombatLogEventAssignment]],
@@ -345,32 +366,19 @@ do -- Profile updating and refreshing
 							)
 						end
 					end
+				else
+					for _, assignment in ipairs(plan.assignments) do
+						if remappings[assignment.spellID] then
+							assignment.spellID = remappings[assignment.spellID]
+						end
+					end
 				end
 			end
+
 			if not next(profile.sharedRoster) then
-				local role = select(5, GetSpecializationInfo(GetSpecialization()))
-				if role then
-					role = "role:" .. role:lower()
-				else
-					role = ""
-				end
-				local _, classFileName, _ = UnitClass("player")
-				local unitName, _ = UnitFullName("player")
-				local colorMixin = GetClassColor(classFileName)
-				local classColoredName = colorMixin:WrapTextInColorCode(unitName)
-				if classFileName == "DEATHKNIGHT" then
-					classFileName = "DeathKnight"
-				elseif classFileName == "DEMONHUNTER" then
-					classFileName = "DemonHunter"
-				else
-					classFileName = classFileName:sub(1, 1):upper() .. classFileName:sub(2):lower()
-				end
-				profile.sharedRoster[unitName] = RosterEntry:New({
-					class = "class:" .. classFileName,
-					role = role,
-					classColoredName = classColoredName,
-				})
+				AddSelfToSharedRoster(profile.sharedRoster)
 			end
+
 			for dungeonEncounterID, activeBossAbilities in pairs(profile.activeBossAbilities) do
 				local boss = GetBoss(dungeonEncounterID)
 				if boss then
@@ -395,13 +403,12 @@ do -- Profile updating and refreshing
 		Private.callbacks:Fire("ProfileRefreshed")
 		interfaceUpdater.RemoveMessageBoxes(false)
 		if Private.mainFrame then
-			local bossDungeonEncounterID = 2902
 			local plans = db.profile.plans --[[@as table<string, Plan>]]
 			local lastOpenPlan = db.profile.lastOpenPlan
 			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
 				local defaultPlanName = L["Default"]
 				plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
-				ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
+				ChangePlanBoss(constants.kDefaultBossDungeonEncounterID, plans[defaultPlanName])
 				db.profile.lastOpenPlan = defaultPlanName
 			end
 			local timeline = Private.mainFrame.timeline
@@ -437,17 +444,6 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	if self.db.profile then
-		for _, plan in pairs(self.db.profile.plans) do
-			for _, assignment in ipairs(plan.assignments) do
-				---@diagnostic disable-next-line: undefined-field
-				if assignment.spellInfo then
-					---@diagnostic disable-next-line: undefined-field
-					assignment.spellID = assignment.spellID
-				end
-			end
-		end
-	end
 	Private.testRunner.RunTests()
 	self.UpdateProfile(self.db.profile)
 	InitializeDungeonInstances()

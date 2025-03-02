@@ -28,4 +28,5 @@ Private.constants = {
 	kMaxBossDuration = 1200.0,
 	kMinBossPhaseDuration = 10.0,
 	kMinimumTimeBetweenAssignmentsBeforeWarning = 2.0,
+	kDefaultBossDungeonEncounterID = 3009, -- Vexie
 }

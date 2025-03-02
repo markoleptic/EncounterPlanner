@@ -541,7 +541,6 @@ do
 	}
 
 	local rowValues = {
-		{ itemValue = 1, text = "1" },
 		{ itemValue = 2, text = "2" },
 		{ itemValue = 3, text = "3" },
 		{ itemValue = 4, text = "4" },

@@ -1418,8 +1418,9 @@ local function HandleExternalTextButtonClicked()
 			end
 			Private.externalTextEditor = nil
 		end)
-		Private.externalTextEditor:SetText(string.join("\n", unpack(currentPlan.content)))
-		Private.externalTextEditor:HighlightTextAndFocus()
+		Private.externalTextEditor:SetText(("\n"):join(unpack(currentPlan.content)))
+		Private.externalTextEditor:SetFocusAndCursorPosition(0)
+		-- Private.externalTextEditor:HighlightTextAndFocus()
 	end
 end
 
@@ -1653,7 +1654,7 @@ function Private:CreateInterface()
 	local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 	local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
 	local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
-	local bossDungeonEncounterID = 2902
+	local bossDungeonEncounterID = constants.kDefaultBossDungeonEncounterID
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 

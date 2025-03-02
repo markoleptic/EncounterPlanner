@@ -47,9 +47,9 @@ local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
 local horizontalScrollBarHeight = 20
 local minimumSpacingBetweenLabels = 4
-local minimumNumberOfAssignmentRows = 1
+local minimumNumberOfAssignmentRows = 2
 local maximumNumberOfAssignmentRows = 12
-local minimumNumberOfBossAbilityRows = 1
+local minimumNumberOfBossAbilityRows = 2
 local maximumNumberOfBossAbilityRows = 12
 local minimumBossAbilityWidth = 10
 local defaultTickWidth = 2
@@ -559,16 +559,15 @@ local function DrawBossPhaseIndicator(self, phaseStart, index, longName, shortNa
 	local partialLeft = startHorizontalOffset + phaseIndicatorWidth / 2.0
 	local left = partialLeft - labelWidth / 2.0
 
-	if left <= lastInfo.right then
+	if left <= lastInfo.right + 5 then
 		label:SetText(shortName)
 		labelWidth = label:GetWidth()
 		left = partialLeft - labelWidth / 2.0
-	end
-
-	if lastInfo.label and left <= lastInfo.right then
-		lastInfo.label:SetText(lastInfo.shortName)
-		local lastLeft = lastInfo.partialLeft - lastInfo.label:GetWidth() / 2.0
-		lastInfo.label:SetPoint("LEFT", timelineFrame, "LEFT", lastLeft, 0)
+		if lastInfo.label then
+			lastInfo.label:SetText(lastInfo.shortName)
+			local lastLeft = lastInfo.partialLeft - lastInfo.label:GetWidth() / 2.0
+			lastInfo.label:SetPoint("LEFT", timelineFrame, "LEFT", lastLeft, 0)
+		end
 	end
 
 	label:SetPoint("LEFT", timelineFrame, "LEFT", left, 0)

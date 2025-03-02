@@ -205,8 +205,14 @@ end
 
 ---@param self EPEditBox
 local function HighlightTextAndFocus(self)
-	self.editBox:HighlightText()
 	self.editBox:SetFocus()
+	self.editBox:HighlightText()
+end
+
+---@param self EPEditBox
+local function SetFocusAndCursorPosition(self, position)
+	self.editBox:SetFocus()
+	self.editBox:SetCursorPosition(position)
 end
 
 local function Constructor()
@@ -280,6 +286,7 @@ local function Constructor()
 		ShowOkayButton = ShowOkayButton,
 		SetTitle = SetTitle,
 		ShowCheckBoxAndLineEdit = ShowCheckBoxAndLineEdit,
+		SetFocusAndCursorPosition = SetFocusAndCursorPosition,
 		frame = frame,
 		type = Type,
 		editBox = editBox,
