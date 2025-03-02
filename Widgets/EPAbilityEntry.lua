@@ -9,7 +9,8 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
-local GetSpellInfo = C_Spell.GetSpellInfo
+local GetSpellName = C_Spell.GetSpellName
+local GetSpellTexture = C_Spell.GetSpellTexture
 local unpack = unpack
 local pi = math.pi
 local piOverTwo = pi / 2
@@ -170,14 +171,15 @@ end
 ---@param key string|table|nil
 ---@param textToAppend string|nil
 local function SetAbility(self, spellID, key, textToAppend)
-	local spellInfo = GetSpellInfo(spellID)
-	if spellInfo then
+	local spellName = GetSpellName(spellID)
+	local iconID = GetSpellTexture(spellID)
+	if spellName and iconID then
 		if textToAppend then
-			self.label:SetText(spellInfo.name .. " " .. textToAppend, padding.x * 2)
+			self.label:SetText(spellName .. " " .. textToAppend, padding.x * 2)
 		else
-			self.label:SetText(spellInfo.name, padding.x * 2)
+			self.label:SetText(spellName, padding.x * 2)
 		end
-		self.label:SetIcon(spellInfo.iconID, padding.x, padding.y, spellInfo.spellID)
+		self.label:SetIcon(iconID, padding.x, padding.y, spellID)
 	else
 		self.label:SetIcon(nil)
 	end

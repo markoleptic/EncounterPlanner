@@ -60,14 +60,13 @@ do
 	local Plan = Private.classes.Plan
 	---@class RosterEntry
 	local RosterEntry = Private.classes.RosterEntry
-	local GetSpellInfo = C_Spell.GetSpellInfo
 
 	---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
 	---@return SerializedAssignment
 	local function SerializeAssignment(assignment)
 		local required = {}
 		required[1] = assignment.assignee
-		required[2] = assignment.spellInfo.spellID
+		required[2] = assignment.spellID
 		required[3] = assignment.text
 		required[4] = assignment.targetName
 		if assignment.time then
@@ -88,16 +87,9 @@ do
 	local function DeserializeAssignment(data)
 		local assignment = Assignment:New({})
 		assignment.assignee = data[1]
-		assignment.spellInfo.spellID = data[2]
+		assignment.spellID = data[2]
 		assignment.text = data[3]
 		assignment.targetName = data[4]
-
-		if assignment.spellInfo.spellID > constants.kTextAssignmentSpellID then
-			local spellInfo = GetSpellInfo(assignment.spellInfo.spellID)
-			if spellInfo then
-				assignment.spellInfo = spellInfo
-			end
-		end
 
 		if data[10] then
 			assignment = CombatLogEventAssignment:New(assignment)
@@ -562,8 +554,8 @@ end
 do
 	---@class Plan
 	local Plan = Private.classes.Plan
-	---@class Tests
-	local tests = Private.tests
+	---@class Test
+	local test = Private.test
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
@@ -626,7 +618,7 @@ do
         ]]
 		-- cSpell:enable
 
-		function tests.TestEncodeDecodePlan()
+		function test.EncodeDecodePlan()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = Private.ParseNote(plan, textTable, true) --[[@as integer]]
@@ -639,7 +631,7 @@ do
 			local deserializedPlan = planSerializer.DeserializePlan(package --[[@as table]])
 			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
 
-			return "TestEncodeDecodePlan"
+			return "EncodeDecodePlan"
 		end
 	end
 end

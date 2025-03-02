@@ -45,8 +45,8 @@ EncounterPlannerAPI = setmetatable({}, { __index = API, __newindex = function() 
 
 --@debug@
 do
-	---@class Tests
-	local tests = Private.tests
+	---@class Test
+	local test = Private.test
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
@@ -62,7 +62,7 @@ do
             nsdispelend
         ]]
 
-		function tests.TestExternalTextDispel()
+		function test.ExternalTextDispel()
 			local textTable = RemoveTabs(SplitStringIntoTable(text, true))
 			TestEqual(#textTable, 3, "Expected number of lines")
 			local splitByWhiteSpaceTable = SplitStringTableByWhiteSpace(textTable)
@@ -74,7 +74,7 @@ do
 			TestEqual(splitByWhiteSpaceTable[2][4], "|cff00fe97Dogpog|r", "Second line fourth word")
 			TestEqual(splitByWhiteSpaceTable[3][1], "nsdispelend", "Third line")
 
-			return "TestExternalTextDispel"
+			return "ExternalTextDispel"
 		end
 	end
 
@@ -84,7 +84,7 @@ do
             {circle}  npc:226200 |cff006fdcPerson5|r  Person6 Person7 |cff00fe97Person8|r Person9
         ]]
 
-		function tests.TestExternalText()
+		function test.ExternalText()
 			local textTable = RemoveTabs(SplitStringIntoTable(text, true))
 			TestEqual(#textTable, 2, "Expected number of lines")
 			local splitByWhiteSpaceTable = SplitStringTableByWhiteSpace(textTable)
@@ -104,7 +104,7 @@ do
 			TestEqual(splitByWhiteSpaceTable[2][6], "|cff00fe97Person8|r", "Second line sixth word")
 			TestEqual(splitByWhiteSpaceTable[2][7], "Person9", "Second line seventh word")
 
-			return "TestExternalText"
+			return "ExternalText"
 		end
 	end
 end

@@ -112,14 +112,14 @@ Private.classes = {}
 ---@field uniqueID integer Incremented each time a new assignment is created used to distinguish in-memory assignments.
 ---@field assignee string Who to assign the assignment to, AssigneeType.
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
----@field spellInfo SpellInfo The spell info for the assignment.
+---@field spellID integer The spell ID for the assignment.
 ---@field targetName string The target's name if the assignment has a '@'.
 ---@field cooldownDuration? number
 Private.classes.Assignment = {
 	uniqueID = 0,
 	assignee = "",
 	text = "",
-	spellInfo = { name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 },
+	spellID = 0,
 	targetName = "",
 }
 
@@ -372,7 +372,7 @@ Private.classes.Plan = {
 
 ---@class SerializedAssignment
 ---@field [1] string assignee
----@field [2] number spellInfo.spellID
+---@field [2] number spellID
 ---@field [3] string text
 ---@field [4] string targetName
 ---@field [5] number time
@@ -922,5 +922,5 @@ fontInitializer:SetParent(UIParent)
 LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))
 
 --@debug@
-Private.tests = {}
+Private.test = {}
 --@end-debug@

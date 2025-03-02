@@ -284,19 +284,6 @@ local function CreateProgressBarContainer(preferences)
 	end
 end
 
----@param spellInfo SpellInfo
----@return integer|nil
-local function GetAssignmentIcon(spellInfo)
-	local icon = nil
-	local spellID = spellInfo.spellID
-	if spellInfo.iconID > 0 then
-		icon = spellInfo.iconID
-	elseif spellID > kTextAssignmentSpellID then
-		icon = GetSpellTexture(spellID)
-	end
-	return icon
-end
-
 ---@param widget EPReminderMessage|EPProgressBar
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
@@ -325,14 +312,13 @@ end
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param duration number
 ---@param reminderText string
+---@param icon integer|nil
 ---@param progressBarPreferences ProgressBarPreferences
-local function AddProgressBar(assignment, duration, reminderText, progressBarPreferences)
-	local icon = GetAssignmentIcon(assignment.spellInfo)
-	local spellID = assignment.spellInfo.spellID
+local function AddProgressBar(assignment, duration, reminderText, icon, progressBarPreferences)
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local progressBar = AceGUI:Create("EPProgressBar")
 	progressBar:Set(progressBarPreferences, reminderText, duration, icon)
-	CreateReminderWidgetCallback(progressBar, spellID, bossPhaseOrderIndex, true)
+	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex, true)
 	tinsert(progressBarsToAdd, progressBar)
 	progressBar:Start()
 end
@@ -341,14 +327,13 @@ end
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 ---@param duration number
 ---@param reminderText string
+---@param icon integer|nil
 ---@param messagePreferences MessagePreferences
-local function AddMessage(assignment, duration, reminderText, messagePreferences)
-	local icon = GetAssignmentIcon(assignment.spellInfo)
-	local spellID = assignment.spellInfo.spellID
+local function AddMessage(assignment, duration, reminderText, icon, messagePreferences)
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local message = AceGUI:Create("EPReminderMessage")
 	message:Set(messagePreferences, reminderText, icon)
-	CreateReminderWidgetCallback(message, spellID, bossPhaseOrderIndex, false)
+	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex, false)
 	tinsert(messagesToAdd, message)
 	message:Start(duration)
 end
@@ -358,7 +343,7 @@ end
 ---@param frame Frame
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
 local function GlowFrameAndCreateTimer(unit, frame, assignment)
-	local spellID = assignment.spellInfo.spellID
+	local spellID = assignment.spellID
 	if spellID > kTextAssignmentSpellID then
 		local targetFrameObject = { frame = frame, targetGUID = UnitGUID(unit) }
 		stopGlowIfCasted[spellID] = stopGlowIfCasted[spellID] or {}
@@ -390,13 +375,14 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	local reminderText = CreateReminderText(assignment, roster, false)
 	local ttsPreferences = reminderPreferences.textToSpeech
 	local soundPreferences = reminderPreferences.sound
-	local spellID = assignment.spellInfo.spellID
+	local spellID = assignment.spellID
+	local icon = spellID > constants.kTextAssignmentSpellID and GetSpellTexture(spellID) or nil
 
 	if reminderPreferences.progressBars.enabled then
-		AddProgressBar(assignment, duration, reminderText, reminderPreferences.progressBars)
+		AddProgressBar(assignment, duration, reminderText, icon, reminderPreferences.progressBars)
 	end
 	if reminderPreferences.messages.enabled and not reminderPreferences.messages.showOnlyAtExpiration then
-		AddMessage(assignment, duration, reminderText, reminderPreferences.messages)
+		AddMessage(assignment, duration, reminderText, icon, reminderPreferences.messages)
 	end
 	if ttsPreferences.enableAtAdvanceNotice then
 		if reminderText:len() > 0 then
@@ -415,7 +401,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 
 	if reminderPreferences.messages.enabled and reminderPreferences.messages.showOnlyAtExpiration then
 		deferredFunctions[#deferredFunctions + 1] = function()
-			AddMessage(assignment, 0, reminderText, reminderPreferences.messages)
+			AddMessage(assignment, 0, reminderText, icon, reminderPreferences.messages)
 		end
 	end
 	if ttsPreferences.enableAtTime then
@@ -467,7 +453,7 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 	if startTime < 0.1 then
 		ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
 	else
-		local args = CreateTimerWithCleanupArgs(assignment.spellInfo.spellID, assignment.bossPhaseOrderIndex)
+		local args = CreateTimerWithCleanupArgs(assignment.spellID, assignment.bossPhaseOrderIndex)
 		CreateTimerWithCleanup(startTime, function()
 			ExecuteReminderTimer(assignment, reminderPreferences, roster, duration)
 		end, timers, unpack(args))

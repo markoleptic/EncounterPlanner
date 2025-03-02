@@ -1625,15 +1625,15 @@ do
 
 	--@debug@
 	do
-		---@class Tests
-		local tests = Private.tests
+		---@class Test
+		local test = Private.test
 		---@class TestUtilities
 		local testUtilities = Private.testUtilities
 
 		local TestEqual = testUtilities.TestEqual
 
 		do
-			function tests.CompareSpellCastTimeTables()
+			function test.CompareSpellCastTimeTables()
 				for _, dungeonInstance in pairs(Private.dungeonInstances) do
 					for _, boss in ipairs(dungeonInstance.bosses) do
 						phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
@@ -1667,7 +1667,7 @@ do
 		end
 
 		do
-			function tests.ValidateMaxPhaseCounts()
+			function test.ValidateMaxPhaseCounts()
 				for _, dungeonInstance in pairs(Private.dungeonInstances) do
 					for _, boss in ipairs(dungeonInstance.bosses) do
 						local encounterID = boss.dungeonEncounterID

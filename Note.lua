@@ -39,7 +39,7 @@ local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 local concat = table.concat
 local format = string.format
 local floor = math.floor
-local GetSpellInfo = C_Spell.GetSpellInfo
+local GetSpellName = C_Spell.GetSpellName
 local getmetatable = getmetatable
 local ipairs = ipairs
 local pairs = pairs
@@ -88,13 +88,12 @@ local function CreateAssignmentsFromLine(line, failed)
 	local failedCount = 0
 	line = line:gsub(removeFirstDashRegex, "", 1)
 	for str in (line .. "  "):gmatch(postDashRegex) do
-		local spellInfo =
-			{ name = "", iconID = 0, originalIconID = 0, castTime = 0, minRange = 0, maxRange = 0, spellID = 0 }
+		local spellID = kInvalidAssignmentSpellID
 		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(left, id, right)
 			if id and id ~= "" then
-				local newSpellInfo = GetSpellInfo(id)
-				if newSpellInfo then
-					spellInfo = newSpellInfo
+				local numericValue = tonumber(id)
+				if numericValue and GetSpellName(numericValue) then
+					spellID = numericValue
 				end
 			end
 			return left .. right
@@ -120,12 +119,12 @@ local function CreateAssignmentsFromLine(line, failed)
 				local assignment = Assignment:New({
 					assignee = assignee,
 					text = text,
-					spellInfo = spellInfo,
+					spellID = spellID,
 					targetName = targetName,
 				})
-				if assignment.spellInfo.spellID == kInvalidAssignmentSpellID then
+				if assignment.spellID == kInvalidAssignmentSpellID then
 					if assignment.text:len() > 0 then
-						assignment.spellInfo.spellID = kTextAssignmentSpellID
+						assignment.spellID = kTextAssignmentSpellID
 					end
 				end
 				tinsert(assignments, assignment)
@@ -472,9 +471,9 @@ do
 				assignment.spellCount
 			)
 			-- Add spell icon and name so note is more readable
-			local spellInfo = GetSpellInfo(assignment.combatLogEventSpellID)
-			if spellInfo then
-				local spellIconAndName = format("{spell:%d}%s", assignment.combatLogEventSpellID, spellInfo.name)
+			local spellName = GetSpellName(assignment.combatLogEventSpellID)
+			if spellName then
+				local spellIconAndName = format("{spell:%d}%s", assignment.combatLogEventSpellID, spellName)
 				timeAndOptionsString = timeAndOptionsString .. spellIconAndName
 			end
 		else
@@ -520,8 +519,8 @@ do
 				assigneeString = assigneeString .. format(" @%s", assignment.targetName)
 			end
 		end
-		if assignment.spellInfo.spellID ~= nil and assignment.spellInfo.spellID > kTextAssignmentSpellID then
-			assignmentString = format("{spell:%d}", assignment.spellInfo.spellID)
+		if assignment.spellID ~= nil and assignment.spellID > kTextAssignmentSpellID then
+			assignmentString = format("{spell:%d}", assignment.spellID)
 		end
 		if assignment.text ~= nil and assignment.text ~= "" then
 			if assignmentString:len() > 0 then
@@ -662,8 +661,8 @@ end
 
 --@debug@
 do
-	---@class Tests
-	local tests = Private.tests
+	---@class Test
+	local test = Private.test
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
@@ -694,7 +693,7 @@ do
             {time:225}Random Text - Markoleptic-Bleeding Hollow {spell:235450}
         ]]
 
-		function tests.TestDashParsing()
+		function test.DashParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local actualAssignmentCount, expectedAssignmentCount = 0, 17
@@ -708,7 +707,7 @@ do
 			end
 			TestEqual(actualAssignmentCount, expectedAssignmentCount, "Expected Assignment Count")
 
-			return "TestDashParsing"
+			return "DashParsing"
 		end
 	end
 
@@ -719,16 +718,16 @@ do
             {time:15} Markoleptic {spell:a}
         ]]
 
-		function tests.TestSpellParsing()
+		function test.SpellParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable, true)
 
-			TestEqual(plan.assignments[1].spellInfo.spellID, 235450, textTable[1])
-			TestEqual(plan.assignments[2].spellInfo.spellID, 0, textTable[2])
-			TestEqual(plan.assignments[3].spellInfo.spellID, 0, textTable[3])
+			TestEqual(plan.assignments[1].spellID, 235450, textTable[1])
+			TestEqual(plan.assignments[2].spellID, 0, textTable[2])
+			TestEqual(plan.assignments[3].spellID, 0, textTable[3])
 
-			return "TestSpellParsing"
+			return "SpellParsing"
 		end
 	end
 
@@ -742,7 +741,7 @@ do
             {time:30} Markoleptic {text}Use Healthstone {6262}{/text}{spell:235450}
         ]]
 
-		function tests.TestTextParsing()
+		function test.TextParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable, true)
@@ -753,12 +752,12 @@ do
 			TestEqual(plan.assignments[4].text, "Use Healthstone {6262}", textTable[4])
 
 			TestEqual(plan.assignments[5].text, "Use Healthstone {6262}", textTable[5])
-			TestEqual(plan.assignments[5].spellInfo.spellID, 235450, textTable[5])
+			TestEqual(plan.assignments[5].spellID, 235450, textTable[5])
 
 			TestEqual(plan.assignments[6].text, "Use Healthstone {6262}", textTable[6])
-			TestEqual(plan.assignments[6].spellInfo.spellID, 235450, textTable[6])
+			TestEqual(plan.assignments[6].spellID, 235450, textTable[6])
 
-			return "TestTextParsing"
+			return "TextParsing"
 		end
 	end
 
@@ -773,14 +772,14 @@ do
             {time:45,SAR:450483:2} Markoleptic {spell:235450}
         ]]
 
-		function tests.TestTimeParsing()
+		function test.TimeParsing()
 			local plan = Plan:New({}, "Test")
 			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)), true)
 
 			local valuesTable = CreateValuesTable({ 1, 5, 70, 15, 25, 35, 45 })
 			TestContains(plan.assignments, "time", valuesTable)
 
-			return "TestTimeParsing"
+			return "TimeParsing"
 		end
 	end
 
@@ -791,7 +790,7 @@ do
             {time:15} Markoleptic@ Markoleptic {spell:235450}
         ]]
 
-		function tests.TestTargetParsing()
+		function test.TargetParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local actualAssignmentCount, expectedAssignmentCount = 0, 3
@@ -806,7 +805,7 @@ do
 			end
 			TestEqual(actualAssignmentCount, expectedAssignmentCount, "Expected Assignment Count")
 
-			return "TestTargetParsing"
+			return "TargetParsing"
 		end
 	end
 
@@ -827,7 +826,7 @@ do
             {time:65} type:melee {spell:235450}
         ]]
 
-		function tests.TestAssignmentUnits()
+		function test.AssignmentUnits()
 			local plan = Plan:New({}, "Test")
 			ParseNote(plan, RemoveTabs(SplitStringIntoTable(text)), true)
 			local valuesTable = CreateValuesTable({
@@ -848,7 +847,7 @@ do
 			})
 			TestContains(plan.assignments, "assignee", valuesTable)
 
-			return "TestAssignmentUnits"
+			return "AssignmentUnits"
 		end
 	end
 
@@ -861,7 +860,7 @@ do
             {time:25} Markoleptic @Idk, Idk@ Markoleptic {spell:235450}
         ]]
 
-		function tests.TestMultiValuedAssignmentUnits()
+		function test.MultiValuedAssignmentUnits()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable, true)
@@ -889,7 +888,7 @@ do
 			TestEqual(plan.assignments[14].assignee, "Idk", textTable[5])
 			TestEqual(plan.assignments[14].targetName, "Markoleptic", textTable[5])
 
-			return "TestMultiValuedAssignmentUnits"
+			return "MultiValuedAssignmentUnits"
 		end
 	end
 
@@ -900,7 +899,7 @@ do
             {time:15} group:1 {text}Yo{/text}  type:ranged {text}Yo 2{/text}
         ]]
 
-		function tests.TestMultipleAssignmentsPerRow()
+		function test.MultipleAssignmentsPerRow()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			ParseNote(plan, textTable, true)
@@ -921,7 +920,51 @@ do
 			TestContains(plan.assignments, "targetName", valuesTable)
 			TestEqual(#plan.assignments, 8, "Expected number of assignments")
 
-			return "TestMultipleAssignmentsPerRow"
+			return "MultipleAssignmentsPerRow"
+		end
+	end
+	do
+		-- cSpell:disable
+		local text = [[
+            nsnovastart
+            ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r
+            ||cff33937fDraugmentor||r  ||cfffefefeReduckted||r  ||cff3ec6eaMarkoleptic||r  ||cffa9d271Orcodontist||r 
+            ||cffc31d39Hobyrim||r  ||cffc31d39Xonj||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r  
+            ||cffa9d271Orcodontist||r  ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r  ||cfffe7b09Skorke||r   
+            ||cfffe7b09Gun||r  ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r   
+            ||cff00fe97Dogpog||r  ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff3ec6eaSeansmage||r
+            ||cfffe7b09Skorke||r  ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r  ||cff3ec6eaMarkoleptic||r
+            ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Gun||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r
+            nsnovaend
+            {time:5} Markoleptic {spell:235450}
+            stuff
+            {time:10,SCC:435136:1} Markoleptic {spell:235450}
+            stuff 2
+            {time:15,SCC:435136:1} Markoleptic {spell:235450}
+            {time:20,SCC:444497:1} Markoleptic,group:1,spec:62,type:ranged {spell:235450}
+            BLUE LEFT:|cfffff468Gørø|r |cffc41e3aHobyrim|r |cfffff468Shiryon|r |cfff48cbaSarys|r |cffc69b6dStranko|r 
+            BLUE RIGHT:|cffff7c0aGun|r |cff0070ddVodkabro|r |cff3fc7ebReduts|r |cff3fc7ebMarkoleptic|r  
+            RED LEFT: |cffaad372Orcodontist|r  |cfff48cbaPogdog|r |cffc69b6dBrockx|r |cff00ff98Dogpog|r
+            REDRIGHT: |cffff7c0aSkorke|r |cff33937fDraugmentor|r |cff0070ddMajablas|r|cff0070ddt|r |cff8788eeArchidell
+        ]]
+		-- cSpell:enable
+
+		function test.ImportNonAssignmentText()
+			local plan = Plan:New({}, "Test")
+			local textTable = RemoveTabs(SplitStringIntoTable(text))
+			ParseNote(plan, textTable, true)
+
+			TestEqual(#plan.assignments, 7, "Correct number of assignments")
+			for i = 1, 10 do
+				TestEqual(textTable[i], plan.content[i], format("Matching content row %d %d", i, i))
+			end
+			TestEqual(textTable[12], plan.content[11], format("Matching content row %d %d", 12, 11))
+			TestEqual(textTable[14], plan.content[12], format("Matching content row %d %d", 14, 12))
+			for i = 17, 20 do
+				TestEqual(textTable[i], plan.content[i - 4], format("Matching content row %d %d", i, i - 4))
+			end
+
+			return "ImportNonAssignmentText"
 		end
 	end
 
@@ -933,7 +976,7 @@ do
             {time:20,SCC:444497:1} Markoleptic,group:1,spec:62,type:ranged {spell:235450}
         ]]
 
-		function tests.TestBossParsing()
+		function test.BossParsing()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = ParseNote(plan, textTable, true)
@@ -953,7 +996,7 @@ do
 				TestEqual(getmetatable(plan.assignments[i]), TimedAssignment, "Correct meta table")
 			end
 
-			return "TestBossParsing"
+			return "BossParsing"
 		end
 	end
 
@@ -970,7 +1013,7 @@ do
             RED RIGHT:Person7 Person8
         ]]
 
-		function tests.TestExport()
+		function test.Export()
 			local plan = Plan:New({}, "Test")
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = ParseNote(plan, textTable, true) --[[@as integer]]
@@ -984,7 +1027,7 @@ do
 				TestEqual(line, textTable[index], "")
 			end
 
-			return "TestExport"
+			return "Export"
 		end
 	end
 end

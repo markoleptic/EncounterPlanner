@@ -6,9 +6,6 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local ClearCursor = ClearCursor
 local CreateFrame = CreateFrame
-local GetCursorInfo = GetCursorInfo
-local GetMacroInfo = GetMacroInfo
-local GetSpellInfo = C_Spell.GetSpellInfo
 local tostring = tostring
 local unpack = unpack
 
@@ -35,27 +32,6 @@ local backdrop = {
 ---@field enabled boolean
 ---@field readOnly boolean
 ---@field lastText string
-
-local function HandleEditBoxReceiveDrag(self)
-	local type, id, info = GetCursorInfo()
-	local name
-	if type == "item" then
-		name = info
-	elseif type == "spell" then
-		local spellInfo = GetSpellInfo(tostring(id))
-		if spellInfo then
-			name = spellInfo.name
-		end
-	elseif type == "macro" then
-		name = GetMacroInfo(tostring(id))
-	end
-	if name then
-		self:SetText(name)
-		self:Fire("OnEnterPressed", name)
-		ClearCursor()
-		AceGUI:ClearFocus()
-	end
-end
 
 local function HandleEditBoxTextChanged(self, frame)
 	local value = frame:GetText()
@@ -220,12 +196,6 @@ local function Constructor()
 	end)
 	editBox:SetScript("OnTextChanged", function(f, ...)
 		HandleEditBoxTextChanged(widget, f)
-	end)
-	editBox:SetScript("OnReceiveDrag", function()
-		HandleEditBoxReceiveDrag(widget)
-	end)
-	editBox:SetScript("OnMouseDown", function()
-		HandleEditBoxReceiveDrag(widget)
 	end)
 
 	return AceGUI:RegisterAsWidget(widget)

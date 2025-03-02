@@ -26,8 +26,8 @@ do
 	local totalTests = 0
 	local totalPassed = 0
 	local totalFailed = 0
-	---@type table<string, table<integer, string>>
-	local testFailures = {}
+	local totalComparisons = 0
+	local testFailures = {} ---@type table<string, table<integer, string>>
 
 	function TestUtilities.Reset()
 		currentTestName = ""
@@ -39,6 +39,7 @@ do
 		totalTests = 0
 		totalPassed = 0
 		totalFailed = 0
+		totalComparisons = 0
 		testFailures = {}
 	end
 
@@ -53,7 +54,7 @@ do
 				tinsert(testFailures[currentTestName], failed)
 			end
 		end
-
+		totalComparisons = totalComparisons + currentTotalComparisons
 		currentTestName = ""
 		currentTotalComparisons = 0
 		currentPassedComparisons = 0
@@ -67,10 +68,15 @@ do
 	end
 
 	function TestUtilities.PrintResults()
-		print("Total Tests: ", totalTests)
-		print("Total Passed: ", totalPassed)
-		print("Total Failed: ", totalFailed)
-
+		print(
+			format(
+				"%s: Tests Passed: %d/%d - Comparisons Made: %d",
+				AddOnName,
+				totalPassed,
+				totalTests,
+				totalComparisons
+			)
+		)
 		for testName, contexts in pairs(testFailures) do
 			print(testName .. ": " .. #contexts .. " failures")
 			for _, context in pairs(contexts) do

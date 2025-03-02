@@ -325,13 +325,18 @@ do -- Profile updating and refreshing
 				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
 				if absoluteSpellCastTimeTable and orderedBossPhaseTable then
 					for _, assignment in ipairs(plan.assignments) do
-						if assignment.spellInfo.spellID == kInvalidAssignmentSpellID then
-							if assignment.text:len() > 0 then
-								assignment.spellInfo.spellID = kTextAssignmentSpellID
-							end
-						elseif remappings[assignment.spellInfo.spellID] then
-							assignment.spellInfo.spellID = remappings[assignment.spellInfo.spellID]
+						---@diagnostic disable-next-line: undefined-field
+						if assignment.spellInfo then
+							---@diagnostic disable-next-line: undefined-field
+							assignment.spellID = assignment.spellID
 						end
+						-- if assignment.spellID == kInvalidAssignmentSpellID then
+						-- 	if assignment.text:len() > 0 then
+						-- 		assignment.spellID = kTextAssignmentSpellID
+						-- 	end
+						-- elseif remappings[assignment.spellID] then
+						-- 	assignment.spellID = remappings[assignment.spellID]
+						-- end
 						if getmetatable(assignment) == CombatLogEventAssignment then
 							UpdateCombatLogEventAssignment(
 								assignment --[[@as CombatLogEventAssignment]],
@@ -432,6 +437,17 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
+	if self.db.profile then
+		for _, plan in pairs(self.db.profile.plans) do
+			for _, assignment in ipairs(plan.assignments) do
+				---@diagnostic disable-next-line: undefined-field
+				if assignment.spellInfo then
+					---@diagnostic disable-next-line: undefined-field
+					assignment.spellID = assignment.spellID
+				end
+			end
+		end
+	end
 	Private.testRunner.RunTests()
 	self.UpdateProfile(self.db.profile)
 	InitializeDungeonInstances()

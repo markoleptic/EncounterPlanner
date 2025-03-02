@@ -672,7 +672,6 @@ end
 do
 	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
-	local GetSpellInfo = C_Spell.GetSpellInfo
 
 	---@param boss Boss
 	---@param abilityID integer
@@ -692,9 +691,10 @@ do
 		elseif bossDeathName then
 			iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", deathIcon, bossDeathName)
 		else
-			local spellInfo = GetSpellInfo(abilityID)
-			if spellInfo then
-				iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", spellInfo.iconID, spellInfo.name)
+			local iconID = GetSpellTexture(abilityID)
+			local spellName = GetSpellName(abilityID)
+			if iconID and spellName then
+				iconText = format("|T%d:16:16:0:0:64:64:5:59:5:59|t %s", iconID, spellName)
 			else
 				iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", unknownIcon, L["Unknown"])
 			end
@@ -866,7 +866,7 @@ do
 
 			for _, timelineAssignment in ipairs(timelineAssignments) do
 				local assignee = timelineAssignment.assignment.assignee
-				local spellID = timelineAssignment.assignment.spellInfo.spellID
+				local spellID = timelineAssignment.assignment.spellID
 				local key = assignee .. tostring(spellID)
 				groupedAssignments[key] = groupedAssignments[key] or {}
 				tinsert(groupedAssignments[key], timelineAssignment)
@@ -962,10 +962,10 @@ do
 						local assignee =
 							Utilities.ConvertAssigneeToLegibleString(previous.assignment.assignee, plan.roster)
 						local spell = L["Unknown"]
-						if previous.assignment.spellInfo.name:len() > 0 then
-							spell = previous.assignment.spellInfo.name
-						elseif previous.assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
+						if previous.assignment.spellID == constants.kTextAssignmentSpellID then
 							spell = L["Text"]
+						elseif previous.assignment.spellID > constants.kTextAssignmentSpellID then
+							spell = GetSpellName(previous.assignment.spellID)
 						end
 						local previousStartTime = format("%s:%s", Utilities.FormatTime(previous.startTime))
 						local currentStartTime = format("%s:%s", Utilities.FormatTime(current.startTime))
@@ -1046,7 +1046,7 @@ do
 		if AddOn.db then
 			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
 			for _, assignment in pairs(plan.assignments) do
-				local spellID = assignment.spellInfo.spellID
+				local spellID = assignment.spellID
 				local overrideDuration = cooldownOverrides[spellID]
 				if overrideDuration then
 					assignment.cooldownDuration = overrideDuration
@@ -1057,7 +1057,7 @@ do
 			end
 		else
 			for _, assignment in pairs(plan.assignments) do
-				local spellID = assignment.spellInfo.spellID
+				local spellID = assignment.spellID
 				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
 				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
 			end
@@ -1149,7 +1149,7 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 
 	for _, assignee in ipairs(assigneeIndices) do
 		for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
-			local spellID = timelineAssignment.assignment.spellInfo.spellID
+			local spellID = timelineAssignment.assignment.spellID
 			if not assigneeMap[assignee] then
 				assigneeMap[assignee] = {
 					order = order,
@@ -1194,7 +1194,7 @@ do
 		---@param b TimelineAssignment
 		return function(a, b)
 			local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
-			local spellIDA, spellIDB = a.assignment.spellInfo.spellID, b.assignment.spellInfo.spellID
+			local spellIDA, spellIDB = a.assignment.spellID, b.assignment.spellID
 			if assignmentSortType == "Alphabetical" then
 				if assigneeA == assigneeB then
 					return spellIDA < spellIDB
@@ -1276,7 +1276,7 @@ function Utilities.DetermineRolesFromAssignments(assignments)
 			if determinedRoles[assignee] then
 				break
 			end
-			local spellID = currentAssigneeAssignment.spellInfo.spellID
+			local spellID = currentAssigneeAssignment.spellID
 			if spellID == 98008 or spellID == 108280 then -- Shaman healing bc classified as raid defensive
 				determinedRoles[assignee] = "role:healer"
 				break
@@ -1741,9 +1741,9 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 		return reminderText
 	end
 
-	local spellID = assignment.spellInfo.spellID
+	local spellID = assignment.spellID
 	if spellID ~= nil and spellID > kTextAssignmentSpellID then
-		local spellName = assignment.spellInfo.name:len() > 0 and assignment.spellInfo.name or GetSpellName(spellID)
+		local spellName = GetSpellName(spellID)
 		if spellName then
 			if addIcon then
 				local spellTexture = GetSpellTexture(spellID)
@@ -2035,7 +2035,6 @@ do
 end
 
 do
-	local GetSpellInfo = C_Spell.GetSpellInfo
 	local FindNearestPreferredCombatLogEventAbility = bossUtilities.FindNearestPreferredCombatLogEventAbility
 	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
 
@@ -2122,12 +2121,6 @@ do
 		end
 		if assignment then
 			assignment.assignee = assignee
-			if spellID and spellID > constants.kTextAssignmentSpellID then
-				local spellInfo = GetSpellInfo(spellID)
-				if spellInfo then
-					assignment.spellInfo = spellInfo
-				end
-			end
 		end
 		if getmetatable(assignment) == CombatLogEventAssignment then
 			Utilities.UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], encounterID)
@@ -2164,13 +2157,13 @@ end
 
 --@debug@
 do
-	---@class Tests
-	local tests = Private.tests
+	---@class Test
+	local test = Private.test
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
 	do
-		function tests.TestCreateUniquePlanName()
+		function test.CreateUniquePlanName()
 			local planName, newName = "", ""
 			for i = 1, 36 do
 				planName = planName .. "H"
@@ -2202,7 +2195,7 @@ do
 			newName = Utilities.CreateUniquePlanName(plans, "boss", "Plan Name 4")
 			testUtilities.TestEqual("Plan Name 4", newName, "Plan name available and used")
 
-			return "TestCreateUniquePlanName"
+			return "CreateUniquePlanName"
 		end
 	end
 end

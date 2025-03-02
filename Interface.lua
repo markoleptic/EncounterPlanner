@@ -60,7 +60,6 @@ local AceGUI = LibStub("AceGUI-3.0")
 local Clamp = Clamp
 local format = format
 local getmetatable = getmetatable
-local GetSpellInfo = C_Spell.GetSpellInfo
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local min, max = math.min, math.max
@@ -506,30 +505,14 @@ do -- Assignment Editor
 		elseif dataType == "SpellAssignment" then
 			if value == constants.kInvalidAssignmentSpellID then
 				if assignment.text:len() > 0 then
-					assignment.spellInfo = {
-						name = "",
-						iconID = 0,
-						originalIconID = 0,
-						castTime = 0,
-						minRange = 0,
-						maxRange = 0,
-						spellID = constants.kTextAssignmentSpellID,
-					}
+					assignment.spellID = constants.kTextAssignmentSpellID
 				else
-					assignment.spellInfo = {
-						name = "",
-						iconID = 0,
-						originalIconID = 0,
-						castTime = 0,
-						minRange = 0,
-						maxRange = 0,
-						spellID = constants.kInvalidAssignmentSpellID,
-					}
+					assignment.spellID = constants.kInvalidAssignmentSpellID
 				end
 			else
-				local spellInfo = GetSpellInfo(value)
-				if spellInfo then
-					assignment.spellInfo = spellInfo
+				local numericValue = tonumber(value)
+				if numericValue then
+					assignment.spellID = numericValue
 				end
 			end
 			updateAssignments = true
@@ -566,11 +549,11 @@ do -- Assignment Editor
 			assignmentEditor.timeSecondLineEdit:SetText(seconds)
 		elseif dataType == "OptionalText" then
 			assignment.text = value
-			if assignment.text:len() > 0 and assignment.spellInfo.spellID == constants.kInvalidAssignmentSpellID then
-				assignment.spellInfo.spellID = constants.kTextAssignmentSpellID
+			if assignment.text:len() > 0 and assignment.spellID == constants.kInvalidAssignmentSpellID then
+				assignment.spellID = constants.kTextAssignmentSpellID
 				updateAssignments = true
-			elseif assignment.text:len() == 0 and assignment.spellInfo.spellID == constants.kTextAssignmentSpellID then
-				assignment.spellInfo.spellID = constants.kInvalidAssignmentSpellID
+			elseif assignment.text:len() == 0 and assignment.spellID == constants.kTextAssignmentSpellID then
+				assignment.spellID = constants.kInvalidAssignmentSpellID
 				updateAssignments = true
 			end
 			updatePreviewText = true

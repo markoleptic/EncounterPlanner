@@ -598,7 +598,7 @@ local function PopulateFields(
 	self.targetDropdown:SetValue(assignment.targetName)
 
 	self.optionalTextLineEdit:SetText(assignment.text)
-	local spellID = assignment.spellInfo.spellID
+	local spellID = assignment.spellID
 	local enableSpellAssignmentCheckBox = spellID ~= nil and spellID > constants.kTextAssignmentSpellID
 	self.enableSpellAssignmentCheckBox:SetChecked(enableSpellAssignmentCheckBox)
 	self.spellAssignmentDropdown:SetEnabled(enableSpellAssignmentCheckBox)

@@ -752,7 +752,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 		self.fakeAssignmentFrame:Hide()
 		assignmentBeingDuplicated = false
 		if timelineAssignment then
-			local spellID = timelineAssignment.assignment.spellInfo.spellID
+			local spellID = timelineAssignment.assignment.spellID
 			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
 			local spellIDTable = orderTable[spellID]
 			for index, assignmentFrameIndex in ipairs(spellIDTable) do
@@ -936,7 +936,7 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 	if isValidDuplicate then
 		assignmentBeingDuplicated = true
 		if timelineAssignment and index then
-			local spellID = timelineAssignment.assignment.spellInfo.spellID
+			local spellID = timelineAssignment.assignment.spellID
 			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
 			local spellIDTable = orderTable[spellID]
 			for spellIDTablePositionIndex, assignmentFrameIndex in ipairs(spellIDTable) do
@@ -1208,7 +1208,7 @@ local function UpdateAssignments(self)
 	for index, timelineAssignment in ipairs(self.timelineAssignments) do
 		local order = timelineAssignment.order
 		local assignment = timelineAssignment.assignment
-		local spellID = assignment.spellInfo.spellID
+		local spellID = assignment.spellID
 		if not orderedSpellIDFrameIndices[order] then
 			orderedSpellIDFrameIndices[order] = {}
 			orderedFrameIndices[order] = {}

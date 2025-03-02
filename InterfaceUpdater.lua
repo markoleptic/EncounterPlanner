@@ -238,7 +238,7 @@ do
 				local assignee = key.assignee
 				local spellID = key.spellID
 				for i = #assignments, 1, -1 do
-					if assignments[i].assignee == assignee and assignments[i].spellInfo.spellID == spellID then
+					if assignments[i].assignee == assignee and assignments[i].spellID == spellID then
 						tremove(assignments, i)
 						removed = removed + 1
 					end
@@ -290,7 +290,7 @@ do
 				local assignee = key.assignee
 				local spellID = key.spellID
 				for _, assignment in ipairs(assignments) do
-					if assignment.assignee == assignee and assignment.spellInfo.spellID == spellID then
+					if assignment.assignee == assignee and assignment.spellID == spellID then
 						assignment.assignee = newAssignee
 					end
 				end
