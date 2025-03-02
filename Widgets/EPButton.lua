@@ -38,6 +38,7 @@ local buttonBackdrop = {
 ---@field toggleable boolean|nil
 ---@field toggled boolean|nil
 ---@field value any
+---@field fireEventsIfDisabled boolean|nil
 
 ---@param self EPButton
 local function OnAcquire(self)
@@ -62,6 +63,7 @@ local function OnRelease(self)
 	self.toggleable = nil
 	self.toggled = nil
 	self.value = nil
+	self.fireEventsIfDisabled = nil
 end
 
 ---@param self EPButton
@@ -70,7 +72,7 @@ local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	local fontString = self.button:GetFontString()
 	self.icon:SetDesaturated(not enabled)
-	self.button:SetEnabled(enabled)
+	self.button:SetMouseClickEnabled(enabled)
 	if enabled then
 		fontString:SetTextColor(unpack(enabledTextColor))
 	else
@@ -309,6 +311,8 @@ local function Constructor()
 				fadeOutGroup:Stop()
 			end
 			fadeInGroup:Play()
+			widget:Fire("OnEnter")
+		elseif widget.fireEventsIfDisabled then
 			widget:Fire("OnEnter")
 		end
 	end)

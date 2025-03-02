@@ -34,6 +34,7 @@ local checkBackdrop = {
 ---@field checked boolean
 ---@field checkBackground Frame|BackdropTemplate|table
 ---@field autoCheckSize boolean
+---@field fireEventsIfDisabled boolean|nil
 
 ---@param self EPCheckBox
 local function OnAcquire(self)
@@ -55,7 +56,9 @@ local function OnAcquire(self)
 		end
 	end)
 	self.button:SetCallback("OnEnter", function()
-		self:Fire("OnEnter")
+		if self.enabled or self.fireEventsIfDisabled then
+			self:Fire("OnEnter")
+		end
 	end)
 	self.button:SetCallback("OnLeave", function()
 		self:Fire("OnLeave")
@@ -81,6 +84,7 @@ local function OnRelease(self)
 	self.button:Release()
 	self.button = nil
 	self.checked = nil
+	self.fireEventsIfDisabled = nil
 end
 
 ---@param self EPCheckBox
