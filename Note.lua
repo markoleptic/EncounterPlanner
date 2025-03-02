@@ -57,11 +57,10 @@ local nameRegex = "^(%S+)"
 local nonSymbolRegex = "[^ \n,%(%)%[%]_%$#@!&]+"
 local phaseNumberRegex = "^p(g?):?(.-)$"
 local postDashRegex = "([^ \n][^\n]-)  +"
--- postDashRegex = "([%w:,%s|%- ]+[ ]+%b{}[ ]-)"
 local postOptionsPreDashNoSpellRegex = "}(.-) %-"
 local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
 local removeFirstDashRegex = "^[^%-]*%-+%s*"
-local spellIconRegex = "{spell:(%d+):?%d*}"
+local spaceSurroundedDashRegex = "^.* %- (.*)"
 local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}(.*)"
 local targetNameRegex = "(@%S+)"
 local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
@@ -86,7 +85,14 @@ local combatLogEventFromAbbreviation = {
 local function CreateAssignmentsFromLine(line, failed)
 	local assignments = {}
 	local failedCount = 0
-	line = line:gsub(removeFirstDashRegex, "", 1)
+
+	local rightOfDash = line:match(spaceSurroundedDashRegex)
+	if rightOfDash then
+		line = rightOfDash
+	else
+		line = line:gsub(removeFirstDashRegex, "", 1)
+	end
+
 	for str in (line .. "  "):gmatch(postDashRegex) do
 		local spellID = kInvalidAssignmentSpellID
 		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(left, id, right)
