@@ -448,7 +448,10 @@ function AddOn:OnEnable()
 	self.UpdateProfile(self.db.profile)
 	InitializeDungeonInstances()
 	Private:RegisterCommunications()
-	Private:RegisterReminderEvents()
+	local preferences = self.db.profile.preferences --[[@as Preferences]]
+	if preferences.reminder.enabled then
+		Private:RegisterReminderEvents()
+	end
 end
 
 function AddOn:OnDisable()
