@@ -22,13 +22,13 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
-local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local GetBossDungeonEncounterIDFromSpellID = bossUtilities.GetBossDungeonEncounterIDFromSpellID
 local ClampSpellCount = bossUtilities.ClampSpellCount
 local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
 ---@class Utilities
 local utilities = Private.utilities
+local ChangePlanBoss = utilities.ChangePlanBoss
 local CreateTimelineAssignments = utilities.CreateTimelineAssignments
 local GetLocalizedSpecNameFromSpecID = utilities.GetLocalizedSpecNameFromSpecID
 local IsValidAssignee = utilities.IsValidAssignee
@@ -619,6 +619,7 @@ end
 function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
+	utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID)
 	if not plans[planName] then
 		plans[planName] = Plan:New({}, planName)
 	end
@@ -626,10 +627,7 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 
 	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
-	ChangePlanBoss(plan.dungeonEncounterID, plan)
-	if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, plan.dungeonEncounterID) then
-		utilities.SwapPrimaryPlan(AddOn.db.profile.plans, plan.dungeonEncounterID)
-	end
+	ChangePlanBoss(plans, plan.name, plan.dungeonEncounterID)
 
 	UpdateRosterFromAssignments(plan.assignments, plan.roster)
 	UpdateRosterDataFromGroup(plan.roster)
@@ -1024,7 +1022,7 @@ do
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID or bossDungeonEncounterID
-			ChangePlanBoss(plan.dungeonEncounterID, plan)
+			ChangePlanBoss({ plan }, plan.name, plan.dungeonEncounterID)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
 			local exportString = Private:ExportPlanToNote(plan, bossDungeonEncounterID --[[@as integer]]) --[[@as string]]

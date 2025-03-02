@@ -37,6 +37,7 @@ local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
+local getmetatable, setmetatable = getmetatable, setmetatable
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetSpecialization = GetSpecialization
@@ -63,7 +64,6 @@ do
 	local GetSpecializationInfoByID = GetSpecializationInfoByID
 	local rawget = rawget
 	local rawset = rawset
-	local setmetatable = setmetatable
 	local kNumberOfClasses = 13
 
 	local caseAndWhiteSpaceInsensitiveMetaTable = {
@@ -326,29 +326,28 @@ function Utilities.Clamp(value, minValue, maxValue)
 end
 
 ---@param plans table<string, Plan>
----@param bossName string
----@param existingName string|nil
+---@param newPlanName string
 ---@return string
-function Utilities.CreateUniquePlanName(plans, bossName, existingName)
-	local newPlanName = existingName or bossName
+function Utilities.CreateUniquePlanName(plans, newPlanName)
+	local planName = newPlanName
 	if plans then
-		local baseName, suffix = newPlanName:match("^(.-)%s*(%d*)$")
+		local baseName, suffix = planName:match("^(.-)%s*(%d*)$")
 		baseName = baseName or ""
 		local num = tonumber(suffix) or 1
 
-		if plans[newPlanName] then
+		if plans[planName] then
 			num = suffix ~= "" and (num + 1) or 2
 		end
 
-		while plans[newPlanName] do
+		while plans[planName] do
 			local suffixStr = " " .. num
 			local maxBaseLength = 36 - #suffixStr
 			local truncatedBase = #baseName > 0 and baseName:sub(1, maxBaseLength) or tostring(num)
-			newPlanName = truncatedBase .. suffixStr
+			planName = truncatedBase .. suffixStr
 			num = num + 1
 		end
 	end
-	return newPlanName
+	return planName
 end
 
 ---@param assignments table<integer, Assignment>
@@ -1795,6 +1794,149 @@ function Utilities.SetAssignmentMetaTables(assignments)
 	end
 end
 
+---@param assignment CombatLogEventAssignment
+---@param dungeonEncounterID integer
+function Utilities.UpdateAssignmentBossPhase(assignment, dungeonEncounterID)
+	local castTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
+	local bossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
+	if castTimeTable and bossPhaseTable then
+		local combatLogEventSpellID = assignment.combatLogEventSpellID
+		local spellCount = assignment.spellCount
+		if castTimeTable[combatLogEventSpellID] and castTimeTable[combatLogEventSpellID][spellCount] then
+			local orderedBossPhaseIndex = castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
+			assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+			assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+		end
+	end
+end
+
+---@param plans table<string, Plan>
+---@param activePlan Plan
+---@return boolean -- True if another plan with the same dungeonEncounterID was the Designated External Plan.
+function Utilities.SetDesignatedExternalPlan(plans, activePlan)
+	local changedPrimaryPlan = false
+	for _, plan in pairs(plans) do
+		if plan.isPrimaryPlan and plan.dungeonEncounterID == activePlan.dungeonEncounterID then
+			plan.isPrimaryPlan = false
+			changedPrimaryPlan = true
+		end
+	end
+	activePlan.isPrimaryPlan = true
+	return changedPrimaryPlan
+end
+
+---@param plans table<string, Plan>
+---@param newPlanName string|nil
+---@param encounterID integer
+---@return Plan
+function Utilities.CreatePlan(plans, newPlanName, encounterID)
+	newPlanName = Utilities.CreateUniquePlanName(plans, newPlanName or L["Default"])
+	plans[newPlanName] = Plan:New({}, newPlanName)
+	Utilities.ChangePlanBoss(plans, newPlanName, encounterID)
+	return plans[newPlanName]
+end
+
+---@param plans table<string, Plan>
+---@param planToCopyName Plan
+---@param newPlanName string
+---@return Plan
+function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
+	newPlanName = Utilities.CreateUniquePlanName(plans, newPlanName)
+	local newPlan = Private.classes.Plan:New({}, newPlanName)
+	local newID = newPlan.ID
+
+	local planToCopy = plans[planToCopyName]
+	for key, value in pairs(Private.DeepCopy(planToCopy)) do
+		newPlan[key] = value
+	end
+
+	newPlan.name = newPlanName
+	newPlan.ID = newID
+	newPlan.isPrimaryPlan = false
+
+	setmetatable(newPlan, getmetatable(planToCopy))
+	Utilities.SetAssignmentMetaTables(newPlan.assignments)
+	plans[newPlanName] = newPlan
+	return newPlan
+end
+
+do
+	---@param plans table<string, Plan>
+	---@param encounterID integer
+	local function SwapDesignatedExternalPlanIfNeeded(plans, encounterID)
+		for _, plan in pairs(plans) do
+			if plan.isPrimaryPlan and plan.dungeonEncounterID == encounterID then
+				return
+			end
+		end
+		for _, plan in pairs(plans) do
+			if plan.dungeonEncounterID == encounterID then
+				plan.isPrimaryPlan = true
+				break
+			end
+		end
+	end
+
+	---@param plans table<string, Plan>
+	---@param planName string
+	---@param encounterID integer New boss dungeon encounter ID
+	function Utilities.ChangePlanBoss(plans, planName, encounterID)
+		if plans[planName] then
+			local plan = plans[planName]
+			local previousEncounterID = plan.dungeonEncounterID
+			local boss = GetBoss(encounterID)
+			if boss then
+				plan.dungeonEncounterID = boss.dungeonEncounterID
+				plan.instanceID = boss.instanceID
+				wipe(plan.customPhaseDurations)
+				wipe(plan.customPhaseCounts)
+			end
+			if previousEncounterID > 0 and previousEncounterID ~= encounterID then
+				SwapDesignatedExternalPlanIfNeeded(plans, previousEncounterID)
+			end
+		end
+		SwapDesignatedExternalPlanIfNeeded(plans, encounterID)
+	end
+
+	-- Deletes the plan from the profile. If it was the last open plan, the last open plan will be changed to either
+	-- the plan before/after the plan to delete, or a new plan will be created. Handles swapping Designated External
+	-- Plans.
+	---@param profile DefaultProfile
+	---@param planToDeleteName string
+	function Utilities.DeletePlan(profile, planToDeleteName)
+		if profile.plans[planToDeleteName] then
+			local plans = profile.plans
+			local previousPlanName, nextPlanName
+
+			local temp
+			for currentPlanName, _ in pairs(plans) do
+				if currentPlanName == planToDeleteName then
+					previousPlanName = temp
+				elseif temp == planToDeleteName then
+					nextPlanName = currentPlanName
+					break
+				end
+				temp = currentPlanName
+			end
+
+			local encounterID = plans[planToDeleteName].dungeonEncounterID
+
+			plans[planToDeleteName] = nil
+
+			if profile.lastOpenPlan == planToDeleteName then
+				if previousPlanName or nextPlanName then
+					profile.lastOpenPlan = previousPlanName or nextPlanName
+				else
+					local newPlan = Utilities.CreatePlan(profile.plans, nil, encounterID)
+					profile.lastOpenPlan = newPlan.name
+				end
+			end
+
+			SwapDesignatedExternalPlanIfNeeded(plans, encounterID)
+		end
+	end
+end
+
 ---@param regionName string|nil
 ---@return boolean
 function Utilities.IsValidRegionName(regionName)
@@ -1852,60 +1994,6 @@ do
 			cooldowns[spellID] = duration
 		end
 		return cooldowns[spellID]
-	end
-end
-
----@param plans table<string, Plan>
----@param activePlan Plan
----@return boolean -- True if another plan with the same dungeonEncounterID was the Designated External Plan.
-function Utilities.SetPrimaryPlan(plans, activePlan)
-	local changedPrimaryPlan = false
-	for _, plan in pairs(plans) do
-		if plan.isPrimaryPlan and plan.dungeonEncounterID == activePlan.dungeonEncounterID then
-			plan.isPrimaryPlan = false
-			changedPrimaryPlan = true
-		end
-	end
-	activePlan.isPrimaryPlan = true
-	return changedPrimaryPlan
-end
-
----@param plans table<string, Plan>
----@param dungeonEncounterID integer
----@return boolean -- True if a plan with the matching dungeonEncounterID is a Designated External Plan.
-function Utilities.HasPrimaryPlan(plans, dungeonEncounterID)
-	for _, plan in pairs(plans) do
-		if plan.isPrimaryPlan and plan.dungeonEncounterID == dungeonEncounterID then
-			return true
-		end
-	end
-	return false
-end
-
----@param plans table<string, Plan>
----@param dungeonEncounterID integer
-function Utilities.SwapPrimaryPlan(plans, dungeonEncounterID)
-	for _, plan in pairs(plans) do
-		if plan.dungeonEncounterID == dungeonEncounterID then
-			plan.isPrimaryPlan = true
-			break
-		end
-	end
-end
-
----@param assignment CombatLogEventAssignment
----@param dungeonEncounterID integer
-function Utilities.UpdateAssignmentBossPhase(assignment, dungeonEncounterID)
-	local castTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
-	local bossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
-	if castTimeTable and bossPhaseTable then
-		local combatLogEventSpellID = assignment.combatLogEventSpellID
-		local spellCount = assignment.spellCount
-		if castTimeTable[combatLogEventSpellID] and castTimeTable[combatLogEventSpellID][spellCount] then
-			local orderedBossPhaseIndex = castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
-			assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-			assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
-		end
 	end
 end
 
@@ -2165,12 +2253,12 @@ do
 	do
 		function test.CreateUniquePlanName()
 			local planName, newName = "", ""
-			for i = 1, 36 do
+			for _ = 1, 36 do
 				planName = planName .. "H"
 			end
 			local plans = {}
 			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			newName = Utilities.CreateUniquePlanName(plans, planName)
 			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
 			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
 
@@ -2180,19 +2268,19 @@ do
 			end
 			planName = planName .. "99"
 			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			newName = Utilities.CreateUniquePlanName(plans, planName)
 			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
 			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
 			testUtilities.TestEqual(newName:sub(34, 36), "100", "Correct number appended")
 
 			planName = "Plan Name"
 			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, "boss", planName)
+			newName = Utilities.CreateUniquePlanName(plans, planName)
 			testUtilities.TestEqual("Plan Name 2", newName, "Plan name appended with number")
 
 			planName = "Plan Name 3"
 			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, "boss", "Plan Name 4")
+			newName = Utilities.CreateUniquePlanName(plans, "Plan Name 4")
 			testUtilities.TestEqual("Plan Name 4", newName, "Plan name available and used")
 
 			return "CreateUniquePlanName"

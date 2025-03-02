@@ -265,7 +265,7 @@ do -- Profile updating and refreshing
 	local Plan = Private.classes.Plan
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
-	local ChangePlanBoss = bossUtilities.ChangePlanBoss
+	local ChangePlanBoss = utilities.ChangePlanBoss
 	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 	local GetBoss = bossUtilities.GetBoss
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
@@ -337,7 +337,7 @@ do -- Profile updating and refreshing
 
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then
-					ChangePlanBoss(constants.kDefaultBossDungeonEncounterID, plan)
+					ChangePlanBoss(profile.plans, plan.name, constants.kDefaultBossDungeonEncounterID)
 				end
 
 				local dungeonEncounterID = plan.dungeonEncounterID
@@ -393,7 +393,7 @@ do -- Profile updating and refreshing
 	end
 
 	local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
-	local UpdatePlanWidgets = interfaceUpdater.UpdatePlanWidgets
+	local RepopulatePlanWidgets = interfaceUpdater.RepopulatePlanWidgets
 
 	---@param db AceDBObject-3.0
 	---@param newProfile string|nil
@@ -408,15 +408,15 @@ do -- Profile updating and refreshing
 			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
 				local defaultPlanName = L["Default"]
 				plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
-				ChangePlanBoss(constants.kDefaultBossDungeonEncounterID, plans[defaultPlanName])
+				ChangePlanBoss(plans, defaultPlanName, constants.kDefaultBossDungeonEncounterID)
 				db.profile.lastOpenPlan = defaultPlanName
 			end
 			local timeline = Private.mainFrame.timeline
 			if timeline then
 				timeline:SetPreferences(db.profile.preferences)
 			end
-			UpdatePlanWidgets()
-			UpdateFromPlan(db.profile.lastOpenPlan)
+			RepopulatePlanWidgets()
+			UpdateFromPlan(plans[db.profile.lastOpenPlan])
 		end
 		if Private.optionsMenu then
 			Private:RecreateAnchors()

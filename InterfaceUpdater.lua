@@ -226,7 +226,8 @@ do
 		local key = abilityEntry:GetKey()
 		local removed = 0
 		if key then
-			local assignments = GetCurrentAssignments()
+			local plan = GetCurrentPlan()
+			local assignments = plan.assignments
 			if type(key) == "string" then
 				for i = #assignments, 1, -1 do
 					if assignments[i].assignee == key then
@@ -234,6 +235,7 @@ do
 						removed = removed + 1
 					end
 				end
+				plan.collapsed[key] = nil
 			elseif type(key) == "table" then
 				local assignee = key.assignee
 				local spellID = key.spellID
@@ -243,6 +245,7 @@ do
 						removed = removed + 1
 					end
 				end
+				plan.collapsed[assignee] = nil
 			end
 			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 			if bossDungeonEncounterID then
@@ -279,6 +282,7 @@ do
 	local function HandleSwapAssignee(abilityEntry, _, newAssignee)
 		local key = abilityEntry:GetKey()
 		if key then
+			local plan = GetCurrentPlan()
 			local assignments = GetCurrentAssignments()
 			if type(key) == "string" then
 				for _, assignment in ipairs(assignments) do
@@ -286,6 +290,7 @@ do
 						assignment.assignee = newAssignee
 					end
 				end
+				plan.collapsed[key] = nil
 			elseif type(key) == "table" then
 				local assignee = key.assignee
 				local spellID = key.spellID
@@ -294,6 +299,7 @@ do
 						assignment.assignee = newAssignee
 					end
 				end
+				plan.collapsed[assignee] = nil
 			end
 			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 			if bossDungeonEncounterID then
@@ -521,13 +527,13 @@ function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDu
 	end
 end
 
----@param planName string
-function InterfaceUpdater.UpdateFromPlan(planName)
+-- Releases the assignment editor, updates boss and assignments, and updates plan checkboxes.
+---@param plan Plan
+function InterfaceUpdater.UpdateFromPlan(plan)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
 	if Private.mainFrame then
-		local plan = AddOn.db.profile.plans[planName] --[[@as Plan]]
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
@@ -546,20 +552,24 @@ do
 	local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
 	local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 
-	---@param planName string
-	function InterfaceUpdater.UpdatePrimaryPlanCheckBox(planName)
+	---@param plan Plan
+	function InterfaceUpdater.UpdatePlanCheckBoxes(plan)
 		if Private.mainFrame then
 			local primaryPlanCheckBox = Private.mainFrame.primaryPlanCheckBox
 			if primaryPlanCheckBox then
-				local isPrimary = AddOn.db.profile.plans[planName].isPrimaryPlan
+				local isPrimary = plan.isPrimaryPlan
 				primaryPlanCheckBox:SetChecked(isPrimary)
 				primaryPlanCheckBox:SetEnabled(not isPrimary)
+			end
+			local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
+			if planReminderEnableCheckBox then
+				planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
 			end
 		end
 	end
 
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
-	function InterfaceUpdater.UpdatePlanWidgets()
+	function InterfaceUpdater.RepopulatePlanWidgets()
 		if Private.mainFrame then
 			local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 			local planDropdown = Private.mainFrame.planDropdown
@@ -579,39 +589,30 @@ do
 				planDropdown:Sort()
 				planDropdown:SetValue(lastOpenPlan)
 			end
-			local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
-			if planReminderEnableCheckBox then
-				local enabled = AddOn.db.profile.plans[lastOpenPlan].remindersEnabled
-				planReminderEnableCheckBox:SetChecked(enabled)
-			end
-			InterfaceUpdater.UpdatePrimaryPlanCheckBox(lastOpenPlan)
+			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])
 		end
 	end
 
 	-- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
-	---@param planName string
+	---@param plan Plan
 	---@param select boolean
-	function InterfaceUpdater.AddPlanToDropdown(planName, select)
+	function InterfaceUpdater.AddPlanToDropdown(plan, select)
 		if Private.mainFrame then
 			local planDropdown = Private.mainFrame.planDropdown
 			if planDropdown then
-				local item, _ = planDropdown:FindItemAndText(planName)
-				local enabled = AddOn.db.profile.plans[planName].remindersEnabled
+				local item, _ = planDropdown:FindItemAndText(plan.name)
+				local enabled = plan.remindersEnabled
 				if not item then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-					planDropdown:AddItem(planName, planName, "EPDropdownItemToggle", nil, false, customTexture, color)
+					planDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle", nil, false, customTexture, color)
 					planDropdown:Sort()
 				end
 				if select then
-					planDropdown:SetValue(planName)
-					local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
-					if planReminderEnableCheckBox then
-						planReminderEnableCheckBox:SetChecked(enabled)
-					end
+					planDropdown:SetValue(plan.name)
 				end
 			end
-			InterfaceUpdater.UpdatePrimaryPlanCheckBox(planName)
+			InterfaceUpdater.UpdatePlanCheckBoxes(plan)
 		end
 	end
 

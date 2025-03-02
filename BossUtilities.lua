@@ -548,18 +548,6 @@ function BossUtilities.SetPhaseDurations(encounterID, phaseDurations)
 	end
 end
 
----@param encounterID integer Boss dungeon encounter ID
----@param plan Plan
-function BossUtilities.ChangePlanBoss(encounterID, plan)
-	local boss = BossUtilities.GetBoss(encounterID)
-	if boss then
-		plan.dungeonEncounterID = boss.dungeonEncounterID
-		plan.instanceID = boss.instanceID
-		wipe(plan.customPhaseDurations)
-		wipe(plan.customPhaseCounts)
-	end
-end
-
 ---@param time number Time relative to the combat log event
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer Combat log event spell ID

@@ -25,6 +25,7 @@ local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
+local ChangePlanBoss = utilities.ChangePlanBoss
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
 local CreateReminderText = utilities.CreateReminderText
@@ -40,7 +41,6 @@ local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
-local ChangePlanBoss = bossUtilities.ChangePlanBoss
 local ConvertAbsoluteTimeToCombatLogEventTime = bossUtilities.ConvertAbsoluteTimeToCombatLogEventTime
 local ConvertAssignmentsToNewBoss = bossUtilities.ConvertAssignmentsToNewBoss
 local GetBoss = bossUtilities.GetBoss
@@ -52,8 +52,6 @@ local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
 local CreateMessageBox = interfaceUpdater.CreateMessageBox
 local UpdateAllAssignments = interfaceUpdater.UpdateAllAssignments
 local UpdateBoss = interfaceUpdater.UpdateBoss
-local UpdatePlanDropdownItemCustomTexture = interfaceUpdater.UpdatePlanDropdownItemCustomTexture
-local UpdatePlanWidgets = interfaceUpdater.UpdatePlanWidgets
 
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
@@ -869,13 +867,8 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, convers
 		if conversionMethod then
 			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod)
 		end
-		ChangePlanBoss(newBossDungeonEncounterID, plan)
-		if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID) then
-			utilities.SwapPrimaryPlan(AddOn.db.profile.plans, currentBossDungeonEncounterID)
-		end
-		if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, newBossDungeonEncounterID) then
-			utilities.SwapPrimaryPlan(AddOn.db.profile.plans, newBossDungeonEncounterID)
-		end
+		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID)
+		interfaceUpdater.UpdatePlanCheckBoxes(plan)
 		UpdateBoss(newBossDungeonEncounterID, true)
 		UpdateAllAssignments(false, newBossDungeonEncounterID)
 	end
@@ -964,14 +957,13 @@ local function HandlePlanDropdownValueChanged(_, _, value)
 
 	UpdateBoss(bossDungeonEncounterID, true)
 	UpdateAllAssignments(true, bossDungeonEncounterID)
-	Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
-	interfaceUpdater.UpdatePrimaryPlanCheckBox(plan.name)
+	interfaceUpdater.UpdatePlanCheckBoxes(plan)
 	Private.mainFrame:DoLayout()
 end
 
 ---@param lineEdit EPLineEdit
 ---@param value string
-local function HandlePlanTextSubmitted(lineEdit, _, value)
+local function HandlePlanNameChanged(lineEdit, _, value)
 	local currentPlanName = AddOn.db.profile.lastOpenPlan
 	if value:gsub("%s", "") == "" then
 		lineEdit:SetText(currentPlanName)
@@ -1130,7 +1122,7 @@ do -- Plan Menu Button Handlers
 			true,
 			L["Overwrite Current Plan"],
 			L["New Plan Name:"],
-			CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name, AddOn.db.profile.lastOpenPlan)
+			CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name)
 		)
 		Private.importEditBox:SetCallback("OkayButtonClicked", function(widget)
 			local planName = widget.lineEdit:GetText()
@@ -1149,62 +1141,29 @@ do -- Plan Menu Button Handlers
 		ClosePlanDependentWidgets()
 		local plans = AddOn.db.profile.plans
 		local planToDuplicateName = AddOn.db.profile.lastOpenPlan
-		local planToDuplicate = plans[planToDuplicateName]
-		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-		local bossName = GetBossName(bossDungeonEncounterID) --[[@as string]]
-		local newPlanName = CreateUniquePlanName(plans, bossName, planToDuplicateName)
-		local newPlan = Private.DuplicatePlan(planToDuplicate, newPlanName)
-		newPlan.isPrimaryPlan = false
-		plans[newPlanName] = newPlan
-		AddOn.db.profile.lastOpenPlan = newPlanName
-		ChangePlanBoss(bossDungeonEncounterID, newPlan)
-		UpdateAllAssignments(true, bossDungeonEncounterID)
-		AddPlanToDropdown(newPlanName, true)
+
+		local newPlan = utilities.DuplicatePlan(plans, planToDuplicateName, planToDuplicateName)
+		AddOn.db.profile.lastOpenPlan = newPlan.name
+
+		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		AddPlanToDropdown(newPlan, true)
 	end
 
 	local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 
 	local function HandleDeleteCurrentPlanButtonClicked()
 		ClosePlanDependentWidgets()
-		local beforeRemovalCount = 0
-		local plans = AddOn.db.profile.plans ---@type table<string, Plan>
-		for _, _ in pairs(plans) do
-			beforeRemovalCount = beforeRemovalCount + 1
-		end
+		local lastOpenPlanName = AddOn.db.profile.lastOpenPlan --[[@as string]]
+		utilities.DeletePlan(AddOn.db.profile, lastOpenPlanName)
+		RemovePlanFromDropdown(lastOpenPlanName)
 
-		local wasPrimaryPlan = false
-		local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-		local lastBossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
-		if lastOpenPlan then
-			wasPrimaryPlan = plans[lastOpenPlan].isPrimaryPlan
-			plans[lastOpenPlan] = nil
-			RemovePlanFromDropdown(lastOpenPlan)
-		end
-		if beforeRemovalCount > 1 then
-			if wasPrimaryPlan then
-				if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, lastBossDungeonEncounterID) then
-					utilities.SwapPrimaryPlan(AddOn.db.profile.plans, lastBossDungeonEncounterID)
-				end
-			end
-			for name, _ in pairs(plans) do
-				AddOn.db.profile.lastOpenPlan = name
-				local bossDungeonEncounterID = plans[name].dungeonEncounterID
-				if bossDungeonEncounterID then
-					UpdateBoss(bossDungeonEncounterID, true)
-				end
-				break
-			end
-		else
-			local newPlanName = L["Default"]
-			plans[newPlanName] = Plan:New({}, newPlanName)
-			plans[newPlanName].isPrimaryPlan = true
-			AddOn.db.profile.lastOpenPlan = newPlanName
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-			ChangePlanBoss(bossDungeonEncounterID, plans[newPlanName])
-		end
-		local newLastOpenPlan = AddOn.db.profile.lastOpenPlan
-		AddPlanToDropdown(newLastOpenPlan, true)
-		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		local newLastOpenPlanName = AddOn.db.profile.lastOpenPlan --[[@as string]]
+		local newLastOpenPlan = AddOn.db.profile.plans[newLastOpenPlanName]
+		AddPlanToDropdown(newLastOpenPlan, true) -- Won't add duplicate, updates plan checkboxes
+
+		local newEncounterID = newLastOpenPlan.dungeonEncounterID
+		UpdateBoss(newEncounterID, true)
+		UpdateAllAssignments(true, newEncounterID)
 	end
 
 	---@param importType string
@@ -1216,11 +1175,12 @@ do -- Plan Menu Button Handlers
 					local text = VMRT.Note.Text1
 					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 					local bossName = GetBossName(bossDungeonEncounterID)
-					local newPlanName = CreateUniquePlanName(AddOn.db.profile.plans, bossName --[[@as string]])
+					local plans = AddOn.db.profile.plans
+					local newPlanName = CreateUniquePlanName(plans, bossName --[[@as string]])
 					bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
 					AddOn.db.profile.lastOpenPlan = newPlanName
-					AddPlanToDropdown(newPlanName, true)
+					AddPlanToDropdown(plans[newPlanName], true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
@@ -1273,14 +1233,9 @@ do -- Plan Menu Button Handlers
 				else
 					ClosePlanDependentWidgets()
 					widget:Release()
-					local plans = AddOn.db.profile.plans
-					plans[planName] = Plan:New(nil, planName)
-					AddOn.db.profile.lastOpenPlan = planName
-					ChangePlanBoss(bossDungeonEncounterID, plans[planName])
-					if not utilities.HasPrimaryPlan(plans, bossDungeonEncounterID) then
-						utilities.SwapPrimaryPlan(plans, bossDungeonEncounterID)
-					end
-					AddPlanToDropdown(planName, true)
+					local newPlan = utilities.CreatePlan(AddOn.db.profile.plans, planName, bossDungeonEncounterID)
+					AddOn.db.profile.lastOpenPlan = newPlan.name
+					AddPlanToDropdown(newPlan, true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
@@ -1301,9 +1256,7 @@ do -- Plan Menu Button Handlers
 			newPlanDialog:Resize()
 			newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
 			local bossName = GetBossName(bossDungeonEncounterID) --[[@as string]]
-			newPlanDialog:SetPlanNameLineEditText(
-				CreateUniquePlanName(AddOn.db.profile.plans, bossName, AddOn.db.profile.lastOpenPlan)
-			)
+			newPlanDialog:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, bossName))
 			Private.newPlanDialog = newPlanDialog
 		end
 	end
@@ -1473,15 +1426,15 @@ local function HandlePlanReminderEnableCheckBoxValueChanged(_, _, value)
 	local planName = AddOn.db.profile.lastOpenPlan
 	local plan = AddOn.db.profile.plans[planName]
 	plan.remindersEnabled = value
-	UpdatePlanDropdownItemCustomTexture(planName, value)
+	interfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, value)
 end
 
 local function HandlePrimaryPlanCheckBoxValueChanged()
 	local planName = AddOn.db.profile.lastOpenPlan
 	local plans = AddOn.db.profile.plans
 	local plan = plans[planName]
-	utilities.SetPrimaryPlan(plans, plan)
-	interfaceUpdater.UpdatePrimaryPlanCheckBox(planName)
+	utilities.SetDesignatedExternalPlan(plans, plan)
+	interfaceUpdater.UpdatePlanCheckBoxes(plan)
 end
 
 ---@param timelineAssignment TimelineAssignment
@@ -1658,28 +1611,11 @@ function Private:CreateInterface()
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 
-	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
-
 	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
 		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
 		local defaultPlanName = L["Default"]
-		if (MRTLoadingOrLoaded or MRTLoaded) and VMRT and VMRT.Note then
-			local text = VMRT.Note.Text1
-			if text then
-				local newDungeonEncounterID = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, text)
-				if newDungeonEncounterID then
-					bossDungeonEncounterID = newDungeonEncounterID
-				end
-			end
-		end
-		if not plans[defaultPlanName] then
-			plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
-			ChangePlanBoss(bossDungeonEncounterID, plans[defaultPlanName])
-		end
-		if not utilities.HasPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID) then
-			utilities.SwapPrimaryPlan(AddOn.db.profile.plans, bossDungeonEncounterID)
-		end
+		utilities.CreatePlan(plans, defaultPlanName, bossDungeonEncounterID)
 		AddOn.db.profile.lastOpenPlan = defaultPlanName
 	end
 
@@ -1700,6 +1636,7 @@ function Private:CreateInterface()
 	local planMenuButton = Create.MenuButton(L["Plan"])
 	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
+	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
 	local bossMenuButton = Create.MenuButton(L["Boss"])
@@ -1797,7 +1734,7 @@ function Private:CreateInterface()
 	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
 	planDropdown:SetMaxVisibleItems(defaultMaxVisibleDropdownItems)
-	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanTextSubmitted)
+	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanNameChanged)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 
 	local planContainer = AceGUI:Create("EPContainer")
@@ -1910,7 +1847,7 @@ function Private:CreateInterface()
 	Private.mainFrame:AddChildren(topContainer, timeline)
 	Private.mainFrame.menuButtonContainer:DoLayout()
 
-	UpdatePlanWidgets()
+	interfaceUpdater.RepopulatePlanWidgets()
 	UpdateBoss(bossDungeonEncounterID, true)
 	UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	UpdateRosterDataFromGroup(GetCurrentRoster())

@@ -15,11 +15,7 @@ local kDistributeText = constants.communications.kDistributeText
 ---@class Utilities
 local utilities = Private.utilities
 local CreateUniquePlanName = utilities.CreateUniquePlanName
-local SetPrimaryPlan = utilities.SetPrimaryPlan
-
----@class BossUtilities
-local bossUtilities = Private.bossUtilities
-local GetBossName = bossUtilities.GetBossName
+local SetDesignatedExternalPlan = utilities.SetDesignatedExternalPlan
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
@@ -239,8 +235,7 @@ local function StringToTable(inString, fromChat)
 		return L["Error decompressing"]
 	end
 
-	---@diagnostic disable-next-line: undefined-field
-	local deserialized = Private.Decode(decompressed)
+	local deserialized = Decode(decompressed)
 	return deserialized
 end
 
@@ -263,8 +258,7 @@ local function ImportPlan(plan, fullName)
 		importInfo = format("%s '%s'", L["Updated matching plan"], existingPlanName)
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
-			local bossName = GetBossName(plan.dungeonEncounterID) --[[@as string]]
-			plan.name = CreateUniquePlanName(plans, bossName, plan.name)
+			plan.name = CreateUniquePlanName(plans, plan.name)
 		end
 		plans[plan.name] = plan
 		importInfo = format("%s '%s'", L["Imported plan as"], plan.name)
@@ -274,7 +268,7 @@ local function ImportPlan(plan, fullName)
 	LogMessage(importInfo)
 
 	if IsInRaid() then
-		local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
+		local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
 		if changedPrimaryPlan then
 			LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
 		end
@@ -288,10 +282,10 @@ local function ImportPlan(plan, fullName)
 		local currentPlanName = Private.mainFrame.planDropdown:GetValue()
 		if currentPlanName == existingPlanName or currentPlanName == plan.name then
 			AddOn.db.profile.lastOpenPlan = plan.name
-			AddPlanToDropdown(plan.name, true)
-			UpdateFromPlan(plan.name) -- Only update if current plan is the imported plan
+			AddPlanToDropdown(plan, true)
+			UpdateFromPlan(plan) -- Only update if current plan is the imported plan
 		else
-			AddPlanToDropdown(plan.name, false)
+			AddPlanToDropdown(plan, false)
 		end
 	end
 end
@@ -499,9 +493,9 @@ do
 		local groupType = GetGroupType()
 		if groupType then
 			if groupType == "RAID" then
-				local changedPrimaryPlan = SetPrimaryPlan(plans, plan)
+				local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
+				interfaceUpdater.UpdatePlanCheckBoxes(plan)
 				if changedPrimaryPlan then
-					interfaceUpdater.UpdatePrimaryPlanCheckBox(plan.name)
 					LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
 				end
 			end
@@ -552,6 +546,8 @@ end
 
 --@debug@
 do
+	---@class BossUtilities
+	local bossUtilities = Private.bossUtilities
 	---@class Plan
 	local Plan = Private.classes.Plan
 	---@class Test
@@ -559,7 +555,7 @@ do
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
-	local ChangePlanBoss = bossUtilities.ChangePlanBoss
+	local ChangePlanBoss = utilities.ChangePlanBoss
 	local RemoveTabs = testUtilities.RemoveTabs
 	local SplitStringIntoTable = utilities.SplitStringIntoTable
 	local TestEqual = testUtilities.TestEqual
@@ -623,12 +619,13 @@ do
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = Private.ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID
-			ChangePlanBoss(plan.dungeonEncounterID, plan)
+			ChangePlanBoss({ plan }, plan.name, plan.dungeonEncounterID)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
 			local export = TableToString(planSerializer.SerializePlan(plan), false)
 			local package = StringToTable(export, false)
 			local deserializedPlan = planSerializer.DeserializePlan(package --[[@as table]])
+			deserializedPlan.isPrimaryPlan = true
 			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
 
 			return "EncodeDecodePlan"
