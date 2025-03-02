@@ -1429,12 +1429,57 @@ local function HandlePlanReminderEnableCheckBoxValueChanged(_, _, value)
 	interfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, value)
 end
 
+---@param checkBoxOrButton EPCheckBox|EPButton
+local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
+	local preferences = AddOn.db.profile.preferences --[[@as Preferences]]
+	if preferences.reminder.enabled == false then
+		local tooltip = Private.tooltip
+		tooltip:SetOwner(checkBoxOrButton.frame, "ANCHOR_TOP")
+		local isCheckBox = checkBoxOrButton.type == "EPCheckBox"
+		local title, text
+
+		if isCheckBox then
+			title = L["Plan Reminders"]
+			text =
+				L["Reminders are currently disabled globally. Enable them in Preferences to modify this plan’s reminder setting."]
+		else
+			title = L["Simulate Reminders"]
+			text = L["Reminders are currently disabled globally. Enable them in Preferences to simulate them."]
+		end
+		tooltip:SetText(title, 1, 0.82, 0, true)
+		tooltip:AddLine(text, 1, 1, 1, true)
+		tooltip:Show()
+	end
+end
+
+local function HandlePlanReminderEnableCheckBoxOrButtonLeave()
+	Private.tooltip:ClearLines()
+	Private.tooltip:Hide()
+end
+
 local function HandlePrimaryPlanCheckBoxValueChanged()
 	local planName = AddOn.db.profile.lastOpenPlan
 	local plans = AddOn.db.profile.plans
 	local plan = plans[planName]
 	utilities.SetDesignatedExternalPlan(plans, plan)
 	interfaceUpdater.UpdatePlanCheckBoxes(plan)
+end
+
+---@param checkBox EPCheckBox
+local function HandlePrimaryPlanCheckBoxEnter(checkBox)
+	local tooltip = Private.tooltip
+	tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
+	local title = L["Designated External Plan"]
+	local text =
+		L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."]
+	tooltip:SetText(title, 1, 0.82, 0, true)
+	tooltip:AddLine(text, 1, 1, 1, true)
+	tooltip:Show()
+end
+
+local function HandlePrimaryPlanCheckBoxLeave()
+	Private.tooltip:ClearLines()
+	Private.tooltip:Hide()
 end
 
 ---@param timelineAssignment TimelineAssignment
@@ -1752,12 +1797,19 @@ function Private:CreateInterface()
 	planReminderEnableCheckBox:SetHeight(topContainerWidgetHeight)
 	planReminderEnableCheckBox:SetFrameWidthFromText()
 	planReminderEnableCheckBox:SetCallback("OnValueChanged", HandlePlanReminderEnableCheckBoxValueChanged)
+	planReminderEnableCheckBox:SetCallback("OnEnter", HandlePlanReminderCheckBoxOrButtonEnter)
+	planReminderEnableCheckBox:SetCallback("OnLeave", HandlePlanReminderEnableCheckBoxOrButtonLeave)
+	planReminderEnableCheckBox.fireEventsIfDisabled = true
+	planReminderEnableCheckBox.button.fireEventsIfDisabled = true
 
 	local simulateRemindersButton = AceGUI:Create("EPButton")
 	simulateRemindersButton:SetText(L["Simulate Reminders"])
 	simulateRemindersButton:SetWidthFromText()
 	simulateRemindersButton:SetHeight(topContainerWidgetHeight)
 	simulateRemindersButton:SetCallback("Clicked", HandleSimulateRemindersButtonClicked)
+	simulateRemindersButton:SetCallback("OnEnter", HandlePlanReminderCheckBoxOrButtonEnter)
+	simulateRemindersButton:SetCallback("OnLeave", HandlePlanReminderEnableCheckBoxOrButtonLeave)
+	simulateRemindersButton.fireEventsIfDisabled = true
 
 	width = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
 	planReminderEnableCheckBox:SetWidth(width)
@@ -1792,6 +1844,10 @@ function Private:CreateInterface()
 	primaryPlanCheckBox:SetHeight(topContainerWidgetHeight)
 	primaryPlanCheckBox:SetFrameWidthFromText()
 	primaryPlanCheckBox:SetCallback("OnValueChanged", HandlePrimaryPlanCheckBoxValueChanged)
+	primaryPlanCheckBox:SetCallback("OnEnter", HandlePrimaryPlanCheckBoxEnter)
+	primaryPlanCheckBox:SetCallback("OnLeave", HandlePrimaryPlanCheckBoxLeave)
+	primaryPlanCheckBox.fireEventsIfDisabled = true
+	primaryPlanCheckBox.button.fireEventsIfDisabled = true
 
 	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
 	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")

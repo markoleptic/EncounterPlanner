@@ -561,9 +561,15 @@ do
 				primaryPlanCheckBox:SetChecked(isPrimary)
 				primaryPlanCheckBox:SetEnabled(not isPrimary)
 			end
+			local preferences = AddOn.db.profile.preferences --[[@as Preferences]]
 			local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
 			if planReminderEnableCheckBox then
 				planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
+				planReminderEnableCheckBox:SetEnabled(preferences.reminder.enabled)
+			end
+			local simulateReminderButton = Private.mainFrame.simulateRemindersButton
+			if simulateReminderButton then
+				simulateReminderButton:SetEnabled(preferences.reminder.enabled)
 			end
 		end
 	end
