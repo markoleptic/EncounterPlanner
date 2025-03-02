@@ -364,7 +364,7 @@ local function GlowFrameAndCreateTimer(unit, frame, assignment)
 	LCG.PixelGlow_Start(frame)
 end
 
--- Executes the actions that occur at the time in which reminders are first displayed. This is usually at advance notice
+-- Executes the actions that occur at the time in which reminders are first displayed. This is usually at countdown start
 -- time before the assignment, but can also be sooner if towards the start of the encounter. Creates timers for actions
 -- that occur at assignment time.
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
@@ -384,15 +384,15 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	if reminderPreferences.messages.enabled and not reminderPreferences.messages.showOnlyAtExpiration then
 		AddMessage(assignment, duration, reminderText, icon, reminderPreferences.messages)
 	end
-	if ttsPreferences.enableAtAdvanceNotice then
+	if ttsPreferences.enableAtCountdownStart then
 		if reminderText:len() > 0 then
-			local textWithAdvanceNotice = format("%s %s %d", reminderText, L["in"], floor(duration))
-			SpeakText(ttsPreferences.voiceID, textWithAdvanceNotice, 1, 1.0, ttsPreferences.volume)
+			local textWithCountdown = format("%s %s %d", reminderText, L["in"], floor(duration))
+			SpeakText(ttsPreferences.voiceID, textWithCountdown, 1, 1.0, ttsPreferences.volume)
 		end
 	end
-	if soundPreferences.enableAtAdvanceNotice then
-		if soundPreferences.advanceNoticeSound and soundPreferences.advanceNoticeSound ~= "" then
-			PlaySoundFile(soundPreferences.advanceNoticeSound)
+	if soundPreferences.enableAtCountdownStart then
+		if soundPreferences.countdownStartSound and soundPreferences.countdownStartSound ~= "" then
+			PlaySoundFile(soundPreferences.countdownStartSound)
 		end
 	end
 
@@ -404,16 +404,20 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 			AddMessage(assignment, 0, reminderText, icon, reminderPreferences.messages)
 		end
 	end
-	if ttsPreferences.enableAtTime then
+	if ttsPreferences.enableAtCountdownEnd then
 		if reminderText:len() > 0 then
 			deferredFunctions[#deferredFunctions + 1] = function()
 				SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
 			end
 		end
 	end
-	if soundPreferences.enableAtTime and soundPreferences.atSound and soundPreferences.atSound ~= "" then
+	if
+		soundPreferences.enableAtCountdownEnd
+		and soundPreferences.countdownEndSound
+		and soundPreferences.countdownEndSound ~= ""
+	then
 		deferredFunctions[#deferredFunctions + 1] = function()
-			PlaySoundFile(soundPreferences.atSound)
+			PlaySoundFile(soundPreferences.countdownEndSound)
 		end
 	end
 	if reminderPreferences.glowTargetFrame and assignment.targetName ~= "" then
@@ -443,7 +447,7 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
-	local duration = reminderPreferences.advanceNotice
+	local duration = reminderPreferences.countdownLength
 	local startTime = assignment.time - duration - elapsed
 
 	if startTime < 0 then

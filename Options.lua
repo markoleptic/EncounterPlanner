@@ -157,6 +157,11 @@ local function GetCurrentProfile()
 	return AddOn.db:GetCurrentProfile()
 end
 
+---@return Plan
+local function GetCurrentPlan()
+	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+end
+
 ---@param noCurrent boolean
 ---@return table<integer, DropdownItemData>
 local function GetProfiles(noCurrent)
@@ -201,7 +206,7 @@ do
 
 	local function AddSecondAndThirdProgressBarsDelayed()
 		isAddingProgressBars = true
-		local secondTimerDuration = GetReminderPreferences().advanceNotice * kGenericTimerMultiplier
+		local secondTimerDuration = GetReminderPreferences().countdownLength * kGenericTimerMultiplier
 		local thirdTimerDuration = secondTimerDuration * 2.0
 		AddDelayedProgressBar(secondTimerDuration)
 		AddDelayedProgressBar(thirdTimerDuration)
@@ -215,13 +220,13 @@ do
 			progressBar:Set(
 				preferences,
 				L["Progress Bar Text"],
-				reminderPreferences.advanceNotice,
+				reminderPreferences.countdownLength,
 				[[Interface\Icons\INV_MISC_QUESTIONMARK]]
 			)
 			progressBar:SetCallback("Completed", function(widget)
 				if progressBarAnchor then
 					if not isAddingProgressBars and #progressBarAnchor.children == 1 then
-						widget:SetDuration(GetReminderPreferences().advanceNotice)
+						widget:SetDuration(GetReminderPreferences().countdownLength)
 						widget:Start()
 
 						AddSecondAndThirdProgressBarsDelayed()
@@ -302,7 +307,7 @@ do
 			AddMessageDelayed(secondTimerDurationNoCountdown)
 			AddMessageDelayed(thirdTimerDurationNoCountdown)
 		else
-			local secondTimerDuration = reminderPreferences.advanceNotice * kGenericTimerMultiplier
+			local secondTimerDuration = reminderPreferences.countdownLength * kGenericTimerMultiplier
 			local thirdTimerDuration = secondTimerDuration * 2.0
 			AddMessageDelayed(secondTimerDuration)
 			AddMessageDelayed(thirdTimerDuration)
@@ -320,7 +325,7 @@ do
 				if messageAnchor then
 					if not isAddingMessages and #messageAnchor.children == 1 then
 						local p = GetReminderPreferences()
-						widget:Start(p.messages.showOnlyAtExpiration and 0 or p.advanceNotice)
+						widget:Start(p.messages.showOnlyAtExpiration and 0 or p.countdownLength)
 						AddSecondAndThirdMessagesDelayed()
 					else
 						if mouseIsDown then
@@ -348,7 +353,7 @@ do
 			else
 				messageAnchor:AddChild(message)
 			end
-			message:Start(preferences.showOnlyAtExpiration and 0 or reminderPreferences.advanceNotice)
+			message:Start(preferences.showOnlyAtExpiration and 0 or reminderPreferences.countdownLength)
 
 			if #messageAnchor.children >= 3 then
 				isAddingMessages = false
@@ -782,8 +787,8 @@ do
 		local kMaxProgressBarHeight = 100.0
 		local kMinSpacing = -1
 		local kMaxSpacing = 100
-		local kMinAdvanceNotice = 2.0
-		local kMaxAdvanceNotice = 30.0
+		local kMinCountdownLength = 2.0
+		local kMaxCountdownLength = 30.0
 		local kMinFontSize = 8
 		local kMaxFontSize = 64
 		local kMaxVolume = 100.0
@@ -801,9 +806,13 @@ do
 					if type(key) == "boolean" then
 						local preferences = GetReminderPreferences()
 						if key ~= preferences.enabled then
+							preferences.enabled = key
 							if key == true then
 								Private:RegisterReminderEvents()
 							else
+								if Private.IsSimulatingBoss() then
+									Private:StopSimulatingBoss()
+								end
 								Private:UnregisterReminderEvents()
 								if messageAnchor and messageAnchor.frame:IsShown() then
 									HideAnchor(false)
@@ -812,6 +821,7 @@ do
 									HideAnchor(true)
 								end
 							end
+							interfaceUpdater.UpdatePlanCheckBoxes(GetCurrentPlan())
 						end
 						preferences.enabled = key
 					end
@@ -862,7 +872,7 @@ do
 			{
 				label = L["Glow Frame for Targeted Spells"],
 				type = "checkBox",
-				description = L["Glows the unit frame of the target at assignment time. If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds. Otherwise, shows for 5 seconds."],
+				description = L["Glows the unit frame of the target at the end of the countdown. If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds. Otherwise, shows for 5 seconds."],
 				enabled = enableReminderOption,
 				get = function()
 					return GetReminderPreferences().glowTargetFrame
@@ -874,29 +884,29 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Reminder Advance Notice"],
+				label = L["Countdown Length"],
 				type = "lineEdit",
-				description = L["How far ahead of assignment time to begin showing reminders."],
+				description = L["How far ahead to begin showing reminders."],
 				get = function()
-					return tostring(GetReminderPreferences().advanceNotice)
+					return tostring(GetReminderPreferences().countdownLength)
 				end,
 				set = function(key)
 					local value = tonumber(key)
 					if value then
-						GetReminderPreferences().advanceNotice = value
+						GetReminderPreferences().countdownLength = value
 						progressBarManager:AddProgressBarsOnTimer()
 					end
 				end,
 				validate = function(value)
 					local numericValue = tonumber(value)
 					if numericValue then
-						if numericValue > kMinAdvanceNotice and numericValue < kMaxAdvanceNotice then
+						if numericValue > kMinCountdownLength and numericValue < kMaxCountdownLength then
 							return true
 						else
-							return false, Clamp(numericValue, kMinAdvanceNotice, kMaxAdvanceNotice)
+							return false, Clamp(numericValue, kMinCountdownLength, kMaxCountdownLength)
 						end
 					else
-						return false, GetReminderPreferences().advanceNotice
+						return false, GetReminderPreferences().countdownLength
 					end
 				end,
 				enabled = enableReminderOption,
@@ -937,8 +947,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Message Visibility"],
+				labels = { L["Expiration Only"], L["With Countdown"] },
 				type = "radioButtonGroup",
-				description = L["Whether to show Messages only at expiration or show them for the duration of the countdown."],
+				descriptions = {
+					L["Only shows Messages at the end of the countdown. Messages are displayed for 2 seconds before fading for 1.2 seconds."],
+					L["Messages are displayed for the duration of the countdown, including time, before fading for 1.2 seconds."],
+				},
 				category = L["Messages"],
 				values = {
 					{ itemValue = "expirationOnly", text = L["Expiration Only"] },
@@ -1035,8 +1049,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Message Order"],
+				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
 				type = "radioButtonGroup",
-				description = L["Whether to sort Messages by ascending or descending expiration time."],
+				descriptions = {
+					L["Sorts Messages by ascending expiration time."],
+					L["Sorts Messages by descending expiration time."],
+				},
 				category = L["Messages"],
 				values = sortingValues,
 				get = function()
@@ -1318,8 +1336,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Bar Order"],
+				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
 				type = "radioButtonGroup",
-				description = L["Whether to sort Messages by ascending or descending expiration time."],
+				descriptions = {
+					L["Sorts Progress Bars by ascending expiration time."],
+					L["Sorts Progress Bars by descending expiration time."],
+				},
 				category = L["Progress Bars"],
 				values = sortingValues,
 				get = function()
@@ -1489,8 +1511,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Icon Position"],
+				labels = { L["Left"], L["Right"] },
 				type = "radioButtonGroup",
-				description = L["Which side to place the icon for Progress Bars."],
+				descriptions = {
+					L["Icon on left, text and duration on right."],
+					L["Icon on right, text and duration on left."],
+				},
 				category = L["Progress Bars"],
 				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
 				get = function()
@@ -1508,8 +1534,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Duration Position"],
+				labels = { L["Left"], L["Right"] },
 				type = "radioButtonGroup",
-				description = L["Position of Progress Bar duration text."],
+				descriptions = {
+					L["Duration to the left of text."],
+					L["Duration to the right of text."],
+				},
 				category = L["Progress Bars"],
 				values = {
 					{ itemValue = "LEFT", text = L["Left"] },
@@ -1530,8 +1560,12 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Bar Progress Type"],
+				labels = { L["Fill"], L["Drain"] },
 				type = "radioButtonGroup",
-				description = L["Whether to fill or drain Progress Bars."],
+				descriptions = {
+					L["Fills Progress Bars from left to right as the countdown progresses."],
+					L["Drains Progress Bars from right to left as the countdown progresses."],
+				},
 				category = L["Progress Bars"],
 				values = { { itemValue = "fill", text = L["Fill"] }, { itemValue = "drain", text = L["Drain"] } },
 				get = function()
@@ -1782,31 +1816,31 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Play Text to Speech at Advance Notice"],
+				label = L["Play Text to Speech at Countdown Start"],
 				type = "checkBox",
-				description = L["Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds)."],
+				description = L["Whether to play text to speech sound at the start of the countdown (i.e. Spell in x seconds)."],
 				category = L["Text to Speech"],
 				get = function()
-					return GetReminderPreferences().textToSpeech.enableAtAdvanceNotice
+					return GetReminderPreferences().textToSpeech.enableAtCountdownStart
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						GetReminderPreferences().textToSpeech.enableAtAdvanceNotice = key
+						GetReminderPreferences().textToSpeech.enableAtCountdownStart = key
 					end
 				end,
 				enabled = enableReminderOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Play Text to Speech at Assignment Time"],
+				label = L["Play Text to Speech at Countdown End"],
 				type = "checkBox",
-				description = L["Whether to play text to speech sound at assignment time (i.e. Spell in x seconds)."],
+				description = L["Whether to play text to speech sound at the end of the countdown (i.e. speak spell or text)."],
 				category = L["Text to Speech"],
 				get = function()
-					return GetReminderPreferences().textToSpeech.enableAtTime
+					return GetReminderPreferences().textToSpeech.enableAtCountdownEnd
 				end,
 				set = function(key)
 					if type(key) == "boolean" then
-						GetReminderPreferences().textToSpeech.enableAtTime = key
+						GetReminderPreferences().textToSpeech.enableAtCountdownEnd = key
 					end
 				end,
 				enabled = enableReminderOption,
@@ -1829,7 +1863,10 @@ do
 				enabled = function()
 					local preferences = GetReminderPreferences()
 					return preferences.enabled == true
-						and (preferences.textToSpeech.enableAtTime or preferences.textToSpeech.enableAtAdvanceNotice)
+						and (
+							preferences.textToSpeech.enableAtCountdownEnd
+							or preferences.textToSpeech.enableAtCountdownStart
+						)
 				end,
 			} --[[@as EPSettingOption]],
 			{
@@ -1849,7 +1886,10 @@ do
 				enabled = function()
 					local preferences = GetReminderPreferences()
 					return preferences.enabled == true
-						and (preferences.textToSpeech.enableAtTime or preferences.textToSpeech.enableAtAdvanceNotice)
+						and (
+							preferences.textToSpeech.enableAtCountdownEnd
+							or preferences.textToSpeech.enableAtCountdownStart
+						)
 				end,
 				validate = function(key)
 					local value = tonumber(key)
@@ -1865,32 +1905,32 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Play Sound at Advance Notice"],
-				labels = { L["Play Sound at Advance Notice"], L["Sound to Play at Advance Notice"] },
+				label = L["Play Sound at Countdown Start"],
+				labels = { L["Play Sound at Countdown Start"], L["Sound to Play at Countdown Start"] },
 				type = "checkBoxWithDropdown",
 				descriptions = {
-					L["Whether to play a sound at advance notice time."],
-					L["The sound to play at advance notice time."],
+					L["Whether to play a sound at the start of the countdown."],
+					L["The sound to play at the start of the countdown."],
 				},
 				category = L["Sound"],
 				values = sounds,
 				get = {
 					function()
-						return GetReminderPreferences().sound.enableAtAdvanceNotice
+						return GetReminderPreferences().sound.enableAtCountdownStart
 					end,
 					function()
-						return GetReminderPreferences().sound.advanceNoticeSound
+						return GetReminderPreferences().sound.countdownStartSound
 					end,
 				},
 				set = {
 					function(key)
 						if type(key) == "boolean" then
-							GetReminderPreferences().sound.enableAtAdvanceNotice = key
+							GetReminderPreferences().sound.enableAtCountdownStart = key
 						end
 					end,
 					function(key)
 						if type(key) == "boolean" then
-							GetReminderPreferences().sound.advanceNoticeSound = key
+							GetReminderPreferences().sound.countdownStartSound = key
 						end
 					end,
 				},
@@ -1898,37 +1938,37 @@ do
 					enableReminderOption,
 					function()
 						local preferences = GetReminderPreferences()
-						return preferences.enabled == true and preferences.sound.enableAtAdvanceNotice == true
+						return preferences.enabled == true and preferences.sound.enableAtCountdownStart == true
 					end,
 				},
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Play Sound at Assignment Time"],
-				labels = { L["Play Sound at Assignment Time"], L["Sound to Play at Assignment Time"] },
+				label = L["Play Sound at Countdown End"],
+				labels = { L["Play Sound at Countdown End"], L["Sound to Play at Countdown End"] },
 				type = "checkBoxWithDropdown",
 				descriptions = {
-					L["Whether to play a sound at assignment time."],
-					L["The sound to play at assignment time."],
+					L["Whether to play a sound at the end of the countdown."],
+					L["The sound to play at the end of the countdown."],
 				},
 				category = L["Sound"],
 				values = sounds,
 				get = {
 					function()
-						return GetReminderPreferences().sound.enableAtTime
+						return GetReminderPreferences().sound.enableAtCountdownEnd
 					end,
 					function()
-						return GetReminderPreferences().sound.atSound
+						return GetReminderPreferences().sound.countdownEndSound
 					end,
 				},
 				set = {
 					function(key)
 						if type(key) == "boolean" then
-							GetReminderPreferences().sound.enableAtTime = key
+							GetReminderPreferences().sound.enableAtCountdownEnd = key
 						end
 					end,
 					function(key)
 						if type(key) == "boolean" then
-							GetReminderPreferences().sound.atSound = key
+							GetReminderPreferences().sound.countdownEndSound = key
 						end
 					end,
 				},
@@ -1936,7 +1976,7 @@ do
 					enableReminderOption,
 					function()
 						local preferences = GetReminderPreferences()
-						return preferences.enabled == true and preferences.sound.enableAtTime == true
+						return preferences.enabled == true and preferences.sound.enableAtCountdownEnd == true
 					end,
 				},
 			} --[[@as EPSettingOption]],
@@ -2003,35 +2043,32 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Timeline Zoom Center"],
+				label = L["Timeline Zoom Behavior"],
+				labels = { L["At cursor"], L["Middle of timeline"] },
 				type = "radioButtonGroup",
-				description = L["Where to center the zoom when zooming in on the timeline."],
+				descriptions = {
+					L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."],
+					L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."],
+				},
 				category = L["Assignment"],
 				values = {
-					{ itemValue = "At cursor", text = L["At cursor"] },
-					{ itemValue = "Middle of timeline", text = L["Middle of timeline"] },
+					{ itemValue = 1, text = L["At cursor"] },
+					{ itemValue = 0, text = L["Middle of timeline"] },
 				},
 				get = function()
-					if GetPreferences().zoomCenteredOnCursor == true then
-						return "At cursor"
-					else
-						return "Middle of timeline"
-					end
+					return GetPreferences().zoomCenteredOnCursor == true and 1 or 0
 				end,
 				set = function(key)
-					if type(key) == "string" then
-						if key == "At cursor" then
-							GetPreferences().zoomCenteredOnCursor = true
-						else
-							GetPreferences().zoomCenteredOnCursor = false
-						end
+					local value = tonumber(key)
+					if value then
+						GetPreferences().zoomCenteredOnCursor = value == 1
 					end
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Assignment Sort Priority"],
+				label = L["Assignee Sort Priority"],
 				type = "dropdown",
-				description = L["Sorts the rows of the assignment timeline."],
+				description = L["How to sort the assignee rows of the assignment timeline."],
 				category = L["Assignment"],
 				values = {
 					{ itemValue = "Alphabetical", text = L["Alphabetical"] },

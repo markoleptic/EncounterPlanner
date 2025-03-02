@@ -254,12 +254,12 @@ If an assignment is a spell and it already on cooldown, the reminder will not be
 If the spell is cast during the reminder countdown, it will be cancelled.
 
 **Glow Frame for Targeted Spells**:
-Glows the unit frame of the target at assignment time.
+Glows the unit frame of the target at the end of the countdown.
 If the assignment has a spell ID, the frame will glow until the spell is cast on the target, up to a maximum of 10 seconds.
 Otherwise, shows for 5 seconds.
 
-**Reminder Advance Notice**:
-How far ahead of assignment time to begin showing reminders.
+**Countdown Length**:
+How far ahead to begin showing reminders.
 
 **Enable Messages**:
 Whether to show Messages for assignments.
@@ -362,13 +362,19 @@ Font size to use for Progress Bar text (8 - 64).
 Font outline to use for Progress Bar text.
 
 **Icon Position**
-Which side to place the icon for Progress Bars.
+
+-   **Left**: Icon on left, text and duration on right.
+-   **Right**: Icon on right, text and duration on left.
 
 **Duration Position**:
-Position of Progress Bar duration text.
+
+-   **Left**: Duration to the left of text.
+-   **Right**: Duration to the right of text.
 
 **Bar Progress Type**
-Whether to fill or drain Progress Bars.
+
+-   **Fill**: Fills Progress Bars from left to right as the countdown progresses.
+-   **Drain**: Drains Progress Bars from right to left as the countdown progresses.
 
 **Bar Size**:
 The width and height of Progress Bars.
@@ -396,11 +402,11 @@ Transparency of Progress Bars (0.0 - 1.0).
 **Bar Spacing**:
 Spacing between Progress Bars (-1 - 100).
 
-**Play Text to Speech at Advance Notice**:
-Whether to play text to speech sound at advance notice time (i.e. Spell in x seconds).
+**Play Text to Speech at Countdown Start**:
+Whether to play text to speech sound at the start of the countdown (i.e. Spell in x seconds).
 
-**Play Text to Speech at Assignment Time**:
-Whether to play text to speech sound at assignment time (i.e. Spell in x seconds).
+**Play Text to Speech at Countdown End**:
+Whether to play text to speech sound at the end of the countdown (i.e. speak spell or text).
 
 **Text to Speech Voice**:
 The voice to use for Text to Speech.
@@ -408,17 +414,17 @@ The voice to use for Text to Speech.
 **Text to Speech Volume**:
 The volume to use for Text to Speech.
 
-**Play Sound at Advance Notice**:
-Whether to play a sound at advance notice time.
+**Play Sound at Countdown Start**:
+Whether to play a sound at the start of the countdown.
 
-**Sound to Play at Advance Notice**:
-The sound to play at advance notice time.
+**Sound to Play at Countdown Start**:
+The sound to play at the start of the countdown.
 
-**Play Sound at Assignment Time**:
-Whether to play a sound at assignment time.
+**Play Sound at Countdown End**:
+Whether to play a sound at the end of the countdown.
 
-**Sound to Play at Assignment Time**:
-The sound to play at assignment time.
+**Sound to Play at Countdown End**:
+The sound to play at the end of the countdown.
 
 **Clear Trusted Characters**:
 Clears all saved trusted characters.
@@ -432,17 +438,17 @@ The assignment timeline will attempt to expand or shrink to show this many rows.
 **Preferred Number of Boss Abilities to Show**:
 The boss ability timeline will attempt to expand or shrink to show this many rows.
 
-**Timeline Zoom Center**:
+**Timeline Zoom Behavior**:
 
--   **At cursor**: Zooming is centered on the cursor.
--   **Middle of timeline**: Zooming is centered on the middle of the timeline.
+-   **At cursor**: Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus.
+-   **Middle of timeline**: Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus.
 
-**Assignment Sort Priority**:
+**Assignee Sort Priority**:
 
--   **Alphabetical**:
--   **First Appearance**:
--   **Role > Alphabetical**:
--   **Role > First Appearance**:
+-   **Alphabetical**: Alphabetically by assignee name.
+-   **First Appearance**: Earliest assignment time.
+-   **Role > Alphabetical**: Healers appear first, followed by tanks and dps. Falls back to **Alphabetical**.
+-   **Role > First Appearance**: Healers appear first, followed by tanks and dps. Falls back to **First Appearance**.
 
 **Show Spell Cooldown Duration**:
 Whether to show textures representing player spell cooldown durations.
@@ -479,7 +485,7 @@ Each boss must have a unique **Designated External Plan**.
 
 **Plan Reminders**:
 Whether reminders are enabled for the **Current Plan**.
-[Preferences -> Reminders -> Enable Reminders](#reminder) must be checked for this to have an effect.
+The option is disabled when reminders are disabled globally ([Preferences -> Reminders -> Enable Reminders](#reminder))
 
 **Simulate Reminders**:
 Simulates reminders for the **Current Plan**.

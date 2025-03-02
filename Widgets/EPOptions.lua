@@ -589,6 +589,9 @@ local function UpdateUpdateIndices(updateIndices, option, index, func)
 	end
 end
 
+---@param frame Frame
+---@param label string
+---@param description string
 local function ShowTooltip(frame, label, description)
 	tooltip:SetOwner(frame, "ANCHOR_TOP")
 	tooltip:SetText(label, 1, 0.82, 0, true)
@@ -696,7 +699,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 	end
-	for _, child in ipairs(radioButtonGroup.children) do
+	for i, child in ipairs(radioButtonGroup.children) do
 		if option.enabled and child.SetEnabled then
 			child:SetEnabled(option.enabled())
 			tinsert(self.refreshMap, { widget = child, enabled = option.enabled })
@@ -711,7 +714,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 		child:SetCallback("OnEnter", function(widget)
-			ShowTooltip(widget.frame, option.label, option.description)
+			ShowTooltip(widget.frame, option.labels[i], option.descriptions[i])
 		end)
 		child:SetCallback("OnLeave", function()
 			tooltip:Hide()

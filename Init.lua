@@ -623,16 +623,16 @@ end
 ---@field minimap {hide: boolean}
 
 ---@class ReminderTextToSpeechPreferences
----@field enableAtAdvanceNotice boolean
----@field enableAtTime boolean
+---@field enableAtCountdownStart boolean
+---@field enableAtCountdownEnd boolean
 ---@field voiceID integer
 ---@field volume number
 
 ---@class ReminderSoundPreferences
----@field enableAtAdvanceNotice boolean
----@field enableAtTime boolean
----@field advanceNoticeSound string
----@field atSound string
+---@field enableAtCountdownStart boolean
+---@field enableAtCountdownEnd boolean
+---@field countdownStartSound string
+---@field countdownEndSound string
 
 ---@class GenericReminderPreferences
 ---@field enabled boolean
@@ -670,7 +670,7 @@ end
 ---@field onlyShowMe boolean
 ---@field removeDueToPhaseChange boolean
 ---@field cancelIfAlreadyCasted boolean
----@field advanceNotice number
+---@field countdownLength number
 ---@field glowTargetFrame boolean
 ---@field progressBars ProgressBarPreferences
 ---@field messages MessagePreferences
@@ -727,7 +727,7 @@ local defaults = {
 				onlyShowMe = true,
 				cancelIfAlreadyCasted = true,
 				removeDueToPhaseChange = false,
-				advanceNotice = 10.0,
+				countdownLength = 10.0,
 				glowTargetFrame = true,
 				messages = {
 					enabled = true,
@@ -770,16 +770,16 @@ local defaults = {
 					soonestExpirationOnBottom = true,
 				},
 				textToSpeech = {
-					enableAtAdvanceNotice = false,
-					enableAtTime = false,
+					enableAtCountdownStart = false,
+					enableAtCountdownEnd = false,
 					voiceID = 0,
 					volume = 100,
 				},
 				sound = {
-					advanceNoticeSound = "",
-					atSound = "",
-					enableAtAdvanceNotice = false,
-					enableAtTime = false,
+					countdownStartSound = "",
+					countdownEndSound = "",
+					enableAtCountdownStart = false,
+					enableAtCountdownEnd = false,
 				},
 			},
 		},
