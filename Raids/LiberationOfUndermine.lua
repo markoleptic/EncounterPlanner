@@ -1704,4 +1704,5 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 		_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
 		Private.dungeonInstances[2769].bosses[2].abilities[465872].additionalContext = bossName:match("^(%S+)")
 	end,
+	isRaid = true,
 })

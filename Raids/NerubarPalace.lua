@@ -1066,4 +1066,5 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 			},
 		}),
 	},
+	isRaid = true,
 })

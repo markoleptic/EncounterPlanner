@@ -574,6 +574,8 @@ do
 		end
 	end
 
+	local sort = table.sort
+
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
 	function InterfaceUpdater.RepopulatePlanWidgets()
 		if Private.mainFrame then
@@ -581,18 +583,30 @@ do
 			local planDropdown = Private.mainFrame.planDropdown
 			if planDropdown then
 				planDropdown:Clear()
-				local planDropdownData = {}
-				for planName, plan in pairs(AddOn.db.profile.plans) do
-					tinsert(planDropdownData, {
-						itemValue = planName,
-						text = planName,
-						customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture,
-						customTextureVertexColor = plan.remindersEnabled and reminderEnabledIconColor
-							or reminderDisabledIconColor,
-					})
+				local instanceDropdownData = utilities.GetOrCreateInstanceDropdownItems()
+				local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+				for planName, plan in pairs(plans) do
+					local instanceID = plan.instanceID
+					local customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture
+					local color = plan.remindersEnabled and reminderEnabledIconColor or reminderDisabledIconColor
+					for _, dropdownData in pairs(instanceDropdownData) do
+						if dropdownData.itemValue == instanceID then
+							tinsert(dropdownData.dropdownItemMenuData, {
+								itemValue = planName,
+								text = planName,
+								customTexture = customTexture,
+								customTextureVertexColor = color,
+							})
+							break
+						end
+					end
 				end
-				planDropdown:AddItems(planDropdownData, "EPDropdownItemToggle")
-				planDropdown:Sort()
+				for _, dropdownData in pairs(instanceDropdownData) do
+					sort(dropdownData.dropdownItemMenuData, function(a, b)
+						return a.text < b.text
+					end)
+				end
+				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")
 				planDropdown:SetValue(lastOpenPlan)
 			end
 			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])
@@ -611,8 +625,15 @@ do
 				if not item then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-					planDropdown:AddItem(plan.name, plan.name, "EPDropdownItemToggle", nil, false, customTexture, color)
-					planDropdown:Sort()
+					planDropdown:AddItemsToExistingDropdownItemMenu(plan.instanceID, {
+						{
+							itemValue = plan.name,
+							text = plan.name,
+							customTexture = customTexture,
+							customTextureVertexColor = color,
+						},
+					})
+					planDropdown:Sort(plan.instanceID)
 				end
 				if select then
 					planDropdown:SetValue(plan.name)

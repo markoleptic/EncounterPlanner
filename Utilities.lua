@@ -570,60 +570,97 @@ do
 end
 
 do
-	local bossDropdownItems = nil
+	-- ---@return table<integer, DropdownItemData>
+	-- local function CreateCustomInstancesDropdownData()
+	-- 	local customDungeonInstanceGroups = Private.customDungeonInstanceGroups
+	-- 	local customInstancesDropdownData = {}
+	-- 	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+	-- 		if dungeonInstance.customGroup and customDungeonInstanceGroups[dungeonInstance.customGroup] then
+	-- 			if not customInstancesDropdownData[dungeonInstance.customGroup] then
+	-- 				local instanceIDToUseForIcon =
+	-- 					customDungeonInstanceGroups[dungeonInstance.customGroup].instanceIDToUseForIcon
+	-- 				local instanceName = customDungeonInstanceGroups[dungeonInstance.customGroup].instanceName
+	-- 				local instanceToUseForIcon = Private.dungeonInstances[instanceIDToUseForIcon]
+	-- 				local instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
+	-- 				local instanceDropdownData =
+	-- 					{ itemValue = instanceName, text = instanceIconText, dropdownItemMenuData = {} }
+	-- 				customInstancesDropdownData[dungeonInstance.customGroup] = instanceDropdownData
+	-- 			end
+	-- 			local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
+	-- 			local instanceDropdownData =
+	-- 				{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+	-- 			for _, boss in ipairs(dungeonInstance.bosses) do
+	-- 				local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
+	-- 				tinsert(
+	-- 					instanceDropdownData.dropdownItemMenuData,
+	-- 					{ itemValue = boss.dungeonEncounterID, text = iconText }
+	-- 				)
+	-- 			end
+	-- 			tinsert(
+	-- 				customInstancesDropdownData[dungeonInstance.customGroup].dropdownItemMenuData,
+	-- 				instanceDropdownData
+	-- 			)
+	-- 		end
+	-- 	end
+	-- 	return customInstancesDropdownData
+	-- end
+
+	local spellIconRegex = "|T.-|t%s(.+)"
+
+	---@param a DropdownItemData
+	---@param b DropdownItemData
+	local function SortInstances(a, b)
+		if Private.dungeonInstances[a.itemValue].isRaid then
+			if not Private.dungeonInstances[b.itemValue].isRaid then
+				return true
+			end
+		elseif Private.dungeonInstances[b.itemValue].isRaid then
+			return false
+		end
+		return a.text:match(spellIconRegex) < b.text:match(spellIconRegex)
+	end
+
+	local instanceAndBossDropdownItems = nil
 
 	-- Creates dropdown item data for instances and bosses
 	---@return table<integer, DropdownItemData>
 	function Utilities.GetOrCreateBossDropdownItems()
-		if not bossDropdownItems then
-			bossDropdownItems = {}
-			local customDungeonInstanceGroups = Private.customDungeonInstanceGroups
-			local customInstancesDropdownData = {}
+		if not instanceAndBossDropdownItems then
+			instanceAndBossDropdownItems = {}
 			for _, dungeonInstance in pairs(Private.dungeonInstances) do
-				if dungeonInstance.customGroup and customDungeonInstanceGroups[dungeonInstance.customGroup] then
-					if not customInstancesDropdownData[dungeonInstance.customGroup] then
-						local instanceIDToUseForIcon =
-							customDungeonInstanceGroups[dungeonInstance.customGroup].instanceIDToUseForIcon
-						local instanceName = customDungeonInstanceGroups[dungeonInstance.customGroup].instanceName
-						local instanceToUseForIcon = Private.dungeonInstances[instanceIDToUseForIcon]
-						local instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
-						local instanceDropdownData =
-							{ itemValue = instanceName, text = instanceIconText, dropdownItemMenuData = {} }
-						customInstancesDropdownData[dungeonInstance.customGroup] = instanceDropdownData
-					end
-					local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-					local instanceDropdownData =
-						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-					for _, boss in ipairs(dungeonInstance.bosses) do
-						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
-						tinsert(
-							instanceDropdownData.dropdownItemMenuData,
-							{ itemValue = boss.dungeonEncounterID, text = iconText }
-						)
-					end
+				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
+				local instanceDropdownData =
+					{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				for _, boss in ipairs(dungeonInstance.bosses) do
+					local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
 					tinsert(
-						customInstancesDropdownData[dungeonInstance.customGroup].dropdownItemMenuData,
-						instanceDropdownData
+						instanceDropdownData.dropdownItemMenuData,
+						{ itemValue = boss.dungeonEncounterID, text = iconText }
 					)
-				else
-					local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-					local instanceDropdownData =
-						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-					for _, boss in ipairs(dungeonInstance.bosses) do
-						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
-						tinsert(
-							instanceDropdownData.dropdownItemMenuData,
-							{ itemValue = boss.dungeonEncounterID, text = iconText }
-						)
-					end
-					tinsert(bossDropdownItems, instanceDropdownData)
 				end
+				tinsert(instanceAndBossDropdownItems, instanceDropdownData)
 			end
-			for _, customDungeonInstanceGroup in pairs(customInstancesDropdownData) do
-				tinsert(bossDropdownItems, customDungeonInstanceGroup)
-			end
+			sort(instanceAndBossDropdownItems, SortInstances)
 		end
-		return bossDropdownItems
+		return instanceAndBossDropdownItems
+	end
+
+	local instanceDropdownItems = nil
+
+	-- Creates dropdown item data for instances
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateInstanceDropdownItems()
+		if not instanceDropdownItems then
+			instanceDropdownItems = {}
+			for _, dungeonInstance in pairs(Private.dungeonInstances) do
+				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
+				local instanceDropdownData =
+					{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				tinsert(instanceDropdownItems, instanceDropdownData)
+			end
+			sort(instanceDropdownItems, SortInstances)
+		end
+		return instanceDropdownItems
 	end
 end
 

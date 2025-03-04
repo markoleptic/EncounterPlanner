@@ -176,6 +176,7 @@ Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 ---@field bosses table<integer, Boss> List of bosses for the instance.
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
 ---@field executeAndNil fun()|nil
+---@field isRaid boolean|nil
 Private.classes.DungeonInstance = {
 	name = "",
 	journalInstanceID = 0,

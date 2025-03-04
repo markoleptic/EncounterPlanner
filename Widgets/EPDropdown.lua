@@ -347,10 +347,20 @@ do
 		self:SetScroll(newVerticalScroll)
 	end
 
-	local function Sort(self)
-		sort(self.items, function(a, b)
-			return a:GetUserDataTable().value < b:GetUserDataTable().value
-		end)
+	local spellIconRegex = "|T.-|t%s(.+)"
+
+	---@param self EPDropdownPullout
+	---@param byText boolean|nil
+	local function Sort(self, byText)
+		if byText then
+			sort(self.items, function(a, b)
+				return a:GetText():match(spellIconRegex) < b:GetText():match(spellIconRegex)
+			end)
+		else
+			sort(self.items, function(a, b)
+				return a:GetUserDataTable().value < b:GetUserDataTable().value
+			end)
+		end
 	end
 
 	local function Constructor()
@@ -1103,8 +1113,18 @@ do
 
 	-- Sorts the immediate children of the pullout.
 	---@param self EPDropdown
-	local function Sort(self)
-		self.pullout:Sort()
+	---@param value any
+	local function Sort(self, value)
+		if value then
+			local item, _ = FindItemAndText(self, value, true)
+			if item then
+				if item.type == "EPDropdownItemMenu" then
+					item.childPullout:Sort()
+				end
+			end
+		else
+			self.pullout:Sort()
+		end
 	end
 
 	---@param self EPDropdown
