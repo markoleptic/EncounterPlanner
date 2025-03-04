@@ -175,6 +175,7 @@ end
 ---@param texture string|integer
 ---@param vertexColor number[]
 function EPItemBase.SetCustomTexture(self, texture, vertexColor)
+	self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize * 2, 0)
 	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
 	self.customTexture:SetTexture(texture)
 	self.customTexture:SetVertexColor(unpack(vertexColor))
@@ -205,7 +206,6 @@ function EPItemBase.Create(type)
 	text:SetJustifyH("LEFT")
 	text:SetJustifyV("MIDDLE")
 	text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
-	text:SetPoint("RIGHT", frame, "RIGHT", -textOffsetX, 0)
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
@@ -320,6 +320,11 @@ do
 	---@param neverShow boolean
 	local function SetNeverShowItemsAsSelected(self, neverShow)
 		self.neverShowItemsAsSelected = neverShow
+		if neverShow then
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", 0, 0)
+		else
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+		end
 	end
 
 	---@param self EPDropdownItemToggle
