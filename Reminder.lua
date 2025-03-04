@@ -38,6 +38,7 @@ local GetTime = GetTime
 local ipairs = ipairs
 local max = math.max
 local NewTimer = C_Timer.NewTimer
+local NewTicker = C_Timer.NewTicker
 local next = next
 local pairs = pairs
 local PlaySoundFile = PlaySoundFile
@@ -45,7 +46,6 @@ local SpeakText = C_VoiceChat.SpeakText
 local split = string.split
 local tinsert = tinsert
 local tonumber = tonumber
-local tremove = tremove
 local type = type
 local UnitGUID = UnitGUID
 local UnitIsGroupLeader = UnitIsGroupLeader
@@ -67,13 +67,10 @@ local combatLogEventMap = {
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
----@type EPContainer|nil
-local messageContainer = nil
----@type EPContainer|nil
-local progressBarContainer = nil
+local messageContainer = nil ---@type EPContainer|nil
+local progressBarContainer = nil ---@type EPContainer|nil
 
----@type FunctionContainer|nil
-local simulationTimer = nil
+local simulationTimer = nil ---@type FunctionContainer|nil
 
 ---@type table<string, FunctionContainer>
 local timers = {} -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
@@ -96,27 +93,33 @@ local noSpellIDGlowFrames = {}
 local frameGlowTimers = {}
 
 ---@type table<integer, number> -- Buffers to use to prevent successive combat log events from retriggering.
-local buffers = {}
+local bufferDurations = {}
 ---@type table<integer, table<FullCombatLogEventType, boolean>> -- Active buffers preventing successive combat log events from retriggering.
 local activeBuffers = {}
 ---@type table<string, FunctionContainer> -- Active buffers preventing successive combat log events from retriggering.
 local bufferTimers = {}
 
 local hideIfAlreadyCasted = false
-local isLocked = false -- Operation Queue lock state.
 local isSimulating = false
-local lastExecutionTime = 0.0
-local updateFrameTickRate = 0.04
+local updateTimerTickRate = 0.04
+local updateTimerIterations = 30000
 local defaultNoSpellIDGlowDuration = 5.0
 local maxGlowDuration = 10.0
-local updateFrame = CreateFrame("Frame")
+local updateTimer = nil ---@type FunctionContainer|nil
 local messagesToAdd = {}
 local progressBarsToAdd = {}
 local messagesToRemove = {}
 local progressBarsToRemove = {}
 
+--@debug@
+local log = {}
+--@end-debug@
+
 local function ResetLocalVariables()
-	updateFrame:SetScript("OnUpdate", nil)
+	if updateTimer and not updateTimer:IsCancelled() then
+		updateTimer:Cancel()
+	end
+	updateTimer = nil
 
 	for _, timer in pairs(timers) do
 		if timer.Cancel then
@@ -126,7 +129,7 @@ local function ResetLocalVariables()
 	wipe(timers)
 	wipe(cancelTimerIfCasted)
 
-	if simulationTimer then
+	if simulationTimer and not simulationTimer:IsCancelled() then
 		simulationTimer:Cancel()
 	end
 	simulationTimer = nil
@@ -160,12 +163,12 @@ local function ResetLocalVariables()
 	wipe(spellCounts)
 
 	for _, timer in pairs(bufferTimers) do
-		if timer.Cancel then
+		if not timer:IsCancelled() then
 			timer:Cancel()
 		end
 	end
 	wipe(bufferTimers)
-	wipe(buffers)
+	wipe(bufferDurations)
 	wipe(activeBuffers)
 
 	wipe(messagesToAdd)
@@ -180,10 +183,11 @@ local function ResetLocalVariables()
 		progressBarContainer:Release()
 	end
 
-	lastExecutionTime = 0.0
-	isLocked = false
 	isSimulating = false
 	hideIfAlreadyCasted = false
+	--@debug@
+	log = nil
+	--@end-debug@
 end
 
 ---@param ... unknown
@@ -235,31 +239,18 @@ local function CreateTimerWithCleanup(duration, func, ...)
 end
 
 local function ProcessNextOperation()
-	if not isLocked then
-		isLocked = true
-		if messageContainer then
-			messageContainer:RemoveChildren(unpack(messagesToRemove))
-			wipe(messagesToRemove)
-			messageContainer:AddChildren(unpack(messagesToAdd))
-			wipe(messagesToAdd)
-		end
-		if progressBarContainer then
-			progressBarContainer:RemoveChildren(unpack(progressBarsToRemove))
-			wipe(progressBarsToRemove)
-			progressBarContainer:AddChildren(unpack(progressBarsToAdd))
-			wipe(progressBarsToAdd)
-		end
+	if messageContainer then
+		messageContainer:RemoveChildren(unpack(messagesToRemove))
+		messagesToRemove = {}
+		messageContainer:AddChildren(unpack(messagesToAdd))
+		messagesToAdd = {}
 	end
-	isLocked = false
-end
-
-local function HandleFrameUpdate(_, elapsed)
-	local currentTime = GetTime()
-	if currentTime - lastExecutionTime < updateFrameTickRate then
-		return
+	if progressBarContainer then
+		progressBarContainer:RemoveChildren(unpack(progressBarsToRemove))
+		progressBarsToRemove = {}
+		progressBarContainer:AddChildren(unpack(progressBarsToAdd))
+		progressBarsToAdd = {}
 	end
-	lastExecutionTime = currentTime
-	ProcessNextOperation()
 end
 
 -- Creates a container for adding progress bars to using preferences.
@@ -470,7 +461,7 @@ end
 ---@param spellCount integer
 local function CreateSpellCountEntry(combatLogEventType, spellID, spellCount)
 	spellCounts[combatLogEventType] = spellCounts[combatLogEventType] or {}
-	spellCounts[combatLogEventType][spellID] = spellCounts[combatLogEventType][spellID] or {}
+	spellCounts[combatLogEventType][spellID] = spellCounts[combatLogEventType][spellID] or 0
 	combatLogEventReminders[combatLogEventType] = combatLogEventReminders[combatLogEventType] or {}
 	combatLogEventReminders[combatLogEventType][spellID] = combatLogEventReminders[combatLogEventType][spellID] or {}
 	for i = 1, spellCount do
@@ -508,7 +499,7 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
 				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
 				if abilities[spellID] and abilities[spellID].buffer then
-					buffers[spellID] = abilities[spellID].buffer
+					bufferDurations[spellID] = abilities[spellID].buffer
 				end
 				CreateSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
 
@@ -524,15 +515,15 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 		end
 	end
 
-	updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+	UpdateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
 end
 
----@param combatLogEventType FullCombatLogEventType
 ---@param spellID integer
-local function ApplyBuffer(combatLogEventType, spellID)
+---@param combatLogEventType FullCombatLogEventType
+local function ApplyBuffer(spellID, combatLogEventType)
 	activeBuffers[spellID] = activeBuffers[spellID] or {}
 	activeBuffers[spellID][combatLogEventType] = true
-	CreateTimerWithCleanup(buffers[spellID], function()
+	CreateTimerWithCleanup(bufferDurations[spellID], function()
 		activeBuffers[spellID][combatLogEventType] = nil
 		if not next(activeBuffers[spellID]) then
 			activeBuffers[spellID] = nil
@@ -552,8 +543,10 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 	if type(hideWidgetIfCasted[spellID]) == "table" then
 		for _, widget in pairs(hideWidgetIfCasted[spellID]) do
-			if widget.parent and widget.parent.RemoveChildNoDoLayout then
-				widget.parent:RemoveChildNoDoLayout(widget)
+			if widget.type == "EPReminderMessage" then
+				tinsert(messagesToRemove, widget)
+			elseif widget.type == "EPProgressBar" then
+				tinsert(progressBarsToRemove, widget)
 			end
 		end
 		hideWidgetIfCasted[spellID] = nil
@@ -593,25 +586,32 @@ local function HandleCombatLogEventUnfiltered()
 			local _, _, _, _, _, id = split("-", destGUID)
 			local mobID = tonumber(id)
 			if mobID and spellCounts[subEvent][mobID] then
-				if not activeBuffers[mobID][subEvent] then
-					if buffers[mobID] then
-						ApplyBuffer(subEvent, mobID)
+				if not activeBuffers[mobID] or (activeBuffers[mobID] and not activeBuffers[mobID][subEvent]) then
+					if bufferDurations[mobID] then
+						ApplyBuffer(mobID, subEvent)
 					end
-					local spellCount = spellCounts[subEvent][mobID] + 1
-					spellCounts[subEvent][mobID] = spellCount
+					local spellCount = spellCounts[subEvent][mobID][1] + 1
+					spellCounts[subEvent][mobID][1] = spellCount
 					local reminders = combatLogEventReminders[subEvent][mobID][spellCount]
 					if reminders then
 						for _, reminder in ipairs(reminders) do
 							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+						end
+						combatLogEventReminders[subEvent][mobID][spellCount] = nil
+						if not next(combatLogEventReminders[subEvent][mobID]) then
+							combatLogEventReminders[subEvent][mobID] = nil
+							if not next(combatLogEventReminders[subEvent]) then
+								combatLogEventReminders[subEvent] = nil
+							end
 						end
 					end
 				end
 			end
 		elseif spellID then
 			if spellCounts[subEvent][spellID] then
-				if not activeBuffers[spellID][subEvent] then
-					if buffers[spellID] then
-						ApplyBuffer(subEvent, spellID)
+				if not activeBuffers[spellID] or (activeBuffers[spellID] and not activeBuffers[spellID][subEvent]) then
+					if bufferDurations[spellID] then
+						ApplyBuffer(spellID, subEvent)
 					end
 					local spellCount = spellCounts[subEvent][spellID] + 1
 					spellCounts[subEvent][spellID] = spellCount
@@ -619,6 +619,13 @@ local function HandleCombatLogEventUnfiltered()
 					if reminders then
 						for _, reminder in ipairs(reminders) do
 							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+						end
+						combatLogEventReminders[subEvent][spellID][spellCount] = nil
+						if not next(combatLogEventReminders[subEvent][spellID]) then
+							combatLogEventReminders[subEvent][spellID] = nil
+							if not next(combatLogEventReminders[subEvent]) then
+								combatLogEventReminders[subEvent] = nil
+							end
 						end
 					end
 				end
@@ -638,6 +645,11 @@ local function HandleBigWigsEvent(event, addon, ...)
 	-- print(event, addon, ...)
 end
 
+local kMythicRaidID = 16
+local kMythicDungeonID = 23
+local kMythicPlusDungeonID = 8
+local difficulties = { [kMythicRaidID] = true, [kMythicDungeonID] = true, [kMythicPlusDungeonID] = true }
+
 ---@param encounterID integer
 ---@param encounterName string
 ---@param difficultyID integer
@@ -646,30 +658,121 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 	ResetLocalVariables()
 	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
 	if reminderPreferences.enabled then
-		if difficultyID == 16 or difficultyID == 23 or difficultyID == 8 then -- Mythic raid, Mythic dung, M+
-			if UnitIsGroupLeader("player") then
-				Private.SendTextToGroup(encounterID)
+		--[===[@non-debug@
+		if difficulties[difficultyID] then
+        --@end-non-debug@]===]
+
+		if UnitIsGroupLeader("player") then
+			Private.SendTextToGroup(encounterID)
+		end
+
+		local startTime = GetTime()
+		local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+		local activePlans = {}
+		for _, plan in pairs(plans) do
+			if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
+				tinsert(activePlans, plan)
 			end
-			local startTime = GetTime()
-			local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-			local activePlans = {}
-			for _, plan in pairs(plans) do
-				if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
-					tinsert(activePlans, plan)
-				end
+		end
+		if #activePlans > 0 then
+			local boss = GetBoss(encounterID)
+			if boss then
+				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+				SetupReminders(activePlans, reminderPreferences, startTime, boss.abilities)
+				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 			end
-			if #activePlans > 0 then
-				local boss = GetBoss(encounterID)
-				if boss then
-					LGF:ScanForUnitFrames()
-					hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-					SetupReminders(activePlans, reminderPreferences, startTime, boss.abilities)
-					Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+		end
+
+		--@debug@
+		AddOn.db.profile.logs = AddOn.db.profile.logs or {}
+		AddOn.db.profile.logs[encounterName .. "-" .. date("%m/%d/%y-%H:%M:%S")] = {}
+		log = AddOn.db.profile.logs[encounterName .. "-" .. date("%m/%d/%y-%H:%M:%S")]
+		log.startTime = startTime
+		log.activePlanCount = #activePlans
+		log.combatLogEventReminders = Private.DeepCopy(combatLogEventReminders)
+		--@end-debug@
+
+		--[===[@non-debug@
+		end
+        --@end-non-debug@]===]
+	end
+end
+
+--@debug@
+local function DebugLog()
+	local count = 0
+	for _, _ in pairs(timers) do
+		count = count + 1
+	end
+	log.endTimerCount = count
+
+	count = 0
+	for _, timer in pairs(frameGlowTimers) do
+		if not timer:IsCancelled() then
+			count = count + 1
+		end
+	end
+	log.endFrameGlowTimerCount = count
+
+	count = 0
+	for _, targetFrames in pairs(stopGlowIfCasted) do
+		for _, targetFrame in pairs(targetFrames) do
+			if targetFrame.frame then
+				count = count + 1
+			end
+		end
+	end
+	log.endStopGlowIfCastedCount = count
+
+	count = 0
+	for _, frame in ipairs(noSpellIDGlowFrames) do
+		if frame then
+			count = count + 1
+		end
+	end
+	log.endSpellIDGlowFramesCount = count
+
+	count = 0
+	for _, subTable in pairs(hideWidgetIfCasted) do
+		if subTable then
+			for _, _ in pairs(subTable) do
+				count = count + 1
+			end
+		end
+	end
+	log.endHideWidgetIfCastedCount = count
+
+	count = 0
+	for _, subTable in pairs(combatLogEventReminders) do
+		if subTable then
+			for _, subSub in pairs(subTable) do
+				if subSub then
+					for _, subSubSub in pairs(subSub) do
+						if subSubSub then
+							for _, _ in pairs(subSubSub) do
+								count = count + 1
+							end
+						end
+					end
 				end
 			end
 		end
 	end
+	log.endCombatLogEventRemindersCount = count
+	log.endSpellCount = Private.DeepCopy(spellCounts)
+
+	count = 0
+	for _, timer in pairs(bufferTimers) do
+		if not timer:IsCancelled() then
+			count = count + 1
+		end
+	end
+	log.endBufferTimerCount = count
+	log.endBuffers = Private.DeepCopy(bufferDurations)
+	log.endActiveBuffers = Private.DeepCopy(activeBuffers)
+	log.totalTime = GetTime() - log.startTime
 end
+--@end-debug@
 
 ---@param encounterID integer ID for the specific encounter that ended.
 ---@param encounterName string Name of the encounter that ended.
@@ -678,6 +781,9 @@ end
 ---@param success integer 1 if success, 0 for wipe.
 local function HandleEncounterEnd(_, encounterID, encounterName, difficultyID, groupSize, success)
 	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	--@debug@
+	DebugLog()
+	--@end-debug@
 	ResetLocalVariables()
 end
 
@@ -760,7 +866,7 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 				CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
 			end
 			simulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
-			updateFrame:SetScript("OnUpdate", HandleFrameUpdate)
+			UpdateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
 			Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end

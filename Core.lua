@@ -326,6 +326,70 @@ do -- Profile updating and refreshing
 	local next = next
 	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
 
+	--@debug@
+	---@param profile DefaultProfile
+	local function CreateTestPlans(profile)
+		for k, _ in pairs(profile.plans) do
+			if type(k) == "table" then
+				profile.plans[k] = nil
+			elseif k:find("-Test") then
+				profile.plans[k] = nil
+			end
+		end
+		local testPlans = {}
+		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			for _, boss in ipairs(dungeonInstance.bosses) do
+				EJ_SelectInstance(dungeonInstance.journalInstanceID)
+				EJ_SelectEncounter(boss.journalEncounterID)
+				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
+				local plan = utilities.CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
+				plan.roster["Markoleptic"] = RosterEntry:New()
+				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID) --[[@as table<integer, BossAbilityInstance>]]
+				for _, abilityInstance in ipairs(instances) do
+					local types = boss.abilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
+					if #types > 0 then
+						local allowedType = types[math.random(1, #types)]
+						local assignment = Private.classes.CombatLogEventAssignment:New()
+						assignment.assignee = "Markoleptic"
+						assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+						assignment.phase = abilityInstance.bossPhaseIndex
+						assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
+						assignment.combatLogEventType = allowedType
+						assignment.spellCount = abilityInstance.spellCount
+						assignment.time = 8.00
+						assignment.spellID = 1
+						assignment.text = C_Spell.GetSpellName(abilityInstance.bossAbilitySpellID)
+						tinsert(plan.assignments, assignment)
+					end
+				end
+				local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID)
+				do
+					local assignment = Private.classes.TimedAssignment:New()
+					assignment.assignee = "Markoleptic"
+					assignment.time = 0
+					assignment.spellID = 1
+					assignment.text = "Timed " .. 0
+					tinsert(plan.assignments, assignment)
+				end
+				for i = 5, floor(d * 0.6), 30 do
+					local assignment = Private.classes.TimedAssignment:New()
+					assignment.assignee = "Markoleptic"
+					assignment.time = i
+					assignment.spellID = 1
+					assignment.text = "Timed " .. i
+					tinsert(plan.assignments, assignment)
+				end
+				testPlans[plan.name] = plan
+			end
+		end
+		for _, testPlan in pairs(testPlans) do
+			if not profile.plans[testPlan.name] then
+				profile.plans[testPlan.name] = testPlan
+			end
+		end
+	end
+	--@end-debug@
+
 	-- Sets the metatables for assignments and performs a small amount of assignment validation.
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
@@ -389,6 +453,9 @@ do -- Profile updating and refreshing
 					end
 				end
 			end
+			--@debug@
+			CreateTestPlans(profile)
+			--@end-debug@
 		end
 	end
 
