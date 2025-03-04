@@ -68,3 +68,4 @@ ignore:
     - CONTRIBUTING.md
     - Meta.lua
     - Widgets/Meta.lua
+    - Raids/NerubarPalace.lua

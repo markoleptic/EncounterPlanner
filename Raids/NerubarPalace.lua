@@ -33,6 +33,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[435138] = BossAbility:New({ -- Digestive Acid
 					phases = {
@@ -42,6 +43,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[434803] = BossAbility:New({ -- Carnivorous Contest
 					phases = {
@@ -51,6 +53,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[445123] = BossAbility:New({ -- Hulking Crash
 					phases = {
@@ -60,6 +63,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[436200] = BossAbility:New({ -- Juggernaut Charge
 					phases = {
@@ -69,6 +73,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 8.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[438012] = BossAbility:New({ -- Hungering Bellows
 					phases = {
@@ -79,6 +84,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 3.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
 				}),
 				[445052] = BossAbility:New({ -- Chittering Swarm
 					phases = {
@@ -88,6 +94,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[441425] = BossAbility:New({ -- Phase Transition
 					phases = {
@@ -103,6 +110,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 			},
 			phases = {
@@ -139,6 +147,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 1.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[444363] = BossAbility:New({ -- Gruesome Disgorge
 					phases = {
@@ -148,6 +157,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 40.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[445936] = BossAbility:New({ -- Spewing Hemorrhage
 					phases = {
@@ -157,6 +167,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 20.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[442530] = BossAbility:New({ -- Goresplatter
 					phases = {
@@ -166,6 +177,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 10.0,
 					castTime = 8.0,
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[443203] = BossAbility:New({ -- Crimson Rain
 					phases = {
@@ -175,6 +187,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 5.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- temp
 				}),
 				[443042] = BossAbility:New({ -- Grasp From Beyond
 					phases = {
@@ -198,6 +211,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 12.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = {}, -- temp
 				}),
 				[452237] = BossAbility:New({ -- Bloodcurdle
 					phases = {
@@ -207,6 +221,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 5.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = {}, -- temp
 				}),
 			},
 			phases = {
@@ -251,6 +266,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[433517] = BossAbility:New({ -- Phase Blades
 					phases = {
@@ -276,6 +292,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 20.0,
 					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[442428] = BossAbility:New({ -- Decimate
 					phases = {
@@ -285,6 +302,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[439559] = BossAbility:New({ -- Rain of Arrows
 					phases = {
@@ -309,6 +327,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 8.0,
 					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[456420] = BossAbility:New({ -- Shattering Sweep
 					phases = {
@@ -318,6 +337,7 @@ Private.dungeonInstances[2657] = DungeonInstance:New({
 					},
 					duration = 10.0,
 					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 			},
 			phases = {
