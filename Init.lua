@@ -663,7 +663,6 @@ end
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean
 ---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
----@field showAnimation boolean
 
 ---@class ReminderPreferences
 ---@field enabled boolean
@@ -742,7 +741,6 @@ local defaults = {
 					alpha = 1.0,
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
-					showAnimation = true,
 					soonestExpirationOnBottom = true,
 				},
 				progressBars = {

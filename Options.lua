@@ -190,11 +190,14 @@ end
 
 local mouseIsDown = false
 local progressBarManager = {}
+
 do
 	local NewTimer = C_Timer.NewTimer
 	local timers = {}
 	local kGenericTimerMultiplier = 0.33
 	local isAddingProgressBars = false
+	local progressBarText = L["Progress Bar Text"]
+	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 
 	local function AddDelayedProgressBar(time)
 		local timer = NewTimer(time, function()
@@ -217,31 +220,24 @@ do
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.progressBars
 			local progressBar = AceGUI:Create("EPProgressBar")
-			progressBar:Set(
-				preferences,
-				L["Progress Bar Text"],
-				reminderPreferences.countdownLength,
-				[[Interface\Icons\INV_MISC_QUESTIONMARK]]
-			)
+			progressBar:Set(preferences, progressBarText, reminderPreferences.countdownLength, questionMarkIcon)
 			progressBar:SetCallback("Completed", function(widget)
 				if progressBarAnchor then
 					if not isAddingProgressBars and #progressBarAnchor.children == 1 then
 						widget:SetDuration(GetReminderPreferences().countdownLength)
 						widget:Start()
-
+						widget.frame:Show()
 						AddSecondAndThirdProgressBarsDelayed()
-					else
-						if mouseIsDown then
-							local p = GetProgressBarPreferences()
-							local p1, p2, p3, p4, p5 =
-								ApplyPoint(progressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-							progressBarAnchor:RemoveChild(widget)
-							if mouseIsDown and p1 then
-								progressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
-							end
-						else
-							progressBarAnchor:RemoveChild(widget)
+					elseif mouseIsDown then
+						local p = GetProgressBarPreferences()
+						local p1, p2, p3, p4, p5 =
+							ApplyPoint(progressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						progressBarAnchor:RemoveChild(widget)
+						if mouseIsDown and p1 then
+							progressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 						end
+					else
+						progressBarAnchor:RemoveChild(widget)
 					end
 				end
 			end)
@@ -291,6 +287,8 @@ do
 	local thirdTimerDurationNoCountdown = 2.4
 	local kGenericTimerMultiplier = 0.33
 	local isAddingMessages = false
+	local messageText = L["Cast spell or something"]
+	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 
 	local function AddMessageDelayed(time)
 		local timer = NewTimer(time, function()
@@ -319,26 +317,25 @@ do
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.messages
 			local message = AceGUI:Create("EPReminderMessage")
-			message:Set(preferences, L["Cast spell or something"], [[Interface\Icons\INV_MISC_QUESTIONMARK]])
+			message:Set(preferences, messageText, questionMarkIcon)
 			message:SetAnchorMode(true)
 			message:SetCallback("Completed", function(widget)
 				if messageAnchor then
 					if not isAddingMessages and #messageAnchor.children == 1 then
 						local p = GetReminderPreferences()
 						widget:Start(p.messages.showOnlyAtExpiration and 0 or p.countdownLength)
+						widget.frame:Show()
 						AddSecondAndThirdMessagesDelayed()
-					else
-						if mouseIsDown then
-							local p = GetMessagePreferences()
-							local p1, p2, p3, p4, p5 =
-								ApplyPoint(messageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-							messageAnchor:RemoveChild(widget)
-							if mouseIsDown and p1 then
-								messageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
-							end
-						else
-							messageAnchor:RemoveChild(widget)
+					elseif mouseIsDown then
+						local p = GetMessagePreferences()
+						local p1, p2, p3, p4, p5 =
+							ApplyPoint(messageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						messageAnchor:RemoveChild(widget)
+						if mouseIsDown and p1 then
+							messageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 						end
+					else
+						messageAnchor:RemoveChild(widget)
 					end
 				end
 			end)
@@ -981,28 +978,6 @@ do
 								ShowAnchor(false)
 							end
 						end
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Animation"],
-				type = "checkBox",
-				description = L["Whether to show a bounce animation when a Message first appears."],
-				category = L["Messages"],
-				get = function()
-					return GetMessagePreferences().showAnimation
-				end,
-				set = function(key)
-					if type(key) == "boolean" then
-						local preferences = GetReminderPreferences()
-						if key ~= preferences.messages.showAnimation then
-							preferences.messages.showAnimation = key
-							if messageAnchor and messageAnchor.frame:IsShown() then
-								ShowAnchor(false)
-							end
-						end
-						preferences.messages.showAnimation = key
 					end
 				end,
 				enabled = enableMessageOption,

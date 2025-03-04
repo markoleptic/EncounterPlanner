@@ -4,30 +4,24 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
-local GetTime = GetTime
 local floor = math.floor
+local GetTime = GetTime
+local next = next
+local pairs = pairs
 
 local defaultHeight = 24
 local defaultWidth = 200
 local defaultBackgroundColor = { 0.05, 0.05, 0.05, 0.3 }
 local defaultColor = { 0.5, 0.5, 0.5, 1 }
 local timeThreshold = 0.1
-local secondsInHour = 3600.0
 local secondsInMinute = 60.0
-local slightlyUnderSecondsInHour = secondsInHour - timeThreshold
 local slightlyUnderSecondsInMinute = secondsInMinute - timeThreshold
 local slightlyUnderTenSeconds = 10.0 - timeThreshold
 
 local animationTickRate = 0.04
-local greaterThanHourFormat = "%d:%02d:%02d"
 local greaterThanMinuteFormat = "%d:%02d"
 local greaterThanTenSecondsFormat = "%.0f"
-local fallbackFormat = "%.1f"
-
--- local greaterThanHourFormatApproximate = "~%d:%02d:%02d"
--- local greaterThanMinuteFormatApproximate = "~%d:%02d"
--- local greaterThanTenSecondsFormatApproximate = "~%.1f"
--- local fallbackFormatApproximate = "~%.0f"
+local lessThanTenSecondsFormat = "%.1f"
 
 local backdropColor = { 0, 0, 0, 0 }
 local backdropBorderColor = { 0, 0, 0, 1 }
@@ -44,7 +38,7 @@ local iconFrameBackdrop = {
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
 
-local activeBars = {}
+local activeBars = {} ---@type table<EPProgressBar, boolean>
 
 local sharedUpdater = CreateFrame("Frame"):CreateAnimationGroup()
 sharedUpdater:SetLooping("REPEAT")
@@ -65,19 +59,14 @@ local function SharedBarUpdate()
 			bar.remaining = relativeTime
 			bar.statusBar:SetValue(bar.fill and (currentTime - bar.startTime) + bar.gap or relativeTime)
 
-			if relativeTime > slightlyUnderSecondsInHour then
-				local h = floor(relativeTime / secondsInHour)
-				local m = floor((relativeTime - (h * secondsInHour)) / secondsInMinute)
-				local s = (relativeTime - (m * secondsInMinute)) - (h * secondsInHour)
-				bar.duration:SetFormattedText(greaterThanHourFormat, h, m, s)
-			elseif relativeTime > slightlyUnderSecondsInMinute then
+			if relativeTime <= slightlyUnderTenSeconds then
+				bar.duration:SetFormattedText(lessThanTenSecondsFormat, relativeTime)
+			elseif relativeTime <= slightlyUnderSecondsInMinute then
+				bar.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
+			else
 				local m = floor(relativeTime / secondsInMinute)
 				local s = relativeTime - (m * secondsInMinute)
 				bar.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
-			elseif relativeTime > slightlyUnderTenSeconds then
-				bar.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
-			else
-				bar.duration:SetFormattedText(fallbackFormat, relativeTime)
 			end
 		end
 	end

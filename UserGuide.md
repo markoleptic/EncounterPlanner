@@ -272,9 +272,6 @@ Displays example Messages that can be moved by dragging.
 -   **Expiration Only**: Only shows Messages at expiration time. Messages are displayed for 2 seconds before fading for 1.2 seconds.
 -   **With Countdown**: Messages are displayed for the duration of the countdown, including countdown text, before fading for 1.2 seconds.
 
-**Animation**:
-Whether to show a bounce animation when a Message first appears.
-
 **Position**:
 
 -   **X**:
