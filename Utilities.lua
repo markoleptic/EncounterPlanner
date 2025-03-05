@@ -1876,7 +1876,7 @@ function Utilities.CreatePlan(plans, newPlanName, encounterID)
 end
 
 ---@param plans table<string, Plan>
----@param planToCopyName Plan
+---@param planToCopyName string
 ---@param newPlanName string
 ---@return Plan
 function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
