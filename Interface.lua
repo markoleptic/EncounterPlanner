@@ -464,6 +464,7 @@ do -- Assignment Editor
 				value
 			)
 			updateFields = true
+			updateAssignments = true
 		elseif dataType == "CombatLogEventSpellID" then
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				local spellID = tonumber(value)
