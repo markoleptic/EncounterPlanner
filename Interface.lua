@@ -1071,6 +1071,7 @@ do -- Plan Menu Button Handlers
 	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
 
+	---@param newPlanName string
 	local function HandleImportPlanFromString(newPlanName)
 		ClosePlanDependentWidgets()
 		local text = Private.importEditBox:GetText()
@@ -1080,7 +1081,8 @@ do -- Plan Menu Button Handlers
 			or bossDungeonEncounterID
 
 		AddOn.db.profile.lastOpenPlan = newPlanName
-		AddPlanToDropdown(newPlanName, true)
+		local newPlan = AddOn.db.profile.plans[newPlanName]
+		AddPlanToDropdown(newPlan, true)
 		UpdateBoss(bossDungeonEncounterID, true)
 		UpdateAllAssignments(true, bossDungeonEncounterID)
 	end
@@ -1537,7 +1539,7 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absolu
 		)
 	end
 	if relativeTime then
-		newAssignment--[[@as CombatLogEventAssignment]].time = relativeTime
+		newAssignment--[[@as CombatLogEventAssignment]].time = utilities.Round(relativeTime, 1)
 	else
 		newAssignment--[[@as TimedAssignment]].time = newAssignmentTime
 	end

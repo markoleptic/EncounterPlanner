@@ -620,9 +620,6 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
 	utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID)
-	if not plans[planName] then
-		plans[planName] = Plan:New({}, planName)
-	end
 	local plan = plans[planName]
 
 	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
