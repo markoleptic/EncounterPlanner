@@ -365,9 +365,20 @@ do
 
 	local GetSpellName = C_Spell.GetSpellName
 
+	---@param widget EPAbilityEntry
 	local function HandleAssigneeSpellRowDeleteButtonClicked(widget)
 		local spellEntryKey = widget:GetKey()
-		local spellName = GetSpellName(spellEntryKey.spellID) or "Unknown Spell"
+		if not spellEntryKey then
+			return
+		end
+		local spellName
+		if spellEntryKey.spellID == constants.kInvalidAssignmentSpellID then
+			spellName = L["Unknown"]
+		elseif spellEntryKey.spellID == constants.kTextAssignmentSpellID then
+			spellName = L["Text"]
+		else
+			spellName = GetSpellName(spellEntryKey.spellID)
+		end
 		local messageBoxData = {
 			ID = Private.GenerateUniqueID(),
 			isCommunication = false,
@@ -377,7 +388,7 @@ do
 				L["Are you sure you want to delete all"],
 				spellName,
 				L["assignments for"],
-				widget:GetText()
+				spellEntryKey.coloredAssignee or spellEntryKey.assignee
 			),
 			acceptButtonText = L["Okay"],
 			acceptButtonCallback = function()
@@ -442,7 +453,7 @@ do
 					if not assigneeCollapsed then
 						for _, spellID in ipairs(textTable.spells) do
 							local spellEntry = AceGUI:Create("EPAbilityEntry")
-							local key = { assignee = assignee, spellID = spellID }
+							local key = { assignee = assignee, spellID = spellID, coloredAssignee = coloredAssignee }
 							if spellID == kInvalidAssignmentSpellID then
 								spellEntry:SetNullAbility(key)
 							elseif spellID == kTextAssignmentSpellID then
