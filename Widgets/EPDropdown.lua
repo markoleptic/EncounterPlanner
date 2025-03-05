@@ -780,10 +780,11 @@ do
 	---@param newValue any
 	---@param newText string
 	local function EditItemText(self, currentValue, newValue, newText)
-		for _, pulloutItem in ipairs(self.pullout.items) do
-			if pulloutItem:GetValue() == currentValue then
-				pulloutItem:SetValue(newValue)
-				pulloutItem:SetText(newText)
+		local item, _ = self:FindItemAndText(currentValue)
+		if item then
+			item:SetValue(newValue)
+			item:SetText(newText)
+			if self.value == currentValue then
 				self:SetValue(newValue)
 			end
 		end

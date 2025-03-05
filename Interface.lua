@@ -981,7 +981,7 @@ local function HandlePlanNameChanged(lineEdit, _, value)
 	local planDropdown = Private.mainFrame.planDropdown
 	if planDropdown then
 		planDropdown:EditItemText(currentPlanName, value, value)
-		planDropdown:Sort()
+		planDropdown:Sort(AddOn.db.profile.plans[value].instanceID)
 	end
 end
 
