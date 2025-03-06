@@ -502,11 +502,11 @@ Clicking this button displays the **External Text Editor**. Lines from an import
 
 ## Boss Timeline
 
-**Boss Spells** are listed on the left-hand side, with **Boss Cast Bars** drawn on the timeline to the right.
-Each occurrence of a **Boss Cast Bar** increases the **Spell Count** for that spell.
+**Boss Abilities** are listed on the left-hand side, with **Boss Ability Cast Bars** drawn on the timeline to the right.
+Each occurrence of a **Boss Ability Cast Bar** increases the **Spell Count** for that spell.
 
--   Hovering over a **Boss Spell** icon displays its tooltip.
--   Hovering over a **Boss Cast Bar** highlights the bar with a yellow outline and any assignments referencing it (combat log event assignments only).
+-   Hovering over a **Boss Ability** icon displays its tooltip.
+-   Hovering over a **Boss Ability Cast Bar** highlights the bar with a yellow outline and any assignments referencing it (combat log event assignments only).
 -   Dashed yellow vertical lines mark phase transitions, with text indicating the next phase. Typically, the spell nearest the line triggers the transition.
 
 ## Assignment Timeline
@@ -524,7 +524,7 @@ Each occurrence of a **Boss Cast Bar** increases the **Spell Count** for that sp
 -   **Duplicate an assignment**: `Ctrl + Drag` an **Assignment Spell Icon**.
 -   **Adjust assignment time**: Drag an **Assignment Spell Icon**.
 -   **Select an assignment**: Click its icon to open the [Assignment Editor](#assignment-editor).
-    A yellow outline indicates selection. If the assignment is a combat log event assignment, the **Boss Cast Bar** it references is highlighted.
+    A yellow outline indicates selection. If the assignment is a combat log event assignment, the **Boss Ability Cast Bar** it references is highlighted.
 
 **Assignee Management**:
 
