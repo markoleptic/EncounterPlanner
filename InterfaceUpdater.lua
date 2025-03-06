@@ -596,6 +596,9 @@ do
 				planDropdown:Clear()
 				local instanceDropdownData = utilities.GetOrCreateInstanceDropdownItems()
 				local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+				for _, dropdownData in pairs(instanceDropdownData) do
+					dropdownData.dropdownItemMenuData = {}
+				end
 				for planName, plan in pairs(plans) do
 					local instanceID = plan.instanceID
 					local customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture
