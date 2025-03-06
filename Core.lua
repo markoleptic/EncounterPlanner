@@ -511,9 +511,9 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
+	InitializeDungeonInstances()
 	Private.testRunner.RunTests()
 	self.UpdateProfile(self.db.profile)
-	InitializeDungeonInstances()
 	Private:RegisterCommunications()
 	local preferences = self.db.profile.preferences --[[@as Preferences]]
 	if preferences.reminder.enabled then

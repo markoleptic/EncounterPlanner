@@ -1900,6 +1900,55 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 end
 
 do
+	---@param plans table<string, Plan>
+	---@param instanceID integer
+	---@param encounterID integer
+	---@return string|nil
+	local function SelectNewLastOpenPlan(plans, instanceID, encounterID)
+		local sortedBossIDs = Utilities.GetOrCreateBossDropdownItems()
+		local table = {}
+
+		for currentPlanName, currentPlan in pairs(plans) do
+			table[currentPlan.instanceID] = table[currentPlan.instanceID] or {}
+			table[currentPlan.instanceID][currentPlan.dungeonEncounterID] = table[currentPlan.instanceID][currentPlan.dungeonEncounterID]
+				or {}
+			tinsert(table[currentPlan.instanceID][currentPlan.dungeonEncounterID], currentPlanName)
+		end
+
+		if table[instanceID] then
+			if table[instanceID][encounterID] then
+				sort(table[instanceID][encounterID])
+				return table[instanceID][encounterID][1]
+			end
+			for _, instanceDropdownData in ipairs(sortedBossIDs) do
+				local currentInstanceID = instanceDropdownData.itemValue
+				if instanceID == currentInstanceID then
+					for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
+						local currentEncounterID = bossDropdownData.itemValue
+						if table[instanceID][currentEncounterID] then
+							sort(table[instanceID][currentEncounterID])
+							return table[instanceID][currentEncounterID][1]
+						end
+					end
+					break
+				end
+			end
+		end
+
+		for _, instanceDropdownData in ipairs(sortedBossIDs) do
+			local currentInstanceID = instanceDropdownData.itemValue
+			for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
+				local currentEncounterID = bossDropdownData.itemValue
+				if table[currentInstanceID] and table[currentInstanceID][currentEncounterID] then
+					sort(table[currentInstanceID][currentEncounterID])
+					return table[currentInstanceID][currentEncounterID][1]
+				end
+			end
+		end
+
+		return nil
+	end
+
 	-- Reassigns a primary plan for the encounterID only if none exist.
 	---@param plans table<string, Plan>
 	---@param encounterID integer
@@ -1964,28 +2013,18 @@ do
 	function Utilities.DeletePlan(profile, planToDeleteName)
 		if profile.plans[planToDeleteName] then
 			local plans = profile.plans
-			local previousPlanName, nextPlanName
 
-			local temp
-			for currentPlanName, _ in pairs(plans) do
-				if currentPlanName == planToDeleteName then
-					previousPlanName = temp
-				elseif temp == planToDeleteName then
-					nextPlanName = currentPlanName
-					break
-				end
-				temp = currentPlanName
-			end
-
+			local instanceID = plans[planToDeleteName].instanceID
 			local encounterID = plans[planToDeleteName].dungeonEncounterID
 
 			plans[planToDeleteName] = nil
 
 			if profile.lastOpenPlan == planToDeleteName then
-				if previousPlanName or nextPlanName then
-					profile.lastOpenPlan = previousPlanName or nextPlanName
+				local newPlanName = SelectNewLastOpenPlan(plans, instanceID, encounterID)
+				if newPlanName then
+					profile.lastOpenPlan = newPlanName
 				else
-					local newPlan = Utilities.CreatePlan(profile.plans, nil, encounterID)
+					local newPlan = Utilities.CreatePlan(plans, nil, encounterID)
 					profile.lastOpenPlan = newPlan.name
 				end
 			end
