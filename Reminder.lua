@@ -553,85 +553,87 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 end
 
--- Possibly cancels reminders or frame glows based on the spell being cast, subEvent, and destGUID.
----@param spellID integer
----@param destGUID string
----@param subEvent FullCombatLogEventType
-local function MaybeCancelStuff(spellID, destGUID, subEvent)
-	if hideIfAlreadyCasted then
-		if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" then
-			CancelRemindersDueToSpellAlreadyCast(spellID)
-		end
-	end
-	if stopGlowIfCasted[spellID] then
-		for ID, obj in pairs(stopGlowIfCasted[spellID]) do
-			if destGUID == obj.targetGUID then
-				if frameGlowTimers[ID] and not frameGlowTimers[ID]:IsCancelled() then
-					frameGlowTimers[ID]:Invoke(frameGlowTimers[ID])
-				end
-			end
-		end
-		if not next(stopGlowIfCasted[spellID]) then
-			stopGlowIfCasted[spellID] = nil
-		end
-	end
-end
-
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
 	local _, subEvent, _, sourceGUID, _, _, _, destGUID, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
-	if spellCounts[subEvent] then
-		if subEvent == "UNIT_DIED" then
-			local _, _, _, _, _, id = split("-", destGUID)
-			local mobID = tonumber(id)
-			if mobID and spellCounts[subEvent][mobID] then
-				if not activeBuffers[mobID] or (activeBuffers[mobID] and not activeBuffers[mobID][subEvent]) then
-					if bufferDurations[mobID] then
-						ApplyBuffer(mobID, subEvent)
+	if not spellCounts[subEvent] then
+		return
+	end
+
+	if subEvent == "UNIT_DIED" then
+		local mobID = tonumber(select(6, split("-", destGUID)))
+		if mobID and spellCounts[subEvent][mobID] then
+			if not activeBuffers[mobID] or (activeBuffers[mobID] and not activeBuffers[mobID][subEvent]) then
+				if bufferDurations[mobID] then
+					ApplyBuffer(mobID, subEvent)
+				end
+				local spellCount = spellCounts[subEvent][mobID] + 1
+				spellCounts[subEvent][mobID] = spellCount
+				local reminders = combatLogEventReminders[subEvent][mobID]
+					and combatLogEventReminders[subEvent][mobID][1]
+				if reminders then
+					for _, reminder in ipairs(reminders) do
+						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
 					end
-					local spellCount = spellCounts[subEvent][mobID][1] + 1
-					spellCounts[subEvent][mobID][1] = spellCount
-					local reminders = combatLogEventReminders[subEvent][mobID][spellCount]
-					if reminders then
-						for _, reminder in ipairs(reminders) do
-							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
-						end
-						combatLogEventReminders[subEvent][mobID][spellCount] = nil
-						if not next(combatLogEventReminders[subEvent][mobID]) then
-							combatLogEventReminders[subEvent][mobID] = nil
-							if not next(combatLogEventReminders[subEvent]) then
-								combatLogEventReminders[subEvent] = nil
-							end
+					combatLogEventReminders[subEvent][mobID][spellCount] = nil
+
+					if not next(combatLogEventReminders[subEvent][mobID]) then
+						spellCounts[subEvent][mobID], combatLogEventReminders[subEvent][mobID] = nil, nil
+						if not next(combatLogEventReminders[subEvent]) then
+							spellCounts[subEvent], combatLogEventReminders[subEvent] = nil, nil
 						end
 					end
 				end
 			end
-		elseif spellID then
-			if spellCounts[subEvent][spellID] then
-				if not activeBuffers[spellID] or (activeBuffers[spellID] and not activeBuffers[spellID][subEvent]) then
-					if bufferDurations[spellID] then
-						ApplyBuffer(spellID, subEvent)
+		end
+	elseif spellID then
+		if spellCounts[subEvent][spellID] then
+			if not activeBuffers[spellID] or (activeBuffers[spellID] and not activeBuffers[spellID][subEvent]) then
+				if bufferDurations[spellID] then
+					ApplyBuffer(spellID, subEvent)
+				end
+				local spellCount = spellCounts[subEvent][spellID] + 1
+				spellCounts[subEvent][spellID] = spellCount
+				local reminders = combatLogEventReminders[subEvent][spellID]
+					and combatLogEventReminders[subEvent][spellID][spellCount]
+				if reminders then
+					for _, reminder in ipairs(reminders) do
+						CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
 					end
-					local spellCount = spellCounts[subEvent][spellID] + 1
-					spellCounts[subEvent][spellID] = spellCount
-					local reminders = combatLogEventReminders[subEvent][spellID][spellCount]
-					if reminders then
-						for _, reminder in ipairs(reminders) do
-							CreateTimer(reminder.assignment, reminder.roster, reminder.preferences, 0.0)
+					combatLogEventReminders[subEvent][spellID][spellCount] = nil
+
+					if not next(combatLogEventReminders[subEvent][spellID]) then
+						spellCounts[subEvent][spellID], combatLogEventReminders[subEvent][spellID] = nil, nil
+						if not next(combatLogEventReminders[subEvent]) then
+							spellCounts[subEvent], combatLogEventReminders[subEvent] = nil, nil
 						end
-						combatLogEventReminders[subEvent][spellID][spellCount] = nil
-						if not next(combatLogEventReminders[subEvent][spellID]) then
-							combatLogEventReminders[subEvent][spellID] = nil
-							if not next(combatLogEventReminders[subEvent]) then
-								combatLogEventReminders[subEvent] = nil
-							end
+					end
+				--@debug@
+				else
+					log.unidentified = log.unidentified or {}
+					tinsert(log.unidentified, { subEvent, spellID, spellCount })
+					--@end-debug@
+				end
+			end
+		end
+		if playerGUID == sourceGUID then
+			if hideIfAlreadyCasted then
+				if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" then
+					CancelRemindersDueToSpellAlreadyCast(spellID)
+				end
+			end
+			if stopGlowIfCasted[spellID] then
+				for ID, obj in pairs(stopGlowIfCasted[spellID]) do
+					if destGUID == obj.targetGUID then
+						if frameGlowTimers[ID] and not frameGlowTimers[ID]:IsCancelled() then
+							frameGlowTimers[ID]:Invoke(frameGlowTimers[ID])
 						end
 					end
 				end
-			end
-			if playerGUID == sourceGUID then
-				MaybeCancelStuff(spellID, destGUID, subEvent)
+				if not next(stopGlowIfCasted[spellID]) then
+					stopGlowIfCasted[spellID] = nil
+				end
 			end
 		end
 	end
@@ -883,3 +885,204 @@ end
 function Private.IsSimulatingBoss()
 	return isSimulating
 end
+
+--@debug@
+do
+	---@class Test
+	local test = Private.test
+	---@class TestUtilities
+	local testUtilities = Private.testUtilities
+
+	---@param testSpellCounts table<FullCombatLogEventType, table<integer, integer>>
+	---@param testCombatLogEventReminders table<FullCombatLogEventType, table<integer, table<integer, table>>>
+	---@param spellID integer
+	---@param count integer
+	local function CreateTestSpellCounts(testSpellCounts, testCombatLogEventReminders, spellID, count)
+		for _, eventType in pairs(combatLogEventMap) do
+			CreateSpellCountEntry(eventType, spellID, 1)
+			testSpellCounts[eventType] = testSpellCounts[eventType] or {}
+			testSpellCounts[eventType][spellID] = testSpellCounts[eventType][spellID] or 0
+			testCombatLogEventReminders[eventType] = testCombatLogEventReminders[eventType] or {}
+			testCombatLogEventReminders[eventType][spellID] = testCombatLogEventReminders[eventType][spellID] or {}
+			for i = 1, count do
+				if not testCombatLogEventReminders[eventType][spellID][i] then
+					testCombatLogEventReminders[eventType][spellID][i] = {}
+				end
+			end
+		end
+	end
+
+	---@param testCombatLogEventReminders table<FullCombatLogEventType, table<integer, table<integer, table>>>
+	---@param eventType FullCombatLogEventType
+	---@param spellID integer
+	---@param count integer
+	local function AddTestSpellCount(testCombatLogEventReminders, eventType, spellID, count)
+		CreateSpellCountEntry(eventType, spellID, count)
+		testCombatLogEventReminders[eventType][spellID][count] = {}
+	end
+
+	---@param testSpellCounts table<FullCombatLogEventType, table<integer, integer>>
+	---@param testCombatLogEventReminders table<FullCombatLogEventType, table<integer, table<integer, table>>>
+	---@param eventType FullCombatLogEventType
+	---@param spellID integer|nil
+	---@param count integer|nil
+	local function RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, eventType, spellID, count)
+		if spellID then
+			if count then
+				testCombatLogEventReminders[eventType][spellID][count] = nil
+				testSpellCounts[eventType][spellID] = testSpellCounts[eventType][spellID] + 1
+			else
+				testSpellCounts[eventType][spellID] = nil
+				testCombatLogEventReminders[eventType][spellID] = nil
+			end
+		else
+			testSpellCounts[eventType] = nil
+			testCombatLogEventReminders[eventType] = nil
+		end
+	end
+
+	do
+		function test.CombatLogEvents()
+			local oldCreateTimer = CreateTimer
+			local oldCombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+
+			CreateTimer = function() end
+			local currentEventType = "SPELL_CAST_SUCCESS"
+			local currentSpellID = 123
+			CombatLogGetCurrentEventInfo = function()
+				return nil, currentEventType, nil, nil, nil, nil, nil, nil, nil, nil, nil, currentSpellID
+			end
+
+			local testSpellCounts, testCombatLogEventReminders = {}, {}
+			CreateTestSpellCounts(testSpellCounts, testCombatLogEventReminders, 123, 1)
+			CreateTestSpellCounts(testSpellCounts, testCombatLogEventReminders, 321, 1)
+			AddTestSpellCount(testCombatLogEventReminders, "SPELL_CAST_SUCCESS", 123, 2)
+			AddTestSpellCount(testCombatLogEventReminders, "SPELL_CAST_SUCCESS", 321, 2)
+
+			local context = "Initialized Test Tables Equal"
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+
+			currentEventType = "SPELL_CAST_SUCCESS"
+			currentSpellID = 123
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, 1)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+
+			currentSpellID = 321
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, 1)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+
+			currentSpellID = 123
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 2
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+
+			currentSpellID = 321
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 2
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			HandleCombatLogEventUnfiltered()
+
+			currentEventType = "SPELL_CAST_START"
+			currentSpellID = 123
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+
+			currentSpellID = 321
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			HandleCombatLogEventUnfiltered()
+
+			currentEventType = "SPELL_AURA_APPLIED"
+			currentSpellID = 123
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+
+			currentSpellID = 321
+			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			HandleCombatLogEventUnfiltered()
+
+			CreateTimer = oldCreateTimer
+			CombatLogGetCurrentEventInfo = oldCombatLogGetCurrentEventInfo
+			ResetLocalVariables()
+			return "CombatLogEvents"
+		end
+
+		function test.UnitDied()
+			local oldCreateTimer = CreateTimer
+			local oldCombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+
+			CreateTimer = function() end
+			local eventType = "UNIT_DIED"
+			local currentSpellID = 123
+			local currentDestGUID = "a-b-c-d-e-111"
+			CombatLogGetCurrentEventInfo = function()
+				return nil, eventType, nil, nil, nil, nil, nil, currentDestGUID, nil, nil, nil, currentSpellID
+			end
+
+			local testSpellCounts, testCombatLogEventReminders = {}, {}
+			CreateSpellCountEntry(eventType, 111, 1)
+			CreateSpellCountEntry(eventType, 112, 1)
+			for spellID = 111, 112 do
+				testSpellCounts[eventType] = testSpellCounts[eventType] or {}
+				testSpellCounts[eventType][spellID] = testSpellCounts[eventType][spellID] or 0
+				testCombatLogEventReminders[eventType] = testCombatLogEventReminders[eventType] or {}
+				testCombatLogEventReminders[eventType][spellID] = testCombatLogEventReminders[eventType][spellID] or {}
+				if not testCombatLogEventReminders[eventType][spellID][1] then
+					testCombatLogEventReminders[eventType][spellID][1] = {}
+				end
+			end
+
+			local context = "Initialized Test Tables Equal"
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+
+			currentDestGUID = "a-b-c-d-e-111"
+			currentSpellID = 111
+			context = "Event: " .. eventType .. " Dest GUID: " .. currentDestGUID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, eventType, currentSpellID, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+			HandleCombatLogEventUnfiltered()
+
+			currentDestGUID = "a-b-c-d-e-112"
+			currentSpellID = 112
+			context = "Event: " .. eventType .. " Dest GUID: " .. currentDestGUID .. " Count: " .. 1
+			HandleCombatLogEventUnfiltered()
+			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, eventType, nil, nil)
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
+			HandleCombatLogEventUnfiltered()
+
+			CreateTimer = oldCreateTimer
+			CombatLogGetCurrentEventInfo = oldCombatLogGetCurrentEventInfo
+			ResetLocalVariables()
+			return "UnitDied"
+		end
+	end
+end
+--@end-debug@
