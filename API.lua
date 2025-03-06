@@ -12,16 +12,6 @@ local join = string.join
 local tinsert = tinsert
 local unpack = unpack
 
--- Public facing API.
----@class EncounterPlannerAPI
-local API = {}
-
----@return string
-function API.GetExternalTextAsString()
-	local profile = Private.addOn.db.profile ---@type DefaultProfile
-	return join("\n", unpack(profile.activeText))
-end
-
 ---@param strTable table<integer, string>
 ---@return table<integer, table<integer, string>>
 local function SplitStringTableByWhiteSpace(strTable)
@@ -33,6 +23,16 @@ local function SplitStringTableByWhiteSpace(strTable)
 		end
 	end
 	return returnTable
+end
+
+-- Public facing API.
+---@class EncounterPlannerAPI
+local API = {}
+
+---@return string
+function API.GetExternalTextAsString()
+	local profile = Private.addOn.db.profile ---@type DefaultProfile
+	return join("\n", unpack(profile.activeText))
 end
 
 ---@return table<integer, table<integer, string>>
