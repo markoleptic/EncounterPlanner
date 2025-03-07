@@ -1050,14 +1050,14 @@ do
 	end
 
 	---@param boss Boss
-	---@param useMax boolean|nil
+	---@param customOrderedBossPhases table<integer, integer>|nil
 	---@return table<integer, {startTime: number, endTime: number, count: integer}>
-	local function GeneratePhaseCountDurationMap(boss, useMax)
+	local function GeneratePhaseCountDurationMap(boss, customOrderedBossPhases)
 		local phases = boss.phases
 		local counts = {}
 		local map = {}
 		local currentTotalDuration = 0.0
-		local tbl = useMax and maxOrderedBossPhases[boss.dungeonEncounterID]
+		local tbl = customOrderedBossPhases ~= nil and customOrderedBossPhases
 			or orderedBossPhases[boss.dungeonEncounterID]
 		for _, bossPhaseIndex in ipairs(tbl) do
 			local phase = phases[bossPhaseIndex]
@@ -1400,6 +1400,52 @@ do
 		return spellCount
 	end
 
+	-- Creates a table that can be used to find the absolute cast time of given the spellID and spell occurrence number
+	-- for the longest possible phase durations and counts.
+	---@param encounterID integer
+	---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+	local function GenerateMaxAbsoluteSpellCastTimeTable(encounterID)
+		---@type table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+		local spellCount = {}
+		local boss = BossUtilities.GetBoss(encounterID)
+		local kMinBossPhaseDuration = Private.constants.kMinBossPhaseDuration
+		local kMaxBossDuration = Private.constants.kMaxBossDuration
+		if boss then
+			local phases = boss.phases
+			for phaseIndex, currentPhase in ipairs(phases) do
+				for _, phase in ipairs(phases) do
+					if currentPhase ~= phase then
+						if not phase.fixedDuration then
+							phase.duration = kMinBossPhaseDuration
+						end
+					end
+				end
+				local duration = BossUtilities.CalculateMaxPhaseDuration(encounterID, phaseIndex, kMaxBossDuration)
+				if duration then
+					currentPhase.duration = duration
+				end
+
+				local orderedBossPhaseTable = GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration)
+				phaseCountDurationMap = GeneratePhaseCountDurationMap(boss, orderedBossPhaseTable)
+				local currentSpellCastTimeTable = GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhaseTable)
+
+				for spellID, spellCountBySpellID in pairs(currentSpellCastTimeTable) do
+					spellCount[spellID] = spellCount[spellID] or {}
+					for count, castStartAndIndex in pairs(spellCountBySpellID) do
+						if not spellCount[spellID][count] then
+							spellCount[spellID][count] = castStartAndIndex
+						end
+					end
+				end
+			end
+			for _, phase in ipairs(phases) do
+				phase.duration = phase.defaultDuration
+			end
+		end
+		wipe(phaseCountDurationMap)
+		return spellCount
+	end
+
 	-- Creates BossAbilityInstances for all abilities of a boss.
 	---@param boss Boss
 	---@param orderedBossPhaseTable table<integer, integer>
@@ -1589,12 +1635,13 @@ do
 	-- Creates ordered boss phases, spell cast times, sorted abilities, and ability instances for a boss.
 	---@param boss Boss
 	function BossUtilities.GenerateBossTables(boss)
-		local ID = boss.dungeonEncounterID
-		orderedBossPhases[ID] = GenerateOrderedBossPhaseTable(ID)
+		local encounterID = boss.dungeonEncounterID
+		orderedBossPhases[encounterID] = GenerateOrderedBossPhaseTable(encounterID)
 		phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
-		absoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[ID])
-		boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[ID])
-		boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[ID])
+		absoluteSpellCastStartTables[encounterID] =
+			GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[encounterID])
+		boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[encounterID])
+		boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[encounterID])
 		wipe(phaseCountDurationMap)
 	end
 
@@ -1602,12 +1649,10 @@ do
 
 	for _, dungeonInstance in pairs(Private.dungeonInstances) do
 		for _, boss in ipairs(dungeonInstance.bosses) do
-			local ID = boss.dungeonEncounterID
+			local encounterID = boss.dungeonEncounterID
 			BossUtilities.GenerateBossTables(boss)
-			maxOrderedBossPhases[ID] = GenerateMaxOrderedBossPhaseTable(ID, kMaxBossDuration)
-			phaseCountDurationMap = GeneratePhaseCountDurationMap(boss, true)
-			maxAbsoluteSpellCastStartTables[ID] = GenerateAbsoluteSpellCastTimeTable(boss, maxOrderedBossPhases[ID])
-			wipe(phaseCountDurationMap)
+			maxOrderedBossPhases[encounterID] = GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration)
+			maxAbsoluteSpellCastStartTables[encounterID] = GenerateMaxAbsoluteSpellCastTimeTable(encounterID)
 		end
 	end
 
@@ -1626,13 +1671,17 @@ do
 					for _, boss in ipairs(dungeonInstance.bosses) do
 						phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
 						local castTimeTable = {}
-						local ID = boss.dungeonEncounterID
-						GenerateBossAbilityInstances(boss, orderedBossPhases[ID], castTimeTable)
+						local encounterID = boss.dungeonEncounterID
+						GenerateBossAbilityInstances(boss, orderedBossPhases[encounterID], castTimeTable)
 						for _, spellOccurrenceNumbers in pairs(castTimeTable) do
 							sort(spellOccurrenceNumbers)
 						end
-						TestEqual(#absoluteSpellCastStartTables[ID], #castTimeTable, "Cast Time Table Size Equal")
-						for bossAbilitySpellID, spellCount in pairs(absoluteSpellCastStartTables[ID]) do
+						TestEqual(
+							#absoluteSpellCastStartTables[encounterID],
+							#castTimeTable,
+							"Cast Time Table Size Equal"
+						)
+						for bossAbilitySpellID, spellCount in pairs(absoluteSpellCastStartTables[encounterID]) do
 							for spellOccurrence, castStartAndOrder in ipairs(spellCount) do
 								local castStart = castTimeTable[bossAbilitySpellID][spellOccurrence]
 								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
@@ -1642,7 +1691,7 @@ do
 						for bossAbilitySpellID, spellCount in pairs(castTimeTable) do
 							for spellOccurrence, castStart in ipairs(spellCount) do
 								local castStartAndOrder =
-									absoluteSpellCastStartTables[ID][bossAbilitySpellID][spellOccurrence]
+									absoluteSpellCastStartTables[encounterID][bossAbilitySpellID][spellOccurrence]
 								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
 								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
