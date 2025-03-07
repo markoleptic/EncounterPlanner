@@ -70,8 +70,16 @@ do -- Minimap icon initialization and handling
 			tooltip:AddLine(" ")
 
 			local sessionAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.SessionAverageTime)
-			local recentAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.RecentAverageTime)
 			local encounterAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.EncounterAverageTime)
+
+			local r, g, b = 237.0 / 255.0, 165.0 / 255.0, 95.0 / 255.0
+			local str = format("%s:", L["Average Time Since Login/Reload"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", sessionAverageTime, L["ms"]), r, g, b)
+			str = format("%s:", L["Average Time Over Boss Encounter"])
+			tooltip:AddDoubleLine(str, format("%.4f %s", encounterAverageTime, L["ms"]), r, g, b)
+
+			--@debug@
+			local recentAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.RecentAverageTime)
 			local lastTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.LastTime)
 			local peakTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.PeakTime)
 			local countTimeOver1Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver1Ms)
@@ -79,20 +87,12 @@ do -- Minimap icon initialization and handling
 			local countTimeOver10Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver10Ms)
 			local countTimeOver50Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver50Ms)
 			local countTimeOver100Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver100Ms)
-
-			local r, g, b = 237.0 / 255.0, 165.0 / 255.0, 95.0 / 255.0
-			local str = format("%s:", L["Average Time Since Login/Reload"])
-			tooltip:AddDoubleLine(str, format("%.4f %s", sessionAverageTime, L["ms"]), r, g, b)
 			str = format("%s:", L["Highest Time Since Login/Reload"])
 			tooltip:AddDoubleLine(str, format("%.4f %s", peakTime, L["ms"]), r, g, b)
 			str = format("%s:", L["Total Time In Most Recent Tick"])
 			tooltip:AddDoubleLine(str, format("%.4f %s", lastTime, L["ms"]), r, g, b)
-
 			str = format("%s:", L["Average Time Over Last 60 Ticks"])
 			tooltip:AddDoubleLine(str, format("%.4f %s", recentAverageTime, L["ms"]), r, g, b)
-			str = format("%s:", L["Average Time Over Boss Encounter"])
-			tooltip:AddDoubleLine(str, format("%.4f %s", encounterAverageTime, L["ms"]), r, g, b)
-
 			str = format("%s %d %s:", L["Count Time Over"], 1, L["ms"])
 			tooltip:AddDoubleLine(str, format("%d", countTimeOver1Ms), r, g, b)
 			str = format("%s %d %s:", L["Count Time Over"], 5, L["ms"])
@@ -103,6 +103,7 @@ do -- Minimap icon initialization and handling
 			tooltip:AddDoubleLine(str, format("%d", countTimeOver50Ms), r, g, b)
 			str = format("%s %d %s:", L["Count Time Over"], 100, L["ms"])
 			tooltip:AddDoubleLine(str, format("%d", countTimeOver100Ms), r, g, b)
+			--@end-debug@
 
 			if not isAddonCompartment then
 				tooltip:AddLine(" ")
@@ -304,20 +305,21 @@ do -- Profile updating and refreshing
 			end
 		end
 		local testPlans = {}
+		local name, entry = utilities.CreateRosterEntryForSelf()
 		for _, dungeonInstance in pairs(Private.dungeonInstances) do
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectInstance(dungeonInstance.journalInstanceID)
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
 				local plan = utilities.CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
-				plan.roster["Markoleptic"] = Private.classes.RosterEntry:New()
+				plan.roster[name] = entry
 				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID) --[[@as table<integer, BossAbilityInstance>]]
 				for _, abilityInstance in ipairs(instances) do
 					local types = boss.abilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
 					if #types > 0 then
 						local allowedType = types[math.random(1, #types)]
 						local assignment = Private.classes.CombatLogEventAssignment:New()
-						assignment.assignee = "Markoleptic"
+						assignment.assignee = name
 						assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
 						assignment.phase = abilityInstance.bossPhaseIndex
 						assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
@@ -332,7 +334,7 @@ do -- Profile updating and refreshing
 				local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID)
 				do
 					local assignment = Private.classes.TimedAssignment:New()
-					assignment.assignee = "Markoleptic"
+					assignment.assignee = name
 					assignment.time = 0
 					assignment.spellID = 1
 					assignment.text = "Timed " .. 0
@@ -340,7 +342,7 @@ do -- Profile updating and refreshing
 				end
 				for i = 5, floor(d * 0.6), 30 do
 					local assignment = Private.classes.TimedAssignment:New()
-					assignment.assignee = "Markoleptic"
+					assignment.assignee = name
 					assignment.time = i
 					assignment.spellID = 1
 					assignment.text = "Timed " .. i
