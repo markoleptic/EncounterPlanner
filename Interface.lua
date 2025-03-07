@@ -1781,7 +1781,8 @@ function Private:CreateInterface()
 	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
-	planDropdown:SetMaxVisibleItems(defaultMaxVisibleDropdownItems)
+	local maxVisiblePlanDropdownItems = 10
+	planDropdown:SetMaxVisibleItems(maxVisiblePlanDropdownItems)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanNameChanged)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 
