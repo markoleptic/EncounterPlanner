@@ -512,7 +512,9 @@ end
 
 function AddOn:OnEnable()
 	InitializeDungeonInstances()
+	--@debug@
 	Private.testRunner.RunTests()
+	--@end-debug@
 	self.UpdateProfile(self.db.profile)
 	Private:RegisterCommunications()
 	local preferences = self.db.profile.preferences --[[@as Preferences]]
