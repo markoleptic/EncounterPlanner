@@ -561,8 +561,9 @@ local function HandleCombatLogEventUnfiltered()
 		return
 	end
 
-	if subEvent == "UNIT_DIED" then
-		local mobID = tonumber(select(6, split("-", destGUID)))
+	if subEvent == "UNIT_DIED" and destGUID then
+		local _, _, _, _, _, id = split("-", destGUID)
+		local mobID = tonumber(id)
 		if mobID and spellCounts[subEvent][mobID] then
 			if not activeBuffers[mobID] or (activeBuffers[mobID] and not activeBuffers[mobID][subEvent]) then
 				if bufferDurations[mobID] then
