@@ -1864,6 +1864,34 @@ function Utilities.SetDesignatedExternalPlan(plans, newDesignatedExternalPlan)
 	return changedPrimaryPlan
 end
 
+---@return string
+---@return RosterEntry
+function Utilities.CreateRosterEntryForSelf()
+	local role = select(5, GetSpecializationInfo(GetSpecialization()))
+	if role then
+		role = "role:" .. role:lower()
+	else
+		role = ""
+	end
+	local _, classFileName, _ = UnitClass("player")
+	local unitName, _ = UnitFullName("player")
+	local colorMixin = GetClassColor(classFileName)
+	local classColoredName = colorMixin:WrapTextInColorCode(unitName)
+	if classFileName == "DEATHKNIGHT" then
+		classFileName = "DeathKnight"
+	elseif classFileName == "DEMONHUNTER" then
+		classFileName = "DemonHunter"
+	else
+		classFileName = classFileName:sub(1, 1):upper() .. classFileName:sub(2):lower()
+	end
+	return unitName,
+		RosterEntry:New({
+			class = "class:" .. classFileName,
+			role = role,
+			classColoredName = classColoredName,
+		})
+end
+
 ---@param plans table<string, Plan>
 ---@param newPlanName string|nil
 ---@param encounterID integer
@@ -1872,6 +1900,8 @@ function Utilities.CreatePlan(plans, newPlanName, encounterID)
 	newPlanName = Utilities.CreateUniquePlanName(plans, newPlanName or L["Default"])
 	plans[newPlanName] = Plan:New({}, newPlanName)
 	Utilities.ChangePlanBoss(plans, newPlanName, encounterID)
+	local unitName, entry = Utilities.CreateRosterEntryForSelf()
+	plans[newPlanName].roster[unitName] = entry
 	return plans[newPlanName]
 end
 
