@@ -684,6 +684,7 @@ end
 ---@param roster table<string, RosterEntry> Roster to character names from
 ---@param assigneeDropdownItems? table<integer, DropdownItemData>
 ---@return table<integer, DropdownItemData>
+---@return boolean individualEmpty
 function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
 	local assignmentTypes = Utilities.GetOrCreateAssignmentTypeDropdownItems()
 
@@ -694,6 +695,7 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 			break
 		end
 	end
+	local individualEmpty = true
 	if individualIndex then
 		if assigneeDropdownItems then
 			assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
@@ -701,8 +703,9 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 			assignmentTypes[individualIndex].dropdownItemMenuData = Utilities.CreateAssigneeDropdownItems(roster)
 		end
 		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
+		individualEmpty = #assignmentTypes[individualIndex].dropdownItemMenuData > 0
 	end
-	return assignmentTypes
+	return assignmentTypes, individualEmpty
 end
 
 do

@@ -550,10 +550,11 @@ Defines what activates an assignment.
 -   For **Fixed Time**, this is from encounter start.
 -   For **Combat Log Event** this is from the event time.
 
-**Type**:
+**Assignee**:
 To whom the assignment is assigned to:
 
 -   **Class**, **Group Number**, **Individual**, **Role**, **Spec**, **Type**, or **Everyone**.
+-   **Individual** is disabled if there are no members in the [Current Plan Roster](#roster).
 
 **Spell**:
 If checked, the assignment will be associated with a spell.

@@ -289,18 +289,23 @@ do -- Roster Editor
 		if Private.assignmentEditor then
 			local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
 			local targetDropdown = Private.assignmentEditor.targetDropdown
-			local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
-			local updatedDropdownItems =
-				CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster(), assigneeDropdownItems)
+			local roster = GetCurrentRoster()
+
+			local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
+			local updatedDropdownItems, enableIndividualItem =
+				CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
+
 			local previousValue = assigneeTypeDropdown:GetValue()
 			assigneeTypeDropdown:Clear()
 			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
 			assigneeTypeDropdown:SetValue(previousValue)
+			assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
 			local previousTargetValue = targetDropdown:GetValue()
 			targetDropdown:Clear()
 			targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 			targetDropdown:SetValue(previousTargetValue)
+			targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 			Private.assignmentEditor:HandleRosterChanged()
 		end
 	end
@@ -643,11 +648,14 @@ do -- Assignment Editor
 			GetOrCreateSpellAssignmentDropdownItems(),
 			"EPDropdownItemToggle"
 		)
-		local assigneeDropdownItems = CreateAssigneeDropdownItems(GetCurrentRoster())
-		local updatedDropdownItems =
-			CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster(), assigneeDropdownItems)
+		local roster = GetCurrentRoster()
+		local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
+		local updatedDropdownItems, enableIndividualItem =
+			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
 		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 			"Recent",

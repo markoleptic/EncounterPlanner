@@ -330,7 +330,7 @@ local function OnAcquire(self)
 		self.assigneeTypeContainer:SetFullWidth(true)
 
 		self.assigneeTypeLabel = AceGUI:Create("EPLabel")
-		self.assigneeTypeLabel:SetText(L["Type:"], 0)
+		self.assigneeTypeLabel:SetText(L["Assignee:"], 0)
 		self.assigneeTypeLabel:SetFrameHeightFromText()
 		self.assigneeTypeLabel:SetFullWidth(true)
 

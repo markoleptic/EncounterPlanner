@@ -268,8 +268,10 @@ do
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapButtonClicked(abilityEntry)
-		local assigneeDropdownItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
-		abilityEntry:SetAssigneeDropdownItems(assigneeDropdownItems)
+		local roster = GetCurrentRoster()
+		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
+		abilityEntry:SetAssigneeDropdownItems(items)
+		abilityEntry.dropdown:SetItemEnabled("Individual", enableIndividualItem)
 	end
 
 	local CreateReminderText = utilities.CreateReminderText
@@ -507,11 +509,10 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 		addAssigneeDropdown:Clear()
 		local text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
 		addAssigneeDropdown:SetText(text)
-		addAssigneeDropdown:AddItems(
-			CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster()),
-			"EPDropdownItemToggle",
-			true
-		)
+		local roster = GetCurrentRoster()
+		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
+		addAssigneeDropdown:AddItems(items, "EPDropdownItemToggle", true)
+		addAssigneeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 	end
 end
 
