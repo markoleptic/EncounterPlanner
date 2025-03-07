@@ -111,10 +111,6 @@ local progressBarsToAdd = {}
 local messagesToRemove = {}
 local progressBarsToRemove = {}
 
---@debug@
-local log = {}
---@end-debug@
-
 local function ResetLocalVariables()
 	if updateTimer and not updateTimer:IsCancelled() then
 		updateTimer:Cancel()
@@ -185,9 +181,6 @@ local function ResetLocalVariables()
 
 	isSimulating = false
 	hideIfAlreadyCasted = false
-	--@debug@
-	log = nil
-	--@end-debug@
 end
 
 ---@param ... unknown
@@ -610,11 +603,6 @@ local function HandleCombatLogEventUnfiltered()
 							spellCounts[subEvent], combatLogEventReminders[subEvent] = nil, nil
 						end
 					end
-				--@debug@
-				else
-					log.unidentified = log.unidentified or {}
-					tinsert(log.unidentified, { subEvent, spellID, spellCount })
-					--@end-debug@
 				end
 			end
 		end
@@ -685,97 +673,11 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 			end
 		end
-
-		--@debug@
-		AddOn.db.profile.logs = AddOn.db.profile.logs or {}
-		AddOn.db.profile.logs[encounterName .. "-" .. date("%m/%d/%y-%H:%M:%S")] = {}
-		log = AddOn.db.profile.logs[encounterName .. "-" .. date("%m/%d/%y-%H:%M:%S")]
-		log.startTime = startTime
-		log.activePlanCount = #activePlans
-		log.combatLogEventReminders = Private.DeepCopy(combatLogEventReminders)
-		--@end-debug@
-
 		--[===[@non-debug@
 		end
         --@end-non-debug@]===]
 	end
 end
-
---@debug@
-local function DebugLog()
-	local count = 0
-	for _, _ in pairs(timers) do
-		count = count + 1
-	end
-	log.endTimerCount = count
-
-	count = 0
-	for _, timer in pairs(frameGlowTimers) do
-		if not timer:IsCancelled() then
-			count = count + 1
-		end
-	end
-	log.endFrameGlowTimerCount = count
-
-	count = 0
-	for _, targetFrames in pairs(stopGlowIfCasted) do
-		for _, targetFrame in pairs(targetFrames) do
-			if targetFrame.frame then
-				count = count + 1
-			end
-		end
-	end
-	log.endStopGlowIfCastedCount = count
-
-	count = 0
-	for _, frame in ipairs(noSpellIDGlowFrames) do
-		if frame then
-			count = count + 1
-		end
-	end
-	log.endSpellIDGlowFramesCount = count
-
-	count = 0
-	for _, subTable in pairs(hideWidgetIfCasted) do
-		if subTable then
-			for _, _ in pairs(subTable) do
-				count = count + 1
-			end
-		end
-	end
-	log.endHideWidgetIfCastedCount = count
-
-	count = 0
-	for _, subTable in pairs(combatLogEventReminders) do
-		if subTable then
-			for _, subSub in pairs(subTable) do
-				if subSub then
-					for _, subSubSub in pairs(subSub) do
-						if subSubSub then
-							for _, _ in pairs(subSubSub) do
-								count = count + 1
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	log.endCombatLogEventRemindersCount = count
-	log.endSpellCount = Private.DeepCopy(spellCounts)
-
-	count = 0
-	for _, timer in pairs(bufferTimers) do
-		if not timer:IsCancelled() then
-			count = count + 1
-		end
-	end
-	log.endBufferTimerCount = count
-	log.endBuffers = Private.DeepCopy(bufferDurations)
-	log.endActiveBuffers = Private.DeepCopy(activeBuffers)
-	log.totalTime = GetTime() - log.startTime
-end
---@end-debug@
 
 ---@param encounterID integer ID for the specific encounter that ended.
 ---@param encounterName string Name of the encounter that ended.
@@ -784,9 +686,6 @@ end
 ---@param success integer 1 if success, 0 for wipe.
 local function HandleEncounterEnd(_, encounterID, encounterName, difficultyID, groupSize, success)
 	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	--@debug@
-	DebugLog()
-	--@end-debug@
 	ResetLocalVariables()
 end
 
