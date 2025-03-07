@@ -523,10 +523,12 @@ end
 -- end
 
 ---@class LastInfo
+---@field left number
 ---@field right number
 ---@field shortName	string
 ---@field partialLeft number
 ---@field label FontString|nil
+---@field alreadyShortened boolean|nil
 
 ---@param self EPTimeline
 ---@param index integer
@@ -534,7 +536,7 @@ end
 ---@param shortName string
 ---@param offset number
 ---@param width number
----@param lastInfo LastInfo
+---@param lastInfo table<integer, LastInfo>
 local function DrawBossPhaseIndicator(self, phaseStart, index, longName, shortName, offset, width, lastInfo)
 	local indicator = self.bossPhaseIndicators[index][phaseStart and 1 or 2]
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
@@ -559,24 +561,16 @@ local function DrawBossPhaseIndicator(self, phaseStart, index, longName, shortNa
 	local partialLeft = startHorizontalOffset + phaseIndicatorWidth / 2.0
 	local left = partialLeft - labelWidth / 2.0
 
-	if left <= lastInfo.right + 5 then
-		label:SetText(shortName)
-		labelWidth = label:GetWidth()
-		left = partialLeft - labelWidth / 2.0
-		if lastInfo.label then
-			lastInfo.label:SetText(lastInfo.shortName)
-			local lastLeft = lastInfo.partialLeft - lastInfo.label:GetWidth() / 2.0
-			lastInfo.label:SetPoint("LEFT", timelineFrame, "LEFT", lastLeft, 0)
-		end
-	end
-
 	label:SetPoint("LEFT", timelineFrame, "LEFT", left, 0)
 	label:Show()
 
-	lastInfo.shortName = shortName
-	lastInfo.partialLeft = partialLeft
-	lastInfo.right = left + labelWidth
-	lastInfo.label = label
+	tinsert(lastInfo, {
+		shortName = shortName,
+		partialLeft = partialLeft,
+		left = left,
+		right = left + labelWidth,
+		label = label,
+	})
 end
 
 ---@param self EPTimeline
@@ -691,11 +685,7 @@ local function UpdateBossAbilityBars(self)
 	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
 	local baseFrameLevel = timelineFrame:GetFrameLevel()
 
-	local lastInfo = {
-		right = 0.0,
-		short = "",
-		partialLeft = 0.0,
-	}
+	local lastInfo = {} ---@type table<integer, LastInfo>
 	for _, entry in ipairs(self.bossAbilityInstances) do
 		local timelineStartPosition = (entry.castStart / totalTimelineDuration) * timelineWidth
 		local timelineEndPosition = (entry.effectEnd / totalTimelineDuration) * timelineWidth
@@ -728,6 +718,28 @@ local function UpdateBossAbilityBars(self)
 			local frameLevel = baseFrameLevel + entry.frameLevel
 			DrawBossAbilityBar(self, entry, horizontalOffset, verticalOffset, width, height, color, frameLevel)
 		end
+	end
+	sort(lastInfo, function(a, b)
+		return a.left < b.left
+	end)
+	local lastLastInfo ---@type LastInfo|nil
+	for index, info in ipairs(lastInfo) do
+		if index > 1 and lastLastInfo then
+			if info.left <= lastLastInfo.right + 5 then
+				info.label:SetText(info.shortName)
+				local labelWidth = info.label:GetWidth()
+				local left = info.partialLeft - labelWidth / 2.0
+				info.label:SetPoint("LEFT", timelineFrame, "LEFT", left, 0)
+				info.alreadyShortened = true
+				if not lastLastInfo.alreadyShortened and lastLastInfo.label then
+					lastLastInfo.label:SetText(lastLastInfo.shortName)
+					local lastLeft = lastLastInfo.partialLeft - lastLastInfo.label:GetWidth() / 2.0
+					lastLastInfo.label:SetPoint("LEFT", timelineFrame, "LEFT", lastLeft, 0)
+					lastLastInfo.alreadyShortened = true
+				end
+			end
+		end
+		lastLastInfo = info
 	end
 end
 
