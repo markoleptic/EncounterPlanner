@@ -2,3 +2,4 @@
 .lua/*
 .vscode
 .release
+Libs/*/
