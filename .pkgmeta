@@ -1,5 +1,7 @@
 package-as: EncounterPlanner
 
+manual-changelog: CHANGELOG.txt
+
 externals:
     Libs/LibStub:
         url: https://repos.curseforge.com/wow/libstub/trunk
@@ -58,14 +60,15 @@ externals:
 
 tools-used:
     - OmniCD
-    - BigWigs
-    - LittleWigs
-    - WeakAuras
 
 ignore:
+    - cspell.json
     - Tests
     - README.md
     - CONTRIBUTING.md
     - Meta.lua
+    - ./Libs/Ace*
+    - ./Libs/CallbackHandler*
+    - ./Libs/Lib*
     - Widgets/Meta.lua
     - Raids/NerubarPalace.lua
