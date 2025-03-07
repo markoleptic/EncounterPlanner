@@ -1138,6 +1138,18 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					duration = 60.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					defaultHidden = true,
+				}),
+				[468728] = BossAbility:New({ -- Mug taking charge
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = 120.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[468658] = BossAbility:New({ -- Elemental Carnage (Mug)
 					eventTriggers = {
@@ -1229,6 +1241,18 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					duration = 60.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					defaultHidden = true,
+				}),
+				[468794] = BossAbility:New({ -- Zee Taking Charge
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 60.0 },
+							repeatInterval = 120.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[468694] = BossAbility:New({ -- Uncontrolled Destruction (Zee)
 					eventTriggers = {
