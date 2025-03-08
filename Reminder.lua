@@ -167,6 +167,18 @@ local function ResetLocalVariables()
 	wipe(bufferDurations)
 	wipe(activeBuffers)
 
+	for _, widget in ipairs(messagesToAdd) do
+		if widget then
+			AceGUI:Release(widget)
+		end
+	end
+
+	for _, widget in ipairs(progressBarsToAdd) do
+		if widget then
+			AceGUI:Release(widget)
+		end
+	end
+
 	wipe(messagesToAdd)
 	wipe(progressBarsToAdd)
 	wipe(messagesToRemove)

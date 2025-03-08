@@ -180,37 +180,41 @@ local function OnRelease(self)
 	if self.menuButtonContainer then
 		self.menuButtonContainer:Release()
 	end
+	self.menuButtonContainer = nil
+
 	if self.closeButton then
 		self.closeButton:Release()
 	end
+	self.closeButton = nil
+
 	if self.minimizeButton then
 		self.minimizeButton:Release()
 	end
+	self.minimizeButton = nil
+
 	if self.maximizeButton then
 		self.maximizeButton:Release()
 	end
+	self.maximizeButton = nil
 	if self.closeButtonMinimizeFrame then
 		self.closeButtonMinimizeFrame:Release()
 	end
+	self.closeButtonMinimizeFrame = nil
 	if self.collapseAllButton then
 		self.collapseAllButton:Release()
 	end
+	self.collapseAllButton = nil
 	if self.expandAllButton then
 		self.expandAllButton:Release()
 	end
+	self.expandAllButton = nil
 	if self.statusBar then
 		self.statusBar:Release()
 	end
+	self.statusBar = nil
+
 	self.minimizeFrame:Hide()
 
-	self.menuButtonContainer = nil
-	self.closeButton = nil
-	self.minimizeButton = nil
-	self.maximizeButton = nil
-	self.closeButtonMinimizeFrame = nil
-	self.collapseAllButton = nil
-	self.expandAllButton = nil
-	self.statusBar = nil
 	self.instanceLabel = nil
 	self.bossLabel = nil
 	self.bossMenuButton = nil
