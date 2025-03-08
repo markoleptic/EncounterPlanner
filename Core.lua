@@ -520,9 +520,11 @@ end
 ---@param input string|nil
 function AddOn:SlashCommand(input)
 	if not input or input:trim() == "" then
+		--@debug@
 		if DevTool then
 			DevTool:AddData(Private)
 		end
+		--@end-debug@
 		if not Private.mainFrame then
 			Private:CreateInterface()
 		end
