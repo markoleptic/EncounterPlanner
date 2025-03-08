@@ -1110,7 +1110,7 @@ do -- Plan Menu Button Handlers
 		Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
 		Private.importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
 		Private.importEditBox.frame:SetPoint("CENTER")
-		Private.importEditBox:SetTitle(L["Import From String"])
+		Private.importEditBox:SetTitle(L["Import From Text"])
 		Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
 		Private.importEditBox.okayButton:SetEnabled(true)
 		Private.importEditBox:SetCallback("OnRelease", function()
@@ -1639,11 +1639,11 @@ local function CloseDialogs()
 end
 
 local function HandleMainFrameReleased()
+	Private.mainFrame = nil
 	Private.UnregisterCallback(simulationCompletedObject, "SimulationCompleted")
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
-	Private.mainFrame = nil
 	CloseDialogs()
 	if Private.optionsMenu then -- Takes care of messageAnchor and progressBarAnchor
 		Private.optionsMenu:Release()
