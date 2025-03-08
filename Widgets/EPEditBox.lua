@@ -8,7 +8,7 @@ local CreateFrame = CreateFrame
 local unpack = unpack
 
 local defaultFrameHeight = 400
-local defaultFrameWidth = 400
+local defaultFrameWidth = 600
 local windowBarHeight = 28
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
