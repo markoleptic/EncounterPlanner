@@ -105,10 +105,20 @@ do -- Plan Menu Items
 						{
 							itemValue = "FromMRT",
 							text = L["From"] .. " " .. "MRT",
+							dropdownItemMenuData = {
+								{
+									itemValue = "FromMRTCreateNew",
+									text = L["Import As New Plan"],
+								},
+								{
+									itemValue = "FromMRTOverwriteCurrent",
+									text = L["Overwrite Current Plan"],
+								},
+							},
 						},
 						{
 							itemValue = "FromString",
-							text = L["From String"],
+							text = L["From Text"],
 						},
 					},
 				},
@@ -1180,22 +1190,28 @@ do -- Plan Menu Button Handlers
 	---@param importType string
 	local function ImportPlan(importType)
 		if not Private.importEditBox then
-			if importType == "FromMRT" then
+			if importType:find("FromMRT") then
 				if VMRT and VMRT.Note and VMRT.Note.Text1 then
+					local createNew = importType:find("CreateNew")
 					ClosePlanDependentWidgets()
 					local text = VMRT.Note.Text1
 					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 					local bossName = GetBossName(bossDungeonEncounterID)
 					local plans = AddOn.db.profile.plans
-					local newPlanName = CreateUniquePlanName(plans, bossName --[[@as string]])
-					bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
+					local planName
+					if createNew then
+						planName = AddOn.db.profile.lastOpenPlan
+					else
+						planName = CreateUniquePlanName(plans, bossName --[[@as string]])
+					end
+					bossDungeonEncounterID = Private:ImportPlanFromNote(planName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
-					AddOn.db.profile.lastOpenPlan = newPlanName
-					AddPlanToDropdown(plans[newPlanName], true)
+					AddOn.db.profile.lastOpenPlan = planName
+					AddPlanToDropdown(plans[planName], true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
 				end
-			elseif importType == "FromString" then
+			elseif importType:find("FromString") then
 				CreateImportEditBox()
 			end
 		end
@@ -1219,8 +1235,7 @@ do -- Plan Menu Button Handlers
 			Private.exportEditBox:HighlightTextAndFocus()
 		end
 	end
-
-	local function CreateNewPlanDialog(bossDropdownData)
+	local function CreateNewPlanDialog()
 		if not Private.newPlanDialog then
 			local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
 			newPlanDialog:SetCallback("OnRelease", function()
@@ -1262,7 +1277,7 @@ do -- Plan Menu Button Handlers
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 			newPlanDialog.frame:SetParent(UIParent)
 			newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
-			newPlanDialog:SetBossDropdownItems(bossDropdownData, bossDungeonEncounterID)
+			newPlanDialog:SetBossDropdownItems(utilities.GetOrCreateBossDropdownItems(), bossDungeonEncounterID)
 			newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 			newPlanDialog:Resize()
 			newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
@@ -1272,8 +1287,6 @@ do -- Plan Menu Button Handlers
 		end
 	end
 
-	local GetOrCreateBossDropdownItems = utilities.GetOrCreateBossDropdownItems
-
 	---@param planMenuButton EPDropdown
 	---@param value any
 	function Handle.PlanMenuButtonClicked(planMenuButton, _, value)
@@ -1281,7 +1294,7 @@ do -- Plan Menu Button Handlers
 			return
 		end
 		if value == "New Plan" then
-			CreateNewPlanDialog(GetOrCreateBossDropdownItems())
+			CreateNewPlanDialog()
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
@@ -1384,7 +1397,6 @@ local function HandleExternalTextButtonClicked()
 		end)
 		Private.externalTextEditor:SetText(("\n"):join(unpack(currentPlan.content)))
 		Private.externalTextEditor:SetFocusAndCursorPosition(0)
-		-- Private.externalTextEditor:HighlightTextAndFocus()
 	end
 end
 
@@ -1639,7 +1651,6 @@ local function HandleMainFrameReleased()
 end
 
 function Private:CreateInterface()
-	local defaultMaxVisibleDropdownItems = 8
 	local topContainerDropdownWidth = 200
 	local topContainerWidgetFontSize = 14
 	local topContainerWidgetHeight = 22
@@ -1666,6 +1677,7 @@ function Private:CreateInterface()
 	local bossDungeonEncounterID = constants.kDefaultBossDungeonEncounterID
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 
 	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
 		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
@@ -1673,6 +1685,14 @@ function Private:CreateInterface()
 		local defaultPlanName = L["Default"]
 		utilities.CreatePlan(plans, defaultPlanName, bossDungeonEncounterID)
 		AddOn.db.profile.lastOpenPlan = defaultPlanName
+		if MRTLoadingOrLoaded or MRTLoaded then
+			if VMRT and VMRT.Note and VMRT.Note.Text1 then
+				local maybeNew = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, VMRT.Note.Text1)
+				if maybeNew then
+					bossDungeonEncounterID = maybeNew
+				end
+			end
+		end
 	end
 
 	Private.mainFrame = AceGUI:Create("EPMainFrame")
@@ -1692,7 +1712,6 @@ function Private:CreateInterface()
 	local planMenuButton = Create.MenuButton(L["Plan"])
 	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
-	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
 	local bossMenuButton = Create.MenuButton(L["Boss"])

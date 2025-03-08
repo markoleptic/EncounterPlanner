@@ -35,12 +35,15 @@ Duplicates the current plan with a unique name.
 
 #### Import
 
-One of the benefits of using Encounter Planner is not dealing with note syntax anymore, but you can still import notes from other addons or tools such as MRT, Viserio Cooldowns, or Viserio healing spreadsheets:
+One of the benefits of using Encounter Planner is not dealing with note syntax anymore, but you can still import notes from other addons or tools such as MRT, Viserio Cooldowns, or Viserio healing spreadsheets.
+The boss will automatically be determined if any combat log events exist:
 
 -   **From MRT**:
-    Creates a new plan with a unique name based on the current note in MRT (`VMRT.Note.Text1`).
--   **From String**:
-    Displays the **Import From String** dialog. Paste the note into the edit box.
+    -   **Overwrite Current Plan**: The current plan will be overwritten with the current note in MRT (`VMRT.Note.Text1`).
+    -   **Create New Plan**: Creates a new plan with a unique name based on the current note in MRT (`VMRT.Note.Text1`).
+-   **From Text**:
+    Displays the **Import From Text** dialog.
+    Paste the note into the edit box.
     -   **Overwrite Current Plan**: If checked, the current plan will be overwritten with the note assignment contents.
     -   **New Plan Name**: Unique name for the plan if not overwriting the current plan.
 

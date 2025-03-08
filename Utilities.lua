@@ -1055,10 +1055,12 @@ do
 	---@param planName string
 	local function LogFailedSpellIDs(interfaceUpdater, count, spellIDs, planID, planName)
 		local shouldLogFailedSpellIDs = count > 0
-		if loggedPlanInfo and loggedPlanInfo.spellIDsCount then
-			if shouldLogFailedSpellIDs and loggedPlanInfo.spellIDsCount ~= count then
+
+		local loggedInfo = loggedPlanInfo[planID]
+		if loggedInfo and loggedInfo.spellIDsCount then
+			if shouldLogFailedSpellIDs and loggedInfo.spellIDsCount ~= count then
 				shouldLogFailedSpellIDs = true
-			elseif loggedPlanInfo.spellIDsCount > count then
+			elseif loggedInfo.spellIDsCount > count then
 				shouldLogFailedSpellIDs = true
 			else
 				shouldLogFailedSpellIDs = false
@@ -1085,10 +1087,12 @@ do
 	---@param planName string
 	local function LogFailedSpellCounts(interfaceUpdater, count, spellCounts, planID, planName)
 		local shouldLogFailedSpellCounts = count > 0
-		if loggedPlanInfo and loggedPlanInfo.spellCountsCount then
-			if shouldLogFailedSpellCounts and loggedPlanInfo.spellCountsCount ~= count then
+
+		local loggedInfo = loggedPlanInfo[planID]
+		if loggedInfo and loggedInfo.spellCountsCount then
+			if shouldLogFailedSpellCounts and loggedInfo.spellCountsCount ~= count then
 				shouldLogFailedSpellCounts = true
-			elseif loggedPlanInfo.spellCountsCount > count then
+			elseif loggedInfo.spellCountsCount > count then
 				shouldLogFailedSpellCounts = true
 			else
 				shouldLogFailedSpellCounts = false
@@ -1115,10 +1119,12 @@ do
 	---@param planName string
 	local function LogFailedMaxSpellCounts(interfaceUpdater, count, maxSpellCounts, planID, planName)
 		local shouldLogFailedMaxSpellCounts = count > 0
-		if loggedPlanInfo and loggedPlanInfo.maxSpellCountsCount then
-			if shouldLogFailedMaxSpellCounts and loggedPlanInfo.maxSpellCountsCount ~= count then
+
+		local loggedInfo = loggedPlanInfo[planID]
+		if loggedInfo and loggedInfo.maxSpellCountsCount then
+			if shouldLogFailedMaxSpellCounts and loggedInfo.maxSpellCountsCount ~= count then
 				shouldLogFailedMaxSpellCounts = true
-			elseif loggedPlanInfo.maxSpellCountsCount > count then
+			elseif loggedInfo.maxSpellCountsCount > count then
 				shouldLogFailedMaxSpellCounts = true
 			else
 				shouldLogFailedMaxSpellCounts = false
@@ -1809,7 +1815,7 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 end
 
 do
-	local lineMatchRegex = "([^\r\n]+)"
+	local lineMatchRegex = "(.-)\r?\n"
 
 	-- Splits a string into table using new lines as separators.
 	---@param text string The text to use to create the table.
@@ -2227,11 +2233,13 @@ function Utilities.FormatTime(time)
 	local minutes = floor(time / 60)
 	local seconds = Utilities.Round(time % 60, 1)
 
-	local formattedMinutes = format("%d", minutes)
+	local formattedMinutes = format("%02d", minutes)
 	local formattedSeconds = format("%02d", seconds)
 	local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
-	if secondsDecimalMatch and secondsDecimalMatch ~= "0" and secondsDecimalMatch ~= "" then
+	if secondsDecimalMatch then
 		formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
+	else
+		formattedSeconds = formattedSeconds .. ".0"
 	end
 
 	return formattedMinutes, formattedSeconds
