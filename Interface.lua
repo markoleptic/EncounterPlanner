@@ -1781,7 +1781,7 @@ function Private:CreateInterface()
 
 	local planDropdown = AceGUI:Create("EPDropdown")
 	planDropdown:SetWidth(topContainerDropdownWidth - 10)
-	planDropdown:SetAutoItemWidth(false)
+	planDropdown:SetAutoItemWidth(true)
 	planDropdown:SetTextFontSize(topContainerWidgetFontSize)
 	planDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
 	planDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)

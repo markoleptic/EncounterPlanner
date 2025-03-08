@@ -14,6 +14,9 @@ local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 ---@class InterfaceUpdater
 local InterfaceUpdater = Private.interfaceUpdater
 
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
 ---@class Utilities
 local utilities = Private.utilities
 local AddIconBeforeText = utilities.AddIconBeforeText
@@ -49,8 +52,6 @@ end
 
 do
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
-	---@class BossUtilities
-	local bossUtilities = Private.bossUtilities
 	local GenerateBossTables = bossUtilities.GenerateBossTables
 	local GetBoss = bossUtilities.GetBoss
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
@@ -612,9 +613,16 @@ do
 					local color = plan.remindersEnabled and reminderEnabledIconColor or reminderDisabledIconColor
 					for _, dropdownData in pairs(instanceDropdownData) do
 						if dropdownData.itemValue == instanceID then
+							local text
+							local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
+							if boss then
+								text = format("|T%s:16|t %s", boss.icon, planName)
+							else
+								text = planName
+							end
 							tinsert(dropdownData.dropdownItemMenuData, {
 								itemValue = planName,
-								text = planName,
+								text = text,
 								customTexture = customTexture,
 								customTextureVertexColor = color,
 							})
@@ -646,10 +654,17 @@ do
 				if not item then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+					local text
+					local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
+					if boss then
+						text = format("|T%s:16|t %s", boss.icon, plan.name)
+					else
+						text = plan.name
+					end
 					planDropdown:AddItemsToExistingDropdownItemMenu(plan.instanceID, {
 						{
 							itemValue = plan.name,
-							text = plan.name,
+							text = text,
 							customTexture = customTexture,
 							customTextureVertexColor = color,
 						},
