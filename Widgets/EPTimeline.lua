@@ -612,9 +612,9 @@ end
 ---@param height number height of bar.
 ---@param color integer[] color of the bar.
 ---@param frameLevel integer Frame level to assign to the frame.
-local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width, height, color, frameLevel)
+---@param index integer Index into boss ability frames.
+local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width, height, color, frameLevel, index)
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
-	local index = abilityInstance.bossAbilityInstanceIndex
 	local frame = self.bossAbilityFrames[index]
 	if not frame then
 		frame = CreateFrame("Frame", nil, timelineFrame) --[[@as BossAbilityFrame]]
@@ -686,6 +686,7 @@ local function UpdateBossAbilityBars(self)
 	local baseFrameLevel = timelineFrame:GetFrameLevel()
 
 	local lastInfo = {} ---@type table<integer, LastInfo>
+	local currentIndex = 1 -- In case boss abilities are hidden, this ensures boss ability frames are indexed correctly
 	for _, entry in ipairs(self.bossAbilityInstances) do
 		local timelineStartPosition = (entry.castStart / totalTimelineDuration) * timelineWidth
 		local timelineEndPosition = (entry.effectEnd / totalTimelineDuration) * timelineWidth
@@ -716,7 +717,18 @@ local function UpdateBossAbilityBars(self)
 				height = height * entry.overlaps.heightMultiplier
 			end
 			local frameLevel = baseFrameLevel + entry.frameLevel
-			DrawBossAbilityBar(self, entry, horizontalOffset, verticalOffset, width, height, color, frameLevel)
+			DrawBossAbilityBar(
+				self,
+				entry,
+				horizontalOffset,
+				verticalOffset,
+				width,
+				height,
+				color,
+				frameLevel,
+				currentIndex
+			)
+			currentIndex = currentIndex + 1
 		end
 	end
 	sort(lastInfo, function(a, b)
