@@ -13,9 +13,8 @@ local tinsert = tinsert
 local tostring = tostring
 local unpack = unpack
 
-local defaultFrameWidth = 550
+local defaultFrameWidth = 600
 local defaultFrameHeight = 400
-local minFrameWidth = 400
 local relWidths = {}
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
@@ -125,7 +124,7 @@ local function OnAcquire(self)
 
 	local labelsAndWidths = {}
 	local phaseNameLabel = AceGUI:Create("EPLabel")
-	phaseNameLabel:SetText(L["Intermission"] .. " " .. 10, 0)
+	phaseNameLabel:SetText(L["Intermission"] .. " 8 (100 Energy)", 0)
 	phaseNameLabel:SetFrameWidthFromText()
 	phaseNameLabel.text:SetTextColor(unpack(headingColor))
 	tinsert(labelsAndWidths, { phaseNameLabel, phaseNameLabel.frame:GetWidth() })
@@ -193,13 +192,13 @@ local function OnAcquire(self)
 
 	local labelContainer = AceGUI:Create("EPContainer")
 	labelContainer:SetLayout("EPHorizontalLayout")
-	labelContainer:SetSpacing(16, 0)
+	labelContainer:SetSpacing(10, 0)
 	labelContainer:SetFullWidth(true)
 	labelContainer:AddChildren(phaseNameLabel, defaultDurationLabel, durationLabel, defaultCountLabel, countLabel)
 
 	local totalContainer = AceGUI:Create("EPContainer")
 	totalContainer:SetLayout("EPHorizontalLayout")
-	totalContainer:SetSpacing(16, 0)
+	totalContainer:SetSpacing(10, 0)
 	totalContainer:SetFullWidth(true)
 	totalContainer:AddChildren(
 		totalLabel,
@@ -237,7 +236,7 @@ local function AddEntries(self, entries)
 	for index, phase in ipairs(entries) do
 		local container = AceGUI:Create("EPContainer")
 		container:SetLayout("EPHorizontalLayout")
-		container:SetSpacing(16, 0)
+		container:SetSpacing(10, 0)
 		container:SetFullWidth(true)
 
 		local label = AceGUI:Create("EPLabel")
