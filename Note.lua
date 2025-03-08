@@ -375,6 +375,7 @@ function Private.ParseNote(plan, text, test)
 	local failedOrReplaced = {} ---@type table<integer, FailureTableEntry>
 	local failedCount, defaultedToTimedCount, defaultedSpellCount = 0, 0, 0
 
+	local lastLineWasOtherContent = false
 	for _, line in pairs(text) do
 		local time, options, rest = ParseTime(line)
 		if time and options then
@@ -397,10 +398,12 @@ function Private.ParseNote(plan, text, test)
 				ProcessOptions(inputs, plan.assignments, time, options, failedOrReplaced, bossDungeonEncounterIDs)
 			defaultedToTimedCount = defaultedToTimedCount + defaultedToTimed
 			defaultedSpellCount = defaultedSpellCount + defaultedCombatLogAssignment
+			lastLineWasOtherContent = false
 		else
-			if line:gsub("%s", ""):len() ~= 0 then
+			if line:gsub("%s", ""):len() ~= 0 or lastLineWasOtherContent then
 				tinsert(otherContent, line)
 			end
+			lastLineWasOtherContent = true
 		end
 	end
 
@@ -619,7 +622,9 @@ end
 function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, content)
 	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
 
-	utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID)
+	if not plans[planName] then
+		utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID)
+	end
 	local plan = plans[planName]
 
 	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
