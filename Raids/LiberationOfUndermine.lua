@@ -1379,8 +1379,8 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 300.0,
-					defaultDuration = 300.0,
+					duration = 360.0,
+					defaultDuration = 360.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
