@@ -804,17 +804,30 @@ do
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
 
-	local loggedOverlappingOrNotVisiblePlans = {} ---@type table <string, {overlapCount: integer, pastDurationCount: integer}>
-
 	---@class FailedInfo
 	---@field bossName string|nil
 	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
+
+	---@class FailTable
+	---@field bossName string|nil
+	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
+	---@field onlyInMaxCastTimeTable table<integer, table<integer, integer>>
+
+	---@class LoggedPlanInfo
+	---@field overlapCount integer
+	---@field pastDurationCount integer
+	---@field spellIDsCount integer
+	---@field spellCountsCount integer
+	---@field maxSpellCountsCount integer
+
+	local loggedPlanInfo = {} ---@type table<string, LoggedPlanInfo>
 
 	---@param spellID integer
 	---@param spellCount integer
 	---@param absolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@param maxAbsolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
 	---@return number|nil
+	---@return boolean|nil wasMax
 	local function FindCastStart(spellID, spellCount, absolute, maxAbsolute)
 		local castStartTable = absolute[spellID]
 		if castStartTable then
@@ -827,7 +840,7 @@ do
 		if castStartTable then
 			local spellCastInfoTable = castStartTable[spellCount]
 			if spellCastInfoTable then
-				return spellCastInfoTable.castStart
+				return spellCastInfoTable.castStart, true
 			end
 		end
 	end
@@ -836,28 +849,30 @@ do
 	---@param timelineAssignments table<integer, TimelineAssignment>
 	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
 	---@return boolean
-	---@return {bossName: string|nil, combatLogEventSpellIDs: table<integer, table<integer, integer>>}?
+	---@return FailTable?
 	function Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
 		local absolute = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		local maxAbsolute = GetMaxAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		local bossName = GetBossName(bossDungeonEncounterID)
-		local failedTable = {
+		local failTable = {
 			bossName = bossName,
 			combatLogEventSpellIDs = {},
+			onlyInMaxCastTimeTable = {},
 		}
 
 		if not absolute or not maxAbsolute or not bossName then
-			return false, failedTable
+			return false, failTable
 		end
 
-		local failedSpellIDs = failedTable.combatLogEventSpellIDs
+		local failedSpellIDs = failTable.combatLogEventSpellIDs
+		local onlyInMax = failTable.onlyInMaxCastTimeTable
 		for _, timelineAssignment in ipairs(timelineAssignments) do
 			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
 				local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
 				local spellID = assignment.combatLogEventSpellID
 				if absolute[spellID] and maxAbsolute[spellID] then
 					local spellCount = assignment.spellCount
-					local castStart = FindCastStart(spellID, spellCount, absolute, maxAbsolute)
+					local castStart, wasMax = FindCastStart(spellID, spellCount, absolute, maxAbsolute)
 					if castStart then
 						local startTime = castStart + assignment.time
 						local ability = FindBossAbility(bossDungeonEncounterID, spellID) --[[@as BossAbility]]
@@ -868,6 +883,10 @@ do
 							startTime = startTime + ability.castTime
 						end
 						timelineAssignment.startTime = startTime
+						if wasMax then
+							onlyInMax[spellID] = onlyInMax[spellID] or {}
+							onlyInMax[spellID][spellCount] = true
+						end
 					else
 						failedSpellIDs[spellID] = failedSpellIDs[spellID] or {}
 						failedSpellIDs[spellID][spellCount] = true
@@ -881,8 +900,8 @@ do
 					.time
 			end
 		end
-		if next(failedSpellIDs) then
-			return false, failedTable
+		if next(failedSpellIDs) or next(onlyInMax) then
+			return false, failTable
 		else
 			return true
 		end
@@ -933,13 +952,13 @@ do
 			end
 
 			local overlapCount = #overlappingAssignments
-			local counts = loggedOverlappingOrNotVisiblePlans[plan.ID]
+			local planInfo = loggedPlanInfo[plan.ID]
 
 			local shouldLogPastDurationCount = pastDurationCount > 0
-			if counts then
-				if shouldLogPastDurationCount and counts.pastDurationCount ~= pastDurationCount then
+			if planInfo and planInfo.pastDurationCount then
+				if shouldLogPastDurationCount and planInfo.pastDurationCount ~= pastDurationCount then
 					shouldLogPastDurationCount = true
-				elseif counts.pastDurationCount > pastDurationCount then
+				elseif planInfo.pastDurationCount > pastDurationCount then
 					shouldLogPastDurationCount = true
 				else
 					shouldLogPastDurationCount = false
@@ -967,7 +986,7 @@ do
 						assignmentsString,
 						L["may be hidden due to starting after the encounter ends. Consider extending the duration in"],
 						L["Boss"],
-						L["Phase Timing Editor"],
+						L["Edit Phase Timings"],
 						L["Assignment times"],
 						stringTimes
 					)
@@ -976,10 +995,10 @@ do
 			end
 
 			local shouldLogOverlapCount = overlapCount > 0
-			if counts then
-				if shouldLogOverlapCount and counts.overlapCount ~= overlapCount then
+			if planInfo and planInfo.overlapCount then
+				if shouldLogOverlapCount and planInfo.overlapCount ~= overlapCount then
 					shouldLogOverlapCount = true
-				elseif counts.overlapCount > overlapCount then
+				elseif planInfo.overlapCount > overlapCount then
 					shouldLogOverlapCount = true
 				else
 					shouldLogOverlapCount = false
@@ -1023,64 +1042,145 @@ do
 				end
 			end
 
-			loggedOverlappingOrNotVisiblePlans[plan.ID] =
-				{ overlapCount = overlapCount, pastDurationCount = pastDurationCount }
+			loggedPlanInfo[plan.ID] = loggedPlanInfo[plan.ID] or {}
+			loggedPlanInfo[plan.ID].overlapCount = overlapCount
+			loggedPlanInfo[plan.ID].pastDurationCount = pastDurationCount
 		end
 	end
 
-	local loggedPlanFailures = {} ---@type table<string, {spellIDs: string, spellCounts: string}>}>
+	---@param interfaceUpdater InterfaceUpdater
+	---@param count integer
+	---@param spellIDs string
+	---@param planID string
+	---@param planName string
+	local function LogFailedSpellIDs(interfaceUpdater, count, spellIDs, planID, planName)
+		local shouldLogFailedSpellIDs = count > 0
+		if loggedPlanInfo and loggedPlanInfo.spellIDsCount then
+			if shouldLogFailedSpellIDs and loggedPlanInfo.spellIDsCount ~= count then
+				shouldLogFailedSpellIDs = true
+			elseif loggedPlanInfo.spellIDsCount > count then
+				shouldLogFailedSpellIDs = true
+			else
+				shouldLogFailedSpellIDs = false
+			end
+		end
+
+		if shouldLogFailedSpellIDs then
+			if count == 0 then
+				interfaceUpdater.LogMessage(format("%s: %s.", planName, L["All Boss Spell IDs valid"]), 1, 1)
+			else
+				local descriptor = count == 1 and L["Spell ID"] or L["Spell IDs"]
+				local msg = format("%s: %d %s %s: %s.", planName, count, L["Invalid Boss"], descriptor, spellIDs)
+				interfaceUpdater.LogMessage(msg, 2, 1)
+			end
+			loggedPlanInfo[planID] = loggedPlanInfo[planID] or {}
+			loggedPlanInfo[planID].spellIDsCount = count
+		end
+	end
+
+	---@param interfaceUpdater InterfaceUpdater
+	---@param count integer
+	---@param spellCounts string
+	---@param planID string
+	---@param planName string
+	local function LogFailedSpellCounts(interfaceUpdater, count, spellCounts, planID, planName)
+		local shouldLogFailedSpellCounts = count > 0
+		if loggedPlanInfo and loggedPlanInfo.spellCountsCount then
+			if shouldLogFailedSpellCounts and loggedPlanInfo.spellCountsCount ~= count then
+				shouldLogFailedSpellCounts = true
+			elseif loggedPlanInfo.spellCountsCount > count then
+				shouldLogFailedSpellCounts = true
+			else
+				shouldLogFailedSpellCounts = false
+			end
+		end
+
+		if shouldLogFailedSpellCounts then
+			if count == 0 then
+				interfaceUpdater.LogMessage(format("%s: %s.", planName, L["All Boss Spell Counts valid"]), 1, 1)
+			else
+				local descriptor = count == 1 and L["Spell Count"] or L["Spell Counts"]
+				local msg = format("%s: %d %s %s: %s.", planName, count, L["Invalid Boss"], descriptor, spellCounts)
+				interfaceUpdater.LogMessage(msg, 2, 1)
+			end
+			loggedPlanInfo[planID] = loggedPlanInfo[planID] or {}
+			loggedPlanInfo[planID].spellCountsCount = count
+		end
+	end
+
+	---@param interfaceUpdater InterfaceUpdater
+	---@param count integer
+	---@param maxSpellCounts string
+	---@param planID string
+	---@param planName string
+	local function LogFailedMaxSpellCounts(interfaceUpdater, count, maxSpellCounts, planID, planName)
+		local shouldLogFailedMaxSpellCounts = count > 0
+		if loggedPlanInfo and loggedPlanInfo.maxSpellCountsCount then
+			if shouldLogFailedMaxSpellCounts and loggedPlanInfo.maxSpellCountsCount ~= count then
+				shouldLogFailedMaxSpellCounts = true
+			elseif loggedPlanInfo.maxSpellCountsCount > count then
+				shouldLogFailedMaxSpellCounts = true
+			else
+				shouldLogFailedMaxSpellCounts = false
+			end
+		end
+
+		if shouldLogFailedMaxSpellCounts then
+			if count == 0 then
+				local msg =
+					format("%s: %s.", planName, L["All Boss Spell Counts active and assignments drawn correctly"])
+				interfaceUpdater.LogMessage(msg, 1, 1)
+			else
+				local descriptor = count == 1 and L["Spell Count"] or L["Spell Counts"]
+				local location = format("%s -> %s", L["Boss"], L["Edit Phase Timings"])
+				local consider = format("%s %s", L["Consider extending boss phase durations/counts in"], location)
+				consider = consider .. " " .. L["so assignments are drawn correctly"] .. "."
+				local msg = format(
+					"%s: %d %s %s: %s. %s",
+					planName,
+					count,
+					L["Inactive Boss"],
+					descriptor,
+					maxSpellCounts,
+					consider
+				)
+				interfaceUpdater.LogMessage(msg, 2, 1)
+			end
+			loggedPlanInfo[planID] = loggedPlanInfo[planID] or {}
+			loggedPlanInfo[planID].maxSpellCountsCount = count
+		end
+	end
 
 	---@param spellIDsCount integer
 	---@param spellIDs string
 	---@param spellCountsCount integer
 	---@param spellCounts string
+	---@param maxSpellCountsCount integer
+	---@param maxSpellCounts string
 	---@param plan Plan
-	local function LogCombatLogEventAssignmentFailures(spellIDsCount, spellIDs, spellCountsCount, spellCounts, plan)
+	local function LogCombatLogEventAssignmentFailures(
+		spellIDsCount,
+		spellIDs,
+		spellCountsCount,
+		spellCounts,
+		maxSpellCountsCount,
+		maxSpellCounts,
+		plan
+	)
 		local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
 		if interfaceUpdater then
-			local loggedPlanData = loggedPlanFailures[plan.ID]
-			local shouldLogFailedSpellIDs = spellIDsCount > 0
-
-			if loggedPlanData then
-				if shouldLogFailedSpellIDs and loggedPlanData.spellIDs ~= spellIDs then
-					shouldLogFailedSpellIDs = true
-				else
-					shouldLogFailedSpellIDs = false
-				end
-			end
-
-			if shouldLogFailedSpellIDs then
-				local descriptor = spellIDsCount == 1 and L["Spell ID"] or L["Spell IDs"]
-				local msg =
-					format("%s: %d %s %s: %s.", plan.name, spellIDsCount, L["Invalid Boss"], descriptor, spellIDs)
-				interfaceUpdater.LogMessage(msg, 2, 1)
-			end
-
-			local shouldLogFailedSpellCounts = spellCountsCount > 0
-			if loggedPlanData then
-				if shouldLogFailedSpellCounts and loggedPlanData.spellCounts ~= spellCounts then
-					shouldLogFailedSpellCounts = true
-				else
-					shouldLogFailedSpellCounts = false
-				end
-			end
-
-			if shouldLogFailedSpellCounts then
-				local descriptor = spellCountsCount == 1 and L["Spell Count"] or L["Spell Counts"]
-				local msg =
-					format("%s: %d %s %s: %s.", plan.name, spellCountsCount, L["Invalid Boss"], descriptor, spellCounts)
-				interfaceUpdater.LogMessage(msg, 2, 1)
-			end
-
-			loggedPlanFailures[plan.ID] = { spellIDs = spellIDs, spellCounts = spellCounts }
+			LogFailedSpellIDs(interfaceUpdater, spellIDsCount, spellIDs, plan.ID, plan.name)
+			LogFailedSpellCounts(interfaceUpdater, spellCountsCount, spellCounts, plan.ID, plan.name)
+			LogFailedMaxSpellCounts(interfaceUpdater, maxSpellCountsCount, maxSpellCounts, plan.ID, plan.name)
 		end
 	end
 
 	-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
 	---@param plan Plan Plan containing assignments to create timeline assignments from
 	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
+	---@param preserveMessageLog boolean|nil Whether or not to preserve the current message log.
 	---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
-	function Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID)
+	function Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog)
 		local timelineAssignments = {}
 		if AddOn.db then
 			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
@@ -1105,26 +1205,36 @@ do
 		local success, failTable =
 			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID)
 
-		local spellIDsString, spellCountsString = "", ""
-		local invalidSpellIDsCount, invalidSpellCountsCount = 0, 0
+		local spellIDsString, spellCountsString, maxSpellCountsString = "", "", ""
+		local invalidSpellIDsCount, invalidSpellCountsCount, maxSpellCountsCount = 0, 0, 0
 
 		if not success and failTable then
 			local failedSpellIDs = failTable.combatLogEventSpellIDs
-			local spellIDs, spellCounts = {}, {}
+			local onlyInMaxSpellIDs = failTable.onlyInMaxCastTimeTable
+			local spellIDs, spellCounts, maxSpellCounts = {}, {}, {}
 			local startCount = #timelineAssignments
 
 			for i = startCount, 1, -1 do
 				local assignment = timelineAssignments[i].assignment --[[@as CombatLogEventAssignment]]
 				local spellID = assignment.combatLogEventSpellID
-				if spellID and failedSpellIDs[spellID] then
-					local spellCount = assignment.spellCount
-					if failedSpellIDs[spellID][spellCount] then
-						spellCounts[spellID] = spellCounts[spellID] or {}
-						tinsert(spellCounts[spellID], spellCount)
-						invalidSpellCountsCount = invalidSpellCountsCount + 1
-					elseif not next(failedSpellIDs[spellID]) then
-						tinsert(spellIDs, spellID)
-						invalidSpellIDsCount = invalidSpellIDsCount + 1
+				if spellID then
+					if failedSpellIDs[spellID] then
+						local spellCount = assignment.spellCount
+						if failedSpellIDs[spellID][spellCount] then
+							spellCounts[spellID] = spellCounts[spellID] or {}
+							tinsert(spellCounts[spellID], spellCount)
+							invalidSpellCountsCount = invalidSpellCountsCount + 1
+						elseif not next(failedSpellIDs[spellID]) then
+							tinsert(spellIDs, spellID)
+							invalidSpellIDsCount = invalidSpellIDsCount + 1
+						end
+					elseif onlyInMaxSpellIDs[spellID] then
+						local spellCount = assignment.spellCount
+						if onlyInMaxSpellIDs[spellID][spellCount] then
+							maxSpellCounts[spellID] = maxSpellCounts[spellID] or {}
+							tinsert(maxSpellCounts[spellID], spellCount)
+							maxSpellCountsCount = maxSpellCountsCount + 1
+						end
 					end
 				end
 			end
@@ -1144,13 +1254,40 @@ do
 				for _, spellID in ipairs(spellIDKeys) do
 					sort(spellCounts[spellID])
 					if #spellCounts[spellID] > 0 then
-						tinsert(countsBySpellID, tostring(spellID) .. ": " .. concat(spellCounts[spellID], ","))
+						tinsert(countsBySpellID, tostring(spellID) .. ": " .. concat(spellCounts[spellID], ", "))
 					end
 				end
 				if #countsBySpellID > 0 then
 					spellCountsString = concat(countsBySpellID, ", ")
 				end
 			end
+
+			if next(maxSpellCounts) then
+				local spellIDKeys = {}
+				for spellID, _ in pairs(maxSpellCounts) do
+					tinsert(spellIDKeys, spellID)
+				end
+				sort(spellIDKeys)
+				local countsBySpellID = {}
+				for _, spellID in ipairs(spellIDKeys) do
+					sort(maxSpellCounts[spellID])
+					if #maxSpellCounts[spellID] > 0 then
+						tinsert(countsBySpellID, tostring(spellID) .. ": " .. concat(maxSpellCounts[spellID], ", "))
+					end
+				end
+				if #countsBySpellID > 0 then
+					maxSpellCountsString = concat(countsBySpellID, ", ")
+				end
+			end
+		end
+
+		-- Clear log when changing plans
+		if not preserveMessageLog and next(loggedPlanInfo) and not loggedPlanInfo[plan.ID] then
+			local interfaceUpdater = Private.interfaceUpdater ---@type InterfaceUpdater
+			if interfaceUpdater then
+				interfaceUpdater.ClearMessageLog()
+			end
+			loggedPlanInfo = {}
 		end
 
 		LogCombatLogEventAssignmentFailures(
@@ -1158,6 +1295,8 @@ do
 			spellIDsString,
 			invalidSpellCountsCount,
 			spellCountsString,
+			maxSpellCountsCount,
+			maxSpellCountsString,
 			plan
 		)
 		LogOverlappingOrNotVisibleAssignments(timelineAssignments, plan, bossDungeonEncounterID)
@@ -1282,9 +1421,11 @@ do
 	---@param plan Plan Plan containing assignments to sort.
 	---@param assignmentSortType AssignmentSortType Sort method.
 	---@param bossDungeonEncounterID integer Used to get boss timers to set the proper timeline assignment start time for combat log assignments.
+	---@param preserveMessageLog boolean|nil Whether or not to preserve the current message log.
 	---@return table<integer, TimelineAssignment>
-	function Utilities.SortAssignments(plan, assignmentSortType, bossDungeonEncounterID)
-		local timelineAssignments = Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID)
+	function Utilities.SortAssignments(plan, assignmentSortType, bossDungeonEncounterID, preserveMessageLog)
+		local timelineAssignments =
+			Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog)
 		sort(timelineAssignments, CompareAssignments(plan.roster, assignmentSortType))
 		return timelineAssignments
 	end

@@ -255,22 +255,22 @@ local function ImportPlan(plan, fullName)
 			AddOn.db.profile.lastOpenPlan = plan.name
 		end
 		existingPlan = nil
-		importInfo = format("%s '%s'", L["Updated matching plan"], existingPlanName)
+		importInfo = format("%s '%s'.", L["Updated matching plan"], existingPlanName)
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
 			plan.name = CreateUniquePlanName(plans, plan.name)
 		end
 		plans[plan.name] = plan
-		importInfo = format("%s '%s'", L["Imported plan as"], plan.name)
+		importInfo = format("%s '%s'.", L["Imported plan as"], plan.name)
 	end
 
-	LogMessage(format("%s '%s' %s %s", L["Received plan"], plan.name, L["from"], fullName))
+	LogMessage(format("%s '%s' %s %s.", L["Received plan"], plan.name, L["from"], fullName))
 	LogMessage(importInfo)
 
 	if IsInRaid() then
 		local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
 		if changedPrimaryPlan then
-			LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
+			LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], plan.name))
 		end
 	end
 
@@ -283,7 +283,7 @@ local function ImportPlan(plan, fullName)
 		if currentPlanName == existingPlanName or currentPlanName == plan.name then
 			AddOn.db.profile.lastOpenPlan = plan.name
 			AddPlanToDropdown(plan, true)
-			UpdateFromPlan(plan) -- Only update if current plan is the imported plan
+			UpdateFromPlan(plan, true) -- Only update if current plan is the imported plan
 		else
 			AddPlanToDropdown(plan, false)
 		end
@@ -496,7 +496,7 @@ do
 				local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
 				interfaceUpdater.UpdatePlanCheckBoxes(plan)
 				if changedPrimaryPlan then
-					LogMessage(format("%s '%s'", L["Changed the Designated External Plan to"], plan.name))
+					LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], plan.name))
 				end
 			end
 			if activePlanIDsBeingSent[plan.ID] then

@@ -2,6 +2,7 @@ local Type = "EPStatusBar"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
+local ColorMixin = ColorMixin
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -66,13 +67,6 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 		lineNumber:SetTextColor(0.35, 0.35, 0.35)
 
 		line = self.messageFrame:CreateFontString(nil, "OVERLAY", "ChatFontNormal")
-		if not severityLevel or severityLevel == 1 then
-			line:SetTextColor(1, 1, 1)
-		elseif severityLevel == 2 then
-			line:SetTextColor(1, 0.82, 0)
-		elseif severityLevel == 3 then
-			line:SetTextColor(1, 0, 0)
-		end
 		line:SetJustifyH("LEFT")
 		line:SetWordWrap(true)
 		line:SetSpacing(0)
@@ -89,6 +83,16 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 	line:Show()
 
 	lineNumber:SetText(format("%d", self.lineNumber))
+
+	if not severityLevel or severityLevel == 1 then
+		ColorMixin:SetRGB(1, 1, 1)
+	elseif severityLevel == 2 then
+		ColorMixin:SetRGB(1, 0.82, 0)
+	elseif severityLevel == 3 then
+		ColorMixin:SetRGB(0.85, 0.2, 0.2)
+	end
+	message = ColorMixin:WrapTextInColorCode(message)
+
 	if not indentLevel or indentLevel == 1 then
 		line:SetText(message)
 	elseif indentLevel == 2 then

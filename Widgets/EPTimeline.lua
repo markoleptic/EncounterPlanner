@@ -36,7 +36,7 @@ local xpcall = xpcall
 local frameWidth = 900
 local frameHeight = 400
 local paddingBetweenTimelines = 44
-local paddingBetweenBossAbilityBars = 4
+local paddingBetweenBossAbilityBars = 2
 local paddingBetweenTimelineAndScrollBar = 10
 local bossAbilityBarHeight = 30.0
 local assignmentTextureSize = { x = 30, y = 30 }

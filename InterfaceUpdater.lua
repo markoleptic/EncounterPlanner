@@ -521,9 +521,14 @@ end
 ---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
 ---@param bossDungeonEncounterID integer
 ---@param firstUpdate boolean|nil
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate)
-	local sortedTimelineAssignments =
-		SortAssignments(GetCurrentPlan(), AddOn.db.profile.preferences.assignmentSortType, bossDungeonEncounterID)
+---@param preserve boolean|nil Whether or not to preserve the current message log.
+function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate, preserve)
+	local sortedTimelineAssignments = SortAssignments(
+		GetCurrentPlan(),
+		AddOn.db.profile.preferences.assignmentSortType,
+		bossDungeonEncounterID,
+		preserve
+	)
 	local sortedWithSpellID = SortAssigneesWithSpellID(
 		sortedTimelineAssignments,
 		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
@@ -541,7 +546,8 @@ end
 
 -- Releases the assignment editor, updates boss and assignments, and updates plan checkboxes.
 ---@param plan Plan
-function InterfaceUpdater.UpdateFromPlan(plan)
+---@param preserve boolean|nil Whether or not to preserve the current message log.
+function InterfaceUpdater.UpdateFromPlan(plan, preserve)
 	if Private.assignmentEditor then
 		Private.assignmentEditor:Release()
 	end
@@ -549,7 +555,7 @@ function InterfaceUpdater.UpdateFromPlan(plan)
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID)
+			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID, nil, preserve)
 		end
 		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
 		Private.mainFrame.primaryPlanCheckBox:SetChecked(plan.isPrimaryPlan)
