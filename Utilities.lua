@@ -2415,7 +2415,8 @@ do
 		if preferred[phaseIndex] then
 			local eventType = preferred[phaseIndex].combatLogEventType
 			local spellID = preferred[phaseIndex].combatLogEventSpellID
-			local spellCount, newTime = FindNearestPreferredCombatLogEventAbility(time, encounterID, spellID, eventType)
+			local _, spellCount, newTime =
+				FindNearestPreferredCombatLogEventAbility(time, encounterID, spellID, eventType)
 			if spellCount and newTime then
 				assignment.time = Utilities.Round(newTime, 1)
 				assignment.combatLogEventSpellID = spellID

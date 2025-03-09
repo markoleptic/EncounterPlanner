@@ -854,40 +854,75 @@ end
 
 ---@param absoluteTime number
 ---@param encounterID integer
----@param spellID integer
+---@param spellID integer|nil
 ---@param eventType CombatLogEventType
+---@return integer|nil spellID
 ---@return integer|nil spellCount
 ---@return number|nil leftoverTime
 function BossUtilities.FindNearestPreferredCombatLogEventAbility(absoluteTime, encounterID, spellID, eventType)
 	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID)
-	if absoluteSpellCastStartTable and absoluteSpellCastStartTable[spellID] then
-		local spellCountAndTime = absoluteSpellCastStartTable[spellID]
-		local ability = BossUtilities.FindBossAbility(encounterID, spellID)
-		if not ability then
-			return nil
-		end
-		local minTime = hugeNumber
-		local spellCountForMinTime = nil
-
-		for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-			local adjustedTime = indexAndCastStart.castStart
-			if ability then
-				if eventType == "SAR" then
-					adjustedTime = adjustedTime + ability.duration + ability.castTime
-				elseif eventType == "SCC" or eventType == "SAA" then
-					adjustedTime = adjustedTime + ability.castTime
-				end
-			end
-			if adjustedTime <= absoluteTime then
-				local difference = absoluteTime - adjustedTime
-				if difference < minTime then
-					minTime = difference
-					spellCountForMinTime = spellCount
-				end
-			end
-		end
-		return spellCountForMinTime, minTime
+	if not absoluteSpellCastStartTable then
+		return nil
 	end
+	if spellID then
+		if absoluteSpellCastStartTable[spellID] then
+			local spellCountAndTime = absoluteSpellCastStartTable[spellID]
+			local ability = BossUtilities.FindBossAbility(encounterID, spellID)
+			if not ability then
+				return nil
+			end
+			local minTime = hugeNumber
+			local spellCountForMinTime = nil
+
+			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+				local adjustedTime = indexAndCastStart.castStart
+				if ability then
+					if eventType == "SAR" then
+						adjustedTime = adjustedTime + ability.duration + ability.castTime
+					elseif eventType == "SCC" or eventType == "SAA" then
+						adjustedTime = adjustedTime + ability.castTime
+					end
+				end
+				if adjustedTime <= absoluteTime then
+					local difference = absoluteTime - adjustedTime
+					if difference < minTime then
+						minTime = difference
+						spellCountForMinTime = spellCount
+					end
+				end
+			end
+			return nil, spellCountForMinTime, minTime
+		end
+	else
+		local minTime = hugeNumber
+		local spellIDForMinTime, spellCountForMinTime = nil, nil
+
+		for currentSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
+			local ability = BossUtilities.FindBossAbility(encounterID, currentSpellID)
+			if not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, currentSpellID, eventType) then
+				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
+					local adjustedTime = indexAndCastStart.castStart
+					if ability then
+						if eventType == "SAR" then
+							adjustedTime = adjustedTime + ability.duration + ability.castTime
+						elseif eventType == "SCC" or eventType == "SAA" then
+							adjustedTime = adjustedTime + ability.castTime
+						end
+					end
+					if adjustedTime <= absoluteTime then
+						local difference = absoluteTime - adjustedTime
+						if difference < minTime then
+							minTime = difference
+							spellIDForMinTime = spellID
+							spellCountForMinTime = spellCount
+						end
+					end
+				end
+			end
+		end
+		return spellIDForMinTime, spellCountForMinTime, minTime
+	end
+
 	return nil
 end
 
@@ -936,8 +971,11 @@ do
 				)
 				if absoluteTime then
 					local newSpellID, newSpellCount, newTime =
-						BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true)
-
+						BossUtilities.FindNearestPreferredCombatLogEventAbility(absoluteTime, newID, nil, eventType)
+					if not newSpellID then
+						newSpellID, newSpellCount, newTime =
+							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true)
+					end
 					if newSpellID and newSpellCount and newTime then
 						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
 							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
