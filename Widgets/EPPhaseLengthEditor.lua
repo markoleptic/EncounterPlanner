@@ -54,14 +54,16 @@ local function ResetToDefault(self)
 				local text = defaultLabel:GetText()
 				local minutes, seconds, decimal = text:match("^(%d+):(%d+)[%.]?(%d*)")
 				if minutes and seconds then
-					currentMinuteLineEdit:SetText(tostring(minutes))
+					local formattedMinutes = format("%02d", minutes)
 					local formattedSeconds = format("%02d", seconds)
-					if decimal and decimal ~= "0" and decimal ~= "" then
-						formattedSeconds = formattedSeconds .. "." .. decimal
-						currentSecondLineEdit:SetText(formattedSeconds)
+					local secondsDecimalMatch = tostring(seconds):match("^%d+%.(%d+)")
+					if secondsDecimalMatch then
+						formattedSeconds = formattedSeconds .. "." .. secondsDecimalMatch
 					else
-						currentSecondLineEdit:SetText(tostring(seconds))
+						formattedSeconds = formattedSeconds .. ".0"
 					end
+					currentMinuteLineEdit:SetText(formattedMinutes)
+					currentSecondLineEdit:SetText(formattedSeconds)
 				end
 				local defaultCountLabel = containerChildren[4]
 				local countLineEdit = containerChildren[5]
