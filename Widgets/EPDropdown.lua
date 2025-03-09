@@ -29,7 +29,7 @@ local defaultDropdownWidth = 200
 local defaultPulloutWidth = 200
 local defaultMaxItems = 13
 local rightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t "
-
+local spellIconRegex = "|T.-|t%s(.+)"
 local pulloutBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -346,8 +346,6 @@ do
 		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
 		self:SetScroll(newVerticalScroll)
 	end
-
-	local spellIconRegex = "|T.-|t%s(.+)"
 
 	---@param self EPDropdownPullout
 	---@param byText boolean|nil
@@ -774,12 +772,11 @@ do
 		return self.value
 	end
 
-	-- Only works for non-nested dropdowns
 	---@param self EPDropdown
 	---@param currentValue any
 	---@param newValue any
 	---@param newText string
-	local function EditItemText(self, currentValue, newValue, newText)
+	local function EditItemValueAndText(self, currentValue, newValue, newText)
 		local item, _ = self:FindItemAndText(currentValue)
 		if item then
 			item:SetValue(newValue)
@@ -1262,7 +1259,7 @@ do
 			AddItem = AddItem,
 			RemoveItem = RemoveItem,
 			AddItems = AddItems,
-			EditItemText = EditItemText,
+			EditItemValueAndText = EditItemValueAndText,
 			SetDropdownItemHeight = SetDropdownItemHeight,
 			AddItemsToExistingDropdownItemMenu = AddItemsToExistingDropdownItemMenu,
 			GetItemsFromDropdownItemMenu = GetItemsFromDropdownItemMenu,
@@ -1310,7 +1307,9 @@ do
 		buttonCover:SetScript("OnDoubleClick", function()
 			if widget.lineEdit then
 				widget:Close()
-				widget.lineEdit:SetText(widget.text:GetText())
+				local textMaybeWithIcon = widget.text:GetText()
+				textMaybeWithIcon = textMaybeWithIcon:match(spellIconRegex) or textMaybeWithIcon
+				widget.lineEdit:SetText(textMaybeWithIcon)
 				widget.lineEdit.frame:Show()
 				widget.lineEdit:SetFocus()
 			end

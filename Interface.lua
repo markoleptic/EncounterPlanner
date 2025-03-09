@@ -280,14 +280,18 @@ do -- Roster Editor
 		if lastOpenPlan then
 			local tempRoster = {}
 			for _, rosterWidgetMapping in ipairs(currentRosterMap) do
-				tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+				if rosterWidgetMapping.name:gsub("%s", ""):len() ~= 0 then
+					tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+				end
 			end
 			AddOn.db.profile.plans[lastOpenPlan].roster = tempRoster
 		end
 
 		local tempRoster = {}
 		for _, rosterWidgetMapping in ipairs(sharedRosterMap) do
-			tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			if rosterWidgetMapping.name:gsub("%s", ""):len() ~= 0 then
+				tempRoster[rosterWidgetMapping.name] = rosterWidgetMapping.dbEntry
+			end
 		end
 		AddOn.db.profile.sharedRoster = tempRoster
 
@@ -911,7 +915,7 @@ local function HandleChangeBossDropdownValueChanged(value)
 				isCommunication = true,
 				title = L["Changing Boss with Combat Log Event Assignments"],
 				message = format(
-					"%s\n\n%s\n%s\n%s\n\n%s",
+					"%s\n\n%s.\n%s.\n%s.\n\n%s",
 					L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"],
 					L["1. Convert all assignments to timed assignments for the new boss"],
 					L["2. Replace spells with those of the new boss, matching the closest timing"],
@@ -981,26 +985,47 @@ local function HandlePlanDropdownValueChanged(_, _, value)
 end
 
 ---@param lineEdit EPLineEdit
----@param value string
-local function HandlePlanNameChanged(lineEdit, _, value)
+---@param text string
+local function HandlePlanNameChanged(lineEdit, _, text)
+	local newPlanName = text:match("|T.-|t%s(.+)") or text
 	local currentPlanName = AddOn.db.profile.lastOpenPlan
-	if value:gsub("%s", "") == "" then
-		lineEdit:SetText(currentPlanName)
+	local revert = false
+
+	if newPlanName:gsub("%s", "") == "" then
+		revert = true
+	elseif newPlanName == currentPlanName then
 		return
-	elseif value == currentPlanName then
-		return
-	elseif AddOn.db.profile.plans[value] then
-		lineEdit:SetText(currentPlanName)
-		return
+	elseif AddOn.db.profile.plans[newPlanName] then
+		revert = true
 	end
-	AddOn.db.profile.plans[value] = AddOn.db.profile.plans[currentPlanName]
-	AddOn.db.profile.plans[currentPlanName] = nil
-	AddOn.db.profile.plans[value].name = value
-	AddOn.db.profile.lastOpenPlan = value
-	local planDropdown = Private.mainFrame.planDropdown
-	if planDropdown then
-		planDropdown:EditItemText(currentPlanName, value, value)
-		planDropdown:Sort(AddOn.db.profile.plans[value].instanceID)
+
+	local currentPlan = AddOn.db.profile.plans[currentPlanName]
+	if revert then
+		local previousText
+		local boss = GetBoss(currentPlan.dungeonEncounterID)
+		if boss then
+			previousText = format("|T%s:16|t %s", boss.icon, currentPlanName)
+		else
+			previousText = currentPlanName
+		end
+		lineEdit:SetText(previousText)
+	else
+		AddOn.db.profile.plans[newPlanName] = currentPlan
+		AddOn.db.profile.plans[currentPlanName] = nil
+		AddOn.db.profile.plans[newPlanName].name = newPlanName
+		AddOn.db.profile.lastOpenPlan = newPlanName
+		local planDropdown = Private.mainFrame.planDropdown
+		if planDropdown then
+			local newText
+			local boss = GetBoss(currentPlan.dungeonEncounterID)
+			if boss then
+				newText = format("|T%s:16|t %s", boss.icon, newPlanName)
+			else
+				newText = newPlanName
+			end
+			planDropdown:EditItemValueAndText(currentPlanName, newPlanName, newText)
+			planDropdown:Sort(AddOn.db.profile.plans[newPlanName].instanceID)
+		end
 	end
 end
 
