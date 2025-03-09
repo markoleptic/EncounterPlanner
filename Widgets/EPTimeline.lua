@@ -1576,9 +1576,15 @@ end
 ---@param self EPTimeline
 ---@return number
 local function CalculateRequiredBarHeight(self)
-	local totalBarHeight = 0
-	for _, visible in pairs(self.bossAbilityVisibility) do
-		if visible == true then
+	local totalBarHeight = 0.0
+
+	local activeAbilities = {}
+	for _, spellID in pairs(self.bossAbilityOrder) do
+		activeAbilities[spellID] = true
+	end
+
+	for spellID, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true and activeAbilities[spellID] then
 			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
 		end
 	end
@@ -1625,8 +1631,14 @@ end
 local function CalculateMinMaxStepBarHeight(self)
 	local abilityCount = 1
 	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
-	for _, visible in pairs(self.bossAbilityVisibility) do
-		if visible == true then
+
+	local activeAbilities = {}
+	for _, spellID in pairs(self.bossAbilityOrder) do
+		activeAbilities[spellID] = true
+	end
+
+	for spellID, visible in pairs(self.bossAbilityVisibility) do
+		if visible == true and activeAbilities[spellID] then
 			if abilityCount <= maximumNumberOfBossAbilityRows then
 				maxH = maxH + stepH
 			end
