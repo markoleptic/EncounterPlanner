@@ -776,7 +776,6 @@ do
 				messageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
 				messageBox:SetTitle(messageBoxData.title)
 				messageBox:SetText(messageBoxData.message)
-				messageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
 				messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 				messageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
@@ -784,10 +783,12 @@ do
 
 				messageBox:SetCallback("Accepted", function()
 					ExecuteCallback(messageBoxData.acceptButtonCallback)
+					HandleMessageBoxReleased()
 				end)
 				if messageBoxData.rejectButtonCallback then
 					messageBox:SetCallback("Rejected", function()
 						ExecuteCallback(messageBoxData.rejectButtonCallback)
+						HandleMessageBoxReleased()
 					end)
 				end
 				for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
@@ -797,10 +798,11 @@ do
 						if buttonToAdd.callback then
 							messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
 								ExecuteCallback(buttonToAdd.callback)
+								HandleMessageBoxReleased()
 							end)
 						end
 					else
-						error("Invalid button index")
+						error(AddOnName .. ": Invalid button index.")
 					end
 				end
 				messageBox.isCommunicationsMessage = messageBoxData.isCommunication

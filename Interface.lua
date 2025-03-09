@@ -1132,56 +1132,64 @@ do -- Plan Menu Button Handlers
 	end
 
 	local function CreateImportEditBox()
-		Private.importEditBox = AceGUI:Create("EPEditBox")
-		Private.importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
-		Private.importEditBox.frame:SetPoint("CENTER")
-		Private.importEditBox:SetTitle(L["Import From Text"])
-		Private.importEditBox:ShowOkayButton(true, L["Import As New Plan"])
-		Private.importEditBox.okayButton:SetEnabled(true)
-		Private.importEditBox:SetCallback("OnRelease", function()
-			Private.importEditBox = nil
-		end)
-		Private.importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
-			if checked then
-				widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
-				widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
-				widget.okayButton:SetWidthFromText()
-				widget.okayButton:SetEnabled(true)
-			else
-				widget.lineEdit:SetText("")
-				widget.okayButton:SetEnabled(false)
-				widget.okayButton:SetText(L["Import As New Plan"])
-				widget.okayButton:SetWidthFromText()
-			end
-		end)
-		Private.importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
-			planName = planName:trim()
-			if planName == "" or AddOn.db.profile.plans[planName] then
-				widget.okayButton:SetEnabled(false)
-			else
-				widget.okayButton:SetEnabled(true)
-			end
-			widget.okayButton:SetText(L["Import As"] .. " " .. planName)
-			widget.okayButton:SetWidthFromText()
-		end)
-		Private.importEditBox:ShowCheckBoxAndLineEdit(
-			true,
-			L["Overwrite Current Plan"],
-			L["New Plan Name:"],
-			CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name)
-		)
-		Private.importEditBox:SetCallback("OkayButtonClicked", function(widget)
-			local planName = widget.lineEdit:GetText()
-			planName = planName:trim()
-			if planName == "" then
-				widget.okayButton:SetEnabled(false)
-			else
-				if not AddOn.db.profile.plans[planName] or Private.importEditBox.checkBox:IsChecked() then
-					HandleImportPlanFromString(planName)
+		if not Private.importEditBox then
+			local importEditBox = AceGUI:Create("EPEditBox")
+			importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
+			importEditBox.frame:SetPoint("CENTER")
+			importEditBox:SetTitle(L["Import From Text"])
+			importEditBox:ShowOkayButton(true, L["Import As New Plan"])
+			importEditBox.okayButton:SetEnabled(true)
+			importEditBox:SetCallback("OnRelease", function()
+				Private.importEditBox = nil
+			end)
+			importEditBox:SetCallback("CloseButtonClicked", function()
+				AceGUI:Release(Private.importEditBox)
+			end)
+			importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
+				if checked then
+					widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
+					widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
+					widget.okayButton:SetWidthFromText()
+					widget.okayButton:SetEnabled(true)
+				else
+					widget.lineEdit:SetText("")
+					widget.okayButton:SetEnabled(false)
+					widget.okayButton:SetText(L["Import As New Plan"])
+					widget.okayButton:SetWidthFromText()
 				end
-			end
-		end)
+			end)
+			importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
+				planName = planName:trim()
+				if planName == "" or AddOn.db.profile.plans[planName] then
+					widget.okayButton:SetEnabled(false)
+				else
+					widget.okayButton:SetEnabled(true)
+				end
+				widget.okayButton:SetText(L["Import As"] .. " " .. planName)
+				widget.okayButton:SetWidthFromText()
+			end)
+			importEditBox:ShowCheckBoxAndLineEdit(
+				true,
+				L["Overwrite Current Plan"],
+				L["New Plan Name:"],
+				CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name)
+			)
+			importEditBox:SetCallback("OkayButtonClicked", function(widget)
+				local checked = Private.importEditBox.checkBox:IsChecked()
+				local planName = Private.importEditBox.lineEdit:GetText()
+				AceGUI:Release(Private.importEditBox)
+				planName = planName:trim()
+				if planName == "" then
+					widget.okayButton:SetEnabled(false)
+				else
+					if not AddOn.db.profile.plans[planName] or checked then
+						HandleImportPlanFromString(planName)
+					end
+				end
+			end)
+			Private.importEditBox = importEditBox
+		end
 	end
 
 	local function HandleDuplicatePlanButtonClicked()
@@ -1245,14 +1253,18 @@ do -- Plan Menu Button Handlers
 
 	local function HandleExportPlanButtonClicked()
 		if not Private.exportEditBox then
-			Private.exportEditBox = AceGUI:Create("EPEditBox")
-			Private.exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-			Private.exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
-			Private.exportEditBox.frame:SetPoint("CENTER")
-			Private.exportEditBox:SetTitle(L["Export"])
-			Private.exportEditBox:SetCallback("OnRelease", function()
+			local exportEditBox = AceGUI:Create("EPEditBox")
+			exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
+			exportEditBox.frame:SetPoint("CENTER")
+			exportEditBox:SetTitle(L["Export"])
+			exportEditBox:SetCallback("OnRelease", function()
 				Private.exportEditBox = nil
 			end)
+			exportEditBox:SetCallback("CloseButtonClicked", function()
+				AceGUI:Release(Private.exportEditBox)
+			end)
+			Private.exportEditBox = exportEditBox
 		end
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local text = Private:ExportPlanToNote(plan, GetCurrentBossDungeonEncounterID())
@@ -1407,22 +1419,28 @@ local function HandleExternalTextButtonClicked()
 	if not Private.externalTextEditor then
 		local currentPlan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local currentPlanID = currentPlan.ID
-		Private.externalTextEditor = AceGUI:Create("EPEditBox")
-		Private.externalTextEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
-		Private.externalTextEditor.frame:SetFrameLevel(constants.frameLevels.kExternalTextEditorFrameLevel)
-		Private.externalTextEditor.frame:SetPoint("CENTER")
-		Private.externalTextEditor:SetTitle(L["External Text Editor"])
-		Private.externalTextEditor:SetCallback("OnRelease", function()
+		local externalTextEditor = AceGUI:Create("EPEditBox")
+		externalTextEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		externalTextEditor.frame:SetFrameLevel(constants.frameLevels.kExternalTextEditorFrameLevel)
+		externalTextEditor.frame:SetPoint("CENTER")
+		externalTextEditor:SetTitle(L["External Text Editor"])
+		externalTextEditor:SetCallback("OnRelease", function()
+			Private.externalTextEditor = nil
+		end)
+		externalTextEditor:SetCallback("CloseButtonClicked", function()
+			local text = Private.externalTextEditor:GetText()
+			AceGUI:Release(Private.externalTextEditor)
+
 			if AddOn.db and AddOn.db.profile then
 				local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 				if plan.ID == currentPlanID then
-					plan.content = utilities.SplitStringIntoTable(Private.externalTextEditor:GetText())
+					plan.content = utilities.SplitStringIntoTable(text)
 				end
 			end
-			Private.externalTextEditor = nil
 		end)
-		Private.externalTextEditor:SetText(("\n"):join(unpack(currentPlan.content)))
-		Private.externalTextEditor:SetFocusAndCursorPosition(0)
+		externalTextEditor:SetText(("\n"):join(unpack(currentPlan.content)))
+		externalTextEditor:SetFocusAndCursorPosition(0)
+		Private.externalTextEditor = externalTextEditor
 	end
 end
 

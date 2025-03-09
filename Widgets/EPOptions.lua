@@ -1142,13 +1142,18 @@ local function CreateDropdownBesideButton(self, option, index)
 				messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 				messageBox:SetCallback("Accepted", function()
-					option.buttonCallback()
+					AceGUI:Release(messageBox)
+					messageBox = nil
+					if type(option.buttonCallback) == "function" then
+						option.buttonCallback()
+					end
 					RefreshEnabledStates(self.refreshMap)
 					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 						Update(self.updateIndices[option.category][index])
 					end
 				end)
-				messageBox:SetCallback("OnRelease", function()
+				messageBox:SetCallback("Rejected", function()
+					AceGUI:Release(messageBox)
 					messageBox = nil
 				end)
 			end
@@ -1250,13 +1255,16 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 						messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 						messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 						messageBox:SetCallback("Accepted", function()
+							AceGUI:Release(messageBox)
+							messageBox = nil
 							option.set(value1, value2, value3, value4)
 							RefreshEnabledStates(self.refreshMap)
 							if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
 								Update(self.updateIndices[option.category][index])
 							end
 						end)
-						messageBox:SetCallback("OnRelease", function()
+						messageBox:SetCallback("Rejected", function()
+							AceGUI:Release(messageBox)
 							messageBox = nil
 							if widget and widget.pullout and option and option.neverShowItemsAsSelected then
 								setWidgetValue(widget, nil)
@@ -1634,7 +1642,7 @@ local function OnAcquire(self)
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
-		self:Release()
+		self:Fire("CloseButtonClicked")
 	end)
 	self.tabTitleContainer = AceGUI:Create("EPContainer")
 	self.tabTitleContainer:SetLayout("EPHorizontalLayout")
@@ -1677,7 +1685,8 @@ end
 ---@param self EPOptions
 local function OnRelease(self)
 	if messageBox then
-		messageBox:Release()
+		AceGUI:Release(messageBox)
+		messageBox = nil
 	end
 	self.closeButton:Release()
 	self.closeButton = nil

@@ -500,6 +500,7 @@ function AddOn:OnDisable()
 	if Private.mainFrame then
 		Private.mainFrame:Release()
 	end
+	Private:ReleaseOptionsMenu()
 	if Private.optionsMenu then
 		Private.optionsMenu:Release()
 	end
@@ -531,7 +532,9 @@ function AddOn:SlashCommand(input)
 	elseif input then
 		local trimmed = input:trim():lower()
 		if trimmed == "options" then
-			Private:CreateOptionsMenu()
+			if not Private.optionsMenu then
+				Private:CreateOptionsMenu()
+			end
 		elseif trimmed == "close" then
 			if Private.mainFrame then
 				Private.mainFrame:Release()

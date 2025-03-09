@@ -56,7 +56,7 @@ local function OnAcquire(self)
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
-		self:Release()
+		self:Fire("CloseButtonClicked")
 	end)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")

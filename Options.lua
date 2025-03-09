@@ -2258,64 +2258,76 @@ do
 	end
 end
 
--- Creates and shows the options menu. The message anchor and progress bar anchor are released when the options menu is
--- released.
-function Private:CreateOptionsMenu()
-	local optionsMenu = AceGUI:Create("EPOptions")
-	optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems().dropdownItemMenuData
-	optionsMenu.FormatTime = utilities.FormatTime
-	optionsMenu.GetSpellCooldown = utilities.GetSpellCooldown
-	optionsMenu.frame:SetParent(UIParent)
-	optionsMenu.frame:SetFrameStrata("DIALOG")
-	optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
-	optionsMenu:SetCallback("OnRelease", function()
-		GetPreferences().lastOpenTab = Private.optionsMenu.activeTab
-		if messageAnchor then
-			messageAnchor:Release()
-		end
-		if progressBarAnchor then
-			progressBarAnchor:Release()
-		end
-		messageAnchor = nil
-		progressBarAnchor = nil
-		Private.optionsMenu = nil
-	end)
+-- Releases the message and progress bar anchors if they exist.
+function Private:CloseAnchors()
+	if messageAnchor then
+		AceGUI:Release(messageAnchor)
+	end
+	messageAnchor = nil
+	if progressBarAnchor then
+		AceGUI:Release(progressBarAnchor)
+	end
+	progressBarAnchor = nil
+end
+
+local function CreateAnchors()
+	Private:CloseAnchors()
 
 	messageAnchor = CreateMessageAnchor()
 	messageAnchor.frame:Hide()
 
 	progressBarAnchor = CreateProgressBarAnchor()
 	progressBarAnchor.frame:Hide()
-
-	local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = optionCreator.GetOrCreateOptions()
-	optionsMenu:AddOptionTab(unpack(cooldownOverrideTab))
-	optionsMenu:AddOptionTab(unpack(keyBindingsTab))
-	optionsMenu:AddOptionTab(unpack(reminderTab))
-	optionsMenu:AddOptionTab(unpack(viewTab))
-	optionsMenu:AddOptionTab(unpack(profileTab))
-	optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-	optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab or L["Cooldown Overrides"])
-	optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
-
-	Private.optionsMenu = optionsMenu
 end
 
+-- Releases the message and progress bar anchors if they exist and recreates them. Requires the options menu to be open.
 function Private:RecreateAnchors()
 	if Private.optionsMenu then
-		messageAnchor = CreateMessageAnchor()
-		messageAnchor.frame:Hide()
-
-		progressBarAnchor = CreateProgressBarAnchor()
-		progressBarAnchor.frame:Hide()
+		CreateAnchors()
 	end
 end
 
-function Private:CloseAnchors()
-	if messageAnchor then
-		messageAnchor:Release()
+-- Releases the options menu, message anchor, and progress bar anchor, if they exist.
+function Private:ReleaseOptionsMenu()
+	if self.optionsMenu then
+		GetPreferences().lastOpenTab = self.optionsMenu.activeTab
+		AceGUI:Release(self.optionsMenu)
 	end
-	if progressBarAnchor then
-		progressBarAnchor:Release()
+	self.optionsMenu = nil
+	self:CloseAnchors()
+end
+
+-- Creates and shows the options menu. The message anchor and progress bar anchor are released when the options menu is
+-- released.
+function Private:CreateOptionsMenu()
+	if not self.optionsMenu then
+		local optionsMenu = AceGUI:Create("EPOptions")
+		optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems().dropdownItemMenuData
+		optionsMenu.FormatTime = utilities.FormatTime
+		optionsMenu.GetSpellCooldown = utilities.GetSpellCooldown
+		optionsMenu.frame:SetParent(UIParent)
+		optionsMenu.frame:SetFrameStrata("DIALOG")
+		optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
+		optionsMenu:SetCallback("OnRelease", function()
+			self.optionsMenu = nil
+		end)
+		optionsMenu:SetCallback("CloseButtonClicked", function()
+			self:ReleaseOptionsMenu()
+		end)
+
+		CreateAnchors()
+
+		local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = optionCreator.GetOrCreateOptions()
+		optionsMenu:AddOptionTab(unpack(cooldownOverrideTab))
+		optionsMenu:AddOptionTab(unpack(keyBindingsTab))
+		optionsMenu:AddOptionTab(unpack(reminderTab))
+		optionsMenu:AddOptionTab(unpack(viewTab))
+		optionsMenu:AddOptionTab(unpack(profileTab))
+		optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab or L["Cooldown Overrides"])
+		optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
+
+		self.optionsMenu = optionsMenu
 	end
 end
 
