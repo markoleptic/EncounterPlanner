@@ -31,7 +31,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			instanceID = 2769,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 460603, combatLogEventType = "SCC" },
+				[2] = { combatLogEventSpellID = 460603, combatLogEventType = "SCS" },
 				[3] = { combatLogEventSpellID = 460116, combatLogEventType = "SAR" },
 			},
 			abilities = {
@@ -131,7 +131,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[460116] = BossAbility:New({ -- Tune-Up
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
+							castTimes = { 4.0 },
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -141,13 +141,9 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 				[460603] = BossAbility:New({ -- Mechanical Breakdown
 					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 125.0 },
-							signifiesPhaseEnd = true,
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 125.0 },
-							signifiesPhaseEnd = true,
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
 					duration = 0.0,
@@ -157,12 +153,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 129.0,
-					defaultDuration = 129.0,
+					duration = 120.0,
+					defaultDuration = 120.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
-					fixedDuration = true,
 				}),
 				[2] = BossPhase:New({
 					duration = 45.0,
@@ -174,13 +169,12 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[3] = BossPhase:New({
-					duration = 129.0,
-					defaultDuration = 129.0,
+					duration = 120.0,
+					defaultDuration = 120.0,
 					count = 2,
 					defaultCount = 2,
 					name = "P1",
 					repeatAfter = 2,
-					fixedDuration = true,
 				}),
 			},
 		}),
@@ -194,7 +188,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			instanceID = 2769,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 465872, combatLogEventType = "SCS" },
+				[2] = { combatLogEventSpellID = 465872, combatLogEventType = "SAA" },
 				[3] = { combatLogEventSpellID = 465872, combatLogEventType = "SAR" },
 			},
 			abilities = {
@@ -206,9 +200,9 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					duration = 20.0,
+					duration = 20.0, -- Channeled, SCC is start of cast
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
 				[465863] = BossAbility:New({ -- Colossal Clash (Flarendo)
 					phases = {
@@ -216,16 +210,16 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							castTimes = { 0.0 },
 						}),
 					},
-					duration = 20.0,
+					duration = 20.0, -- Channeled, SCC is start of cast
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
 				[472222] = BossAbility:New({ -- Blistering Spite
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
-						[2] = BossAbilityPhase:New({
+						[3] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
 					},
@@ -239,7 +233,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 						[1] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
-						[2] = BossAbilityPhase:New({
+						[3] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 						}),
 					},
@@ -251,10 +245,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[473650] = BossAbility:New({ -- Scrapbomb
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 9.0, 24.0, 23.0 },
+							castTimes = { 9.0, 23.0, 24.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 9.0, 24.0, 23.0 },
+							castTimes = { 9.0, 23.0, 24.0 },
 						}),
 					},
 					duration = 10.0,
@@ -264,10 +258,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[472233] = BossAbility:New({ -- Blastburn Roarcannon
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 15.0, 24.0, 23.0 },
+							castTimes = { 15.0, 24.0, 21.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 15.0, 24.0, 23.0 },
+							castTimes = { 15.0, 24.0, 21.0 },
 						}),
 					},
 					duration = 3.0,
@@ -277,10 +271,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[1213690] = BossAbility:New({ -- Molten Phlegm
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 24.6, 27.4 },
+							castTimes = { 24.6, 24.4 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 24.6, 27.4 },
+							castTimes = { 24.6, 24.4 },
 						}),
 					},
 					duration = 10.0,
@@ -290,10 +284,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[1214190] = BossAbility:New({ -- Eruption Stomp
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 27.0, 24.0 },
+							castTimes = { 26.0, 25.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 27.0, 24.0 },
+							castTimes = { 26.0, 25.0 },
 						}),
 					},
 					duration = 0.0,
@@ -324,9 +318,9 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 							castTimes = { 10.0, 30.0 },
 						}),
 					},
-					duration = 0.0,
-					castTime = 8.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					duration = 8.0, -- Channeled, SCC is start of cast
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[1213994] = BossAbility:New({ -- Voltaic Image
 					phases = {
@@ -358,32 +352,30 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 95.0,
-					defaultDuration = 95.0,
+					duration = 74.0,
+					defaultDuration = 74.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
 				[2] = BossPhase:New({
-					duration = 20.0,
-					defaultDuration = 20.0,
-					count = 3,
-					defaultCount = 3,
+					duration = 21.0,
+					defaultDuration = 21.0,
+					count = 5,
+					defaultCount = 5,
 					name = "P2",
 					repeatAfter = 3,
 					fixedDuration = true,
-					fixedCount = true,
 				}),
 				[3] = BossPhase:New({
-					duration = 95.0,
-					defaultDuration = 95.0,
-					count = 3,
-					defaultCount = 3,
+					duration = 74.0,
+					defaultDuration = 74.0,
+					count = 5,
+					defaultCount = 5,
 					name = "P1",
 					repeatAfter = 2,
 					fixedDuration = true,
-					fixedCount = true,
 				}),
 			},
 		}),
