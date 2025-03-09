@@ -30,12 +30,14 @@ end
 local API = {}
 
 ---@return string
+---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextasstring--string)
 function API.GetExternalTextAsString()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return join("\n", unpack(profile.activeText))
 end
 
 ---@return table<integer, table<integer, string>>
+---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextastable--tableinteger-tableinteger-string)
 function API.GetExternalTextAsTable()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return SplitStringTableByWhiteSpace(profile.activeText)
