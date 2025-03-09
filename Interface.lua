@@ -891,7 +891,7 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, convers
 			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod)
 		end
 		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID)
-		interfaceUpdater.UpdatePlanCheckBoxes(plan)
+		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(newBossDungeonEncounterID, true)
 		UpdateAllAssignments(false, newBossDungeonEncounterID)
 	end
@@ -1126,6 +1126,7 @@ do -- Plan Menu Button Handlers
 		AddOn.db.profile.lastOpenPlan = newPlanName
 		local newPlan = AddOn.db.profile.plans[newPlanName]
 		AddPlanToDropdown(newPlan, true)
+		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(bossDungeonEncounterID, true)
 		UpdateAllAssignments(true, bossDungeonEncounterID)
 	end
