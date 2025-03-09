@@ -377,6 +377,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Activation"],
 				}),
 				[283143] = BossAbility:New({ -- Magneto-Arm (Cast by Magneto-Arm, pull in start)
 					eventTriggers = {
@@ -388,6 +389,7 @@ Private.dungeonInstances[2097] = DungeonInstance:New({
 					duration = 10.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = {},
+					additionalContext = L["Pull in"],
 				}),
 			},
 			phases = {

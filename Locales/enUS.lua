@@ -412,3 +412,5 @@ L["P"] = true
 L["Reminders are currently disabled globally. Enable them in Preferences to modify this plan’s reminder setting."] =
 	true
 L["Reminders are currently disabled globally. Enable them in Preferences to simulate them."] = true
+L["Activation"] = true
+L["Pull in"] = true
