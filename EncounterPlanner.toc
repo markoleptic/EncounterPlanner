@@ -8,6 +8,8 @@
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, MRT, DevTool, WeakAuras
 ## IconTexture: Interface\AddOns\EncounterPlanner\Media\ep-logo.tga
 ## X-Flavor: Mainline
+## X-Website: https://www.curseforge.com/wow/addons/encounter-planner
+## X-Curse-Project-ID: 1217064
 ## X-Localizations: enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
 ## Category-enUS: Dungeons & Raids
 ## Category-deDE: Dungeons & Schlachtzüge
