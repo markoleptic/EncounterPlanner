@@ -53,7 +53,6 @@ end
 ---@param message string
 ---@param severityLevel SeverityLevel?
 ---@param indentLevel IndentLevel?
----@return number -- textHeight
 local function AddSingleMessage(self, message, severityLevel, indentLevel)
 	local lineNumber, --[[@as FontString]]
 		line --[[@as FontString]]
@@ -110,20 +109,15 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 	line:SetPoint("RIGHT", self.messageFrame, "RIGHT", -padding.right, 0)
 	lineNumber:SetPoint("RIGHT", line, "LEFT")
 
-	local textHeight = line:GetHeight()
 	if #self.activeMessages > 0 then
 		local lastLine = self.activeMessages[#self.activeMessages].line
 		line:SetPoint("TOP", lastLine, "BOTTOM", 0, -textPadding)
-		textHeight = textHeight + textPadding
 	else
 		line:SetPoint("TOP", self.messageFrame, "TOP", 0, -padding.top)
-		textHeight = textHeight + padding.top
 	end
 
 	self.lineNumber = self.lineNumber + 1
 	tinsert(self.activeMessages, { lineNumber = lineNumber, line = line })
-
-	return textHeight
 end
 
 ---@param self EPStatusBar
@@ -131,20 +125,17 @@ end
 ---@param severityLevel SeverityLevel?
 ---@param indentLevel IndentLevel?
 local function AddMessage(self, message, severityLevel, indentLevel)
-	local textHeight = AddSingleMessage(self, message, severityLevel, indentLevel)
-	self.messageFrame:SetHeight(self.messageFrame:GetHeight() + textHeight)
-	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
+	AddSingleMessage(self, message, severityLevel, indentLevel)
+	self:OnWidthSet()
 end
 
 ---@param self EPStatusBar
 ---@param messages table<integer, {message: string, severityLevel: integer, indentLevel: integer}>
 local function AddMessages(self, messages)
-	local height = self.messageFrame:GetHeight()
 	for _, message in ipairs(messages) do
-		height = height + AddSingleMessage(self, message.message, message.severityLevel, message.indentLevel)
+		AddSingleMessage(self, message.message, message.severityLevel, message.indentLevel)
 	end
-	self.messageFrame:SetHeight(height)
-	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
+	self:OnWidthSet()
 end
 
 ---@param self EPStatusBar
