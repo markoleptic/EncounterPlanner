@@ -2266,7 +2266,7 @@ function Private:CreateOptionsMenu()
 	optionsMenu.FormatTime = utilities.FormatTime
 	optionsMenu.GetSpellCooldown = utilities.GetSpellCooldown
 	optionsMenu.frame:SetParent(UIParent)
-	optionsMenu.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	optionsMenu.frame:SetFrameStrata("DIALOG")
 	optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)
 	optionsMenu:SetCallback("OnRelease", function()
 		GetPreferences().lastOpenTab = Private.optionsMenu.activeTab

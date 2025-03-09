@@ -220,7 +220,7 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetFrameStrata("DIALOG")
 	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(unpack(backdropColor))
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))

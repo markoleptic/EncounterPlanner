@@ -24,7 +24,6 @@ local widgetHeight = 20
 ---@param self EPRosterEntry
 local function OnAcquire(self)
 	self.frame:SetParent(UIParent)
-	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	self.frame:Show()
 
 	self:SetLayout("EPHorizontalLayout")
@@ -126,7 +125,6 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
 	local content = CreateFrame("Frame", Type .. "Content" .. count, frame)

@@ -43,7 +43,7 @@ end
 local function HandleColorSwatchClicked(self)
 	ColorPickerFrame:Hide()
 	if self.enabled then
-		ColorPickerFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+		ColorPickerFrame:SetFrameStrata("DIALOG")
 		ColorPickerFrame:SetFrameLevel(self.frame:GetFrameLevel() + 10)
 		ColorPickerFrame:SetClampedToScreen(true)
 		local r, g, b, a = unpack(self.color)

@@ -275,7 +275,7 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetFrameStrata("DIALOG")
 	frame:SetHeight(defaultHeight)
 	frame:SetWidth(defaultWidth)
 

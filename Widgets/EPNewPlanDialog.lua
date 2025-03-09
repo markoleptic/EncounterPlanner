@@ -233,7 +233,7 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetFrameStrata("DIALOG")
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")

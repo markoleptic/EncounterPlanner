@@ -179,7 +179,6 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:EnableMouse(true)
 

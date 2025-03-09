@@ -94,7 +94,7 @@ end
 ---@param self EPItemBase
 function EPItemBase.OnAcquire(self)
 	self.frame:SetToplevel(true)
-	self.frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	self.frame:SetFrameStrata("DIALOG")
 	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX, 0)
 end
 
@@ -197,7 +197,7 @@ function EPItemBase.Create(type)
 
 	local frame = CreateFrame("Button", type .. count)
 	frame:SetHeight(dropdownItemHeight)
-	frame:SetFrameStrata("FULLSCREEN_DIALOG")
+	frame:SetFrameStrata("DIALOG")
 	frame:SetScript("OnEnter", HandleItemBaseFrameEnter)
 	frame:SetScript("OnLeave", HandleItemBaseFrameLeave)
 
