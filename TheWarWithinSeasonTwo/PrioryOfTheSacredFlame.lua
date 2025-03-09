@@ -230,7 +230,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					durationLastsUntilEndOfPhase = true,
-					allowedCombatLogEventType = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[444546] = BossAbility:New({ -- Purify
 					phases = {
@@ -245,7 +245,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 3.0,
-					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[444608] = BossAbility:New({ -- Inner Fire
 					phases = {
@@ -260,7 +260,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 5.2,
 					castTime = 2.0,
-					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[451605] = BossAbility:New({ -- Holy Flame
 					phases = {
@@ -275,7 +275,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 1.0,
 					castTime = 3.0,
-					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[428169] = BossAbility:New({ -- Blinding Light
 					phases = {
@@ -290,7 +290,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 4.0,
 					castTime = 4.0,
-					allowedCombatLogEventType = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 			},
 			phases = {
@@ -315,7 +315,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					defaultDuration = 70.0,
 					count = 1,
 					defaultCount = 1,
-					name = "P1",
+					name = "P3",
 					fixedCount = true,
 				}),
 			},
