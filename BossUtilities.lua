@@ -937,6 +937,7 @@ do
 				if absoluteTime then
 					local newSpellID, newSpellCount, newTime =
 						BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true)
+
 					if newSpellID and newSpellCount and newTime then
 						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
 							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
@@ -946,6 +947,9 @@ do
 						assignment.time = Utilities.Round(newTime, 1)
 						assignment.combatLogEventSpellID = newSpellID
 						assignment.spellCount = newSpellCount
+					else
+						assignment = TimedAssignment:New(assignment, true)
+						assignment.time = Utilities.Round(absoluteTime, 1)
 					end
 				end
 			end
