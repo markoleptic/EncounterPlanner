@@ -780,27 +780,27 @@ do
 				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
 				messageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
 				messageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
-
+				messageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
 				messageBox:SetCallback("Accepted", function()
+					AceGUI:Release(messageBox)
 					ExecuteCallback(messageBoxData.acceptButtonCallback)
-					HandleMessageBoxReleased()
 				end)
-				if messageBoxData.rejectButtonCallback then
-					messageBox:SetCallback("Rejected", function()
+				messageBox:SetCallback("Rejected", function()
+					AceGUI:Release(messageBox)
+					if type(messageBoxData.rejectButtonCallback) == "function" then
 						ExecuteCallback(messageBoxData.rejectButtonCallback)
-						HandleMessageBoxReleased()
-					end)
-				end
+					end
+				end)
 				for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
 					local button = messageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
 					if button then
 						messageBox:AddButton(buttonToAdd.buttonText, button)
-						if buttonToAdd.callback then
-							messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
+						messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
+							AceGUI:Release(messageBox)
+							if type(buttonToAdd.callback) == "function" then
 								ExecuteCallback(buttonToAdd.callback)
-								HandleMessageBoxReleased()
-							end)
-						end
+							end
+						end)
 					else
 						error(AddOnName .. ": Invalid button index.")
 					end
