@@ -1234,9 +1234,9 @@ do -- Plan Menu Button Handlers
 					local plans = AddOn.db.profile.plans
 					local planName
 					if createNew then
-						planName = AddOn.db.profile.lastOpenPlan
-					else
 						planName = CreateUniquePlanName(plans, bossName --[[@as string]])
+					else
+						planName = AddOn.db.profile.lastOpenPlan
 					end
 					bossDungeonEncounterID = Private:ImportPlanFromNote(planName, bossDungeonEncounterID, text)
 						or bossDungeonEncounterID
