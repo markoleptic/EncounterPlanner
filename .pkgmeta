@@ -1,7 +1,5 @@
 package-as: EncounterPlanner
 
-manual-changelog: CHANGELOG.txt
-
 externals:
     Libs/LibStub:
         url: https://repos.curseforge.com/wow/libstub/trunk
