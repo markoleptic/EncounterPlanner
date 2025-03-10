@@ -252,7 +252,7 @@ do
 			if bossDungeonEncounterID then
 				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			end
-			local assignmentString = removed == 1 and L["assignment"] or L["assignments"]
+			local assignmentString = removed == 1 and L["Assignment"]:lower() or L["assignments"]
 			InterfaceUpdater.LogMessage(format("%s %d %s.", L["Removed"], removed, assignmentString))
 		end
 	end

@@ -105,7 +105,7 @@ local function OnAcquire(self)
 	bossContainer:SetFullWidth(true)
 
 	local bossLabel = AceGUI:Create("EPLabel")
-	bossLabel:SetText(L["Boss:"])
+	bossLabel:SetText(L["Boss"] .. ":")
 	bossLabel:SetFrameWidthFromText()
 
 	self.bossDropdown = AceGUI:Create("EPDropdown")

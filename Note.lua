@@ -299,7 +299,7 @@ local function LogFailures(failedOrReplaced, failedCount, defaultedToTimedCount,
 	if failedCount > 0 then
 		local msg
 		if failedCount == 1 then
-			msg = format("%s %d %s:", L["Failed to import"], failedCount, L["assignment"])
+			msg = format("%s %d %s:", L["Failed to import"], failedCount, L["Assignment"]:lower())
 		else
 			msg = format("%s %d %s:", L["Failed to import"], failedCount, L["assignments"])
 		end

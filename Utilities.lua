@@ -499,10 +499,10 @@ do
 			text = L["Group Number"],
 			itemValue = "Group Number",
 			dropdownItemMenuData = {
-				{ text = L["1"], itemValue = "group:1" },
-				{ text = L["2"], itemValue = "group:2" },
-				{ text = L["3"], itemValue = "group:3" },
-				{ text = L["4"], itemValue = "group:4" },
+				{ text = "1", itemValue = "group:1" },
+				{ text = "2", itemValue = "group:2" },
+				{ text = "3", itemValue = "group:3" },
+				{ text = "4", itemValue = "group:4" },
 			},
 		},
 		{
@@ -978,7 +978,7 @@ do
 						stringTimes = stringTimes:sub(1, stringTimes:len() - 2)
 					end
 
-					local assignmentsString = pastDurationCount == 1 and L["assignment"] or L["assignments"]
+					local assignmentsString = pastDurationCount == 1 and L["Assignment"]:lower() or L["assignments"]
 					local message = format(
 						"%s: %d %s %s %s -> %s. %s: %s.",
 						plan.name,

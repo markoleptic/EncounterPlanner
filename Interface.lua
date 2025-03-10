@@ -445,7 +445,7 @@ do -- Assignment Editor
 		for i, v in ipairs(assignments) do
 			if v.uniqueID == assignmentID then
 				tremove(assignments, i)
-				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed"], L["assignment"]))
+				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed"], L["Assignment"]:lower()))
 				break
 			end
 		end
