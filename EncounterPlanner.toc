@@ -1,4 +1,4 @@
-## Interface: 110100
+## Interface: 110007, 110100
 ## Version: 0.9.1
 ## Title: Encounter Planner
 ## Notes: Assignment planning and reminder tool for mythic dungeon and raid boss encounters /ep
