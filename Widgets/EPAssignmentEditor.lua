@@ -243,7 +243,7 @@ local function OnAcquire(self)
 		leftContainer:SetFullWidth(true)
 
 		self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
-		self.combatLogEventSpellIDLabel:SetText(L["Spell:"], 0)
+		self.combatLogEventSpellIDLabel:SetText(L["Spell"] .. ":", 0)
 		self.combatLogEventSpellIDLabel:SetFullHeight(true)
 		self.combatLogEventSpellIDLabel:SetFrameWidthFromText()
 		maxLabelWidth = max(maxLabelWidth, self.combatLogEventSpellIDLabel.frame:GetWidth())
