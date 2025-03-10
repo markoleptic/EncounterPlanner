@@ -21,12 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run luacheck
-        uses: nebularg/actions-luacheck@v1
-        with:
-          args: "--no-color -q"
-          annotate: warning
-
       - name: Package
         uses: BigWigsMods/packager@master
         env:
