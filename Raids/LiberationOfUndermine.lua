@@ -460,10 +460,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[472293] = BossAbility:New({ -- Grand Finale (death of Pyrotechnics)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 20.8, 82.4 },
+							castTimes = { 26.1, 59.7, 22.3 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 20.8, 82.4 },
+							castTimes = { 26.1, 59.7, 22.3 },
 						}),
 					},
 					duration = 14.5,
