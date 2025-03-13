@@ -57,7 +57,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 				[422116] = BossAbility:New({ -- Reckless Charge
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 28.8 },
+							castTimes = { 33.0 },
 							repeatInterval = 35.2,
 						}),
 					},
@@ -68,8 +68,8 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 				[429093] = BossAbility:New({ -- Underhanded Track-tics
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 55.0 },
-							repeatInterval = 80.0,
+							castTimes = { 12.9 },
+							repeatInterval = { 30.8, 50.4 },
 						}),
 					},
 					duration = 0.0,
