@@ -52,7 +52,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 					durationIsPlayerDebuff = true,
 					duration = 10.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCC", "SCS" },
+					allowedCombatLogEventTypes = { "SAA" },
 				}),
 				[422116] = BossAbility:New({ -- Reckless Charge
 					phases = {
