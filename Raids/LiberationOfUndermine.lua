@@ -457,19 +457,6 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					castTime = 2.125,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[472306] = BossAbility:New({ -- Sparkblast Ignition (Pyrotechnics)
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 20.8, 82.4 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 20.8, 82.4 },
-						}),
-					},
-					duration = 15.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {}, -- Don't see in PTR logs
-				}),
 				[472293] = BossAbility:New({ -- Grand Finale (death of Pyrotechnics)
 					phases = {
 						[1] = BossAbilityPhase:New({
