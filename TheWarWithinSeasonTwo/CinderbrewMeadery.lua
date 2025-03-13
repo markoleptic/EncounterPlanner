@@ -29,11 +29,18 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 				[1] = nil,
 				[2] = { combatLogEventSpellID = 442525, combatLogEventType = "SCC" },
 				[3] = { combatLogEventSpellID = 442525, combatLogEventType = "SAR" },
+				[4] = { combatLogEventSpellID = 442525, combatLogEventType = "SCC" },
+				[5] = { combatLogEventSpellID = 442525, combatLogEventType = "SAR" },
 			},
 			abilities = {
 				[442525] = BossAbility:New({ -- Happy Hour (33% and 66% health)
 					phases = {
 						[2] = BossAbilityPhase:New({ -- Not a true phase
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+						[4] = BossAbilityPhase:New({ -- Not a true phase
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
@@ -54,6 +61,10 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 							castTimes = { 17.4 },
 							repeatInterval = { 23.0 },
 						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 17.4 },
+							repeatInterval = { 23.0 },
+						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
@@ -66,6 +77,10 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 							repeatInterval = { 18.2 },
 						}),
 						[3] = BossAbilityPhase:New({
+							castTimes = { 13.8 },
+							repeatInterval = { 18.2 },
+						}),
+						[5] = BossAbilityPhase:New({
 							castTimes = { 13.8 },
 							repeatInterval = { 18.2 },
 						}),
@@ -83,6 +98,10 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 							repeatInterval = { 14.5 },
 						}),
 						[3] = BossAbilityPhase:New({
+							castTimes = { 8.9 },
+							repeatInterval = { 14.5 },
+						}),
+						[5] = BossAbilityPhase:New({
 							castTimes = { 8.9 },
 							repeatInterval = { 14.5 },
 						}),
@@ -105,18 +124,32 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 				[2] = BossPhase:New({
 					duration = 20.0,
 					defaultDuration = 20.0,
-					count = 2,
-					defaultCount = 2,
-					repeatAfter = 3,
+					count = 1,
+					defaultCount = 1,
 					fixedCount = true,
-					name = "P2",
+					name = "Int1 (66%)",
 				}),
 				[3] = BossPhase:New({
 					duration = 60.0,
 					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "P1",
+				}),
+				[4] = BossPhase:New({
+					duration = 20.0,
+					defaultDuration = 20.0,
 					count = 2,
-					defaultCount = 2,
-					repeatAfter = 2,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "Int2 (33%)",
+				}),
+				[5] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
 					fixedCount = true,
 					name = "P1",
 				}),
