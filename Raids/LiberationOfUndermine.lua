@@ -408,10 +408,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[466866] = BossAbility:New({ -- Echoing Chant
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 22.0, 29.0, 57.5 },
+							castTimes = { 21.0, 39.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 22.0, 29.0, 57.5 },
+							castTimes = { 21.0, 39.0 },
 						}),
 					},
 					duration = 0.0,
