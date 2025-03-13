@@ -350,7 +350,7 @@ local function OnAcquire(self)
 		self.spellAssignmentContainer:SetFullWidth(true)
 
 		self.enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableSpellAssignmentCheckBox:SetText(L["Spell:"])
+		self.enableSpellAssignmentCheckBox:SetText(L["Spell"] .. ":")
 		self.enableSpellAssignmentCheckBox:SetFullWidth(true)
 		self.enableSpellAssignmentCheckBox:SetFrameHeightFromText()
 		self.enableSpellAssignmentCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
