@@ -421,10 +421,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[467606] = BossAbility:New({ -- Sound Cannon
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 30.0, 37.0 },
+							castTimes = { 32.0, 35.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 30.0, 37.0 },
+							castTimes = { 32.0, 35.0 },
 						}),
 					},
 					duration = 0.0,
@@ -447,10 +447,10 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				[466979] = BossAbility:New({ -- Faulty Zap
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 40.5, 34.5, 26.0 },
+							castTimes = { 43.5, 31.5, 26.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 40.5, 34.5, 26.0 },
+							castTimes = { 43.5, 31.5, 26.0 },
 						}),
 					},
 					duration = 12.0,
