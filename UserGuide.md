@@ -1,39 +1,114 @@
-# User Guide
+To open the main window, type `/ep` in a chat window or left click on the minimap icon.
 
-## Introduction
+# Boss Timeline
 
-### Console Commands
+**Boss Abilities** are listed on the left-hand side, with **Boss Ability Cast Bars** drawn on the timeline to the right.
+Each occurrence of a **Boss Ability Cast Bar** increases the **Spell Count** for that spell.
 
--   `ep`: Opens the [Main Window](#main-window).
--   `ep options`: Open the [Preferences](#preferences) window.
--   `ep minimap`: Toggles showing the minimap icon.
+-   Hovering over a **Boss Ability** icon displays its tooltip.
+-   Hovering over a **Boss Ability Cast Bar** highlights the bar with a yellow outline and any assignments referencing it (combat log event assignments only).
+-   Dashed yellow vertical lines mark phase transitions, with text indicating the next phase. Typically, the spell nearest the line triggers the transition.
 
-## Main Window
+# Assignment Timeline
 
-The **Main Window** is composed of the following:
+**Add Assignee**:
+Adds the selected assignee to the assignment timeline with an empty assignment.
 
--   [Menu Bar](#menu-bar)
--   [Current Plan Bar](#current-plan-bar)
--   [Boss Timeline](#boss-timeline)
--   [Assignment Timeline](#assignment-timeline)
--   [Status Bar](#status-bar)
+**Assignees** are listed on the left, with **Assignment Spell Icons** drawn on the timeline to the right.
 
-## Menu Bar
+-   Click the dropdown arrow beside an **Assignee** to collapse or expand their view:
+    -   **Collapsed**: Displays all spells in one row without cooldown duration textures.
+    -   **Expanded**: Shows each spell on a separate row with cooldown duration textures (if [enabled](#view)).
+-   Use **Collapse All** and **Expand All** buttons to adjust all assignees at once.
 
-### Plan
+**Quick Actions**:
 
-#### New Plan
+-   **Add an assignment**: Left-click anywhere on the timeline.
+-   **Duplicate an assignment**: `Ctrl + Drag` an **Assignment Spell Icon**.
+-   **Adjust assignment time**: Drag an **Assignment Spell Icon**.
+-   **Select an assignment**: Click its icon to open the [Assignment Editor](#assignment-editor).
+    A yellow outline indicates selection. If the assignment is a combat log event assignment, the **Boss Ability Cast Bar** it references is highlighted.
+
+**Assignee Management**:
+
+-   **Swap Assignee**: Transfers all assignments to a selected assignee.
+-   **Delete Assignee**: Displays a confirmation dialog, and if confirmed, deletes all assignments for the assignee.
+-   **Delete Spell Assignments**: Displays a confirmation dialog, and if confirmed, deletes assignments for a specific spell.
+
+## Assignment Editor
+
+**Trigger**:
+Defines what activates an assignment.
+
+-   **Fixed Time**: Triggered at a set time from the encounter start.
+-   **Combat Log Event**:
+    Triggered by specific combat events:
+    -   **Spell Cast Success** (SPELL_CAST_SUCCESS)
+    -   **Spell Cast Start** (SPELL_CAST_START)
+    -   **Spell Aura Applied** (SPELL_AURA_APPLIED)
+    -   **Spell Aura Removed** (SPELL_AURA_REMOVED)
+
+**Time**:
+
+-   For **Fixed Time**, this is from encounter start.
+-   For **Combat Log Event** this is from the event time.
+
+**Assignee**:
+To whom the assignment is assigned to:
+
+-   **Class**, **Group Number**, **Individual**, **Role**, **Spec**, **Type**, or **Everyone**.
+-   **Individual** is disabled if there are no members in the [Current Plan Roster](#roster).
+
+**Spell**:
+If checked, the assignment will be associated with a spell.
+This doesn't do anything other than update the default text.
+
+**Target**:
+If enabled, highlights the target's raid frame at assignment time.
+
+**Text**:
+Text to display on Reminders (Messages and Progress Bars).
+
+-   If left blank, text is filled by default:
+
+    -   If the assignment has a **Spell**, the spell icon and spell name are added.
+    -   If the assignment has a **Target**, the target's name is added.
+
+-   Icons can be inserted into text by using the syntax `{[icon]}`, where `[icon]` can be a raid marker name (English only), a class name, a spell ID, or a spell name (spotty):
+
+    -   `{Death Knight} go to {star}`
+        -   `{Death Knight}` replaced with class icon
+        -   `{star}` replaced with star icon
+    -   `{Mage} cast {31661}`
+        -   `{Mage}` replaced with class icon
+        -   `{31661}` replaced with spell icon for Dragon's Breath
+    -   `{Mage} cast {Dragon's Breath}`
+        -   `{Mage}` replaced with class icon
+        -   `{Dragon's Breath}` is not replaced for some reason
+    -   `{Mage} cast {Mass Barrier}` Works
+        -   `{Mage}` replaced with class icon
+        -   `{star}` replaced with Mass Barrier icon
+
+**Preview**:
+Displays a preview of the **Text** that will be shown on Reminders (Messages and Progress Bars).
+
+**Delete Assignment**:
+Deletes the assignment without confirmation.
+
+# Plan Menu Button
+
+## New Plan
 
 Displays the **Create New Plan** dialog.
 
 -   **Boss**: The boss to create the plan for. This can be changed later.
 -   **Plan Name**: Unique name for the plan.
 
-#### Duplicate Plan
+## Duplicate Plan
 
 Duplicates the current plan with a unique name.
 
-#### Import
+## Import
 
 One of the benefits of using Encounter Planner is not dealing with note syntax anymore, but you can still import notes from other addons or tools such as MRT, Viserio Cooldowns, or Viserio healing spreadsheets.
 The boss will automatically be determined if any combat log events exist:
@@ -142,17 +217,18 @@ This is the spell and/or text being assigned to the **Assignee(s)**.
 {time:1:30,SAR:450483:2} class:evoker {spell:6262}{text}Use Healthstone {6262}{/text}
 ```
 
-#### Export Current Plan
+### Export Current Plan
 
 Displays the **Export** window. This can be used to copy the plan assignments to an MRT note.
 
-#### Delete Current Plan
+### Delete Current Plan
 
 Displays a confirmation dialog, and if confirmed, deletes the current plan.
 
-### Boss
+# Boss Menu Button
 
-**Change Boss**:
+## Change Boss
+
 Selecting a boss from this dropdown menu will do one of the following:
 
 -   If the assignments are all time-based (no combat log event assignments), no dialog is presented and the plan is converted to the new boss.
@@ -169,7 +245,8 @@ Selecting a boss from this dropdown menu will do one of the following:
 > [!CAUTION]  
 > **Convert to Timed Assignments** and **Replace Spells** are one-way actions, meaning that converting from boss A to boss B and converting back to boss A will not necessarily restore the original state.
 
-**Edit Phase Timings**:
+## Edit Phase Timings
+
 Displays the **Phase Timing Editor** window, which allows you customize the phase duration and counts of the boss encounter.
 These settings are unique to each plan.
 
@@ -181,13 +258,14 @@ These settings are unique to each plan.
 -   **Reset All to Default**:
     Resets the phase duration and counts to their default values.
 
-**Filter Spells**:
+## Filter Spells
+
 Selecting a boss spell from this dropdown hides it from the boss timeline.
 Assignments that rely on the boss spell are not be affected.
 
-### Roster
+# Roster Menu Button
 
-Clicking this button opens the **Roster Editor**.
+Opens the **Roster Editor**.
 
 -   **Current Plan Roster**:
     The roster that is unique to the plan. To assign players to assignments in the plan, this roster must contain their name.
@@ -204,19 +282,19 @@ Clicking this button opens the **Roster Editor**.
     -   **Fill From Shared Roster**: Adds all roster members from the **Current Plan Roster** into the **Shared Roster**, if they are not already present.
     -   **Import Current Party/Raid Group**: Adds all characters in the current party or raid group to the **Shared Roster**.
 
-### Preferences
+# Preferences Menu Button
 
 Clicking this button opens the **Preferences** window.
 All of the settings in this menu are independent of plans.
 
-#### Cooldown Overrides
+## Cooldown Overrides
 
 If the cooldown durations obtained using the WoW API don't match reality, you can set custom spell cooldown durations using this menu.
 These durations are used in place of the default to draw the [Spell Cooldown Durations](#view), if enabled.
 
-#### Keybindings
+## Keybindings
 
-**Assignment**:
+### Assignment
 
 -   **Add Assignment**:
     Creates a new assignment when this key is pressed when hovering over the timeline.
@@ -228,7 +306,7 @@ These durations are used in place of the default to draw the [Spell Cooldown Dur
     Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key.
     Default value is `Ctrl + Left Click`.
 
-**Timeline**:
+### Timeline
 
 -   **Pan**:
     Pans the timeline to the left and right when holding this key..
@@ -240,7 +318,7 @@ These durations are used in place of the default to draw the [Spell Cooldown Dur
     Zooms in horizontally on the timeline.
     Default value is `Ctrl + Mouse Scroll`.
 
-#### Reminder
+## Reminder
 
 **Enable Reminders**:
 Whether to enable reminders for assignments.
@@ -430,7 +508,7 @@ The sound to play at the end of the countdown.
 Clears all saved trusted characters.
 You will see a confirmation dialog each time a non-trusted character sends a plan to you.
 
-#### View
+## View
 
 **Preferred Number of Assignments to Show**:
 The assignment timeline will attempt to expand or shrink to show this many rows.
@@ -453,7 +531,7 @@ The boss ability timeline will attempt to expand or shrink to show this many row
 **Show Spell Cooldown Duration**:
 Whether to show textures representing player spell cooldown durations.
 
-#### Profile
+## Profile
 
 **Current Profile**:
 The currently active profile, where all plans, rosters, and preferences are saved.
@@ -474,126 +552,40 @@ Displays a confirmation dialog, and if confirmed, deletes the selected profile f
 
 **Current Plan**:
 The currently active plan.
-Plans with reminders enabled will display a yellow bell icon next to their name in the dropdown, while plans with reminders disabled will show a desaturated bell icon.
+
+-   **Double Click** the dropdown to rename the current plan.
+-   Plans with reminders enabled will display a yellow bell icon next to their name in the dropdown, while plans with reminders disabled will show a desaturated bell icon.
 
 **Designated External Plan**:
 Denotes whether the [External Text](#external-text) of the plan should be made available to other addons or WeakAuras.
-Each boss must have a unique **Designated External Plan**.
 
+-   Each boss must have a unique **Designated External Plan**.
 -   Only the group leader needs to have the correct designation.
     When the encounter starts, the group leader will automatically send an addon message to everyone in the group so that everyone has the same [External Text](#external-text).
 
 **Plan Reminders**:
 Whether reminders are enabled for the **Current Plan**.
-The option is disabled when reminders are disabled globally ([Preferences -> Reminders -> Enable Reminders](#reminder))
+
+-   This option is disabled when reminders are disabled globally ([Preferences -> Reminders -> Enable Reminders](#reminder))
 
 **Simulate Reminders**:
 Simulates reminders for the **Current Plan**.
-Some features may be disabled when simulating.
-**Enable Reminders for Plan** and [Preferences -> Reminders -> Enable Reminders](#reminder) must be checked for this to have an effect.
+
+-   Some features may be disabled when simulating.
+-   **Enable Reminders for Plan** and [Preferences -> Reminders -> Enable Reminders](#reminder) must be checked for this to have an effect.
 
 **Send Plan to Group**:
-Sends the **Current Plan** to the party or raid group. Requires group leader or group assistant.
+Sends the **Current Plan** to the party or raid group.
 
+-   Requires group leader or group assistant.
 -   The person receiving the plan must either approve the plan to receive it or have the sender saved as a trusted character to automatically receive it.
 -   If a receiver has not yet decided to accept or reject a plan and they are sent subsequent plans, they are placed in a queue.
 
-### External Text
+**External Text**:
+Clicking this button displays the **External Text Editor**.
 
-Clicking this button displays the **External Text Editor**. Lines from an imported note that were not assignments are stored as **External Text**.
-**External Text** can be obtained by other addons and WeakAuras using the Encounter Planner API.
-
-## Boss Timeline
-
-**Boss Abilities** are listed on the left-hand side, with **Boss Ability Cast Bars** drawn on the timeline to the right.
-Each occurrence of a **Boss Ability Cast Bar** increases the **Spell Count** for that spell.
-
--   Hovering over a **Boss Ability** icon displays its tooltip.
--   Hovering over a **Boss Ability Cast Bar** highlights the bar with a yellow outline and any assignments referencing it (combat log event assignments only).
--   Dashed yellow vertical lines mark phase transitions, with text indicating the next phase. Typically, the spell nearest the line triggers the transition.
-
-## Assignment Timeline
-
-**Assignees** are listed on the left, with **Assignment Spell Icons** drawn on the timeline to the right.
-
--   Click the dropdown arrow beside an **Assignee** to collapse or expand their view:
-    -   **Collapsed**: Displays all spells in one row without cooldown duration textures.
-    -   **Expanded**: Shows each spell on a separate row with cooldown duration textures (if [enabled](#view)).
--   Use **Collapse All** and **Expand All** buttons to adjust all assignees at once.
-
-**Quick Actions**:
-
--   **Add an assignment**: Left-click anywhere on the timeline.
--   **Duplicate an assignment**: `Ctrl + Drag` an **Assignment Spell Icon**.
--   **Adjust assignment time**: Drag an **Assignment Spell Icon**.
--   **Select an assignment**: Click its icon to open the [Assignment Editor](#assignment-editor).
-    A yellow outline indicates selection. If the assignment is a combat log event assignment, the **Boss Ability Cast Bar** it references is highlighted.
-
-**Assignee Management**:
-
--   **Swap Assignee**: Transfers all assignments to a selected assignee.
--   **Delete Assignee**: Displays a confirmation dialog, and if confirmed, deletes all assignments for the assignee.
--   **Delete Spell Assignments**: Displays a confirmation dialog, and if confirmed, deletes assignments for a specific spell.
-
-### Assignment Editor
-
-**Trigger**:
-Defines what activates an assignment.
-
--   **Fixed Time**: Triggered at a set time from the encounter start.
--   **Combat Log Event**:
-    Triggered by specific combat events:
-    -   **Spell Cast Success** (SPELL_CAST_SUCCESS)
-    -   **Spell Cast Start** (SPELL_CAST_START)
-    -   **Spell Aura Applied** (SPELL_AURA_APPLIED)
-    -   **Spell Aura Removed** (SPELL_AURA_REMOVED)
-
-**Time**:
-
--   For **Fixed Time**, this is from encounter start.
--   For **Combat Log Event** this is from the event time.
-
-**Assignee**:
-To whom the assignment is assigned to:
-
--   **Class**, **Group Number**, **Individual**, **Role**, **Spec**, **Type**, or **Everyone**.
--   **Individual** is disabled if there are no members in the [Current Plan Roster](#roster).
-
-**Spell**:
-If checked, the assignment will be associated with a spell.
-This doesn't do anything other than update the default text.
-
-**Target**:
-If enabled, highlights the target's raid frame at assignment time.
-
-**Text**:
-Text to display on Reminders (Messages and Progress Bars).
-
--   If left blank, text is filled by default:
-
-    -   If the assignment has a **Spell**, the spell icon and spell name are added.
-    -   If the assignment has a **Target**, the target's name is added.
-
--   Icons can be inserted into text by using the syntax `{[icon]}`, where `[icon]` can be a raid marker name (English only), a class name, a spell ID, or a spell name (spotty):
-
-    -   `{Death Knight} go to {star}`
-        -   `{Death Knight}` replaced with class icon
-        -   `{star}` replaced with star icon
-    -   `{Mage} cast {31661}`
-        -   `{Mage}` replaced with class icon
-        -   `{31661}` replaced with spell icon for Dragon's Breath
-    -   `{Mage} cast {Dragon's Breath}`
-        -   `{Mage}` replaced with class icon
-        -   `{Dragon's Breath}` is not replaced for some reason
-    -   `{Mage} cast {Mass Barrier}` Works
-        -   `{Mage}` replaced with class icon
-        -   `{star}` replaced with Mass Barrier icon
-
-**Preview**:
-Displays a preview of the **Text** that will be shown on Reminders (Messages and Progress Bars).
-
-**Delete Assignment**:
-Deletes the assignment without confirmation.
+-   Lines from an imported note that were not assignments are stored as **External Text**.
+-   **External Text** can be obtained by other addons and WeakAuras using the Encounter Planner API.
 
 ## Status Bar
 
@@ -625,3 +617,9 @@ The **Status Bar** communicates major changes and warnings.
         -   Resolved hidden assignments.
     -   Detected overlapping assignments.
     -   Failed to update assignments (unexpected behavior).
+
+# Console Commands
+
+-   `ep`: Opens the main window.
+-   `ep options`: Open the [Preferences](#preferences) window.
+-   `ep minimap`: Toggles showing the minimap icon.
