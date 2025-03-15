@@ -829,8 +829,7 @@ do
             {time:55} spec:62 {spell:235450}
             {time:50} spec:fire {spell:235450}
             {time:60} type:ranged {spell:235450}
-            {time:65} type:melee {spell:235450}
-        ]]
+            {time:65} type:melee {spell:235450}]]
 
 		function test.AssignmentUnits()
 			local plan = Plan:New({}, "Test")

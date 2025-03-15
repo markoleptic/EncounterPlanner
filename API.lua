@@ -61,8 +61,7 @@ do
 		local text = [[
             nsdispelstart
             |cff006fdcMajablast|r  |cfffe7b09Skorke|r  |cfff38bb9Berlinnetti|r  |cff00fe97Dogpog|r  
-            nsdispelend
-        ]]
+            nsdispelend]]
 
 		function test.ExternalTextDispel()
 			local textTable = RemoveTabs(SplitStringIntoTable(text, true))

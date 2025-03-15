@@ -1815,7 +1815,7 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 end
 
 do
-	local lineMatchRegex = "(.-)\r?\n"
+	local lineMatchRegex = "([^\r\n]+)"
 
 	-- Splits a string into table using new lines as separators.
 	---@param text string The text to use to create the table.
