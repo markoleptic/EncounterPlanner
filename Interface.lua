@@ -1178,7 +1178,6 @@ do -- Plan Menu Button Handlers
 			importEditBox:SetCallback("OkayButtonClicked", function(widget)
 				local checked = Private.importEditBox.checkBox:IsChecked()
 				local planName = Private.importEditBox.lineEdit:GetText()
-				AceGUI:Release(Private.importEditBox)
 				planName = planName:trim()
 				if planName == "" then
 					widget.okayButton:SetEnabled(false)
