@@ -70,3 +70,4 @@ ignore:
     - ./Libs/Lib*
     - Widgets/Meta.lua
     - Raids/NerubarPalace.lua
+    - wiki
