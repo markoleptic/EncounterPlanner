@@ -4594,6 +4594,15 @@ Private.spellDB = {
 			},
 			{
 				["class"] = "PRIEST",
+				["type"] = "heal",
+				["spec"] = true,
+				["name"] = "Power Word: Radiance",
+				["spellID"] = 194509,
+				["icon"] = 1386546,
+				["charges"] = 2,
+			},
+			{
+				["class"] = "PRIEST",
 				["type"] = "cc",
 				["buff"] = 88625,
 				["spec"] = true,
