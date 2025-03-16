@@ -114,7 +114,6 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.editBox:SetText(text or "")
-	self.scrollFrame.scrollFrame:UpdateScrollChildRect()
 end
 
 ---@param self EPEditBox

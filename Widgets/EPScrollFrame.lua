@@ -37,14 +37,39 @@ local scrollFrameBackdrop = {
 local wrapperPadding = scrollFrameBackdrop.edgeSize
 
 ---@param self EPScrollFrame
+---@return number -- min
+---@return number -- max
+local function GetScrollRange(self)
+	local minScroll, maxScroll = 0.0, 0.0
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local scrollChild = self.scrollChild
+	if scrollChild then
+		local scrollChildHeight = scrollChild:GetHeight()
+		maxScroll = max(maxScroll, scrollChildHeight - scrollFrameHeight)
+	end
+	return minScroll, maxScroll
+end
+
+---@param self EPScrollFrame
+---@param offset number
+local function SetVerticalScroll(self, offset)
+	if self.scrollChild then
+		local minScroll, maxScroll = GetScrollRange(self)
+		offset = max(minScroll, min(offset, maxScroll))
+		self.scrollChild:SetPoint("TOPLEFT", 0, offset)
+		self.currentScroll = offset
+	end
+end
+
+---@param self EPScrollFrame
 local function HandleEdgeScrolling(self)
-	local scrollFrame = self.scrollFrame
-	local scrollFrameHeight = scrollFrame:GetHeight()
-	local scrollChild = scrollFrame:GetScrollChild()
+	local scrollChild = self.scrollChild
 	if not scrollChild then
 		return
 	end
 
+	local scrollFrame = self.scrollFrame
+	local scrollFrameHeight = scrollFrame:GetHeight()
 	local scrollChildHeight = scrollChild:GetHeight()
 	local maxScroll = scrollChildHeight - scrollFrameHeight
 	if maxScroll <= 0 then
@@ -54,16 +79,16 @@ local function HandleEdgeScrolling(self)
 	local yPosition = select(2, GetCursorPosition()) / UIParent:GetEffectiveScale()
 	local frameTop = scrollFrame:GetTop()
 	local frameBottom = scrollFrame:GetBottom()
-	local currentScroll = scrollFrame:GetVerticalScroll()
+	local currentScroll = self.currentScroll
 
 	if yPosition > frameTop - 5 then -- Cursor near the top
 		local t = min(maxEdgeCursorScrollDistance, yPosition - (frameTop - 5)) / maxEdgeCursorScrollDistance
 		local result = edgeMultiplierRange * t + minEdgeMultiplier
-		scrollFrame:SetVerticalScroll(max(0, currentScroll - scrollMultiplier * result))
+		SetVerticalScroll(self, max(0, currentScroll - scrollMultiplier * result))
 	elseif yPosition < frameBottom + 5 then -- Cursor near the bottom edge
 		local t = min(maxEdgeCursorScrollDistance, (frameBottom + 5) - yPosition) / maxEdgeCursorScrollDistance
 		local result = edgeMultiplierRange * t + minEdgeMultiplier
-		scrollFrame:SetVerticalScroll(min(maxScroll, currentScroll + scrollMultiplier * result))
+		SetVerticalScroll(self, min(maxScroll, currentScroll + scrollMultiplier * result))
 	end
 
 	self:UpdateThumbPositionAndSize()
@@ -103,15 +128,12 @@ local function HandleVerticalThumbUpdate(self)
 	local newOffset = Clamp(self.scrollBar:GetTop() - yPosition - currentOffset, minAllowedOffset, maxAllowedOffset)
 	self.thumb:SetPoint("TOP", 0, -newOffset)
 
-	local scrollFrame = self.scrollFrame
-	local scrollFrameHeight = scrollFrame:GetHeight()
-	local scrollChildHeight = scrollFrame:GetScrollChild():GetHeight()
-	local maxScroll = scrollChildHeight - scrollFrameHeight
+	local minScroll, maxScroll = self:GetScrollRange()
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
 	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-	scrollFrame:SetVerticalScroll(max(0, scrollOffset))
+	SetVerticalScroll(self, max(minScroll, scrollOffset))
 end
 
 ---@param self EPScrollFrame
@@ -134,6 +156,7 @@ end
 
 ---@param self EPScrollFrame
 local function OnAcquire(self)
+	self.currentScroll = 0
 	self.verticalThumbOffsetWhenThumbClicked = 0
 	self.verticalScrollBarHeightWhenThumbClicked = 0
 	self.verticalThumbHeightWhenThumbClicked = 0
@@ -189,6 +212,14 @@ end
 
 ---@param self EPScrollFrame
 local function OnRelease(self)
+	if self.scrollChild then
+		self.scrollChild:SetScript("OnMouseDown", nil)
+		self.scrollChild:SetScript("OnMouseUp", nil)
+		self.scrollChild:SetScript("OnMouseWheel", nil)
+		self.scrollChild:SetScript("OnSizeChanged", nil)
+		self.scrollChild:EnableMouse(false)
+	end
+
 	self.frame:ClearBackdrop()
 	self.scrollFrameWrapper:ClearBackdrop()
 
@@ -196,6 +227,7 @@ local function OnRelease(self)
 	self.scrollFrameWrapper:SetParent(UIParent)
 	self.scrollFrameWrapper:Hide()
 
+	self.scrollFrame:SetScript("OnUpdate", nil)
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(UIParent)
 	self.scrollFrame:Hide()
@@ -211,6 +243,16 @@ local function OnRelease(self)
 	self.thumb:SetScript("OnMouseDown", nil)
 	self.thumb:SetScript("OnMouseUp", nil)
 	self.thumb:SetScript("OnUpdate", nil)
+
+	self.currentScroll = nil
+	self.verticalThumbOffsetWhenThumbClicked = nil
+	self.verticalScrollBarHeightWhenThumbClicked = nil
+	self.verticalThumbHeightWhenThumbClicked = nil
+	self.verticalThumbIsDragging = nil
+	self.edgeScrollingEnabled = nil
+	self.setScrollChildWidth = nil
+	self.enableEdgeScrolling = nil
+	self.scrollBarScrollFramePadding = nil
 end
 
 ---@param self EPScrollFrame
@@ -220,13 +262,12 @@ end
 local function SetScrollChild(self, child, needsWidthSetting, enableEdgeScrolling)
 	self.setScrollChildWidth = needsWidthSetting
 	self.enableEdgeScrolling = enableEdgeScrolling
+	self.scrollChild = child
 
 	child:ClearAllPoints()
 	child:EnableMouse(true)
 	child:SetParent(self.scrollFrame --[[@as Frame]])
 	child:Show()
-	self.scrollFrame:SetScrollChild(child)
-
 	child:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
 
 	if needsWidthSetting then
@@ -234,19 +275,19 @@ local function SetScrollChild(self, child, needsWidthSetting, enableEdgeScrollin
 	end
 
 	if enableEdgeScrolling then
-		child:SetScript("OnMouseDown", function(frame, button)
+		child:SetScript("OnMouseDown", function(_, button)
 			if button == "LeftButton" then
 				EnableEdgeScrolling(self)
 			end
 		end)
-		child:SetScript("OnMouseUp", function(frame, button)
+		child:SetScript("OnMouseUp", function(_, button)
 			if button == "LeftButton" then
 				DisableEdgeScrolling(self)
 			end
 		end)
 	end
 
-	child:SetScript("OnMouseWheel", function(frame, delta)
+	child:SetScript("OnMouseWheel", function(_, delta)
 		self:UpdateVerticalScroll(delta)
 		self:UpdateThumbPositionAndSize()
 	end)
@@ -263,7 +304,7 @@ end
 ---@param delta number|nil
 local function UpdateVerticalScroll(self, delta)
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
-	local scrollChild = self.scrollFrame:GetScrollChild()
+	local scrollChild = self.scrollChild
 	if scrollChild then
 		if not delta then
 			delta = 0
@@ -271,7 +312,7 @@ local function UpdateVerticalScroll(self, delta)
 		local scrollChildHeight = scrollChild:GetHeight()
 		local maxScroll = scrollChildHeight - scrollFrameHeight
 		if maxScroll <= 0.0 then
-			self.scrollFrame:SetVerticalScroll(0)
+			SetVerticalScroll(self, 0)
 			self.scrollFrameWrapper:SetPoint("BOTTOMRIGHT", 0, 0)
 			self.scrollBar:Hide()
 		else
@@ -281,9 +322,8 @@ local function UpdateVerticalScroll(self, delta)
 				-self.scrollBarScrollFramePadding - self.scrollBar:GetWidth(),
 				0
 			)
-			local currentScroll = self.scrollFrame:GetVerticalScroll()
-			local newVerticalScroll = Clamp(currentScroll - (delta * scrollMultiplier), 0, maxScroll)
-			self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+			local newVerticalScroll = Clamp(self.currentScroll - (delta * scrollMultiplier), 0, maxScroll)
+			SetVerticalScroll(self, newVerticalScroll)
 		end
 		if self.setScrollChildWidth then
 			scrollChild:SetWidth(self.scrollFrame:GetWidth())
@@ -295,10 +335,11 @@ end
 local function UpdateThumbPositionAndSize(self)
 	if self.scrollBar:IsShown() then
 		local scrollFrameHeight = self.scrollFrame:GetHeight()
-		local scrollChild = self.scrollFrame:GetScrollChild()
+		local scrollChild = self.scrollChild
 		if scrollChild then
 			local scrollChildHeight = scrollChild:GetHeight()
-			local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (scrollChildHeight - scrollFrameHeight)
+			local currentScroll = self.currentScroll
+			local scrollPercentage = currentScroll / (scrollChildHeight - scrollFrameHeight)
 			local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
 			local thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
@@ -314,8 +355,7 @@ local function UpdateThumbPositionAndSize(self)
 end
 
 ---@param self EPScrollFrame
----@param height number
-local function OnHeightSet(self, height)
+local function OnHeightSet(self)
 	self:UpdateVerticalScroll()
 	self:UpdateThumbPositionAndSize()
 end
@@ -342,25 +382,9 @@ local function SetScrollBarScrollFramePadding(self, padding)
 end
 
 ---@param self EPScrollFrame
----@return number -- min
----@return number -- max
-local function GetScrollRange(self)
-	local minScroll, maxScroll = 0.0, 0.0
-	local scrollFrameHeight = self.scrollFrame:GetHeight()
-	local scrollChild = self.scrollFrame:GetScrollChild()
-	if scrollChild then
-		local scrollChildHeight = scrollChild:GetHeight()
-		maxScroll = max(maxScroll, scrollChildHeight - scrollFrameHeight)
-	end
-	return minScroll, maxScroll
-end
-
----@param self EPScrollFrame
 ---@param newVerticalScroll number
 local function SetScroll(self, newVerticalScroll)
-	local minScroll, maxScroll = GetScrollRange(self)
-	newVerticalScroll = Clamp(newVerticalScroll, minScroll, maxScroll)
-	self.scrollFrame:SetVerticalScroll(newVerticalScroll)
+	SetVerticalScroll(self, newVerticalScroll)
 	UpdateThumbPositionAndSize(self)
 end
 
@@ -373,7 +397,7 @@ local function Constructor()
 	local scrollFrameWrapper = CreateFrame("Frame", Type .. "scrollFrameWrapper" .. count, frame, "BackdropTemplate")
 	scrollFrameWrapper:SetClipsChildren(true)
 
-	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
+	local scrollFrame = CreateFrame("Frame", Type .. "ScrollFrame" .. count, frame)
 	scrollFrame:SetClipsChildren(true)
 
 	local scrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
@@ -397,6 +421,8 @@ local function Constructor()
 	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
 
 	---@class EPScrollFrame : AceGUIWidget
+	---@field scrollChild Frame|nil
+	---@field currentScroll number
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -410,7 +436,7 @@ local function Constructor()
 		GetScrollRange = GetScrollRange,
 		SetScroll = SetScroll,
 		frame = frame,
-		scrollFrame = scrollFrame,
+		scrollFrame = scrollFrame --[[@as Frame]],
 		scrollFrameWrapper = scrollFrameWrapper,
 		type = Type,
 		scrollBar = scrollBar,
