@@ -513,17 +513,19 @@ do
 	---@param bossDungeonEncounterID integer
 	function Private.SendTextToGroup(bossDungeonEncounterID)
 		local plans = AddOn.db.profile.plans --[[@as table<integer, Plan>]]
-		local primaryPlan --[[@as Plan]]
+		local primaryPlan ---@type Plan|nil
 		for _, plan in pairs(plans) do
 			if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
 				primaryPlan = plan
 				break
 			end
 		end
-		local groupType = GetGroupType()
-		if groupType then
-			local exportString = TableToString(primaryPlan.content, false)
-			AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
+		if primaryPlan then
+			local groupType = GetGroupType()
+			if groupType then
+				local exportString = TableToString(primaryPlan.content, false)
+				AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
+			end
 		end
 	end
 end
