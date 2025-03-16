@@ -664,22 +664,21 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 		--[===[@non-debug@
 		if difficulties[difficultyID] then
         --@end-non-debug@]===]
-
-		if UnitIsGroupLeader("player") then
-			Private.SendTextToGroup(encounterID)
-		end
-
-		local startTime = GetTime()
-		local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
-		local activePlans = {}
-		for _, plan in pairs(plans) do
-			if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
-				tinsert(activePlans, plan)
+		local boss = GetBoss(encounterID)
+		if boss then
+			if UnitIsGroupLeader("player") then
+				Private.SendTextToGroup(encounterID)
 			end
-		end
-		if #activePlans > 0 then
-			local boss = GetBoss(encounterID)
-			if boss then
+
+			local startTime = GetTime()
+			local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+			local activePlans = {}
+			for _, plan in pairs(plans) do
+				if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
+					tinsert(activePlans, plan)
+				end
+			end
+			if #activePlans > 0 then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
 				SetupReminders(activePlans, reminderPreferences, startTime, boss.abilities)
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
