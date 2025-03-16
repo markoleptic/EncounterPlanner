@@ -23,6 +23,7 @@
     <Script file="EPCheckBox.lua" />
     <Script file="EPStatusBar.lua" />
     <Script file="EPNewPlanDialog.lua" />
+    <Script file="EPQuickStartDialog.lua" />
     <Script file="EPPhaseLengthEditor.lua" />
     <Script file="EPAssignmentEditor.lua" />
     <Script file="EPTimelineSection.lua" />

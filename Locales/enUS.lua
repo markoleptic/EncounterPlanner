@@ -396,3 +396,4 @@ L["Zooms in toward the position of your mouse cursor, keeping the area under the
 L["Clear Status Bar"] = true
 L["User Guide"] = true
 L["Discord"] = true
+L["Quick Start"] = true
