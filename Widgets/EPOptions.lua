@@ -1445,6 +1445,7 @@ local function PopulateActiveTab(self, tab)
 	if messageBox then
 		messageBox:Release()
 	end
+	messageBox = nil
 
 	if self.optionTabs[tab][1].type == "cooldownOverrides" then
 		self.labelContainer.frame:Show()
@@ -1664,7 +1665,6 @@ local function OnAcquire(self)
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
 	self.activeContainer:SetPadding(unpack(activeContainerPadding))
-	self.activeContainer.frame:EnableMouse(true)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
 
 	self.labelContainer = AceGUI:Create("EPContainer")
@@ -1686,24 +1686,36 @@ end
 local function OnRelease(self)
 	if messageBox then
 		AceGUI:Release(messageBox)
-		messageBox = nil
 	end
-	self.closeButton:Release()
-	self.closeButton = nil
+	messageBox = nil
 
-	self.tabTitleContainer:Release()
-	self.tabTitleContainer = nil
+	AceGUI:Release(self.scrollFrame)
+	self.scrollFrame = nil
 
-	self.activeContainer.frame:EnableMouse(false)
-	self.activeContainer.frame:SetScript("OnMouseWheel", nil)
-	self.activeContainer:Release()
+	AceGUI:Release(self.activeContainer)
 	self.activeContainer = nil
 
-	self.labelContainer:Release()
-	self.labelContainer = nil
+	cooldownOverrideObject.FormatTime = nil
+	cooldownOverrideObject.GetSpellCooldown = nil
+	cooldownOverrideObject.cooldownDurations = nil
+	cooldownOverrideObject.labelContainer = nil
+	cooldownOverrideObject.activeContainer = nil
+	cooldownOverrideObject.scrollFrame = nil
+	cooldownOverrideObject.option = nil
+	cooldownOverrideObject.cooldownDurations = nil
+	if cooldownOverrideObject.realDropdown then
+		AceGUI:Release(cooldownOverrideObject.realDropdown)
+	end
+	cooldownOverrideObject.realDropdown = nil
 
-	self.scrollFrame:Release()
-	self.scrollFrame = nil
+	AceGUI:Release(self.closeButton)
+	self.closeButton = nil
+
+	AceGUI:Release(self.tabTitleContainer)
+	self.tabTitleContainer = nil
+
+	AceGUI:Release(self.labelContainer)
+	self.labelContainer = nil
 
 	self.optionTabs = nil
 	self.activeTab = nil
