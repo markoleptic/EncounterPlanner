@@ -59,6 +59,8 @@ externals:
 tools-used:
     - OmniCD
 
+manual-changelog: CHANGELOG.txt
+
 ignore:
     - cspell.json
     - Tests
