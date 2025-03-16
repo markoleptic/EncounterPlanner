@@ -9,6 +9,9 @@
 ---@alias EPBaseContainerType
 ---|"EPContainer"
 
+---@alias EPAnchorContainerType
+---|"EPAnchorContainer"
+
 ---@alias EPSpacerType
 ---|"EPSpacer"
 
@@ -120,7 +123,7 @@
 ---| EPMainFrameType
 ---| EPBaseContainerType
 ---| EPRosterEditorType
----| EPOptionsType
+---| EPAnchorContainerType
 
 ---@class AceGUI-3.0
 local AceGUI = {}
@@ -137,6 +140,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPBaseContainerType
 ---@return EPContainer
+function AceGUI:Create(type) end
+
+---@param type EPAnchorContainerType
+---@return EPAnchorContainer
 function AceGUI:Create(type) end
 
 ---@param type EPSpacerType

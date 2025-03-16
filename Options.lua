@@ -35,9 +35,9 @@ local tostring = tostring
 local type = type
 local unpack = unpack
 
----@type EPContainer|nil
+---@type EPAnchorContainer|nil
 local messageAnchor = nil
----@type EPContainer|nil
+---@type EPAnchorContainer|nil
 local progressBarAnchor = nil
 
 ---@param left number
@@ -377,10 +377,10 @@ do
 	end
 end
 
----@return EPContainer
+---@return EPAnchorContainer
 local function CreateProgressBarAnchor()
 	local progressBarPreferences = GetProgressBarPreferences()
-	local container = utilities.CreateReminderContainer(progressBarPreferences, progressBarPreferences.spacing)
+	local container = utilities.CreateReminderAnchorContainer(progressBarPreferences, progressBarPreferences.spacing)
 	container:SetAnchorMode(true, progressBarPreferences.point)
 	container.frame:SetClampedToScreen(true)
 	progressBarManager:AddProgressBarsOnTimer()
@@ -414,10 +414,10 @@ local function CreateProgressBarAnchor()
 	return container
 end
 
----@return EPContainer
+---@return EPAnchorContainer
 local function CreateMessageAnchor()
 	local messagePreferences = GetMessagePreferences()
-	local container = utilities.CreateReminderContainer(messagePreferences)
+	local container = utilities.CreateReminderAnchorContainer(messagePreferences)
 	container.frame:SetClampedToScreen(true)
 	container:SetAnchorMode(true, messagePreferences.point)
 
@@ -1005,8 +1005,9 @@ do
 						preferences.y = y
 						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
+						local region = _G[regionName] or UIParent
 						if messageAnchor then
-							messageAnchor.frame:SetPoint(preferences.point, regionName, preferences.relativePoint, x, y)
+							messageAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
 						end
 					end
 				end,
@@ -1286,14 +1287,9 @@ do
 						preferences.x, preferences.y = x, y
 						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
+						local region = _G[regionName] or UIParent
 						if progressBarAnchor then
-							progressBarAnchor.frame:SetPoint(
-								preferences.point,
-								regionName,
-								preferences.relativePoint,
-								x,
-								y
-							)
+							progressBarAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
 						end
 					end
 				end,
