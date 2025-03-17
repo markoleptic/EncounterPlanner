@@ -394,6 +394,5 @@ L["Zooms in horizontally on the timeline."] = true
 L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."] = true
 L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."] = true
 L["Clear Status Bar"] = true
-L["Bugs and Feedback"] = true
 L["User Guide"] = true
 L["Discord"] = true
