@@ -1,5 +1,8 @@
 local _, Namespace = ...
-local L = Namespace.L
+
+---@class Private
+local Private = Namespace
+local L = Private.L
 
 local Type = "EPMainFrame"
 local Version = 1
@@ -14,11 +17,14 @@ local mainFrameWidth = 1200
 local mainFrameHeight = 600
 local windowBarHeight = 30
 local defaultPadding = 10
-local statusBarHeight = 60
+local statusBarHeight = 48
 local statusBarPadding = 5
+local buttonWidth = 200
 local padding = { top = 10, right = 10, bottom = 10, left = 10 }
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
+local editBoxFrameBackdropColor = { 0, 0, 0, 1.0 }
+local editBoxFrameBackdropBorderColor = { 0.15, 0.15, 0.15, 1.0 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -34,9 +40,31 @@ local titleBarBackdrop = {
 	tileSize = 16,
 	edgeSize = 2,
 }
-
+local closeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
+local discordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-24]]
+local helpIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-help-32]]
+local userGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]]
+local discordUrl = [[discord.gg/9bmH43JSzy]]
 local throttleInterval = 0.015 -- Minimum time between executions, in seconds
 local lastExecutionTime = 0
+
+---@param self EPMainFrame
+---@param buttonFrame Frame
+---@param point "BOTTOM"|"BOTTOMLEFT"
+---@param relativePoint "TOP"|"TOPLEFT"
+---@param text string
+local function HandleButtonClicked(self, buttonFrame, point, relativePoint, text)
+	self.editBoxFrame:SetPoint(point, buttonFrame, relativePoint, 0, 2)
+	self.editBox:SetText(text)
+	self.testFontString:SetText(text)
+	self.editBoxFrame:SetSize(
+		self.testFontString:GetUnboundedStringWidth() + 20,
+		self.testFontString:GetStringHeight() + 20
+	)
+	self.editBoxFrame:Show()
+	self.editBox:SetFocus()
+	self.editBox:HighlightText(0, self.editBox:GetText():len())
+end
 
 ---@class EPMainFrame : AceGUIContainer
 ---@field frame table|Frame
@@ -50,6 +78,7 @@ local lastExecutionTime = 0
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
 ---@field simulateRemindersButton EPButton
+---@field lowerContainer EPContainer
 ---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
 ---@field bossLabel EPLabel
@@ -128,10 +157,12 @@ local function OnAcquire(self)
 		self.frame:Show()
 	end)
 
-	local buttonWidth = self.maximizeButton.frame:GetWidth()
+	local minimizeFrameButtonWidths = self.maximizeButton.frame:GetWidth()
 		+ self.closeButtonMinimizeFrame.frame:GetWidth()
 		+ 2 * edgeSize
-	self.minimizeFrame:SetWidth(2 * (buttonWidth + (self.minimizeFrameText:GetStringWidth() / 2.0) + padding.right))
+	self.minimizeFrame:SetWidth(
+		2 * (minimizeFrameButtonWidths + (self.minimizeFrameText:GetStringWidth() / 2.0) + padding.right)
+	)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
 	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
@@ -162,12 +193,57 @@ local function OnAcquire(self)
 	self.menuButtonContainer.frame:SetPoint("TOPLEFT", self.windowBar, "TOPLEFT", 1, -1)
 	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar, "BOTTOMLEFT", 1, 1)
 
+	local buttonSpacing = 4
+	local buttonHeight = (statusBarHeight - buttonSpacing) / 2.0
+	local halfButtonWidth = (buttonWidth - buttonSpacing) / 2.0
+
+	local clearLogButton = AceGUI:Create("EPButton")
+	clearLogButton:SetText(format("|T%s:%d|t %s", closeIcon, 0, L["Clear Status Bar"]))
+	clearLogButton:SetWidth(buttonWidth)
+	clearLogButton:SetHeight(buttonHeight)
+	clearLogButton:SetCallback("Clicked", function()
+		Private.interfaceUpdater.ClearMessageLog()
+	end)
+
+	local userGuideButton = AceGUI:Create("EPButton")
+	userGuideButton:SetText(format("|T%s:%d|t %s", helpIcon, 0, L["User Guide"]))
+	userGuideButton:SetWidth(halfButtonWidth)
+	userGuideButton:SetHeight(buttonHeight)
+	userGuideButton:SetCallback("Clicked", function()
+		HandleButtonClicked(self, userGuideButton.frame, "BOTTOMLEFT", "TOPLEFT", userGuideUrl)
+	end)
+
+	local discordButton = AceGUI:Create("EPButton")
+	discordButton:SetText(format("|T%s:%d|t %s", discordIcon, 0, L["Discord"]))
+	discordButton:SetWidth(halfButtonWidth)
+	discordButton:SetHeight(buttonHeight)
+	discordButton:SetCallback("Clicked", function()
+		HandleButtonClicked(self, discordButton.frame, "BOTTOM", "TOP", discordUrl)
+	end)
+
+	local userGuideAndDiscordContainer = AceGUI:Create("EPContainer")
+	userGuideAndDiscordContainer:SetLayout("EPHorizontalLayout")
+	userGuideAndDiscordContainer:SetSpacing(buttonSpacing, 0)
+	userGuideAndDiscordContainer:SetFullWidth(true)
+	userGuideAndDiscordContainer:AddChildren(userGuideButton, discordButton)
+
+	local lowerLeftContainer = AceGUI:Create("EPContainer")
+	lowerLeftContainer:SetLayout("EPVerticalLayout")
+	lowerLeftContainer:SetSpacing(0, buttonSpacing)
+	lowerLeftContainer:AddChildren(clearLogButton, userGuideAndDiscordContainer)
+
 	self.statusBar = AceGUI:Create("EPStatusBar")
-	self.statusBar.frame:SetParent(self.frame)
-	self.statusBar.frame:SetHeight(statusBarHeight)
-	self.statusBar.frame:SetPoint("LEFT", self.frame, "LEFT", padding.left, 0)
-	self.statusBar.frame:SetPoint("RIGHT", self.frame, "RIGHT", -padding.right, 0)
-	self.statusBar.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, padding.bottom)
+	self.statusBar:SetHeight(statusBarHeight)
+	self.statusBar:SetFullWidth(true)
+
+	self.lowerContainer = AceGUI:Create("EPContainer")
+	self.lowerContainer:SetLayout("EPHorizontalLayout")
+	self.lowerContainer:SetSpacing(padding.right, 0)
+	self.lowerContainer.frame:SetParent(self.frame)
+	self.lowerContainer.frame:SetPoint("LEFT", self.frame, "LEFT", padding.left, 0)
+	self.lowerContainer.frame:SetPoint("RIGHT", self.frame, "RIGHT", -padding.right, 0)
+	self.lowerContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, padding.bottom)
+	self.lowerContainer:AddChildren(lowerLeftContainer, self.statusBar)
 
 	local verticalOffset = statusBarHeight + statusBarPadding + padding.bottom
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, verticalOffset)
@@ -208,9 +284,9 @@ local function OnRelease(self)
 		self.expandAllButton:Release()
 	end
 	self.expandAllButton = nil
-	if self.statusBar then
-		self.statusBar:Release()
-	end
+
+	self.lowerContainer:Release()
+	self.lowerContainer = nil
 	self.statusBar = nil
 
 	self.minimizeFrame:Hide()
@@ -237,7 +313,7 @@ local function LayoutFinished(self, width, height)
 					+ windowBarHeight
 					+ padding.top
 					+ padding.bottom
-					+ self.statusBar.frame:GetHeight()
+					+ self.lowerContainer.frame:GetHeight()
 					+ statusBarPadding
 			)
 		end
@@ -416,6 +492,46 @@ local function Constructor()
 	resizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
 	resizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
 
+	local editBoxFrame = CreateFrame("Frame", Type .. "EditBoxFrame" .. count, frame, "BackdropTemplate")
+	editBoxFrame:SetFrameStrata("TOOLTIP")
+	editBoxFrame:SetBackdrop(titleBarBackdrop)
+	editBoxFrame:SetBackdropColor(unpack(editBoxFrameBackdropColor))
+	editBoxFrame:SetBackdropBorderColor(unpack(editBoxFrameBackdropBorderColor))
+	editBoxFrame:EnableMouseMotion(true)
+
+	local testFontString = editBoxFrame:CreateFontString(nil, "BACKGROUND")
+	if fPath then
+		testFontString:SetFont(fPath, 12)
+	end
+
+	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, editBoxFrame)
+	editBox:SetPoint("TOPLEFT")
+	editBox:SetPoint("BOTTOMRIGHT")
+	editBox:SetAutoFocus(false)
+	editBox:EnableKeyboard(true)
+	editBox:SetMultiLine(false)
+	editBox:SetJustifyH("CENTER")
+	editBox:SetJustifyV("MIDDLE")
+	if fPath then
+		editBox:SetFont(fPath, 12, "")
+	end
+
+	editBoxFrame:Hide()
+
+	local function HideEditBoxAndClearFocus()
+		editBox:ClearFocus()
+		editBoxFrame:ClearAllPoints()
+		editBoxFrame:Hide()
+	end
+
+	editBox:SetScript("OnKeyDown", function(_, key)
+		if key == "ESCAPE" or (key == "C" and IsControlKeyDown()) then
+			HideEditBoxAndClearFocus()
+		end
+	end)
+	editBox:SetScript("OnEditFocusLost", HideEditBoxAndClearFocus)
+	editBoxFrame:SetScript("OnLeave", HideEditBoxAndClearFocus)
+
 	---@class EPMainFrame
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -434,6 +550,11 @@ local function Constructor()
 		windowBar = windowBar,
 		minimizeFrame = minimizeFrame,
 		minimizeFrameText = minimizeFrameText,
+		editBox = editBox,
+		editBoxFrame = editBoxFrame,
+		userGuideStringLength = 0,
+		discordStringLength = 0,
+		testFontString = testFontString,
 	}
 
 	resizer:SetScript("OnMouseDown", function(_, mouseButton)

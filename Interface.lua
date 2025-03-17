@@ -1996,6 +1996,9 @@ function Private:CreateInterface()
 	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 	Private.mainFrame:DoLayout()
 	timeline:UpdateTimeline()
+	C_Timer.After(0, function() -- Otherwise height will not be properly set and can clip messages
+		Private.mainFrame.statusBar:OnWidthSet()
+	end)
 end
 
 function Private:CloseDialogs()
