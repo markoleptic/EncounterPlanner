@@ -15,6 +15,7 @@ local defaultFrameHeight = 400
 local defaultFrameWidth = 400
 local fontSize = 12
 local lineNumberWidth = 20
+local scrollFrameScrollBarWidth = 20
 local textPadding = 2
 local padding = { left = 2, top = 2, right = 2, bottom = 2 }
 
@@ -27,6 +28,7 @@ local padding = { left = 2, top = 2, right = 2, bottom = 2 }
 ---@field lineNumberPool table<integer, FontString>
 ---@field type string
 ---@field lineNumber integer
+---@field setScrollMultiplier boolean|nil
 
 ---@param self EPStatusBar
 local function OnAcquire(self)
@@ -39,6 +41,7 @@ local function OnAcquire(self)
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
 	self.scrollFrame.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
 	self.scrollFrame.frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
+	self.scrollFrame:SetScrollBarWidth(scrollFrameScrollBarWidth)
 	self.scrollFrame:SetScrollChild(self.messageFrame, true, true)
 end
 
@@ -47,6 +50,7 @@ local function OnRelease(self)
 	self:ClearMessages()
 	self.scrollFrame:Release()
 	self.scrollFrame = nil
+	self.setScrollMultiplier = nil
 end
 
 ---@param self EPStatusBar
@@ -68,7 +72,7 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 		line = self.messageFrame:CreateFontString(nil, "OVERLAY", "ChatFontNormal")
 		line:SetJustifyH("LEFT")
 		line:SetWordWrap(true)
-		line:SetSpacing(0)
+		line:SetSpacing(2)
 		line:SetIndentedWordWrap(false)
 
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -116,6 +120,11 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 		line:SetPoint("TOP", self.messageFrame, "TOP", 0, -padding.top)
 	end
 
+	if not self.setScrollMultiplier then
+		self.scrollFrame:SetScrollMultiplier(line:GetLineHeight() + padding.top)
+		self.setScrollMultiplier = true
+	end
+
 	self.lineNumber = self.lineNumber + 1
 	tinsert(self.activeMessages, { lineNumber = lineNumber, line = line })
 end
@@ -150,7 +159,7 @@ local function ClearMessages(self)
 		tinsert(self.messagePool, obj)
 	end
 	wipe(self.activeMessages)
-	self.messageFrame:SetHeight(padding.bottom)
+	self.messageFrame:SetHeight(0)
 	self.lineNumber = 1
 end
 
@@ -163,7 +172,7 @@ local function OnWidthSet(self)
 	if height > 0.0 then
 		height = height + padding.top
 	end
-	self.messageFrame:SetHeight(height + padding.bottom)
+	self.messageFrame:SetHeight(height)
 	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
 end
 
