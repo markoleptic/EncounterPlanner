@@ -1,4 +1,4 @@
-local _, Namespace = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -6,6 +6,7 @@ local L = Private.L
 
 local Type = "EPMainFrame"
 local Version = 1
+local addOnVersion = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -438,7 +439,7 @@ local function Constructor()
 	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(L["Encounter Planner"])
+	windowBarText:SetText(L["Encounter Planner"] .. " " .. addOnVersion)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")

@@ -1,11 +1,11 @@
 ## Interface: 110007, 110100
-## Version: 0.9.1
+## Version: 0.9.7
 ## Title: Encounter Planner
 ## Notes: Assignment planning and reminder tool for mythic dungeon and raid boss encounters /ep
 ## Author: Markoleptic
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
-## OptionalDeps: Ace3, LibSharedMedia-3.0, BigWigs, MRT, DevTool, WeakAuras
+## OptionalDeps: Ace3, LibSharedMedia-3.0, MRT, WeakAuras
 ## IconTexture: Interface\AddOns\EncounterPlanner\Media\ep-logo.tga
 ## X-Flavor: Mainline
 ## X-Website: https://www.curseforge.com/wow/addons/encounter-planner
