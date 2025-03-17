@@ -84,11 +84,11 @@ local function HandleEdgeScrolling(self)
 	if yPosition > frameTop - 5 then -- Cursor near the top
 		local t = min(maxEdgeCursorScrollDistance, yPosition - (frameTop - 5)) / maxEdgeCursorScrollDistance
 		local result = edgeMultiplierRange * t + minEdgeMultiplier
-		SetVerticalScroll(self, max(0, currentScroll - scrollMultiplier * result))
+		SetVerticalScroll(self, max(0, currentScroll - self.scrollMultiplier * result))
 	elseif yPosition < frameBottom + 5 then -- Cursor near the bottom edge
 		local t = min(maxEdgeCursorScrollDistance, (frameBottom + 5) - yPosition) / maxEdgeCursorScrollDistance
 		local result = edgeMultiplierRange * t + minEdgeMultiplier
-		SetVerticalScroll(self, min(maxScroll, currentScroll + scrollMultiplier * result))
+		SetVerticalScroll(self, min(maxScroll, currentScroll + self.scrollMultiplier * result))
 	end
 
 	self:UpdateThumbPositionAndSize()
@@ -156,6 +156,7 @@ end
 
 ---@param self EPScrollFrame
 local function OnAcquire(self)
+	self.scrollMultiplier = scrollMultiplier
 	self.currentScroll = 0
 	self.verticalThumbOffsetWhenThumbClicked = 0
 	self.verticalScrollBarHeightWhenThumbClicked = 0
@@ -322,7 +323,7 @@ local function UpdateVerticalScroll(self, delta)
 				-self.scrollBarScrollFramePadding - self.scrollBar:GetWidth(),
 				0
 			)
-			local newVerticalScroll = Clamp(self.currentScroll - (delta * scrollMultiplier), 0, maxScroll)
+			local newVerticalScroll = Clamp(self.currentScroll - (delta * self.scrollMultiplier), 0, maxScroll)
 			SetVerticalScroll(self, newVerticalScroll)
 		end
 		if self.setScrollChildWidth then
@@ -388,6 +389,12 @@ local function SetScroll(self, newVerticalScroll)
 	UpdateThumbPositionAndSize(self)
 end
 
+---@param self EPScrollFrame
+---@param multiplier number
+local function SetScrollMultiplier(self, multiplier)
+	self.scrollMultiplier = multiplier
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -435,6 +442,7 @@ local function Constructor()
 		GetWrapperPadding = GetWrapperPadding,
 		GetScrollRange = GetScrollRange,
 		SetScroll = SetScroll,
+		SetScrollMultiplier = SetScrollMultiplier,
 		frame = frame,
 		scrollFrame = scrollFrame --[[@as Frame]],
 		scrollFrameWrapper = scrollFrameWrapper,
@@ -449,6 +457,7 @@ local function Constructor()
 		setScrollChildWidth = false,
 		enableEdgeScrolling = false,
 		scrollBarScrollFramePadding = defaultScrollBarScrollFramePadding,
+		scrollMultiplier = scrollMultiplier,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)
