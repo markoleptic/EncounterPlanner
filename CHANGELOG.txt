@@ -1,8 +1,8 @@
 # Encounter Planner
 
-## [v0.9.6](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.6) (2025-03-15)
-[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.5...v0.9.6) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
+## [v0.9.7](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.7) (2025-03-16)
+[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.6...v0.9.7) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
 
-- Fixed crashing issues that sometimes occurred when opening or closing the options menu.
-- Added Power Word: Radiance to spell dropdowns.
-- Fix issue where unsupported encounters could trigger sending of external text to group (although it would fail).
+- Added button to clear the Status Bar.
+- Adjusted height and scroll multiplier of the Status Bar to improve smoothness.
+- Added buttons for opening a link to the user guide and Discord.
