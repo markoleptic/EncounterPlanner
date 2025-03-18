@@ -8,6 +8,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local ipairs = ipairs
 local max = math.max
 local unpack = unpack
 
