@@ -425,6 +425,7 @@ local function Constructor()
 		SetShowBorder = SetShowBorder,
 		SetShowIconBorder = SetShowIconBorder,
 		SetAlpha = SetAlpha,
+		RestyleBar = RestyleBar,
 		Set = Set,
 		frame = frame,
 		type = Type,

@@ -397,3 +397,6 @@ L["Clear Status Bar"] = true
 L["User Guide"] = true
 L["Discord"] = true
 L["Quick Start"] = true
+L["Previous"] = true
+L["Next"] = true
+L["Skip Quick Start"] = true
