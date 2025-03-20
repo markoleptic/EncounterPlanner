@@ -47,6 +47,7 @@ InterfaceUpdater.lua
 Communications.lua
 Options.lua
 Interface.lua
+Tutorial.lua
 API.lua
 Core.lua
 

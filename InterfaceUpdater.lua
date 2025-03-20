@@ -276,8 +276,6 @@ do
 	end
 
 	local CreateReminderText = utilities.CreateReminderText
-	---@class BossUtilities
-	local bossUtilities = Private.bossUtilities
 	local FindBossAbility = bossUtilities.FindBossAbility
 	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
 
@@ -877,6 +875,69 @@ function InterfaceUpdater.FindMatchingPlan(planID)
 	for planName, plan in pairs(plans) do
 		if plan.ID == planID then
 			return planName, plan
+		end
+	end
+end
+
+do
+	local assignmentMetaTables = {
+		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
+		TimedAssignment = Private.classes.TimedAssignment,
+	}
+	-- Syncs the Assignment Editor and optionally the timeline with data from the assignment.
+	---@param dungeonEncounterID any
+	---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
+	---@param updateFields boolean If true, updates all fields in the Assignment Editor from the assignment.
+	---@param updateTimeline boolean If true, the timeline assignment start time is updated, UpdateTimeline is called, and selected boss abilities are updated.
+	---@param updateAssignments boolean If true, UpdateAllAssignments is called, and assignment is scrolled into view.
+	function InterfaceUpdater.UpdateFromAssignment(
+		dungeonEncounterID,
+		assignment,
+		updateFields,
+		updateTimeline,
+		updateAssignments
+	)
+		if updateFields and Private.assignmentEditor then
+			local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
+			local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
+			local spellSpecificCombatLogEventTypes = nil
+			local combatLogEventSpellID = assignment.combatLogEventSpellID
+			if combatLogEventSpellID then
+				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
+				if ability then
+					spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
+				end
+			end
+			Private.assignmentEditor:PopulateFields(
+				assignment,
+				previewText,
+				assignmentMetaTables,
+				availableCombatLogEventTypes,
+				spellSpecificCombatLogEventTypes
+			)
+		end
+
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			if updateTimeline then
+				for _, timelineAssignment in pairs(timeline:GetAssignments()) do
+					if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
+						utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
+						break
+					end
+				end
+				timeline:UpdateTimeline()
+				timeline:ClearSelectedAssignments()
+				timeline:ClearSelectedBossAbilities()
+				timeline:SelectAssignment(assignment.uniqueID, true)
+				if assignment.combatLogEventSpellID and assignment.spellCount then
+					timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
+				end
+			end
+			if updateAssignments then
+				InterfaceUpdater.UpdateAllAssignments(false, dungeonEncounterID)
+				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
+			end
 		end
 	end
 end

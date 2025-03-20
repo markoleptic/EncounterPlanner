@@ -182,9 +182,12 @@ function Private.Decode(obj) end
 
 ---@param target table
 ---@param name string
----@param func fun()|string
+---@param func fun(...)|string
 function Private.RegisterCallback(target, name, func) end
 
 ---@param target table
 ---@param name string
 function Private.UnregisterCallback(target, name) end
+
+---@param target table
+function Private.UnregisterAllCallbacks(target) end

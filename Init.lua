@@ -891,6 +891,8 @@ Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.externalTextEditor = nil --[[@as EPEditBox]]
 Private.quickStart = nil --[[@as EPQuickStartDialog]]
+Private.tutorialCallbackObject = nil ---@type table|nil
+Private.activeTutorialCallbackName = nil ---@type string|nil
 
 Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent, "GameTooltipTemplate")
 

@@ -403,7 +403,7 @@ do -- Roster Editor
 	end
 
 	---@param openToTab string
-	function Create.RosterEditor(openToTab)
+	function Private.CreateRosterEditor(openToTab)
 		if Private.IsSimulatingBoss() then
 			return
 		end
@@ -433,7 +433,6 @@ end
 
 do -- Assignment Editor
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
-	local UpdateTimelineAssignmentStartTime = utilities.UpdateTimelineAssignmentStartTime
 
 	local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
 	local assignmentEditorWidth = 240
@@ -473,7 +472,6 @@ do -- Assignment Editor
 
 		local dungeonEncounterID = GetCurrentBossDungeonEncounterID()
 		local updateFields = false
-		local updatePreviewText = false
 		local updateAssignments = false
 
 		if dataType == "AssignmentType" then
@@ -534,10 +532,10 @@ do -- Assignment Editor
 				end
 			end
 			updateAssignments = true
-			updatePreviewText = true
+			updateFields = true
 		elseif dataType == "AssigneeType" then
 			assignment.assignee = value
-			updatePreviewText = true
+			updateFields = true
 			updateAssignments = true
 		elseif dataType == "Time" then
 			local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
@@ -574,60 +572,18 @@ do -- Assignment Editor
 				assignment.spellID = constants.kInvalidAssignmentSpellID
 				updateAssignments = true
 			end
-			updatePreviewText = true
+			updateFields = true
 		elseif dataType == "Target" then
 			assignment.targetName = value
-			updatePreviewText = true
+			updateFields = true
 		end
 
-		if updateFields or updatePreviewText then
-			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-			local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
-			local spellSpecificCombatLogEventTypes = nil
-			local combatLogEventSpellID = assignment.combatLogEventSpellID
-			if combatLogEventSpellID then
-				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
-				if ability then
-					spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
-				end
-			end
-			assignmentEditor:PopulateFields(
-				assignment,
-				previewText,
-				assignmentMetaTables,
-				availableCombatLogEventTypes,
-				spellSpecificCombatLogEventTypes
-			)
-		elseif updatePreviewText then
-			local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-			assignmentEditor.previewLabel:SetText(previewText, 0)
-		end
-
-		local timeline = Private.mainFrame.timeline
-		if timeline then
-			for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-				if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-					UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
-					break
-				end
-			end
-			timeline:UpdateTimeline()
-			timeline:ClearSelectedBossAbilities()
-			if assignment.combatLogEventSpellID and assignment.spellCount then
-				timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
-			end
-		end
-		if updateAssignments then
-			UpdateAllAssignments(false, dungeonEncounterID)
-			if timeline then
-				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
-			end
-		end
+		interfaceUpdater.UpdateFromAssignment(dungeonEncounterID, assignment, updateFields, true, updateAssignments)
 	end
 
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 
-	function Create.AssignmentEditor()
+	function Private.CreateAssignmentEditor()
 		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		assignmentEditor.FormatTime = FormatTime
 		assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
@@ -817,7 +773,7 @@ do -- Phase Length Editor
 		end
 	end
 
-	function Create.PhaseLengthEditor()
+	function Private.CreatePhaseLengthEditor()
 		if not Private.phaseLengthEditor then
 			local phaseLengthEditor = AceGUI:Create("EPPhaseLengthEditor")
 			phaseLengthEditor.FormatTime = FormatTime
@@ -1036,35 +992,9 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 	local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), uniqueID)
 	if assignment then
 		if not Private.assignmentEditor then
-			Create.AssignmentEditor()
+			Private.CreateAssignmentEditor()
 		end
-		local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-		local encounterID = GetCurrentBossDungeonEncounterID()
-		local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(encounterID)
-		local spellSpecificCombatLogEventTypes = nil
-		local combatLogEventSpellID = assignment.combatLogEventSpellID
-		if combatLogEventSpellID then
-			local ability = bossUtilities.FindBossAbility(encounterID, combatLogEventSpellID)
-			if ability then
-				spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
-			end
-		end
-		Private.assignmentEditor:PopulateFields(
-			assignment,
-			previewText,
-			assignmentMetaTables,
-			availableCombatLogEventTypes,
-			spellSpecificCombatLogEventTypes
-		)
-		local timeline = Private.mainFrame.timeline
-		if timeline then
-			timeline:ClearSelectedAssignments()
-			timeline:ClearSelectedBossAbilities()
-			timeline:SelectAssignment(uniqueID, true)
-			if assignment.combatLogEventSpellID and assignment.spellCount then
-				timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
-			end
-		end
+		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, false)
 	end
 end
 
@@ -1271,7 +1201,7 @@ do -- Plan Menu Button Handlers
 			Private.exportEditBox:HighlightTextAndFocus()
 		end
 	end
-	local function CreateNewPlanDialog()
+	function Private.CreateNewPlanDialog()
 		if not Private.newPlanDialog then
 			local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
 			newPlanDialog:SetCallback("OnRelease", function()
@@ -1330,7 +1260,10 @@ do -- Plan Menu Button Handlers
 			return
 		end
 		if value == "New Plan" then
-			CreateNewPlanDialog()
+			Private.CreateNewPlanDialog()
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName)
+			end
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
 		elseif value == "Export Current Plan" then
@@ -1370,7 +1303,7 @@ local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, t
 	if value == "Boss" then
 		return
 	elseif value == "Edit Phase Timings" then
-		Create.PhaseLengthEditor()
+		Private.CreatePhaseLengthEditor()
 		bossMenuButton:SetValue("Boss")
 		bossMenuButton:SetText("Boss")
 	elseif topLevelItemValue == "Change Boss" then
@@ -1384,7 +1317,7 @@ local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, t
 end
 
 local function HandleRosterMenuButtonClicked()
-	Create.RosterEditor("Current Plan Roster")
+	Private.CreateRosterEditor("Current Plan Roster")
 	if Private.mainFrame then
 		local menuButtonContainer = Private.mainFrame.menuButtonContainer
 		if menuButtonContainer then
@@ -1394,6 +1327,9 @@ local function HandleRosterMenuButtonClicked()
 				end
 			end
 		end
+	end
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(Private.activeTutorialCallbackName)
 	end
 end
 
@@ -2005,487 +1941,4 @@ end
 
 function Private:CloseDialogs()
 	CloseDialogs()
-end
-
-local highlightBorderFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-highlightBorderFrame:SetBackdrop({
-	edgeFile = "Interface\\Buttons\\WHITE8x8",
-	edgeSize = 2,
-})
-highlightBorderFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
-highlightBorderFrame:EnableMouse(false)
-highlightBorderFrame:Hide()
-
----@param frame Frame
-local function HighlightFrame(frame)
-	if not frame then
-		return
-	end
-
-	highlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
-	highlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-	highlightBorderFrame:ClearAllPoints()
-	highlightBorderFrame:SetPoint("TOPLEFT", frame, -2, 2)
-	highlightBorderFrame:SetPoint("BOTTOMRIGHT", frame, 2, -2)
-	highlightBorderFrame:Show()
-end
-
-function Private:OpenQuickStart()
-	if not self.quickStart then
-		if not self.mainFrame then
-			self:CreateInterface()
-		end
-
-		local kQuickStartOffset = 10
-		local kQuickStartFrameLevel = 250
-		local assignmentTextureSize = 30
-		local spacing = 2
-
-		local steps = {
-			{
-				text = "The Menu Bar contains high level categories for managing plans, modifying bosses of plans, editing rosters, and settings.",
-				frame = self.mainFrame.menuButtonContainer.frame,
-			},
-			{
-				text = "Clicking Plan button opens a menu that lets you create, import, export, and delete plans.",
-				frame = self.mainFrame.menuButtonContainer.children[1].frame,
-			},
-			{
-				text = "Clicking the Boss button lets change the current plan boss, adjust phase timings, and show/hide boss abilities.",
-				frame = self.mainFrame.menuButtonContainer.children[2].frame,
-			},
-			{
-				text = "Clicking the Roster button opens the Roster Editor for the current plan.",
-				frame = self.mainFrame.menuButtonContainer.children[3].frame,
-			},
-			{
-				text = "The Current Plan Roster is unique to the current plan. Roster members must be added here before assigning assignments to individuals.",
-				CreateRequiredWidget = function(localSelf)
-					if not Private.rosterEditor then
-						Create.RosterEditor("Current Plan Roster")
-					end
-					Private.rosterEditor:SetCurrentTab("Current Plan Roster")
-					localSelf.frame = self.rosterEditor.tabContainer.children[1].frame
-				end,
-				CloseRequiredWidget = function(localSelf)
-					if Private.rosterEditor then
-						Private.rosterEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
-				closeRequiredWidgetOnDecrement = true,
-				closeRequiredWidgetOnIncrement = false,
-			},
-			{
-				text = "The Shared Roster tab opens the Shared Roster, which is plan-independent and persists across all plans.",
-				CreateRequiredWidget = function(localSelf)
-					if not Private.rosterEditor then
-						Create.RosterEditor("Shared Roster")
-					end
-					Private.rosterEditor:SetCurrentTab("Shared Roster")
-					localSelf.frame = self.rosterEditor.tabContainer.children[2].frame
-				end,
-				CloseRequiredWidget = function(localSelf)
-					if Private.rosterEditor then
-						Private.rosterEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
-				closeRequiredWidgetOnDecrement = false,
-				closeRequiredWidgetOnIncrement = true,
-			},
-			{
-				text = "The Current Plan Bar shows information and settings for the current plan.",
-				frame = self.mainFrame.children[1].frame,
-			},
-			{
-				text = "The current plan is selected using this dropdown. Rename the current plan by double clicking the dropdown.",
-				frame = self.mainFrame.planDropdown.frame,
-			},
-			{
-				text = "Reminders for plans can be individually toggled on and off. The yellow bell icon in the Current Plan Dropdown also indicates whether reminders are enabled for a plan.",
-				frame = self.mainFrame.planReminderEnableCheckBox.frame,
-			},
-			{
-				text = "Add an assignee to the Assignment Timeline by selecting an option from the Add Assignee dropdown.",
-				frame = self.mainFrame.timeline.addAssigneeDropdown.frame,
-			},
-			{
-				text = "The Assignment Editor is opened after adding an assignee. It can also by opened by clicking an icon in the Assignment Timeline.",
-				CreateRequiredWidget = function(localSelf)
-					if not Private.assignmentEditor then
-						Create.AssignmentEditor()
-						local assignment = TimedAssignment:New()
-						local roster = GetCurrentRoster()
-						local entry = next(roster)
-						if entry then
-							assignment.assignee = entry
-						else
-							assignment.assignee = "Everyone"
-						end
-						local assignments = GetCurrentAssignments()
-						if #assignments == 0 then
-							local timelineRows = AddOn.db.profile.preferences.timelineRows
-							timelineRows.numberOfAssignmentsToShow = max(timelineRows.numberOfAssignmentsToShow, 2)
-						end
-						tinsert(GetCurrentAssignments(), assignment)
-						UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-						HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-					end
-					localSelf.frame = Private.assignmentEditor.frame
-				end,
-				CloseRequiredWidget = function(localSelf)
-					if Private.assignmentEditor then
-						Private.assignmentEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
-				closeRequiredWidgetOnDecrement = true,
-				closeRequiredWidgetOnIncrement = false,
-			},
-			{
-				text = "Adding a spell to an assignment will generate text using the icon and spell name.",
-				CreateRequiredWidget = function(localSelf)
-					if not Private.assignmentEditor then
-						Create.AssignmentEditor()
-						local assignment = TimedAssignment:New()
-						local roster = GetCurrentRoster()
-						local entry = next(roster)
-						if entry then
-							assignment.assignee = entry
-						else
-							assignment.assignee = "Everyone"
-						end
-						local assignments = GetCurrentAssignments()
-						if #assignments == 0 then
-							local timelineRows = AddOn.db.profile.preferences.timelineRows
-							timelineRows.numberOfAssignmentsToShow = max(timelineRows.numberOfAssignmentsToShow, 2)
-						end
-						tinsert(GetCurrentAssignments(), assignment)
-						UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-						HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-					end
-					local assignmentID = Private.assignmentEditor:GetAssignmentID()
-					if assignmentID then
-						local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-						if assignment then
-							assignment.spellID = 6262
-							local dungeonEncounterID = GetCurrentBossDungeonEncounterID()
-							local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-							local availableCombatLogEventTypes =
-								bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
-							local spellSpecificCombatLogEventTypes = nil
-							local combatLogEventSpellID = assignment.combatLogEventSpellID
-							if combatLogEventSpellID then
-								local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
-								if ability then
-									spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
-								end
-							end
-							Private.assignmentEditor:PopulateFields(
-								assignment,
-								previewText,
-								assignmentMetaTables,
-								availableCombatLogEventTypes,
-								spellSpecificCombatLogEventTypes
-							)
-							local timeline = Private.mainFrame.timeline
-							if timeline then
-								for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-									if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-										utilities.UpdateTimelineAssignmentStartTime(
-											timelineAssignment,
-											dungeonEncounterID
-										)
-										break
-									end
-								end
-								timeline:UpdateTimeline()
-								timeline:ClearSelectedBossAbilities()
-								if assignment.combatLogEventSpellID and assignment.spellCount then
-									timeline:SelectBossAbility(
-										assignment.combatLogEventSpellID,
-										assignment.spellCount,
-										true
-									)
-								end
-							end
-							UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-						end
-					end
-					localSelf.frame = Private.assignmentEditor.frame
-				end,
-				CloseRequiredWidget = function(localSelf)
-					if Private.assignmentEditor then
-						Private.assignmentEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
-				closeRequiredWidgetOnDecrement = false,
-				closeRequiredWidgetOnIncrement = false,
-			},
-			{
-				text = "Add spell IDs or raid marker names in brackets to show icons.",
-				CreateRequiredWidget = function(localSelf)
-					if not Private.assignmentEditor then
-						Create.AssignmentEditor()
-						local assignment = TimedAssignment:New()
-						local roster = GetCurrentRoster()
-						local entry = next(roster)
-						if entry then
-							assignment.assignee = entry
-						else
-							assignment.assignee = "Everyone"
-						end
-						local assignments = GetCurrentAssignments()
-						if #assignments == 0 then
-							local timelineRows = AddOn.db.profile.preferences.timelineRows
-							timelineRows.numberOfAssignmentsToShow = max(timelineRows.numberOfAssignmentsToShow, 2)
-						end
-						tinsert(GetCurrentAssignments(), assignment)
-						UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-						HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-					end
-					local assignmentID = Private.assignmentEditor:GetAssignmentID()
-					if assignmentID then
-						local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-						if assignment then
-							assignment.text = "Use Healthstone {6262} at {circle}"
-							local dungeonEncounterID = GetCurrentBossDungeonEncounterID()
-							local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-							local availableCombatLogEventTypes =
-								bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
-							local spellSpecificCombatLogEventTypes = nil
-							local combatLogEventSpellID = assignment.combatLogEventSpellID
-							if combatLogEventSpellID then
-								local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
-								if ability then
-									spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
-								end
-							end
-							Private.assignmentEditor:PopulateFields(
-								assignment,
-								previewText,
-								assignmentMetaTables,
-								availableCombatLogEventTypes,
-								spellSpecificCombatLogEventTypes
-							)
-							local timeline = Private.mainFrame.timeline
-							if timeline then
-								for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-									if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-										utilities.UpdateTimelineAssignmentStartTime(
-											timelineAssignment,
-											dungeonEncounterID
-										)
-										break
-									end
-								end
-								timeline:UpdateTimeline()
-								timeline:ClearSelectedBossAbilities()
-								if assignment.combatLogEventSpellID and assignment.spellCount then
-									timeline:SelectBossAbility(
-										assignment.combatLogEventSpellID,
-										assignment.spellCount,
-										true
-									)
-								end
-							end
-							UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
-						end
-					end
-					localSelf.frame = Private.assignmentEditor.frame
-				end,
-				CloseRequiredWidget = function(localSelf)
-					if Private.assignmentEditor then
-						Private.assignmentEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
-				closeRequiredWidgetOnDecrement = false,
-				closeRequiredWidgetOnIncrement = true,
-			},
-			{
-				text = "Create blank assignments by left-clicking the timeline beside an Assignee. The assignment will be created relative to the start of the encounter unless clicked within a boss phase triggered by a combat log event",
-				HighlightFrame = function()
-					local timeline = Private.mainFrame.timeline
-					if timeline then
-						local assignmentContainer = timeline:GetAssignmentContainer()
-						if assignmentContainer.children[1] then
-							local abilityEntry = assignmentContainer.children[1]
-							AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] =
-								false
-							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-							if bossDungeonEncounterID then
-								interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
-						end
-						local assignmentTimelineFrame = timeline.assignmentTimeline.frame
-						highlightBorderFrame:SetFrameStrata(assignmentTimelineFrame:GetFrameStrata())
-						highlightBorderFrame:SetFrameLevel(assignmentTimelineFrame:GetFrameLevel() + 50)
-						highlightBorderFrame:ClearAllPoints()
-						highlightBorderFrame:SetPoint("TOPLEFT", assignmentTimelineFrame, -2 + 200 + 10, 2)
-						highlightBorderFrame:SetPoint("TOPRIGHT", assignmentTimelineFrame, 2 - 30, 2)
-						highlightBorderFrame:SetHeight(assignmentTextureSize + 2)
-						highlightBorderFrame:Show()
-						self.quickStart.frame:ClearAllPoints()
-						self.quickStart.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kQuickStartOffset)
-					end
-				end,
-			},
-			{
-				text = "If left-clicking beside an assignment, a new assignment is created using its spell ID.",
-				HighlightFrame = function()
-					local timeline = Private.mainFrame.timeline
-					if timeline then
-						local assignmentContainer = timeline:GetAssignmentContainer()
-						if assignmentContainer.children[1] then
-							local abilityEntry = assignmentContainer.children[1]
-							AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] =
-								false
-							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-							if bossDungeonEncounterID then
-								interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
-						end
-						local assignmentTimelineFrame = timeline.assignmentTimeline.frame
-						highlightBorderFrame:SetFrameStrata(assignmentTimelineFrame:GetFrameStrata())
-						highlightBorderFrame:SetFrameLevel(assignmentTimelineFrame:GetFrameLevel() + 50)
-						highlightBorderFrame:ClearAllPoints()
-						local x, y = -2 + 200 + 10, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPLEFT", assignmentTimelineFrame, x, y)
-						x, y = 2 - 30, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPRIGHT", assignmentTimelineFrame, x, y)
-						highlightBorderFrame:SetHeight(assignmentTextureSize + 2)
-						highlightBorderFrame:Show()
-						self.quickStart.frame:ClearAllPoints()
-						self.quickStart.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kQuickStartOffset)
-					end
-				end,
-			},
-			{
-				text = "You can change the time of an assignment by holding left-click and dragging.",
-				HighlightFrame = function()
-					local timeline = Private.mainFrame.timeline
-					if timeline then
-						local assignmentContainer = timeline:GetAssignmentContainer()
-						if assignmentContainer.children[1] then
-							local abilityEntry = assignmentContainer.children[1]
-							AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] =
-								false
-							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-							if bossDungeonEncounterID then
-								interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
-						end
-						local assignmentTimelineFrame = timeline.assignmentTimeline.frame
-						highlightBorderFrame:SetFrameStrata(assignmentTimelineFrame:GetFrameStrata())
-						highlightBorderFrame:SetFrameLevel(assignmentTimelineFrame:GetFrameLevel() + 50)
-						highlightBorderFrame:ClearAllPoints()
-						local x, y = -2 + 200 + 10, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPLEFT", assignmentTimelineFrame, x, y)
-						x, y = 2 - 30, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPRIGHT", assignmentTimelineFrame, x, y)
-						highlightBorderFrame:SetHeight(assignmentTextureSize + 2)
-						highlightBorderFrame:Show()
-						self.quickStart.frame:ClearAllPoints()
-						self.quickStart.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kQuickStartOffset)
-					end
-				end,
-			},
-			{
-				text = "Assignments can be duplicated by control-clicking an icon and dragging.",
-				HighlightFrame = function()
-					local timeline = Private.mainFrame.timeline
-					if timeline then
-						local assignmentContainer = timeline:GetAssignmentContainer()
-						if assignmentContainer.children[1] then
-							local abilityEntry = assignmentContainer.children[1]
-							AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] =
-								false
-							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-							if bossDungeonEncounterID then
-								interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
-						end
-						local assignmentTimelineFrame = timeline.assignmentTimeline.frame
-						highlightBorderFrame:SetFrameStrata(assignmentTimelineFrame:GetFrameStrata())
-						highlightBorderFrame:SetFrameLevel(assignmentTimelineFrame:GetFrameLevel() + 50)
-						highlightBorderFrame:ClearAllPoints()
-						local x, y = -2 + 200 + 10, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPLEFT", assignmentTimelineFrame, x, y)
-						x, y = 2 - 30, 2 - spacing - assignmentTextureSize
-						highlightBorderFrame:SetPoint("TOPRIGHT", assignmentTimelineFrame, x, y)
-						highlightBorderFrame:SetHeight(assignmentTextureSize + 2)
-						highlightBorderFrame:Show()
-						self.quickStart.frame:ClearAllPoints()
-						self.quickStart.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kQuickStartOffset)
-					end
-				end,
-			},
-		}
-
-		local totalStepCount = #steps
-
-		---@param previousStepIndex integer
-		---@param currentStepIndex integer
-		local function SetCurrentStep(previousStepIndex, currentStepIndex)
-			local previousStep = steps[previousStepIndex]
-			if previousStep then
-				if currentStepIndex > previousStepIndex and previousStep.closeRequiredWidgetOnIncrement then
-					if previousStep.CloseRequiredWidget then
-						previousStep:CloseRequiredWidget()
-					end
-				elseif currentStepIndex < previousStepIndex and previousStep.closeRequiredWidgetOnDecrement then
-					if previousStep.CloseRequiredWidget then
-						previousStep:CloseRequiredWidget()
-					end
-				end
-			end
-
-			currentStepIndex = max(1, currentStepIndex)
-			if currentStepIndex > totalStepCount then
-				self.quickStart:Release()
-			else
-				local currentStep = steps[currentStepIndex]
-				self.quickStart:SetCurrentStep(currentStepIndex, currentStep.text)
-				if currentStep.CreateRequiredWidget then
-					currentStep:CreateRequiredWidget()
-				end
-				if currentStep.frame then
-					HighlightFrame(currentStep.frame)
-					self.quickStart.frame:ClearAllPoints()
-					self.quickStart.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kQuickStartOffset)
-				elseif currentStep.HighlightFrame then
-					currentStep:HighlightFrame()
-				end
-			end
-		end
-
-		local quickStart = AceGUI:Create("EPQuickStartDialog")
-		quickStart:InitProgressBar(totalStepCount, AddOn.db.profile.preferences.reminder.progressBars.texture)
-		quickStart.frame:SetFrameLevel(kQuickStartFrameLevel)
-		quickStart:SetCallback("OnRelease", function()
-			self.quickStart = nil
-			highlightBorderFrame:ClearAllPoints()
-			highlightBorderFrame:Hide()
-			for _, quickStartStep in pairs(steps) do
-				if quickStartStep.CloseRequiredWidget then
-					quickStartStep:CloseRequiredWidget()
-				end
-			end
-		end)
-		quickStart:SetCallback("PreviousButtonClicked", function()
-			SetCurrentStep(self.quickStart.currentStep, self.quickStart.currentStep - 1)
-		end)
-		quickStart:SetCallback("NextButtonClicked", function()
-			SetCurrentStep(self.quickStart.currentStep, self.quickStart.currentStep + 1)
-		end)
-		quickStart:SetCallback("SkipButtonClicked", function()
-			self.quickStart:Release()
-		end)
-
-		self.quickStart = quickStart
-		SetCurrentStep(1, 1)
-	end
 end
