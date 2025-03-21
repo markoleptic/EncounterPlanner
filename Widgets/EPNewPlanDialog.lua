@@ -134,7 +134,7 @@ local function OnAcquire(self)
 	if font then
 		self.planNameLineEdit:SetFont(font, defaultFontSize, flags)
 	end
-	self.planNameLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+	self.planNameLineEdit:SetCallback("OnTextChanged", function(_, _, value)
 		self:Fire("ValidatePlanName", value)
 	end)
 
