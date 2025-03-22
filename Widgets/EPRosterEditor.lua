@@ -1,5 +1,8 @@
-local _, Namespace = ...
-local L = Namespace.L
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+local L = Private.L
 
 local Type = "EPRosterEditor"
 local Version = 1
@@ -23,6 +26,7 @@ local preferredHeight = 600
 local windowBarHeight = 28
 local contentFramePadding = { x = 15, y = 15 }
 local otherPadding = { x = 10, y = 10 }
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
@@ -407,6 +411,7 @@ local function OnAcquire(self)
 	currentRosterTab:SetIsToggleable(true)
 	currentRosterTab:SetText(L["Current Plan Roster"], "Current Plan Roster")
 	currentRosterTab:SetWidthFromText()
+	currentRosterTab:SetColor(unpack(neutralButtonColor))
 	currentRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
 			for _, child in ipairs(self.tabContainer.children) do
@@ -423,6 +428,7 @@ local function OnAcquire(self)
 	sharedRosterTab:SetIsToggleable(true)
 	sharedRosterTab:SetText(L["Shared Roster"], "Shared Roster")
 	sharedRosterTab:SetWidthFromText()
+	sharedRosterTab:SetColor(unpack(neutralButtonColor))
 	sharedRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
 			for _, child in ipairs(self.tabContainer.children) do
@@ -445,6 +451,7 @@ local function OnAcquire(self)
 	addEntryButton:SetText("+")
 	addEntryButton:SetHeight(20)
 	addEntryButton:SetWidth(20)
+	addEntryButton:SetColor(unpack(neutralButtonColor))
 	addEntryButton:SetCallback("Clicked", function()
 		self.activeContainer:AddChild(CreateRosterEntry(self), addEntryButton)
 		for _, child in ipairs(self.activeContainer.children) do
@@ -469,18 +476,21 @@ local function OnAcquire(self)
 	local updateRosterButton = AceGUI:Create("EPButton")
 	updateRosterButton:SetText(L["Update from Shared Roster"])
 	updateRosterButton:SetWidthFromText()
+	updateRosterButton:SetColor(unpack(neutralButtonColor))
 	updateRosterButton:SetCallback("Clicked", function()
 		self:Fire("UpdateRosterButtonClicked", self.activeTab)
 	end)
 	local fillRosterButton = AceGUI:Create("EPButton")
 	fillRosterButton:SetText(L["Fill from Shared Roster"])
 	fillRosterButton:SetWidthFromText()
+	fillRosterButton:SetColor(unpack(neutralButtonColor))
 	fillRosterButton:SetCallback("Clicked", function()
 		self:Fire("FillRosterButtonClicked", self.activeTab)
 	end)
 	local importCurrentGroupButton = AceGUI:Create("EPButton")
 	importCurrentGroupButton:SetText(L["Import Current Party/Raid Group"])
 	importCurrentGroupButton:SetWidthFromText()
+	importCurrentGroupButton:SetColor(unpack(neutralButtonColor))
 	importCurrentGroupButton:SetCallback("Clicked", function()
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
 	end)

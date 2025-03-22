@@ -1,3 +1,8 @@
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPEditBox"
 local Version = 1
 
@@ -13,6 +18,7 @@ local windowBarHeight = 28
 local backdropColor = { 0, 0, 0, 1 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local okayButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local okayButtonHeight = 24
 local resizerSize = 16
 local framePadding = 15
@@ -133,6 +139,7 @@ local function ShowOkayButton(self, show, okayButtonText)
 			self.okayButton:SetText(okayButtonText or "Okay")
 			self.okayButton:SetHeight(okayButtonHeight)
 			self.okayButton:SetWidthFromText()
+			self.okayButton:SetColor(unpack(okayButtonColor))
 			self.okayButton:SetCallback("Clicked", function()
 				self:Fire("OkayButtonClicked")
 			end)

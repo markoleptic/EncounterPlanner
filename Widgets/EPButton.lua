@@ -1,3 +1,8 @@
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPButton"
 local Version = 1
 
@@ -10,12 +15,12 @@ local unpack = unpack
 local defaultFrameHeight = 24
 local defaultFrameWidth = 100
 local defaultFontHeight = 14
-local defaultBackgroundColor = { 0.725, 0.008, 0.008, 1 }
-local toggledColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 }
-local defaultBackdropColor = { 0.25, 0.25, 0.25, 1 }
-local toggledBackdropColor = { 0.35, 0.35, 0.35, 1 }
-local enabledTextColor = { 1, 1, 1 }
-local disabledTextColor = { 0.5, 0.5, 0.5 }
+local defaultBackgroundColor = Private.constants.colors.kDestructiveButtonActionColor
+local toggledColor = Private.constants.colors.kToggledButtonColor
+local defaultBackdropColor = Private.constants.colors.kDefaultButtonBackdropColor
+local toggledBackdropColor = Private.constants.colors.kToggledButtonBackdropColor
+local enabledTextColor = Private.constants.colors.kEnabledTextColor
+local disabledTextColor = Private.constants.colors.kDisabledTextColor
 local defaultIconColor = { 1, 1, 1, 1 }
 local buttonBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -155,7 +160,8 @@ local function Toggle(self)
 	if not self.toggled then
 		self.toggleIndicator:Hide()
 		self.background:ClearAllPoints()
-		self.background:SetAllPoints()
+		self.background:SetPoint("TOPLEFT")
+		self.background:SetPoint("BOTTOMRIGHT")
 		self.button:SetBackdropColor(unpack(defaultBackdropColor))
 	else
 		self.background:ClearAllPoints()
@@ -211,11 +217,6 @@ local function SetIconPadding(self, x, y)
 	self.icon:SetPoint("TOPLEFT", x, -y)
 	self.icon:SetPoint("BOTTOMRIGHT", -x, y)
 end
-
----@param self EPButton
----@param width number|nil
----@param height number|nil
-local function LayoutFinished(self, width, height) end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
@@ -283,7 +284,6 @@ local function Constructor()
 		SetEnabled = SetEnabled,
 		SetText = SetText,
 		SetWidthFromText = SetWidthFromText,
-		LayoutFinished = LayoutFinished,
 		SetBackdropColor = SetBackdropColor,
 		SetColor = SetColor,
 		SetIsToggleable = SetIsToggleable,

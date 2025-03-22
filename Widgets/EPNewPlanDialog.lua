@@ -24,6 +24,7 @@ local defaultFontSize = 14
 local contentFramePadding = { x = 15, y = 15 }
 local otherPadding = { x = 10, y = 10 }
 local windowBarHeight = 28
+local neutralButtonColor = constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
@@ -157,6 +158,7 @@ local function OnAcquire(self)
 	self.createButton = AceGUI:Create("EPButton")
 	self.createButton:SetText(L["Create"])
 	self.createButton:SetWidthFromText()
+	self.createButton:SetColor(unpack(neutralButtonColor))
 	self.createButton:SetCallback("Clicked", function()
 		self:Fire("CreateButtonClicked", self.bossDropdown:GetValue(), self.planNameLineEdit:GetText())
 	end)

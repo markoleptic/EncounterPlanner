@@ -28,7 +28,6 @@ local utilities = Private.utilities
 local ChangePlanBoss = utilities.ChangePlanBoss
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
-local CreateReminderText = utilities.CreateReminderText
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
@@ -1755,7 +1754,9 @@ function Private:CreateInterface()
 		preferencesMenuButtonBackdropColor,
 		preferencesMenuButtonBackdropBorderColor
 	)
-	rosterMenuButton:SetColor(unpack(preferencesMenuButtonColor))
+	rosterMenuButton.background:SetPoint("TOPLEFT", 1, -1)
+	rosterMenuButton.background:SetPoint("BOTTOMRIGHT", -1, 1)
+	rosterMenuButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	rosterMenuButton:SetCallback("Clicked", HandleRosterMenuButtonClicked)
 
 	local preferencesMenuButton = AceGUI:Create("EPButton")
@@ -1769,7 +1770,9 @@ function Private:CreateInterface()
 		preferencesMenuButtonBackdropColor,
 		preferencesMenuButtonBackdropBorderColor
 	)
-	preferencesMenuButton:SetColor(unpack(preferencesMenuButtonColor))
+	preferencesMenuButton.background:SetPoint("TOPLEFT", 1, -1)
+	preferencesMenuButton.background:SetPoint("BOTTOMRIGHT", -1, 1)
+	preferencesMenuButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	preferencesMenuButton:SetCallback("Clicked", HandlePreferencesMenuButtonClicked)
 
 	Private.mainFrame.menuButtonContainer:AddChildren(
@@ -1862,6 +1865,7 @@ function Private:CreateInterface()
 	simulateRemindersButton:SetText(L["Simulate Reminders"])
 	simulateRemindersButton:SetWidthFromText()
 	simulateRemindersButton:SetHeight(topContainerWidgetHeight)
+	simulateRemindersButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	simulateRemindersButton:SetCallback("Clicked", HandleSimulateRemindersButtonClicked)
 	simulateRemindersButton:SetCallback("OnEnter", HandlePlanReminderCheckBoxOrButtonEnter)
 	simulateRemindersButton:SetCallback("OnLeave", HandlePlanReminderEnableCheckBoxOrButtonLeave)
@@ -1881,12 +1885,14 @@ function Private:CreateInterface()
 	local sendPlanButton = AceGUI:Create("EPButton")
 	sendPlanButton:SetText(L["Send Plan to Group"])
 	sendPlanButton:SetWidthFromText()
+	sendPlanButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	sendPlanButton:SetHeight(topContainerWidgetHeight)
 	sendPlanButton:SetCallback("Clicked", Private.SendPlanToGroup)
 
 	local externalTextButton = AceGUI:Create("EPButton")
 	externalTextButton:SetText(L["External Text"])
 	externalTextButton:SetWidthFromText()
+	externalTextButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	externalTextButton:SetHeight(topContainerWidgetHeight)
 	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
 

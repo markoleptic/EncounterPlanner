@@ -1,3 +1,8 @@
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPCheckBox"
 local Version = 1
 
@@ -9,7 +14,8 @@ local unpack = unpack
 local defaultFrameHeight = 24
 local defaultFrameWidth = 100
 local spacingBetweenCheckAndLabel = 4
-local buttonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0, 0.5 }
+
+local buttonColor = Private.constants.colors.kNeutralButtonActionColor
 local buttonBackdropColor = { 0, 0, 0, 0 }
 local checkBackdropColor = { 0, 0, 0, 0 }
 local checkBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }

@@ -1,8 +1,8 @@
-local _, Namespace = ...
-local L = Namespace.L
+local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 
 local Type = "EPOptions"
 local Version = 1
@@ -53,6 +53,7 @@ local frameWidth = 500
 local groupBoxBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local indentWidth = 20
 local labelTextColor = { 1, 1, 1, 1 }
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local preferredHeight = 600
 local optionLabelFontSize = 14
 local radioButtonGroupSpacing = { 8, 0 }
@@ -483,6 +484,7 @@ do
 		addEntryButton:SetText("+")
 		addEntryButton:SetHeight(deleteButtonSize)
 		addEntryButton:SetWidth(deleteButtonSize)
+		addEntryButton:SetColor(unpack(neutralButtonColor))
 		addEntryButton:SetCallback("Clicked", function()
 			local container, space = CreateEntry(activeContainer, nil, nil)
 			activeContainer:InsertChildren(addEntryButton, container, space)
@@ -625,6 +627,7 @@ local function CreateFrameChooser(self, option, index, label)
 	end
 
 	local button = AceGUI:Create("EPButton")
+	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(L["Choose"])
 	button:SetRelativeWidth(0.4)
 	button:SetCallback("Clicked", function()
@@ -1035,6 +1038,7 @@ local function CreateCheckBoxBesideButton(self, option)
 	widget:SetText(option.label)
 
 	local button = AceGUI:Create("EPButton")
+	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(option.buttonText)
 	button:SetRelativeWidth(0.5)
 	button:SetCallback("Clicked", option.buttonCallback)
@@ -1056,6 +1060,7 @@ local function CreateCenteredButton(self, option)
 	container:SetSelfAlignment("center")
 
 	local button = AceGUI:Create("EPButton")
+	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(option.label)
 	button:SetWidthFromText()
 
@@ -1102,6 +1107,7 @@ local function CreateDropdownBesideButton(self, option, index)
 	dropdown:SetValue(option.get())
 
 	local button = AceGUI:Create("EPButton")
+	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(option.buttonText)
 	button:SetRelativeWidth(0.3)
 
@@ -1740,6 +1746,7 @@ local function AddOptionTab(self, tabName, options, categories)
 	tab:SetIsToggleable(true)
 	tab:SetText(tabName)
 	tab:SetWidthFromText()
+	tab:SetColor(unpack(neutralButtonColor))
 	self.tabTitleContainer:AddChild(tab)
 	tab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then

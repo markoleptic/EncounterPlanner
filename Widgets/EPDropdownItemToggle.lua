@@ -1,3 +1,8 @@
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
@@ -15,6 +20,7 @@ local checkSize = 16
 local fontSize = 14
 local dropdownItemHeight = 24
 local subHeight = 18
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
@@ -213,7 +219,7 @@ function EPItemBase.Create(type)
 	end
 
 	local highlight = frame:CreateTexture(type .. "Highlight" .. count, "OVERLAY")
-	highlight:SetColorTexture(0.25, 0.25, 0.5, 0.5)
+	highlight:SetColorTexture(unpack(neutralButtonColor))
 	highlight:SetPoint("TOPLEFT", 1, 0)
 	highlight:SetPoint("BOTTOMRIGHT", -1, 0)
 	highlight:SetBlendMode("ADD")

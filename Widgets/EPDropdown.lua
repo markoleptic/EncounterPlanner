@@ -1,3 +1,8 @@
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
@@ -22,9 +27,9 @@ local pulloutBackdropColor = { 0.1, 0.1, 0.1, 1 }
 local pulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 local dropdownBackdropColor = { 0.1, 0.1, 0.1, 1 }
 local dropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local dropdownButtonCoverColor = { 0.25, 0.25, 0.5, 0.5 }
-local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
-local enabledTextColor = { 1, 1, 1, 1 }
+local disabledTextColor = Private.constants.colors.kDisabledTextColor
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
+local enabledTextColor = Private.constants.colors.kEnabledTextColor
 local defaultDropdownWidth = 200
 local defaultPulloutWidth = 200
 local defaultMaxItems = 13
@@ -1173,24 +1178,7 @@ do
 		frame:SetBackdropColor(unpack(dropdownBackdropColor))
 		frame:SetBackdropBorderColor(unpack(dropdownBackdropBorderColor))
 
-		local dropdown = CreateFrame("Frame", Type .. "Dropdown" .. count, frame, "UIDropDownMenuTemplate")
-		dropdown:ClearAllPoints()
-		dropdown:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-		dropdown:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-		dropdown:SetScript("OnHide", nil)
-
-		local left = _G[dropdown:GetName() .. "Left"]
-		local middle = _G[dropdown:GetName() .. "Middle"]
-		local right = _G[dropdown:GetName() .. "Right"]
-
-		left:ClearAllPoints()
-		middle:ClearAllPoints()
-		right:ClearAllPoints()
-		left:Hide()
-		middle:Hide()
-		right:Hide()
-
-		local button = _G[dropdown:GetName() .. "Button"]
+		local button = CreateFrame("Button", Type .. "Button" .. count, frame)
 		button:ClearAllPoints()
 		button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 		button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
@@ -1205,10 +1193,10 @@ do
 		buttonCover:SetPoint("TOPLEFT")
 		buttonCover:SetPoint("BOTTOMRIGHT")
 
-		local background = dropdown:CreateTexture(Type .. "Background" .. count, "BORDER")
-		background:SetPoint("TOPLEFT", buttonCover)
-		background:SetPoint("BOTTOMRIGHT", buttonCover)
-		background:SetColorTexture(unpack(dropdownButtonCoverColor))
+		local background = frame:CreateTexture(Type .. "Background" .. count, "BORDER")
+		background:SetPoint("TOPLEFT", buttonCover, 1, -1)
+		background:SetPoint("BOTTOMRIGHT", buttonCover, -1, 1)
+		background:SetColorTexture(unpack(neutralButtonColor))
 		background:Hide()
 
 		local fadeInGroup = background:CreateAnimationGroup()
@@ -1230,10 +1218,6 @@ do
 		fadeOut:SetToAlpha(0)
 		fadeOut:SetDuration(0.3)
 		fadeOut:SetSmoothing("OUT")
-
-		local textHide = _G[dropdown:GetName() .. "Text"]
-		textHide:ClearAllPoints()
-		textHide:Hide()
 
 		local text = frame:CreateFontString(nil, "OVERLAY")
 		text:SetWordWrap(false)
@@ -1288,7 +1272,6 @@ do
 			frame = frame,
 			type = Type,
 			count = count,
-			dropdown = dropdown,
 			text = text,
 			buttonCover = buttonCover,
 			button = button,

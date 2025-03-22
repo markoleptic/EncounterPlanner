@@ -1,5 +1,8 @@
-local _, Namespace = ...
-local L = Namespace.L
+local AddOnName, Namespace = ...
+
+---@class Private
+local Private = Namespace
+local L = Private.L
 
 local Type = "EPMessageBox"
 local Version = 1
@@ -20,6 +23,7 @@ local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
 local defaultButtonHeight = 24
 local framePadding = 15
 local defaultFontSize = 14
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local title = "Export as MRT Note"
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
@@ -75,6 +79,7 @@ local function OnAcquire(self)
 	acceptButton:SetText(L["Okay"])
 	acceptButton:SetWidthFromText()
 	acceptButton:SetHeight(defaultButtonHeight)
+	acceptButton:SetColor(unpack(neutralButtonColor))
 	acceptButton:SetCallback("Clicked", function()
 		self:Fire("Accepted")
 	end)
@@ -148,6 +153,7 @@ local function AddButton(self, text, beforeWidget)
 	button:SetText(text)
 	button:SetWidthFromText()
 	button:SetHeight(defaultButtonHeight)
+	button:SetColor(unpack(neutralButtonColor))
 	button:SetCallback("Clicked", function()
 		self:Fire(text .. "Clicked")
 	end)

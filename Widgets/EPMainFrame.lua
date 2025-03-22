@@ -22,6 +22,7 @@ local statusBarHeight = 48
 local statusBarPadding = 5
 local buttonWidth = 200
 local padding = { top = 10, right = 10, bottom = 10, left = 10 }
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
 local editBoxFrameBackdropColor = { 0, 0, 0, 1.0 }
@@ -172,6 +173,7 @@ local function OnAcquire(self)
 	self.collapseAllButton:SetWidth(buttonSize)
 	self.collapseAllButton:SetHeight(buttonSize)
 	self.collapseAllButton:SetBackdropColor(unpack(backdropColor))
+	self.collapseAllButton:SetColor(unpack(neutralButtonColor))
 	self.collapseAllButton.frame:SetParent(self.frame)
 	self.collapseAllButton:SetCallback("Clicked", function()
 		self:Fire("CollapseAllButtonClicked")
@@ -183,6 +185,7 @@ local function OnAcquire(self)
 	self.expandAllButton:SetWidth(buttonSize)
 	self.expandAllButton:SetHeight(buttonSize)
 	self.expandAllButton:SetBackdropColor(unpack(backdropColor))
+	self.expandAllButton:SetColor(unpack(neutralButtonColor))
 	self.expandAllButton.frame:SetParent(self.frame)
 	self.expandAllButton:SetCallback("Clicked", function()
 		self:Fire("ExpandAllButtonClicked")
@@ -211,6 +214,7 @@ local function OnAcquire(self)
 	userGuideButton:SetText(format("|T%s:%d|t %s", helpIcon, 0, L["User Guide"]))
 	userGuideButton:SetWidth(halfButtonWidth)
 	userGuideButton:SetHeight(buttonHeight)
+	userGuideButton:SetColor(unpack(neutralButtonColor))
 	userGuideButton:SetCallback("Clicked", function()
 		HandleButtonClicked(self, userGuideButton.frame, "BOTTOMLEFT", "TOPLEFT", userGuideUrl)
 	end)
@@ -219,6 +223,7 @@ local function OnAcquire(self)
 	discordButton:SetText(format("|T%s:%d|t %s", discordIcon, 0, L["Discord"]))
 	discordButton:SetWidth(halfButtonWidth)
 	discordButton:SetHeight(buttonHeight)
+	discordButton:SetColor(unpack(neutralButtonColor))
 	discordButton:SetCallback("Clicked", function()
 		HandleButtonClicked(self, discordButton.frame, "BOTTOM", "TOP", discordUrl)
 	end)

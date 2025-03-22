@@ -1,7 +1,8 @@
-local _, Namespace = ...
+local AddOnName, Namespace = ...
 
----@class Constants
-local constants = Namespace.constants
+---@class Private
+local Private = Namespace
+
 local L = Namespace.L
 local Type = "EPAbilityEntry"
 local Version = 1
@@ -21,6 +22,8 @@ local padding = { x = 2, y = 2 }
 local backdropColor = { 0, 0, 0, 0.9 }
 local checkBackdropColor = { 0, 0, 0, 0 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
+local textAssignmentTexture = Private.constants.kTextAssignmentTexture
+local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local listItemBackdrop = {
 	bgFile = nil,
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -199,7 +202,7 @@ end
 ---@param key string|table|nil
 local function SetGeneralAbility(self, key)
 	self.label:SetText(L["Text"], padding.x * 2)
-	self.label:SetIcon(constants.kTextAssignmentTexture, padding.x, padding.y, 0)
+	self.label:SetIcon(textAssignmentTexture, padding.x, padding.y, 0)
 	self.key = key
 end
 
@@ -312,6 +315,7 @@ local function ShowSwapIcon(self, show)
 		self.swap:SetWidth(checkSize)
 		self.swap:SetHeight(checkSize)
 		self.swap:SetBackdropColor(unpack(checkBackdropColor))
+		self.swap:SetColor(unpack(neutralButtonColor))
 		self.swap:SetCallback("Clicked", function()
 			if self.enabled then
 				if self.dropdown.frame:IsShown() then
