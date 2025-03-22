@@ -556,11 +556,11 @@ function AddOn:SlashCommand(input)
 			else
 				LDBIcon:Show(AddOnName)
 			end
-		--@debug@
-		elseif trimmed == "quick start" then
-			if not Private.quickStart then
-				Private:OpenQuickStart()
+		elseif trimmed == "tut" or trimmed == "tutorial" then
+			if not Private.tutorial then
+				Private:OpenTutorial()
 			end
+		--@debug@
 		elseif trimmed == "dolayout" then
 			if Private.mainFrame then
 				Private.mainFrame:DoLayout()

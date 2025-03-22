@@ -93,8 +93,8 @@
 ---@alias EPStatusBarType
 ---|"EPStatusBar"
 
----@alias EPQuickStartDialogType
----|"EPQuickStartDialog"
+---@alias EPTutorialType
+---|"EPTutorial"
 
 ---@alias EPWidgetType
 ---| EPSpacerType
@@ -120,7 +120,7 @@
 ---| EPNewPlanDialog
 ---| EPScrollFrame
 ---| EPStatusBar
----| EPQuickStartDialog
+---| EPTutorial
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -258,8 +258,8 @@ function AceGUI:Create(type) end
 ---@return EPStatusBar
 function AceGUI:Create(type) end
 
----@param type EPQuickStartDialogType
----@return EPQuickStartDialog
+---@param type EPTutorialType
+---@return EPTutorial
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

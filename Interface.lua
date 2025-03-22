@@ -322,6 +322,10 @@ do -- Roster Editor
 			targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 			Private.assignmentEditor:HandleRosterChanged()
 		end
+
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+		end
 	end
 
 	---@param rosterTab EPRosterEditorTab
@@ -579,6 +583,11 @@ do -- Assignment Editor
 		end
 
 		interfaceUpdater.UpdateFromAssignment(dungeonEncounterID, assignment, updateFields, true, updateAssignments)
+		if dataType == "SpellAssignment" or dataType == "OptionalText" then
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName)
+			end
+		end
 	end
 
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
@@ -604,6 +613,9 @@ do -- Assignment Editor
 					timeline:ClearSelectedAssignments()
 					timeline:ClearSelectedBossAbilities()
 				end
+			end
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "released")
 			end
 			Private.assignmentEditor = nil
 		end)
@@ -984,8 +996,10 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 	end
 end
 
+---@param widget EPTimeline|nil
 ---@param uniqueID integer
-local function HandleTimelineAssignmentClicked(_, _, uniqueID)
+---@param timeDifference number|nil
+local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifference)
 	if Private.IsSimulatingBoss() then
 		return
 	end
@@ -995,6 +1009,9 @@ local function HandleTimelineAssignmentClicked(_, _, uniqueID)
 			Private.CreateAssignmentEditor()
 		end
 		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, false)
+		if Private.activeTutorialCallbackName and widget then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, timeDifference)
+		end
 	end
 end
 
@@ -1021,6 +1038,9 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(addAssigneeText)
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(Private.activeTutorialCallbackName)
+	end
 end
 
 ---@param assignee string
@@ -1033,6 +1053,9 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 		tinsert(GetCurrentAssignments(), assignment)
 		UpdateAllAssignments(false, encounterID)
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName)
+		end
 	end
 end
 
@@ -1209,14 +1232,23 @@ do -- Plan Menu Button Handlers
 			end)
 			newPlanDialog:SetCallback("CloseButtonClicked", function()
 				Private.newPlanDialog:Release()
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+				end
 			end)
 			newPlanDialog:SetCallback("CancelButtonClicked", function()
 				Private.newPlanDialog:Release()
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+				end
 			end)
 			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
 				local newBossName = GetBossName(bossDungeonEncounterID) --[[@as string]]
 				widget:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
 				widget:SetCreateButtonEnabled(true)
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "validate")
+				end
 			end)
 			newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
 				planName = planName:trim()
@@ -1230,6 +1262,9 @@ do -- Plan Menu Button Handlers
 					AddPlanToDropdown(newPlan, true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
+					if Private.activeTutorialCallbackName then
+						Private.callbacks:Fire(Private.activeTutorialCallbackName, "created")
+					end
 				end
 			end)
 			newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
@@ -1238,6 +1273,9 @@ do -- Plan Menu Button Handlers
 					widget:SetCreateButtonEnabled(false)
 				else
 					widget:SetCreateButtonEnabled(true)
+				end
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "validate")
 				end
 			end)
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -1428,6 +1466,9 @@ local function HandlePlanReminderEnableCheckBoxValueChanged(_, _, value)
 	local plan = AddOn.db.profile.plans[planName]
 	plan.remindersEnabled = value
 	interfaceUpdater.UpdatePlanDropdownItemCustomTexture(planName, value)
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(Private.activeTutorialCallbackName, value)
+	end
 end
 
 ---@param checkBoxOrButton EPCheckBox|EPButton
@@ -1551,7 +1592,10 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absolu
 	local sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 	timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
 	timeline:UpdateAssignmentsAndTickMarks()
-	HandleTimelineAssignmentClicked(_, _, newAssignment.uniqueID)
+	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(Private.activeTutorialCallbackName)
+	end
 end
 
 ---@param timeline EPTimeline
@@ -1626,8 +1670,8 @@ local function HandleMainFrameReleased()
 	if Private.optionsMenu then -- Takes care of messageAnchor and progressBarAnchor
 		Private.optionsMenu:Release()
 	end
-	if Private.quickStart then
-		Private.quickStart:Release()
+	if Private.tutorial then
+		Private.tutorial:Release()
 	end
 end
 

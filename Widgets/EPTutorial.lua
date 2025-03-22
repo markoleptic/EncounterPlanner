@@ -4,7 +4,7 @@ local _, Namespace = ...
 local Private = Namespace
 local L = Private.L
 
-local Type = "EPQuickStartDialog"
+local Type = "EPTutorial"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
@@ -22,9 +22,10 @@ local defaultFontSize = 14
 local contentFramePadding = { x = 10, y = 10 }
 local otherPadding = { x = 5, y = 5 }
 local windowBarHeight = 28
+local buttonColor = Private.constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local title = L["Quick Start"]
+local title = L["Tutorial"]
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -41,20 +42,27 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
+local playerClass = select(2, UnitClass("player"))
+local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 
 ---@param container EPContainer
 local function SetButtonWidths(container)
 	local maxWidth = 0
 	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
+		if child.type == "EPButton" then
+			maxWidth = max(maxWidth, child.frame:GetWidth())
+		end
 	end
 	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
+		if child.type == "EPButton" then
+			child:SetWidth(maxWidth)
+		end
 	end
 end
 
----@param self EPQuickStartDialog
+---@param self EPTutorial
 local function OnAcquire(self)
+	self.previousText = ""
 	self.currentStep = 0
 	self.totalSteps = 0
 	self.frame:SetSize(defaultWidth, defaultHeight)
@@ -73,6 +81,9 @@ local function OnAcquire(self)
 
 	self.text:SetPoint("TOPLEFT", self.container.frame, "TOPLEFT")
 	self.text:SetPoint("BOTTOMRIGHT", self.container.frame, "BOTTOMRIGHT")
+	self.text:SetScript("OnTextChanged", function()
+		self.text:SetText(self.previousText)
+	end)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
@@ -90,28 +101,36 @@ local function OnAcquire(self)
 	previousButton:SetText(L["Previous"])
 	previousButton:SetWidthFromText()
 	previousButton:SetHeight(defaultButtonHeight)
+	previousButton:SetColor(unpack(buttonColor))
 	previousButton:SetCallback("Clicked", function()
 		self:Fire("PreviousButtonClicked")
 	end)
+	self.previousButton = previousButton
 
 	local nextButton = AceGUI:Create("EPButton")
 	nextButton:SetText(L["Next"])
 	nextButton:SetWidthFromText()
 	nextButton:SetHeight(defaultButtonHeight)
+	nextButton:SetColor(unpack(buttonColor))
 	nextButton:SetCallback("Clicked", function()
 		self:Fire("NextButtonClicked")
 	end)
+	self.nextButton = nextButton
 
+	local spacer = AceGUI:Create("EPSpacer")
+	spacer:SetWidth(0)
 	local skipButton = AceGUI:Create("EPButton")
-	skipButton:SetText(L["Skip Quick Start"])
+	skipButton:SetText(L["Skip Tutorial"])
 	skipButton:SetWidthFromText()
 	skipButton:SetHeight(defaultButtonHeight)
 	skipButton:SetCallback("Clicked", function()
 		self:Fire("SkipButtonClicked")
 	end)
+	self.skipButton = skipButton
 
 	self.buttonContainer:AddChildNoDoLayout(previousButton)
 	self.buttonContainer:AddChildNoDoLayout(nextButton)
+	self.buttonContainer:AddChildNoDoLayout(spacer)
 	self.buttonContainer:AddChildNoDoLayout(skipButton)
 	SetButtonWidths(self.buttonContainer)
 	self.buttonContainer:DoLayout()
@@ -124,7 +143,7 @@ local function OnAcquire(self)
 	self.frame:Show()
 end
 
----@param self EPQuickStartDialog
+---@param self EPTutorial
 local function OnRelease(self)
 	self.container:Release()
 	self.container = nil
@@ -136,11 +155,9 @@ local function OnRelease(self)
 	self.totalSteps = nil
 end
 
----@param self EPQuickStartDialog
+---@param self EPTutorial
 local function InitProgressBar(self, totalSteps, barTexture)
 	self.totalSteps = totalSteps
-	local playerClass = select(2, UnitClass("player"))
-	local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 	local preferences = {
 		enabled = true,
 		font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
@@ -165,22 +182,28 @@ local function InitProgressBar(self, totalSteps, barTexture)
 	self.progressBar:RestyleBar()
 end
 
----@param self EPQuickStartDialog
+---@param self EPTutorial
 ---@param step integer
-local function SetCurrentStep(self, step, text)
+---@param text string
+---@param enableNext boolean
+local function SetCurrentStep(self, step, text, enableNext)
 	self.currentStep = step
+	self.previousButton:SetEnabled(step > 1)
+	self.nextButton:SetEnabled(enableNext)
 	if step == self.totalSteps then
 		self.buttonContainer.children[2]:SetText("Finish")
 		SetButtonWidths(self.buttonContainer)
 		self.buttonContainer:DoLayout()
 	end
 	self.text:SetText(text)
+	self.previousText = text
+
 	self.progressBar.statusBar:SetValue(step)
 	self.progressBar.duration:SetFormattedText("%d/%d", step, self.totalSteps)
 	self:Resize()
 end
 
----@param self EPQuickStartDialog
+---@param self EPTutorial
 local function Resize(self)
 	local buttonWidth = self.buttonContainer.frame:GetWidth()
 	local width = buttonWidth + contentFramePadding.x * 2
@@ -188,8 +211,10 @@ local function Resize(self)
 	self.progressBar:RestyleBar()
 	self.container.frame:SetWidth(width - contentFramePadding.x * 2)
 	self.text:ClearAllPoints()
+	self.measureText:SetWidth(width - contentFramePadding.x * 2)
+	self.measureText:SetText(self.text:GetText())
 	self.text:SetWidth(width - contentFramePadding.x * 2)
-	self.container.frame:SetHeight(self.text:GetHeight())
+	self.container.frame:SetHeight(self.measureText:GetHeight())
 	self.text:SetPoint("CENTER", self.container.frame)
 
 	local containerHeight = self.container.frame:GetHeight()
@@ -212,12 +237,24 @@ local function Constructor()
 	frame:SetMovable(true)
 	frame:SetFrameStrata("DIALOG")
 
-	local text = frame:CreateFontString(nil, "OVERLAY")
-	text:SetWordWrap(true)
-	text:SetSpacing(4)
+	local measureText = frame:CreateFontString(nil, "OVERLAY")
+	measureText:SetWordWrap(true)
+	measureText:SetSpacing(4)
+	measureText:SetJustifyH("CENTER")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		text:SetFont(fPath, defaultFontSize)
+		measureText:SetFont(fPath, defaultFontSize, "")
+	end
+
+	local text = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
+	text:SetSpacing(4)
+	text:SetMultiLine(true)
+	text:EnableMouse(true)
+	text:SetAutoFocus(false)
+	text:SetFontObject("ChatFontNormal")
+	text:SetJustifyH("CENTER")
+	if fPath then
+		text:SetFont(fPath, defaultFontSize, "")
 	end
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
@@ -243,13 +280,17 @@ local function Constructor()
 		frame:StopMovingOrSizing()
 	end)
 
-	---@class EPQuickStartDialog : AceGUIWidget
+	---@class EPTutorial : AceGUIWidget
 	---@field closeButton EPButton
 	---@field container EPContainer
 	---@field buttonContainer EPContainer
 	---@field progressBar EPProgressBar
 	---@field currentStep integer
 	---@field totalSteps integer
+	---@field previousButton EPButton
+	---@field nextButton EPButton
+	---@field skipButton EPButton
+	---@field previousText string
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -260,6 +301,7 @@ local function Constructor()
 		type = Type,
 		windowBar = windowBar,
 		text = text,
+		measureText = measureText,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

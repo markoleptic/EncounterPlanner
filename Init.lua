@@ -890,7 +890,7 @@ Private.optionsMenu = nil --[[@as EPOptions]]
 Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
 Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
 Private.externalTextEditor = nil --[[@as EPEditBox]]
-Private.quickStart = nil --[[@as EPQuickStartDialog]]
+Private.tutorial = nil --[[@as EPTutorial]]
 Private.tutorialCallbackObject = nil ---@type table|nil
 Private.activeTutorialCallbackName = nil ---@type string|nil
 

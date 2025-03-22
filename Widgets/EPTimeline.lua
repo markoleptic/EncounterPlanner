@@ -758,7 +758,7 @@ end
 -- Called when an assignment has stopped being dragged.
 ---@param self EPTimeline
 ---@param assignmentFrame AssignmentFrame
----@return boolean
+---@return boolean|number
 local function StopMovingAssignment(self, assignmentFrame)
 	assignmentIsDragging = false
 	assignmentFrame:SetScript("OnUpdate", nil)
@@ -807,14 +807,17 @@ local function StopMovingAssignment(self, assignmentFrame)
 			timelineAssignment.startTime = Round(time, 1)
 			local relativeTime = self.CalculateAssignmentTimeFromStart(timelineAssignment)
 			local assignment = timelineAssignment.assignment
+			local previousTime = assignment--[[@as TimedAssignment]].time
+
 			if relativeTime then
 				assignment--[[@as CombatLogEventAssignment]].time = relativeTime
 			else
 				assignment--[[@as TimedAssignment]].time = timelineAssignment.startTime
 			end
+			return abs(previousTime - assignment--[[@as TimedAssignment]].time)
 		end
 	end
-	return false
+	return 0.0
 end
 
 -- Called while an assignment is being dragged.
@@ -1023,9 +1026,10 @@ local function HandleAssignmentMouseUp(self, frame, mouseButton)
 	if isSimulating then
 		return
 	end
-
+	local result = nil
 	if assignmentIsDragging then
-		if StopMovingAssignment(self, frame) then
+		result = StopMovingAssignment(self, frame)
+		if type(result) == "boolean" and result == true then
 			UpdateTimeLabels(self)
 			return
 		end
@@ -1036,7 +1040,7 @@ local function HandleAssignmentMouseUp(self, frame, mouseButton)
 	end
 
 	if frame.uniqueAssignmentID then
-		self:Fire("AssignmentClicked", frame.uniqueAssignmentID)
+		self:Fire("AssignmentClicked", frame.uniqueAssignmentID, result)
 	end
 end
 
@@ -2663,6 +2667,7 @@ local function Constructor()
 		SetIsSimulating = SetIsSimulating,
 		GetSelectedAssignments = GetSelectedAssignments,
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
+		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

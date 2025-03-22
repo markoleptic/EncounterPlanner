@@ -131,6 +131,7 @@ local function OnAcquire(self)
 	self.minimizeButton:SetCallback("Clicked", function()
 		self.frame:Hide()
 		self.minimizeFrame:Show()
+		self:Fire("MinimizeButtonClicked")
 	end)
 
 	self.closeButtonMinimizeFrame = AceGUI:Create("EPButton")
