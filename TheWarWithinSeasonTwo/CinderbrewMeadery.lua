@@ -27,20 +27,20 @@ Private.dungeonInstances[2661] = DungeonInstance:New({
 			instanceID = 2661,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 442525, combatLogEventType = "SCC" },
+				[2] = { combatLogEventSpellID = 442525, combatLogEventType = "SCS" },
 				[3] = { combatLogEventSpellID = 442525, combatLogEventType = "SAR" },
-				[4] = { combatLogEventSpellID = 442525, combatLogEventType = "SCC" },
+				[4] = { combatLogEventSpellID = 442525, combatLogEventType = "SCS" },
 				[5] = { combatLogEventSpellID = 442525, combatLogEventType = "SAR" },
 			},
 			abilities = {
 				[442525] = BossAbility:New({ -- Happy Hour (33% and 66% health)
 					phases = {
-						[2] = BossAbilityPhase:New({ -- Not a true phase
+						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
-						[4] = BossAbilityPhase:New({ -- Not a true phase
+						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
