@@ -2489,6 +2489,9 @@ do
 		end
 		if assignment then
 			assignment.assignee = assignee
+			if spellID then
+				assignment.spellID = spellID
+			end
 		end
 		if getmetatable(assignment) == CombatLogEventAssignment then
 			Utilities.UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], encounterID)
