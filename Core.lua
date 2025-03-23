@@ -7,8 +7,6 @@ local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
-local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
-local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
@@ -18,6 +16,7 @@ local utilities = Private.utilities
 
 local AceDB = LibStub("AceDB-3.0")
 local format = string.format
+local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
@@ -266,10 +265,6 @@ do -- Profile updating and refreshing
 	local Plan = Private.classes.Plan
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
-	local ChangePlanBoss = utilities.ChangePlanBoss
-	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
-	local GetBoss = bossUtilities.GetBoss
-	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 	---@param assignment CombatLogEventAssignment
 	---@param absoluteSpellCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
@@ -290,11 +285,10 @@ do -- Profile updating and refreshing
 		end
 	end
 
-	local getmetatable = getmetatable
-	local next = next
-	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
-
 	--@debug@
+	local GetSpellName = C_Spell.GetSpellName
+	local random = math.random
+
 	---@param profile DefaultProfile
 	local function CreateTestPlans(profile)
 		for k, _ in pairs(profile.plans) do
@@ -317,8 +311,8 @@ do -- Profile updating and refreshing
 				for _, abilityInstance in ipairs(instances) do
 					local types = boss.abilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
 					if #types > 0 then
-						local allowedType = types[math.random(1, #types)]
-						local assignment = Private.classes.CombatLogEventAssignment:New()
+						local allowedType = types[random(1, #types)]
+						local assignment = CombatLogEventAssignment:New()
 						assignment.assignee = name
 						assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
 						assignment.phase = abilityInstance.bossPhaseIndex
@@ -327,7 +321,7 @@ do -- Profile updating and refreshing
 						assignment.spellCount = abilityInstance.spellCount
 						assignment.time = 8.00
 						assignment.spellID = 1
-						assignment.text = C_Spell.GetSpellName(abilityInstance.bossAbilitySpellID)
+						assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
 						tinsert(plan.assignments, assignment)
 					end
 				end
@@ -359,6 +353,19 @@ do -- Profile updating and refreshing
 	end
 	--@end-debug@
 
+	local getmetatable = getmetatable
+	local next = next
+
+	local GenerateBossTables = bossUtilities.GenerateBossTables
+	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
+	local GetBoss = bossUtilities.GetBoss
+	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local SetPhaseCounts = bossUtilities.SetPhaseCounts
+	local SetPhaseDurations = bossUtilities.SetPhaseDurations
+
+	local ChangePlanBoss = utilities.ChangePlanBoss
+	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
+
 	-- Sets the metatables for assignments and performs a small amount of assignment validation.
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
@@ -378,11 +385,10 @@ do -- Profile updating and refreshing
 				local customPhaseDurations = AddOn.db.profile.plans[planName].customPhaseDurations
 				local customPhaseCounts = AddOn.db.profile.plans[planName].customPhaseCounts
 
-				bossUtilities.SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
-				customPhaseCounts =
-					bossUtilities.SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
+				SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
+				customPhaseCounts = SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
 
-				bossUtilities.GenerateBossTables(boss)
+				GenerateBossTables(boss)
 				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
 				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
 
@@ -429,9 +435,6 @@ do -- Profile updating and refreshing
 		end
 	end
 
-	local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
-	local RepopulatePlanWidgets = interfaceUpdater.RepopulatePlanWidgets
-
 	---@param db AceDBObject-3.0
 	---@param newProfile string|nil
 	function AddOn:Refresh(_, db, newProfile)
@@ -452,8 +455,8 @@ do -- Profile updating and refreshing
 			if timeline then
 				timeline:SetPreferences(db.profile.preferences)
 			end
-			RepopulatePlanWidgets()
-			UpdateFromPlan(plans[db.profile.lastOpenPlan])
+			interfaceUpdater.RepopulatePlanWidgets()
+			interfaceUpdater.UpdateFromPlan(plans[db.profile.lastOpenPlan])
 		end
 		if Private.optionsMenu then
 			Private:RecreateAnchors()
@@ -471,10 +474,8 @@ function AddOn:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileReset", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileShutdown", "OnProfileShutdown")
-
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
-
 	minimapIconObject.RegisterMinimapIcons(self)
 
 	self.OnInitialize = nil

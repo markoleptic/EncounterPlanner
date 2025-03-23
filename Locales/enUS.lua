@@ -400,3 +400,5 @@ L["Tutorial"] = true
 L["Previous"] = true
 L["Next"] = true
 L["Skip Tutorial"] = true
+L["Finish"] = true
+L["Start"] = true

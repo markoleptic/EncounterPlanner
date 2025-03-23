@@ -107,6 +107,26 @@ local function HandleCreateAssignmentEditor(self)
 end
 
 ---@param self Private
+---@return integer|nil
+local function FindCurrentAssignmentOrder(self)
+	if self.mainFrame and self.mainFrame.timeline then
+		if self.assignmentEditor then
+			local assignmentID = self.assignmentEditor:GetAssignmentID()
+			if assignmentID then
+				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
+					self.mainFrame.timeline.timelineAssignments,
+					assignmentID
+				)
+				if timelineAssignment then
+					return timelineAssignment.order - 1
+				end
+			end
+		end
+	end
+	return nil
+end
+
+---@param self Private
 local function EnsureAssigneeIsExpanded(self)
 	local timeline = self.mainFrame.timeline
 	if timeline then
@@ -137,15 +157,34 @@ local function IsSelfPresentInPlan()
 end
 
 ---@param self Private
-local function IsSpellChanged(self)
+local function IsTimeCorrect(self, time)
 	if self.assignmentEditor then
 		local assignmentID = self.assignmentEditor:GetAssignmentID()
 		if assignmentID then
 			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 			if assignment then
-				local name = C_Spell.GetSpellName(assignment.spellID)
-				if name then
-					return true
+				return abs(assignment.time - time) < 0.01
+			end
+		end
+	end
+	return false
+end
+
+---@param self Private
+---@param combatLogEventType CombatLogEventType
+local function IsCombatLogEventTypeCorrect(self, combatLogEventType)
+	if self.assignmentEditor then
+		local assignmentID = self.assignmentEditor:GetAssignmentID()
+		if assignmentID then
+			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+			if assignment then
+				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+					if
+						assignment--[[@as CombatLogEventAssignment]].combatLogEventType == combatLogEventType
+						and assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID == 442525
+					then
+						return true
+					end
 				end
 			end
 		end
@@ -154,6 +193,37 @@ local function IsSpellChanged(self)
 end
 
 ---@param self Private
+---@param requiredCount integer
+---@param unique boolean|nil
+---@param requiredUniqueCount integer|nil
+---@param exactUnique boolean|nil
+local function IsSpellChanged(self, requiredCount, unique, requiredUniqueCount, exactUnique)
+	local count = 0
+	local uniqueCount = 0
+	local uniqueSet = {}
+	if self.assignmentEditor then
+		for _, assignment in ipairs(GetCurrentAssignments()) do
+			if assignment.spellID > Private.constants.kTextAssignmentSpellID then
+				if unique and not uniqueSet[assignment.spellID] then
+					uniqueCount = uniqueCount + 1
+					uniqueSet[assignment.spellID] = true
+				end
+				count = count + 1
+			end
+		end
+	end
+	if unique and requiredUniqueCount then
+		if exactUnique then
+			return count >= requiredCount and uniqueCount == requiredUniqueCount
+		else
+			return count >= requiredCount and uniqueCount >= requiredUniqueCount
+		end
+	end
+	return count >= requiredCount
+end
+
+---@param self Private
+---@return boolean
 local function IsTextChanged(self)
 	if self.assignmentEditor then
 		local assignmentID = self.assignmentEditor:GetAssignmentID()
@@ -169,8 +239,51 @@ local function IsTextChanged(self)
 	return false
 end
 
+---@return Assignment|CombatLogEventAssignment|TimedAssignment|nil
+local function FindPhaseOneAssignment()
+	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	if boss then
+		local phaseOneDuration = boss.phases[1].duration
+		for _, assignment in ipairs(GetCurrentAssignments()) do
+			if getmetatable(assignment) == Private.classes.TimedAssignment then
+				if
+					assignment--[[@as TimedAssignment]].time < phaseOneDuration
+				then
+					return assignment
+				end
+			end
+		end
+	end
+	return nil
+end
+
 ---@param self Private
-local function TwoPhaseOneSpellsExists(self)
+---@return boolean
+local function IsCurrentAssignmentInPhaseOne(self)
+	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	if boss then
+		local phaseOneDuration = boss.phases[1].duration
+		if self.assignmentEditor then
+			local assignmentID = self.assignmentEditor:GetAssignmentID()
+			if assignmentID then
+				local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+				if assignment then
+					if getmetatable(assignment) == Private.classes.TimedAssignment then
+						if
+							assignment--[[@as TimedAssignment]].time < phaseOneDuration
+						then
+							return true
+						end
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+---@return boolean
+local function TwoPhaseOneAssignmentsExist()
 	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
 		local phaseOneDuration = boss.phases[1].duration
@@ -191,17 +304,78 @@ local function TwoPhaseOneSpellsExists(self)
 	return false
 end
 
----@param self Private
-local function IntermissionSpellExists(self)
+---@param combatLogEventType CombatLogEventType
+---@param limitToInIntermission boolean
+---@return boolean
+local function IntermissionAssignmentExists(combatLogEventType, limitToInIntermission)
 	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
-		local phaseTwoDuration = boss.phases[1].duration
+		local phaseTwoDuration = boss.phases[2].duration
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local timeOkay = not limitToInIntermission
+					or assignment--[[@as CombatLogEventAssignment]].time < phaseTwoDuration
 				if
-					assignment--[[@as TimedAssignment]].time < phaseTwoDuration
+					timeOkay
+					and assignment--[[@as CombatLogEventAssignment]].combatLogEventType == combatLogEventType
+					and assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID == 442525
 				then
 					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+---@param combatLogEventType CombatLogEventType
+---@param limitToInIntermission boolean
+---@return Assignment|CombatLogEventAssignment|TimedAssignment|nil
+local function FindIntermissionAssignment(combatLogEventType, limitToInIntermission)
+	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	if boss then
+		local phaseTwoDuration = boss.phases[2].duration
+		for _, assignment in ipairs(GetCurrentAssignments()) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				local timeOkay = not limitToInIntermission
+					or assignment--[[@as CombatLogEventAssignment]].time < phaseTwoDuration
+				if
+					timeOkay
+					and assignment--[[@as CombatLogEventAssignment]].combatLogEventType == combatLogEventType
+					and assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID == 442525
+				then
+					return assignment
+				end
+			end
+		end
+	end
+	return nil
+end
+
+---@param self Private
+---@param combatLogEventType CombatLogEventType
+---@param limitToInIntermission boolean
+---@return boolean
+local function IsCurrentAssignmentInIntermission(self, combatLogEventType, limitToInIntermission)
+	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	if boss then
+		local phaseTwoDuration = boss.phases[2].duration
+		if self.assignmentEditor then
+			local assignmentID = self.assignmentEditor:GetAssignmentID()
+			if assignmentID then
+				local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+				if assignment then
+					if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+						local timeOkay = not limitToInIntermission
+							or assignment--[[@as CombatLogEventAssignment]].time < phaseTwoDuration
+						if
+							timeOkay
+							and assignment--[[@as CombatLogEventAssignment]].combatLogEventType == combatLogEventType
+							and assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID == 442525
+						then
+							return true
+						end
+					end
 				end
 			end
 		end
@@ -228,7 +402,7 @@ end
 ---@param self Private
 ---@return number
 ---@return number
-local function GetPhaseTwoOffsets(self)
+local function GetIntermissionOffsets(self)
 	local left, right = 200 + 10, -30
 	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
@@ -245,6 +419,67 @@ local function GetPhaseTwoOffsets(self)
 	return left, right
 end
 
+---@param dungeonEncounterID integer
+---@return Plan|nil
+local function FindTutorialPlan(dungeonEncounterID)
+	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	for _, plan in pairs(plans) do
+		if plan.name:lower():find(L["Tutorial"]:lower()) and plan.dungeonEncounterID == dungeonEncounterID then
+			return plan
+		end
+	end
+	return nil
+end
+
+---@param dungeonEncounterID integer
+---@return boolean
+local function CurrentPlanValidates(dungeonEncounterID)
+	return AddOn.db.profile.lastOpenPlan:lower():find(L["Tutorial"]:lower()) ~= nil
+		and AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].dungeonEncounterID == dungeonEncounterID
+end
+
+---@param self Private
+---@return boolean
+local function ShouldProceedPhaseOne(self)
+	local proceed = false
+	if self.tutorial then
+		if not self.assignmentEditor then
+			HandleCreateAssignmentEditor(self)
+		end
+		proceed = IsCurrentAssignmentInPhaseOne(self)
+		if not proceed then
+			local assignment = FindPhaseOneAssignment()
+			if assignment then
+				interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, false)
+				return true
+			end
+		end
+	end
+	return proceed
+end
+
+---@param self Private
+---@param combatLogEventType CombatLogEventType
+---@param limitToInIntermission boolean
+---@return boolean
+local function ShouldProceedIntermission(self, combatLogEventType, limitToInIntermission)
+	local proceed = false
+	if self.tutorial then
+		if not self.assignmentEditor then
+			HandleCreateAssignmentEditor(self)
+		end
+		proceed = IsCurrentAssignmentInIntermission(self, combatLogEventType, limitToInIntermission)
+		if not proceed then
+			local assignment = FindIntermissionAssignment(combatLogEventType, limitToInIntermission)
+			if assignment then
+				interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, false)
+				return true
+			end
+		end
+	end
+	return proceed
+end
+
 local kAssignmentTextureSize = 30
 local kAssignmentSpacing = 2
 local kTutorialOffset = 10
@@ -254,7 +489,8 @@ local kTutorialFrameLevel = 250
 ---@param leftOffset number
 ---@param rightOffset number
 ---@param rowNumber integer
-local function HighlightTimelineSection(self, leftOffset, rightOffset, rowNumber)
+---@param additionalVerticalOffset number|nil
+local function HighlightTimelineSection(self, leftOffset, rightOffset, rowNumber, additionalVerticalOffset)
 	local timeline = self.mainFrame.timeline
 	if timeline then
 		local assignmentTimelineFrame = timeline.assignmentTimeline.frame
@@ -263,9 +499,6 @@ local function HighlightTimelineSection(self, leftOffset, rightOffset, rowNumber
 		highlightBorderFrame:ClearAllPoints()
 		local x = -kHighlightPadding + leftOffset
 		local assignmentHeight = (kAssignmentTextureSize + kAssignmentSpacing) * rowNumber
-		if assignmentHeight > (kAssignmentTextureSize + kAssignmentSpacing) then
-			assignmentHeight = assignmentHeight - kAssignmentSpacing
-		end
 		local y = kHighlightPadding - assignmentHeight
 		highlightBorderFrame:SetPoint("TOPLEFT", assignmentTimelineFrame, x, y)
 		x = kHighlightPadding + rightOffset
@@ -274,7 +507,17 @@ local function HighlightTimelineSection(self, leftOffset, rightOffset, rowNumber
 		highlightBorderFrame:SetHeight(kAssignmentTextureSize + 2 * kHighlightPadding)
 		highlightBorderFrame:Show()
 		self.tutorial.frame:ClearAllPoints()
-		self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+		if additionalVerticalOffset then
+			self.tutorial.frame:SetPoint(
+				"BOTTOM",
+				highlightBorderFrame,
+				"TOP",
+				0,
+				kTutorialOffset + additionalVerticalOffset
+			)
+		else
+			self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+		end
 	end
 end
 
@@ -284,8 +527,9 @@ end
 ---@field frame Frame|table|nil
 ---@field callbackName string|nil
 ---@field OnStepActivated fun(self: TutorialStep)|nil
----@field PreStepDeactivated fun(self: TutorialStep, incrementing: boolean)|nil
+---@field PreStepDeactivated fun(self: TutorialStep, incrementing: boolean, cleanUp: boolean|nil)|nil
 ---@field HighlightFrame fun()|nil
+---@field additionalVerticalOffset number|nil
 
 ---@param self Private
 ---@param setCurrentStep fun(previousStepIndex: integer, currentStepIndex: integer)
@@ -296,30 +540,73 @@ local function CreateTutorialSteps(self, setCurrentStep)
 	---@type table<integer, TutorialStep>
 	steps = {
 		{
+			text = format(
+				"%s |c%s%s|r %s.",
+				"This interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and pick up where you left by clicking the",
+				"cffffd10",
+				"Tutorial button",
+				"located in the lower left of the main window"
+			),
+			enableNextButton = true,
+			OnStepActivated = function(_)
+				self.tutorial.frame:ClearAllPoints()
+				self.tutorial.frame:SetPoint("CENTER", UIParent)
+				local x, y = self.tutorial.frame:GetLeft(), self.tutorial.frame:GetTop()
+				self.tutorial.frame:ClearAllPoints()
+				self.tutorial.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+			end,
+		},
+		{
 			text = "The Menu Bar contains high level categories for managing plans, modifying bosses, editing rosters, and settings.",
 			enableNextButton = true,
-			frame = self.mainFrame.menuButtonContainer.frame,
+			OnStepActivated = function(localSelf)
+				localSelf.frame = self.mainFrame.menuButtonContainer.frame
+			end,
+			PreStepDeactivated = function(localSelf, incrementing)
+				if not incrementing then
+					highlightBorderFrame:ClearAllPoints()
+					highlightBorderFrame:Hide()
+				end
+				localSelf.frame = nil
+			end,
 		},
 		{
 			text = "Click the Plan button, and then click New Plan.",
-			enableNextButton = false,
-			frame = self.mainFrame.menuButtonContainer.children[1].frame,
+			enableNextButton = function()
+				return CurrentPlanValidates(2900)
+			end,
 			callbackName = "TutNewPlanDialogOpened",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function()
+				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					if category == "planCreated" then
+						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					end
 				end)
+				localSelf.frame = self.mainFrame.menuButtonContainer.children[1].frame
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
+			PreStepDeactivated = function(localSelf)
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+				localSelf.frame = nil
 			end,
 		},
 		{
-			text = "This plan will be used throughout this tutorial. Select Brew Master Aldryr (Cinderbrew Meadery) as the boss and name the plan Tutorial.",
-			enableNextButton = false,
+			text = format(
+				"%s |c%s%s|r (|c%s%s|r) %s |c%s%s|r.",
+				"This plan will be used throughout this tutorial. Select",
+				"cffffd10",
+				"Brew Master Aldryr",
+				"cffffd10",
+				"Cinderbrew Meadery",
+				"as the boss, and name the plan",
+				"cffffd10",
+				L["Tutorial"]
+			),
+			enableNextButton = function()
+				return CurrentPlanValidates(2900)
+			end,
 			OnStepActivated = function(localSelf)
 				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
@@ -332,7 +619,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							self.newPlanDialog.createButton:SetEnabled(
 								planName ~= ""
 									and not AddOn.db.profile.plans[planName]
-									and planName:lower():find("tutorial") ~= nil
+									and planName:lower():find(L["Tutorial"]:lower()) ~= nil
 									and encounterID == 2900
 							)
 						end
@@ -340,7 +627,9 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						createdTutorialPlan = true
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					elseif category == "closed" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+						if self.tutorial then
+							self.tutorial:Release()
+						end
 					end
 				end)
 				if not self.newPlanDialog then
@@ -352,7 +641,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					self.newPlanDialog.createButton:SetEnabled(
 						planName ~= ""
 							and not AddOn.db.profile.plans[planName]
-							and planName:lower():find("tutorial") ~= nil
+							and planName:lower():find(L["Tutorial"]:lower()) ~= nil
 							and encounterID == 2900
 					)
 				end
@@ -373,16 +662,24 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			callbackName = "TutNewPlanDialog",
 		},
 		{
-			text = "Click the Roster button to open the Roster Editor for the plan.",
+			text = format(
+				"%s |c%s%s|r %s.",
+				"Click the",
+				"cffffd10",
+				"Roster button",
+				"to open the Roster Editor for the plan"
+			),
 			enableNextButton = false,
 			frame = self.mainFrame.menuButtonContainer.children[3].frame,
 			callbackName = "TutRosterEditorOpened",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function()
+				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					if category == "rosterEditorOpened" then
+						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					end
 				end)
 			end,
 			PreStepDeactivated = function(localSelf)
@@ -395,7 +692,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				"The",
 				"cffffd10",
 				"Current Plan Roster",
-				"is unique to the current plan. Roster members must be added here before assigning assignments to individuals. The creator of the plan is automatically added"
+				"is unique to the current plan. Roster members must be added here before assignments can be assigned to them. The creator of the plan is automatically added"
 			),
 			enableNextButton = true,
 			callbackName = "TutRosterEditor",
@@ -409,14 +706,53 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						return
 					end
 					if category == "closed" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+						if self.tutorial then
+							self.tutorial:Release()
+						end
 					end
 				end)
 				localSelf.frame = self.rosterEditor.tabContainer.children[1].frame
 			end,
-			PreStepDeactivated = function(localSelf)
+			PreStepDeactivated = function(localSelf, incrementing)
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
-				if self.rosterEditor then
+				if not incrementing and self.rosterEditor then
+					self.rosterEditor:Release()
+				end
+				localSelf.frame = nil
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s |c%s%s|r.",
+				"The",
+				"cffffd10",
+				"Shared Roster",
+				"is independent of plans and can and be used quickly populate the",
+				"cffffd10",
+				"Current Plan Roster"
+			),
+			enableNextButton = true,
+			callbackName = "TutRosterEditorTwo",
+			OnStepActivated = function(localSelf)
+				if not self.rosterEditor then
+					self.CreateRosterEditor("Shared Roster")
+				end
+				self.rosterEditor:SetCurrentTab("Shared Roster")
+				self.RegisterCallback(self.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+					if self.activeTutorialCallbackName ~= localSelf.callbackName then
+						return
+					end
+					if category == "closed" then
+						if self.tutorial then
+							self.tutorial:Release()
+						end
+					end
+				end)
+				localSelf.frame = self.rosterEditor.tabContainer.children[2].frame
+			end,
+			PreStepDeactivated = function(localSelf, incrementing)
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+				if incrementing and self.rosterEditor then
 					self.rosterEditor:Release()
 				end
 				localSelf.frame = nil
@@ -437,6 +773,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = "The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown.",
 			enableNextButton = true,
 			frame = self.mainFrame.planDropdown.frame,
+			additionalVerticalOffset = 10,
 		},
 		{
 			text = format(
@@ -444,7 +781,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				"Reminders can be toggled on and off on a per-plan basis. The yellow bell icon in the",
 				"cffffd10",
 				"Current Plan Dropdown",
-				"also indicates whether reminders are enabled for a plan.\n\nDisable reminders for this plan since it is a tutorial"
+				"also indicates whether reminders are enabled for a plan.\n\nUncheck the check box to disable reminders for this plan"
 			),
 			enableNextButton = function()
 				if Private.mainFrame and not Private.mainFrame.planReminderEnableCheckBox:IsChecked() then
@@ -485,11 +822,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 			callbackName = "TutSelfAssigneeAdded",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function()
+				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					if IsSelfPresentInPlan() then
+					if category == "assigneeAdded" and IsSelfPresentInPlan() then
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					end
 				end)
@@ -511,18 +848,21 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			enableNextButton = true,
 			callbackName = "TutAssignmentEditorOpened",
 			OnStepActivated = function(localSelf)
-				if not self.assignmentEditor then
-					HandleCreateAssignmentEditor(self)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
 				end
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
-					if self.activeTutorialCallbackName ~= localSelf.callbackName then
-						return
-					end
-					if category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
-					end
-				end)
-				localSelf.frame = self.assignmentEditor.frame
 			end,
 			PreStepDeactivated = function(localSelf, incrementing)
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
@@ -538,23 +878,26 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				"The",
 				"cffffd10",
 				"Trigger",
-				"determines what activates an assignment. It can either be relative to the start of an encounter (Fixed Time) or relative to a combat log event. Not all combat log event types may be available for a given boss. Leave it as Fixed Time for now"
+				"determines what activates an assignment. It can either be relative to the start of an encounter (Fixed Time) or relative to a combat log event. Leave it as Fixed Time"
 			),
 			enableNextButton = true,
 			callbackName = "TutAssignmentTrigger",
 			OnStepActivated = function(localSelf)
-				if not self.assignmentEditor then
-					HandleCreateAssignmentEditor(self)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.children[1].frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
 				end
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
-					if self.activeTutorialCallbackName ~= localSelf.callbackName then
-						return
-					end
-					if category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 2)
-					end
-				end)
-				localSelf.frame = self.assignmentEditor.children[1].frame
 			end,
 			PreStepDeactivated = function(localSelf)
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
@@ -562,28 +905,71 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Check the Spell checkbox and use the dropdown to select a spell for the assignment.", -- TODO: Add dps/healer/tank cooldown spell
+			text = format("%s |c%s%s|r %s.", "Set the", "cffffd10", "Time", "to 30 seconds"),
 			enableNextButton = function()
-				return IsSpellChanged(self)
+				return IsTimeCorrect(self, 30.0)
+			end,
+			callbackName = "TutAssignmentTime",
+			OnStepActivated = function(localSelf)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "assignmentEditorDataChanged" then
+							if IsTimeCorrect(self, 30.0) then
+								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+							end
+						elseif category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.timeContainer.frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+				localSelf.frame = nil
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s |c%s%s|r.",
+				"Check the",
+				"cffffd10",
+				"Spell checkbox",
+				"and select a spell from the",
+				"cffffd10",
+				"Spell dropdown"
+			),
+			enableNextButton = function()
+				return IsSpellChanged(self, 1)
 			end,
 			callbackName = "TutAssignmentSpellChanged",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
-					if self.activeTutorialCallbackName ~= localSelf.callbackName then
-						return
-					end
-					if category == nil then
-						if IsSpellChanged(self) then
-							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
 						end
-					elseif category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 3)
-					end
-				end)
-				if not self.assignmentEditor then
-					HandleCreateAssignmentEditor(self)
+						if category == "assignmentEditorDataChanged" then
+							if IsSpellChanged(self, 1) then
+								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+							end
+						elseif category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.spellAssignmentContainer.frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
 				end
-				localSelf.frame = self.assignmentEditor.spellAssignmentContainer.frame
 			end,
 			PreStepDeactivated = function(localSelf)
 				localSelf.frame = nil
@@ -594,16 +980,21 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = "The Assignment Timeline is updated to reflect the spell. The cooldown duration of the spell is shown as the alternating grey texture.",
 			enableNextButton = true,
 			HighlightFrame = function()
+				EnsureAssigneeIsExpanded(self)
 				HighlightTimelineSection(self, 0, -30, 1)
 			end,
 		},
 		{
 			text = format(
-				"%s |c%s%s|r %s.",
+				"%s |c%s%s|r %s. %s |c%s%s|r %s",
 				"Spell cooldown durations can be overridden in the",
 				"cffffd10",
 				"Cooldown Overrides",
-				"section of the Preferences Menu"
+				"section of the Preferences Menu",
+				"The alternating grey cooldown textures can be disabled in the",
+				"cffffd10",
+				"View",
+				"section"
 			),
 			enableNextButton = true,
 			frame = self.mainFrame.menuButtonContainer.children[4].frame,
@@ -611,23 +1002,22 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"If the",
+				"Assignment",
 				"cffffd10",
 				"Text",
-				"is blank, the spell icon and name are automatically used"
+				"is displayed on reminder messages and progress bars. If blank, the spell icon and name are automatically used"
 			),
 			enableNextButton = true,
 			callbackName = "TutAssignmentAutoText",
 			OnStepActivated = function(localSelf)
-				if not self.assignmentEditor then
-					HandleCreateAssignmentEditor(self)
-				end
 				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
 					if category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+						if self.tutorial then
+							self.tutorial:Release()
+						end
 					end
 				end)
 				if not self.assignmentEditor then
@@ -654,10 +1044,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s",
-				"You can display icons in the text by surrounding a spell ID, raid marker name, etc. in curly braces. Set the",
+				"Icons can be inserted into text by enclosing a spell ID, raid marker name, or similar in curly braces. Set the",
 				"cffffd10",
 				"Text",
-				"to the following:\nUse Healthstone {6262} at {circle}"
+				"to the following:\nUse Healthstone {6262} at {circle}\nand press enter."
 			),
 			enableNextButton = function()
 				return IsTextChanged(self)
@@ -668,12 +1058,14 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					if category == nil then
+					if category == "assignmentEditorDataChanged" then
 						if IsTextChanged(self) then
 							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 						end
 					elseif category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 2)
+						if self.tutorial then
+							self.tutorial:Release()
+						end
 					end
 				end)
 				if not self.assignmentEditor then
@@ -687,21 +1079,17 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Create a blank assignment by left-clicking the timeline beside an Assignee. The assignment will be created relative to the start of the encounter unless clicked within a boss phase triggered by a combat log event.",
+			text = "Create a blank assignment in Phase 1 by left-clicking the timeline beside an assignee.",
 			enableNextButton = function()
-				return TwoPhaseOneSpellsExists(self)
+				return TwoPhaseOneAssignmentsExist()
 			end,
 			callbackName = "TutAssignmentAddedOne",
-			HighlightFrame = function()
-				EnsureAssigneeIsExpanded(self)
-				HighlightTimelineSection(self, 200 + 10, GetPhaseOneRightOffset(self), 0)
-			end,
 			OnStepActivated = function(localSelf)
 				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					if category == nil and TwoPhaseOneSpellsExists(self) then
+					if category == "added" and TwoPhaseOneAssignmentsExist() then
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					end
 				end)
@@ -713,16 +1101,94 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				localSelf.frame = nil
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
 			end,
+			HighlightFrame = function()
+				EnsureAssigneeIsExpanded(self)
+				HighlightTimelineSection(self, 200 + 10, GetPhaseOneRightOffset(self), 0, 32)
+			end,
 		},
 		{
-			text = "Create another blank assignment but this time during the first intermission.",
+			text = "The assignment is created relative to the start of the encounter since it was clicked within Phase 1.",
+			enableNextButton = true,
+			callbackName = "TutAssignmentAddedOneTime",
+			OnStepActivated = function(localSelf)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+			HighlightFrame = function()
+				local frame = self.assignmentEditor.children[1].frame
+				highlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
+				highlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
+				highlightBorderFrame:ClearAllPoints()
+				highlightBorderFrame:SetPoint("TOPLEFT", frame, -kHighlightPadding, kHighlightPadding)
+				local lowerFrame = self.assignmentEditor.timeContainer.frame
+				highlightBorderFrame:SetPoint("BOTTOMRIGHT", lowerFrame, kHighlightPadding, -kHighlightPadding)
+				highlightBorderFrame:Show()
+				self.tutorial.frame:ClearAllPoints()
+				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s.",
+				"Change the",
+				"cffffd10",
+				"Spell",
+				"to something different from first assignment you created"
+			),
 			enableNextButton = function()
-				return IntermissionSpellExists(self)
+				return IsSpellChanged(self, 2, true, 2)
+			end,
+			callbackName = "TutAssignmentSpellChangedTwo",
+			OnStepActivated = function(localSelf)
+				if ShouldProceedPhaseOne(self) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "assignmentEditorDataChanged" then
+							if IsSpellChanged(self, 2, true, 2) then
+								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+							end
+						elseif category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+				localSelf.frame = self.assignmentEditor.spellAssignmentContainer.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = "Create another blank assignment, this time during the first intermission.",
+			enableNextButton = function()
+				return IntermissionAssignmentExists("SCS", true)
 			end,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
-				local left, right = GetPhaseTwoOffsets(self)
-				HighlightTimelineSection(self, left, right, 0)
+				local left, right = GetIntermissionOffsets(self)
+				HighlightTimelineSection(self, left, right, 0, 32)
 			end,
 			callbackName = "TutAssignmentAddedTwo",
 			OnStepActivated = function(localSelf)
@@ -730,7 +1196,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					if category == nil and IntermissionSpellExists(self) then
+					if category == "added" and IntermissionAssignmentExists("SCS", true) then
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					end
 				end)
@@ -748,18 +1214,21 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			enableNextButton = true,
 			callbackName = "TutIntermissionSpell",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
-					if self.activeTutorialCallbackName ~= localSelf.callbackName then
-						return
-					end
-					if category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
-					end
-				end)
-				if not self.assignmentEditor then
-					HandleCreateAssignmentEditor(self)
+				if ShouldProceedIntermission(self, "SCS", true) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.children[1].frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
 				end
-				localSelf.frame = self.assignmentEditor.children[1].frame
 			end,
 			PreStepDeactivated = function(localSelf)
 				localSelf.frame = nil
@@ -767,11 +1236,156 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Instead of clicking beside an Assignee, left-click beside the spell of an assignee.", -- TODO Show arrow
+			text = "Change the time of an assignment by left-clicking an icon and dragging it.\nWhen dragging a combat log event assignment, it can only be placed after the boss ability, as the assignment must occur afterward.",
 			enableNextButton = false,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
-				HighlightTimelineSection(self, 200 + 10, -30, 1)
+				HighlightTimelineSection(self, 200 + 10, -30, FindCurrentAssignmentOrder(self) or 1)
+			end,
+			callbackName = "TutAssignmentMovedByDragging",
+			OnStepActivated = function(localSelf)
+				if ShouldProceedIntermission(self, "SCS", false) then
+					self.RegisterCallback(
+						Private.tutorialCallbackObject,
+						localSelf.callbackName,
+						function(_, timeDifference)
+							if self.activeTutorialCallbackName ~= localSelf.callbackName then
+								return
+							end
+							if type(timeDifference) == "number" and timeDifference > 0.0 then
+								self.tutorial.nextButton:SetEnabled(true)
+							end
+						end
+					)
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s.",
+				"Change the",
+				"cffffd10",
+				"Spell",
+				"to one of the spells you used in another assignment"
+			),
+			enableNextButton = function()
+				return IsSpellChanged(self, 3, true, 2, true)
+			end,
+			callbackName = "TutAssignmentSpellChangedThree",
+			OnStepActivated = function(localSelf)
+				if ShouldProceedIntermission(self, "SCS", false) or ShouldProceedIntermission(self, "SAR", false) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "assignmentEditorDataChanged" then
+							if IsSpellChanged(self, 3, true, 2, true) then
+								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+							end
+						elseif category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+				localSelf.frame = self.assignmentEditor.spellAssignmentContainer.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s |c%s%s|r.",
+				"Change the",
+				"cffffd10",
+				"Trigger",
+				"to",
+				"cffffd10",
+				"Spell Aura Removed"
+			),
+			callbackName = "TutAssignmentChangeCombatLogEventType",
+			enableNextButton = function()
+				return IsCombatLogEventTypeCorrect(self, "SAR")
+			end,
+			OnStepActivated = function(localSelf)
+				if ShouldProceedIntermission(self, "SCS", false) or ShouldProceedIntermission(self, "SAR", false) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "assignmentEditorDataChanged" then
+							print(IsCombatLogEventTypeCorrect(self, "SAR"))
+							if IsCombatLogEventTypeCorrect(self, "SAR") then
+								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+							end
+						elseif category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.children[1].frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s |c%s%s|r %s.",
+				"The time relative to the event stayed the same, but the icon moved forward since the",
+				"cffffd10",
+				"Spell Aura Removed",
+				"event occurs after the",
+				"cffffd10",
+				"Spell Cast Start",
+				"event"
+			),
+			callbackName = "TutAssignmentChangeCombatLogEventTypeExplain",
+			enableNextButton = true,
+			OnStepActivated = function(localSelf)
+				if ShouldProceedIntermission(self, "SAR", false) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "released" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.children[1].frame
+				else
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = "Instead of left-clicking beside an assignee, create an assignment by left-clicking the timeline beside a spell.",
+			enableNextButton = false,
+			HighlightFrame = function()
+				EnsureAssigneeIsExpanded(self)
+				HighlightTimelineSection(self, 200 + 10, -30, FindCurrentAssignmentOrder(self) or 1)
 			end,
 			callbackName = "TutAssignmentAddedThree",
 			OnStepActivated = function(localSelf)
@@ -779,10 +1393,8 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					if category == nil then
+					if category == "added" then
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
-					elseif category == "released" then
-						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 2)
 					end
 				end)
 				if not self.assignmentEditor then
@@ -795,49 +1407,34 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Change the time of an assignment by left-clicking an icon and dragging it.", -- TODO Show longer arrow
-			enableNextButton = false,
-			HighlightFrame = function()
-				EnsureAssigneeIsExpanded(self)
-				HighlightTimelineSection(self, 200 + 10, -30, 1)
-			end,
-			callbackName = "TutAssignmentMovedByDragging",
+			text = "The new assignment is created using the matching spell.",
+			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(
-					Private.tutorialCallbackObject,
-					localSelf.callbackName,
-					function(_, timeDifference)
-						if self.activeTutorialCallbackName ~= localSelf.callbackName then
-							return
-						end
-						if type(timeDifference) == "number" and timeDifference > 0.0 then
-							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
-						end
-					end
-				)
 				if not self.assignmentEditor then
 					HandleCreateAssignmentEditor(self)
 				end
+				localSelf.frame = self.assignmentEditor.spellAssignmentContainer.frame
 			end,
 			PreStepDeactivated = function(localSelf)
 				localSelf.frame = nil
-				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
 			end,
 		},
 		{
-			text = "Duplicate an assignment by control-clicking an icon and dragging.", -- TODO Show longer arrow
+			text = "Duplicate an assignment by control-clicking an icon and dragging.",
 			enableNextButton = false,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
-				HighlightTimelineSection(self, 200 + 10, -30, 1)
+				HighlightTimelineSection(self, 200 + 10, -30, FindCurrentAssignmentOrder(self) or 1)
 			end,
 			callbackName = "TutAssignmentDuplicated",
 			OnStepActivated = function(localSelf)
-				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function()
+				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
 					if self.activeTutorialCallbackName ~= localSelf.callbackName then
 						return
 					end
-					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					if category == "duplicated" then
+						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					end
 				end)
 				if not self.assignmentEditor then
 					HandleCreateAssignmentEditor(self)
@@ -846,18 +1443,39 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			PreStepDeactivated = function(localSelf)
 				localSelf.frame = nil
 				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = "The duplicated assignment inherits all properties, besides time, from the original and is independent of it.",
+			enableNextButton = true,
+			OnStepActivated = function(localSelf)
+				if not self.assignmentEditor then
+					HandleCreateAssignmentEditor(self)
+				end
+				localSelf.frame = self.assignmentEditor.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
 			end,
 		},
 		{
 			text = "Tutorial Complete!",
 			enableNextButton = true,
+			OnStepActivated = function(_)
+				highlightBorderFrame:ClearAllPoints()
+				highlightBorderFrame:Hide()
+				self.tutorial.frame:ClearAllPoints()
+				self.tutorial.frame:SetPoint("CENTER", UIParent)
+				local x, y = self.tutorial.frame:GetLeft(), self.tutorial.frame:GetTop()
+				self.tutorial.frame:ClearAllPoints()
+				self.tutorial.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+			end,
 		},
 	}
 	return steps
 end
 
 function Private:OpenTutorial()
-	-- TODO: Save last step
 	if not self.tutorial then
 		if not self.mainFrame then
 			self:CreateInterface()
@@ -902,12 +1520,19 @@ function Private:OpenTutorial()
 			end
 
 			currentStepIndex = max(1, currentStepIndex)
+			AddOn.db.global.lastTutorialStep = min(currentStepIndex, totalStepCount)
 			if currentStepIndex > totalStepCount then
+				AddOn.db.global.tutorialCompleted = true
+				AddOn.db.global.lastTutorialStep = 1
 				self.tutorial:Release()
 			else
 				local currentStep = steps[currentStepIndex]
 				if currentStep.callbackName then
 					Private.activeTutorialCallbackName = currentStep.callbackName
+				end
+				self.tutorial.currentStep = currentStepIndex
+				if currentStep.OnStepActivated then
+					currentStep:OnStepActivated()
 				end
 				local enable = false
 				if type(currentStep.enableNextButton) == "function" then
@@ -916,13 +1541,14 @@ function Private:OpenTutorial()
 					enable = currentStep.enableNextButton --[[@as boolean]]
 				end
 				self.tutorial:SetCurrentStep(currentStepIndex, currentStep.text, enable)
-				if currentStep.OnStepActivated then
-					currentStep:OnStepActivated()
-				end
 				if currentStep.frame then
 					HighlightFrame(currentStep.frame)
 					self.tutorial.frame:ClearAllPoints()
-					self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+					local offset = kTutorialOffset
+					if currentStep.additionalVerticalOffset then
+						offset = offset + currentStep.additionalVerticalOffset
+					end
+					self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, offset)
 				elseif currentStep.HighlightFrame then
 					currentStep:HighlightFrame()
 				end
@@ -952,8 +1578,6 @@ function Private:OpenTutorial()
 					end
 					localSelf.frame = nil
 				end,
-				closeRequiredWidgetOnDecrement = false,
-				closeRequiredWidgetOnIncrement = true,
 			},
 		}
 
@@ -961,13 +1585,13 @@ function Private:OpenTutorial()
 		tutorial:InitProgressBar(totalStepCount, AddOn.db.profile.preferences.reminder.progressBars.texture)
 		tutorial.frame:SetFrameLevel(kTutorialFrameLevel)
 		tutorial:SetCallback("OnRelease", function()
-			Private.UnregisterAllCallbacks(Private.tutorialCallbackObject)
 			self.tutorial = nil
+			Private.UnregisterAllCallbacks(Private.tutorialCallbackObject)
 			highlightBorderFrame:ClearAllPoints()
 			highlightBorderFrame:Hide()
 			for _, step in pairs(steps) do
 				if step.PreStepDeactivated then
-					step:PreStepDeactivated(true)
+					step:PreStepDeactivated(true, true)
 				end
 			end
 			Private.tutorialCallbackObject = nil
@@ -978,11 +1602,21 @@ function Private:OpenTutorial()
 		tutorial:SetCallback("NextButtonClicked", function()
 			SetCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 		end)
-		tutorial:SetCallback("SkipButtonClicked", function()
+		tutorial:SetCallback("CloseButtonClicked", function()
 			self.tutorial:Release()
 		end)
 
 		self.tutorial = tutorial
-		SetCurrentStep(1, 14)
+		if AddOn.db.global.lastTutorialStep > 3 then
+			local plan = FindTutorialPlan(2900)
+			if plan then
+				AddOn.db.profile.lastOpenPlan = plan.name
+				interfaceUpdater.UpdateFromPlan(plan)
+			else
+				AddOn.db.global.lastTutorialStep = 2
+			end
+		end
+
+		SetCurrentStep(1, AddOn.db.global.lastTutorialStep)
 	end
 end

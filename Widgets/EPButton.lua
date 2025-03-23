@@ -140,9 +140,10 @@ local function SetIconColor(self, r, g, b, a)
 	end
 end
 ---@param self EPButton
-local function SetWidthFromText(self)
+---@param totalHorizontalPadding number|nil
+local function SetWidthFromText(self, totalHorizontalPadding)
 	local fontString = self.button:GetFontString()
-	self.frame:SetWidth(fontString:GetUnboundedStringWidth() + 20)
+	self.frame:SetWidth(fontString:GetUnboundedStringWidth() + (totalHorizontalPadding or 20))
 end
 
 ---@param self EPButton

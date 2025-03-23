@@ -621,7 +621,7 @@ end
 ---@field zoomCenteredOnCursor boolean
 ---@field reminder ReminderPreferences
 ---@field showSpellCooldownDuration boolean
----@field minimap {hide: boolean}
+---@field minimap {show: boolean}
 
 ---@class ReminderTextToSpeechPreferences
 ---@field enableAtCountdownStart boolean
@@ -680,19 +680,28 @@ end
 local playerClass = select(2, UnitClass("player"))
 local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 
+---@class DefaultProfile
+---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
+---@field plans table<string, Plan> All plans.
+---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
+---@field lastOpenPlan string The last open plan.
+---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
+---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
+---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
+---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
+---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
+---@field activeText table<integer, string> External text send by the group leader on encounter start.
+---@field preferences Preferences Settings.
+
+---@class GlobalProfile
+---@field tutorialCompleted boolean
+---@field lastTutorialStep integer
+---@field tutorialSkipped boolean
+
+---@class Defaults : AceDB.Schema
+---@field profile DefaultProfile
+---@field global GlobalProfile
 local defaults = {
-	---@class DefaultProfile
-	---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
-	---@field plans table<string, Plan> All plans.
-	---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
-	---@field lastOpenPlan string The last open plan.
-	---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
-	---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
-	---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
-	---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
-	---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
-	---@field activeText table<integer, string> External text send by the group leader on encounter start.
-	---@field preferences Preferences Settings.
 	profile = {
 		activeBossAbilities = {},
 		plans = {},
@@ -720,7 +729,7 @@ local defaults = {
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,
 			minimap = {
-				hide = false,
+				show = true,
 			},
 			reminder = {
 				enabled = true,
@@ -783,6 +792,11 @@ local defaults = {
 			},
 		},
 	},
+	global = {
+		tutorialCompleted = false,
+		lastTutorialStep = 1,
+		tutorialSkipped = false,
+	},
 }
 
 do
@@ -820,7 +834,7 @@ end
 
 Private.addOn = AceAddon:NewAddon(AddOnName, "AceConsole-3.0", "AceComm-3.0")
 Private.addOn.defaults = defaults
-Private.addOn.db = nil ---@type AceDBObject-3.0
+Private.addOn.db = nil ---@type AceDBObject-3.0|Defaults
 Private.addOn.optionsModule = Private.addOn:NewModule("Options") --[[@as OptionsModule]]
 Private.callbacks = LibStub("CallbackHandler-1.0"):New(Private)
 

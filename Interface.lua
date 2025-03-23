@@ -582,9 +582,14 @@ do -- Assignment Editor
 		end
 
 		interfaceUpdater.UpdateFromAssignment(dungeonEncounterID, assignment, updateFields, true, updateAssignments)
-		if dataType == "SpellAssignment" or dataType == "OptionalText" then
+		if
+			dataType == "SpellAssignment"
+			or dataType == "OptionalText"
+			or dataType == "Time"
+			or dataType == "AssignmentType"
+		then
 			if Private.activeTutorialCallbackName then
-				Private.callbacks:Fire(Private.activeTutorialCallbackName)
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDataChanged")
 			end
 		end
 	end
@@ -1038,7 +1043,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(addAssigneeText)
 	if Private.activeTutorialCallbackName then
-		Private.callbacks:Fire(Private.activeTutorialCallbackName)
+		Private.callbacks:Fire(Private.activeTutorialCallbackName, "assigneeAdded")
 	end
 end
 
@@ -1053,7 +1058,7 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 		UpdateAllAssignments(false, encounterID)
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 		if Private.activeTutorialCallbackName then
-			Private.callbacks:Fire(Private.activeTutorialCallbackName)
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "added")
 		end
 	end
 end
@@ -1299,7 +1304,7 @@ do -- Plan Menu Button Handlers
 		if value == "New Plan" then
 			Private.CreateNewPlanDialog()
 			if Private.activeTutorialCallbackName then
-				Private.callbacks:Fire(Private.activeTutorialCallbackName)
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "planCreated")
 			end
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
@@ -1366,7 +1371,7 @@ local function HandleRosterMenuButtonClicked()
 		end
 	end
 	if Private.activeTutorialCallbackName then
-		Private.callbacks:Fire(Private.activeTutorialCallbackName)
+		Private.callbacks:Fire(Private.activeTutorialCallbackName, "rosterEditorOpened")
 	end
 end
 
@@ -1593,7 +1598,7 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absolu
 	timeline:UpdateAssignmentsAndTickMarks()
 	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
 	if Private.activeTutorialCallbackName then
-		Private.callbacks:Fire(Private.activeTutorialCallbackName)
+		Private.callbacks:Fire(Private.activeTutorialCallbackName, "duplicated")
 	end
 end
 
@@ -1674,6 +1679,8 @@ local function HandleMainFrameReleased()
 	end
 end
 
+local openedTutorial = false
+
 function Private:CreateInterface()
 	local topContainerDropdownWidth = 200
 	local topContainerWidgetFontSize = 14
@@ -1732,6 +1739,9 @@ function Private:CreateInterface()
 	Private.mainFrame:SetCallback("ExpandAllButtonClicked", HandleExpandAllButtonClicked)
 	Private.mainFrame:SetCallback("MinimizeFramePointChanged", HandleMinimizeFramePointChanged)
 	Private.mainFrame:SetCallback("OnRelease", HandleMainFrameReleased)
+	Private.mainFrame:SetCallback("TutorialButtonClicked", function()
+		self:OpenTutorial()
+	end)
 
 	local planMenuButton = Create.MenuButton(L["Plan"])
 	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
@@ -1987,6 +1997,11 @@ function Private:CreateInterface()
 	C_Timer.After(0, function() -- Otherwise height will not be properly set and can clip messages
 		Private.mainFrame.statusBar:OnWidthSet()
 	end)
+
+	if not AddOn.db.global.tutorialSkipped and not AddOn.db.global.tutorialCompleted and not openedTutorial then
+		self:OpenTutorial()
+		openedTutorial = true
+	end
 end
 
 function Private:CloseDialogs()

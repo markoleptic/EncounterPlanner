@@ -1092,6 +1092,8 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 	end
 end
 
+local passThroughButtons = {}
+
 ---@param self EPTimeline
 ---@param spellID integer
 ---@param timelineFrame Frame
@@ -1108,6 +1110,7 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	spellTexture:SetPoint("TOPLEFT", 1, -1)
 	spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
 	spellTexture:SetWidth(assignmentTextureSize.y - 2)
+	spellTexture:SetPassThroughButtons("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
 
 	local outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 2)
 	outlineTexture:SetPoint("TOPLEFT")
@@ -1139,9 +1142,6 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	invalidTexture:SetAllPoints(spellTexture)
 	invalidTexture:SetColorTexture(unpack(invalidTextureColor))
 	invalidTexture:Hide()
-
-	local passThrough = spellTexture.SetPassThroughButtons
-	SafeCall(passThrough, spellTexture, "LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
 
 	assignment.spellTexture = spellTexture
 	assignment.invalidTexture = invalidTexture
@@ -2668,6 +2668,7 @@ local function Constructor()
 		GetSelectedAssignments = GetSelectedAssignments,
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
+		FindTimelineAssignment = FindTimelineAssignment,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

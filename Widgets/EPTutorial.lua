@@ -16,11 +16,12 @@ local ipairs = ipairs
 local unpack = unpack
 
 local defaultHeight = 200
-local defaultWidth = 400
+local defaultWidth = 350
 local defaultButtonHeight = 20
 local defaultFontSize = 14
 local contentFramePadding = { x = 10, y = 10 }
-local otherPadding = { x = 5, y = 5 }
+local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
+local otherPadding = { x = 10, y = 10 }
 local windowBarHeight = 28
 local buttonColor = Private.constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 0.9 }
@@ -42,8 +43,6 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
-local playerClass = select(2, UnitClass("player"))
-local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 
 ---@param container EPContainer
 local function SetButtonWidths(container)
@@ -66,6 +65,21 @@ local function OnAcquire(self)
 	self.currentStep = 0
 	self.totalSteps = 0
 	self.frame:SetSize(defaultWidth, defaultHeight)
+
+	local edgeSize = frameBackdrop.edgeSize
+	local buttonSize = windowBarHeight - 2 * edgeSize
+
+	self.closeButton = AceGUI:Create("EPButton")
+	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+	self.closeButton:SetIconPadding(2, 2)
+	self.closeButton:SetWidth(buttonSize)
+	self.closeButton:SetHeight(buttonSize)
+	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
+	self.closeButton.frame:SetParent(self.windowBar --[[@as Frame]])
+	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
+	self.closeButton:SetCallback("Clicked", function()
+		self:Fire("CloseButtonClicked")
+	end)
 
 	self.container = AceGUI:Create("EPContainer")
 	self.container:SetLayout("EPVerticalLayout")
@@ -108,7 +122,7 @@ local function OnAcquire(self)
 	self.previousButton = previousButton
 
 	local nextButton = AceGUI:Create("EPButton")
-	nextButton:SetText(L["Next"])
+	nextButton:SetText(L["Start"])
 	nextButton:SetWidthFromText()
 	nextButton:SetHeight(defaultButtonHeight)
 	nextButton:SetColor(unpack(buttonColor))
@@ -117,28 +131,10 @@ local function OnAcquire(self)
 	end)
 	self.nextButton = nextButton
 
-	local spacer = AceGUI:Create("EPSpacer")
-	spacer:SetWidth(0)
-	local skipButton = AceGUI:Create("EPButton")
-	skipButton:SetText(L["Skip Tutorial"])
-	skipButton:SetWidthFromText()
-	skipButton:SetHeight(defaultButtonHeight)
-	skipButton:SetCallback("Clicked", function()
-		self:Fire("SkipButtonClicked")
-	end)
-	self.skipButton = skipButton
-
 	self.buttonContainer:AddChildNoDoLayout(previousButton)
 	self.buttonContainer:AddChildNoDoLayout(nextButton)
-	self.buttonContainer:AddChildNoDoLayout(spacer)
-	self.buttonContainer:AddChildNoDoLayout(skipButton)
 	SetButtonWidths(self.buttonContainer)
 	self.buttonContainer:DoLayout()
-
-	local currentContentWidth = self.frame:GetWidth() - 2 * contentFramePadding.x
-	if self.buttonContainer.frame:GetWidth() > currentContentWidth then
-		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * contentFramePadding.x)
-	end
 
 	self.frame:Show()
 end
@@ -151,6 +147,10 @@ local function OnRelease(self)
 	self.buttonContainer = nil
 	self.progressBar:Release()
 	self.progressBar = nil
+
+	self.previousButton = nil
+	self.nextButton = nil
+
 	self.currentStep = nil
 	self.totalSteps = nil
 end
@@ -172,13 +172,13 @@ local function InitProgressBar(self, totalSteps, barTexture)
 		fill = false,
 		showBorder = false,
 		showIconBorder = false,
-		color = { ccA, ccR, ccB, 1.0 },
-		backgroundColor = { 0.25, 0.25, 0.25, 1 },
+		color = buttonColor,
+		backgroundColor = Private.constants.colors.kDefaultButtonBackdropColor,
 	}
 	self.progressBar:Set(preferences, "", 0, nil)
 	self.progressBar.statusBar:SetValue(0)
-	self.progressBar.statusBar:SetMinMaxValues(0, totalSteps)
-	self.progressBar.duration:SetFormattedText("%d/%d", 0, totalSteps)
+	self.progressBar.statusBar:SetMinMaxValues(0, totalSteps - 1)
+	self.progressBar.duration:SetFormattedText("%0d%%", 0)
 	self.progressBar:RestyleBar()
 end
 
@@ -190,30 +190,33 @@ local function SetCurrentStep(self, step, text, enableNext)
 	self.currentStep = step
 	self.previousButton:SetEnabled(step > 1)
 	self.nextButton:SetEnabled(enableNext)
-	if step == self.totalSteps then
-		self.buttonContainer.children[2]:SetText("Finish")
-		SetButtonWidths(self.buttonContainer)
-		self.buttonContainer:DoLayout()
+	if step == 1 then
+		self.buttonContainer.children[2]:SetText(L["Start"])
+	elseif step == self.totalSteps then
+		self.buttonContainer.children[2]:SetText(L["Finish"])
+	else
+		self.buttonContainer.children[2]:SetText(L["Next"])
 	end
+	SetButtonWidths(self.buttonContainer)
+	self.buttonContainer:DoLayout()
+
 	self.text:SetText(text)
 	self.previousText = text
 
-	self.progressBar.statusBar:SetValue(step)
-	self.progressBar.duration:SetFormattedText("%d/%d", step, self.totalSteps)
+	self.progressBar.statusBar:SetValue(step - 1)
+	self.progressBar.duration:SetFormattedText("%0d%%", ((step - 1) / (self.totalSteps - 1)) * 100)
 	self:Resize()
 end
 
 ---@param self EPTutorial
 local function Resize(self)
-	local buttonWidth = self.buttonContainer.frame:GetWidth()
-	local width = buttonWidth + contentFramePadding.x * 2
-	self.progressBar.frame:SetWidth(width - contentFramePadding.x * 2)
+	self.progressBar.frame:SetWidth(defaultWidth - contentFramePadding.x * 2)
 	self.progressBar:RestyleBar()
-	self.container.frame:SetWidth(width - contentFramePadding.x * 2)
+	self.container.frame:SetWidth(defaultWidth - contentFramePadding.x * 2)
 	self.text:ClearAllPoints()
-	self.measureText:SetWidth(width - contentFramePadding.x * 2)
+	self.measureText:SetWidth(defaultWidth - contentFramePadding.x * 2)
 	self.measureText:SetText(self.text:GetText())
-	self.text:SetWidth(width - contentFramePadding.x * 2)
+	self.text:SetWidth(defaultWidth - contentFramePadding.x * 2)
 	self.container.frame:SetHeight(self.measureText:GetHeight())
 	self.text:SetPoint("CENTER", self.container.frame)
 
@@ -223,7 +226,7 @@ local function Resize(self)
 	local paddingHeight = contentFramePadding.y * 4
 
 	local height = windowBarHeight + buttonContainerHeight + paddingHeight + containerHeight + progressBarHeight
-	self.frame:SetSize(width, height)
+	self.frame:SetSize(defaultWidth, height)
 end
 
 local function Constructor()
@@ -289,7 +292,6 @@ local function Constructor()
 	---@field totalSteps integer
 	---@field previousButton EPButton
 	---@field nextButton EPButton
-	---@field skipButton EPButton
 	---@field previousText string
 	local widget = {
 		OnAcquire = OnAcquire,
