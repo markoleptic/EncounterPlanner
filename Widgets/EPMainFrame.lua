@@ -43,8 +43,10 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 local closeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
-local discordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-24]]
-local helpIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-help-32]]
+local discordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-new-48]]
+local tutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]]
+local userGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]]
+
 local userGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]]
 local discordUrl = [[discord.gg/9bmH43JSzy]]
 local throttleInterval = 0.015 -- Minimum time between executions, in seconds
@@ -158,6 +160,7 @@ local function OnAcquire(self)
 	self.maximizeButton:SetCallback("Clicked", function()
 		self.minimizeFrame:Hide()
 		self.frame:Show()
+		self:Fire("MaximizeButtonClicked")
 	end)
 
 	local minimizeFrameButtonWidths = self.maximizeButton.frame:GetWidth()
@@ -199,8 +202,8 @@ local function OnAcquire(self)
 	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar, "BOTTOMLEFT", 1, 1)
 
 	local buttonSpacing = 4
-	local buttonHeight = (statusBarHeight - buttonSpacing) / 2.0
-	local halfButtonWidth = (buttonWidth - buttonSpacing) / 2.0
+	local buttonHeight = (statusBarHeight / 2.0) - buttonSpacing
+	local horizontalButtonSpacing = (buttonWidth - (3 * buttonHeight)) / 2.0
 
 	local clearLogButton = AceGUI:Create("EPButton")
 	clearLogButton:SetText(format("|T%s:%d|t %s", closeIcon, 0, L["Clear Status Bar"]))
@@ -210,9 +213,18 @@ local function OnAcquire(self)
 		Private.interfaceUpdater.ClearMessageLog()
 	end)
 
+	local tutorialButton = AceGUI:Create("EPButton")
+	tutorialButton:SetText(format("|T%s:%d|t %s", tutorialIcon, 0, L["Tutorial"]))
+	tutorialButton:SetWidthFromText(0)
+	tutorialButton:SetHeight(buttonHeight)
+	tutorialButton:SetColor(unpack(neutralButtonColor))
+	tutorialButton:SetCallback("Clicked", function()
+		self:Fire("TutorialButtonClicked")
+	end)
+
 	local userGuideButton = AceGUI:Create("EPButton")
-	userGuideButton:SetText(format("|T%s:%d|t %s", helpIcon, 0, L["User Guide"]))
-	userGuideButton:SetWidth(halfButtonWidth)
+	userGuideButton:SetText(format("|T%s:%d|t %s", userGuideIcon, 0, L["User Guide"]))
+	userGuideButton:SetWidthFromText(0)
 	userGuideButton:SetHeight(buttonHeight)
 	userGuideButton:SetColor(unpack(neutralButtonColor))
 	userGuideButton:SetCallback("Clicked", function()
@@ -220,19 +232,30 @@ local function OnAcquire(self)
 	end)
 
 	local discordButton = AceGUI:Create("EPButton")
-	discordButton:SetText(format("|T%s:%d|t %s", discordIcon, 0, L["Discord"]))
-	discordButton:SetWidth(halfButtonWidth)
+	discordButton:SetText(format("|T%s:%d|t", discordIcon, 0))
+	discordButton:SetWidthFromText(0)
 	discordButton:SetHeight(buttonHeight)
 	discordButton:SetColor(unpack(neutralButtonColor))
 	discordButton:SetCallback("Clicked", function()
 		HandleButtonClicked(self, discordButton.frame, "BOTTOM", "TOP", discordUrl)
 	end)
 
+	local remainingWidthAvailable = buttonWidth
+		- tutorialButton.frame:GetWidth()
+		- userGuideButton.frame:GetWidth()
+		- discordButton.frame:GetWidth()
+		- (2 * buttonSpacing)
+
+	local additionalTextPadding = remainingWidthAvailable / 3.0
+	tutorialButton:SetWidthFromText(additionalTextPadding)
+	userGuideButton:SetWidthFromText(additionalTextPadding)
+	discordButton:SetWidthFromText(additionalTextPadding)
+
 	local userGuideAndDiscordContainer = AceGUI:Create("EPContainer")
 	userGuideAndDiscordContainer:SetLayout("EPHorizontalLayout")
 	userGuideAndDiscordContainer:SetSpacing(buttonSpacing, 0)
 	userGuideAndDiscordContainer:SetFullWidth(true)
-	userGuideAndDiscordContainer:AddChildren(userGuideButton, discordButton)
+	userGuideAndDiscordContainer:AddChildren(tutorialButton, userGuideButton, discordButton)
 
 	local lowerLeftContainer = AceGUI:Create("EPContainer")
 	lowerLeftContainer:SetLayout("EPVerticalLayout")
