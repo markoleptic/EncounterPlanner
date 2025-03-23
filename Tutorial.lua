@@ -230,7 +230,7 @@ local function IsTextChanged(self)
 		if assignmentID then
 			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
 			if assignment then
-				if assignment.text:lower() == "use healthstone {6262} at {circle}" then
+				if assignment.text:lower() == L["use {6262} at {circle}"] then
 					return true
 				end
 			end
@@ -537,15 +537,17 @@ end
 local function CreateTutorialSteps(self, setCurrentStep)
 	local steps = {}
 	local createdTutorialPlan = false
+	local cinderBrewMeaderyName = self.dungeonInstances[2661].name
+	local brewMasterAldryrName = bossUtilities.GetBoss(2900).name
 	---@type table<integer, TutorialStep>
 	steps = {
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"This interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and pick up where you left by clicking the",
+				L["This interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and pick up where you left by clicking the"],
 				"cffffd10",
-				"Tutorial button",
-				"located in the lower left of the main window"
+				L["Tutorial button"],
+				L["located in the lower left of the main window"]
 			),
 			enableNextButton = true,
 			OnStepActivated = function(_)
@@ -557,21 +559,17 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "The Menu Bar contains high level categories for managing plans, modifying bosses, editing rosters, and settings.",
+			text = L["The Menu Bar contains high level categories for managing plans, modifying bosses, editing rosters, and settings."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
 				localSelf.frame = self.mainFrame.menuButtonContainer.frame
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
-				if not incrementing then
-					highlightBorderFrame:ClearAllPoints()
-					highlightBorderFrame:Hide()
-				end
+			PreStepDeactivated = function(localSelf)
 				localSelf.frame = nil
 			end,
 		},
 		{
-			text = "Click the Plan button, and then click New Plan.",
+			text = L["Click the Plan button, and then click New Plan."],
 			enableNextButton = function()
 				return CurrentPlanValidates(2900)
 			end,
@@ -595,12 +593,12 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r (|c%s%s|r) %s |c%s%s|r.",
-				"This plan will be used throughout this tutorial. Select",
+				L["This plan will be used throughout this tutorial. Select"],
 				"cffffd10",
-				"Brew Master Aldryr",
+				brewMasterAldryrName,
 				"cffffd10",
-				"Cinderbrew Meadery",
-				"as the boss, and name the plan",
+				cinderBrewMeaderyName,
+				L["as the boss, and name the plan"],
 				"cffffd10",
 				L["Tutorial"]
 			),
@@ -664,10 +662,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"Click the",
+				L["Click the"],
 				"cffffd10",
-				"Roster button",
-				"to open the Roster Editor for the plan"
+				L["Roster button"],
+				L["to open the Roster Editor for the plan"]
 			),
 			enableNextButton = false,
 			frame = self.mainFrame.menuButtonContainer.children[3].frame,
@@ -689,10 +687,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"The",
+				L["The"],
 				"cffffd10",
-				"Current Plan Roster",
-				"is unique to the current plan. Roster members must be added here before assignments can be assigned to them. The creator of the plan is automatically added"
+				L["Current Plan Roster"],
+				L["is unique to the current plan. Roster members must be added here before assignments can be assigned to them. The creator of the plan is automatically added"]
 			),
 			enableNextButton = true,
 			callbackName = "TutRosterEditor",
@@ -724,12 +722,12 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s |c%s%s|r.",
-				"The",
+				L["The"],
 				"cffffd10",
-				"Shared Roster",
-				"is independent of plans and can and be used quickly populate the",
+				L["Shared Roster"],
+				L["is independent of plans and can and be used quickly populate the"],
 				"cffffd10",
-				"Current Plan Roster"
+				L["Current Plan Roster"]
 			),
 			enableNextButton = true,
 			callbackName = "TutRosterEditorTwo",
@@ -761,27 +759,35 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"The",
+				L["The"],
 				"cffffd10",
-				"Current Plan Bar",
-				"shows information and settings for the current plan"
+				L["Current Plan Bar"],
+				L["shows information and settings for the current plan"]
 			),
 			enableNextButton = true,
 			frame = self.mainFrame.children[1].frame,
 		},
 		{
-			text = "The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown.",
+			text = L["The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown."],
 			enableNextButton = true,
 			frame = self.mainFrame.planDropdown.frame,
 			additionalVerticalOffset = 10,
 		},
 		{
 			text = format(
-				"%s |c%s%s|r %s.",
-				"Reminders can be toggled on and off on a per-plan basis. The yellow bell icon in the",
+				"%s |c%s%s|r %s |c%s%s|r %s. %s |c%s%s|r %s %s.",
+				L["Reminders can be toggled on and off on a per-plan basis using this checkbox or globally in the"],
 				"cffffd10",
-				"Current Plan Dropdown",
-				"also indicates whether reminders are enabled for a plan.\n\nUncheck the check box to disable reminders for this plan"
+				L["Reminder"],
+				L["section of the"],
+				"cffffd10",
+				L["Preferences"],
+				L["menu"],
+				L["The yellow bell icon in the"],
+				"cffffd10",
+				L["Current Plan"],
+				L["dropdown"],
+				L["also indicates whether reminders are enabled for a plan.\n\nUncheck the checkbox to disable reminders for this plan"]
 			),
 			enableNextButton = function()
 				if Private.mainFrame and not Private.mainFrame.planReminderEnableCheckBox:IsChecked() then
@@ -812,10 +818,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		},
 		{
 			text = format(
-				"%s |c%s%s|r.",
-				"Add yourself to the Assignment Timeline by selecting your character name from the Individual menu in the",
+				"%s |c%s%s|r %s.",
+				L["Add yourself to the Assignment Timeline by selecting your character name from the Individual menu in the"],
 				"cffffd10",
-				"Add Assignee dropdown"
+				L["Add Assignee"],
+				L["dropdown"]
 			),
 			enableNextButton = function()
 				return IsSelfPresentInPlan()
@@ -840,10 +847,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"The",
+				L["The"],
 				"cffffd10",
-				"Assignment Editor",
-				"is opened after adding an assignee. It can also by opened by left-clicking an assignment spell icon in the Assignment Timeline"
+				L["Assignment Editor"],
+				L["is opened after adding an assignee. It can also by opened by left-clicking an assignment spell icon in the Assignment Timeline"]
 			),
 			enableNextButton = true,
 			callbackName = "TutAssignmentEditorOpened",
@@ -875,10 +882,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"The",
+				L["The"],
 				"cffffd10",
-				"Trigger",
-				"determines what activates an assignment. It can either be relative to the start of an encounter (Fixed Time) or relative to a combat log event. Leave it as Fixed Time"
+				L["Trigger"],
+				L["determines what activates an assignment. It can either be relative to the start of an encounter (Fixed Time) or relative to a combat log event. Leave it as Fixed Time"]
 			),
 			enableNextButton = true,
 			callbackName = "TutAssignmentTrigger",
@@ -905,7 +912,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = format("%s |c%s%s|r %s.", "Set the", "cffffd10", "Time", "to 30 seconds"),
+			text = format("%s |c%s%s|r %s.", L["Set the"], "cffffd10", L["Time"], L["to 30 seconds and press enter."]),
 			enableNextButton = function()
 				return IsTimeCorrect(self, 30.0)
 			end,
@@ -938,13 +945,14 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		},
 		{
 			text = format(
-				"%s |c%s%s|r %s |c%s%s|r.",
-				"Check the",
+				"%s |c%s%s|r %s |c%s%s|r %s.",
+				L["Check the"],
 				"cffffd10",
-				"Spell checkbox",
-				"and select a spell from the",
+				L["Spell checkbox"],
+				L["and select a spell from the"],
 				"cffffd10",
-				"Spell dropdown"
+				L["Spell"],
+				L["dropdown"]
 			),
 			enableNextButton = function()
 				return IsSpellChanged(self, 1)
@@ -977,7 +985,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "The Assignment Timeline is updated to reflect the spell. The cooldown duration of the spell is shown as the alternating grey texture.",
+			text = L["The Assignment Timeline is updated to reflect the spell. The cooldown duration of the spell is shown as the alternating grey texture."],
 			enableNextButton = true,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
@@ -986,15 +994,18 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		},
 		{
 			text = format(
-				"%s |c%s%s|r %s. %s |c%s%s|r %s",
-				"Spell cooldown durations can be overridden in the",
+				"%s |c%s%s|r %s |c%s%s|r %s. %s |c%s%s|r %s.",
+				L["Spell cooldown durations can be overridden in the"],
 				"cffffd10",
-				"Cooldown Overrides",
-				"section of the Preferences Menu",
-				"The alternating grey cooldown textures can be disabled in the",
+				L["Cooldown Overrides"],
+				L["section of the"],
 				"cffffd10",
-				"View",
-				"section"
+				L["Preferences"],
+				L["menu"],
+				L["The alternating grey cooldown textures can be disabled in the"],
+				"cffffd10",
+				L["View"],
+				L["section"]
 			),
 			enableNextButton = true,
 			frame = self.mainFrame.menuButtonContainer.children[4].frame,
@@ -1002,10 +1013,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"Assignment",
+				L["Assignment"],
 				"cffffd10",
-				"Text",
-				"is displayed on reminder messages and progress bars. If blank, the spell icon and name are automatically used"
+				L["Text"],
+				L["is displayed on reminder messages and progress bars. If blank, the spell icon and name are automatically used"]
 			),
 			enableNextButton = true,
 			callbackName = "TutAssignmentAutoText",
@@ -1033,7 +1044,6 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				local previewFrame = self.assignmentEditor.previewContainer.frame
 				highlightBorderFrame:SetFrameStrata(previewFrame:GetFrameStrata())
 				highlightBorderFrame:SetFrameLevel(previewFrame:GetFrameLevel() + 10)
-				highlightBorderFrame:ClearAllPoints()
 				highlightBorderFrame:SetPoint("TOPLEFT", textFrame, -2, 2)
 				highlightBorderFrame:SetPoint("BOTTOMRIGHT", previewFrame, 2, -2)
 				highlightBorderFrame:Show()
@@ -1044,10 +1054,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s",
-				"Icons can be inserted into text by enclosing a spell ID, raid marker name, or similar in curly braces. Set the",
+				L["Icons can be inserted into text by enclosing a spell ID, raid marker name, or similar in curly braces. Set the"],
 				"cffffd10",
-				"Text",
-				"to the following:\nUse Healthstone {6262} at {circle}\nand press enter."
+				L["Text"],
+				L["to the following:\nUse {6262} at {circle}\nand press enter."]
 			),
 			enableNextButton = function()
 				return IsTextChanged(self)
@@ -1079,7 +1089,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Create a blank assignment in Phase 1 by left-clicking the timeline beside an assignee.",
+			text = L["Create a blank assignment in Phase 1 by left-clicking the timeline beside an assignee."],
 			enableNextButton = function()
 				return TwoPhaseOneAssignmentsExist()
 			end,
@@ -1107,7 +1117,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "The assignment is created relative to the start of the encounter since it was clicked within Phase 1.",
+			text = L["The assignment is created relative to the start of the encounter since it was clicked within Phase 1."],
 			enableNextButton = true,
 			callbackName = "TutAssignmentAddedOneTime",
 			OnStepActivated = function(localSelf)
@@ -1133,7 +1143,6 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				local frame = self.assignmentEditor.children[1].frame
 				highlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
 				highlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-				highlightBorderFrame:ClearAllPoints()
 				highlightBorderFrame:SetPoint("TOPLEFT", frame, -kHighlightPadding, kHighlightPadding)
 				local lowerFrame = self.assignmentEditor.timeContainer.frame
 				highlightBorderFrame:SetPoint("BOTTOMRIGHT", lowerFrame, kHighlightPadding, -kHighlightPadding)
@@ -1145,10 +1154,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"Change the",
+				L["Change the"],
 				"cffffd10",
-				"Spell",
-				"to something different from first assignment you created"
+				L["Spell"],
+				L["to something different from first assignment you created"]
 			),
 			enableNextButton = function()
 				return IsSpellChanged(self, 2, true, 2)
@@ -1181,7 +1190,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Create another blank assignment, this time during the first intermission.",
+			text = L["Create another blank assignment, this time during the first intermission."],
 			enableNextButton = function()
 				return IntermissionAssignmentExists("SCS", true)
 			end,
@@ -1210,7 +1219,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Since the intermission is triggered by boss health, using timed assignments would be unreliable. Instead, the spell the boss casts before transitioning into intermission is used.",
+			text = L["Since the intermission is triggered by boss health, using timed assignments would be unreliable. Instead, the spell the boss casts before transitioning into intermission is used."],
 			enableNextButton = true,
 			callbackName = "TutIntermissionSpell",
 			OnStepActivated = function(localSelf)
@@ -1236,7 +1245,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Change the time of an assignment by left-clicking an icon and dragging it.\nWhen dragging a combat log event assignment, it can only be placed after the boss ability, as the assignment must occur afterward.",
+			text = L["Change the time of an assignment by left-clicking an icon and dragging it.\nWhen dragging a combat log event assignment, it can only be placed after the boss ability, as the assignment must occur afterward."],
 			enableNextButton = false,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
@@ -1269,10 +1278,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s.",
-				"Change the",
+				L["Change the"],
 				"cffffd10",
-				"Spell",
-				"to one of the spells you used in another assignment"
+				L["Spell"],
+				L["to one of the spells you used in another assignment"]
 			),
 			enableNextButton = function()
 				return IsSpellChanged(self, 3, true, 2, true)
@@ -1307,12 +1316,12 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s |c%s%s|r.",
-				"Change the",
+				L["Change the"],
 				"cffffd10",
-				"Trigger",
-				"to",
+				L["Trigger"],
+				L["to"],
 				"cffffd10",
-				"Spell Aura Removed"
+				L["Spell Aura Removed"]
 			),
 			callbackName = "TutAssignmentChangeCombatLogEventType",
 			enableNextButton = function()
@@ -1325,7 +1334,6 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							return
 						end
 						if category == "assignmentEditorDataChanged" then
-							print(IsCombatLogEventTypeCorrect(self, "SAR"))
 							if IsCombatLogEventTypeCorrect(self, "SAR") then
 								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 							end
@@ -1348,13 +1356,13 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			text = format(
 				"%s |c%s%s|r %s |c%s%s|r %s.",
-				"The time relative to the event stayed the same, but the icon moved forward since the",
+				L["The time relative to the event stayed the same, but the icon moved forward since the"],
 				"cffffd10",
-				"Spell Aura Removed",
-				"event occurs after the",
+				L["Spell Aura Removed"],
+				L["event occurs after the"],
 				"cffffd10",
-				"Spell Cast Start",
-				"event"
+				L["Spell Cast Start"],
+				L["event"]
 			),
 			callbackName = "TutAssignmentChangeCombatLogEventTypeExplain",
 			enableNextButton = true,
@@ -1381,7 +1389,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Instead of left-clicking beside an assignee, create an assignment by left-clicking the timeline beside a spell.",
+			text = L["Instead of left-clicking beside an assignee, create an assignment by left-clicking the timeline beside a spell."],
 			enableNextButton = false,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
@@ -1407,7 +1415,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "The new assignment is created using the matching spell.",
+			text = L["The new assignment is created using the matching spell."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
 				if not self.assignmentEditor then
@@ -1420,7 +1428,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Duplicate an assignment by control-clicking an icon and dragging.",
+			text = L["Duplicate an assignment by control-clicking an icon and dragging."],
 			enableNextButton = false,
 			HighlightFrame = function()
 				EnsureAssigneeIsExpanded(self)
@@ -1446,7 +1454,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "The duplicated assignment inherits all properties, besides time, from the original and is independent of it.",
+			text = L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
 				if not self.assignmentEditor then
@@ -1459,11 +1467,215 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
-			text = "Tutorial Complete!",
+			text = L["Click the Boss button, navigate to Filter Spells, and click an ability to hide it from the timeline."],
+			enableNextButton = false,
+			callbackName = "hideBossAbility",
+			OnStepActivated = function(localSelf)
+				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+					if self.activeTutorialCallbackName ~= localSelf.callbackName then
+						return
+					end
+					if category == "hidden" then
+						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					end
+				end)
+				localSelf.frame = self.mainFrame.bossMenuButton.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = L["Hiding a boss ability does not affect combat log event assignments using it."],
+			enableNextButton = true,
+			OnStepActivated = function(localSelf)
+				localSelf.frame = self.mainFrame.bossMenuButton.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+			end,
+		},
+		{
+			text = L["Click the Simulate Reminders button to preview reminders for the current plan."],
+			enableNextButton = false,
+			callbackName = "startSimulatingReminders",
+			OnStepActivated = function(localSelf)
+				if self:IsSimulatingBoss() then
+					self:StopSimulatingBoss()
+				end
+				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+					if self.activeTutorialCallbackName ~= localSelf.callbackName then
+						return
+					end
+					if category == "simulationStarted" then
+						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+					end
+				end)
+				localSelf.frame = self.mainFrame.simulateRemindersButton.frame
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = L["Minimize the main window to get a better view."],
+			enableNextButton = false,
+			callbackName = "minimizeMainWindow",
+			OnStepActivated = function(localSelf)
+				if not self:IsSimulatingBoss() then
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				else
+					if self.mainFrame.minimizeFrame:IsShown() then
+						self.mainFrame:Maximize()
+					end
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "minimizeButtonClicked" then
+							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+						end
+					end)
+					localSelf.frame = self.mainFrame.minimizeButton.frame
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = L["Click the maximize button to continue the tutorial."],
+			enableNextButton = false,
+			callbackName = "maximizeMainWindow",
+			OnStepActivated = function(localSelf)
+				if not self:IsSimulatingBoss() then
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				else
+					if not self.mainFrame.minimizeFrame:IsShown() then
+						self.mainFrame:Minimize()
+					end
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "maximizeButtonClicked" then
+							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+						end
+					end)
+					HighlightFrame(self.mainFrame.maximizeButton.frame)
+					self.tutorial.frame:ClearAllPoints()
+					self.tutorial.frame:SetPoint("TOP", highlightBorderFrame, "BOTTOM", 0, -kTutorialOffset)
+					self.tutorial.frame:Show()
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = L["Click the Simulate Reminders button again to stop previewing."],
+			enableNextButton = false,
+			callbackName = "stopSimulatingReminders",
+			OnStepActivated = function(localSelf)
+				if not self:IsSimulatingBoss() then
+					setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
+				else
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.callbackName, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.callbackName then
+							return
+						end
+						if category == "simulationStopped" then
+							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+						end
+					end)
+					localSelf.frame = self.mainFrame.simulateRemindersButton.frame
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				localSelf.frame = nil
+				self.UnregisterCallback(self.tutorialCallbackObject, localSelf.callbackName)
+			end,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s |c%s%s|r %s.",
+				L["Reminders can be customized in the"],
+				"cffffd10",
+				L["Reminder"],
+				L["section of the"],
+				"cffffd10",
+				L["Preferences"],
+				L["menu"]
+			),
+			enableNextButton = false,
+			OnStepActivated = function(localSelf)
+				if not self.optionsMenu then
+					self:CreateOptionsMenu()
+				end
+				self.optionsMenu:SetCurrentTab(L["Reminder"])
+				for _, widget in ipairs(self.optionsMenu.tabTitleContainer.children) do
+					if widget.type == "EPButton" and widget.button then
+						if
+							widget--[[@as EPButton]].button:GetText() == L["Reminder"]
+						then
+							localSelf.frame = widget--[[@as EPButton]].frame
+							break
+						end
+					end
+				end
+			end,
+			PreStepDeactivated = function(localSelf)
+				if self.optionsMenu then
+					self:ReleaseOptionsMenu()
+				end
+				localSelf.frame = nil
+			end,
+		},
+		{
+			text = format(
+				"|c%s%s|r %s.",
+				"cffffd10",
+				L["External Text"],
+				L["is miscellaneous text that can be accessed by other addons and WeakAuras. Clicking this button opens the External Text Editor"]
+			),
+			enableNextButton = true,
+			frame = self.mainFrame.externalTextButton.frame,
+		},
+		{
+			text = format(
+				"%s |c%s%s|r %s, %s |c%s%s|r %s. %s |c%s%s|r",
+				L["If a plan is the"],
+				"cffffd10",
+				L["Designated External Plan"],
+				L["and you are the group leader"],
+				L["its"],
+				"cffffd10",
+				L["External Text"],
+				L["is sent to all members of the group"],
+				L["Each boss must have a unique"],
+				"cffffd10",
+				L["Designated External Plan"]
+			),
+			enableNextButton = true,
+			frame = self.mainFrame.primaryPlanCheckBox.frame,
+		},
+		{
+			text = format(
+				"%s. %s.",
+				L["Sending the current plan requires group leader or group assistant"],
+				L["Receivers can approve or reject incoming plans, and can automatically receive future plans by saving the sender as a trusted character"]
+			),
+			enableNextButton = true,
+			frame = self.mainFrame.sendPlanButton.frame,
+		},
+		{
+			text = L["Tutorial Complete!"],
 			enableNextButton = true,
 			OnStepActivated = function(_)
-				highlightBorderFrame:ClearAllPoints()
-				highlightBorderFrame:Hide()
 				self.tutorial.frame:ClearAllPoints()
 				self.tutorial.frame:SetPoint("CENTER", UIParent)
 				local x, y = self.tutorial.frame:GetLeft(), self.tutorial.frame:GetTop()
@@ -1487,6 +1699,9 @@ function Private:OpenTutorial()
 				highlightBorderFrameWasVisible = highlightBorderFrame:IsShown()
 				self.tutorial.frame:Hide()
 				highlightBorderFrame:Hide()
+				if self.activeTutorialCallbackName then
+					self.callbacks:Fire(self.activeTutorialCallbackName, "minimizeButtonClicked")
+				end
 			end
 		end)
 		self.mainFrame:SetCallback("MaximizeButtonClicked", function()
@@ -1494,6 +1709,9 @@ function Private:OpenTutorial()
 				self.tutorial.frame:Show()
 				if highlightBorderFrameWasVisible then
 					highlightBorderFrame:Show()
+				end
+				if self.activeTutorialCallbackName then
+					self.callbacks:Fire(self.activeTutorialCallbackName, "maximizeButtonClicked")
 				end
 			end
 		end)
@@ -1531,6 +1749,8 @@ function Private:OpenTutorial()
 					Private.activeTutorialCallbackName = currentStep.callbackName
 				end
 				self.tutorial.currentStep = currentStepIndex
+				highlightBorderFrame:ClearAllPoints()
+				highlightBorderFrame:Hide()
 				if currentStep.OnStepActivated then
 					currentStep:OnStepActivated()
 				end
@@ -1560,24 +1780,8 @@ function Private:OpenTutorial()
 
 		local addBack = {
 			{
-				text = "Clicking the Boss button lets change the current plan boss, adjust phase timings, and show/hide boss abilities.",
+				text = L["Clicking the Boss button lets change the current plan boss, adjust phase timings, and show/hide boss abilities."],
 				frame = self.mainFrame.menuButtonContainer.children[2].frame,
-			},
-			{
-				text = "The Shared Roster tab opens the Shared Roster, which is plan-independent and persists across all plans.",
-				OnStepActivated = function(localSelf)
-					if not self.rosterEditor then
-						self.CreateRosterEditor("Shared Roster")
-					end
-					self.rosterEditor:SetCurrentTab("Shared Roster")
-					localSelf.frame = self.rosterEditor.tabContainer.children[2].frame
-				end,
-				PreStepDeactivated = function(localSelf)
-					if self.rosterEditor then
-						self.rosterEditor:Release()
-					end
-					localSelf.frame = nil
-				end,
 			},
 		}
 

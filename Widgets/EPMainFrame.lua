@@ -82,6 +82,7 @@ end
 ---@field collapseAllButton EPButton
 ---@field expandAllButton EPButton
 ---@field simulateRemindersButton EPButton
+---@field externalTextButton EPButton
 ---@field lowerContainer EPContainer
 ---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
@@ -132,8 +133,7 @@ local function OnAcquire(self)
 	self.minimizeButton.frame:SetParent(self.windowBar)
 	self.minimizeButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT")
 	self.minimizeButton:SetCallback("Clicked", function()
-		self.frame:Hide()
-		self.minimizeFrame:Show()
+		self:Minimize()
 		self:Fire("MinimizeButtonClicked")
 	end)
 
@@ -158,8 +158,7 @@ local function OnAcquire(self)
 	self.maximizeButton.frame:SetParent(self.minimizeFrame --[[@as Frame]])
 	self.maximizeButton.frame:SetPoint("RIGHT", self.closeButtonMinimizeFrame.frame, "LEFT", -edgeSize, 0)
 	self.maximizeButton:SetCallback("Clicked", function()
-		self.minimizeFrame:Hide()
-		self.frame:Show()
+		self:Maximize()
 		self:Fire("MaximizeButtonClicked")
 	end)
 
@@ -330,6 +329,7 @@ local function OnRelease(self)
 	self.sendPlanButton = nil
 	self.primaryPlanCheckBox = nil
 	self.simulateRemindersButton = nil
+	self.externalTextButton = nil
 end
 
 ---@param self EPMainFrame
@@ -440,6 +440,12 @@ end
 local function Maximize(self)
 	self.minimizeFrame:Hide()
 	self.frame:Show()
+end
+
+---@param self EPMainFrame
+local function Minimize(self)
+	self.frame:Hide()
+	self.minimizeFrame:Show()
 end
 
 local function Constructor()
@@ -574,6 +580,7 @@ local function Constructor()
 		HandleResizeBoundsCalculated = HandleResizeBoundsCalculated,
 		UpdateHorizontalResizeBounds = UpdateHorizontalResizeBounds,
 		Maximize = Maximize,
+		Minimize = Minimize,
 		frame = frame,
 		type = Type,
 		content = contentFrame,
@@ -582,8 +589,6 @@ local function Constructor()
 		minimizeFrameText = minimizeFrameText,
 		editBox = editBox,
 		editBoxFrame = editBoxFrame,
-		userGuideStringLength = 0,
-		discordStringLength = 0,
 		testFontString = testFontString,
 	}
 

@@ -931,12 +931,34 @@ local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 					break
 				end
 			end
+
+			local enabledCount = 0
+			if Private.activeTutorialCallbackName then
+				for _, currentSelected in pairs(activeBossAbilities) do
+					if currentSelected == true then
+						enabledCount = enabledCount + 1
+					end
+				end
+			end
+
 			if atLeastOneSelected then
 				activeBossAbilities[value] = selected
 				UpdateBoss(boss.dungeonEncounterID, false)
 			else
 				dropdown:SetItemIsSelected(value, true, true)
 				activeBossAbilities[value] = true
+			end
+
+			if Private.activeTutorialCallbackName then
+				local newEnabledCount = 0
+				for _, currentSelected in pairs(activeBossAbilities) do
+					if currentSelected == true then
+						newEnabledCount = newEnabledCount + 1
+					end
+				end
+				if newEnabledCount < enabledCount then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "hidden")
+				end
 			end
 		end
 	end
@@ -1445,6 +1467,12 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 		addAssigneeDropdown:SetEnabled(not isSimulatingBoss)
 	end
 	Private.mainFrame.planDropdown:SetEnabled(not isSimulatingBoss)
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(
+			Private.activeTutorialCallbackName,
+			wasSimulatingBoss and "simulationStopped" or "simulationStarted"
+		)
+	end
 end
 
 local simulationCompletedObject = {}
@@ -1969,6 +1997,7 @@ function Private:CreateInterface()
 	Private.mainFrame.timeline = timeline
 	Private.mainFrame.sendPlanButton = sendPlanButton
 	Private.mainFrame.simulateRemindersButton = simulateRemindersButton
+	Private.mainFrame.externalTextButton = externalTextButton
 
 	Private.HandleSendPlanButtonConstructed()
 	interfaceUpdater.RestoreMessageLog()
