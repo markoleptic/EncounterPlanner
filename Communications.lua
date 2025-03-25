@@ -461,7 +461,7 @@ do
 			end
 		elseif prefix == kDistributeText then
 			local package = StringToTable(message, false)
-			self.db.profile.activeText = package
+			self.db.profile.activeText = package --[[@as table]]
 		end
 	end
 
@@ -631,6 +631,28 @@ do
 			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
 
 			return "EncodeDecodePlan"
+		end
+	end
+
+	do
+		-- cSpell:disable
+		local textTable = {
+			"nsdispelstart",
+			"|cff006fdcMajablast|r  |cfffe7b09Skorke|r  |cfff38bb9Berlinnetti|r  |cff00fe97Dogpog|r",
+			"nsdispelend",
+		}
+		-- cSpell:enable
+
+		function test.TableToStringToTable()
+			local export = TableToString(textTable, false)
+			local package = StringToTable(export, false)
+
+			TestEqual(type(package) == "table", true, "Correct type returned from StringToTable")
+			TestEqual(package[1], textTable[1], "Conversion string table entry equal")
+			TestEqual(package[2], textTable[2], "Conversion string table entry equal")
+			TestEqual(package[3], textTable[3], "Conversion string table entry equal")
+
+			return "TableToStringToTable"
 		end
 	end
 end
