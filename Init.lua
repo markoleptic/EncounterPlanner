@@ -695,8 +695,9 @@ local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 
 ---@class GlobalProfile
 ---@field tutorialCompleted boolean
----@field lastTutorialStep integer
+---@field lastTutorialStepName string
 ---@field tutorialSkipped boolean
+---@field tutorialRevision integer
 
 ---@class Defaults : AceDB.Schema
 ---@field profile DefaultProfile
@@ -794,8 +795,9 @@ local defaults = {
 	},
 	global = {
 		tutorialCompleted = false,
-		lastTutorialStep = 1,
+		lastTutorialStepName = "",
 		tutorialSkipped = false,
+		tutorialRevision = 1,
 	},
 }
 

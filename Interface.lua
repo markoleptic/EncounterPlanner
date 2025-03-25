@@ -323,7 +323,7 @@ do -- Roster Editor
 		end
 
 		if Private.activeTutorialCallbackName then
-			Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "rosterEditorClosed")
 		end
 	end
 
@@ -442,6 +442,9 @@ do -- Assignment Editor
 
 	local function HandleAssignmentEditorDeleteButtonClicked()
 		local assignmentID = Private.assignmentEditor:GetAssignmentID()
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "preAssignmentEditorDeleteButtonClicked")
+		end
 		Private.assignmentEditor:Release()
 		local assignments = GetCurrentAssignments()
 		for i, v in ipairs(assignments) do
@@ -452,6 +455,9 @@ do -- Assignment Editor
 			end
 		end
 		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDeleteButtonClicked")
+		end
 	end
 
 	local ChangeAssignmentType = utilities.ChangeAssignmentType
@@ -619,7 +625,7 @@ do -- Assignment Editor
 				end
 			end
 			if Private.activeTutorialCallbackName then
-				Private.callbacks:Fire(Private.activeTutorialCallbackName, "released")
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorReleased")
 			end
 			Private.assignmentEditor = nil
 		end)
@@ -758,6 +764,16 @@ do -- Phase Length Editor
 				UpdateBoss(bossDungeonEncounterID, true)
 				UpdateAllAssignments(false, bossDungeonEncounterID)
 				UpdateTotalTime()
+
+				if Private.activeTutorialCallbackName then
+					if phaseIndex == 1 then
+						Private.callbacks:Fire(
+							Private.activeTutorialCallbackName,
+							"phaseOneDurationChanged",
+							newDuration
+						)
+					end
+				end
 			end
 		end
 	end
@@ -795,6 +811,9 @@ do -- Phase Length Editor
 			phaseLengthEditor.FormatTime = FormatTime
 			phaseLengthEditor:SetCallback("OnRelease", function()
 				Private.phaseLengthEditor = nil
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "phaseLengthEditorReleased")
+				end
 			end)
 			phaseLengthEditor:SetCallback("CloseButtonClicked", function()
 				Private.phaseLengthEditor:Release()
@@ -844,6 +863,9 @@ do -- Phase Length Editor
 			phaseLengthEditor:SetPoint("TOP", UIParent, "TOP", 0, -phaseLengthEditor.frame:GetBottom())
 
 			Private.phaseLengthEditor = phaseLengthEditor
+		end
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "phaseLengthEditorOpened")
 		end
 	end
 end
@@ -957,7 +979,7 @@ local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 					end
 				end
 				if newEnabledCount < enabledCount then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "hidden")
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "bossAbilityHidden")
 				end
 			end
 		end
@@ -975,6 +997,7 @@ local function HandlePlanDropdownValueChanged(_, _, value)
 	UpdateAllAssignments(true, bossDungeonEncounterID)
 	interfaceUpdater.UpdatePlanCheckBoxes(plan)
 	Private.mainFrame:DoLayout()
+	Private.callbacks:Fire("PlanChanged")
 end
 
 ---@param lineEdit EPLineEdit
@@ -1107,6 +1130,7 @@ do -- Plan Menu Button Handlers
 		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(bossDungeonEncounterID, true)
 		UpdateAllAssignments(true, bossDungeonEncounterID)
+		Private.callbacks:Fire("PlanChanged")
 	end
 
 	local function CreateImportEditBox()
@@ -1196,6 +1220,7 @@ do -- Plan Menu Button Handlers
 		local newEncounterID = newLastOpenPlan.dungeonEncounterID
 		UpdateBoss(newEncounterID, true)
 		UpdateAllAssignments(true, newEncounterID)
+		Private.callbacks:Fire("PlanChanged")
 	end
 
 	---@param importType string
@@ -1221,6 +1246,7 @@ do -- Plan Menu Button Handlers
 					AddPlanToDropdown(plans[planName], true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
+					Private.callbacks:Fire("PlanChanged")
 				end
 			elseif importType:find("FromString") then
 				CreateImportEditBox()
@@ -1259,13 +1285,13 @@ do -- Plan Menu Button Handlers
 			newPlanDialog:SetCallback("CloseButtonClicked", function()
 				Private.newPlanDialog:Release()
 				if Private.activeTutorialCallbackName then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogClosed")
 				end
 			end)
 			newPlanDialog:SetCallback("CancelButtonClicked", function()
 				Private.newPlanDialog:Release()
 				if Private.activeTutorialCallbackName then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "closed")
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogClosed")
 				end
 			end)
 			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
@@ -1273,7 +1299,7 @@ do -- Plan Menu Button Handlers
 				widget:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
 				widget:SetCreateButtonEnabled(true)
 				if Private.activeTutorialCallbackName then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "validate")
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
 				end
 			end)
 			newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
@@ -1288,8 +1314,9 @@ do -- Plan Menu Button Handlers
 					AddPlanToDropdown(newPlan, true)
 					UpdateBoss(bossDungeonEncounterID, true)
 					UpdateAllAssignments(true, bossDungeonEncounterID)
+					Private.callbacks:Fire("PlanChanged")
 					if Private.activeTutorialCallbackName then
-						Private.callbacks:Fire(Private.activeTutorialCallbackName, "created")
+						Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogPlanCreated")
 					end
 				end
 			end)
@@ -1301,7 +1328,7 @@ do -- Plan Menu Button Handlers
 					widget:SetCreateButtonEnabled(true)
 				end
 				if Private.activeTutorialCallbackName then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "validate")
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
 				end
 			end)
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -1326,7 +1353,7 @@ do -- Plan Menu Button Handlers
 		if value == "New Plan" then
 			Private.CreateNewPlanDialog()
 			if Private.activeTutorialCallbackName then
-				Private.callbacks:Fire(Private.activeTutorialCallbackName, "planCreated")
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
 			end
 		elseif value == "Duplicate Plan" then
 			HandleDuplicatePlanButtonClicked()
@@ -1515,7 +1542,7 @@ local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
 		if isCheckBox then
 			title = L["Plan Reminders"]
 			text =
-				L["Reminders are currently disabled globally. Enable them in Preferences to modify this plan’s reminder setting."]
+				L["Reminders are currently disabled globally. Enable them in Preferences to modify this plan's reminder setting."]
 		else
 			title = L["Simulate Reminders"]
 			text = L["Reminders are currently disabled globally. Enable them in Preferences to simulate them."]
@@ -1673,6 +1700,9 @@ local function HandleExpandAllButtonClicked()
 	UpdateAllAssignments(false, currentBossDungeonEncounterID)
 	Private.mainFrame.timeline:SetMaxAssignmentHeight()
 	Private.mainFrame:DoLayout()
+	if Private.activeTutorialCallbackName then
+		Private.callbacks:Fire(Private.activeTutorialCallbackName, "expandAllButtonClicked")
+	end
 end
 
 local function HandleMinimizeFramePointChanged(_, _, x, y)

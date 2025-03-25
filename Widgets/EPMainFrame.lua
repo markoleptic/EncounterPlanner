@@ -43,7 +43,11 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 }
 local closeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
+local collapseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]]
 local discordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-new-48]]
+local expandIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]]
+local maximizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]]
+local minimizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]]
 local tutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]]
 local userGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]]
 
@@ -83,6 +87,7 @@ end
 ---@field expandAllButton EPButton
 ---@field simulateRemindersButton EPButton
 ---@field externalTextButton EPButton
+---@field tutorialButton EPButton
 ---@field lowerContainer EPContainer
 ---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
@@ -113,7 +118,7 @@ local function OnAcquire(self)
 	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
 
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+	self.closeButton:SetIcon(closeIcon)
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
@@ -125,7 +130,7 @@ local function OnAcquire(self)
 	end)
 
 	self.minimizeButton = AceGUI:Create("EPButton")
-	self.minimizeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]])
+	self.minimizeButton:SetIcon(minimizeIcon)
 	self.minimizeButton:SetIconPadding(2, 2)
 	self.minimizeButton:SetWidth(buttonSize)
 	self.minimizeButton:SetHeight(buttonSize)
@@ -138,7 +143,7 @@ local function OnAcquire(self)
 	end)
 
 	self.closeButtonMinimizeFrame = AceGUI:Create("EPButton")
-	self.closeButtonMinimizeFrame:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+	self.closeButtonMinimizeFrame:SetIcon(closeIcon)
 	self.closeButtonMinimizeFrame:SetIconPadding(2, 2)
 	self.closeButtonMinimizeFrame:SetWidth(buttonSize)
 	self.closeButtonMinimizeFrame:SetHeight(buttonSize)
@@ -150,7 +155,7 @@ local function OnAcquire(self)
 	end)
 
 	self.maximizeButton = AceGUI:Create("EPButton")
-	self.maximizeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]])
+	self.maximizeButton:SetIcon(maximizeIcon)
 	self.maximizeButton:SetIconPadding(2, 2)
 	self.maximizeButton:SetWidth(buttonSize)
 	self.maximizeButton:SetHeight(buttonSize)
@@ -170,7 +175,7 @@ local function OnAcquire(self)
 	)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
-	self.collapseAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]])
+	self.collapseAllButton:SetIcon(collapseIcon)
 	self.collapseAllButton:SetIconPadding(2, 2)
 	self.collapseAllButton:SetWidth(buttonSize)
 	self.collapseAllButton:SetHeight(buttonSize)
@@ -182,7 +187,7 @@ local function OnAcquire(self)
 	end)
 
 	self.expandAllButton = AceGUI:Create("EPButton")
-	self.expandAllButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]])
+	self.expandAllButton:SetIcon(expandIcon)
 	self.expandAllButton:SetIconPadding(2, 2)
 	self.expandAllButton:SetWidth(buttonSize)
 	self.expandAllButton:SetHeight(buttonSize)
@@ -202,7 +207,6 @@ local function OnAcquire(self)
 
 	local buttonSpacing = 4
 	local buttonHeight = (statusBarHeight / 2.0) - buttonSpacing
-	local horizontalButtonSpacing = (buttonWidth - (3 * buttonHeight)) / 2.0
 
 	local clearLogButton = AceGUI:Create("EPButton")
 	clearLogButton:SetText(format("|T%s:%d|t %s", closeIcon, 0, L["Clear Status Bar"]))
@@ -220,6 +224,7 @@ local function OnAcquire(self)
 	tutorialButton:SetCallback("Clicked", function()
 		self:Fire("TutorialButtonClicked")
 	end)
+	self.tutorialButton = tutorialButton
 
 	local userGuideButton = AceGUI:Create("EPButton")
 	userGuideButton:SetText(format("|T%s:%d|t %s", userGuideIcon, 0, L["User Guide"]))
@@ -330,6 +335,7 @@ local function OnRelease(self)
 	self.primaryPlanCheckBox = nil
 	self.simulateRemindersButton = nil
 	self.externalTextButton = nil
+	self.tutorialButton = nil
 end
 
 ---@param self EPMainFrame
@@ -590,6 +596,7 @@ local function Constructor()
 		editBox = editBox,
 		editBoxFrame = editBoxFrame,
 		testFontString = testFontString,
+		resizer = resizer,
 	}
 
 	resizer:SetScript("OnMouseDown", function(_, mouseButton)
@@ -614,6 +621,7 @@ local function Constructor()
 				frame:ClearAllPoints()
 				frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
 				widget:DoLayout()
+				widget:Fire("Resized")
 			end
 		end
 	end)

@@ -254,6 +254,9 @@ do
 			end
 			local assignmentString = removed == 1 and L["Assignment"]:lower() or L["assignments"]
 			InterfaceUpdater.LogMessage(format("%s %d %s.", L["Removed"], removed, assignmentString))
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "deleteAssigneeRowClicked")
+			end
 		end
 	end
 
@@ -264,6 +267,14 @@ do
 		local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+		end
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(
+				Private.activeTutorialCallbackName,
+				"assigneeCollapsed",
+				abilityEntry:GetKey(),
+				collapsed
+			)
 		end
 	end
 
@@ -551,14 +562,13 @@ function InterfaceUpdater.UpdateFromPlan(plan, preserve)
 		Private.assignmentEditor:Release()
 	end
 	if Private.mainFrame then
+		AddOn.db.profile.lastOpenPlan = plan.name
+		InterfaceUpdater.RepopulatePlanWidgets()
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
 			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID, nil, preserve)
 		end
-		Private.mainFrame.planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
-		Private.mainFrame.primaryPlanCheckBox:SetChecked(plan.isPrimaryPlan)
-		Private.mainFrame.primaryPlanCheckBox:SetEnabled(not plan.isPrimaryPlan)
 		Private.mainFrame:DoLayout()
 	end
 end

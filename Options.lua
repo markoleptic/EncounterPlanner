@@ -2309,6 +2309,9 @@ function Private:CreateOptionsMenu()
 		end)
 		optionsMenu:SetCallback("CloseButtonClicked", function()
 			self:ReleaseOptionsMenu()
+			if self.activeTutorialCallbackName then
+				self.callbacks:Fire(self.activeTutorialCallbackName, "optionsMenuClosed")
+			end
 		end)
 
 		CreateAnchors()

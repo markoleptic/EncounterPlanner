@@ -291,6 +291,7 @@ local function ScrollVerticallyIfNotVisible(self, distanceToTop, distanceToBotto
 		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
 		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	end
+	UpdateVerticalScroll(self)
 end
 
 local function Constructor()

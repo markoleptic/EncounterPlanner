@@ -133,10 +133,11 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.text:ClearAllPoints()
-	self.text:SetText(text)
-	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
 	self.text:SetWidth(self.frame:GetWidth() - 2 * framePadding)
-	self:SetHeight(self.windowBar:GetHeight() + self.text:GetStringHeight() + defaultButtonHeight + framePadding * 3)
+	self.text:SetText(text)
+	local textHeight = self.text:GetHeight()
+	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
+	self:SetHeight(self.windowBar:GetHeight() + textHeight + defaultButtonHeight + framePadding * 3)
 end
 
 ---@param self EPMessageBox

@@ -1415,6 +1415,9 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 		UpdateAssignments(self)
 		UpdateBossAbilityBars(self)
 		UpdateTickMarks(self)
+		if Private.activeTutorialCallbackName then
+			Private.callbacks:Fire(Private.activeTutorialCallbackName, "timelineFrameMouseWheel")
+		end
 	end
 end
 
@@ -2604,6 +2607,52 @@ local function SetIsSimulating(self, simulating)
 	end
 end
 
+---@param self EPTimeline
+local function GetOffsetFromTime(self, time)
+	if not time or time < 0 then
+		return 0
+	end
+
+	local timelineFrame = self.assignmentTimeline.timelineFrame
+	local timelineFrameWidth = timelineFrame:GetWidth()
+
+	if totalTimelineDuration <= 0 then
+		return 0
+	end
+
+	-- Convert time to an offset percentage
+	local offsetPercent = time / totalTimelineDuration
+
+	-- Apply padding adjustments
+	local padding = timelineLinePadding.x
+	local effectiveTimelineWidth = timelineFrameWidth - (padding * 2)
+
+	-- Calculate the offset within the timeline frame
+	local offset = (offsetPercent * effectiveTimelineWidth) + padding
+
+	-- Ensure the offset stays within valid bounds
+	return max(0, min(offset, effectiveTimelineWidth + padding))
+end
+
+---@param self EPTimeline
+---@param scroll number
+local function SetHorizontalScroll(self, scroll)
+	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
+	local timelineFrameWidth = max(scrollFrameWidth, scrollFrameWidth * self.zoomFactor)
+
+	self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(scroll)
+	self.assignmentTimeline.scrollFrame:SetHorizontalScroll(scroll)
+	self.splitterScrollFrame:SetHorizontalScroll(scroll)
+
+	UpdateHorizontalScrollBarThumb(
+		self.horizontalScrollBar:GetWidth(),
+		self.thumb,
+		scrollFrameWidth,
+		timelineFrameWidth,
+		scroll
+	)
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -2669,6 +2718,8 @@ local function Constructor()
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
 		FindTimelineAssignment = FindTimelineAssignment,
+		GetOffsetFromTime = GetOffsetFromTime,
+		SetHorizontalScroll = SetHorizontalScroll,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,
