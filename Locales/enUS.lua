@@ -145,7 +145,7 @@ L["Delete Assignments Confirmation"] = true
 L["Delete Current Plan"] = true
 L["Delete Plan Confirmation"] = true
 L["Designated External Plan"] = true
-L["determines what activates an assignment. It can either be relative to the start of an encounter (Fixed Time) or relative to a combat log event. Leave it as Fixed Time"] =
+L["determines what activates an assignment. It can either be relative to the start of an encounter or relative to a combat log event. Leave it as Fixed Time"] =
 	true
 L["Discord"] = true
 L["Displays a confirmation dialog, and if confirmed, deletes the selected profile from the database."] = true
@@ -252,10 +252,10 @@ L["Invalid spell count"] = true
 L["Invalid spell count has been assigned the value"] = true
 L["is displayed on reminder messages and progress bars. If blank, the spell icon and name are automatically used"] =
 	true
-L["is independent of plans and can and be used quickly populate the"] = true
+L["is independent of plans and can be used to quickly populate the"] = true
 L["is miscellaneous text that can be accessed by other addons and WeakAuras. Clicking this button opens the External Text Editor"] =
 	true
-L["is opened after adding an assignee. It can also by opened by left-clicking an assignment spell icon in the Assignment Timeline"] =
+L["is opened after adding an assignee. It can also by opened by left-clicking an icon in the Assignment Timeline"] =
 	true
 L["is sent to all members of the group"] = true
 L["is unique to the current plan. Roster members must be added here before assignments can be assigned to them. The creator of the plan is automatically added"] =
@@ -266,6 +266,7 @@ L["Left"] = true
 L["Left Click"] = true
 L["Left-Click|r to toggle showing the main window."] = true
 L["located in the lower left of the main window"] = true
+L["coincides with the end of reminder countdowns"] = true
 L["may be hidden due to starting after the encounter ends. Consider extending the duration in"] = true
 L["Melee"] = true
 L["menu"] = true
@@ -428,7 +429,7 @@ L["The Assignment Timeline updates to reflect the spell. Its cooldown duration i
 L["The assignment timeline will attempt to expand or shrink to show this many rows."] = true
 L["The boss ability timeline will attempt to expand or shrink to show this many rows."] = true
 L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"] = true
-L["The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown."] =
+L["The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown (You cannot rename the tutorial plan)."] =
 	true
 L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."] = true
 L["The frame that the Message container is anchored to. Defaults to UIParent (screen)."] = true
@@ -456,7 +457,6 @@ L["Timeline Zoom Behavior"] = true
 L["to"] = true
 L["to 15 seconds and press enter"] = true
 L["to 20 seconds and press enter"] = true
-L["to one of the spells you used for first two assignments"] = true
 L["to open the"] = true
 L["to open the Roster Editor for the plan"] = true
 L["to preview reminders for the current plan"] = true
@@ -478,14 +478,14 @@ L["Trinket"] = true
 L["Trusting this character will allow them to send you new plans and update plans they have previously sent you without showing this message."] =
 	true
 L["Tutorial"] = true
-L["Tutorial Complete!"] = true
+L["Tutorial Complete! You can delete the tutorial plan or keep it for future reference."] = true
 L["Unit Died"] = true
 L["Unknown"] = true
 L["Update from Current Plan Roster"] = true
 L["Update from Shared Roster"] = true
 L["Updated matching plan"] = true
 L["Use /ep minimap to show the minimap icon again."] = true
-L["use {6262} at {circle}"] = true
+L["Use {6262} at {circle}"] = true
 L["User Guide"] = true
 L["View"] = true
 L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."] =

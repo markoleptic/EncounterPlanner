@@ -929,14 +929,19 @@ do
 
 		local timeline = Private.mainFrame.timeline
 		if timeline then
+			if updateAssignments then
+				InterfaceUpdater.UpdateAllAssignments(false, dungeonEncounterID)
+			end
 			if updateTimeline then
-				for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-					if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-						utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
-						break
+				if not updateAssignments then
+					for _, timelineAssignment in pairs(timeline:GetAssignments()) do
+						if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
+							utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
+							break
+						end
 					end
+					timeline:UpdateTimeline()
 				end
-				timeline:UpdateTimeline()
 				timeline:ClearSelectedAssignments()
 				timeline:ClearSelectedBossAbilities()
 				timeline:SelectAssignment(assignment.uniqueID, true)
@@ -945,7 +950,6 @@ do
 				end
 			end
 			if updateAssignments then
-				InterfaceUpdater.UpdateAllAssignments(false, dungeonEncounterID)
 				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
 			end
 		end

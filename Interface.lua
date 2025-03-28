@@ -1003,6 +1003,9 @@ end
 ---@param lineEdit EPLineEdit
 ---@param text string
 local function HandlePlanNameChanged(lineEdit, _, text)
+	if Private.activeTutorialCallbackName then
+		return
+	end
 	local newPlanName = text:match("|T.-|t%s(.+)") or text
 	local currentPlanName = AddOn.db.profile.lastOpenPlan
 	local revert = false
@@ -1737,8 +1740,6 @@ local function HandleMainFrameReleased()
 	end
 end
 
-local openedTutorial = false
-
 function Private:CreateInterface()
 	local topContainerDropdownWidth = 200
 	local topContainerWidgetFontSize = 14
@@ -2057,9 +2058,8 @@ function Private:CreateInterface()
 		Private.mainFrame.statusBar:OnWidthSet()
 	end)
 
-	if not AddOn.db.global.tutorialSkipped and not AddOn.db.global.tutorialCompleted and not openedTutorial then
+	if not AddOn.db.global.tutorial.skipped and not AddOn.db.global.tutorial.completed then
 		self:OpenTutorial()
-		openedTutorial = true
 	end
 end
 

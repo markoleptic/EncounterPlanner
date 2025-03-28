@@ -2096,17 +2096,7 @@ local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	self.collapsed = collapsed
 
 	self:UpdateHeightFromAssignments()
-
-	local assignmentScrollFrameHeight = self.assignmentTimeline.scrollFrame:GetHeight()
-	local assignmentTimelineFrameHeight = self.assignmentTimeline.timelineFrame:GetHeight()
-	local maxVerticalScroll = assignmentTimelineFrameHeight - assignmentScrollFrameHeight
-	local currentVerticalScroll = self.assignmentTimeline.scrollFrame:GetVerticalScroll()
-	local snapValue = (self.assignmentTimeline.textureHeight + self.assignmentTimeline.listPadding) / 2
-	local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
-	local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
-	self.assignmentTimeline.scrollFrame:SetVerticalScroll(newVerticalScroll)
-	self.assignmentTimeline.listScrollFrame:SetVerticalScroll(newVerticalScroll)
-	self.assignmentTimeline:UpdateVerticalScroll()
+	self:SetAssignmentTimelineVerticalScroll(self.assignmentTimeline.scrollFrame:GetVerticalScroll())
 end
 
 -- Only here to preserve ordering of local functions...
@@ -2653,6 +2643,20 @@ local function SetHorizontalScroll(self, scroll)
 	)
 end
 
+---@param self EPTimeline
+---@param scroll number
+local function SetAssignmentTimelineVerticalScroll(self, scroll)
+	local assignmentScrollFrameHeight = self.assignmentTimeline.scrollFrame:GetHeight()
+	local assignmentTimelineFrameHeight = self.assignmentTimeline.timelineFrame:GetHeight()
+	local maxVerticalScroll = assignmentTimelineFrameHeight - assignmentScrollFrameHeight
+	local snapValue = (self.assignmentTimeline.textureHeight + self.assignmentTimeline.listPadding) / 2
+	local currentSnapValue = floor((scroll / snapValue) + 0.5)
+	local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+	self.assignmentTimeline.scrollFrame:SetVerticalScroll(newVerticalScroll)
+	self.assignmentTimeline.listScrollFrame:SetVerticalScroll(newVerticalScroll)
+	self.assignmentTimeline:UpdateVerticalScroll()
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
@@ -2720,6 +2724,7 @@ local function Constructor()
 		FindTimelineAssignment = FindTimelineAssignment,
 		GetOffsetFromTime = GetOffsetFromTime,
 		SetHorizontalScroll = SetHorizontalScroll,
+		SetAssignmentTimelineVerticalScroll = SetAssignmentTimelineVerticalScroll,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,

@@ -693,11 +693,16 @@ local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 ---@field activeText table<integer, string> External text send by the group leader on encounter start.
 ---@field preferences Preferences Settings.
 
+---@class TutorialData
+---@field completed boolean
+---@field lastStepName string
+---@field skipped boolean
+---@field revision integer
+---@field firstSpell integer
+---@field secondSpell integer
+
 ---@class GlobalProfile
----@field tutorialCompleted boolean
----@field lastTutorialStepName string
----@field tutorialSkipped boolean
----@field tutorialRevision integer
+---@field tutorial TutorialData
 
 ---@class Defaults : AceDB.Schema
 ---@field profile DefaultProfile
@@ -794,10 +799,14 @@ local defaults = {
 		},
 	},
 	global = {
-		tutorialCompleted = false,
-		lastTutorialStepName = "",
-		tutorialSkipped = false,
-		tutorialRevision = 1,
+		tutorial = {
+			completed = false,
+			lastStepName = "",
+			skipped = false,
+			revision = 1,
+			firstSpell = -1,
+			secondSpell = -1,
+		},
 	},
 }
 
