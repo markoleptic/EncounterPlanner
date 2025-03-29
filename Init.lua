@@ -692,6 +692,7 @@ local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 ---@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
 ---@field activeText table<integer, string> External text send by the group leader on encounter start.
 ---@field preferences Preferences Settings.
+---@field version string
 
 ---@class TutorialData
 ---@field completed boolean
@@ -797,6 +798,7 @@ local defaults = {
 				},
 			},
 		},
+		version = "",
 	},
 	global = {
 		tutorial = {

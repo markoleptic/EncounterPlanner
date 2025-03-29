@@ -16,8 +16,6 @@ local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
 
-local gallywixEnergyChargeTime = 90.0
-
 Private.dungeonInstances[2769] = DungeonInstance:New({
 	journalInstanceID = 1296,
 	instanceID = 2769,
@@ -1385,7 +1383,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Chrome King Gallywix -- TODO: Completely made up timings
+		Boss:New({ -- Chrome King Gallywix
 			bossIDs = {
 				237194, -- Gallywix
 			},
@@ -1394,254 +1392,47 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			instanceID = 2769,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = nil,
-				[3] = { combatLogEventSpellID = 1214226, combatLogEventType = "SCC" },
-				[4] = { combatLogEventSpellID = 1214369, combatLogEventType = "SCS" },
+				[2] = { combatLogEventSpellID = 1214590, combatLogEventType = "SAR" },
+				[3] = { combatLogEventSpellID = 1226891, combatLogEventType = "SAA" },
+				[4] = { combatLogEventSpellID = 1226891, combatLogEventType = "SAR" },
+				[5] = { combatLogEventSpellID = 1226891, combatLogEventType = "SAA" },
+				[6] = { combatLogEventSpellID = 1226891, combatLogEventType = "SAR" },
 			},
 			abilities = {
-				[466340] = BossAbility:New({ -- Scatterblast Canisters
+				[1214590] = BossAbility:New({ -- TOTAL DESTRUCTION!!!
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							repeatInterval = { 45.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							repeatInterval = { 45.0 },
-							signifiesPhaseStart = true,
+							castTimes = { 8.8 },
+							signifiesPhaseEnd = true,
 						}),
 					},
-					duration = 0.0,
-					castTime = 3.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[465952] = BossAbility:New({ -- Big Bad Buncha Bombs
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 10.0 },
-							repeatInterval = { 60.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 30.0 },
-							repeatInterval = { 60.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 3.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[466158] = BossAbility:New({ -- Sapper's Satchel
-					eventTriggers = {
-						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 5.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[466165] = BossAbility:New({ -- 1500-Pound "Dud"
-					eventTriggers = {
-						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 15.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[466338] = BossAbility:New({ -- Zagging Zizzler
-					eventTriggers = {
-						[465952] = EventTrigger:New({ -- Big Bad Buncha Bombs
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 15.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[467182] = BossAbility:New({ -- Suppression
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 15.0 },
-							repeatInterval = { 30.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 15.0 },
-							repeatInterval = { 30.0 },
-						}),
-						[4] = BossAbilityPhase:New({
-							castTimes = { 15.0 },
-							repeatInterval = { 30.0 },
-						}),
-					},
-					duration = 3.0,
-					castTime = 1.5,
-					allowedCombatLogEventTypes = {},
-				}),
-				[466751] = BossAbility:New({ -- Venting Heat
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 25.0 },
-							repeatInterval = { 45.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 25.0 },
-							repeatInterval = { 45.0 },
-						}),
-						[4] = BossAbilityPhase:New({
-							castTimes = { 25.0 },
-							repeatInterval = { 45.0 },
-						}),
-					},
-					duration = 4.0,
-					castTime = 1.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[466341] = BossAbility:New({ -- Fused Canisters
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 40 },
-							repeatInterval = { 60.0 },
-						}),
-					},
-					eventTriggers = {
-						[1217987] = EventTrigger:New({ -- Combination Canisters
-							combatLogEventType = "SCC",
-							castTimes = { 0.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 6.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1220761] = BossAbility:New({ -- Mechengineer's Canisters
-					eventTriggers = {
-						[466341] = EventTrigger:New({ -- Fused Canisters
-							combatLogEventType = "SCC",
-							castTimes = { 2.0 },
-						}),
-					},
+					durationLastsUntilEndOfPhase = true,
 					duration = 30.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[469286] = BossAbility:New({ -- Giga Coils
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { gallywixEnergyChargeTime },
-							repeatInterval = { gallywixEnergyChargeTime },
-						}),
-						[4] = BossAbilityPhase:New({
-							castTimes = { gallywixEnergyChargeTime },
-							repeatInterval = { gallywixEnergyChargeTime },
-						}),
-					},
-					duration = 0.0,
 					castTime = 2.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[469327] = BossAbility:New({ -- Giga Blast
-					eventTriggers = {
-						[469286] = EventTrigger:New({ -- Giga Coils
-							combatLogEventType = "SCC",
-							castTimes = { 0.0, 3.5, 3.5, 3.5, 3.5 },
-						}),
-					},
-					duration = 10.0,
-					castTime = 3.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[469362] = BossAbility:New({ -- Charged Giga Bomb
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { gallywixEnergyChargeTime - 20.0 },
-							repeatInterval = { gallywixEnergyChargeTime },
-						}),
-						[4] = BossAbilityPhase:New({
-							castTimes = { gallywixEnergyChargeTime - 20.0 },
-							repeatInterval = { gallywixEnergyChargeTime },
-						}),
-					},
-					duration = 40.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1214226] = BossAbility:New({ -- Cratering
-					phases = {
-						[3] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[466958] = BossAbility:New({ -- Ego Check
 					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 15.4, 21.5, 14.5, 19.9, 17.1, 12.4, 16.5, 23.6, 11.5, 23.8, 23.5 },
+						}),
 						[4] = BossAbilityPhase:New({
-							castTimes = { 10.0 },
-							repeatInterval = 30.0,
+							castTimes = { 21.1, 26.5, 28.6, 27.9, 29.0, 22.1 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 23.0, 39.0, 26.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.5,
 					onlyRelevantForTanks = true,
 					allowedCombatLogEventTypes = {},
-				}),
-				[1219278] = BossAbility:New({ -- Gallybux Pest Eliminator
-					phases = {
-						[3] = BossAbilityPhase:New({
-							castTimes = { 5.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1214369] = BossAbility:New({ -- TOTAL DESTRUCTION!!!
-					phases = {
-						[3] = BossAbilityPhase:New({
-							castTimes = { 10.0 },
-							signifiesPhaseEnd = true,
-						}),
-					},
-					duration = 30.0,
-					castTime = 4.6,
-					allowedCombatLogEventTypes = { "SCS" },
-				}),
-				[1214607] = BossAbility:New({ -- Bigger Badder Bomb Blast
-					phases = {
-						[4] = BossAbilityPhase:New({
-							castTimes = { 30.0 },
-							repeatInterval = 60.0,
-						}),
-					},
-					duration = 25.0,
-					castTime = 4.0,
-					allowedCombatLogEventTypes = {},
+					defaultHidden = true,
 				}),
 				[1217987] = BossAbility:New({ -- Combination Canisters
-					eventTriggers = {
-						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
-							combatLogEventType = "SCC",
-							castTimes = { 0.0 },
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 30.4, 28.5, 31.6, 38.4, 25.6, 38.9 },
 						}),
 					},
 					duration = 0.0,
@@ -1656,43 +1447,249 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 						}),
 					},
 					duration = 0.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = {},
+					defaultHidden = true,
+				}),
+				[466341] = BossAbility:New({ -- Fused Canisters
+					eventTriggers = {
+						[1217987] = EventTrigger:New({ -- Combination Canisters
+							combatLogEventType = "SCC",
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = {},
+					defaultHidden = true,
+				}),
+				[1218488] = BossAbility:New({ -- Scatterbomb Canisters
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 12.55, 42.56, 36.92, 32.52 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 7.48, 37.01, 45.6 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1214607] = BossAbility:New({ -- Bigger Badder Bomb Blast
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 7.4 },
+							repeatInterval = 57.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[466165] = BossAbility:New({ -- 1500-Pound "Dud"
+					eventTriggers = {
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCS",
+							castTimes = { 6.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 15.0,
+					onlyRelevantForTanks = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1218546] = BossAbility:New({ -- Biggest Baddest Bomb Barrage
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 37.55, 47.99, 54.1 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 30.0, 48.03 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[466338] = BossAbility:New({ -- Zagging Zizzler
+					eventTriggers = {
+						[1214607] = EventTrigger:New({ -- Bigger Badder Bomb Blast
+							combatLogEventType = "SCS",
+							castTimes = { 6.0 },
+							phaseOccurrences = { [2] = { [1] = true } },
+						}),
+					},
+					phases = {
+						-- [2] = BossAbilityPhase:New({
+						-- 	castTimes = { 13.5 },
+						-- 	repeatInterval = 58.0,
+						-- }),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 42.4, 47.9, 54.2 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 34.8, 48.0 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1214749] = BossAbility:New({ -- Overloaded Rockets
+					eventTriggers = {
+						[466338] = EventTrigger:New({ -- Zagging Zizzler
+							combatLogEventType = "SCS",
+							castTimes = { 0.5 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[467182] = BossAbility:New({ -- Suppression
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 42.5, 60.5, 64.5 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 23.1, 44.1, 44.9 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 64.1, 34.6 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[466751] = BossAbility:New({ -- Venting Heat
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 38.9, 16.5, 23.6, 18.4, 22.0, 29.6, 12.1, 23.4 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 9.0, 35.0, 19.6, 36.9, 20.5, 25.1 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 19.5, 33.5, 31.5 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224378] = BossAbility:New({ -- Giga Coils
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 26.4, 58.2, 60.5, 59.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 159.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+					defaultHidden = true,
+				}),
+				[1222831] = BossAbility:New({ -- Overloaded Coils
+					phases = {
+						[6] = BossAbilityPhase:New({
+							castTimes = { 110.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+					durationLastsUntilEndOfPhase = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1226891] = BossAbility:New({ -- Circuit Reboot
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					durationLastsUntilEndOfPhase = true,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1219333] = BossAbility:New({ -- Gallybux Finale Blast
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 46.9, 60.5, 64.5 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 27.6, 44.1, 44.9 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 68.6, 34.6 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = gallywixEnergyChargeTime,
-					defaultDuration = gallywixEnergyChargeTime,
+					duration = 28.0,
+					defaultDuration = 28.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedCount = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 208.0,
+					defaultDuration = 208.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedCount = true,
 					fixedDuration = true,
 				}),
-				[2] = BossPhase:New({
-					duration = gallywixEnergyChargeTime * 1.5,
-					defaultDuration = gallywixEnergyChargeTime * 1.5,
-					count = 1,
-					defaultCount = 1,
-					name = "P2 (100 Energy)",
-					fixedCount = true,
-				}),
 				[3] = BossPhase:New({
-					duration = 44.6,
-					defaultDuration = 44.6,
+					duration = 33.5,
+					defaultDuration = 33.5,
 					count = 1,
 					defaultCount = 1,
-					name = "Int1 (50%)",
+					name = "Int2",
 					fixedCount = true,
 					fixedDuration = true,
 				}),
 				[4] = BossPhase:New({
-					duration = 240.0,
-					defaultDuration = 240.0,
+					duration = 167.2,
+					defaultDuration = 167.2,
 					count = 1,
 					defaultCount = 1,
-					name = "P3",
+					name = "P2",
+					fixedCount = true,
+					fixedDuration = true,
+				}),
+				[5] = BossPhase:New({
+					duration = 31.0,
+					defaultDuration = 31.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int3",
+					fixedCount = true,
+					fixedDuration = true,
+				}),
+				[6] = BossPhase:New({
+					duration = 132.6,
+					defaultDuration = 132.6,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
 					fixedCount = true,
 				}),
 			},

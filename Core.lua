@@ -429,9 +429,29 @@ do -- Profile updating and refreshing
 					end
 				end
 			end
+
+			if profile.version == "" then
+				local gallywixActiveBossAbilities = profile.activeBossAbilities[3016]
+				if gallywixActiveBossAbilities then
+					if gallywixActiveBossAbilities[466341] == true then -- Fused Canisters
+						gallywixActiveBossAbilities[466341] = false
+					end
+					if gallywixActiveBossAbilities[466342] == true then -- Tick-Tock Canisters
+						gallywixActiveBossAbilities[466342] = false
+					end
+					if gallywixActiveBossAbilities[1224378] == true then -- Giga Coils
+						gallywixActiveBossAbilities[1224378] = false
+					end
+					if gallywixActiveBossAbilities[466958] == true then -- Ego Check
+						gallywixActiveBossAbilities[466958] = false
+					end
+				end
+			end
+
 			--@debug@
 			CreateTestPlans(profile)
 			--@end-debug@
+			profile.version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 		end
 	end
 
