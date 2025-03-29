@@ -24,6 +24,34 @@ local pairs = pairs
 local print = print
 local type = type
 
+---@param version string
+---@return number?
+---@return number?
+---@return number?
+local function ParseVersion(version)
+	local major, minor, patch = version:match("(%d+)%.(%d+)%.(%d+)")
+	if major and minor and patch then
+		return tonumber(major), tonumber(minor), tonumber(patch)
+	end
+	return nil, nil, nil
+end
+
+---@param major number|nil
+---@param minor number|nil
+---@param patch number|nil
+---@param targetMajor number
+---@param targetMinor number
+---@param targetPatch number
+---@return boolean
+local function IsVersionLessThan(major, minor, patch, targetMajor, targetMinor, targetPatch)
+	if not major or not minor or not patch then
+		return true
+	end
+	return (major < targetMajor)
+		or (major == targetMajor and minor < targetMinor)
+		or (major == targetMajor and minor == targetMinor and patch < targetPatch)
+end
+
 local minimapIconObject = {}
 do -- Minimap icon initialization and handling
 	local GetAddOnMetric = C_AddOnProfiler.GetAddOnMetric
@@ -430,28 +458,35 @@ do -- Profile updating and refreshing
 				end
 			end
 
-			if profile.version == "" then
-				local gallywixActiveBossAbilities = profile.activeBossAbilities[3016]
-				if gallywixActiveBossAbilities then
-					if gallywixActiveBossAbilities[466341] == true then -- Fused Canisters
-						gallywixActiveBossAbilities[466341] = false
-					end
-					if gallywixActiveBossAbilities[466342] == true then -- Tick-Tock Canisters
-						gallywixActiveBossAbilities[466342] = false
-					end
-					if gallywixActiveBossAbilities[1224378] == true then -- Giga Coils
-						gallywixActiveBossAbilities[1224378] = false
-					end
-					if gallywixActiveBossAbilities[466958] == true then -- Ego Check
-						gallywixActiveBossAbilities[466958] = false
+			local currentVersionString = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
+			local currentMajor, currentMinor, currentPatch = ParseVersion(currentVersionString)
+			local major, minor, patch = ParseVersion(profile.version)
+			local noVersion = not major or not minor or not patch
+
+			if noVersion or major ~= currentMajor or minor ~= currentMinor or patch ~= currentPatch then
+				if noVersion or IsVersionLessThan(major, minor, patch, 0, 9, 9) then -- v0.9.8 or less
+					local gallywixActiveBossAbilities = profile.activeBossAbilities[3016]
+					if gallywixActiveBossAbilities then
+						if gallywixActiveBossAbilities[466341] == true then -- Fused Canisters
+							gallywixActiveBossAbilities[466341] = false
+						end
+						if gallywixActiveBossAbilities[466342] == true then -- Tick-Tock Canisters
+							gallywixActiveBossAbilities[466342] = false
+						end
+						if gallywixActiveBossAbilities[1224378] == true then -- Giga Coils
+							gallywixActiveBossAbilities[1224378] = false
+						end
+						if gallywixActiveBossAbilities[466958] == true then -- Ego Check
+							gallywixActiveBossAbilities[466958] = false
+						end
 					end
 				end
 			end
+			profile.version = currentVersionString
 
 			--@debug@
 			CreateTestPlans(profile)
 			--@end-debug@
-			profile.version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 		end
 	end
 
@@ -596,6 +631,71 @@ function AddOn:SlashCommand(input)
 		elseif trimmed == "runtests" then
 			Private.testRunner.RunTests()
 			--@end-debug@
+		end
+	end
+end
+
+--@debug@
+do
+	---@class Test
+	local test = Private.test
+	---@class TestUtilities
+	local testUtilities = Private.testUtilities
+
+	local TestEqual = testUtilities.TestEqual
+
+	do
+		function test.VersionParsing()
+			local major, minor, patch = ParseVersion("")
+			TestEqual(major, nil, "major")
+			TestEqual(major, nil, "minor")
+			TestEqual(major, nil, "patch")
+
+			major, minor, patch = ParseVersion("0.9.8")
+			TestEqual(major, 0, "major")
+			TestEqual(minor, 9, "minor")
+			TestEqual(patch, 8, "patch")
+
+			local lessThan = IsVersionLessThan(major, minor, patch, 0, 9, 9)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 0, 10, 8)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 1, 9, 8)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 0, 9, 8)
+			TestEqual(lessThan, false, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 0, 8, 8)
+			TestEqual(lessThan, false, "version compare")
+
+			major, minor, patch = ParseVersion("18.19.81")
+			TestEqual(major, 18, "major")
+			TestEqual(minor, 19, "minor")
+			TestEqual(patch, 81, "patch")
+
+			lessThan = IsVersionLessThan(major, minor, patch, 18, 19, 82)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 18, 20, 81)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 19, 19, 81)
+			TestEqual(lessThan, true, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 18, 19, 80)
+			TestEqual(lessThan, false, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 18, 18, 81)
+			TestEqual(lessThan, false, "version compare")
+			lessThan = IsVersionLessThan(major, minor, patch, 17, 19, 81)
+			TestEqual(lessThan, false, "version compare")
+
+			major, minor, patch = ParseVersion("18.1.81")
+			TestEqual(major, 18, "major")
+			TestEqual(minor, 1, "minor")
+			TestEqual(patch, 81, "patch")
+
+			major, minor, patch = ParseVersion("18.19.8")
+			TestEqual(major, 18, "major")
+			TestEqual(minor, 19, "minor")
+			TestEqual(patch, 8, "patch")
+
+			return "VersionParsing"
 		end
 	end
 end
