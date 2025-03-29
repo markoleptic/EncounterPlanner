@@ -1,8 +1,10 @@
 # Encounter Planner
 
-## [v0.9.7](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.7) (2025-03-16)
-[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.6...v0.9.7) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
+## [v0.9.8](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.8) (2025-03-28)
+[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.7...v0.9.8) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
 
-- Added button to clear the Status Bar.
-- Adjusted height and scroll multiplier of the Status Bar to improve smoothness.
-- Added buttons for opening a link to the user guide and Discord.
+- Added an optional interactive tutorial. It can be opened using the tutorial button located on the bottom left of the main window.
+- Fixed a bug where clicking on the timeline beside an assignment with a spell was not correctly creating the new assignment with the same spell.
+- The create button plan in the New Plan Dialogue is now enabled/disabled when typing instead of only when losing focus.
+- Modified the default intermission combat log event of Brew Master Aldryr to be Spell Cast Start instead of Spell Cast Success.
+- Miscellaneous user interface icon and color changes.
