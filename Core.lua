@@ -168,9 +168,9 @@ do -- Minimap icon initialization and handling
 		OnLeave = function(_)
 			GameTooltip:Hide()
 		end,
-		iconR = 0,
-		iconG = 1,
-		iconB = 0,
+		iconR = 74 / 255.0,
+		iconG = 174 / 255.0,
+		iconB = 242 / 255.0,
 	}
 
 	---@param addOn AceAddon|table
