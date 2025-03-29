@@ -3,8 +3,7 @@
 Encounter Planner is an assignment planning and reminder tool for mythic dungeon and raid boss encounters.
 
 It is designed to be easy to use while providing a feature set you would expect from a website.
-Timers for all bosses in Liberation of Undermine and Season 2 Mythic+ dungeons are included (Although Gallywix timers are made for the moment).
-Timers may be inaccurate since they are from PTR, but I will update them as mythic logs become available.
+Timers for all bosses in Liberation of Undermine and Season 2 Mythic+ dungeons are included.
 
 If you encounter bugs, unexpected behavior, inaccurate timers, or have any suggestions, please let me know in the [Encounter Planner Discord](https://discord.gg/9bmH43JSzy) and I will do my best to fix or improve it.
 
