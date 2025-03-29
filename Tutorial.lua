@@ -322,8 +322,9 @@ local timeValues = { [1] = 15.0, [2] = 20.0, [3] = 120.0 }
 
 ---@param assignmentNumber integer
 ---@param setTime boolean
+---@param allowUnknown boolean|nil
 ---@return Assignment|CombatLogEventAssignment|TimedAssignment|nil
-local function FindPhaseOneAssignment(assignmentNumber, setTime)
+local function FindPhaseOneAssignment(assignmentNumber, setTime, allowUnknown)
 	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
 	local assignments = GetCurrentAssignments()
 	if boss then
@@ -350,6 +351,8 @@ local function FindPhaseOneAssignment(assignmentNumber, setTime)
 						if assignment.time < phaseOneDuration then
 							if secondSpell > 0 then
 								if secondSpell == assignment.spellID then
+									valid = true
+								elseif allowUnknown and firstSpell ~= assignment.spellID then
 									valid = true
 								end
 							elseif firstSpell ~= assignment.spellID then
@@ -385,9 +388,10 @@ end
 ---@param assignmentNumber integer
 ---@param setSpellID boolean
 ---@param setTime boolean
+---@param allowUnknown boolean|nil
 ---@return Assignment|CombatLogEventAssignment|TimedAssignment
-local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime)
-	local assignment = FindPhaseOneAssignment(assignmentNumber, setTime)
+local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime, allowUnknown)
+	local assignment = FindPhaseOneAssignment(assignmentNumber, setTime, allowUnknown)
 	if assignment then
 		return assignment
 	else
@@ -465,6 +469,28 @@ local function IntermissionAssignmentExists(combatLogEventType, limitToInIntermi
 	return false
 end
 
+---@return boolean
+local function TwoIntermissionAssignmentsExist()
+	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	if boss then
+		local count = 0
+		for _, assignment in ipairs(GetCurrentAssignments()) do
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
+				if assignment.combatLogEventType == "SAR" and assignment.combatLogEventSpellID == kHappyHourSpellID then
+					if assignment.spellID == Private.constants.kTextAssignmentSpellID then
+						count = count + 1
+						if count >= 2 then
+							return true
+						end
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
 ---@param assignmentNumber integer
 ---@param setSpellID boolean
 ---@param setTime boolean
@@ -472,6 +498,7 @@ end
 ---@param spellID integer
 ---@param spellCount integer
 ---@param limitToInIntermission boolean
+---@param time number
 ---@return Assignment|CombatLogEventAssignment
 local function FindOrCreateIntermissionAssignment(
 	assignmentNumber,
@@ -480,11 +507,13 @@ local function FindOrCreateIntermissionAssignment(
 	combatLogEventTypes,
 	spellID,
 	spellCount,
-	limitToInIntermission
+	limitToInIntermission,
+	time
 )
 	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
 		local phaseTwoDuration = boss.phases[2].duration
+		local encounteredFirstAssignment = false
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
@@ -498,16 +527,22 @@ local function FindOrCreateIntermissionAssignment(
 						end
 					end
 					if validEventType then
-						if assignmentNumber == 3 then
+						if assignmentNumber == 1 then
 							if setSpellID then
 								assignment.spellID = Private.constants.kTextAssignmentSpellID
 								assignment.text = L["Use {6262} at {circle}"]
 							end
-							if setTime then
-								assignment.time = 10.0
+							return assignment
+						elseif assignmentNumber == 2 then
+							if encounteredFirstAssignment then
+								if setSpellID then
+									assignment.spellID = Private.constants.kTextAssignmentSpellID
+									assignment.text = L["Use {6262} at {circle}"]
+								end
+								return assignment
 							end
+							encounteredFirstAssignment = true
 						end
-						return assignment
 					end
 				end
 			end
@@ -519,13 +554,21 @@ local function FindOrCreateIntermissionAssignment(
 	assignment.combatLogEventType = combatLogEventTypes[1]
 	assignment.combatLogEventSpellID = spellID
 	assignment.spellCount = spellCount
-	if assignmentNumber == 3 then
+	if assignmentNumber == 1 then
 		if setSpellID then
 			assignment.spellID = Private.constants.kTextAssignmentSpellID
 			assignment.text = L["Use {6262} at {circle}"]
 		end
 		if setTime then
 			assignment.time = 10.0
+		end
+	elseif assignmentNumber == 2 then
+		if setSpellID then
+			assignment.spellID = Private.constants.kTextAssignmentSpellID
+			assignment.text = L["Use {6262} at {circle}"]
+		end
+		if setTime then
+			assignment.time = time
 		end
 	end
 	tinsert(GetCurrentAssignments(), assignment)
@@ -604,8 +647,9 @@ end
 ---@param setSpellID boolean
 ---@param setTime boolean
 ---@param openAssignmentEditor boolean
+---@param allowUnknown boolean|nil
 ---@return integer|nil
-local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAssignmentEditor)
+local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAssignmentEditor, allowUnknown)
 	if self.tutorial then
 		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 		if collapsed[playerName] ~= nil then
@@ -623,9 +667,10 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 		if assignmentNumber > 2 then
 			FindOrCreatePhaseOneAssignment(2, true, true)
 		end
-		local assignment = FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime)
+		local assignment = FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime, allowUnknown)
 		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
 		if not openAssignmentEditor then
+			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
 		end
 		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
@@ -645,7 +690,6 @@ end
 ---@param setTime boolean
 ---@param combatLogEventTypes table<integer, CombatLogEventType>
 ---@param spellID integer
----@param spellCount integer
 ---@param limitToInIntermission boolean
 ---@param openAssignmentEditor boolean
 ---@param skipExpand boolean|nil
@@ -657,7 +701,6 @@ local function IntermissionOkay(
 	setTime,
 	combatLogEventTypes,
 	spellID,
-	spellCount,
 	limitToInIntermission,
 	openAssignmentEditor,
 	skipExpand
@@ -678,8 +721,11 @@ local function IntermissionOkay(
 
 		FindOrCreatePhaseOneAssignment(1, true, true)
 		FindOrCreatePhaseOneAssignment(2, true, true)
-		if assignmentNumber == 4 then
+		local time = 0.0
+		if assignmentNumber > 1 then
 			FindOrCreatePhaseOneAssignment(3, true, true)
+			local a = FindOrCreateIntermissionAssignment(1, true, true, { "SAR" }, kHappyHourSpellID, 1, false, 0.0)
+			time = a.time + 15.0
 		end
 		local assignment = FindOrCreateIntermissionAssignment(
 			assignmentNumber,
@@ -687,11 +733,13 @@ local function IntermissionOkay(
 			setTime,
 			combatLogEventTypes,
 			spellID,
-			spellCount,
-			limitToInIntermission
+			1,
+			limitToInIntermission,
+			time
 		)
 		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
 		if not openAssignmentEditor then
+			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
 		end
 		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
@@ -748,7 +796,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			name = "start",
 			text = FormatText(
-				L["This interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"],
+				L["This optional interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"],
 				{ L["Tutorial"] },
 				L["button"]
 			),
@@ -1159,6 +1207,35 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 		{
+			name = "assignmentTarget",
+			text = FormatText(
+				L["Choosing a"],
+				{ L["Target"] },
+				L["adds their name to the assignment"],
+				{ L["Text"] },
+				L["and highlights their raid frame at the end of reminder countdown"]
+			),
+			enableNextButton = true,
+			OnStepActivated = function(localSelf)
+				if PhaseOneOkay(self, 1, true, true, true) then
+					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
+						if self.activeTutorialCallbackName ~= localSelf.name then
+							return
+						end
+						if category == "assignmentEditorReleased" then
+							if self.tutorial then
+								self.tutorial:Release()
+							end
+						end
+					end)
+					localSelf.frame = self.assignmentEditor.targetContainer.frame
+					return true
+				else
+					return false
+				end
+			end,
+		},
+		{
 			name = "assignmentText",
 			text = FormatText(
 				L["Assignment"],
@@ -1193,6 +1270,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				highlightBorderFrame:Show()
 				self.tutorial.frame:ClearAllPoints()
 				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+			end,
+			PreStepDeactivated = function(_, incrementing)
+				if incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
 			end,
 		},
 		{
@@ -1262,7 +1344,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["The assignment is created relative to the start of the encounter since it was clicked within Phase 1."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if PhaseOneOkay(self, 2, false, false, true) then
+				if PhaseOneOkay(self, 2, false, false, true, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1289,6 +1371,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				self.tutorial.frame:ClearAllPoints()
 				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if not incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "assignmentTimeTwo",
@@ -1297,7 +1384,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				return IsTimeCorrect(self, 20.0)
 			end,
 			OnStepActivated = function(localSelf)
-				if PhaseOneOkay(self, 2, false, false, true) then
+				if PhaseOneOkay(self, 2, false, false, true, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1330,7 +1417,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				return CountSpells(2, true, 2)
 			end,
 			OnStepActivated = function(localSelf)
-				if PhaseOneOkay(self, 2, false, true, true) then
+				if PhaseOneOkay(self, 2, false, true, true, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1359,6 +1446,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "createAssignmentDuringIntermission",
@@ -1373,7 +1465,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				self.mainFrame.timeline:SetAssignmentTimelineVerticalScroll(0)
 			end,
 			OnStepActivated = function(localSelf)
-				if PhaseOneOkay(self, 2, true, true, true) then
+				if PhaseOneOkay(self, 2, true, true, false) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1390,13 +1482,18 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "createAssignmentDuringIntermissionExplain",
 			text = L["Since the intermission is triggered by boss health, using timed assignments would be unreliable. Instead, the spell the boss casts before transitioning into intermission is used."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 3, false, false, { "SCS", "SAR" }, kHappyHourSpellID, 1, true, true) then
+				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, kHappyHourSpellID, true, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1413,6 +1510,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if not incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "changeIntermissionAssignmentCombatLogEventType",
@@ -1421,7 +1523,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				return IsCombatLogEventCorrect(self, "SAR", kHappyHourSpellID)
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 3, false, false, { "SCS", "SAR" }, kHappyHourSpellID, 1, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, kHappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1454,7 +1556,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 3, false, false, { "SAR" }, kHappyHourSpellID, 1, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SAR" }, kHappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1483,14 +1585,14 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				return IsTextChanged(self)
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 3, false, false, { "SAR" }, kHappyHourSpellID, 1, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SAR" }, kHappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
 						end
 						if category == "assignmentEditorDataChanged" then
 							if IsTextChanged(self) then
-								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
+								self.tutorial.nextButton:SetEnabled(true)
 							end
 						elseif category == "assignmentEditorReleased" then
 							if self.tutorial then
@@ -1513,6 +1615,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				highlightBorderFrame:Show()
 				self.tutorial.frame:ClearAllPoints()
 				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+			end,
+			PreStepDeactivated = function(_, incrementing)
+				if incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
 			end,
 		},
 		{
@@ -1574,6 +1681,11 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "changeIntermissionAssignmentTimeByDragging",
@@ -1583,7 +1695,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				EnsureAssigneeIsExpanded(self, true)
 			end,
 			OnStepActivated = function(localSelf)
-				local order = IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false)
+				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, kHappyHourSpellID, false, false)
 				if order then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, timeDifference)
 						if self.activeTutorialCallbackName ~= localSelf.name then
@@ -1604,16 +1716,23 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
+			PreStepDeactivated = function(_, incrementing)
+				if incrementing and self.assignmentEditor then
+					self.assignmentEditor:Release()
+				end
+			end,
 		},
 		{
 			name = "duplicateAssignment",
 			text = L["Duplicate an assignment by control-clicking an icon and dragging."],
-			enableNextButton = false,
+			enableNextButton = function()
+				return TwoIntermissionAssignmentsExist()
+			end,
 			HighlightFrameAndPositionTutorialFrame = function()
 				EnsureAssigneeIsExpanded(self, true)
 			end,
 			OnStepActivated = function(localSelf)
-				local order = IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false)
+				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, kHappyHourSpellID, false, false)
 				if order then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
@@ -1642,7 +1761,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1660,7 +1779,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				end
 			end,
 			PreStepDeactivated = function(localSelf, incrementing)
-				if incrementing and self.assignmentEditor then
+				if self.assignmentEditor then
 					self.assignmentEditor:Release()
 				end
 			end,
@@ -1670,7 +1789,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["Zoom in and out horizontally on either timeline by pressing Ctrl + Mouse Scroll. Pan the view to the left and right by holding right-click."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				return IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false) ~= nil
+				return IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false) ~= nil
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
 				local timeline = self.mainFrame.timeline
@@ -1702,7 +1821,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = false,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1726,9 +1845,17 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]] .. ":16:16:0:-4|t",
 				L["button to collapse spells for an assignee"]
 			),
-			enableNextButton = false,
+			enableNextButton = function()
+				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+				if collapsed[playerName] ~= nil then
+					if collapsed[playerName] == true then
+						return true
+					end
+				end
+				return false
+			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
 					self.RegisterCallback(
 						Private.tutorialCallbackObject,
 						localSelf.name,
@@ -1768,7 +1895,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "collapseSpellsForAssigneeExplain",
 			text = L["All spells for that assignee are condensed into a single row and cooldown durations are hidden. The same button can be clicked to expand spells."],
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1797,7 +1924,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
 					localSelf.frame = self.mainFrame.collapseAllButton.frame
 					return true
 				else
@@ -1812,9 +1939,17 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]] .. ":0:0:0:-6|t",
 				L["button to expand all spells for all assignees"]
 			),
-			enableNextButton = false,
+			enableNextButton = function()
+				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+				if collapsed[playerName] ~= nil then
+					if collapsed[playerName] == false then
+						return true
+					end
+				end
+				return false
+			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1898,11 +2033,26 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["Boss phase durations and counts can be customized here. These settings are unique to each plan. If a boss phase has a fixed timer, it will not be editable. Similarly, if a boss phase does not repeat, its count will not be editable."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
+				self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
+					if self.activeTutorialCallbackName ~= localSelf.name then
+						return
+					end
+					if category == "phaseLengthEditorReleased" then
+						if self.tutorial then
+							self.tutorial:Release()
+						end
+					end
+				end)
 				if not self.phaseLengthEditor then
 					Private.CreatePhaseLengthEditor()
 				end
 				localSelf.frame = self.phaseLengthEditor.frame
 				return true
+			end,
+			PreStepDeactivated = function(_, incrementing)
+				if not incrementing and self.phaseLengthEditor then
+					self.phaseLengthEditor:Release()
+				end
 			end,
 		},
 		{
@@ -1989,7 +2139,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				if self:IsSimulatingBoss() then
 					self:StopSimulatingBoss()
 				end
-				if IntermissionOkay(self, 4, true, false, { "SAR" }, kHappyHourSpellID, 1, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -2152,7 +2302,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 			PreStepDeactivated = function(localSelf, incrementing)
 				localSelf.ignoreNextAssignmentEditorReleased = nil
-				if self.assignmentEditor and incrementing then
+				if self.assignmentEditor then
 					self.assignmentEditor:Release()
 				end
 			end,
@@ -2313,7 +2463,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				L["Receivers can approve or reject incoming plans, and can automatically receive future plans by saving the sender as a trusted character"]
 			),
 			enableNextButton = true,
-			frame = self.mainFrame.sendPlanButton.frame,
+			OnStepActivated = function(localSelf)
+				localSelf.frame = self.mainFrame.sendPlanButton.frame
+				return true
+			end,
 		},
 		{
 			name = "tutorialCompleted",
@@ -2505,6 +2658,10 @@ function Private:OpenTutorial()
 				if step.PreStepDeactivated then
 					step:PreStepDeactivated(true, true)
 				end
+			end
+			if not self.assignmentEditor and self.mainFrame and self.mainFrame.timeline then
+				self.mainFrame.timeline:ClearSelectedBossAbilities()
+				self.mainFrame.timeline:ClearSelectedAssignments()
 			end
 			self.tutorialCallbackObject = nil
 		end)
