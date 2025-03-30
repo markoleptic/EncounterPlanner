@@ -2,7 +2,7 @@ std = "lua51"
 max_line_length = false
 exclude_files = {
 	"Meta.lua",
-	"Widget/Meta.lua",
+	"Widgets/Meta.lua",
 	"Libs/",
 	".luacheckrc",
 }
