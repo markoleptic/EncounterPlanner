@@ -774,27 +774,10 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 	elseif getmetatable(assignment) == TimedAssignment then
 		---@cast assignment TimedAssignment
 		timelineAssignment.startTime = assignment.time
-	elseif getmetatable(assignment) == PhasedAssignment then
-		---@cast assignment PhasedAssignment
-		local boss = GetBoss(bossDungeonEncounterID)
-		if boss then
-			local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
-			local phase = boss.phases[assignment.phase]
-			if bossPhaseTable and phase then
-				for phaseCount = 1, #phase.count do
-					local phaseStartTime =
-						GetCumulativePhaseStartTime(bossDungeonEncounterID, bossPhaseTable, phaseCount)
-					timelineAssignment.startTime = phaseStartTime
-					break -- TODO: Only first phase appearance implemented
-				end
-			else
-				return false
-			end
-		else
-			return false
-		end
+		return true
+	else
+		return false
 	end
-	return true
 end
 
 do
