@@ -197,7 +197,8 @@
 		".luacheckrc",
 		"cspell.json",
 		"EncounterPlanner.toc",
-		".github/"
+		".github/",
+		".pkgmeta"
 	],
 	"enableFiletypes": ["lua", "toc"]
 }
