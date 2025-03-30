@@ -6,7 +6,14 @@ exclude_files = {
 	"Libs/",
 	".luacheckrc",
 }
+ignore = {
+	"211", -- Unused local variable
+	"212", -- Unused argument
+	"311", -- Value assigned to a local variable is unused
+	"613", -- Trailing whitespace in a string (Tests)
+}
 globals = {
+	"EncounterPlannerAPI",
 	"_G",
 	"bit",
 	"Constants",
@@ -58,6 +65,8 @@ globals = {
 	"KuiNameplatesPlayerAnchor",
 	"Plater",
 	"GAME_LOCALE",
+	"VMRT",
+	"DevTool",
 
 	-- FrameXML misc
 	"BackdropTemplateMixin",
@@ -265,6 +274,7 @@ globals = {
 	"BuyTrainerService",
 	"BuybackItem",
 	"C_ActionBar",
+	"C_AddOnProfiler.GetAddOnMetric",
 	"C_AddOns.DisableAddOn",
 	"C_AddOns.EnableAddOn",
 	"C_AddOns.GetAddOnEnableState",
@@ -4012,6 +4022,7 @@ globals = {
 	"CloseSpecialWindows",
 	"CloseWindows",
 	"ColorPaperDollStat",
+	"ColorPickerFrame",
 	"ComboPointShineFadeIn",
 	"ComboPointShineFadeOut",
 	"ComputePetBonus",
@@ -19523,4 +19534,5 @@ globals = {
 	"ZOOM_OUT",
 	"ZOOM_OUT_BUTTON_TEXT",
 	"_RECORDING_WARNING_CORRUPTED",
+	"strsplittable",
 }
