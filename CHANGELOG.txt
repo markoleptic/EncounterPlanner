@@ -1,6 +1,6 @@
 # Encounter Planner
 
-## [v0.9.9](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.9) (2025-03-29)
-[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.8...v0.9.9) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
+## [v0.9.10](https://github.com/markoleptic/EncounterPlanner/tree/v0.9.10) (2025-03-29)
+[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.9...v0.9.10) [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
 
-- Updated all Gallywix timers, added missing abilities, and removed irrelevant abilities.
+- Fix missing debug block end.
