@@ -520,7 +520,7 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 		end
 	end
 
-	UpdateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
+	updateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
 end
 
 ---@param spellID integer
@@ -779,7 +779,7 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 				CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
 			end
 			simulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
-			UpdateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
+			updateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
 			Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end
