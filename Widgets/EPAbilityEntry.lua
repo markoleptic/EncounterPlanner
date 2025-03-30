@@ -1,9 +1,9 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
-
 local L = Namespace.L
+
 local Type = "EPAbilityEntry"
 local Version = 1
 

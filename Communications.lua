@@ -26,9 +26,9 @@ local LogMessage = interfaceUpdater.LogMessage
 local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
-local format = format
-
 local LibDeflate = LibStub("LibDeflate")
+local format = string.format
+local IsInRaid = IsInRaid
 local type = type
 local UnitFullName = UnitFullName
 
@@ -242,10 +242,10 @@ end
 ---@param plan Plan
 ---@param fullName string
 local function ImportPlan(plan, fullName)
-	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local plans = AddOn.db.profile.plans
 	local existingPlanName, existingPlan = FindMatchingPlan(plan.ID)
 
-	local importInfo = ""
+	local importInfo
 	if existingPlanName and existingPlan then -- Replace matching plan with imported plan
 		plans[plan.name] = plan
 		if existingPlanName ~= plan.name then
@@ -254,7 +254,6 @@ local function ImportPlan(plan, fullName)
 		if AddOn.db.profile.lastOpenPlan == existingPlanName then -- Replace last open if it was removed
 			AddOn.db.profile.lastOpenPlan = plan.name
 		end
-		existingPlan = nil
 		importInfo = format("%s '%s'.", L["Updated matching plan"], existingPlanName)
 	else -- Create a unique plan name if necessary
 		if plans[plan.name] then
@@ -293,13 +292,16 @@ end
 local commObject = {}
 do
 	local CreateMessageBox = interfaceUpdater.CreateMessageBox
-	local IsInGroup, IsInRaid = IsInGroup, IsInRaid
+	local IsInGroup = IsInGroup
+	local NewTimer = C_Timer.NewTimer
 	local next = next
 	local RemoveFromMessageQueue = interfaceUpdater.RemoveFromMessageQueue
 	local strsplittable = strsplittable
+	local tinsert = table.insert
+	local tremove = table.remove
 	local UnitIsGroupAssistant, UnitIsGroupLeader = UnitIsGroupAssistant, UnitIsGroupLeader
 	local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
-	local wipe = wipe
+	local wipe = table.wipe
 
 	local activePlanIDsBeingSent = {} ---@type table<string, {timer:FunctionContainer|nil, totalReceivedConfirmations: integer}>
 	local activePlanReceiveMessageBoxDataIDs = {} ---@type table<integer, string>
@@ -422,9 +424,9 @@ do
 
 	---@param prefix string
 	---@param message string
-	---@param distribution string
+	---@param _ string Distribution
 	---@param sender string
-	function AddOn:OnCommReceived(prefix, message, distribution, sender)
+	function AddOn:OnCommReceived(prefix, message, _, sender)
 		local name, realm = UnitFullName(sender)
 		if not name then
 			return
@@ -473,7 +475,7 @@ do
 		if progress >= 1.0 then
 			LogMessage(L["Plan sent"] .. ".")
 			if activePlanIDsBeingSent[planID] then
-				activePlanIDsBeingSent[planID].timer = C_Timer.NewTimer(10, function()
+				activePlanIDsBeingSent[planID].timer = NewTimer(10, function()
 					local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
 					local playerString = count == 1 and L["player"] or L["players"]
 					LogMessage(format("%s %d %s.", L["Plan received by"], count, playerString))
@@ -512,7 +514,7 @@ do
 
 	---@param bossDungeonEncounterID integer
 	function Private.SendTextToGroup(bossDungeonEncounterID)
-		local plans = AddOn.db.profile.plans --[[@as table<integer, Plan>]]
+		local plans = AddOn.db.profile.plans
 		local primaryPlan ---@type Plan|nil
 		for _, plan in pairs(plans) do
 			if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
@@ -548,8 +550,6 @@ end
 
 --@debug@
 do
-	---@class BossUtilities
-	local bossUtilities = Private.bossUtilities
 	---@class Plan
 	local Plan = Private.classes.Plan
 	---@class Test

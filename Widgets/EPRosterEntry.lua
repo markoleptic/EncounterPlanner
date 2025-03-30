@@ -1,10 +1,14 @@
 local _, Namespace = ...
-local L = Namespace.L
+
+---@class Private
+local Private = Namespace
+local L = Private.L
 
 local Type = "EPRosterEntry"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
+local UIParent = UIParent
 local CreateFrame = CreateFrame
 
 local mainFrameWidth = 400

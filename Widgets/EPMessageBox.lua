@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -138,6 +138,12 @@ local function SetText(self, text)
 	local textHeight = self.text:GetHeight()
 	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
 	self:SetHeight(self.windowBar:GetHeight() + textHeight + defaultButtonHeight + framePadding * 3)
+end
+
+---@param self EPMessageBox
+---@return string
+local function GetText(self)
+	return self.text:GetText()
 end
 
 ---@param self EPMessageBox

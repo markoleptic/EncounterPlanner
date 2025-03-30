@@ -1,24 +1,15 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
----@class Assignment
-local Assignment = Private.classes.Assignment
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 ---@class TimedAssignment
 local TimedAssignment = Private.classes.TimedAssignment
----@class Plan
-local Plan = Private.classes.Plan
 ---@class PhasedAssignment
 local PhasedAssignment = Private.classes.PhasedAssignment
-local assignmentMetaTables = {
-	CombatLogEventAssignment = CombatLogEventAssignment,
-	TimedAssignment = TimedAssignment,
-	PhasedAssignment = PhasedAssignment,
-}
 
 ---@class Constants
 local constants = Private.constants
@@ -55,18 +46,18 @@ local UpdateBoss = interfaceUpdater.UpdateBoss
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
 local Clamp = Clamp
-local format = format
+local format = string.format
 local getmetatable = getmetatable
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local min, max = math.min, math.max
 local pairs = pairs
 local sub = string.sub
-local tinsert = tinsert
+local tinsert = table.insert
 local tonumber = tonumber
-local tremove = tremove
+local tremove = table.remove
 local unpack = unpack
-local wipe = wipe
+local wipe = table.wipe
 
 local Create = {}
 local Handle = {}
@@ -484,33 +475,28 @@ do -- Assignment Editor
 		local updateAssignments = false
 
 		if dataType == "AssignmentType" then
-			ChangeAssignmentType(
-				assignment --[[@as CombatLogEventAssignment|TimedAssignment]],
-				dungeonEncounterID,
-				value
-			)
+			---@cast assignment CombatLogEventAssignment|TimedAssignment
+			ChangeAssignmentType(assignment, dungeonEncounterID, value)
 			updateFields = true
 			updateAssignments = true
 		elseif dataType == "CombatLogEventSpellID" then
 			if getmetatable(assignment) == CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
 				local spellID = tonumber(value)
 				if spellID then
-					utilities.ChangeAssignmentCombatLogEventSpellID(
-						assignment --[[@as CombatLogEventAssignment]],
-						dungeonEncounterID,
-						spellID
-					)
+					utilities.ChangeAssignmentCombatLogEventSpellID(assignment, dungeonEncounterID, spellID)
 				end
 				updateFields = true
 			end
 		elseif dataType == "CombatLogEventSpellCount" then
 			if getmetatable(assignment) == CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
 				local spellCount = tonumber(value)
 				if spellCount then
 					local spellID = assignment.combatLogEventSpellID
 					if IsValidSpellCount(dungeonEncounterID, spellID, spellCount) then
 						assignment.spellCount = spellCount
-						UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], dungeonEncounterID)
+						UpdateAssignmentBossPhase(assignment, dungeonEncounterID)
 					else
 						local clamped = ClampSpellCount(dungeonEncounterID, spellID, spellCount)
 						if clamped then
@@ -522,9 +508,10 @@ do -- Assignment Editor
 			end
 		elseif dataType == "PhaseNumber" then
 			if getmetatable(assignment) == PhasedAssignment then
+				---@cast assignment PhasedAssignment
 				local phase = tonumber(value, 10)
 				if phase then
-					assignment--[[@as PhasedAssignment]].phase = phase
+					assignment.phase = phase
 				end
 			end
 		elseif dataType == "SpellAssignment" then
@@ -549,7 +536,8 @@ do -- Assignment Editor
 		elseif dataType == "Time" then
 			local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
 			local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
-			local newTime = assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time
+			---@cast assignment CombatLogEventAssignment|TimedAssignment
+			local newTime = assignment.time
 			if timeMinutes and timeSeconds then
 				local roundedMinutes = Round(timeMinutes, 0)
 				local roundedSeconds = Round(timeSeconds, 1)
@@ -561,13 +549,10 @@ do -- Assignment Editor
 					newTime = timeValue
 				end
 			end
-			if
-				getmetatable(assignment) == CombatLogEventAssignment
-				or getmetatable(assignment) == PhasedAssignment
-				or getmetatable(assignment) == TimedAssignment
-			then
+			if getmetatable(assignment) == CombatLogEventAssignment or getmetatable(assignment) == TimedAssignment then
+				---@cast assignment CombatLogEventAssignment|TimedAssignment
 				newTime = Round(newTime, 1)
-				assignment--[[@as CombatLogEventAssignment|PhasedAssignment|TimedAssignment]].time = newTime
+				assignment.time = newTime
 			end
 			local minutes, seconds = FormatTime(newTime)
 			assignmentEditor.timeMinuteLineEdit:SetText(minutes)
@@ -778,6 +763,8 @@ do -- Phase Length Editor
 		end
 	end
 
+	local floor = math.floor
+
 	---@param phaseIndex integer
 	---@param text string
 	---@param widget EPLineEdit
@@ -894,7 +881,7 @@ end
 local function HandleChangeBossDropdownValueChanged(value)
 	local bossDungeonEncounterID = tonumber(value)
 	if bossDungeonEncounterID then
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local containsCombatLogEventAssignment = false
 		for _, assignment in ipairs(plan.assignments) do
 			if getmetatable(assignment) == CombatLogEventAssignment then
@@ -990,7 +977,7 @@ end
 local function HandlePlanDropdownValueChanged(_, _, value)
 	ClosePlanDependentWidgets()
 	AddOn.db.profile.lastOpenPlan = value
-	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
+	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 	local bossDungeonEncounterID = plan.dungeonEncounterID
 
 	UpdateBoss(bossDungeonEncounterID, true)
@@ -1212,11 +1199,11 @@ do -- Plan Menu Button Handlers
 
 	local function HandleDeleteCurrentPlanButtonClicked()
 		ClosePlanDependentWidgets()
-		local lastOpenPlanName = AddOn.db.profile.lastOpenPlan --[[@as string]]
+		local lastOpenPlanName = AddOn.db.profile.lastOpenPlan
 		utilities.DeletePlan(AddOn.db.profile, lastOpenPlanName)
 		RemovePlanFromDropdown(lastOpenPlanName)
 
-		local newLastOpenPlanName = AddOn.db.profile.lastOpenPlan --[[@as string]]
+		local newLastOpenPlanName = AddOn.db.profile.lastOpenPlan
 		local newLastOpenPlan = AddOn.db.profile.plans[newLastOpenPlanName]
 		AddPlanToDropdown(newLastOpenPlan, true) -- Won't add duplicate, updates plan checkboxes
 
@@ -1535,7 +1522,7 @@ end
 
 ---@param checkBoxOrButton EPCheckBox|EPButton
 local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
-	local preferences = AddOn.db.profile.preferences --[[@as Preferences]]
+	local preferences = AddOn.db.profile.preferences
 	if preferences.reminder.enabled == false then
 		local tooltip = Private.tooltip
 		tooltip:SetOwner(checkBoxOrButton.frame, "ANCHOR_TOP")
@@ -1591,12 +1578,13 @@ end
 local function HandleCalculateAssignmentTimeFromStart(timelineAssignment)
 	local assignment = timelineAssignment.assignment
 	if getmetatable(assignment) == CombatLogEventAssignment then
+		---@cast assignment CombatLogEventAssignment
 		return ConvertAbsoluteTimeToCombatLogEventTime(
 			timelineAssignment.startTime,
 			GetCurrentBossDungeonEncounterID(),
-			assignment.combatLogEventSpellID --[[@as integer]],
-			assignment.spellCount --[[@as integer]],
-			assignment.combatLogEventType --[[@as CombatLogEventType]]
+			assignment.combatLogEventSpellID,
+			assignment.spellCount,
+			assignment.combatLogEventType
 		)
 	else
 		return nil
@@ -1608,11 +1596,12 @@ end
 local function HandleGetMinimumCombatLogEventTime(timelineAssignment)
 	local assignment = timelineAssignment.assignment
 	if getmetatable(assignment) == CombatLogEventAssignment then
+		---@cast assignment CombatLogEventAssignment
 		return GetMinimumCombatLogEventTime(
 			GetCurrentBossDungeonEncounterID(),
-			assignment.combatLogEventSpellID --[[@as integer]],
-			assignment.spellCount --[[@as integer]],
-			assignment.combatLogEventType --[[@as CombatLogEventType]]
+			assignment.combatLogEventSpellID,
+			assignment.spellCount,
+			assignment.combatLogEventType
 		)
 	else
 		return nil
@@ -1631,18 +1620,21 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absolu
 	local relativeTime = nil
 
 	if getmetatable(assignment) == CombatLogEventAssignment then
+		---@cast assignment CombatLogEventAssignment
 		relativeTime = ConvertAbsoluteTimeToCombatLogEventTime(
 			absoluteTime,
 			GetCurrentBossDungeonEncounterID(),
-			assignment.combatLogEventSpellID --[[@as integer]],
-			assignment.spellCount --[[@as integer]],
-			assignment.combatLogEventType --[[@as CombatLogEventType]]
+			assignment.combatLogEventSpellID,
+			assignment.spellCount,
+			assignment.combatLogEventType
 		)
 	end
 	if relativeTime then
-		newAssignment--[[@as CombatLogEventAssignment]].time = utilities.Round(relativeTime, 1)
+		---@cast newAssignment CombatLogEventAssignment
+		newAssignment.time = utilities.Round(relativeTime, 1)
 	else
-		newAssignment--[[@as TimedAssignment]].time = newAssignmentTime
+		---@cast newAssignment TimedAssignment
+		newAssignment.time = newAssignmentTime
 	end
 
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
@@ -1763,9 +1755,8 @@ function Private:CreateInterface()
 	}
 	local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
 	local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
-	local preferencesMenuButtonColor = { 0.25, 0.25, 0.5, 0.5 }
 	local bossDungeonEncounterID = constants.kDefaultBossDungeonEncounterID
-	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local plans = AddOn.db.profile.plans
 	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 

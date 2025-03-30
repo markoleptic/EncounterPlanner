@@ -17,21 +17,23 @@ local ceil, floor = math.ceil, math.floor
 local CreateFrame = CreateFrame
 local format = string.format
 local GetCursorPosition = GetCursorPosition
-local GetTime = GetTime
-local geterrorhandler = geterrorhandler
 local GetSpellTexture = C_Spell.GetSpellTexture
+local GetTime = GetTime
 local ipairs = ipairs
 local IsAltKeyDown = IsAltKeyDown
+local IsControlKeyDown = IsControlKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
 local max, min = math.max, math.min
 local next = next
 local pairs = pairs
 local select = select
-local sort = sort
+local sort = table.sort
 local split = string.split
+local tinsert = table.insert
+local tremove = table.remove
 local type = type
 local unpack = unpack
-local xpcall = xpcall
+local wipe = table.wipe
 
 local frameWidth = 900
 local frameHeight = 400
@@ -128,16 +130,6 @@ local function ResetLocalVariables()
 	selectedAssignmentIDsFromBossAbilityFrameEnter = {}
 	isSimulating = false
 	simulationStartTime = 0.0
-end
-
-local function errorhandler(err)
-	return geterrorhandler()(err)
-end
-
-local function SafeCall(func, ...)
-	if type(func) == "function" then
-		return xpcall(func, errorhandler, ...)
-	end
 end
 
 ---@param value number
@@ -474,7 +466,7 @@ local function UpdateHorizontalScrollBarThumb(scrollBarWidth, thumb, scrollFrame
 
 	local maxScroll = timelineWidth - scrollFrameWidth
 	local maxThumbPosition = scrollBarWidth - thumbWidth - (2 * thumbPadding.x)
-	local horizontalThumbPosition = 0
+	local horizontalThumbPosition
 	if maxScroll > 0 then -- Prevent division by zero if maxScroll is 0
 		horizontalThumbPosition = (horizontalScroll / maxScroll) * maxThumbPosition
 		horizontalThumbPosition = horizontalThumbPosition + thumbPadding.x
@@ -590,7 +582,8 @@ local function HandleBossAbilityBarEnter(self, frame)
 		ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 	end
 	for _, timelineAssignment in ipairs(self.timelineAssignments) do
-		local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+		local assignment = timelineAssignment.assignment
+		---@cast assignment CombatLogEventAssignment
 		if assignment.combatLogEventSpellID and assignment.spellCount then
 			if assignment.combatLogEventSpellID == spellID and assignment.spellCount == spellCount then
 				tinsert(selectedAssignmentIDsFromBossAbilityFrameEnter, assignment.uniqueID)
@@ -630,7 +623,6 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 			ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 		end)
 		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
-		spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
 		spellTexture:SetPoint("TOPLEFT", 2, -2)
 		spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
 
@@ -807,14 +799,17 @@ local function StopMovingAssignment(self, assignmentFrame)
 			timelineAssignment.startTime = Round(time, 1)
 			local relativeTime = self.CalculateAssignmentTimeFromStart(timelineAssignment)
 			local assignment = timelineAssignment.assignment
-			local previousTime = assignment--[[@as TimedAssignment]].time
+			---@cast assignment TimedAssignment
+			local previousTime = assignment.time
 
 			if relativeTime then
-				assignment--[[@as CombatLogEventAssignment]].time = relativeTime
+				---@cast assignment CombatLogEventAssignment
+				assignment.time = relativeTime
 			else
-				assignment--[[@as TimedAssignment]].time = timelineAssignment.startTime
+				---@cast assignment TimedAssignment
+				assignment.time = timelineAssignment.startTime
 			end
-			return abs(previousTime - assignment--[[@as TimedAssignment]].time)
+			return abs(previousTime - assignment.time)
 		end
 	end
 	return 0.0
@@ -823,8 +818,7 @@ end
 -- Called while an assignment is being dragged.
 ---@param self EPTimeline
 ---@param frame AssignmentFrame
----@param elapsed number
-local function HandleAssignmentUpdate(self, frame, elapsed)
+local function HandleAssignmentUpdate(self, frame)
 	if isSimulating or not assignmentIsDragging then
 		return
 	end
@@ -850,16 +844,6 @@ local function HandleAssignmentUpdate(self, frame, elapsed)
 		- timelineFrameLeft
 		- horizontalCursorAssignmentFrameOffsetWhenClicked
 
-	local lineOffset = -horizontalCursorAssignmentFrameOffsetWhenClicked
-	if assignmentFrameOffsetFromTimelineFrameLeft < minOffsetFromTimelineFrameLeft then
-		local negativeOverflow = minOffsetFromTimelineFrameLeft - assignmentFrameOffsetFromTimelineFrameLeft
-		assignmentFrameOffsetFromTimelineFrameLeft = minOffsetFromTimelineFrameLeft
-		lineOffset = lineOffset + negativeOverflow
-	elseif assignmentFrameOffsetFromTimelineFrameLeft > maxOffsetFromTimelineFrameLeft then
-		local positiveOverflow = assignmentFrameOffsetFromTimelineFrameLeft - maxOffsetFromTimelineFrameLeft
-		lineOffset = lineOffset - positiveOverflow
-		assignmentFrameOffsetFromTimelineFrameLeft = maxOffsetFromTimelineFrameLeft
-	end
 	assignmentFrameOffsetFromTimelineFrameLeft = max(
 		minOffsetFromTimelineFrameLeft,
 		min(maxOffsetFromTimelineFrameLeft, assignmentFrameOffsetFromTimelineFrameLeft)
@@ -1014,8 +998,8 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 	frame.selected = true
 	frame.timelineAssignment = timelineAssignment
 	assignmentFrameBeingDragged = frame
-	frame:SetScript("OnUpdate", function(f, delta)
-		HandleAssignmentUpdate(self, f, delta)
+	frame:SetScript("OnUpdate", function(f)
+		HandleAssignmentUpdate(self, f)
 	end)
 end
 
@@ -1091,8 +1075,6 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 		self:Fire("CreateNewAssignment", assignee, spellID, time)
 	end
 end
-
-local passThroughButtons = {}
 
 ---@param self EPTimeline
 ---@param spellID integer
@@ -1305,7 +1287,7 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 	local validScroll = IsValidKeyCombination(self.preferences.keyBindings.scroll, "MouseScroll")
 	local validZoom = IsValidKeyCombination(self.preferences.keyBindings.zoom, "MouseScroll")
 
-	local timelineSection = nil
+	local timelineSection
 	if isBossTimelineSection then
 		timelineSection = self.bossAbilityTimeline
 	else
@@ -1376,19 +1358,19 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 
 		-- Correct boundaries
 		if newVisibleStartTime < 0 then
-			local overflow = newVisibleStartTime
-			newVisibleEndTime = newVisibleEndTime - overflow
+			-- local overflow = newVisibleStartTime
+			-- newVisibleEndTime = newVisibleEndTime - overflow
 			newVisibleStartTime = 0
 		elseif newVisibleEndTime > totalTimelineDuration then
 			-- Add overflow from end time to start time to prevent empty space between end of timeline and scroll frame
 			local overflow = totalTimelineDuration - newVisibleEndTime
-			newVisibleEndTime = totalTimelineDuration
+			-- newVisibleEndTime = totalTimelineDuration
 			newVisibleStartTime = newVisibleStartTime + overflow
 		end
 
 		-- Ensure boundaries are within the total timeline range
 		newVisibleStartTime = max(0, newVisibleStartTime)
-		newVisibleEndTime = min(totalTimelineDuration, newVisibleEndTime)
+		-- newVisibleEndTime = min(totalTimelineDuration, newVisibleEndTime)
 
 		-- Adjust the timeline frame width based on zoom factor
 		local scrollFrameWidth = scrollFrame:GetWidth()
@@ -2173,19 +2155,19 @@ local function UpdateTimeline(self, skipUpdateAssignments, skipUpdateBossAbility
 
 	-- Correct boundaries
 	if newVisibleStartTime < 0 then
-		local overflow = newVisibleStartTime
-		newVisibleEndTime = newVisibleEndTime - overflow
+		-- local overflow = newVisibleStartTime
+		-- newVisibleEndTime = newVisibleEndTime - overflow
 		newVisibleStartTime = 0
 	elseif newVisibleEndTime > totalTimelineDuration then
 		-- Add overflow from end time to start time to prevent empty space between end of timeline and scroll frame
 		local overflow = totalTimelineDuration - newVisibleEndTime
-		newVisibleEndTime = totalTimelineDuration
+		-- newVisibleEndTime = totalTimelineDuration
 		newVisibleStartTime = newVisibleStartTime + overflow
 	end
 
 	-- Ensure boundaries are within the total timeline range
 	newVisibleStartTime = max(0, newVisibleStartTime)
-	newVisibleEndTime = min(totalTimelineDuration, newVisibleEndTime)
+	-- newVisibleEndTime = min(totalTimelineDuration, newVisibleEndTime)
 
 	-- Adjust the timeline frame width based on zoom factor
 	local scrollFrameWidth = bossAbilityScrollFrame:GetWidth()

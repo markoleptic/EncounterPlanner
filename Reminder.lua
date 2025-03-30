@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -30,27 +30,28 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
 local LGF = LibStub("LibGetFrame-1.0")
 
-local floor = math.floor
-local getmetatable = getmetatable
 local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+local floor = math.floor
+local format = string.format
+local getmetatable = getmetatable
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
 local ipairs = ipairs
 local max = math.max
-local NewTimer = C_Timer.NewTimer
 local NewTicker = C_Timer.NewTicker
+local NewTimer = C_Timer.NewTimer
 local next = next
 local pairs = pairs
 local PlaySoundFile = PlaySoundFile
 local SpeakText = C_VoiceChat.SpeakText
 local split = string.split
-local tinsert = tinsert
+local tinsert = table.insert
 local tonumber = tonumber
 local type = type
 local UnitGUID = UnitGUID
 local UnitIsGroupLeader = UnitIsGroupLeader
 local unpack = unpack
-local wipe = wipe
+local wipe = table.wipe
 
 local playerGUID = UnitGUID("player")
 
@@ -499,10 +500,11 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 		end
 		for _, assignment in ipairs(filteredAssignments or assignments) do
 			if getmetatable(assignment) == CombatLogEventAssignment then
-				local abbreviatedCombatLogEventType = assignment--[[@as CombatLogEventAssignment]].combatLogEventType
+				---@cast assignment CombatLogEventAssignment
+				local abbreviatedCombatLogEventType = assignment.combatLogEventType
 				local fullCombatLogEventType = combatLogEventMap[abbreviatedCombatLogEventType]
-				local spellID = assignment--[[@as CombatLogEventAssignment]].combatLogEventSpellID
-				local spellCount = assignment--[[@as CombatLogEventAssignment]].spellCount
+				local spellID = assignment.combatLogEventSpellID
+				local spellCount = assignment.spellCount
 				if abilities[spellID] and abilities[spellID].buffer then
 					bufferDurations[spellID] = abilities[spellID].buffer
 				end
@@ -511,11 +513,12 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 				local currentSize = #combatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
 				combatLogEventReminders[fullCombatLogEventType][spellID][spellCount][currentSize + 1] = {
 					preferences = preferences,
-					assignment = assignment --[[@as CombatLogEventAssignment]],
+					assignment = assignment,
 					roster = roster,
 				}
 			elseif getmetatable(assignment) == TimedAssignment then
-				CreateTimer(assignment--[[@as TimedAssignment]], roster, preferences, GetTime() - startTime)
+				---@cast assignment TimedAssignment
+				CreateTimer(assignment, roster, preferences, GetTime() - startTime)
 			end
 		end
 	end
@@ -659,7 +662,7 @@ local difficulties = { [kMythicRaidID] = true, [kMythicDungeonID] = true, [kMyth
 ---@param groupSize integer
 local function HandleEncounterStart(_, encounterID, encounterName, difficultyID, groupSize)
 	ResetLocalVariables()
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
+	local reminderPreferences = AddOn.db.profile.preferences.reminder
 	if reminderPreferences.enabled then
 		--[===[@non-debug@
 		if difficulties[difficultyID] then
@@ -671,7 +674,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			end
 
 			local startTime = GetTime()
-			local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+			local plans = AddOn.db.profile.plans
 			local activePlans = {}
 			for _, plan in pairs(plans) do
 				if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
@@ -690,7 +693,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 	end
 end
 
----@param encounterID integer ID for the specific encounter that ended.
+---@param encounterID integer encounterID ID for the specific encounter that ended.
 ---@param encounterName string Name of the encounter that ended.
 ---@param difficultyID integer ID representing the difficulty of the encounter.
 ---@param groupSize integer Group size for the encounter.
@@ -702,8 +705,8 @@ end
 
 -- Registers callbacks from Encounter start/end.
 function Private:RegisterReminderEvents()
-	Private:RegisterEvent("ENCOUNTER_START", HandleEncounterStart)
-	Private:RegisterEvent("ENCOUNTER_END", HandleEncounterEnd)
+	self:RegisterEvent("ENCOUNTER_START", HandleEncounterStart)
+	self:RegisterEvent("ENCOUNTER_END", HandleEncounterEnd)
 
 	-- if type(BigWigsLoader) == "table" and BigWigsLoader.RegisterMessage then
 	-- 	BigWigsLoader.RegisterMessage(self, "BigWigs_SetStage", HandleBigWigsEvent)
@@ -717,9 +720,9 @@ end
 -- Unregisters callbacks from Encounter start/end and CombatLogEventUnfiltered.
 function Private:UnregisterReminderEvents()
 	ResetLocalVariables()
-	Private:UnregisterEvent("ENCOUNTER_START")
-	Private:UnregisterEvent("ENCOUNTER_END")
-	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	self:UnregisterEvent("ENCOUNTER_START")
+	self:UnregisterEvent("ENCOUNTER_END")
+	self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 	-- if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
 	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
@@ -735,7 +738,8 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, elapsed)
-	local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+	local assignment = timelineAssignment.assignment
+	---@cast assignment TimedAssignment
 	local oldTime = assignment.time
 	assignment.time = timelineAssignment.startTime
 	CreateTimer(assignment, roster, reminderPreferences, elapsed)
@@ -753,7 +757,7 @@ end
 ---@param roster table<string, RosterEntry>
 function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
 	isSimulating = true
-	local reminderPreferences = AddOn.db.profile.preferences.reminder --[[@as ReminderPreferences]]
+	local reminderPreferences = AddOn.db.profile.preferences.reminder
 	if reminderPreferences.enabled then
 		if not messageContainer then
 			CreateMessageContainer(reminderPreferences.messages)
@@ -780,14 +784,14 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 			end
 			simulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
 			updateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
-			Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end
 end
 
 -- Clears all timers and reminder widgets.
 function Private:StopSimulatingBoss()
-	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	ResetLocalVariables()
 end
 
@@ -886,22 +890,22 @@ do
 			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
 			HandleCombatLogEventUnfiltered()
 			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, 1)
-			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
-			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
 
 			currentSpellID = 123
 			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 2
 			HandleCombatLogEventUnfiltered()
 			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, currentSpellID, nil)
-			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
-			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
 
 			currentSpellID = 321
 			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 2
 			HandleCombatLogEventUnfiltered()
 			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
-			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
-			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
 			HandleCombatLogEventUnfiltered()
 
 			currentEventType = "SPELL_CAST_START"
@@ -916,8 +920,8 @@ do
 			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
 			HandleCombatLogEventUnfiltered()
 			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
-			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
-			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
 			HandleCombatLogEventUnfiltered()
 
 			currentEventType = "SPELL_AURA_APPLIED"
@@ -932,8 +936,8 @@ do
 			context = "Event: " .. currentEventType .. " Spell ID: " .. currentSpellID .. " Count: " .. 1
 			HandleCombatLogEventUnfiltered()
 			RemoveTestSpellCount(testSpellCounts, testCombatLogEventReminders, currentEventType, nil, nil)
-			testUtilities.TestEqual(spellCounts, testSpellCounts, "")
-			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, "")
+			testUtilities.TestEqual(spellCounts, testSpellCounts, context)
+			testUtilities.TestEqual(combatLogEventReminders, testCombatLogEventReminders, context)
 			HandleCombatLogEventUnfiltered()
 
 			CreateTimer = oldCreateTimer

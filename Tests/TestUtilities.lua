@@ -13,7 +13,7 @@ do
 	local ipairs = ipairs
 	local pairs = pairs
 	local print = print
-	local tinsert = tinsert
+	local tinsert = table.insert
 	local tostring = tostring
 	local type = type
 

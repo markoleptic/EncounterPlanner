@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -14,7 +14,7 @@ local tooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
 local geterrorhandler = geterrorhandler
-local format = format
+local format = string.format
 local GetMouseFoci = GetMouseFoci
 local ipairs = ipairs
 local IsMouseButtonDown = IsMouseButtonDown
@@ -22,11 +22,11 @@ local max = math.max
 local pairs = pairs
 local ResetCursor = ResetCursor
 local SetCursor = SetCursor
-local tinsert = tinsert
+local tinsert = table.insert
 local type = type
 local unpack = unpack
 local xpcall = xpcall
-local wipe = wipe
+local wipe = table.wipe
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -196,10 +196,10 @@ do
 	local timeLineEditRelWidth = 0.475
 
 	local abs = math.abs
-	local ceil, floor = ceil, floor
+	local ceil, floor = math.ceil, math.floor
 	local Clamp = Clamp
 	local GetSpellName = C_Spell.GetSpellName
-	local sort = sort
+	local sort = table.sort
 	local tonumber = tonumber
 
 	local function Round(value, precision)
@@ -222,7 +222,7 @@ do
 	---@param spellID integer
 	---@param minLineEdit EPLineEdit
 	---@param secLineEdit EPLineEdit
-	function UpdateCooldown(spellID, minLineEdit, secLineEdit)
+	local function UpdateCooldown(spellID, minLineEdit, secLineEdit)
 		local previousDuration = cooldownOverrideObject.cooldownDurations[spellID]
 		local newDuration = previousDuration
 		local timeMinutes = tonumber(minLineEdit:GetText())

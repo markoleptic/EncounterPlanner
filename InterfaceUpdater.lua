@@ -25,15 +25,16 @@ local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
 
 local AceGUI = LibStub("AceGUI-3.0")
-local format = format
+local format = string.format
 local ipairs = ipairs
 local pairs = pairs
-local tinsert = tinsert
+local tinsert = table.insert
 local tonumber = tonumber
 local tostring = tostring
-local tremove = tremove
+local tremove = table.remove
 local type = type
-local wipe = wipe
+local unpack = unpack
+local wipe = table.wipe
 
 ---@return table<string, RosterEntry>
 local function GetCurrentRoster()
@@ -195,10 +196,9 @@ do
 		lastBossDungeonEncounterID = bossDungeonEncounterID
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
-			local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
-			SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations)
-			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
-			customPhaseCounts = SetPhaseCounts(bossDungeonEncounterID, customPhaseCounts, kMaxBossDuration)
+			local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+			SetPhaseDurations(bossDungeonEncounterID, plan.customPhaseDurations)
+			plan.customPhaseCounts = SetPhaseCounts(bossDungeonEncounterID, plan.customPhaseCounts, kMaxBossDuration)
 			GenerateBossTables(boss)
 			local timeline = Private.mainFrame.timeline
 			if timeline then
@@ -588,7 +588,7 @@ do
 				primaryPlanCheckBox:SetChecked(isPrimary)
 				primaryPlanCheckBox:SetEnabled(not isPrimary)
 			end
-			local preferences = AddOn.db.profile.preferences --[[@as Preferences]]
+			local preferences = AddOn.db.profile.preferences
 			local planReminderEnableCheckBox = Private.mainFrame.planReminderEnableCheckBox
 			if planReminderEnableCheckBox then
 				planReminderEnableCheckBox:SetChecked(plan.remindersEnabled)
@@ -611,7 +611,7 @@ do
 			if planDropdown then
 				planDropdown:Clear()
 				local instanceDropdownData = utilities.GetOrCreateInstanceDropdownItems()
-				local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+				local plans = AddOn.db.profile.plans
 				for _, dropdownData in pairs(instanceDropdownData) do
 					dropdownData.dropdownItemMenuData = {}
 				end
@@ -881,7 +881,7 @@ end
 ---@return string|nil
 ---@return Plan|nil
 function InterfaceUpdater.FindMatchingPlan(planID)
-	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local plans = AddOn.db.profile.plans
 	for planName, plan in pairs(plans) do
 		if plan.ID == planID then
 			return planName, plan

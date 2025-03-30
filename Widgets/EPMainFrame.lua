@@ -12,6 +12,9 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local format = string.format
+local GetTime = GetTime
+local IsControlKeyDown = IsControlKeyDown
 local unpack = unpack
 
 local mainFrameWidth = 1200
@@ -339,9 +342,9 @@ local function OnRelease(self)
 end
 
 ---@param self EPMainFrame
----@param width number|nil
+---@param _ number|nil
 ---@param height number|nil
-local function LayoutFinished(self, width, height)
+local function LayoutFinished(self, _, height)
 	if not self.frame.isResizing then
 		if height then
 			self:SetHeight(

@@ -13,6 +13,7 @@ local UIParent = UIParent
 
 local CreateFrame = CreateFrame
 local ipairs = ipairs
+local max = math.max
 local unpack = unpack
 
 local defaultHeight = 200

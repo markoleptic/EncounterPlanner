@@ -2,14 +2,16 @@ local Type = "EPStatusBar"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local ColorMixin = ColorMixin
-local CreateFrame = CreateFrame
-local ipairs = ipairs
 local LSM = LibStub("LibSharedMedia-3.0")
-local select = select
-local tinsert = tinsert
+local ColorMixin = ColorMixin
 local UIParent = UIParent
-local wipe = wipe
+
+local CreateFrame = CreateFrame
+local format = string.format
+local ipairs = ipairs
+local select = select
+local tinsert = table.insert
+local wipe = table.wipe
 
 local defaultFrameHeight = 400
 local defaultFrameWidth = 400

@@ -80,7 +80,7 @@ end
 
 ---@param self EPColorPicker
 local function OnAcquire(self)
-	ColorPickerFrame = ColorPickerFrame or _G[ColorPickerFrame]
+	ColorPickerFrame = ColorPickerFrame or _G["ColorPickerFrame"]
 end
 
 ---@param self EPColorPicker

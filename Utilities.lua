@@ -48,6 +48,7 @@ local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
 local IsInRaid = IsInRaid
+local max, min = math.max, math.min
 local pairs = pairs
 local select = select
 local sort = table.sort
@@ -58,6 +59,7 @@ local type = type
 local UnitClass = UnitClass
 local UnitFullName = UnitFullName
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
+local wipe = table.wipe
 
 do
 	local GetClassInfo = GetClassInfo
@@ -490,8 +492,6 @@ do
 end
 
 do
-	local wipe = wipe
-
 	local specDropdownItems = nil
 	local addedClassAndSpecDropdownItems = false
 	local assignmentTypes = {
@@ -747,8 +747,9 @@ end
 ---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
 ---@return boolean -- Whether or not the update succeeded
 function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID)
-	if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
-		local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+	local assignment = timelineAssignment.assignment
+	if getmetatable(assignment) == CombatLogEventAssignment then
+		---@cast assignment CombatLogEventAssignment
 		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID)
 		if absoluteSpellCastStartTable then
 			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
@@ -770,11 +771,11 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 			end
 		end
 		return false
-	elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
-		local assignment = timelineAssignment.assignment --[[@as TimedAssignment]]
+	elseif getmetatable(assignment) == TimedAssignment then
+		---@cast assignment TimedAssignment
 		timelineAssignment.startTime = assignment.time
-	elseif getmetatable(timelineAssignment.assignment) == PhasedAssignment then
-		local assignment = timelineAssignment.assignment --[[@as PhasedAssignment]]
+	elseif getmetatable(assignment) == PhasedAssignment then
+		---@cast assignment PhasedAssignment
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID)
@@ -867,8 +868,9 @@ do
 		local failedSpellIDs = failTable.combatLogEventSpellIDs
 		local onlyInMax = failTable.onlyInMaxCastTimeTable
 		for _, timelineAssignment in ipairs(timelineAssignments) do
-			if getmetatable(timelineAssignment.assignment) == CombatLogEventAssignment then
-				local assignment = timelineAssignment.assignment --[[@as CombatLogEventAssignment]]
+			local assignment = timelineAssignment.assignment
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
 				local spellID = assignment.combatLogEventSpellID
 				if absolute[spellID] and maxAbsolute[spellID] then
 					local spellCount = assignment.spellCount
@@ -894,10 +896,9 @@ do
 				else
 					failedSpellIDs[spellID] = failedSpellIDs[spellID] or {}
 				end
-			elseif getmetatable(timelineAssignment.assignment) == TimedAssignment then
-				timelineAssignment.startTime = timelineAssignment
-					.assignment--[[@as TimedAssignment]]
-					.time
+			elseif getmetatable(assignment) == TimedAssignment then
+				---@cast assignment TimedAssignment
+				timelineAssignment.startTime = assignment.time
 			end
 		end
 		if next(failedSpellIDs) or next(onlyInMax) then
@@ -1757,7 +1758,7 @@ end
 function Utilities.ImportGroupIntoRoster(roster)
 	for _, unit in pairs(Utilities.IterateRosterUnits()) do
 		if unit then
-			local unitName, _ = UnitName(unit)
+			local unitName, _ = UnitFullName(unit)
 			if unitName then
 				roster[unitName] = RosterEntry:New({})
 			end
@@ -2494,7 +2495,8 @@ do
 			end
 		end
 		if getmetatable(assignment) == CombatLogEventAssignment then
-			Utilities.UpdateAssignmentBossPhase(assignment --[[@as CombatLogEventAssignment]], encounterID)
+			---@cast assignment CombatLogEventAssignment
+			Utilities.UpdateAssignmentBossPhase(assignment, encounterID)
 		elseif getmetatable(assignment) == TimedAssignment then
 			assignment.time = Utilities.Round(time, 1)
 		end
@@ -2505,6 +2507,7 @@ end
 do
 	local AceGUI = LibStub("AceGUI-3.0")
 	local kReminderContainerFrameLevel = constants.frameLevels.kReminderContainerFrameLevel
+	local UIParent = UIParent
 
 	-- Creates a container for adding progress bars or messages to.
 	---@param preferences GenericReminderPreferences
@@ -2556,7 +2559,8 @@ do
 
 	do
 		function test.CreateUniquePlanName()
-			local planName, newName = "", ""
+			local planName = ""
+			local newName
 			for _ = 1, 36 do
 				planName = planName .. "H"
 			end

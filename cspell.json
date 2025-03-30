@@ -190,6 +190,6 @@
 	],
 	// flagWords - list of words to be always considered incorrect
 	"flagWords": [],
-	"ignorePaths": ["./Libs", "./Spells.lua", ".luarc.json", "cspell.json", "EncounterPlanner.toc"],
+	"ignorePaths": ["./Libs", "./Spells.lua", ".luarc.json", ".luacheckrc", "cspell.json", "EncounterPlanner.toc"],
 	"enableFiletypes": ["lua", "toc"]
 }

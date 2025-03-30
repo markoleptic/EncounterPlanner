@@ -4,7 +4,7 @@
 -- Kim Alvefur
 
 ---@class Private
-local Private = select(2, ...) --[[@as Private]]
+local Private = select(2, ...)
 
 local setmetatable = setmetatable
 local getmetatable = getmetatable

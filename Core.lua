@@ -15,7 +15,9 @@ local interfaceUpdater = Private.interfaceUpdater
 local utilities = Private.utilities
 
 local AceDB = LibStub("AceDB-3.0")
+local AddOnProfilerMetricEnum = Enum.AddOnProfilerMetric
 local format = string.format
+local GameTooltip = GameTooltip
 local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local LDB = LibStub("LibDataBroker-1.1")
@@ -23,6 +25,9 @@ local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
 local print = print
 local type = type
+local UIParent = UIParent
+
+local currentVersionString = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 ---@param version string
 ---@return number?
@@ -55,7 +60,6 @@ end
 local minimapIconObject = {}
 do -- Minimap icon initialization and handling
 	local GetAddOnMetric = C_AddOnProfiler.GetAddOnMetric
-	local version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 	-- Function copied from LibDBIcon-1.0.lua
 	---@param frame Frame
@@ -90,14 +94,14 @@ do -- Minimap icon initialization and handling
 		end
 		if tooltip then
 			tooltip:ClearLines()
-			tooltip:AddDoubleLine(AddOnName, version)
+			tooltip:AddDoubleLine(AddOnName, currentVersionString)
 			tooltip:AddLine(" ")
 			tooltip:AddLine("|cffeda55f" .. L["Left-Click|r to toggle showing the main window."], 0.2, 1, 0.2)
 			tooltip:AddLine("|cffeda55f" .. L["Right-Click|r to open the options menu."], 0.2, 1, 0.2)
 			tooltip:AddLine(" ")
 
-			local sessionAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.SessionAverageTime)
-			local encounterAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.EncounterAverageTime)
+			local sessionAverageTime = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.SessionAverageTime)
+			local encounterAverageTime = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.EncounterAverageTime)
 
 			local r, g, b = 237.0 / 255.0, 165.0 / 255.0, 95.0 / 255.0
 			local str = format("%s:", L["Average Time Since Login/Reload"])
@@ -106,14 +110,14 @@ do -- Minimap icon initialization and handling
 			tooltip:AddDoubleLine(str, format("%.4f %s", encounterAverageTime, L["ms"]), r, g, b)
 
 			--@debug@
-			local recentAverageTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.RecentAverageTime)
-			local lastTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.LastTime)
-			local peakTime = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.PeakTime)
-			local countTimeOver1Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver1Ms)
-			local countTimeOver5Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver5Ms)
-			local countTimeOver10Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver10Ms)
-			local countTimeOver50Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver50Ms)
-			local countTimeOver100Ms = GetAddOnMetric(AddOnName, Enum.AddOnProfilerMetric.CountTimeOver100Ms)
+			local recentAverageTime = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.RecentAverageTime)
+			local lastTime = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.LastTime)
+			local peakTime = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.PeakTime)
+			local countTimeOver1Ms = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.CountTimeOver1Ms)
+			local countTimeOver5Ms = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.CountTimeOver5Ms)
+			local countTimeOver10Ms = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.CountTimeOver10Ms)
+			local countTimeOver50Ms = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.CountTimeOver50Ms)
+			local countTimeOver100Ms = GetAddOnMetric(AddOnName, AddOnProfilerMetricEnum.CountTimeOver100Ms)
 			str = format("%s:", L["Highest Time Since Login/Reload"])
 			tooltip:AddDoubleLine(str, format("%.4f %s", peakTime, L["ms"]), r, g, b)
 			str = format("%s:", L["Total Time In Most Recent Tick"])
@@ -180,8 +184,6 @@ do -- Minimap icon initialization and handling
 		end,
 	}
 
-	local GameTooltip = GameTooltip
-
 	---@type LibDataBroker.QuickLauncher
 	local dataBrokerObject = {
 		type = "launcher",
@@ -209,6 +211,7 @@ do -- Minimap icon initialization and handling
 	end
 end
 
+local dungeonInstanceInitializer = {}
 do -- Raid instance initialization
 	local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
@@ -225,7 +228,7 @@ do -- Raid instance initialization
 				phaseType, number = nameOrNumber:match("^(%a+)(%d+)$")
 			end
 
-			local phaseName, shortName = "", ""
+			local phaseName, shortName
 			if phaseType == "Int" then
 				phaseName = format("%s %d", L["Intermission"], number)
 				shortName = format("%s%d", L["I"], number)
@@ -250,7 +253,7 @@ do -- Raid instance initialization
 	end
 
 	-- Initializes names and icons for raid instances.
-	function InitializeDungeonInstances()
+	function dungeonInstanceInitializer.InitializeDungeonInstances()
 		for _, dungeonInstance in pairs(Private.dungeonInstances) do
 			if dungeonInstance.executeAndNil then
 				dungeonInstance.executeAndNil()
@@ -314,8 +317,12 @@ do -- Profile updating and refreshing
 	end
 
 	--@debug@
+	local floor = math.floor
 	local GetSpellName = C_Spell.GetSpellName
 	local random = math.random
+	local tinsert = table.insert
+	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
+	local EJ_SelectInstance = EJ_SelectInstance
 
 	---@param profile DefaultProfile
 	local function CreateTestPlans(profile)
@@ -335,7 +342,8 @@ do -- Profile updating and refreshing
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
 				local plan = utilities.CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
 				plan.roster[name] = entry
-				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID) --[[@as table<integer, BossAbilityInstance>]]
+				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID)
+				---@cast instances table<integer, BossAbilityInstance>
 				for _, abilityInstance in ipairs(instances) do
 					local types = boss.abilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
 					if #types > 0 then
@@ -410,11 +418,10 @@ do -- Profile updating and refreshing
 
 				local dungeonEncounterID = plan.dungeonEncounterID
 				boss = GetBoss(dungeonEncounterID) --[[@as Boss]]
-				local customPhaseDurations = AddOn.db.profile.plans[planName].customPhaseDurations
-				local customPhaseCounts = AddOn.db.profile.plans[planName].customPhaseCounts
 
-				SetPhaseDurations(dungeonEncounterID, customPhaseDurations)
-				customPhaseCounts = SetPhaseCounts(dungeonEncounterID, customPhaseCounts, constants.kMaxBossDuration)
+				SetPhaseDurations(dungeonEncounterID, plan.customPhaseDurations)
+				plan.customPhaseCounts =
+					SetPhaseCounts(dungeonEncounterID, plan.customPhaseCounts, constants.kMaxBossDuration)
 
 				GenerateBossTables(boss)
 				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
@@ -426,8 +433,9 @@ do -- Profile updating and refreshing
 							assignment.spellID = remappings[assignment.spellID]
 						end
 						if getmetatable(assignment) == CombatLogEventAssignment then
+							---@cast assignment CombatLogEventAssignment
 							UpdateCombatLogEventAssignment(
-								assignment --[[@as CombatLogEventAssignment]],
+								assignment,
 								absoluteSpellCastTimeTable,
 								orderedBossPhaseTable
 							)
@@ -458,7 +466,6 @@ do -- Profile updating and refreshing
 				end
 			end
 
-			local currentVersionString = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 			local currentMajor, currentMinor, currentPatch = ParseVersion(currentVersionString)
 			local major, minor, patch = ParseVersion(profile.version)
 			local noVersion = not major or not minor or not patch
@@ -491,27 +498,28 @@ do -- Profile updating and refreshing
 	end
 
 	---@param db AceDBObject-3.0
-	---@param newProfile string|nil
-	function AddOn:Refresh(_, db, newProfile)
-		self.UpdateProfile(db.profile)
-		LDBIcon:Refresh(AddOnName, db.profile.preferences.minimap)
+	---@param _ string|nil New profile
+	function AddOn:Refresh(_, db, _)
+		local profile = db.profile --[[@as DefaultProfile]]
+		self.UpdateProfile(profile)
+		LDBIcon:Refresh(AddOnName, profile.preferences.minimap)
 		Private.callbacks:Fire("ProfileRefreshed")
 		interfaceUpdater.RemoveMessageBoxes(false)
 		if Private.mainFrame then
-			local plans = db.profile.plans --[[@as table<string, Plan>]]
-			local lastOpenPlan = db.profile.lastOpenPlan
+			local plans = profile.plans
+			local lastOpenPlan = profile.lastOpenPlan
 			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
 				local defaultPlanName = L["Default"]
 				plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
 				ChangePlanBoss(plans, defaultPlanName, constants.kDefaultBossDungeonEncounterID)
-				db.profile.lastOpenPlan = defaultPlanName
+				profile.lastOpenPlan = defaultPlanName
 			end
 			local timeline = Private.mainFrame.timeline
 			if timeline then
-				timeline:SetPreferences(db.profile.preferences)
+				timeline:SetPreferences(profile.preferences)
 			end
 			interfaceUpdater.RepopulatePlanWidgets()
-			interfaceUpdater.UpdateFromPlan(plans[db.profile.lastOpenPlan])
+			interfaceUpdater.UpdateFromPlan(plans[profile.lastOpenPlan])
 		end
 		if Private.optionsMenu then
 			Private:RecreateAnchors()
@@ -537,13 +545,13 @@ function AddOn:OnInitialize()
 end
 
 function AddOn:OnEnable()
-	InitializeDungeonInstances()
+	dungeonInstanceInitializer.InitializeDungeonInstances()
 	--@debug@
 	Private.testRunner.RunTests()
 	--@end-debug@
 	self.UpdateProfile(self.db.profile)
 	Private:RegisterCommunications()
-	local preferences = self.db.profile.preferences --[[@as Preferences]]
+	local preferences = self.db.profile.preferences
 	if preferences.reminder.enabled then
 		Private:RegisterReminderEvents()
 	end
@@ -648,8 +656,8 @@ do
 		function test.VersionParsing()
 			local major, minor, patch = ParseVersion("")
 			TestEqual(major, nil, "major")
-			TestEqual(major, nil, "minor")
-			TestEqual(major, nil, "patch")
+			TestEqual(minor, nil, "minor")
+			TestEqual(patch, nil, "patch")
 
 			major, minor, patch = ParseVersion("0.9.8")
 			TestEqual(major, 0, "major")

@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -9,7 +9,7 @@ local SplitStringIntoTable = utilities.SplitStringIntoTable
 
 local ipairs = ipairs
 local join = string.join
-local tinsert = tinsert
+local tinsert = table.insert
 local unpack = unpack
 
 ---@param strTable table<integer, string>

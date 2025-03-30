@@ -1,8 +1,7 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
-local L = Private.L
 ---@class EventTrigger
 local EventTrigger = Private.classes.EventTrigger
 ---@class Boss

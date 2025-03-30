@@ -1,11 +1,11 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
-local L = Private.L
 
 local Type = "EPNewPlanDialog"
 local Version = 1
@@ -14,6 +14,8 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local max = math.max
+local unpack = unpack
 
 local defaultHeight = 400
 local defaultWidth = 400

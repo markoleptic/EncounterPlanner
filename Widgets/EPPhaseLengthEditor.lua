@@ -1,5 +1,8 @@
 local _, Namespace = ...
-local L = Namespace.L
+
+---@class Private
+local Private = Namespace
+local L = Private.L
 
 local Type = "EPPhaseLengthEditor"
 local Version = 1
@@ -7,11 +10,13 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
-local format = format
+local format = string.format
 local ipairs = ipairs
-local tinsert = tinsert
+local tinsert = table.insert
 local tostring = tostring
 local unpack = unpack
+local wipe = table.wipe
+local UIParent = UIParent
 
 local defaultFrameWidth = 600
 local defaultFrameHeight = 400
@@ -52,7 +57,7 @@ local function ResetToDefault(self)
 				local currentMinuteLineEdit = currentContainer.children[1]
 				local currentSecondLineEdit = currentContainer.children[3]
 				local text = defaultLabel:GetText()
-				local minutes, seconds, decimal = text:match("^(%d+):(%d+)[%.]?(%d*)")
+				local minutes, seconds, _ = text:match("^(%d+):(%d+)[%.]?(%d*)")
 				if minutes and seconds then
 					local formattedMinutes = format("%02d", minutes)
 					local formattedSeconds = format("%02d", seconds)
@@ -266,7 +271,7 @@ local function AddEntries(self, entries)
 		minuteLineEdit:SetText(minutes)
 		minuteLineEdit:SetRelativeWidth(0.475)
 		minuteLineEdit:SetEnabled(not phase.fixedDuration)
-		minuteLineEdit:SetCallback("OnTextSubmitted", function(widget, ...)
+		minuteLineEdit:SetCallback("OnTextSubmitted", function(widget)
 			self:Fire("DataChanged", index, widget, secondLineEdit)
 		end)
 		local separatorLabel = AceGUI:Create("EPLabel")
@@ -276,7 +281,7 @@ local function AddEntries(self, entries)
 		secondLineEdit:SetText(seconds)
 		secondLineEdit:SetRelativeWidth(0.475)
 		secondLineEdit:SetEnabled(not phase.fixedDuration)
-		secondLineEdit:SetCallback("OnTextSubmitted", function(widget, _, text)
+		secondLineEdit:SetCallback("OnTextSubmitted", function(widget)
 			self:Fire("DataChanged", index, minuteLineEdit, widget)
 		end)
 

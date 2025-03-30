@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -9,16 +9,17 @@ local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local max = math.max
 local min = math.min
 local pairs = pairs
-local sort = sort
-local tinsert = tinsert
-local tremove = tremove
+local sort = table.sort
+local tinsert = table.insert
+local tremove = table.remove
 local unpack = unpack
-local wipe = wipe
+local wipe = table.wipe
 
 local defaultFrameWidth = 500
 local defaultFrameHeight = 500

@@ -1,11 +1,11 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
-local L = Private.L
 
 local Type = "EPAssignmentEditor"
 local Version = 1
@@ -15,7 +15,8 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
-local tremove = tremove
+local max = math.max
+local tremove = table.remove
 local unpack = unpack
 
 local frameWidth = 200
@@ -575,7 +576,7 @@ end
 ---@param self EPAssignmentEditor
 ---@param assignment Assignment
 ---@param previewText string
----@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment, PhasedAssignment:PhasedAssignment}
+---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment}
 ---@param availableCombatLogEventTypes table<integer, CombatLogEventType>
 ---@param spellSpecificCombatLogEventTypes table<integer, CombatLogEventType>|nil
 local function PopulateFields(
@@ -642,7 +643,7 @@ local function PopulateFields(
 	end
 
 	if getmetatable(assignment) == metaTables.CombatLogEventAssignment then
-		assignment = assignment --[[@as CombatLogEventAssignment]]
+		---@cast assignment CombatLogEventAssignment
 		self:SetAssignmentType("CombatLogEventAssignment")
 		self.assignmentTypeDropdown:SetValue(assignment.combatLogEventType)
 		self.combatLogEventSpellIDDropdown:SetValue(assignment.combatLogEventSpellID)
@@ -651,7 +652,7 @@ local function PopulateFields(
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
 	elseif isTimedAssignment then
-		assignment = assignment --[[@as TimedAssignment]]
+		---@cast assignment TimedAssignment
 		self:SetAssignmentType("TimedAssignment")
 		self.assignmentTypeDropdown:SetValue(nil)
 		self.combatLogEventSpellIDDropdown:SetValue(nil)

@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -14,8 +14,9 @@ local max = math.max
 local min = math.min
 local pairs = pairs
 local select = select
-local tinsert = tinsert
-local tremove = tremove
+local sort = table.sort
+local tinsert = table.insert
+local tremove = table.remove
 local type = type
 local unpack = unpack
 
@@ -151,9 +152,10 @@ do
 	---@param item EPDropdownItemToggle|EPDropdownItemMenu
 	local function OnEnter(item)
 		local self = item.parentPullout
-		for k, v in ipairs(self.items) do
+		for _, v in ipairs(self.items) do
 			if v.CloseMenu and v ~= item then
-				v--[[@as EPDropdownItemMenu]]:CloseMenu()
+				---@cast v EPDropdownItemMenu
+				v:CloseMenu()
 			end
 		end
 	end
@@ -524,7 +526,8 @@ do
 
 	---@param pullout EPDropdownPullout
 	local function HandlePulloutOpen(pullout)
-		local self = pullout:GetUserDataTable().obj --[[@as EPDropdown]]
+		local self = pullout:GetUserDataTable().obj
+		---@cast self EPDropdown
 		local value = self.value
 		if not self.multiselect then
 			for _, item in ipairs(pullout.items) do
@@ -540,7 +543,8 @@ do
 
 	---@param pullout EPDropdownPullout
 	local function HandlePulloutClose(pullout)
-		local self = pullout:GetUserDataTable().obj --[[@as EPDropdown]]
+		local self = pullout:GetUserDataTable().obj
+		---@cast self EPDropdown
 		self.open = nil
 		self.button:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
 		self.button:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
@@ -960,7 +964,8 @@ do
 	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData, index)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			existingDropdownMenuItem--[[@as EPDropdownItemMenu]]:AddMenuItems(dropdownItemData, self, index)
+			---@cast existingDropdownMenuItem EPDropdownItemMenu
+			existingDropdownMenuItem:AddMenuItems(dropdownItemData, self, index)
 		end
 	end
 
@@ -971,6 +976,7 @@ do
 	local function RemoveItemsFromExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
+			---@cast existingDropdownMenuItem EPDropdownItemMenu
 			for _, data in ipairs(dropdownItemData) do
 				existingDropdownMenuItem.childPullout:RemoveItem(data.itemValue)
 			end
@@ -985,6 +991,7 @@ do
 		local existingDropdownMenuItem, _ = FindItemAndText(self, itemValue, true)
 		local dropdownItemData = {}
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
+			---@cast existingDropdownMenuItem EPDropdownItemMenu
 			for _, item in pairs(existingDropdownMenuItem.childPullout.items) do
 				tinsert(dropdownItemData, { itemValue = item:GetValue(), text = item:GetText() })
 			end
@@ -998,7 +1005,8 @@ do
 	local function ClearExistingDropdownItemMenu(self, existingItemValue)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			existingDropdownMenuItem--[[@as EPDropdownItemMenu]]:Clear()
+			---@cast existingDropdownMenuItem EPDropdownItemMenu
+			existingDropdownMenuItem:Clear()
 		end
 	end
 

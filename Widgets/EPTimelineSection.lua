@@ -3,6 +3,7 @@ local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
+local abs = math.abs
 local CreateFrame = CreateFrame
 local floor = math.floor
 local GetCursorPosition = GetCursorPosition

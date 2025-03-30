@@ -3,6 +3,7 @@ local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
+local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local unpack = unpack
 
@@ -222,19 +223,13 @@ local function SetIconPadding(self, x, y)
 	self.button.iconCenter:SetWidth(self.button:GetHeight() - 2 * y)
 end
 
----@param self EPRadioButton
----@param width number|nil
----@param height number|nil
-local function LayoutFinished(self, width, height) end
-
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:EnableMouse(true)
 
-	local button =
-		CreateFrame("Button", Type .. "Button" .. count, frame, BackdropTemplateMixin and "BackdropTemplate" or nil)
+	local button = CreateFrame("Button", Type .. "Button" .. count, frame, "BackdropTemplate")
 	button:SetBackdrop(buttonBackdrop)
 	button:SetBackdropColor(unpack(backdropColor))
 	button:RegisterForClicks("LeftButtonUp")
@@ -273,7 +268,6 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		SetLabelText = SetLabelText,
-		LayoutFinished = LayoutFinished,
 		SetBackdropColor = SetBackdropColor,
 		SetToggled = SetToggled,
 		IsToggled = IsToggled,

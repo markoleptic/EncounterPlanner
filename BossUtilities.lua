@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -13,10 +13,11 @@ local Clamp = Clamp
 local floor = math.floor
 local hugeNumber = math.huge
 local ipairs = ipairs
-local min = math.min
+local max, min = math.max, math.min
 local pairs = pairs
-local sort = sort
-local tinsert = tinsert
+local sort = table.sort
+local tinsert = table.insert
+local wipe = table.wipe
 
 -- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
 ---@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>

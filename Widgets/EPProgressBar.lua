@@ -8,6 +8,7 @@ local floor = math.floor
 local GetTime = GetTime
 local next = next
 local pairs = pairs
+local unpack = unpack
 
 local defaultHeight = 24
 local defaultWidth = 200

@@ -369,7 +369,6 @@ local function Constructor()
 		SetIcon = SetIcon,
 		SetText = SetText,
 		SetFont = SetFont,
-		GetText = GetText,
 		SetAnchorMode = SetAnchorMode,
 		SetDuration = SetDuration,
 		Start = Start,

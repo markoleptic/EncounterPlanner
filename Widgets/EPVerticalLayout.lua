@@ -4,6 +4,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler
 local xpcall = xpcall
 local max = math.max
+local tinsert = table.insert
 local defaultSpacing = 10
 
 local function errorhandler(err)

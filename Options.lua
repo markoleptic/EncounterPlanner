@@ -26,14 +26,19 @@ local ACD = LibStub("AceConfigDialog-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 local ACR = LibStub("AceConfigRegistry-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local UIParent = UIParent
+local format = string.format
 local GetTtsVoices = C_VoiceChat.GetTtsVoices
+local NewTimer = C_Timer.NewTimer
 local pairs = pairs
-local sort = sort
-local tinsert = tinsert
+local sort = table.sort
+local tinsert = table.insert
 local tonumber = tonumber
 local tostring = tostring
+local tremove = table.remove
 local type = type
 local unpack = unpack
+local wipe = table.wipe
 
 ---@type EPAnchorContainer|nil
 local messageAnchor = nil
@@ -192,7 +197,6 @@ local mouseIsDown = false
 local progressBarManager = {}
 
 do
-	local NewTimer = C_Timer.NewTimer
 	local timers = {}
 	local kGenericTimerMultiplier = 0.33
 	local isAddingProgressBars = false
@@ -281,7 +285,6 @@ end
 
 local messageManager = {}
 do
-	local NewTimer = C_Timer.NewTimer
 	local timers = {}
 	local secondTimerDurationNoCountdown = 1.2
 	local thirdTimerDurationNoCountdown = 2.4
@@ -525,7 +528,6 @@ end
 local optionCreator = {}
 do
 	local Clamp = Clamp
-	local wipe = wipe
 
 	local MouseButtonKeyBindingValues = {
 		{ itemValue = "LeftButton", text = L["Left Click"] },

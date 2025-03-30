@@ -8,10 +8,14 @@ local AceAddon = LibStub("AceAddon-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local concat = table.concat
 local CreateFrame = CreateFrame
+local GetTime = GetTime
+local band = bit.band
 local getmetatable, setmetatable = getmetatable, setmetatable
 local pairs = pairs
 local random = math.random
 local type = type
+local format = string.format
+local rshift = bit.rshift
 
 Private.L = LibStub("AceLocale-3.0"):GetLocale(AddOnName)
 
@@ -88,8 +92,8 @@ local byteToBase64 = {
 local function ToBase64(num, length)
 	local result = {}
 	for i = 1, length do
-		result[i] = byteToBase64[bit.band(num, 63)] -- Last 6 bits
-		num = bit.rshift(num, length)
+		result[i] = byteToBase64[band(num, 63)] -- Last 6 bits
+		num = rshift(num, length)
 	end
 	return concat(result)
 end

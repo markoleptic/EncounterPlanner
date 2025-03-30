@@ -5,7 +5,8 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local select = select
-local tinsert = tinsert
+local tinsert = table.insert
+local tremove = table.remove
 local unpack = unpack
 
 local defaultSpacing = { x = 10, y = 10 }

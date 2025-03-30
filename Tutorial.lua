@@ -1,5 +1,5 @@
 ---@diagnostic disable: invisible
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -8,8 +8,6 @@ local L = Private.L
 
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
----@class Plan
-local Plan = Private.classes.Plan
 ---@class TimedAssignment
 local TimedAssignment = Private.classes.TimedAssignment
 
@@ -22,6 +20,7 @@ local interfaceUpdater = Private.interfaceUpdater
 ---@class Utilities
 local utilities = Private.utilities
 
+local UIParent = UIParent
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
 local concat = table.concat
@@ -30,7 +29,7 @@ local getmetatable = getmetatable
 local ipairs = ipairs
 local max = math.max
 local pairs = pairs
-local tinsert = tinsert
+local tinsert = table.insert
 local type = type
 
 local kAbilityEntryWidth = 200
@@ -225,7 +224,7 @@ end
 
 ---@return boolean
 local function IsSelfPresentInPlan()
-	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan] --[[@as Plan]]
+	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 	if plan then
 		for _, assignment in ipairs(plan.assignments) do
 			if assignment.assignee == playerName then
@@ -615,7 +614,7 @@ end
 ---@param encounterID integer
 ---@return Plan|nil
 local function FindTutorialPlan(encounterID)
-	local plans = AddOn.db.profile.plans --[[@as table<string, Plan>]]
+	local plans = AddOn.db.profile.plans
 	for _, plan in pairs(plans) do
 		if plan.name:lower():find(L["Tutorial"]:lower()) and plan.dungeonEncounterID == encounterID then
 			return plan
@@ -786,13 +785,12 @@ end
 ---@param setCurrentStep fun(previousStepIndex: integer, currentStepIndex: integer)
 ---@return table<integer, TutorialStep>
 local function CreateTutorialSteps(self, setCurrentStep)
-	local steps = {}
 	local createdTutorialPlan = false
 	local cinderBrewMeaderyName = self.dungeonInstances[2661].name
 	local brewmasterAldryrName = bossUtilities.GetBoss(kBrewmasterAldryrEncounterID).name
 
 	---@type table<integer, TutorialStep>
-	steps = {
+	return {
 		{
 			name = "start",
 			text = FormatText(
@@ -901,7 +899,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				localSelf.frame = self.newPlanDialog.frame
 				return true
 			end,
-			PreStepDeactivated = function(_)
+			PreStepDeactivated = function()
 				if self.newPlanDialog then
 					self.newPlanDialog:Release()
 				end
@@ -955,7 +953,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				localSelf.frame = self.rosterEditor.tabContainer.children[1].frame
 				return true
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
+			PreStepDeactivated = function(_, incrementing)
 				if not incrementing and self.rosterEditor then
 					self.rosterEditor:Release()
 				end
@@ -988,7 +986,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				localSelf.frame = self.rosterEditor.tabContainer.children[2].frame
 				return true
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
+			PreStepDeactivated = function(_, incrementing)
 				if incrementing and self.rosterEditor then
 					self.rosterEditor:Release()
 				end
@@ -1281,7 +1279,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "assignmentTimelineUpdated",
 			text = L["The Assignment Timeline updates to reflect the spell. Its cooldown duration is represented by an alternating grey texture. If multiple instances of the same spell overlap, the rightmost spell icon will be tinted red."],
 			enableNextButton = true,
-			OnStepActivated = function(localSelf)
+			OnStepActivated = function(_)
 				return PhaseOneOkay(self, 1, true, true, false) ~= nil
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
@@ -1681,7 +1679,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
-			PreStepDeactivated = function(_, incrementing)
+			PreStepDeactivated = function()
 				if self.assignmentEditor then
 					self.assignmentEditor:Release()
 				end
@@ -1778,7 +1776,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					return false
 				end
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
+			PreStepDeactivated = function()
 				if self.assignmentEditor then
 					self.assignmentEditor:Release()
 				end
@@ -1788,7 +1786,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "zoomAndPan",
 			text = L["Zoom in and out horizontally on either timeline by pressing Ctrl + Mouse Scroll. Pan the view to the left and right by holding right-click."],
 			enableNextButton = true,
-			OnStepActivated = function(localSelf)
+			OnStepActivated = function()
 				return IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false) ~= nil
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
@@ -2263,7 +2261,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				end
 				return true
 			end,
-			PreStepDeactivated = function(_)
+			PreStepDeactivated = function()
 				if self.optionsMenu then
 					self:ReleaseOptionsMenu()
 				end
@@ -2300,7 +2298,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				localSelf.frame = self.assignmentEditor.deleteButton.frame
 				return true
 			end,
-			PreStepDeactivated = function(localSelf, incrementing)
+			PreStepDeactivated = function(localSelf)
 				localSelf.ignoreNextAssignmentEditorReleased = nil
 				if self.assignmentEditor then
 					self.assignmentEditor:Release()
@@ -2482,7 +2480,6 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 		},
 	}
-	return steps
 end
 
 local creatingTutorial = false

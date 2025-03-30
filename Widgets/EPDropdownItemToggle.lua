@@ -1,4 +1,4 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -9,6 +9,7 @@ local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
 local select = select
+local tinsert = table.insert
 local unpack = unpack
 local pi = math.pi
 
@@ -306,7 +307,8 @@ do
 	end
 
 	local function HandleFrameClick(frame, _)
-		local self = frame.obj --[[@as EPDropdownItemToggle]]
+		local self = frame.obj
+		---@cast self EPDropdownItemToggle
 		if not self.enabled then
 			return
 		end
@@ -393,7 +395,8 @@ do
 	local widgetVersion = 1
 
 	local function HandleFrameEnter(frame)
-		local self = frame.obj --[[@as EPDropdownItemMenu]]
+		local self = frame.obj
+		---@cast self EPDropdownItemMenu
 		self:Fire("OnEnter")
 		if self.specialOnEnter then
 			self.specialOnEnter(self)
@@ -410,7 +413,8 @@ do
 	end
 
 	local function HandleFrameHide(frame)
-		local self = frame.obj --[[@as EPDropdownItemMenu]]
+		local self = frame.obj
+		---@cast self EPDropdownItemMenu
 		if self.childPullout then
 			self.childPullout:Close()
 			self.childPullout.frame:ClearAllPoints()
@@ -419,7 +423,8 @@ do
 
 	---@param childPullout EPDropdownPullout
 	local function HandleChildPulloutOpen(childPullout)
-		local self = childPullout:GetUserDataTable().obj --[[@as EPDropdownItemMenu]]
+		local self = childPullout:GetUserDataTable().obj
+		---@cast self EPDropdownItemMenu
 		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
 		if not self.multiselect then
 			for _, pulloutItem in ipairs(childPullout.items) do
@@ -432,7 +437,8 @@ do
 
 	---@param childPullout EPDropdownPullout
 	local function HandleChildPulloutClose(childPullout)
-		local self = childPullout:GetUserDataTable().obj --[[@as EPDropdownItemMenu]]
+		local self = childPullout:GetUserDataTable().obj
+		---@cast self EPDropdownItemMenu
 		self.open = false
 		self:Fire("OnClosed")
 	end
@@ -458,11 +464,13 @@ do
 	---@param value any
 	---@param textLevels table<string>
 	local function HandleMenuItemValueChanged(dropdownItem, event, selected, value, textLevels)
-		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
+		local self = dropdownItem:GetUserDataTable().parentItemMenu
+		---@cast self EPDropdownItemMenu
 		self:SetChildValue(value)
 
 		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
-			local parent = self:GetUserDataTable().obj --[[@as EPDropdown]]
+			local parent = self:GetUserDataTable().obj
+			---@cast parent EPDropdown
 			if parent.showPathText then
 				tinsert(textLevels, 1, self:GetText())
 				local combinedLevelString = ""
@@ -512,7 +520,8 @@ do
 	---@param event string
 	---@param selected boolean
 	local function HandleItemValueChanged(dropdownItem, event, selected)
-		local self = dropdownItem:GetUserDataTable().parentItemMenu --[[@as EPDropdownItemMenu]]
+		local self = dropdownItem:GetUserDataTable().parentItemMenu
+		---@cast self EPDropdownItemMenu
 		self:SetChildValue(dropdownItem:GetValue())
 		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
 			local combinedLevelString = self:GetText() .. rightArrow .. dropdownItem:GetText()
