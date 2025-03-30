@@ -1,26 +1,26 @@
 name: Package
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - "!**-alpha**"
-      - "!**-beta**"
-    paths-ignore:
-      - '.github/**'
+    push:
+        tags:
+            - "v[0-9]+.[0-9]+.[0-9]+"
+            - "!**-alpha**"
+            - "!**-beta**"
+        paths-ignore:
+            - ".github/**"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Package
-        uses: BigWigsMods/packager@master
-        env:
-          CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+            - name: Package
+              uses: BigWigsMods/packager@master
+              env:
+                  CF_API_KEY: ${{ secrets.CF_API_KEY }}
+                  GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
