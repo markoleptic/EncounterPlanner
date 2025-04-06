@@ -1975,6 +1975,8 @@ do
 
 	---@return table<integer, EPSettingOption>
 	local function CreateViewOptions()
+		local kMinimumAssignmentHeight = 16.0
+		local kMaximumAssignmentHeight = 48.0
 		return {
 			{
 				label = L["Preferred Number of Assignments to Show"],
@@ -1993,6 +1995,37 @@ do
 							timeline:UpdateHeightFromAssignments()
 							Private.mainFrame:DoLayout()
 						end
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Assignment Row Height"],
+				type = "lineEdit",
+				description = L["The height of individual assignment rows in the assignment timeline (16 - 48)."],
+				get = function()
+					return tostring(GetPreferences().timelineRows.assignmentHeight)
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.assignmentHeight = value
+						if Private.mainFrame and Private.mainFrame.timeline then
+							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+							local plan = AddOn.db.profile.plans[lastOpenPlan]
+							interfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kMinimumAssignmentHeight or value > kMaximumAssignmentHeight then
+							return false, Clamp(value, kMinimumAssignmentHeight, kMaximumAssignmentHeight)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.assignmentHeight
 					end
 				end,
 			} --[[@as EPSettingOption]],

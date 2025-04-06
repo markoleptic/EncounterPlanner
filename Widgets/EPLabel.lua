@@ -196,6 +196,19 @@ local function SetFrameWidthFromText(self)
 	end
 end
 
+---@param self EPLabel
+---@param paddingXOrLeft number?
+---@param paddingYOrTop number?
+---@param paddingRight number?
+---@param paddingBottom number?
+local function SetIconPadding(self, paddingXOrLeft, paddingYOrTop, paddingRight, paddingBottom)
+	self.iconPadding.left = paddingXOrLeft or self.iconPadding.left
+	self.iconPadding.right = paddingRight or paddingXOrLeft or self.iconPadding.right
+	self.iconPadding.top = paddingYOrTop or self.iconPadding.top
+	self.iconPadding.bottom = paddingBottom or paddingYOrTop or self.iconPadding.bottom
+	UpdateIconAndTextAnchors(self)
+end
+
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
@@ -229,6 +242,8 @@ local function Constructor()
 		SetFrameHeightFromText = SetFrameHeightFromText,
 		SetFrameWidthFromText = SetFrameWidthFromText,
 		SetHorizontalTextPadding = SetHorizontalTextPadding,
+		OnHeightSet = UpdateIconAndTextAnchors,
+		SetIconPadding = SetIconPadding,
 		frame = frame,
 		type = Type,
 		icon = icon,

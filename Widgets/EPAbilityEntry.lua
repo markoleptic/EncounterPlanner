@@ -52,6 +52,7 @@ local checkBackdrop = {
 ---@field enabled boolean
 ---@field key string|table|nil
 ---@field collapsed boolean
+---@field role string|number|nil
 
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
@@ -123,6 +124,7 @@ local function OnRelease(self)
 	self.dropdown = nil
 
 	self.key = nil
+	self.role = nil
 
 	self.frame:ClearAllPoints()
 	self.frame:Hide()
@@ -209,8 +211,9 @@ end
 ---@param self EPAbilityEntry
 ---@param str string
 ---@param key string|table|nil
-local function SetText(self, str, key)
-	self.label:SetText(str, 0)
+---@param horizontalTextPadding number|nil
+local function SetText(self, str, key, horizontalTextPadding)
+	self.label:SetText(str, horizontalTextPadding)
 	self.label:SetIcon(nil)
 	self.key = key
 end
@@ -237,8 +240,9 @@ end
 ---@param role RaidGroupRole|integer|nil
 local function SetRoleOrSpec(self, role)
 	if role == "role:tank" or role == "role:healer" or role == "role:damager" then
-		self.label:SetHorizontalTextPadding(padding.x, 0)
-		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", 0, 7, nil, nil, 7)
+		self.label:SetHorizontalTextPadding(padding.x * 2)
+		local iconPadding = self.frame:GetHeight() * 0.25
+		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", padding.x, iconPadding)
 		if role == "role:tank" then
 			self.label.icon:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
 		elseif role == "role:healer" then
@@ -247,13 +251,20 @@ local function SetRoleOrSpec(self, role)
 			self.label.icon:SetTexCoord(20 / 64, 39 / 64, 22 / 64, 41 / 64)
 		end
 		if self.collapseButton:IsShown() then
-			self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth())
+			self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth(), 0)
 		else
 			self.label.frame:SetPoint("LEFT")
 		end
+		self.role = role
 	elseif type(role) == "number" then
-		self.label:SetHorizontalTextPadding(padding.x, 0)
-		self.label:SetIcon(role, 0, 7, nil, nil, 7)
+		self.label:SetHorizontalTextPadding(padding.x * 2)
+		self.label:SetIcon(role, padding.x, padding.y)
+		if self.collapseButton:IsShown() then
+			self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth(), 0)
+		else
+			self.label.frame:SetPoint("LEFT")
+		end
+		self.role = role
 	end
 end
 
@@ -305,7 +316,7 @@ local function ShowSwapIcon(self, show)
 		self.label.frame:SetPoint("RIGHT", self.swapBackground, "LEFT")
 
 		local checkSpacing = checkBackdrop.edgeSize
-		local checkSize = frameHeight - 2 * checkSpacing
+		local checkSize = self.frame:GetHeight() - 2 * checkSpacing
 
 		self.swap = AceGUI:Create("EPButton")
 		self.swap:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-swap-32]])
@@ -354,6 +365,7 @@ local function ShowSwapIcon(self, show)
 	end
 end
 
+---@param self EPAbilityEntry
 local function HideCheckBox(self)
 	if self.check then
 		self.check:Release()
@@ -362,6 +374,50 @@ local function HideCheckBox(self)
 	self.checkBackground:ClearAllPoints()
 	self.checkBackground:Hide()
 	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
+end
+
+---@param self EPAbilityEntry
+local function OnHeightSet(self)
+	local height = self.frame:GetHeight()
+	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT", padding.x, 0)
+	self.collapseButton:SetSize(height - 2 * padding.y, height - 2 * padding.y)
+
+	self.checkBackground:SetSize(height - 2 * padding.y, height - 2 * padding.y)
+	self.checkBackground:SetPoint("RIGHT", -padding.x, 0)
+
+	self.swapBackground:SetSize(height - 2 * padding.y, height - 2 * padding.y)
+	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x / 2, 0)
+
+	local checkSpacing = checkBackdrop.edgeSize
+	local checkSize = height - 2 * checkSpacing
+
+	if self.check then
+		self.check.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
+		self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
+		self.check:SetWidth(checkSize)
+		self.check:SetHeight(checkSize)
+	end
+
+	if self.swap then
+		self.swap.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
+		self.swap.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
+		self.swap:SetWidth(checkSize)
+		self.swap:SetHeight(checkSize)
+	end
+
+	if self.collapseButton:IsShown() then
+		self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth(), 0)
+	end
+
+	self.label:SetHeight(height)
+	if self.role then
+		if type(self.role) == "string" then
+			local iconPadding = self.frame:GetHeight() * 0.25
+			self.label:SetIconPadding(padding.x, iconPadding)
+		elseif type(self.role) == "number" then
+			self.label:SetIconPadding(padding.x, padding.y)
+		end
+	end
 end
 
 local function Constructor()
@@ -418,6 +474,7 @@ local function Constructor()
 		ShowSwapIcon = ShowSwapIcon,
 		SetAssigneeDropdownItems = SetAssigneeDropdownItems,
 		HideCheckBox = HideCheckBox,
+		OnHeightSet = OnHeightSet,
 		frame = frame,
 		type = Type,
 		count = count,

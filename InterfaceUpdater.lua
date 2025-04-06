@@ -127,8 +127,7 @@ do
 						if context then
 							bossDeathName = format("%s (%s)", bossDeathName, context)
 						end
-						abilityEntry:SetText(bossDeathName, tostring(abilityID))
-						abilityEntry.label:SetText(bossDeathName, 4)
+						abilityEntry:SetText(bossDeathName, tostring(abilityID), 4)
 						abilityEntry.label:SetIcon(deathIcon, 2, 2, 0)
 					else
 						if boss.abilities[abilityID].onlyRelevantForTanks then
@@ -431,6 +430,7 @@ do
 				local roster = GetCurrentRoster()
 				local map = CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
 				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+				local assignmentHeight = AddOn.db.profile.preferences.timelineRows.assignmentHeight
 				for _, textTable in ipairs(map) do
 					local assignee = textTable.assignee
 					local coloredAssignee = textTable.text
@@ -448,14 +448,14 @@ do
 					end
 
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-					assigneeEntry:SetText(coloredAssignee, assignee)
+					assigneeEntry:SetText(coloredAssignee, assignee, 2)
 					assigneeEntry:SetFullWidth(true)
-					assigneeEntry:SetHeight(30)
 					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 					assigneeEntry:SetRoleOrSpec(roster[assignee] and roster[assignee].role or specIconID or nil)
 					assigneeEntry:SetCollapsible(true)
 					assigneeEntry:ShowSwapIcon(true)
 					assigneeEntry:SetCollapsed(assigneeCollapsed)
+					assigneeEntry:SetHeight(assignmentHeight)
 					assigneeEntry:SetCallback("SwapButtonClicked", HandleSwapButtonClicked)
 					assigneeEntry:SetCallback("CollapseButtonToggled", HandleCollapseButtonClicked)
 					assigneeEntry:SetCallback("AssigneeSwapped", HandleSwapAssignee)
@@ -474,8 +474,8 @@ do
 								spellEntry:SetAbility(spellID, key)
 							end
 							spellEntry:SetFullWidth(true)
-							spellEntry:SetLeftIndent(15 - 2)
-							spellEntry:SetHeight(30)
+							spellEntry:SetLeftIndent(assignmentHeight / 2.0 - 2)
+							spellEntry:SetHeight(assignmentHeight)
 							spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 							spellEntry:SetCallback("OnValueChanged", HandleAssigneeSpellRowDeleteButtonClicked)
 							tinsert(children, spellEntry)

@@ -621,7 +621,7 @@ end
 ---@field lastOpenTab string
 ---@field keyBindings KeyBindings
 ---@field assignmentSortType AssignmentSortType
----@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer}
+---@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer, assignmentHeight: integer}
 ---@field zoomCenteredOnCursor boolean
 ---@field reminder ReminderPreferences
 ---@field showSpellCooldownDuration boolean
@@ -736,6 +736,7 @@ local defaults = {
 			timelineRows = {
 				numberOfAssignmentsToShow = 8,
 				numberOfBossAbilitiesToShow = 8,
+				assignmentHeight = 30,
 			},
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,

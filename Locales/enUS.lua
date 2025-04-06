@@ -45,6 +45,7 @@ L["Assignee Sort Priority"] = true
 L["Assignment"] = true
 L["Assignment Editor"] = true
 L["assignment had its spell count replaced"] = true
+L["Assignment Row Height"] = true
 L["Assignment times"] = true
 L["assignment was defaulted to a timed assignment"] = true
 L["assignments"] = true
@@ -438,6 +439,7 @@ L["The current plan is selected using this dropdown. You can rename the current 
 L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."] = true
 L["The frame that the Message container is anchored to. Defaults to UIParent (screen)."] = true
 L["The frame that the Progress Bar container is anchored to. Defaults to UIParent (screen)."] = true
+L["The height of individual assignment rows in the assignment timeline (16 - 48)."] = true
 L["The height of Progress Bars."] = true
 L["The horizontal offset from the Relative Anchor Point to the Anchor Point."] = true
 L["The new assignment is created using the matching spell."] = true

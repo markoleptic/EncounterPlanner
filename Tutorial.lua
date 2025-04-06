@@ -34,7 +34,6 @@ local type = type
 
 local kAbilityEntryWidth = 200
 local kAssignmentSpacing = 2
-local kAssignmentTextureSize = 30
 local kBrewmasterAldryrEncounterID = 2900
 local kHappyHourSpellID = 442525
 local kHighlightPadding = 2
@@ -125,13 +124,14 @@ local function HighlightTimelineSectionAndPositionTutorialFrame(
 		highlightBorderFrame:SetFrameLevel(timelineFrame:GetFrameLevel() + 50)
 		highlightBorderFrame:ClearAllPoints()
 		local x = leftOffset
-		local assignmentHeight = (kAssignmentTextureSize + kAssignmentSpacing) * rowNumber
+		local assignmentHeightSetting = AddOn.db.profile.preferences.timelineRows.assignmentHeight
+		local assignmentHeight = (assignmentHeightSetting + kAssignmentSpacing) * rowNumber
 		local y = -assignmentHeight
 		highlightBorderFrame:SetPoint("TOPLEFT", timelineFrame, x, y)
 		x = rightOffset
 		y = -assignmentHeight
 		highlightBorderFrame:SetPoint("TOPRIGHT", timelineFrame, x, y)
-		highlightBorderFrame:SetHeight(kAssignmentTextureSize)
+		highlightBorderFrame:SetHeight(assignmentHeightSetting)
 		highlightBorderFrame:Show()
 		self.tutorial.frame:ClearAllPoints()
 		if additionalVerticalOffset then
