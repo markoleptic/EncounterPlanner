@@ -533,16 +533,10 @@ end
 ---@param firstUpdate boolean|nil
 ---@param preserve boolean|nil Whether or not to preserve the current message log.
 function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate, preserve)
-	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentPlan(),
-		AddOn.db.profile.preferences.assignmentSortType,
-		bossDungeonEncounterID,
-		preserve
-	)
-	local sortedWithSpellID = SortAssigneesWithSpellID(
-		sortedTimelineAssignments,
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-	)
+	local currentPlan = GetCurrentPlan()
+	local sortedTimelineAssignments =
+		SortAssignments(currentPlan, AddOn.db.profile.preferences.assignmentSortType, bossDungeonEncounterID, preserve)
+	local sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
 	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
 	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
 	if updateAddAssigneeDropdown then

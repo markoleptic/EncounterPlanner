@@ -65,7 +65,6 @@ local Handle = {}
 local addAssigneeText =
 	utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
 local maxNumberOfRecentItems = 10
-local menuButtonFontSize = 16
 local menuButtonHorizontalPadding = 8
 
 do -- Plan Menu Items
@@ -213,6 +212,7 @@ end
 do -- Menu Button
 	local autoOpenNextMenuButtonEntered = nil
 	local menuButtonToClose = nil
+	local menuButtonFontSize = 16
 
 	---@param menuButton EPDropdown
 	local function HandleMenuButtonEntered(menuButton)
@@ -238,8 +238,9 @@ do -- Menu Button
 	end
 
 	---@param text string
+	---@param height number
 	---@return EPDropdown
-	function Create.MenuButton(text)
+	function Create.DropdownMenuButton(text, height)
 		local menuButton = AceGUI:Create("EPDropdown")
 		menuButton:SetTextCentered(true)
 		menuButton:SetAutoItemWidth(true)
@@ -248,13 +249,41 @@ do -- Menu Button
 		menuButton:SetItemTextFontSize(menuButtonFontSize)
 		menuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
 		menuButton:SetWidth(menuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
-		local menuButtonHeight = Private.mainFrame.windowBar:GetHeight() - 2
-		menuButton:SetDropdownItemHeight(menuButtonHeight)
+		menuButton:SetDropdownItemHeight(height)
 		menuButton:SetButtonVisibility(false)
 		menuButton:SetShowHighlight(true)
 		menuButton:SetCallback("OnEnter", HandleMenuButtonEntered)
 		menuButton:SetCallback("OnOpened", HandleMenuButtonOpened)
 		menuButton:SetCallback("OnClosed", HandleMenuButtonClosed)
+		return menuButton
+	end
+
+	local menuButtonBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	}
+	local menuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
+	local menuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
+
+	---@param text string
+	---@param height number
+	---@param clickedCallback fun()
+	---@return EPButton
+	function Create.MenuButton(text, height, clickedCallback)
+		local menuButton = AceGUI:Create("EPButton")
+		menuButton:SetText(text)
+		menuButton:SetFontSize(menuButtonFontSize)
+		local width = menuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
+		menuButton:SetWidth(width)
+		menuButton:SetHeight(height)
+		menuButton:SetBackdrop(menuButtonBackdrop, menuButtonBackdropColor, menuButtonBackdropBorderColor)
+		menuButton.background:SetPoint("TOPLEFT", 1, -1)
+		menuButton.background:SetPoint("BOTTOMRIGHT", -1, 1)
+		menuButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
+		menuButton:SetCallback("Clicked", clickedCallback)
 		return menuButton
 	end
 end
@@ -1608,22 +1637,22 @@ local function HandleGetMinimumCombatLogEventTime(timelineAssignment)
 	end
 end
 
----@param timeline EPTimeline
 ---@param timelineAssignment TimelineAssignment
 ---@param absoluteTime number
-local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absoluteTime)
+local function HandleDuplicateAssignment(_, _, timelineAssignment, absoluteTime)
 	local assignment = timelineAssignment.assignment
 	local newAssignment = Private.DuplicateAssignment(assignment)
 	tinsert(GetCurrentAssignments(), newAssignment)
 
 	local newAssignmentTime = utilities.Round(absoluteTime, 1)
 	local relativeTime = nil
+	local encounterID = GetCurrentBossDungeonEncounterID()
 
 	if getmetatable(assignment) == CombatLogEventAssignment then
 		---@cast assignment CombatLogEventAssignment
 		relativeTime = ConvertAbsoluteTimeToCombatLogEventTime(
 			absoluteTime,
-			GetCurrentBossDungeonEncounterID(),
+			encounterID,
 			assignment.combatLogEventSpellID,
 			assignment.spellCount,
 			assignment.combatLogEventType
@@ -1637,15 +1666,7 @@ local function HandleDuplicateAssignment(timeline, _, timelineAssignment, absolu
 		newAssignment.time = newAssignmentTime
 	end
 
-	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentPlan(),
-		AddOn.db.profile.preferences.assignmentSortType,
-		GetCurrentBossDungeonEncounterID()
-	)
-	local sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
-	timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
-	timeline:UpdateAssignmentsAndTickMarks()
+	UpdateAllAssignments(false, encounterID)
 	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "duplicated")
@@ -1700,6 +1721,8 @@ local function HandleExpandAllButtonClicked()
 	end
 end
 
+---@param x number
+---@param y number
 local function HandleMinimizeFramePointChanged(_, _, x, y)
 	AddOn.db.profile.minimizeFramePosition = { x = x, y = y }
 end
@@ -1739,108 +1762,62 @@ function Private:CreateInterface()
 	local topContainerSpacing = { 4, 4 }
 	local mainFramePadding = { 10, 10, 10, 10 }
 	local mainFrameSpacing = { 0, 22 }
-	local preferencesMenuButtonBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 1,
-	}
-	local topContainerBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-	}
-	local preferencesMenuButtonBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-	local preferencesMenuButtonBackdropColor = { 0.1, 0.1, 0.1, 1 }
-	local bossDungeonEncounterID = constants.kDefaultBossDungeonEncounterID
-	local plans = AddOn.db.profile.plans
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+	local encounterID = constants.kDefaultBossDungeonEncounterID
+	local profile = self.addOn.db.profile --[[@as DefaultProfile]]
+	local plans = profile.plans
+	local lastOpenPlan = profile.lastOpenPlan
 	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 
 	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
-		bossDungeonEncounterID = plans[lastOpenPlan].dungeonEncounterID
+		encounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
 		local defaultPlanName = L["Default"]
-		utilities.CreatePlan(plans, defaultPlanName, bossDungeonEncounterID)
-		AddOn.db.profile.lastOpenPlan = defaultPlanName
+		utilities.CreatePlan(plans, defaultPlanName, encounterID)
+		profile.lastOpenPlan = defaultPlanName
 		if MRTLoadingOrLoaded or MRTLoaded then
 			if VMRT and VMRT.Note and VMRT.Note.Text1 then
-				local maybeNew = Private:ImportPlanFromNote(defaultPlanName, bossDungeonEncounterID, VMRT.Note.Text1)
+				local maybeNew = Private:ImportPlanFromNote(defaultPlanName, encounterID, VMRT.Note.Text1)
 				if maybeNew then
-					bossDungeonEncounterID = maybeNew
+					encounterID = maybeNew
 				end
 			end
 		end
 	end
 
-	Private.mainFrame = AceGUI:Create("EPMainFrame")
-	Private.mainFrame:SetLayout("EPVerticalLayout")
-	Private.mainFrame:SetSpacing(unpack(mainFrameSpacing))
-	Private.mainFrame:SetPadding(unpack(mainFramePadding))
-	if AddOn.db.profile.minimizeFramePosition then
-		local x, y = AddOn.db.profile.minimizeFramePosition.x, AddOn.db.profile.minimizeFramePosition.y
-		Private.mainFrame:SetMinimizeFramePosition(x, y)
+	local mainFrame = AceGUI:Create("EPMainFrame")
+	mainFrame:SetLayout("EPVerticalLayout")
+	mainFrame:SetSpacing(unpack(mainFrameSpacing))
+	mainFrame:SetPadding(unpack(mainFramePadding))
+	if profile.minimizeFramePosition then
+		local x, y = profile.minimizeFramePosition.x, profile.minimizeFramePosition.y
+		mainFrame:SetMinimizeFramePosition(x, y)
 	end
-	Private.mainFrame:SetCallback("CloseButtonClicked", HandleCloseButtonClicked)
-	Private.mainFrame:SetCallback("CollapseAllButtonClicked", HandleCollapseAllButtonClicked)
-	Private.mainFrame:SetCallback("ExpandAllButtonClicked", HandleExpandAllButtonClicked)
-	Private.mainFrame:SetCallback("MinimizeFramePointChanged", HandleMinimizeFramePointChanged)
-	Private.mainFrame:SetCallback("OnRelease", HandleMainFrameReleased)
-	Private.mainFrame:SetCallback("TutorialButtonClicked", function()
+	mainFrame:SetCallback("CloseButtonClicked", HandleCloseButtonClicked)
+	mainFrame:SetCallback("CollapseAllButtonClicked", HandleCollapseAllButtonClicked)
+	mainFrame:SetCallback("ExpandAllButtonClicked", HandleExpandAllButtonClicked)
+	mainFrame:SetCallback("MinimizeFramePointChanged", HandleMinimizeFramePointChanged)
+	mainFrame:SetCallback("OnRelease", HandleMainFrameReleased)
+	mainFrame:SetCallback("TutorialButtonClicked", function()
 		self:OpenTutorial()
 	end)
 
-	local planMenuButton = Create.MenuButton(L["Plan"])
+	local menuButtonHeight = mainFrame.windowBar:GetHeight() - 2
+
+	local planMenuButton = Create.DropdownMenuButton(L["Plan"], menuButtonHeight)
 	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
-	local bossMenuButton = Create.MenuButton(L["Boss"])
+	local bossMenuButton = Create.DropdownMenuButton(L["Boss"], menuButtonHeight)
 	bossMenuButton:SetMultiselect(true)
 	bossMenuButton:AddItems(Create.BossMenuItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
-	local rosterMenuButton = AceGUI:Create("EPButton")
-	rosterMenuButton:SetText(L["Roster"])
-	rosterMenuButton:SetFontSize(menuButtonFontSize)
-	local width = rosterMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
-	rosterMenuButton:SetWidth(width)
-	rosterMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
-	rosterMenuButton:SetBackdrop(
-		preferencesMenuButtonBackdrop,
-		preferencesMenuButtonBackdropColor,
-		preferencesMenuButtonBackdropBorderColor
-	)
-	rosterMenuButton.background:SetPoint("TOPLEFT", 1, -1)
-	rosterMenuButton.background:SetPoint("BOTTOMRIGHT", -1, 1)
-	rosterMenuButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
-	rosterMenuButton:SetCallback("Clicked", HandleRosterMenuButtonClicked)
+	local rosterMenuButton = Create.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)
+	local preferencesMenuButton =
+		Create.MenuButton(L["Preferences"], menuButtonHeight, HandlePreferencesMenuButtonClicked)
 
-	local preferencesMenuButton = AceGUI:Create("EPButton")
-	preferencesMenuButton:SetText(L["Preferences"])
-	preferencesMenuButton:SetFontSize(menuButtonFontSize)
-	width = preferencesMenuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
-	preferencesMenuButton:SetWidth(width)
-	preferencesMenuButton:SetHeight(Private.mainFrame.windowBar:GetHeight() - 2)
-	preferencesMenuButton:SetBackdrop(
-		preferencesMenuButtonBackdrop,
-		preferencesMenuButtonBackdropColor,
-		preferencesMenuButtonBackdropBorderColor
-	)
-	preferencesMenuButton.background:SetPoint("TOPLEFT", 1, -1)
-	preferencesMenuButton.background:SetPoint("BOTTOMRIGHT", -1, 1)
-	preferencesMenuButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
-	preferencesMenuButton:SetCallback("Clicked", HandlePreferencesMenuButtonClicked)
-
-	Private.mainFrame.menuButtonContainer:AddChildren(
-		planMenuButton,
-		bossMenuButton,
-		rosterMenuButton,
-		preferencesMenuButton
-	)
+	mainFrame.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
 	local instanceLabelContainer = AceGUI:Create("EPContainer")
 	instanceLabelContainer:SetLayout("EPVerticalLayout")
@@ -1859,9 +1836,9 @@ function Private:CreateInterface()
 	bossLabelLabel:SetText(L["Boss"] .. ":", 0)
 	bossLabelLabel:SetFrameWidthFromText()
 
-	width = max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth())
-	instanceLabelLabel:SetWidth(width)
-	bossLabelLabel:SetWidth(width)
+	local instanceBossLabelWidth = max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth())
+	instanceLabelLabel:SetWidth(instanceBossLabelWidth)
+	bossLabelLabel:SetWidth(instanceBossLabelWidth)
 	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel)
 
 	local instanceBossContainer = AceGUI:Create("EPContainer")
@@ -1931,12 +1908,12 @@ function Private:CreateInterface()
 	simulateRemindersButton:SetCallback("OnLeave", HandlePlanReminderEnableCheckBoxOrButtonLeave)
 	simulateRemindersButton.fireEventsIfDisabled = true
 
-	width = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
-	planReminderEnableCheckBox:SetWidth(width)
-	simulateRemindersButton:SetWidth(width)
+	local checkBoxWidth = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
+	planReminderEnableCheckBox:SetWidth(checkBoxWidth)
+	simulateRemindersButton:SetWidth(checkBoxWidth)
 	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
 
-	Private.RegisterCallback(simulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
+	self.RegisterCallback(simulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
 
 	local sendPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
 	sendPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
@@ -1956,9 +1933,9 @@ function Private:CreateInterface()
 	externalTextButton:SetHeight(topContainerWidgetHeight)
 	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
 
-	width = max(sendPlanButton.frame:GetWidth(), externalTextButton.frame:GetWidth())
-	sendPlanButton:SetWidth(width)
-	externalTextButton:SetWidth(width)
+	local buttonWidth = max(sendPlanButton.frame:GetWidth(), externalTextButton.frame:GetWidth())
+	sendPlanButton:SetWidth(buttonWidth)
+	externalTextButton:SetWidth(buttonWidth)
 	sendPlanAndExternalTextContainer:AddChildren(sendPlanButton, externalTextButton)
 
 	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
@@ -1992,10 +1969,17 @@ function Private:CreateInterface()
 		reminderAndSendPlanButtonContainer
 	)
 	topContainer:SetPadding(10, 10, 10, 10)
-	topContainer:SetBackdrop(topContainerBackdrop, { 0, 0, 0, 0 }, preferencesMenuButtonBackdropBorderColor)
+	local topContainerBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+	}
+	topContainer:SetBackdrop(topContainerBackdrop, { 0, 0, 0, 0 }, { 0.25, 0.25, 0.25, 1 })
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetPreferences(AddOn.db.profile.preferences)
+	timeline:SetPreferences(profile.preferences)
 	timeline.CalculateAssignmentTimeFromStart = HandleCalculateAssignmentTimeFromStart
 	timeline.GetMinimumCombatLogEventTime = HandleGetMinimumCombatLogEventTime
 
@@ -2010,46 +1994,48 @@ function Private:CreateInterface()
 	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
 
-	Private.mainFrame.instanceLabel = instanceLabel
-	Private.mainFrame.bossLabel = bossLabel
-	Private.mainFrame.bossMenuButton = bossMenuButton
-	Private.mainFrame.planDropdown = planDropdown
-	Private.mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
-	Private.mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
-	Private.mainFrame.timeline = timeline
-	Private.mainFrame.sendPlanButton = sendPlanButton
-	Private.mainFrame.simulateRemindersButton = simulateRemindersButton
-	Private.mainFrame.externalTextButton = externalTextButton
+	mainFrame.instanceLabel = instanceLabel
+	mainFrame.bossLabel = bossLabel
+	mainFrame.bossMenuButton = bossMenuButton
+	mainFrame.planDropdown = planDropdown
+	mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
+	mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
+	mainFrame.timeline = timeline
+	mainFrame.sendPlanButton = sendPlanButton
+	mainFrame.simulateRemindersButton = simulateRemindersButton
+	mainFrame.externalTextButton = externalTextButton
+	self.mainFrame = mainFrame
 
-	Private.HandleSendPlanButtonConstructed()
+	self.HandleSendPlanButtonConstructed()
 	interfaceUpdater.RestoreMessageLog()
-	Private.mainFrame:AddChildren(topContainer, timeline)
-	Private.mainFrame.menuButtonContainer:DoLayout()
+	mainFrame:AddChildren(topContainer, timeline)
+	mainFrame.menuButtonContainer:DoLayout()
 
 	interfaceUpdater.RepopulatePlanWidgets()
-	UpdateBoss(bossDungeonEncounterID, true)
+	UpdateBoss(encounterID, true)
 	UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	UpdateRosterDataFromGroup(GetCurrentRoster())
-	UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
-	UpdateAllAssignments(true, bossDungeonEncounterID, true)
-	if AddOn.db.profile.windowSize then
-		local minWidth, minHeight, _, _ = Private.mainFrame.frame:GetResizeBounds()
-		AddOn.db.profile.windowSize.x = max(AddOn.db.profile.windowSize.x, minWidth)
-		AddOn.db.profile.windowSize.y = max(AddOn.db.profile.windowSize.y, minHeight)
-		Private.mainFrame:SetWidth(AddOn.db.profile.windowSize.x)
-		Private.mainFrame:SetHeight(AddOn.db.profile.windowSize.y)
+	UpdateRosterDataFromGroup(profile.sharedRoster)
+	UpdateAllAssignments(true, encounterID, true)
+	if profile.windowSize then
+		local minWidth, minHeight, _, _ = mainFrame.frame:GetResizeBounds()
+		profile.windowSize.x = max(profile.windowSize.x, minWidth)
+		profile.windowSize.y = max(profile.windowSize.y, minHeight)
+		mainFrame:SetWidth(profile.windowSize.x)
+		mainFrame:SetHeight(profile.windowSize.y)
 	end
-	Private.mainFrame.frame:SetPoint("CENTER")
-	local x, y = Private.mainFrame.frame:GetLeft(), Private.mainFrame.frame:GetTop()
-	Private.mainFrame.frame:ClearAllPoints()
-	Private.mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
-	Private.mainFrame:DoLayout()
+	mainFrame.frame:SetPoint("CENTER")
+	local x, y = mainFrame.frame:GetLeft(), mainFrame.frame:GetTop()
+	mainFrame.frame:ClearAllPoints()
+	mainFrame.frame:SetPoint("TOPLEFT", x, -(UIParent:GetHeight() - y))
+	mainFrame:DoLayout()
 	timeline:UpdateTimeline()
+
 	C_Timer.After(0, function() -- Otherwise height will not be properly set and can clip messages
-		Private.mainFrame.statusBar:OnWidthSet()
+		self.mainFrame.statusBar:OnWidthSet()
 	end)
 
-	if not AddOn.db.global.tutorial.skipped and not AddOn.db.global.tutorial.completed then
+	if not self.addOn.db.global.tutorial.skipped and not self.addOn.db.global.tutorial.completed then
 		self:OpenTutorial()
 	end
 end
