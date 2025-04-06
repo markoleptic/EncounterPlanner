@@ -1,6 +1,6 @@
 # Encounter Planner
 
-Encounter Planner is an assignment planning and reminder tool for mythic dungeon and raid boss encounters.
+Encounter Planner is an assignment planning and reminder tool for mythic dungeon and mythic raid boss encounters.
 
 It is designed to be easy to use while providing a feature set you would expect from a website.
 Timers for all bosses in Liberation of Undermine and Season 2 Mythic+ dungeons are included.
@@ -16,7 +16,6 @@ If you encounter bugs, unexpected behavior, inaccurate timers, or have any sugge
 **Plans**
 
 -   Encounter Planners uses _plans_ to store assignments.
-    Assignments are the drivers for reminders.
 -   Import notes from other sources such as MRT, Viserio, or plain text.
 -   Export plans from Encounter Planner to plain text.
 -   Create any number of plans per boss; Your shared raid plan and personal plan can both be active so you receive reminders from both.
@@ -48,13 +47,11 @@ If you encounter bugs, unexpected behavior, inaccurate timers, or have any sugge
 -   Target frames automatically receive a glow border for targeted assignments.
 -   Simulate reminders for plan from the main window.
 
-**Validation System**
+**Other**
 
--   Assignments failed to import? Any issues you should be aware of are logged to a small window at the bottom of the main window. They are automatically resolved if possible.
-
-**Extensive User Guide**
-
--   Every part of the addon is documented in the [wiki](https://github.com/markoleptic/EncounterPlanner/wiki/User-Guide).
+-   **In Game Tutorial**: The optional interactive tutorial walks you through the key features of Encounter Planner.
+-   **Extensive User Guide**: Every part of the addon is documented.
+-   **Validation System**: Assignments failed to import? Any issues you should be aware of are logged to a small window at the bottom of the main window. They are automatically resolved if possible.
 
 ## FAQ
 
