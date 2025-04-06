@@ -110,7 +110,7 @@ local function OnAcquire(self)
 
 	self.progressBar = AceGUI:Create("EPProgressBar")
 	self.progressBar.frame:SetParent(self.frame --[[@as Frame]])
-	self.progressBar:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
+	self.progressBar:SetPoint("BOTTOM", self.buttonContainer.frame --[[@as Frame]], "TOP", 0, contentFramePadding.y)
 
 	local previousButton = AceGUI:Create("EPButton")
 	previousButton:SetText(L["Previous"])

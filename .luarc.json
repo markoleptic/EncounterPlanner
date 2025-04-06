@@ -412,21 +412,21 @@
 		"CreateTexturePool",
 		"Clamp",
 		"GetClassColor",
-		"CreateColor",
-		"BackdropTemplateMixin"
+		"CreateColor"
 	],
 	"runtime.version": "Lua 5.1",
 	"runtime.builtin": {
-		"basic": "disable",
+		"basic": "enable",
 		"debug": "disable",
 		"io": "disable",
-		"math": "disable",
+		"math": "enable",
 		"os": "disable",
 		"package": "disable",
-		"string": "disable",
-		"table": "disable",
+		"string": "enable",
+		"table": "enable",
 		"utf8": "disable"
 	},
+	"search.useIgnoreFiles": false,
 	"workspace.library": ["~\\.vscode\\extensions\\ketho.wow-api-0.18.2\\Annotations"],
 	"workspace.ignoreDir": [".release", ".github", ".vscode", "Libs", ".luacheckrc"]
 }

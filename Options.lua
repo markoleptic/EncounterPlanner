@@ -770,6 +770,7 @@ do
 		}
 	end
 
+	---@return table<integer, EPSettingOption>
 	local function CreateReminderOptions()
 		local enableReminderOption = function()
 			return GetReminderPreferences().enabled == true
@@ -2187,6 +2188,7 @@ do
 		}
 	end
 
+	---@return table<integer, EPSettingOption>
 	local function GetCooldownOverrideOptions()
 		return {
 			{
@@ -2211,6 +2213,11 @@ do
 		}
 	end
 
+	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}
+	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
+	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
+	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
+	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
 	function optionCreator.GetOrCreateOptions()
 		if not sounds then
 			sounds = IterateHashTable("sound")
@@ -2319,11 +2326,11 @@ function Private:CreateOptionsMenu()
 		CreateAnchors()
 
 		local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = optionCreator.GetOrCreateOptions()
-		optionsMenu:AddOptionTab(unpack(cooldownOverrideTab))
-		optionsMenu:AddOptionTab(unpack(keyBindingsTab))
-		optionsMenu:AddOptionTab(unpack(reminderTab))
-		optionsMenu:AddOptionTab(unpack(viewTab))
-		optionsMenu:AddOptionTab(unpack(profileTab))
+		optionsMenu:AddOptionTab(cooldownOverrideTab[1], cooldownOverrideTab[2], cooldownOverrideTab[3])
+		optionsMenu:AddOptionTab(keyBindingsTab[1], keyBindingsTab[2], keyBindingsTab[3])
+		optionsMenu:AddOptionTab(reminderTab[1], reminderTab[2], reminderTab[3])
+		optionsMenu:AddOptionTab(viewTab[1], viewTab[2], viewTab[3])
+		optionsMenu:AddOptionTab(profileTab[1], profileTab[2], profileTab[3])
 		optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab or L["Cooldown Overrides"])
 		optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())

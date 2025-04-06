@@ -165,7 +165,7 @@ do
 	local Version = 1
 
 	---@class EPContainer : AceGUIContainer
-	---@field frame table|Frame
+	---@field frame table|Frame|BackdropTemplate
 	---@field type string
 	---@field content table|Frame
 	---@field children table<AceGUIWidget>
