@@ -794,7 +794,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			name = "start",
 			text = FormatText(
-				L["This optional interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"],
+				L["This optional interactive tutorial walks you through the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"],
 				{ L["Tutorial"] },
 				L["button"]
 			),

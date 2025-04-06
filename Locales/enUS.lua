@@ -451,7 +451,7 @@ L["The volume to use for Text to Speech."] = true
 L["The width of Progress Bars."] = true
 L["The yellow bell icon in the"] = true
 L["Thick Outline"] = true
-L["This optional interactive tutorial walks you the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"] =
+L["This optional interactive tutorial walks you through the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"] =
 	true
 L["This plan will be used throughout the tutorial. Select"] = true
 L["Time"] = true
