@@ -577,7 +577,7 @@ end
 local function UpdateUpdateIndices(updateIndices, option, index, func)
 	if type(func) == "function" then
 		if option.updateIndices then
-			local key = option.category or option.label
+			local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 			if not updateIndices[key] then
 				updateIndices[key] = {}
 			end
@@ -631,6 +631,7 @@ local function CreateFrameChooser(self, option, index, label)
 	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(L["Choose"])
 	button:SetRelativeWidth(0.4)
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	button:SetCallback("Clicked", function()
 		if isChoosingFrame then
 			StopChoosingFrame(self.frameChooserFrame, self.frameChooserBox, nil, nil)
@@ -641,8 +642,8 @@ local function CreateFrameChooser(self, option, index, label)
 					option.set(value)
 					valueLineEdit:SetText(value)
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-						Update(self.updateIndices[option.category][index])
+					if self.updateIndices[key] and self.updateIndices[key][index] then
+						Update(self.updateIndices[key][index])
 					end
 				end
 				button:SetText(L["Choose"])
@@ -703,6 +704,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 	end
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	for i, child in ipairs(radioButtonGroup.children) do
 		if option.enabled and child.SetEnabled then
 			child:SetEnabled(option.enabled())
@@ -713,8 +715,8 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			local value = radioButton:GetUserData("key")
 			option.set(value)
 			RefreshEnabledStates(self.refreshMap)
-			if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-				Update(self.updateIndices[option.category][index])
+			if self.updateIndices[key] and self.updateIndices[key][index] then
+				Update(self.updateIndices[key][index])
 			end
 		end)
 		child:SetCallback("OnEnter", function(widget)
@@ -775,6 +777,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 			lineEditY:SetText(y)
 		end)
 	end
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	local function Callback()
 		local valueX, valueY = lineEditX:GetText(), lineEditY:GetText()
 		local valid, valueToRevertTo, valueToRevertToB = option.validate(valueX, valueY)
@@ -786,8 +789,8 @@ local function CreateDoubleLineEdit(self, option, index, label)
 			option.set(valueX, valueY)
 		end
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end
 	lineEditX:SetCallback("OnTextSubmitted", Callback)
@@ -851,18 +854,19 @@ local function CreateDoubleColorPicker(self, option, index, label)
 			colorPickerTwo:SetColor(option.get[2]())
 		end)
 	end
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	colorPickerOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 	colorPickerTwo:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 
@@ -922,18 +926,19 @@ local function CreateDoubleCheckBox(self, option, index, label)
 			checkBoxTwo:SetChecked(option.get[2]())
 		end)
 	end
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	checkBoxOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 	checkBoxTwo:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 
@@ -994,18 +999,19 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 			dropdown:SetValue(option.get[2]())
 		end)
 	end
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 	checkBox:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 	dropdown:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 
@@ -1126,11 +1132,13 @@ local function CreateDropdownBesideButton(self, option, index)
 		end
 	end
 
+	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+
 	dropdown:SetCallback("OnValueChanged", function(_, _, value)
 		option.set(value)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-			Update(self.updateIndices[option.category][index])
+		if self.updateIndices[key] and self.updateIndices[key][index] then
+			Update(self.updateIndices[key][index])
 		end
 	end)
 
@@ -1155,8 +1163,8 @@ local function CreateDropdownBesideButton(self, option, index)
 						option.buttonCallback()
 					end
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-						Update(self.updateIndices[option.category][index])
+					if self.updateIndices[key] and self.updateIndices[key][index] then
+						Update(self.updateIndices[key][index])
 					end
 				end)
 				messageBox:SetCallback("Rejected", function()
@@ -1215,7 +1223,7 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 			end
 		end
 
-		local key = option.category or option.label
+		local key = option.category or option.label or (option.labels[1] .. option.labels[2])
 
 		if type(setWidgetValue) == "function" then
 			if option.updateIndices then

@@ -585,7 +585,7 @@ do
 	--[[@type table<integer, EPSettingOption>]]
 	local cooldownOverrideOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
-	local keyBindingOptions = nil
+	local controlOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
 	local viewOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
@@ -618,13 +618,81 @@ do
 	end
 
 	---@return table<integer, EPSettingOption>
-	local function CreateKeyBindingOptions()
+	local function CreateControlOptions()
 		return {
+			{
+				label = L["Add Assignment"],
+				type = "dropdown",
+				category = L["Assignment Timeline"],
+				description = L["Creates a new assignment when this key is pressed when hovering over the timeline."],
+				values = MouseButtonKeyBindingValues,
+				get = function()
+					return GetPreferences().keyBindings.newAssignment
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						GetPreferences().keyBindings.newAssignment = key
+					end
+				end,
+				validate = function(key)
+					local preferences = GetPreferences()
+					if preferences.keyBindings.pan == key then
+						return false, preferences.keyBindings.newAssignment
+					end
+					return true
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Edit Assignment"],
+				type = "dropdown",
+				category = L["Assignment Timeline"],
+				description = L["Opens the assignment editor when this key is pressed when hovering over an assignment spell icon."],
+				values = MouseButtonKeyBindingValues,
+				get = function()
+					return GetPreferences().keyBindings.editAssignment
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						GetPreferences().keyBindings.editAssignment = key
+					end
+				end,
+				validate = function(key)
+					local preferences = GetPreferences()
+					if preferences.keyBindings.pan == key then
+						return false, preferences.keyBindings.editAssignment
+					elseif preferences.keyBindings.duplicateAssignment == key then
+						return false, preferences.keyBindings.editAssignment
+					end
+					return true
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Duplicate Assignment"],
+				type = "dropdown",
+				category = L["Assignment Timeline"],
+				description = L["Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key."],
+				values = MouseButtonKeyBindingValues,
+				get = function()
+					return GetPreferences().keyBindings.duplicateAssignment
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						GetPreferences().keyBindings.duplicateAssignment = key
+					end
+				end,
+				validate = function(key)
+					local preferences = GetPreferences()
+					if preferences.keyBindings.editAssignment == key then
+						return false, preferences.keyBindings.duplicateAssignment
+					end
+					return true
+				end,
+			} --[[@as EPSettingOption]],
 			{
 				label = L["Pan"],
 				type = "dropdown",
-				description = L["Pans the timeline to the left and right when holding this key."],
 				category = L["Timeline"],
+				description = L["Pans the timeline to the left and right when holding this key."],
 				values = MouseButtonKeyBindingValues,
 				get = function()
 					return GetPreferences().keyBindings.pan
@@ -648,8 +716,8 @@ do
 			{
 				label = L["Scroll"],
 				type = "dropdown",
-				description = L["Scrolls the timeline up and down."],
 				category = L["Timeline"],
+				description = L["Scrolls the timeline up and down."],
 				values = {
 					{ itemValue = "MouseScroll", text = L["Mouse Scroll"] },
 					{ itemValue = "Alt-MouseScroll", text = L["Alt + Mouse Scroll"] },
@@ -675,8 +743,8 @@ do
 			{
 				label = L["Zoom"],
 				type = "dropdown",
-				description = L["Zooms in horizontally on the timeline."],
 				category = L["Timeline"],
+				description = L["Zooms in horizontally on the timeline."],
 				values = {
 					{ itemValue = "MouseScroll", text = L["Mouse Scroll"] },
 					{ itemValue = "Alt-MouseScroll", text = L["Alt + Mouse Scroll"] },
@@ -700,71 +768,26 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Add Assignment"],
-				type = "dropdown",
-				description = L["Creates a new assignment when this key is pressed when hovering over the timeline."],
-				category = L["Assignment"],
-				values = MouseButtonKeyBindingValues,
+				label = L["Timeline Zoom Behavior"],
+				labels = { L["At cursor"], L["Middle of timeline"] },
+				type = "radioButtonGroup",
+				category = L["Timeline"],
+				descriptions = {
+					L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."],
+					L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."],
+				},
+				values = {
+					{ itemValue = 1, text = L["At cursor"] },
+					{ itemValue = 0, text = L["Middle of timeline"] },
+				},
 				get = function()
-					return GetPreferences().keyBindings.newAssignment
+					return GetPreferences().zoomCenteredOnCursor == true and 1 or 0
 				end,
 				set = function(key)
-					if type(key) == "string" then
-						GetPreferences().keyBindings.newAssignment = key
+					local value = tonumber(key)
+					if value then
+						GetPreferences().zoomCenteredOnCursor = value == 1
 					end
-				end,
-				validate = function(key)
-					local preferences = GetPreferences()
-					if preferences.keyBindings.pan == key then
-						return false, preferences.keyBindings.newAssignment
-					end
-					return true
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Edit Assignment"],
-				type = "dropdown",
-				description = L["Opens the assignment editor when this key is pressed when hovering over an assignment spell icon."],
-				category = L["Assignment"],
-				values = MouseButtonKeyBindingValues,
-				get = function()
-					return GetPreferences().keyBindings.editAssignment
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						GetPreferences().keyBindings.editAssignment = key
-					end
-				end,
-				validate = function(key)
-					local preferences = GetPreferences()
-					if preferences.keyBindings.pan == key then
-						return false, preferences.keyBindings.editAssignment
-					elseif preferences.keyBindings.duplicateAssignment == key then
-						return false, preferences.keyBindings.editAssignment
-					end
-					return true
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Duplicate Assignment"],
-				type = "dropdown",
-				description = L["Creates a new assignment based on the assignment being hovered over after holding, dragging, and releasing this key."],
-				category = L["Assignment"],
-				values = MouseButtonKeyBindingValues,
-				get = function()
-					return GetPreferences().keyBindings.duplicateAssignment
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						GetPreferences().keyBindings.duplicateAssignment = key
-					end
-				end,
-				validate = function(key)
-					local preferences = GetPreferences()
-					if preferences.keyBindings.editAssignment == key then
-						return false, preferences.keyBindings.duplicateAssignment
-					end
-					return true
 				end,
 			} --[[@as EPSettingOption]],
 		}
@@ -1954,26 +1977,11 @@ do
 					end,
 				},
 			} --[[@as EPSettingOption]],
-			{
-				label = L["Clear Trusted Characters"],
-				category = L["Other"],
-				type = "centeredButton",
-				get = function()
-					return ""
-				end,
-				set = function() end,
-				description = L["Clears all saved trusted characters. You will see a confirmation dialogue each time a non-trusted character sends a plan to you."],
-				enabled = function()
-					return #AddOn.db.profile.trustedCharacters > 0
-				end,
-				buttonCallback = function()
-					wipe(AddOn.db.profile.trustedCharacters)
-				end,
-			} --[[@as EPSettingOption]],
 		}
 	end
 
 	local floor = math.floor
+
 	---@return table<integer, EPSettingOption>
 	local function CreateViewOptions()
 		local kMinimumRowHeight = 16.0
@@ -1992,85 +2000,20 @@ do
 
 		return {
 			{
-				label = L["Timeline Zoom Behavior"],
-				labels = { L["At cursor"], L["Middle of timeline"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."],
-					L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."],
-				},
-				values = {
-					{ itemValue = 1, text = L["At cursor"] },
-					{ itemValue = 0, text = L["Middle of timeline"] },
-				},
-				get = function()
-					return GetPreferences().zoomCenteredOnCursor == true and 1 or 0
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().zoomCenteredOnCursor = value == 1
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Row Height"],
-				type = "lineEdit",
-				category = L["Boss Ability Timeline"],
-				updateIndices = { 0, 1 },
-				description = L["The height of individual boss ability rows in the timeline (16 - 48)."],
-				get = function()
-					return tostring(GetPreferences().timelineRows.bossAbilityHeight)
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().timelineRows.bossAbilityHeight = utilities.Round(value, 0)
-						if Private.mainFrame and Private.mainFrame.timeline then
-							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-							local plan = AddOn.db.profile.plans[lastOpenPlan]
-							interfaceUpdater.UpdateBoss(plan.dungeonEncounterID, false)
-						end
-					end
-				end,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						local bossAbilityHeightHeight = utilities.Round(value, 0)
-						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
-						local timelineRows = GetPreferences().timelineRows
-						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
-								* (timelineRows.assignmentHeight + 2)
-							- 2
-						local usableHeight = availableHeight - assignmentTimelineHeight - 2
-						local maxHeight =
-							floor(min(kMaximumRowHeight, (usableHeight / timelineRows.numberOfBossAbilitiesToShow) - 2))
-
-						if bossAbilityHeightHeight < kMinimumRowHeight or bossAbilityHeightHeight > maxHeight then
-							return false, Clamp(bossAbilityHeightHeight, kMinimumRowHeight, maxHeight)
-						else
-							return true
-						end
-					else
-						return false, GetPreferences().timelineRows.bossAbilityHeight
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
 				label = L["Number of Visible Rows"],
 				type = "lineEdit",
-				category = L["Boss Ability Timeline"],
-				updateIndices = { -1, 0 },
-				description = L["Number of boss ability rows visible before scrolling is required."],
+				category = L["Assignment Timeline"],
+				updateIndices = { 0, 1 },
+				description = L["Number of assignment rows visible before scrolling is required."],
 				get = function()
-					return GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+					return GetPreferences().timelineRows.numberOfAssignmentsToShow
 				end,
 				set = function(key)
 					local value = tonumber(key)
 					if value then
-						GetPreferences().timelineRows.numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						GetPreferences().timelineRows.numberOfAssignmentsToShow = utilities.Round(value, 0)
 						if Private.mainFrame and Private.mainFrame.timeline then
-							Private.mainFrame.timeline:UpdateHeightFromBossAbilities()
+							Private.mainFrame.timeline:UpdateHeightFromAssignments()
 							Private.mainFrame:DoLayout()
 						end
 					end
@@ -2078,25 +2021,22 @@ do
 				validate = function(key)
 					local value = tonumber(key)
 					if value then
-						local numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						local numberOfAssignmentsToShow = utilities.Round(value, 0)
 						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
 						local timelineRows = GetPreferences().timelineRows
-						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
-								* (timelineRows.assignmentHeight + 2)
+						local bossTimelineHeight = timelineRows.numberOfBossAbilitiesToShow
+								* (timelineRows.bossAbilityHeight + 2)
 							- 2
-						local usableHeight = availableHeight - assignmentTimelineHeight - 2
-						local maxRows = floor(usableHeight / (timelineRows.bossAbilityHeight + 2))
+						local usableHeight = availableHeight - bossTimelineHeight - 2
+						local maxRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
 
-						if
-							numberOfBossAbilitiesToShow <= kMinimumNumberOfRows
-							or numberOfBossAbilitiesToShow > maxRows
-						then
-							return false, Clamp(numberOfBossAbilitiesToShow, kMinimumNumberOfRows, maxRows)
+						if numberOfAssignmentsToShow < kMinimumNumberOfRows or numberOfAssignmentsToShow > maxRows then
+							return false, Clamp(numberOfAssignmentsToShow, kMinimumNumberOfRows, maxRows)
 						else
 							return true
 						end
 					else
-						return false, GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+						return false, GetPreferences().timelineRows.numberOfAssignmentsToShow
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -2104,7 +2044,7 @@ do
 				label = L["Row Height"],
 				type = "lineEdit",
 				category = L["Assignment Timeline"],
-				updateIndices = { 0, 1 },
+				updateIndices = { -1, 0 },
 				description = L["The height of individual assignment rows in the timeline (16 - 48)."],
 				get = function()
 					return tostring(GetPreferences().timelineRows.assignmentHeight)
@@ -2143,48 +2083,6 @@ do
 					end
 				end,
 			} --[[@as EPSettingOption]],
-			{
-				label = L["Number of Visible Rows"],
-				type = "lineEdit",
-				category = L["Assignment Timeline"],
-				updateIndices = { -1, 0 },
-				description = L["Number of assignment rows visible before scrolling is required."],
-				get = function()
-					return GetPreferences().timelineRows.numberOfAssignmentsToShow
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().timelineRows.numberOfAssignmentsToShow = utilities.Round(value, 0)
-						if Private.mainFrame and Private.mainFrame.timeline then
-							Private.mainFrame.timeline:UpdateHeightFromAssignments()
-							Private.mainFrame:DoLayout()
-						end
-					end
-				end,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						local numberOfAssignmentsToShow = utilities.Round(value, 0)
-						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
-						local timelineRows = GetPreferences().timelineRows
-						local bossTimelineHeight = timelineRows.numberOfBossAbilitiesToShow
-								* (timelineRows.bossAbilityHeight + 2)
-							- 2
-						local usableHeight = availableHeight - bossTimelineHeight - 2
-						local maxRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
-
-						if numberOfAssignmentsToShow < kMinimumNumberOfRows or numberOfAssignmentsToShow > maxRows then
-							return false, Clamp(numberOfAssignmentsToShow, kMinimumNumberOfRows, maxRows)
-						else
-							return true
-						end
-					else
-						return false, GetPreferences().timelineRows.numberOfAssignmentsToShow
-					end
-				end,
-			} --[[@as EPSettingOption]],
-
 			{
 				label = L["Assignee Sort Priority"],
 				type = "dropdown",
@@ -2234,6 +2132,93 @@ do
 					end
 				end,
 			} --[[@as EPSettingOption]],
+			{
+				label = L["Number of Visible Rows"],
+				type = "lineEdit",
+				category = L["Boss Ability Timeline"],
+				updateIndices = { 0, 1 },
+				description = L["Number of boss ability rows visible before scrolling is required."],
+				get = function()
+					return GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							Private.mainFrame.timeline:UpdateHeightFromBossAbilities()
+							Private.mainFrame:DoLayout()
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
+								* (timelineRows.assignmentHeight + 2)
+							- 2
+						local usableHeight = availableHeight - assignmentTimelineHeight - 2
+						local maxRows = floor(usableHeight / (timelineRows.bossAbilityHeight + 2))
+
+						if
+							numberOfBossAbilitiesToShow <= kMinimumNumberOfRows
+							or numberOfBossAbilitiesToShow > maxRows
+						then
+							return false, Clamp(numberOfBossAbilitiesToShow, kMinimumNumberOfRows, maxRows)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Row Height"],
+				type = "lineEdit",
+				category = L["Boss Ability Timeline"],
+				updateIndices = { -1, 0 },
+				description = L["The height of individual boss ability rows in the timeline (16 - 48)."],
+				get = function()
+					return tostring(GetPreferences().timelineRows.bossAbilityHeight)
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.bossAbilityHeight = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+							local plan = AddOn.db.profile.plans[lastOpenPlan]
+							interfaceUpdater.UpdateBoss(plan.dungeonEncounterID, false)
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local bossAbilityHeightHeight = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
+								* (timelineRows.assignmentHeight + 2)
+							- 2
+						local usableHeight = availableHeight - assignmentTimelineHeight - 2
+						local maxHeight =
+							floor(min(kMaximumRowHeight, (usableHeight / timelineRows.numberOfBossAbilitiesToShow) - 2))
+
+						if bossAbilityHeightHeight < kMinimumRowHeight or bossAbilityHeightHeight > maxHeight then
+							return false, Clamp(bossAbilityHeightHeight, kMinimumRowHeight, maxHeight)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.bossAbilityHeight
+					end
+				end,
+			} --[[@as EPSettingOption]],
 		}
 	end
 
@@ -2243,7 +2228,6 @@ do
 			{
 				label = L["Current Profile"],
 				type = "dropdownBesideButton",
-				category = L["Profile"],
 				description = L["Select the currently active profile."],
 				values = function()
 					return GetProfiles(false)
@@ -2268,7 +2252,6 @@ do
 			{
 				label = L["New"],
 				type = "lineEdit",
-				category = L["Profile"],
 				description = L["Creates a new empty profile and switches to it."],
 				get = function()
 					return ""
@@ -2287,7 +2270,6 @@ do
 				label = L["Copy From"],
 				type = "dropdown",
 				neverShowItemsAsSelected = true,
-				category = L["Profile"],
 				description = L["Copies the settings from an existing profile into the Current Profile."],
 				values = function()
 					return GetProfiles(true)
@@ -2309,7 +2291,6 @@ do
 				label = L["Delete a Profile"],
 				type = "dropdown",
 				neverShowItemsAsSelected = true,
-				category = L["Profile"],
 				description = L["Displays a confirmation dialog, and if confirmed, deletes the selected profile from the database."],
 				values = function()
 					return GetProfiles(true)
@@ -2330,6 +2311,21 @@ do
 					return format("%s %s?", L["Are you sure you want to delete"], arg)
 				end,
 				updateIndices = { -3, -2, -1, 0 },
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Clear Trusted Characters"],
+				type = "centeredButton",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				description = L["Clears all saved trusted characters. You will see a confirmation dialogue each time a non-trusted character sends a plan to you."],
+				enabled = function()
+					return #AddOn.db.profile.trustedCharacters > 0
+				end,
+				buttonCallback = function()
+					wipe(AddOn.db.profile.trustedCharacters)
+				end,
 			} --[[@as EPSettingOption]],
 		}
 	end
@@ -2385,8 +2381,8 @@ do
 		if not cooldownOverrideOptions then
 			cooldownOverrideOptions = GetCooldownOverrideOptions()
 		end
-		if not keyBindingOptions then
-			keyBindingOptions = CreateKeyBindingOptions()
+		if not controlOptions then
+			controlOptions = CreateControlOptions()
 		end
 		if not reminderOptions then
 			reminderOptions = CreateReminderOptions()
@@ -2399,13 +2395,13 @@ do
 		end
 
 		local cooldownOverrideTab = { L["Cooldown Overrides"], cooldownOverrideOptions }
-		local keyBindingsTab = { L["Keybindings"], keyBindingOptions, { L["Assignment"], L["Timeline"] } }
-		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"], L["Other"] }
+		local controlsTab = { L["Controls"], controlOptions, { L["Assignment Timeline"], L["Timeline"] } }
+		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"] }
 		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
-		local viewTab = { L["View"], viewOptions, { L["Boss Ability Timeline"], L["Assignment Timeline"] } }
-		local profileTab = { L["Profile"], profileOptions, { L["Profile"] } }
+		local viewTab = { L["View"], viewOptions, { L["Assignment Timeline"], L["Boss Ability Timeline"] } }
+		local profileTab = { L["Profile"], profileOptions }
 
-		return cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab
+		return cooldownOverrideTab, controlsTab, reminderTab, viewTab, profileTab
 	end
 end
 

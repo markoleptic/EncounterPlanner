@@ -111,6 +111,7 @@ L["Combat Log Event"] = true
 L["Confirmation"] = true
 L["Consider extending boss phase durations/counts in"] = true
 L["contains high level categories for managing plans, modifying bosses, editing rosters, and settings"] = true
+L["Controls"] = true
 L["Convert to Timed Assignments"] = true
 L["Cooldown Overrides"] = true
 L["Copies the settings from an existing profile into the Current Profile."] = true
@@ -266,7 +267,6 @@ L["is sent to all members of the group"] = true
 L["is unique to the current plan. Roster members must be added here before assignments can be assigned to them. The creator of the plan is automatically added"] =
 	true
 L["its"] = true
-L["Keybindings"] = true
 L["Left"] = true
 L["Left Click"] = true
 L["Left-Click|r to toggle showing the main window."] = true
@@ -306,7 +306,6 @@ L["Only shows Messages at the end of the countdown. Messages are displayed for 2
 	true
 L["Open Preferences"] = true
 L["Opens the assignment editor when this key is pressed when hovering over an assignment spell icon."] = true
-L["Other"] = true
 L["Outline"] = true
 L["Override the default cooldown of player spells."] = true
 L["Overwrite"] = true
