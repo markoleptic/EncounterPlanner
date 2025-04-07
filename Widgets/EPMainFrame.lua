@@ -19,12 +19,11 @@ local unpack = unpack
 
 local mainFrameWidth = 1200
 local mainFrameHeight = 600
-local windowBarHeight = 30
+local windowBarHeight = Private.constants.kWindowBarHeight
 local defaultPadding = 10
-local statusBarHeight = 48
-local statusBarPadding = 5
+local statusBarHeight = Private.constants.kStatusBarHeight
+local statusBarPadding = Private.constants.kStatusBarPadding
 local buttonWidth = 200
-local padding = { top = 10, right = 10, bottom = 10, left = 10 }
 local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local backdropColor = { 0, 0, 0, 0.9 }
 local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
@@ -103,13 +102,11 @@ end
 ---@field primaryPlanCheckBox EPCheckBox
 ---@field menuButtonContainer EPContainer
 ---@field children table<integer, EPContainer>
+---@field padding {left: number, top: number, right: number, bottom: number}
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
-	padding.top = defaultPadding
-	padding.right = defaultPadding
-	padding.bottom = defaultPadding
-	padding.left = defaultPadding
+	self.padding = { left = defaultPadding, top = defaultPadding, right = defaultPadding, bottom = defaultPadding }
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("DIALOG")
 	self.frame:Show()
@@ -117,8 +114,14 @@ local function OnAcquire(self)
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
 
-	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	self.content:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -padding.right, -(windowBarHeight + padding.bottom))
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(windowBarHeight + self.padding.top))
+	self.content:SetPoint(
+		"TOPRIGHT",
+		self.frame,
+		"TOPRIGHT",
+		-self.padding.right,
+		-(windowBarHeight + self.padding.bottom)
+	)
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon(closeIcon)
@@ -174,7 +177,7 @@ local function OnAcquire(self)
 		+ self.closeButtonMinimizeFrame.frame:GetWidth()
 		+ 2 * edgeSize
 	self.minimizeFrame:SetWidth(
-		2 * (minimizeFrameButtonWidths + (self.minimizeFrameText:GetStringWidth() / 2.0) + padding.right)
+		2 * (minimizeFrameButtonWidths + (self.minimizeFrameText:GetStringWidth() / 2.0) + self.padding.right)
 	)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
@@ -275,16 +278,16 @@ local function OnAcquire(self)
 
 	self.lowerContainer = AceGUI:Create("EPContainer")
 	self.lowerContainer:SetLayout("EPHorizontalLayout")
-	self.lowerContainer:SetSpacing(padding.right, 0)
+	self.lowerContainer:SetSpacing(self.padding.right, 0)
 	self.lowerContainer.frame:SetParent(self.frame)
-	self.lowerContainer.frame:SetPoint("LEFT", self.frame, "LEFT", padding.left, 0)
-	self.lowerContainer.frame:SetPoint("RIGHT", self.frame, "RIGHT", -padding.right, 0)
-	self.lowerContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, padding.bottom)
+	self.lowerContainer.frame:SetPoint("LEFT", self.frame, "LEFT", self.padding.left, 0)
+	self.lowerContainer.frame:SetPoint("RIGHT", self.frame, "RIGHT", -self.padding.right, 0)
+	self.lowerContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, self.padding.bottom)
 	self.lowerContainer:AddChildren(lowerLeftContainer, self.statusBar)
 
-	local verticalOffset = statusBarHeight + statusBarPadding + padding.bottom
-	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, verticalOffset)
-	local expandHorizontalOffset = padding.right + 2 + self.collapseAllButton.frame:GetWidth()
+	local verticalOffset = statusBarHeight + statusBarPadding + self.padding.bottom
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.padding.right, verticalOffset)
+	local expandHorizontalOffset = self.padding.right + 2 + self.collapseAllButton.frame:GetWidth()
 	self.expandAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", expandHorizontalOffset, verticalOffset)
 end
 
@@ -350,8 +353,8 @@ local function LayoutFinished(self, _, height)
 			self:SetHeight(
 				height
 					+ windowBarHeight
-					+ padding.top
-					+ padding.bottom
+					+ self.padding.top
+					+ self.padding.bottom
 					+ self.lowerContainer.frame:GetHeight()
 					+ statusBarPadding
 			)
@@ -365,17 +368,21 @@ end
 ---@param bottom number
 ---@param left number
 local function SetPadding(self, top, right, bottom, left)
-	padding.top = top
-	padding.right = right
-	padding.bottom = bottom
-	padding.left = left
+	self.padding.top = top
+	self.padding.right = right
+	self.padding.bottom = bottom
+	self.padding.left = left
 
-	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	local verticalOffset = self.statusBar.frame:GetHeight() + statusBarPadding + padding.bottom
-	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -padding.right, verticalOffset)
-	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", padding.right, verticalOffset)
-	local expandHorizontalOffset = padding.right + 2 + self.collapseAllButton.frame:GetWidth()
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(windowBarHeight + self.padding.top))
+	local verticalOffset = self.statusBar.frame:GetHeight() + statusBarPadding + self.padding.bottom
+	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -self.padding.right, verticalOffset)
+	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.padding.right, verticalOffset)
+	local expandHorizontalOffset = self.padding.right + 2 + self.collapseAllButton.frame:GetWidth()
 	self.expandAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", expandHorizontalOffset, verticalOffset)
+
+	self.lowerContainer.frame:SetPoint("LEFT", self.frame, "LEFT", self.padding.left, 0)
+	self.lowerContainer.frame:SetPoint("RIGHT", self.frame, "RIGHT", -self.padding.right, 0)
+	self.lowerContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, self.padding.bottom)
 end
 
 ---@param self EPMainFrame
@@ -407,7 +414,7 @@ local function CalculateMinWidth(self)
 			minWidth = minWidth + child.frame:GetWidth() + topContainerSpacing.x
 		end
 	end
-	minWidth = minWidth + padding.left + padding.right - topContainerSpacing.x
+	minWidth = minWidth + self.padding.left + self.padding.right - topContainerSpacing.x
 	minWidth = minWidth + topContainer.padding.left + topContainer.padding.right
 	return minWidth
 end
@@ -440,11 +447,6 @@ local function UpdateHorizontalResizeBounds(self)
 	end
 end
 
----@return {left:number, top:number, right:number, bottom:number}
-local function GetPadding()
-	return padding
-end
-
 ---@param self EPMainFrame
 local function Maximize(self)
 	self.minimizeFrame:Hide()
@@ -471,8 +473,8 @@ local function Constructor()
 	frame:SetSize(mainFrameWidth, mainFrameHeight)
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
-	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", padding.left, -(windowBarHeight + padding.top))
-	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -padding.right, padding.bottom)
+	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultPadding, -(windowBarHeight + defaultPadding))
+	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -defaultPadding, defaultPadding)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetHeight(windowBarHeight)
@@ -585,7 +587,6 @@ local function Constructor()
 		SetPadding = SetPadding,
 		SetSpacing = SetSpacing,
 		SetMinimizeFramePosition = SetMinimizeFramePosition,
-		GetPadding = GetPadding,
 		HandleResizeBoundsCalculated = HandleResizeBoundsCalculated,
 		UpdateHorizontalResizeBounds = UpdateHorizontalResizeBounds,
 		Maximize = Maximize,

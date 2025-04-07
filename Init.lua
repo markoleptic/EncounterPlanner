@@ -617,11 +617,17 @@ end
 ---@field newAssignment MouseButtonKeyBinding
 ---@field duplicateAssignment MouseButtonKeyBinding
 
+---@class TimelineRows
+---@field numberOfAssignmentsToShow integer
+---@field numberOfBossAbilitiesToShow integer
+---@field assignmentHeight integer
+---@field bossAbilityHeight integer
+
 ---@class Preferences
 ---@field lastOpenTab string
 ---@field keyBindings KeyBindings
 ---@field assignmentSortType AssignmentSortType
----@field timelineRows {numberOfAssignmentsToShow: integer, numberOfBossAbilitiesToShow: integer, assignmentHeight: integer}
+---@field timelineRows TimelineRows
 ---@field zoomCenteredOnCursor boolean
 ---@field reminder ReminderPreferences
 ---@field showSpellCooldownDuration boolean
@@ -736,7 +742,8 @@ local defaults = {
 			timelineRows = {
 				numberOfAssignmentsToShow = 8,
 				numberOfBossAbilitiesToShow = 8,
-				assignmentHeight = 30,
+				assignmentHeight = 30.0,
+				bossAbilityHeight = 30.0,
 			},
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,

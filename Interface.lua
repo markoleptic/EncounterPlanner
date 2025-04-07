@@ -1760,8 +1760,8 @@ function Private:CreateInterface()
 	local topContainerWidgetFontSize = 14
 	local topContainerWidgetHeight = 22
 	local topContainerSpacing = { 4, 4 }
-	local mainFramePadding = { 10, 10, 10, 10 }
-	local mainFrameSpacing = { 0, 22 }
+	local mainFramePadding = constants.kMainFramePadding
+	local mainFrameSpacing = constants.kMainFrameSpacing
 	local encounterID = constants.kDefaultBossDungeonEncounterID
 	local profile = self.addOn.db.profile --[[@as DefaultProfile]]
 	local plans = profile.plans

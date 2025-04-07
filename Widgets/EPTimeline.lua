@@ -37,21 +37,18 @@ local wipe = table.wipe
 
 local frameWidth = 900
 local frameHeight = 400
-local paddingBetweenTimelines = 44
+local paddingBetweenTimelines = constants.timeline.kPaddingBetweenTimelines
 local paddingBetweenBossAbilityBars = 2
-local paddingBetweenTimelineAndScrollBar = 10
-local bossAbilityBarHeight = 30.0
+local paddingBetweenTimelineAndScrollBar = constants.timeline.kPaddingBetweenTimelineAndScrollBar
 local assignmentTextureSubLevel = 0
 local assignmentOverlapTolerance = 0.001
 local cooldownWidthTolerance = 0.01
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
-local horizontalScrollBarHeight = 20
+local horizontalScrollBarHeight = constants.timeline.kHorizontalScrollBarHeight
 local minimumSpacingBetweenLabels = 4
 local minimumNumberOfAssignmentRows = 2
-local maximumNumberOfAssignmentRows = 12
 local minimumNumberOfBossAbilityRows = 2
-local maximumNumberOfBossAbilityRows = 12
 local minimumBossAbilityWidth = 10
 local defaultTickWidth = 2
 local minZoomFactor = 1
@@ -84,7 +81,6 @@ local colors = {
 	{ 0.09, 0.745, 0.812, 1 },
 }
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
-local cooldownTextureHalfSize = 32
 local cooldownPadding = 1
 local cooldownBackgroundColor = { 0.25, 0.25, 0.25, 1 }
 local cooldownTextureAlpha = 0.5
@@ -679,10 +675,11 @@ local function UpdateBossAbilityBars(self)
 
 	local offsets = {}
 	local offset = 0
+	local bossAbilityHeight = self.preferences.timelineRows.bossAbilityHeight
 	for _, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 		offsets[bossAbilitySpellID] = offset
 		if self.bossAbilityVisibility[bossAbilitySpellID] == true then
-			offset = offset + bossAbilityBarHeight + paddingBetweenBossAbilityBars
+			offset = offset + bossAbilityHeight + paddingBetweenBossAbilityBars
 		end
 	end
 
@@ -716,7 +713,7 @@ local function UpdateBossAbilityBars(self)
 
 		if self.bossAbilityVisibility[entry.bossAbilitySpellID] == true then
 			local verticalOffset = offsets[entry.bossAbilitySpellID]
-			local height = bossAbilityBarHeight
+			local height = bossAbilityHeight
 			local color = colors[((entry.bossAbilityOrderIndex - 1) % #colors) + 1]
 			if entry.overlaps then
 				verticalOffset = verticalOffset + entry.overlaps.offset * height
@@ -1576,6 +1573,7 @@ end
 ---@return number
 local function CalculateRequiredBarHeight(self)
 	local totalBarHeight = 0.0
+	local rowHeight = self.preferences.timelineRows.bossAbilityHeight
 
 	local activeAbilities = {}
 	for _, spellID in pairs(self.bossAbilityOrder) do
@@ -1584,10 +1582,10 @@ local function CalculateRequiredBarHeight(self)
 
 	for spellID, visible in pairs(self.bossAbilityVisibility) do
 		if visible == true and activeAbilities[spellID] then
-			totalBarHeight = totalBarHeight + (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+			totalBarHeight = totalBarHeight + (rowHeight + paddingBetweenBossAbilityBars)
 		end
 	end
-	if totalBarHeight >= (bossAbilityBarHeight + paddingBetweenBossAbilityBars) then
+	if totalBarHeight >= (rowHeight + paddingBetweenBossAbilityBars) then
 		totalBarHeight = totalBarHeight - paddingBetweenBossAbilityBars
 	end
 	return totalBarHeight
@@ -1599,14 +1597,14 @@ end
 local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentHeight = 0
 	local totalAssignmentRows = 0
+	local rowHeight = self.preferences.timelineRows.assignmentHeight
 	for _, as in ipairs(self.assigneesAndSpells) do
 		if as.spellID == nil or not self.collapsed[as.assignee] then
-			totalAssignmentHeight = totalAssignmentHeight
-				+ (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
+			totalAssignmentHeight = totalAssignmentHeight + (rowHeight + paddingBetweenAssignments)
 			totalAssignmentRows = totalAssignmentRows + 1
 		end
 	end
-	if totalAssignmentHeight >= (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments) then
+	if totalAssignmentHeight >= (rowHeight + paddingBetweenAssignments) then
 		totalAssignmentHeight = totalAssignmentHeight - paddingBetweenAssignments
 	end
 	return totalAssignmentHeight
@@ -1630,13 +1628,15 @@ end
 ---@param self EPTimeline
 local function CalculateMinMaxStepBarHeight(self)
 	local abilityCount = 1
-	local minH, maxH, stepH = 0, 0, (bossAbilityBarHeight + paddingBetweenBossAbilityBars)
+	local rowHeight = self.preferences.timelineRows.bossAbilityHeight
+	local minH, maxH, stepH = 0, 0, (rowHeight + paddingBetweenBossAbilityBars)
 
 	local activeAbilities = {}
 	for _, spellID in pairs(self.bossAbilityOrder) do
 		activeAbilities[spellID] = true
 	end
 
+	local maximumNumberOfBossAbilityRows = self.preferences.timelineRows.numberOfBossAbilitiesToShow
 	for spellID, visible in pairs(self.bossAbilityVisibility) do
 		if visible == true and activeAbilities[spellID] then
 			if abilityCount <= maximumNumberOfBossAbilityRows then
@@ -1651,12 +1651,12 @@ local function CalculateMinMaxStepBarHeight(self)
 	if minH >= stepH then
 		minH = minH - paddingBetweenBossAbilityBars
 	else
-		minH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
+		minH = rowHeight -- Prevent boss ability timeline frame from having 0 height
 	end
 	if maxH >= stepH then
 		maxH = maxH - paddingBetweenBossAbilityBars
 	else
-		maxH = bossAbilityBarHeight -- Prevent boss ability timeline frame from having 0 height
+		maxH = rowHeight -- Prevent boss ability timeline frame from having 0 height
 	end
 	self.bossAbilityDimensions.min = minH
 	self.bossAbilityDimensions.max = maxH
@@ -1669,6 +1669,7 @@ end
 local function CalculateMinMaxStepAssignmentHeight(self)
 	local totalAssignmentRows = 1
 	local minH, maxH, stepH = 0, 0, (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
+	local maximumNumberOfAssignmentRows = self.preferences.timelineRows.numberOfAssignmentsToShow
 	for _, as in ipairs(self.assigneesAndSpells) do
 		if as.spellID == nil or not self.collapsed[as.assignee] then
 			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
@@ -1787,7 +1788,6 @@ local function OnAcquire(self)
 	self.bossAbilityTimeline = AceGUI:Create("EPTimelineSection")
 	self.bossAbilityTimeline.frame:SetParent(self.contentFrame)
 	self.bossAbilityTimeline:SetListPadding(paddingBetweenBossAbilityBars)
-	self.bossAbilityTimeline:SetTextureHeight(bossAbilityBarHeight)
 
 	self.assignmentTimeline.listContainer.frame:SetScript("OnMouseWheel", function(_, delta)
 		HandleTimelineFrameMouseWheel(self, false, delta)
@@ -2233,6 +2233,7 @@ end
 ---@param self EPTimeline
 local function UpdateHeightFromBossAbilities(self)
 	CalculateMinMaxStepBarHeight(self)
+	self.bossAbilityTimeline:SetTextureHeight(self.preferences.timelineRows.bossAbilityHeight)
 	local height = paddingBetweenTimelines
 		+ paddingBetweenTimelineAndScrollBar
 		+ horizontalScrollBarHeight
@@ -2264,7 +2265,6 @@ local function SetMaxAssignmentHeight(self)
 		+ horizontalScrollBarHeight
 		+ bossFrameHeight
 	self.assignmentTimeline.frame:SetHeight(self.assignmentDimensions.max)
-	self.preferences.timelineRows.numberOfAssignmentsToShow = maximumNumberOfAssignmentRows
 	self:SetHeight(height + self.assignmentDimensions.max)
 end
 
@@ -2483,12 +2483,14 @@ local function SetAllowHeightResizing(self, allow)
 		self.assignmentTimeline:SetHeight(assignmentHeight)
 		self.bossAbilityTimeline:SetHeight(barHeight)
 
+		local maximumNumberOfAssignmentRows = self.preferences.timelineRows.numberOfAssignmentsToShow
 		local numberOfAssignmentsToShow =
 			floor((assignmentHeight + paddingBetweenAssignments + 0.5) / self.assignmentDimensions.step)
 		numberOfAssignmentsToShow =
 			min(max(minimumNumberOfAssignmentRows, numberOfAssignmentsToShow), maximumNumberOfAssignmentRows)
 		self.preferences.timelineRows.numberOfAssignmentsToShow = numberOfAssignmentsToShow
 
+		local maximumNumberOfBossAbilityRows = self.preferences.timelineRows.numberOfBossAbilitiesToShow
 		local numberOfBossAbilitiesToShow =
 			floor((barHeight + paddingBetweenBossAbilityBars + 0.5) / self.bossAbilityDimensions.step)
 		numberOfBossAbilitiesToShow =

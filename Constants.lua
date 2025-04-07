@@ -34,8 +34,19 @@ Private.constants = {
 		kEnabledTextColor = { 1, 1, 1 },
 		kDisabledTextColor = { 0.5, 0.5, 0.5 },
 	},
+	timeline = {
+		kPaddingBetweenTimelines = 44,
+		kPaddingBetweenTimelineAndScrollBar = 10,
+		kHorizontalScrollBarHeight = 20,
+	},
+	kWindowBarHeight = 30,
+	kStatusBarHeight = 48,
+	kStatusBarPadding = 5,
 	kMaxBossDuration = 1200.0,
 	kMinBossPhaseDuration = 10.0,
+	kMainFramePadding = { 10, 10, 10, 10 },
+	kMainFrameSpacing = { 0, 22 },
+	kTopContainerHeight = 68,
 	kMinimumTimeBetweenAssignmentsBeforeWarning = 2.0,
 	kDefaultBossDungeonEncounterID = 3009, -- Vexie
 }

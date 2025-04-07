@@ -91,8 +91,10 @@ do
 			bossLabel:SetFrameWidthFromText()
 
 			Private.mainFrame:UpdateHorizontalResizeBounds()
-
 			bossAbilityContainer:ReleaseChildren()
+
+			local bossAbilityHeight = AddOn.db.profile.preferences.timelineRows.bossAbilityHeight
+
 			local children = {}
 			local bossAbilitySelectItems = {}
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
@@ -140,6 +142,7 @@ do
 						end
 					end
 					abilityEntry:HideCheckBox()
+					abilityEntry:SetHeight(bossAbilityHeight)
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then

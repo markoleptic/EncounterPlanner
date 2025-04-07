@@ -577,15 +577,16 @@ end
 local function UpdateUpdateIndices(updateIndices, option, index, func)
 	if type(func) == "function" then
 		if option.updateIndices then
-			if not updateIndices[option.category] then
-				updateIndices[option.category] = {}
+			local key = option.category or option.label
+			if not updateIndices[key] then
+				updateIndices[key] = {}
 			end
 			for _, relativeOptionIndex in pairs(option.updateIndices) do
 				local optionIndex = index + relativeOptionIndex
-				if not updateIndices[option.category][optionIndex] then
-					updateIndices[option.category][optionIndex] = {}
+				if not updateIndices[key][optionIndex] then
+					updateIndices[key][optionIndex] = {}
 				end
-				tinsert(updateIndices[option.category][optionIndex], func)
+				tinsert(updateIndices[key][optionIndex], func)
 			end
 		end
 	end
@@ -1213,6 +1214,9 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 				tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 			end
 		end
+
+		local key = option.category or option.label
+
 		if type(setWidgetValue) == "function" then
 			if option.updateIndices then
 				if option.type == "dropdown" and type(option.values) == "function" then
@@ -1241,8 +1245,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 						option.set(...)
 					end
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-						Update(self.updateIndices[option.category][index])
+					if self.updateIndices[key] and self.updateIndices[key][index] then
+						Update(self.updateIndices[key][index])
 					end
 				end)
 			elseif option.confirm then
@@ -1265,8 +1269,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 							messageBox = nil
 							option.set(value1, value2, value3, value4)
 							RefreshEnabledStates(self.refreshMap)
-							if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-								Update(self.updateIndices[option.category][index])
+							if self.updateIndices[key] and self.updateIndices[key][index] then
+								Update(self.updateIndices[key][index])
 							end
 						end)
 						messageBox:SetCallback("Rejected", function()
@@ -1282,8 +1286,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 				widget:SetCallback(callbackName, function(_, _, ...)
 					option.set(...)
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-						Update(self.updateIndices[option.category][index])
+					if self.updateIndices[key] and self.updateIndices[key][index] then
+						Update(self.updateIndices[key][index])
 					end
 				end)
 			end
@@ -1304,8 +1308,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 					option.set(...)
 				end
 				RefreshEnabledStates(self.refreshMap)
-				if self.updateIndices[option.category] and self.updateIndices[option.category][index] then
-					Update(self.updateIndices[option.category][index])
+				if self.updateIndices[key] and self.updateIndices[key][index] then
+					Update(self.updateIndices[key][index])
 				end
 			end)
 		end

@@ -1973,82 +1973,24 @@ do
 		}
 	end
 
+	local floor = math.floor
 	---@return table<integer, EPSettingOption>
 	local function CreateViewOptions()
-		local kMinimumAssignmentHeight = 16.0
-		local kMaximumAssignmentHeight = 48.0
+		local kMinimumRowHeight = 16.0
+		local kMaximumRowHeight = 48.0
+		local kMinimumNumberOfRows = 2
+		local kNonTimelineHeight = constants.timeline.kHorizontalScrollBarHeight
+			+ constants.timeline.kPaddingBetweenTimelineAndScrollBar
+			+ constants.timeline.kPaddingBetweenTimelines
+			+ constants.kStatusBarHeight
+			+ constants.kStatusBarPadding
+			+ constants.kWindowBarHeight
+			+ constants.kMainFramePadding[2]
+			+ constants.kMainFramePadding[4]
+			+ constants.kTopContainerHeight
+			+ constants.kMainFrameSpacing[2]
+
 		return {
-			{
-				label = L["Preferred Number of Assignments to Show"],
-				type = "dropdown",
-				description = L["The assignment timeline will attempt to expand or shrink to show this many rows."],
-				values = rowValues,
-				get = function()
-					return GetPreferences().timelineRows.numberOfAssignmentsToShow
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().timelineRows.numberOfAssignmentsToShow = value
-						local timeline = Private.mainFrame.timeline
-						if timeline then
-							timeline:UpdateHeightFromAssignments()
-							Private.mainFrame:DoLayout()
-						end
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Assignment Row Height"],
-				type = "lineEdit",
-				description = L["The height of individual assignment rows in the assignment timeline (16 - 48)."],
-				get = function()
-					return tostring(GetPreferences().timelineRows.assignmentHeight)
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().timelineRows.assignmentHeight = value
-						if Private.mainFrame and Private.mainFrame.timeline then
-							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-							local plan = AddOn.db.profile.plans[lastOpenPlan]
-							interfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
-						end
-					end
-				end,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < kMinimumAssignmentHeight or value > kMaximumAssignmentHeight then
-							return false, Clamp(value, kMinimumAssignmentHeight, kMaximumAssignmentHeight)
-						else
-							return true
-						end
-					else
-						return false, GetPreferences().timelineRows.assignmentHeight
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Preferred Number of Boss Abilities to Show"],
-				type = "dropdown",
-				description = L["The boss ability timeline will attempt to expand or shrink to show this many rows."],
-				values = rowValues,
-				get = function()
-					return GetPreferences().timelineRows.numberOfBossAbilitiesToShow
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetPreferences().timelineRows.numberOfBossAbilitiesToShow = value
-						local timeline = Private.mainFrame.timeline
-						if timeline then
-							timeline:UpdateHeightFromBossAbilities()
-							Private.mainFrame:DoLayout()
-						end
-					end
-				end,
-			} --[[@as EPSettingOption]],
 			{
 				label = L["Timeline Zoom Behavior"],
 				labels = { L["At cursor"], L["Middle of timeline"] },
@@ -2057,7 +1999,6 @@ do
 					L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."],
 					L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."],
 				},
-				category = L["Assignment"],
 				values = {
 					{ itemValue = 1, text = L["At cursor"] },
 					{ itemValue = 0, text = L["Middle of timeline"] },
@@ -2073,10 +2014,182 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Row Height"],
+				type = "lineEdit",
+				category = L["Boss Ability Timeline"],
+				updateIndices = { 0, 1 },
+				description = L["The height of individual boss ability rows in the timeline (16 - 48)."],
+				get = function()
+					return tostring(GetPreferences().timelineRows.bossAbilityHeight)
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.bossAbilityHeight = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+							local plan = AddOn.db.profile.plans[lastOpenPlan]
+							interfaceUpdater.UpdateBoss(plan.dungeonEncounterID, false)
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local bossAbilityHeightHeight = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
+								* (timelineRows.assignmentHeight + 2)
+							- 2
+						local usableHeight = availableHeight - assignmentTimelineHeight - 2
+						local maxHeight =
+							floor(min(kMaximumRowHeight, (usableHeight / timelineRows.numberOfBossAbilitiesToShow) - 2))
+
+						if bossAbilityHeightHeight < kMinimumRowHeight or bossAbilityHeightHeight > maxHeight then
+							return false, Clamp(bossAbilityHeightHeight, kMinimumRowHeight, maxHeight)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.bossAbilityHeight
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Number of Visible Rows"],
+				type = "lineEdit",
+				category = L["Boss Ability Timeline"],
+				updateIndices = { -1, 0 },
+				description = L["Number of boss ability rows visible before scrolling is required."],
+				get = function()
+					return GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							Private.mainFrame.timeline:UpdateHeightFromBossAbilities()
+							Private.mainFrame:DoLayout()
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local numberOfBossAbilitiesToShow = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow
+								* (timelineRows.assignmentHeight + 2)
+							- 2
+						local usableHeight = availableHeight - assignmentTimelineHeight - 2
+						local maxRows = floor(usableHeight / (timelineRows.bossAbilityHeight + 2))
+
+						if
+							numberOfBossAbilitiesToShow <= kMinimumNumberOfRows
+							or numberOfBossAbilitiesToShow > maxRows
+						then
+							return false, Clamp(numberOfBossAbilitiesToShow, kMinimumNumberOfRows, maxRows)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.numberOfBossAbilitiesToShow
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Row Height"],
+				type = "lineEdit",
+				category = L["Assignment Timeline"],
+				updateIndices = { 0, 1 },
+				description = L["The height of individual assignment rows in the timeline (16 - 48)."],
+				get = function()
+					return tostring(GetPreferences().timelineRows.assignmentHeight)
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.assignmentHeight = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+							local plan = AddOn.db.profile.plans[lastOpenPlan]
+							interfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local assignmentHeight = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local bossTimelineHeight = timelineRows.numberOfBossAbilitiesToShow
+								* (timelineRows.bossAbilityHeight + 2)
+							- 2
+						local usableHeight = availableHeight - bossTimelineHeight - 2
+						local maxHeight =
+							floor(min(kMaximumRowHeight, (usableHeight / timelineRows.numberOfAssignmentsToShow) - 2))
+
+						if assignmentHeight < kMinimumRowHeight or assignmentHeight > maxHeight then
+							return false, Clamp(assignmentHeight, kMinimumRowHeight, maxHeight)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.assignmentHeight
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Number of Visible Rows"],
+				type = "lineEdit",
+				category = L["Assignment Timeline"],
+				updateIndices = { -1, 0 },
+				description = L["Number of assignment rows visible before scrolling is required."],
+				get = function()
+					return GetPreferences().timelineRows.numberOfAssignmentsToShow
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetPreferences().timelineRows.numberOfAssignmentsToShow = utilities.Round(value, 0)
+						if Private.mainFrame and Private.mainFrame.timeline then
+							Private.mainFrame.timeline:UpdateHeightFromAssignments()
+							Private.mainFrame:DoLayout()
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						local numberOfAssignmentsToShow = utilities.Round(value, 0)
+						local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+						local timelineRows = GetPreferences().timelineRows
+						local bossTimelineHeight = timelineRows.numberOfBossAbilitiesToShow
+								* (timelineRows.bossAbilityHeight + 2)
+							- 2
+						local usableHeight = availableHeight - bossTimelineHeight - 2
+						local maxRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
+
+						if numberOfAssignmentsToShow < kMinimumNumberOfRows or numberOfAssignmentsToShow > maxRows then
+							return false, Clamp(numberOfAssignmentsToShow, kMinimumNumberOfRows, maxRows)
+						else
+							return true
+						end
+					else
+						return false, GetPreferences().timelineRows.numberOfAssignmentsToShow
+					end
+				end,
+			} --[[@as EPSettingOption]],
+
+			{
 				label = L["Assignee Sort Priority"],
 				type = "dropdown",
+				category = L["Assignment Timeline"],
 				description = L["How to sort the assignee rows of the assignment timeline."],
-				category = L["Assignment"],
 				values = {
 					{ itemValue = "Alphabetical", text = L["Alphabetical"] },
 					{ itemValue = "First Appearance", text = L["First Appearance"] },
@@ -2104,8 +2217,8 @@ do
 			{
 				label = L["Show Spell Cooldown Duration"],
 				type = "checkBox",
+				category = L["Assignment Timeline"],
 				description = L["Whether to show textures representing player spell cooldown durations."],
-				category = L["Assignment"],
 				get = function()
 					return GetPreferences().showSpellCooldownDuration
 				end,
@@ -2289,7 +2402,7 @@ do
 		local keyBindingsTab = { L["Keybindings"], keyBindingOptions, { L["Assignment"], L["Timeline"] } }
 		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"], L["Other"] }
 		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
-		local viewTab = { L["View"], viewOptions, { L["Assignment"] } }
+		local viewTab = { L["View"], viewOptions, { L["Boss Ability Timeline"], L["Assignment Timeline"] } }
 		local profileTab = { L["Profile"], profileOptions, { L["Profile"] } }
 
 		return cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab
