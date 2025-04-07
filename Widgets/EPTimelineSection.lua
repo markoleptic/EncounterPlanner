@@ -4,11 +4,10 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local abs = math.abs
+local Clamp = Clamp
 local CreateFrame = CreateFrame
 local floor = math.floor
 local GetCursorPosition = GetCursorPosition
-local max = math.max
-local min = math.min
 local unpack = unpack
 
 local verticalPositionLineSubLevel = -8
@@ -38,8 +37,7 @@ local function HandleVerticalThumbUpdate(self)
 
 	local minAllowedOffset = thumbPadding.y
 	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
-	newOffset = max(newOffset, minAllowedOffset)
-	newOffset = min(newOffset, maxAllowedOffset)
+	newOffset = Clamp(newOffset, minAllowedOffset, maxAllowedOffset)
 	self.thumb:SetPoint("TOP", 0, -newOffset)
 
 	local scrollFrame = self.scrollFrame
@@ -258,11 +256,11 @@ local function UpdateVerticalScroll(self)
 	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
 	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
-	thumbHeight = min(max(thumbHeight, minThumbSize), availableThumbHeight)
+	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
 
 	local maxThumbPosition = availableThumbHeight - thumbHeight
-	local verticalThumbPosition = max(0, min(maxThumbPosition, (scrollPercentage * maxThumbPosition))) + thumbPadding.y
+	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
@@ -288,7 +286,7 @@ local function ScrollVerticallyIfNotVisible(self, distanceToTop, distanceToBotto
 	if newVerticalScroll then
 		local snapValue = (self.textureHeight + self.listPadding) / 2
 		local currentSnapValue = floor((newVerticalScroll / snapValue) + 0.5)
-		newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		newVerticalScroll = Clamp(currentSnapValue * snapValue, 0, maxVerticalScroll)
 		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
 		self.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	end

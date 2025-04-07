@@ -14,6 +14,7 @@ local UIParent = UIParent
 
 local abs = math.abs
 local ceil, floor = math.ceil, math.floor
+local Clamp = Clamp
 local CreateFrame = CreateFrame
 local format = string.format
 local GetCursorPosition = GetCursorPosition
@@ -470,8 +471,7 @@ local function UpdateHorizontalScrollBarThumb(scrollBarWidth, thumb, scrollFrame
 
 	-- Calculate the scroll bar thumb size based on the visible area
 	local thumbWidth = (scrollFrameWidth / timelineWidth) * (scrollBarWidth - (2 * thumbPadding.x))
-	thumbWidth = max(thumbWidth, 20) -- Minimum size so it's always visible
-	thumbWidth = min(thumbWidth, scrollFrameWidth - (2 * thumbPadding.x))
+	thumbWidth = Clamp(thumbWidth, 20, scrollFrameWidth - (2 * thumbPadding.x))
 	thumb:SetWidth(thumbWidth)
 
 	local maxScroll = timelineWidth - scrollFrameWidth
@@ -854,9 +854,10 @@ local function HandleAssignmentUpdate(self, frame)
 		- timelineFrameLeft
 		- horizontalCursorAssignmentFrameOffsetWhenClicked
 
-	assignmentFrameOffsetFromTimelineFrameLeft = max(
+	assignmentFrameOffsetFromTimelineFrameLeft = Clamp(
+		assignmentFrameOffsetFromTimelineFrameLeft,
 		minOffsetFromTimelineFrameLeft,
-		min(maxOffsetFromTimelineFrameLeft, assignmentFrameOffsetFromTimelineFrameLeft)
+		maxOffsetFromTimelineFrameLeft
 	)
 
 	local assignmentLeft = frame:GetLeft()
@@ -875,7 +876,7 @@ local function HandleAssignmentUpdate(self, frame)
 	end
 
 	if newHorizontalScroll then
-		newHorizontalScroll = max(0, min(newHorizontalScroll, timelineFrameWidth - scrollFrameWidth))
+		newHorizontalScroll = Clamp(newHorizontalScroll, 0, timelineFrameWidth - scrollFrameWidth)
 		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
 		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
@@ -1318,7 +1319,7 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 			currentSnapValue = currentSnapValue + 1
 		end
 
-		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		local newVerticalScroll = Clamp(currentSnapValue * snapValue, 0, maxVerticalScroll)
 		scrollFrame:SetVerticalScroll(newVerticalScroll)
 		timelineSection.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 		timelineSection:UpdateVerticalScroll()
@@ -1438,8 +1439,7 @@ local function HandleThumbMouseDown(self)
 
 		local minAllowedOffset = paddingX
 		local maxAllowedOffset = currentScrollBarWidth - currentWidth - paddingX
-		newOffset = max(newOffset, minAllowedOffset)
-		newOffset = min(newOffset, maxAllowedOffset)
+		newOffset = Clamp(newOffset, minAllowedOffset, maxAllowedOffset)
 		thumb:SetPoint("LEFT", newOffset, 0)
 
 		-- Calculate the scroll frame's horizontal scroll based on the thumb's position
@@ -1519,7 +1519,7 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 			local dx = (x - timelineFrameOffsetWhenDragStarted) / bossAbilityScrollFrame:GetEffectiveScale()
 			local newHorizontalScroll = bossAbilityScrollFrame:GetHorizontalScroll() - dx
 			local maxHorizontalScroll = timelineFrameWidth - scrollFrameWidth
-			newHorizontalScroll = min(max(0, newHorizontalScroll), maxHorizontalScroll)
+			newHorizontalScroll = Clamp(newHorizontalScroll, 0, maxHorizontalScroll)
 			bossAbilityScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			assignmentScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
@@ -1625,10 +1625,22 @@ local function UpdateResizeBounds(self)
 	self:Fire("ResizeBoundsCalculated", minHeight, maxHeight)
 end
 
+local kNonTimelineHeight = constants.timeline.kHorizontalScrollBarHeight
+	+ constants.timeline.kPaddingBetweenTimelineAndScrollBar
+	+ constants.timeline.kPaddingBetweenTimelines
+	+ constants.kStatusBarHeight
+	+ constants.kStatusBarPadding
+	+ constants.kWindowBarHeight
+	+ constants.kMainFramePadding[2]
+	+ constants.kMainFramePadding[4]
+	+ constants.kTopContainerHeight
+	+ constants.kMainFrameSpacing[2]
+
 ---@param self EPTimeline
 local function CalculateMinMaxStepBarHeight(self)
 	local abilityCount = 1
-	local rowHeight = self.preferences.timelineRows.bossAbilityHeight
+	local timelineRows = self.preferences.timelineRows
+	local rowHeight = timelineRows.bossAbilityHeight
 	local minH, maxH, stepH = 0, 0, (rowHeight + paddingBetweenBossAbilityBars)
 
 	local activeAbilities = {}
@@ -1636,7 +1648,11 @@ local function CalculateMinMaxStepBarHeight(self)
 		activeAbilities[spellID] = true
 	end
 
-	local maximumNumberOfBossAbilityRows = self.preferences.timelineRows.numberOfBossAbilitiesToShow
+	local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+	local assignmentTimelineHeight = timelineRows.numberOfAssignmentsToShow * (timelineRows.assignmentHeight + 2) - 2
+	local usableHeight = availableHeight - assignmentTimelineHeight - 2
+	local maximumNumberOfBossAbilityRows = floor(usableHeight / (timelineRows.bossAbilityHeight + 2))
+
 	for spellID, visible in pairs(self.bossAbilityVisibility) do
 		if visible == true and activeAbilities[spellID] then
 			if abilityCount <= maximumNumberOfBossAbilityRows then
@@ -1668,8 +1684,14 @@ end
 ---@param self EPTimeline
 local function CalculateMinMaxStepAssignmentHeight(self)
 	local totalAssignmentRows = 1
+	local timelineRows = self.preferences.timelineRows
 	local minH, maxH, stepH = 0, 0, (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
-	local maximumNumberOfAssignmentRows = self.preferences.timelineRows.numberOfAssignmentsToShow
+	local availableHeight = UIParent:GetHeight() - kNonTimelineHeight
+
+	local bossTimelineHeight = timelineRows.numberOfBossAbilitiesToShow * (timelineRows.bossAbilityHeight + 2) - 2
+	local usableHeight = availableHeight - bossTimelineHeight - 2
+	local maximumNumberOfAssignmentRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
+
 	for _, as in ipairs(self.assigneesAndSpells) do
 		if as.spellID == nil or not self.collapsed[as.assignee] then
 			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
@@ -2306,8 +2328,8 @@ local function OnHeightSet(self, height)
 				assignmentHeight = assignmentHeight - surplusSplit
 			end
 		end
-		barHeight = min(max(barHeight, self.bossAbilityDimensions.min), self.bossAbilityDimensions.max)
-		assignmentHeight = min(max(assignmentHeight, self.assignmentDimensions.min), self.assignmentDimensions.max)
+		barHeight = Clamp(barHeight, self.bossAbilityDimensions.min, self.bossAbilityDimensions.max)
+		assignmentHeight = Clamp(assignmentHeight, self.assignmentDimensions.min, self.assignmentDimensions.max)
 	end
 
 	self.assignmentTimeline:SetHeight(assignmentHeight)
@@ -2477,24 +2499,20 @@ local function SetAllowHeightResizing(self, allow)
 			barHeight = barHeight - paddingBetweenBossAbilityBars
 		end
 
-		assignmentHeight = min(max(assignmentHeight, self.assignmentDimensions.min), self.assignmentDimensions.max)
-		barHeight = min(max(barHeight, self.bossAbilityDimensions.min), self.bossAbilityDimensions.max)
+		assignmentHeight = Clamp(assignmentHeight, self.assignmentDimensions.min, self.assignmentDimensions.max)
+		barHeight = Clamp(barHeight, self.bossAbilityDimensions.min, self.bossAbilityDimensions.max)
 
 		self.assignmentTimeline:SetHeight(assignmentHeight)
 		self.bossAbilityTimeline:SetHeight(barHeight)
 
-		local maximumNumberOfAssignmentRows = self.preferences.timelineRows.numberOfAssignmentsToShow
 		local numberOfAssignmentsToShow =
 			floor((assignmentHeight + paddingBetweenAssignments + 0.5) / self.assignmentDimensions.step)
-		numberOfAssignmentsToShow =
-			min(max(minimumNumberOfAssignmentRows, numberOfAssignmentsToShow), maximumNumberOfAssignmentRows)
+		numberOfAssignmentsToShow = max(minimumNumberOfAssignmentRows, numberOfAssignmentsToShow)
 		self.preferences.timelineRows.numberOfAssignmentsToShow = numberOfAssignmentsToShow
 
-		local maximumNumberOfBossAbilityRows = self.preferences.timelineRows.numberOfBossAbilitiesToShow
 		local numberOfBossAbilitiesToShow =
 			floor((barHeight + paddingBetweenBossAbilityBars + 0.5) / self.bossAbilityDimensions.step)
-		numberOfBossAbilitiesToShow =
-			min(max(minimumNumberOfBossAbilityRows, numberOfBossAbilitiesToShow), maximumNumberOfBossAbilityRows)
+		numberOfBossAbilitiesToShow = max(minimumNumberOfBossAbilityRows, numberOfBossAbilitiesToShow)
 		self.preferences.timelineRows.numberOfBossAbilitiesToShow = numberOfBossAbilitiesToShow
 
 		local totalHeight = paddingBetweenTimelineAndScrollBar
@@ -2603,7 +2621,7 @@ local function GetOffsetFromTime(self, time)
 	local offset = (offsetPercent * effectiveTimelineWidth) + padding
 
 	-- Ensure the offset stays within valid bounds
-	return max(0, min(offset, effectiveTimelineWidth + padding))
+	return Clamp(offset, 0, effectiveTimelineWidth + padding)
 end
 
 ---@param self EPTimeline
@@ -2636,7 +2654,7 @@ local function SetAssignmentTimelineVerticalScroll(self, scroll)
 	local maxVerticalScroll = assignmentTimelineFrameHeight - assignmentScrollFrameHeight
 	local snapValue = (self.assignmentTimeline.textureHeight + self.assignmentTimeline.listPadding) / 2
 	local currentSnapValue = floor((scroll / snapValue) + 0.5)
-	local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+	local newVerticalScroll = Clamp(currentSnapValue * snapValue, 0, maxVerticalScroll)
 	self.assignmentTimeline.scrollFrame:SetVerticalScroll(newVerticalScroll)
 	self.assignmentTimeline.listScrollFrame:SetVerticalScroll(newVerticalScroll)
 	self.assignmentTimeline:UpdateVerticalScroll()
@@ -2653,7 +2671,7 @@ local function SetBossAbilityTimelineVerticalScroll(self, scroll)
 	local bossMaxVerticalScroll = bossTimelineFrameHeight - bossScrollFrameHeight
 	local bossSnapValue = (self.bossAbilityTimeline.textureHeight + self.bossAbilityTimeline.listPadding) / 2
 	local bossCurrentSnapValue = floor((scroll / bossSnapValue) + 0.5)
-	local bossNewVerticalScroll = max(min(bossCurrentSnapValue * bossSnapValue, bossMaxVerticalScroll), 0)
+	local bossNewVerticalScroll = Clamp(bossCurrentSnapValue * bossSnapValue, 0, bossMaxVerticalScroll)
 	self.bossAbilityTimeline.scrollFrame:SetVerticalScroll(bossNewVerticalScroll)
 	self.bossAbilityTimeline.listScrollFrame:SetVerticalScroll(bossNewVerticalScroll)
 	self.bossAbilityTimeline:UpdateVerticalScroll()
