@@ -59,7 +59,7 @@ externals:
 tools-used:
     - OmniCD
 
-manual-changelog: CHANGELOG.txt
+manual-changelog: CHANGELOG.md
 
 ignore:
     - cspell.json
