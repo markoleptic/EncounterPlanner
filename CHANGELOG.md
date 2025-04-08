@@ -1,6 +1,6 @@
 # Encounter Planner
 
-## [v1.0.0](https://github.com/markoleptic/EncounterPlanner/tree/v1.0.0) (2025-04-07)
+## [v1.0.0](https://github.com/markoleptic/EncounterPlanner/tree/v1.0.0) (2025-04-08)
 
 [Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/v0.9.10...v1.0.0)
 [Previous Releases](https://github.com/markoleptic/EncounterPlanner/releases)
