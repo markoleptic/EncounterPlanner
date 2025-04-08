@@ -768,7 +768,7 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Timeline Zoom Behavior"],
+				label = L["Zoom Behavior"],
 				labels = { L["At cursor"], L["Middle of timeline"] },
 				type = "radioButtonGroup",
 				category = L["Timeline"],
