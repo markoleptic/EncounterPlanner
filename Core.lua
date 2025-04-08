@@ -327,14 +327,19 @@ do -- Profile updating and refreshing
 	---@param profile DefaultProfile
 	local function CreateTestPlans(profile)
 		for k, _ in pairs(profile.plans) do
-			if type(k) == "table" then
-				profile.plans[k] = nil
-			elseif k:find("-Test") then
+			if k:find("-Test") then
 				profile.plans[k] = nil
 			end
 		end
 		local testPlans = {}
 		local name, entry = utilities.CreateRosterEntryForSelf()
+		-- cSpell:disable
+		local textTable = {
+			"Test Start",
+			"|cff006fdcMajablast|r  |cfffe7b09Skorke|r  |cfff38bb9Berlinnetti|r  |cff00fe97Dogpog|r",
+			"Test End",
+		}
+		-- cSpell:enable
 		for _, dungeonInstance in pairs(Private.dungeonInstances) do
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectInstance(dungeonInstance.journalInstanceID)
@@ -342,6 +347,7 @@ do -- Profile updating and refreshing
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
 				local plan = utilities.CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
 				plan.roster[name] = entry
+				plan.content = textTable
 				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID)
 				---@cast instances table<integer, BossAbilityInstance>
 				for _, abilityInstance in ipairs(instances) do
