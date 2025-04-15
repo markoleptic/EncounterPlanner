@@ -24,9 +24,11 @@ local slightlyUnderTenSeconds = 10.0 - timeThreshold
 local greaterThanMinuteFormat = "%d:%02d"
 local greaterThanTenSecondsFormat = "%.0f"
 local lessThanTenSecondsFormat = "%.1f"
+
+local backdropBorderColor = { 0, 0, 0, 1 }
 local frameBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = nil,
+	edgeFile = "Interface\\BUTTONS\\White8x8",
 	tile = true,
 	tileSize = 0,
 	edgeSize = 0,
@@ -45,6 +47,7 @@ local function OnRelease(self)
 	self.expirationTime = 0
 	self.currentThreshold = ""
 	self.running = false
+	self.showText = false
 	self:SetAnchorMode(false)
 end
 
@@ -67,6 +70,20 @@ local function SetText(self, text, fontFile, size, flags)
 	self.text:SetText(text or "")
 	if fontFile and size then
 		self.text:SetFont(fontFile, size, flags)
+		self.cooldown:SetCountdownFont(fontFile)
+	end
+end
+
+---@param self EPReminderIcon
+---@param show boolean
+local function SetShowText(self, show)
+	self.showText = show
+	if self.frame:IsVisible() then
+		if show then
+			self.text:Show()
+		else
+			self.text:Hide()
+		end
 	end
 end
 
@@ -77,8 +94,12 @@ local function Start(self, start, duration)
 	if self.running then
 		return
 	end
-	self.cooldown:SetCooldownDuration(start, duration)
-	self.text:Show()
+	self.cooldown:SetCooldown(start, duration)
+	if self.showText then
+		self.text:Show()
+	else
+		self.text:Hide()
+	end
 	self.running = true
 end
 
@@ -88,8 +109,8 @@ end
 ---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
 local function SetFont(self, fontFile, size, flags)
 	if fontFile then
-		self.cooldown:SetCountdownFont(fontFile)
 		self.text:SetFont(fontFile, size, flags)
+		self.cooldown:SetCountdownFont(fontFile)
 	end
 end
 
@@ -119,19 +140,32 @@ local function SetAnchorMode(self, anchorMode)
 end
 
 ---@param self EPReminderIcon
----@param preferences MessagePreferences
+---@param borderSize integer
+local function SetBorderSize(self, borderSize)
+	self.frame:ClearBackdrop()
+	frameBackdrop.edgeSize = borderSize
+	self.frame:SetBackdrop(frameBackdrop)
+	self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+end
+
+---@param self EPReminderIcon
+---@param preferences IconPreferences
 ---@param text string
 ---@param icon string|number|nil
 local function Set(self, preferences, text, icon)
+	self.frame:SetSize(preferences.width, preferences.height)
+	self.showText = preferences.showText
 	self.text:SetText(text or "")
 	if preferences.font and preferences.fontSize then
-		self.cooldown:SetCountdownFont(preferences.font)
 		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		self.cooldown:SetCountdownFont(preferences.font)
 	end
+	self.cooldown:SetDrawEdge(preferences.drawEdge)
+	self.cooldown:SetDrawSwipe(preferences.drawSwipe)
 	self.frame:SetAlpha(preferences.alpha)
-	local r, g, b, a = unpack(preferences.textColor)
-	self.text:SetTextColor(r, g, b, a)
+	SetTextColor(self, unpack(preferences.textColor))
 	SetIcon(self, icon)
+	SetBorderSize(self, preferences.borderSize)
 end
 
 local function Constructor()
@@ -141,32 +175,26 @@ local function Constructor()
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
 	frame:SetBackdrop(frameBackdrop)
 	frame:SetBackdropColor(unpack(defaultBackdropColor))
-	frame:SetBackdropBorderColor(unpack(defaultBackdropColor))
+	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT")
 	icon:SetPoint("BOTTOMRIGHT")
 	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
-	local cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+	local cooldown = CreateFrame("Cooldown", Type .. "Cooldown" .. count, frame, "CooldownFrameTemplate")
 	cooldown:SetPoint("TOPLEFT")
 	cooldown:SetPoint("BOTTOMRIGHT")
+	cooldown:SetDrawSwipe(false)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	text:SetJustifyH("CENTER")
 	text:SetWordWrap(false)
 	text:SetPoint("TOPLEFT", cooldown, "BOTTOMLEFT", 0, -2)
 	text:SetPoint("TOPRIGHT", cooldown, "BOTTOMRIGHT", 0, -2)
+	text:Hide()
 
 	---@class EPReminderIcon : AceGUIWidget
-	---@field frame Frame|table
-	---@field cooldown table|Cooldown
-	---@field type string
-	---@field text FontString
-	---@field remaining number
-	---@field expirationTime number
-	---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
-	---@field running boolean
 	---@field parent EPContainer
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -179,6 +207,8 @@ local function Constructor()
 		SetTextColor = SetTextColor,
 		SetAlpha = SetAlpha,
 		Set = Set,
+		SetShowText = SetShowText,
+		SetBorderSize = SetBorderSize,
 		frame = frame,
 		cooldown = cooldown,
 		icon = icon,
@@ -188,6 +218,7 @@ local function Constructor()
 		expirationTime = 0,
 		currentThreshold = "",
 		running = false,
+		showText = false,
 	}
 
 	cooldown:SetScript("OnCooldownDone", function()

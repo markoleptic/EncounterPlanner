@@ -647,7 +647,7 @@ end
 
 ---@class GenericReminderPreferences
 ---@field enabled boolean
----@field font string,
+---@field font string
 ---@field fontSize integer
 ---@field fontOutline ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
 ---@field point AnchorPoint
@@ -675,6 +675,16 @@ end
 ---@field showOnlyAtExpiration boolean
 ---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
 
+---@class IconPreferences : GenericReminderPreferences
+---@field soonestExpirationOnLeft boolean
+---@field width number
+---@field height number
+---@field drawSwipe boolean
+---@field drawEdge boolean
+---@field showText boolean
+---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
+---@field borderSize integer
+
 ---@class ReminderPreferences
 ---@field enabled boolean
 ---@field onlyShowMe boolean
@@ -684,6 +694,7 @@ end
 ---@field glowTargetFrame boolean
 ---@field progressBars ProgressBarPreferences
 ---@field messages MessagePreferences
+---@field icons IconPreferences
 ---@field textToSpeech ReminderTextToSpeechPreferences
 ---@field sound ReminderSoundPreferences
 
@@ -768,9 +779,9 @@ local defaults = {
 					x = 0,
 					y = 385,
 					alpha = 1.0,
+					soonestExpirationOnBottom = true,
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
-					soonestExpirationOnBottom = true,
 				},
 				progressBars = {
 					enabled = true,
@@ -783,6 +794,7 @@ local defaults = {
 					x = -200,
 					y = 0,
 					alpha = 0.90,
+					soonestExpirationOnBottom = true,
 					texture = "Interface\\AddOns\\WeakAuras\\Media\\Textures\\Statusbar_Clean",
 					iconPosition = "LEFT",
 					height = 24,
@@ -794,7 +806,27 @@ local defaults = {
 					color = { ccA, ccR, ccB, 0.90 },
 					backgroundColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 },
 					spacing = 0,
+				},
+				icons = {
+					enabled = true,
+					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+					fontSize = 16,
+					fontOutline = "",
+					point = "BOTTOMRIGHT",
+					relativeTo = "UIParent",
+					relativePoint = "CENTER",
+					x = -200,
+					y = 0,
+					alpha = 0.90,
 					soonestExpirationOnBottom = true,
+					soonestExpirationOnLeft = true,
+					height = 50,
+					width = 50,
+					drawSwipe = true,
+					drawEdge = false,
+					showText = false,
+					textColor = { 1, 0.82, 0, 0.95 },
+					borderSize = 1,
 				},
 				textToSpeech = {
 					enableAtCountdownStart = false,
