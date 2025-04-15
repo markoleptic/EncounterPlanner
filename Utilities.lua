@@ -2498,7 +2498,7 @@ do
 	---@return EPContainer
 	function Utilities.CreateReminderContainer(preferences, spacing)
 		local container = AceGUI:Create("EPContainer")
-		container:SetLayout("EPProgressBarLayout")
+		container:SetLayout("EPReminderLayout")
 		container.frame:SetParent(UIParent)
 		container.frame:SetFrameStrata("MEDIUM")
 		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
@@ -2518,7 +2518,7 @@ do
 	---@return EPAnchorContainer
 	function Utilities.CreateReminderAnchorContainer(preferences, spacing)
 		local container = AceGUI:Create("EPAnchorContainer")
-		container:SetLayout("EPProgressBarLayout")
+		container:SetLayout("EPReminderLayout")
 		container.frame:SetParent(UIParent)
 		container.frame:SetFrameStrata("MEDIUM")
 		container.frame:SetFrameLevel(kReminderContainerFrameLevel)

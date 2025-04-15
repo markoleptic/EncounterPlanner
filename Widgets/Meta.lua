@@ -4,7 +4,7 @@
 ---|"EPContentFrameLayout"
 ---|"EPHorizontalLayout"
 ---|"EPVerticalLayout"
----|"EPProgressBarLayout"
+---|"EPReminderLayout"
 
 ---@alias EPBaseContainerType
 ---|"EPContainer"

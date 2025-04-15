@@ -1,4 +1,4 @@
-local Type = "EPProgressBarLayout"
+local Type = "EPReminderLayout"
 
 local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler

@@ -156,7 +156,6 @@ sharedUpdater:SetScript("OnLoop", SharedMessageUpdate)
 ---@field type string
 ---@field text FontString
 ---@field duration FontString
----@field highlight Texture
 ---@field icon Texture|nil
 ---@field showIcon boolean
 ---@field horizontalTextPadding number

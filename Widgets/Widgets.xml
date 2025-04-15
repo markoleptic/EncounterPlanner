@@ -4,7 +4,7 @@
     <Script file="EPContentFrameLayout.lua" />
     <Script file="EPHorizontalLayout.lua" />
     <Script file="EPVerticalLayout.lua" />
-    <Script file="EPProgressBarLayout.lua" />
+    <Script file="EPReminderLayout.lua" />
     <Script file="EPContainer.lua" />
     <Script file="EPSpacer.lua" />
     <Script file="EPLabel.lua" />
