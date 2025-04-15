@@ -75,6 +75,9 @@
 ---@alias EPReminderMessageType
 ---|"EPReminderMessage"
 
+---@alias EPReminderIconType
+---|"EPReminderIcon"
+
 ---@alias EPColorPickerType
 ---|"EPColorPicker"
 
@@ -114,6 +117,7 @@
 ---| EPCheckBoxType
 ---| EPProgressBarType
 ---| EPReminderMessageType
+---| EPReminderIconType
 ---| EPColorPickerType
 ---| EPMessageBoxType
 ---| EPPhaseLengthEditor
@@ -232,6 +236,10 @@ function AceGUI:Create(type) end
 
 ---@param type EPReminderMessageType
 ---@return EPReminderMessage
+function AceGUI:Create(type) end
+
+---@param type EPReminderIconType
+---@return EPReminderIcon
 function AceGUI:Create(type) end
 
 ---@param type EPColorPickerType

@@ -15,6 +15,7 @@
     <Script file="EPEditBox.lua" />
     <Script file="EPProgressBar.lua" />
     <Script file="EPReminderMessage.lua" />
+    <Script file="EPReminderIcon.lua" />
     <Script file="EPColorPicker.lua" />
     <Script file="EPMessageBox.lua" />
     <Script file="EPDropdownItemToggle.lua" />
