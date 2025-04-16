@@ -17,43 +17,78 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
-	local maxWidth = 0.0
-	local paddingY = defaultSpacing
+	local paddingX, paddingY = defaultSpacing, defaultSpacing
 	if content.spacing then
+		paddingX = content.spacing.x
 		paddingY = content.spacing.y
 	end
-	local cumulativeHeight = 0.0
+
 	local sortAscending = content.sortAscending
+	local orientation = content.orientation
+	local width, height = 0.0, 0.0
 
-	if sortAscending then
-		for i = 1, #children do
-			local child = children[i]
-			local frame = child.frame
-			frame:ClearAllPoints()
-			frame:Show()
+	if orientation == "vertical" then
+		local cumulativeHeight = 0.0
+		if sortAscending then
+			for i = 1, #children do
+				local child = children[i]
+				local frame = child.frame
+				frame:ClearAllPoints()
+				frame:Show()
 
-			frame:SetPoint("BOTTOM", content, "BOTTOM", 0, cumulativeHeight)
+				frame:SetPoint("BOTTOM", content, "BOTTOM", 0, cumulativeHeight)
 
-			cumulativeHeight = cumulativeHeight + frame:GetHeight() + paddingY
-			maxWidth = max(maxWidth, frame:GetWidth())
+				cumulativeHeight = cumulativeHeight + frame:GetHeight() + paddingY
+				width = max(width, frame:GetWidth())
+			end
+		else
+			for i = 1, #children do
+				local child = children[i]
+				local frame = child.frame
+				frame:ClearAllPoints()
+				frame:Show()
+
+				frame:SetPoint("TOP", content, "TOP", 0, -cumulativeHeight)
+
+				cumulativeHeight = cumulativeHeight + frame:GetHeight() + paddingY
+				width = max(width, frame:GetWidth())
+			end
 		end
+		height = cumulativeHeight - paddingY
+		content:SetHeight(height)
+		content:SetWidth(width)
 	else
-		for i = 1, #children do
-			local child = children[i]
-			local frame = child.frame
-			frame:ClearAllPoints()
-			frame:Show()
+		local cumulativeWidth = 0.0
+		if sortAscending then
+			for i = 1, #children do
+				local child = children[i]
+				local frame = child.frame
+				frame:ClearAllPoints()
+				frame:Show()
 
-			frame:SetPoint("TOP", content, "TOP", 0, -cumulativeHeight)
+				frame:SetPoint("LEFT", content, "LEFT", cumulativeWidth, 0)
 
-			cumulativeHeight = cumulativeHeight + frame:GetHeight() + paddingY
-			maxWidth = max(maxWidth, frame:GetWidth())
+				cumulativeWidth = cumulativeWidth + frame:GetWidth() + paddingX
+				height = max(height, frame:GetHeight())
+			end
+		else
+			for i = 1, #children do
+				local child = children[i]
+				local frame = child.frame
+				frame:ClearAllPoints()
+				frame:Show()
+
+				frame:SetPoint("RIGHT", content, "RIGHT", -cumulativeWidth, 0)
+
+				cumulativeWidth = cumulativeWidth + frame:GetWidth() + paddingX
+				height = max(height, frame:GetHeight())
+			end
 		end
+		width = cumulativeWidth - paddingX
 	end
 
-	local totalHeight = cumulativeHeight - paddingY
-	content:SetHeight(totalHeight)
-	content:SetWidth(maxWidth)
+	content:SetHeight(height)
+	content:SetWidth(width)
 
-	SafeCall(content.obj.LayoutFinished, content.obj, maxWidth, totalHeight)
+	SafeCall(content.obj.LayoutFinished, content.obj, width, height)
 end)

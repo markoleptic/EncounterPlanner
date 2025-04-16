@@ -2492,18 +2492,29 @@ do
 	local kReminderContainerFrameLevel = constants.frameLevels.kReminderContainerFrameLevel
 	local UIParent = UIParent
 
-	-- Creates a container for adding progress bars or messages to.
-	---@param preferences GenericReminderPreferences
+	---@generic T
+	---@param containerType `T` | "EPContainer"|"EPAnchorContainer"
+	---@param preferences GenericReminderPreferences|IconPreferences
 	---@param spacing number|nil
-	---@return EPContainer
-	function Utilities.CreateReminderContainer(preferences, spacing)
-		local container = AceGUI:Create("EPContainer")
+	---@return T
+	local function Create(containerType, preferences, spacing)
+		local container = AceGUI:Create(containerType) --[[@as EPContainer]]
 		container:SetLayout("EPReminderLayout")
 		container.frame:SetParent(UIParent)
 		container.frame:SetFrameStrata("MEDIUM")
 		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
 		container:SetSpacing(0, spacing or 0)
-		container.content.sortAscending = preferences.soonestExpirationOnBottom
+		if preferences.orientation then
+			container.content.orientation = preferences.orientation
+			if preferences.orientation == "vertical" then
+				container.content.sortAscending = preferences.soonestExpirationOnBottom
+			elseif preferences.orientation == "horizontal" then
+				container.content.sortAscending = preferences.soonestExpirationOnLeft
+			end
+		else
+			container.content.orientation = "vertical"
+			container.content.sortAscending = preferences.soonestExpirationOnBottom
+		end
 		local regionName = Utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 		local region = _G[regionName] or UIParent
 		local point, relativePoint = preferences.point, preferences.relativePoint
@@ -2513,23 +2524,19 @@ do
 	end
 
 	-- Creates a container for adding progress bars or messages to.
-	---@param preferences GenericReminderPreferences
+	---@param preferences GenericReminderPreferences|IconPreferences
+	---@param spacing number|nil
+	---@return EPContainer
+	function Utilities.CreateReminderContainer(preferences, spacing)
+		return Create("EPContainer", preferences, spacing)
+	end
+
+	-- Creates a container for adding progress bars or messages to.
+	---@param preferences GenericReminderPreferences|IconPreferences
 	---@param spacing number|nil
 	---@return EPAnchorContainer
 	function Utilities.CreateReminderAnchorContainer(preferences, spacing)
-		local container = AceGUI:Create("EPAnchorContainer")
-		container:SetLayout("EPReminderLayout")
-		container.frame:SetParent(UIParent)
-		container.frame:SetFrameStrata("MEDIUM")
-		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
-		container:SetSpacing(0, spacing or 0)
-		container.content.sortAscending = preferences.soonestExpirationOnBottom
-		local regionName = Utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
-		local region = _G[regionName] or UIParent
-		local point, relativePoint = preferences.point, preferences.relativePoint
-		local x, y = preferences.x, preferences.y
-		container.frame:SetPoint(point, region, relativePoint, x, y)
-		return container
+		return Create("EPAnchorContainer", preferences, spacing)
 	end
 end
 

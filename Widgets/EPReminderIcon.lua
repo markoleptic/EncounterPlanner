@@ -144,8 +144,10 @@ end
 local function SetBorderSize(self, borderSize)
 	self.frame:ClearBackdrop()
 	frameBackdrop.edgeSize = borderSize
-	self.frame:SetBackdrop(frameBackdrop)
-	self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	if borderSize > 1 then
+		self.frame:SetBackdrop(frameBackdrop)
+		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	end
 end
 
 ---@param self EPReminderIcon

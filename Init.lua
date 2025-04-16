@@ -684,6 +684,8 @@ end
 ---@field showText boolean
 ---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
 ---@field borderSize integer
+---@field spacing integer
+---@field orientation "vertical"|"horizontal"
 
 ---@class ReminderPreferences
 ---@field enabled boolean
@@ -812,7 +814,7 @@ local defaults = {
 					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
 					fontSize = 16,
 					fontOutline = "",
-					point = "BOTTOMRIGHT",
+					point = "TOPRIGHT",
 					relativeTo = "UIParent",
 					relativePoint = "CENTER",
 					x = -200,
@@ -827,6 +829,8 @@ local defaults = {
 					showText = false,
 					textColor = { 1, 0.82, 0, 0.95 },
 					borderSize = 1,
+					spacing = 0,
+					orientation = "horizontal",
 				},
 				textToSpeech = {
 					enableAtCountdownStart = false,

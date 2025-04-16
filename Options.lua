@@ -44,6 +44,8 @@ local wipe = table.wipe
 local messageAnchor = nil
 ---@type EPAnchorContainer|nil
 local progressBarAnchor = nil
+---@type EPAnchorContainer|nil
+local iconAnchor = nil
 
 ---@param left number
 ---@param top number
@@ -148,6 +150,11 @@ local function GetMessagePreferences()
 	return AddOn.db.profile.preferences.reminder.messages
 end
 
+---@return IconPreferences
+local function GetIconPreferences()
+	return AddOn.db.profile.preferences.reminder.icons
+end
+
 local function ResetProfile()
 	AddOn.db:ResetProfile()
 end
@@ -226,6 +233,7 @@ do
 			local progressBar = AceGUI:Create("EPProgressBar")
 			progressBar:Set(preferences, progressBarText, reminderPreferences.countdownLength, questionMarkIcon)
 			progressBar:SetCallback("Completed", function(widget)
+				---@cast widget EPProgressBar
 				if progressBarAnchor then
 					if not isAddingProgressBars and #progressBarAnchor.children == 1 then
 						widget:SetDuration(GetReminderPreferences().countdownLength)
@@ -323,6 +331,7 @@ do
 			message:Set(preferences, messageText, questionMarkIcon)
 			message:SetAnchorMode(true)
 			message:SetCallback("Completed", function(widget)
+				---@cast widget EPReminderMessage
 				if messageAnchor then
 					if not isAddingMessages and #messageAnchor.children == 1 then
 						local p = GetReminderPreferences()
@@ -377,6 +386,93 @@ do
 		end
 		wipe(timers)
 		isAddingMessages = false
+	end
+end
+
+local iconManager = {}
+do
+	local timers = {}
+	local kGenericTimerMultiplier = 0.33
+	local isAddingIcons = false
+	local iconText = L["Icon Text"]
+	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+
+	local function AddDelayedIcon(time)
+		local timer = NewTimer(time, function()
+			iconManager:AddProgressBar()
+			tremove(timers, 1)
+		end)
+		tinsert(timers, timer)
+	end
+
+	local function AddSecondAndThirdIconsDelayed()
+		isAddingIcons = true
+		local secondTimerDuration = GetReminderPreferences().countdownLength * kGenericTimerMultiplier
+		local thirdTimerDuration = secondTimerDuration * 2.0
+		AddDelayedIcon(secondTimerDuration)
+		AddDelayedIcon(thirdTimerDuration)
+	end
+
+	function iconManager:AddIcon()
+		if iconAnchor then
+			local reminderPreferences = GetReminderPreferences()
+			local preferences = reminderPreferences.icons
+			local icon = AceGUI:Create("EPReminderIcon")
+			icon:Set(preferences, iconText, questionMarkIcon)
+			icon:SetCallback("Completed", function(widget)
+				---@cast widget EPReminderIcon
+				if iconAnchor then
+					if not isAddingIcons and #iconAnchor.children == 1 then
+						widget:Start(GetTime(), GetReminderPreferences().countdownLength)
+						widget.frame:Show()
+						AddSecondAndThirdIconsDelayed()
+					elseif mouseIsDown then
+						local p = GetIconPreferences()
+						local p1, p2, p3, p4, p5 = ApplyPoint(iconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						iconAnchor:RemoveChild(widget)
+						if mouseIsDown and p1 then
+							iconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+						end
+					else
+						iconAnchor:RemoveChild(widget)
+					end
+				end
+			end)
+
+			if mouseIsDown then
+				local p = GetIconPreferences()
+				local p1, p2, p3, p4, p5 = ApplyPoint(iconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+				iconAnchor:AddChild(icon)
+				if mouseIsDown and p1 then
+					iconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+				end
+			else
+				iconAnchor:AddChild(icon)
+			end
+			icon:Start(GetTime(), reminderPreferences.countdownLength)
+
+			if #iconAnchor.children >= 3 then
+				isAddingIcons = false
+			end
+		end
+	end
+
+	function iconManager:AddIconsOnTimer()
+		if iconAnchor then
+			iconAnchor:ReleaseChildren()
+			self:AddIcon()
+			AddSecondAndThirdIconsDelayed()
+		end
+	end
+
+	function iconManager:CancelTimers()
+		for _, timer in ipairs(timers) do
+			if timer and timer.Cancel then
+				timer:Cancel()
+			end
+		end
+		wipe(timers)
+		isAddingIcons = false
 	end
 end
 
@@ -453,75 +549,164 @@ local function CreateMessageAnchor()
 	return container
 end
 
----@param progressBar boolean
+---@return EPAnchorContainer
+local function CreateIconAnchor()
+	local iconPreferences = GetIconPreferences()
+	local container = utilities.CreateReminderAnchorContainer(iconPreferences, iconPreferences.spacing)
+	container.frame:SetClampedToScreen(true)
+	container:SetAnchorMode(true, iconPreferences.point)
+
+	container:SetCallback("OnRelease", function()
+		iconManager:CancelTimers()
+		if iconAnchor then
+			iconAnchor.frame:SetClampedToScreen(false)
+		end
+		iconAnchor = nil
+		mouseIsDown = false
+	end)
+	container:SetCallback("MouseDown", function()
+		mouseIsDown = true
+	end)
+	container:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
+		mouseIsDown = false
+		if iconAnchor then
+			local preferences = GetIconPreferences()
+			if iconAnchor.frame:GetName() == relativeFrame then
+				relativeFrame = preferences.relativeTo
+			end
+			preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
+				ApplyPoint(iconAnchor.frame, point, relativeFrame, relativePoint)
+			if Private.optionsMenu then
+				Private.optionsMenu:UpdateOptions()
+			end
+		end
+	end)
+
+	return container
+end
+
+---@enum AnchorType
+local AnchorType = {
+	Message = {},
+	ProgressBar = {},
+	Icon = {},
+}
+
+---@param anchorType AnchorType
 ---@param point AnchorPoint|nil
 ---@param relativeTo string|nil
 ---@param relativePoint AnchorPoint|nil
-local function ApplyPointToAnchor(progressBar, point, relativeTo, relativePoint)
-	if progressBarAnchor and progressBar then
-		local x, y
-		point, relativeTo, relativePoint, x, y = ApplyPoint(progressBarAnchor.frame, point, relativeTo, relativePoint)
-		progressBarAnchor:SetAnchorPoint(point)
-		local preferences = GetProgressBarPreferences()
-		preferences.point = point
-		preferences.relativeTo = relativeTo
-		preferences.relativePoint = relativePoint
-		preferences.x, preferences.y = x, y
-	elseif messageAnchor and not progressBar then
-		local x, y
-		point, relativeTo, relativePoint, x, y = ApplyPoint(messageAnchor.frame, point, relativeTo, relativePoint)
-		messageAnchor:SetAnchorPoint(point)
-		local preferences = GetMessagePreferences()
-		preferences.point = point
-		preferences.relativeTo = relativeTo
-		preferences.relativePoint = relativePoint
-		preferences.x, preferences.y = x, y
-	end
-end
-
----@param func fun(message: EPReminderMessage)
-local function CallMessageAnchorFunction(func)
-	if messageAnchor then
-		for _, child in ipairs(messageAnchor.children) do
-			func(child)
+local function ApplyPointToAnchor(anchorType, point, relativeTo, relativePoint)
+	if anchorType == AnchorType.ProgressBar then
+		if progressBarAnchor then
+			local x, y
+			point, relativeTo, relativePoint, x, y =
+				ApplyPoint(progressBarAnchor.frame, point, relativeTo, relativePoint)
+			progressBarAnchor:SetAnchorPoint(point)
+			local preferences = GetProgressBarPreferences()
+			preferences.point = point
+			preferences.relativeTo = relativeTo
+			preferences.relativePoint = relativePoint
+			preferences.x, preferences.y = x, y
 		end
-		messageAnchor:DoLayout()
-	end
-end
-
----@param func fun(progressBar: EPProgressBar)
-local function CallProgressBarAnchorFunction(func)
-	if progressBarAnchor then
-		for _, child in ipairs(progressBarAnchor.children) do
-			func(child)
+	elseif anchorType == AnchorType.Message then
+		if messageAnchor then
+			local x, y
+			point, relativeTo, relativePoint, x, y = ApplyPoint(messageAnchor.frame, point, relativeTo, relativePoint)
+			messageAnchor:SetAnchorPoint(point)
+			local preferences = GetMessagePreferences()
+			preferences.point = point
+			preferences.relativeTo = relativeTo
+			preferences.relativePoint = relativePoint
+			preferences.x, preferences.y = x, y
 		end
-		progressBarAnchor:DoLayout()
+	elseif anchorType == AnchorType.Icon then
+		if iconAnchor then
+			local x, y
+			point, relativeTo, relativePoint, x, y = ApplyPoint(iconAnchor.frame, point, relativeTo, relativePoint)
+			iconAnchor:SetAnchorPoint(point)
+			local preferences = GetIconPreferences()
+			preferences.point = point
+			preferences.relativeTo = relativeTo
+			preferences.relativePoint = relativePoint
+			preferences.x, preferences.y = x, y
+		end
 	end
 end
 
----@param progressBar boolean
-local function HideAnchor(progressBar)
-	if progressBarAnchor and progressBar then
-		progressBarAnchor.frame:Hide()
-		progressBarManager:CancelTimers()
-		progressBarAnchor:ReleaseChildren()
-	elseif messageAnchor and not progressBar then
-		messageAnchor.frame:Hide()
-		messageManager:CancelTimers()
-		messageAnchor:ReleaseChildren()
+---@param anchorType AnchorType
+---@param func fun(widget: EPProgressBar|EPReminderMessage|EPReminderIcon)
+local function CallAnchorFunction(anchorType, func)
+	if anchorType == AnchorType.ProgressBar then
+		if progressBarAnchor then
+			for _, child in ipairs(progressBarAnchor.children) do
+				---@cast child EPProgressBar
+				func(child)
+			end
+			progressBarAnchor:DoLayout()
+		end
+	elseif anchorType == AnchorType.Message then
+		if messageAnchor then
+			for _, child in ipairs(messageAnchor.children) do
+				---@cast child EPReminderMessage
+				func(child)
+			end
+			messageAnchor:DoLayout()
+		end
+	elseif anchorType == AnchorType.Icon then
+		if iconAnchor then
+			for _, child in ipairs(iconAnchor.children) do
+				---@cast child EPReminderIcon
+				func(child)
+			end
+			iconAnchor:DoLayout()
+		end
 	end
 end
 
----@param progressBar boolean
-local function ShowAnchor(progressBar)
-	if progressBarAnchor and progressBar then
-		progressBarAnchor.frame:Show()
-		progressBarManager:CancelTimers()
-		progressBarManager:AddProgressBarsOnTimer()
-	elseif messageAnchor and not progressBar then
-		messageAnchor.frame:Show()
-		messageManager:CancelTimers()
-		messageManager:AddMessagesOnTimer()
+---@param anchorType AnchorType
+local function HideAnchor(anchorType)
+	if anchorType == AnchorType.ProgressBar then
+		if progressBarAnchor then
+			progressBarAnchor.frame:Hide()
+			progressBarManager:CancelTimers()
+			progressBarAnchor:ReleaseChildren()
+		end
+	elseif anchorType == AnchorType.Message then
+		if messageAnchor then
+			messageAnchor.frame:Hide()
+			messageManager:CancelTimers()
+			messageAnchor:ReleaseChildren()
+		end
+	elseif anchorType == AnchorType.Icon then
+		if iconAnchor then
+			iconAnchor.frame:Hide()
+			iconManager:CancelTimers()
+			iconAnchor:ReleaseChildren()
+		end
+	end
+end
+
+---@param anchorType AnchorType
+local function ShowAnchor(anchorType)
+	if anchorType == AnchorType.ProgressBar then
+		if progressBarAnchor then
+			progressBarAnchor.frame:Show()
+			progressBarManager:CancelTimers()
+			progressBarManager:AddProgressBarsOnTimer()
+		end
+	elseif anchorType == AnchorType.Message then
+		if messageAnchor then
+			messageAnchor.frame:Show()
+			messageManager:CancelTimers()
+			messageManager:AddMessagesOnTimer()
+		end
+	elseif anchorType == AnchorType.Icon then
+		if iconAnchor then
+			iconAnchor.frame:Hide()
+			iconManager:CancelTimers()
+			iconAnchor:ReleaseChildren()
+		end
 	end
 end
 
@@ -558,9 +743,19 @@ do
 		{ itemValue = 12, text = "12" },
 	}
 
-	local sortingValues = {
+	local horizontalSortingValues = {
+		{ itemValue = false, text = L["Soonest Expiration on Left"] },
+		{ itemValue = true, text = L["Soonest Expiration on Right"] },
+	}
+
+	local verticalSortingValues = {
 		{ itemValue = false, text = L["Soonest Expiration on Top"] },
 		{ itemValue = true, text = L["Soonest Expiration on Bottom"] },
+	}
+
+	local growDirectionValues = {
+		{ itemValue = "horizontal", text = L["Horizontal"] },
+		{ itemValue = "vertical", text = L["Vertical"] },
 	}
 
 	local anchorPointValues = {
@@ -806,6 +1001,10 @@ do
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.progressBars.enabled == true
 		end
+		local enableIconOption = function()
+			local preferences = GetReminderPreferences()
+			return preferences.enabled == true and preferences.icons.enabled == true
+		end
 		local kMaxProgressBarWidth = 1000.0
 		local kMaxProgressBarHeight = 100.0
 		local kMinSpacing = -1
@@ -838,10 +1037,13 @@ do
 								end
 								Private:UnregisterReminderEvents()
 								if messageAnchor and messageAnchor.frame:IsShown() then
-									HideAnchor(false)
+									HideAnchor(AnchorType.Message)
 								end
 								if progressBarAnchor and progressBarAnchor.frame:IsShown() then
-									HideAnchor(true)
+									HideAnchor(AnchorType.ProgressBar)
+								end
+								if iconAnchor and iconAnchor.frame:IsShown() then
+									HideAnchor(AnchorType.Icon)
 								end
 							end
 							interfaceUpdater.UpdatePlanCheckBoxes(GetCurrentPlan())
@@ -948,7 +1150,7 @@ do
 						if key ~= preferences.enabled and key == false then
 							preferences.enabled = false
 							if messageAnchor and messageAnchor.frame:IsShown() then
-								HideAnchor(false)
+								HideAnchor(AnchorType.Message)
 							end
 						end
 						preferences.enabled = key
@@ -962,9 +1164,9 @@ do
 				end,
 				buttonCallback = function()
 					if messageAnchor and messageAnchor.frame:IsShown() then
-						HideAnchor(false)
+						HideAnchor(AnchorType.Message)
 					else
-						ShowAnchor(false)
+						ShowAnchor(AnchorType.Message)
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -994,15 +1196,39 @@ do
 						if preferences.messages.showOnlyAtExpiration ~= true then
 							preferences.messages.showOnlyAtExpiration = true
 							if messageAnchor and messageAnchor.frame:IsShown() then
-								ShowAnchor(false)
+								ShowAnchor(AnchorType.Message)
 							end
 						end
 					else -- if key == "fullCountdown" then
 						if preferences.messages.showOnlyAtExpiration ~= false then
 							preferences.messages.showOnlyAtExpiration = false
 							if messageAnchor and messageAnchor.frame:IsShown() then
-								ShowAnchor(false)
+								ShowAnchor(AnchorType.Message)
 							end
+						end
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Message Order"],
+				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Sorts Messages by ascending expiration time."],
+					L["Sorts Messages by descending expiration time."],
+				},
+				category = L["Messages"],
+				values = verticalSortingValues,
+				get = function()
+					return GetMessagePreferences().soonestExpirationOnBottom
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetMessagePreferences().soonestExpirationOnBottom = key
+						if messageAnchor then
+							messageAnchor.content.sortAscending = key
+							messageAnchor:DoLayout()
 						end
 					end
 				end,
@@ -1050,30 +1276,6 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Message Order"],
-				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Sorts Messages by ascending expiration time."],
-					L["Sorts Messages by descending expiration time."],
-				},
-				category = L["Messages"],
-				values = sortingValues,
-				get = function()
-					return GetMessagePreferences().soonestExpirationOnBottom
-				end,
-				set = function(key)
-					if type(key) == "boolean" then
-						GetMessagePreferences().soonestExpirationOnBottom = key
-						if messageAnchor then
-							messageAnchor.content.sortAscending = key
-							messageAnchor:DoLayout()
-						end
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
 				label = L["Anchor Point"],
 				type = "dropdown",
 				description = L["Which spot on the Message container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
@@ -1086,7 +1288,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local messages = GetMessagePreferences()
-						ApplyPointToAnchor(false, key, messages.relativeTo, messages.relativePoint)
+						ApplyPointToAnchor(AnchorType.Message, key, messages.relativeTo, messages.relativePoint)
 					end
 				end,
 				enabled = enableMessageOption,
@@ -1106,7 +1308,7 @@ do
 						if messageAnchor and messageAnchor.frame:GetName() == key then
 							key = messages.relativeTo
 						end
-						ApplyPointToAnchor(false, messages.point, key, messages.relativePoint)
+						ApplyPointToAnchor(AnchorType.Message, messages.point, key, messages.relativePoint)
 					end
 				end,
 				enabled = enableMessageOption,
@@ -1124,7 +1326,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local messages = GetMessagePreferences()
-						ApplyPointToAnchor(false, messages.point, messages.relativeTo, key)
+						ApplyPointToAnchor(AnchorType.Message, messages.point, messages.relativeTo, key)
 					end
 				end,
 				enabled = enableMessageOption,
@@ -1152,7 +1354,8 @@ do
 					if type(key) == "string" then
 						local preferences = GetMessagePreferences()
 						preferences.font = key
-						CallMessageAnchorFunction(function(message)
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
 							message:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 						end)
 					end
@@ -1172,7 +1375,8 @@ do
 					if value then
 						local preferences = GetMessagePreferences()
 						preferences.fontSize = value
-						CallMessageAnchorFunction(function(message)
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
 							message:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 						end)
 					end
@@ -1204,7 +1408,8 @@ do
 					if type(key) == "string" then
 						local preferences = GetMessagePreferences()
 						preferences.fontOutline = key
-						CallMessageAnchorFunction(function(message)
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
 							message:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 						end)
 					end
@@ -1223,7 +1428,8 @@ do
 				set = function(r, g, b, a)
 					if type(r) == "number" and type(g) == "number" and type(b) == "number" and type(a) == "number" then
 						GetMessagePreferences().textColor = { r, g, b, a }
-						CallMessageAnchorFunction(function(message)
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
 							message:SetTextColor(r, g, b, a)
 						end)
 					end
@@ -1242,7 +1448,8 @@ do
 					local value = tonumber(key)
 					if value then
 						GetMessagePreferences().alpha = value
-						CallMessageAnchorFunction(function(message)
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
 							message:SetAlpha(value)
 						end)
 					end
@@ -1275,7 +1482,7 @@ do
 						if key ~= preferences.enabled and key == false then
 							preferences.enabled = false
 							if progressBarAnchor and progressBarAnchor.frame:IsShown() then
-								HideAnchor(true)
+								HideAnchor(AnchorType.ProgressBar)
 							end
 						end
 						preferences.enabled = key
@@ -1286,9 +1493,9 @@ do
 				buttonEnabled = enableProgressBarOption,
 				buttonCallback = function()
 					if progressBarAnchor and progressBarAnchor.frame:IsShown() then
-						HideAnchor(true)
+						HideAnchor(AnchorType.ProgressBar)
 					else
-						ShowAnchor(true)
+						ShowAnchor(AnchorType.ProgressBar)
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -1340,7 +1547,7 @@ do
 					L["Sorts Progress Bars by descending expiration time."],
 				},
 				category = L["Progress Bars"],
-				values = sortingValues,
+				values = verticalSortingValues,
 				get = function()
 					return GetProgressBarPreferences().soonestExpirationOnBottom
 				end,
@@ -1368,7 +1575,12 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
-						ApplyPointToAnchor(true, key, preferences.relativeTo, preferences.relativePoint)
+						ApplyPointToAnchor(
+							AnchorType.ProgressBar,
+							key,
+							preferences.relativeTo,
+							preferences.relativePoint
+						)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1388,7 +1600,7 @@ do
 						if progressBarAnchor and progressBarAnchor.frame:GetName() == key then
 							key = preferences.relativeTo
 						end
-						ApplyPointToAnchor(true, preferences.point, key, preferences.relativePoint)
+						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, key, preferences.relativePoint)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1406,7 +1618,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
-						ApplyPointToAnchor(true, preferences.point, preferences.relativeTo, key)
+						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, preferences.relativeTo, key)
 					end
 				end,
 				enabled = enableProgressBarOption,
@@ -1434,7 +1646,8 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.font = key
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 							progressBar:SetIconAndText(
 								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
@@ -1458,7 +1671,8 @@ do
 					if value then
 						local preferences = GetProgressBarPreferences()
 						preferences.fontSize = value
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 						end)
 					end
@@ -1490,7 +1704,8 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.fontOutline = key
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 						end)
 					end
@@ -1522,7 +1737,8 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().iconPosition = key
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetIconPosition(key)
 						end)
 					end
@@ -1548,7 +1764,8 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						GetProgressBarPreferences().durationAlignment = key
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetDurationTextAlignment(key)
 						end)
 					end
@@ -1580,7 +1797,8 @@ do
 						else
 							preferences.fill = false
 						end
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetFill(preferences.fill)
 						end)
 					end
@@ -1616,7 +1834,8 @@ do
 						local preferences = GetProgressBarPreferences()
 						preferences.width = width
 						preferences.height = height
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetProgressBarSize(preferences.width, preferences.height)
 						end)
 					end
@@ -1658,7 +1877,8 @@ do
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
 						preferences.texture = key
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetTexture(preferences.texture, preferences.color, preferences.backgroundColor)
 						end)
 					end
@@ -1693,7 +1913,8 @@ do
 							and type(a) == "number"
 						then
 							GetProgressBarPreferences().color = { r, g, b, a }
-							CallProgressBarAnchorFunction(function(progressBar)
+							CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+								---@cast progressBar EPProgressBar
 								progressBar:SetColor(r, g, b, a)
 							end)
 						end
@@ -1706,7 +1927,8 @@ do
 							and type(a) == "number"
 						then
 							GetProgressBarPreferences().backgroundColor = { r, g, b, a }
-							CallProgressBarAnchorFunction(function(progressBar)
+							CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+								---@cast progressBar EPProgressBar
 								progressBar:SetBackgroundColor(r, g, b, a)
 							end)
 						end
@@ -1726,7 +1948,8 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().alpha = value
-						CallProgressBarAnchorFunction(function(progressBar)
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
 							progressBar:SetAlpha(value)
 						end)
 					end
@@ -1765,7 +1988,8 @@ do
 					function(key)
 						if type(key) == "boolean" then
 							GetProgressBarPreferences().showBorder = key
-							CallProgressBarAnchorFunction(function(progressBar)
+							CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+								---@cast progressBar EPProgressBar
 								progressBar:SetShowBorder(key)
 							end)
 						end
@@ -1773,7 +1997,8 @@ do
 					function(key)
 						if type(key) == "boolean" then
 							GetProgressBarPreferences().showIconBorder = key
-							CallProgressBarAnchorFunction(function(progressBar)
+							CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+								---@cast progressBar EPProgressBar
 								progressBar:SetShowIconBorder(key)
 							end)
 						end
@@ -1811,6 +2036,187 @@ do
 					end
 					return false, GetProgressBarPreferences().spacing
 				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Enable Cooldown Icons"],
+				type = "checkBoxBesideButton",
+				description = L["Whether to show cooldown-style icons for spell assignments (does not apply to text only assignments)."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().enabled
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetIconPreferences()
+						if key ~= preferences.enabled and key == false then
+							preferences.enabled = false
+							if iconAnchor and iconAnchor.frame:IsShown() then
+								HideAnchor(AnchorType.Icon)
+							end
+						end
+						preferences.enabled = key
+					end
+				end,
+				enabled = enableReminderOption,
+				buttonText = L["Toggle Cooldown Icon Anchor"],
+				buttonEnabled = enableIconOption,
+				buttonCallback = function()
+					if iconAnchor and iconAnchor.frame:IsShown() then
+						HideAnchor(AnchorType.Icon)
+					else
+						ShowAnchor(AnchorType.Icon)
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Cooldown Icon Grow Direction"],
+				labels = { L["Horizontal"], L["Vertical"] },
+				type = "radioButtonGroup",
+				-- descriptions = {
+				-- 	L[""],
+				-- 	L[""],
+				-- },
+				category = L["Cooldown Icons"],
+				values = growDirectionValues,
+				get = function()
+					return GetIconPreferences().orientation
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						icons.orientation = key
+						if iconAnchor then
+							iconAnchor.content.orientation = key
+							if key == "vertical" then
+								iconAnchor.content.sortAscending = icons.soonestExpirationOnBottom
+							elseif key == "horizontal" then
+								iconAnchor.content.sortAscending = icons.soonestExpirationOnLeft
+							end
+							iconAnchor:DoLayout()
+						end
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Cooldown Icon Order"],
+				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Sorts Cooldown Icons by ascending expiration time."],
+					L["Sorts Cooldown Icons by descending expiration time."],
+				},
+				category = L["Cooldown Icons"],
+				values = verticalSortingValues,
+				get = function()
+					return GetIconPreferences().soonestExpirationOnBottom
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetIconPreferences().soonestExpirationOnBottom = key
+						if iconAnchor then
+							iconAnchor.content.sortAscending = key
+							iconAnchor:DoLayout()
+						end
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
+				},
+				category = L["Cooldown Icons"],
+				updateIndices = { 0, 1, 2, 3 },
+				get = function()
+					local p = GetIconPreferences()
+					return p.x, p.y
+				end,
+				set = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						local preferences = GetIconPreferences()
+						preferences.x, preferences.y = x, y
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
+							or "UIParent"
+						local region = _G[regionName] or UIParent
+						if iconAnchor then
+							iconAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						end
+					end
+				end,
+				enabled = enableIconOption,
+				validate = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						return true
+					else
+						local preferences = GetIconPreferences()
+						return false, preferences.x, preferences.y
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
+				category = L["Cooldown Icons"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetIconPreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						ApplyPointToAnchor(AnchorType.Icon, key, icons.relativeTo, icons.relativePoint)
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Cooldown Icon container is anchored to. Defaults to UIParent (screen)."],
+				category = L["Cooldown Icons"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetIconPreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						if iconAnchor and iconAnchor.frame:GetName() == key then
+							key = icons.relativeTo
+						end
+						ApplyPointToAnchor(AnchorType.Icon, icons.point, key, icons.relativePoint)
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Cooldown Icon container is anchored to."],
+				category = L["Cooldown Icons"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetIconPreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						ApplyPointToAnchor(AnchorType.Icon, icons.point, icons.relativeTo, key)
+					end
+				end,
+				enabled = enableIconOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Play Text to Speech at Countdown Start"],
@@ -2415,6 +2821,10 @@ function Private:CloseAnchors()
 		AceGUI:Release(progressBarAnchor)
 	end
 	progressBarAnchor = nil
+	if iconAnchor then
+		AceGUI:Release(iconAnchor)
+	end
+	iconAnchor = nil
 end
 
 local function CreateAnchors()
@@ -2425,6 +2835,9 @@ local function CreateAnchors()
 
 	progressBarAnchor = CreateProgressBarAnchor()
 	progressBarAnchor.frame:Hide()
+
+	iconAnchor = CreateIconAnchor()
+	iconAnchor.frame:Hide()
 end
 
 -- Releases the message and progress bar anchors if they exist and recreates them. Requires the options menu to be open.
