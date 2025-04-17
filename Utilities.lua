@@ -2506,11 +2506,7 @@ do
 		container:SetSpacing(0, spacing or 0)
 		if preferences.orientation then
 			container.content.orientation = preferences.orientation
-			if preferences.orientation == "vertical" then
-				container.content.sortAscending = preferences.soonestExpirationOnBottom
-			elseif preferences.orientation == "horizontal" then
-				container.content.sortAscending = preferences.soonestExpirationOnLeft
-			end
+			container.content.sortAscending = preferences.soonestExpirationOnBottom
 		else
 			container.content.orientation = "vertical"
 			container.content.sortAscending = preferences.soonestExpirationOnBottom

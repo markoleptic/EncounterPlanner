@@ -2072,10 +2072,10 @@ do
 				label = L["Cooldown Icon Grow Direction"],
 				labels = { L["Horizontal"], L["Vertical"] },
 				type = "radioButtonGroup",
-				-- descriptions = {
-				-- 	L[""],
-				-- 	L[""],
-				-- },
+				descriptions = {
+					L["Cooldown Icons grow horizontally."],
+					L["Cooldown Icons grow vertically."],
+				},
 				category = L["Cooldown Icons"],
 				values = growDirectionValues,
 				get = function()
@@ -2087,11 +2087,6 @@ do
 						icons.orientation = key
 						if iconAnchor then
 							iconAnchor.content.orientation = key
-							if key == "vertical" then
-								iconAnchor.content.sortAscending = icons.soonestExpirationOnBottom
-							elseif key == "horizontal" then
-								iconAnchor.content.sortAscending = icons.soonestExpirationOnLeft
-							end
 							iconAnchor:DoLayout()
 						end
 					end
@@ -2100,7 +2095,13 @@ do
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Cooldown Icon Order"],
-				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
+				labels = function()
+					if GetIconPreferences().orientation == "vertical" then
+						return { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] }
+					else
+						return { L["Soonest Expiration on Left"], L["Soonest Expiration on Right"] }
+					end
+				end,
 				type = "radioButtonGroup",
 				descriptions = {
 					L["Sorts Cooldown Icons by ascending expiration time."],
@@ -2217,6 +2218,116 @@ do
 					end
 				end,
 				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Cooldown Icons"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Show Text Beneath Icon"],
+				type = "checkBox",
+				description = L["Whether to show reminder text beneath Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().showText
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetIconPreferences().showText = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetShowText(key)
+						end)
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font"],
+				type = "dropdown",
+				itemsAreFonts = true,
+				description = L["Font to use for text beneath Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				values = fonts,
+				get = function()
+					return GetIconPreferences().font
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetIconPreferences()
+						preferences.font = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
+					end
+				end,
+				enabled = function()
+					return enableIconOption() and GetIconPreferences().showText == true
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font Size"],
+				type = "lineEdit",
+				description = L["Font size to use for text beneath Cooldown Icons (8 - 64)."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().fontSize
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						local preferences = GetIconPreferences()
+						preferences.fontSize = value
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kMinFontSize or value > kMaxFontSize then
+							return false, Clamp(value, kMinFontSize, kMaxFontSize)
+						else
+							return true
+						end
+					else
+						return false, GetIconPreferences().fontSize
+					end
+				end,
+				enabled = function()
+					return enableIconOption() and GetIconPreferences().showText == true
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font Outline"],
+				type = "dropdown",
+				description = L["Font outline to use for text beneath Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				values = fontOutlineValues,
+				get = function()
+					return GetIconPreferences().fontOutline
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetIconPreferences()
+						preferences.fontOutline = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
+					end
+				end,
+				enabled = function()
+					return enableIconOption() and GetIconPreferences().showText == true
+				end,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Play Text to Speech at Countdown Start"],

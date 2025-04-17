@@ -676,7 +676,6 @@ end
 ---@field textColor {[1]:number, [2]:number, [3]:number, [4]:number}
 
 ---@class IconPreferences : GenericReminderPreferences
----@field soonestExpirationOnLeft boolean
 ---@field width number
 ---@field height number
 ---@field drawSwipe boolean
@@ -821,7 +820,6 @@ local defaults = {
 					y = 0,
 					alpha = 0.90,
 					soonestExpirationOnBottom = true,
-					soonestExpirationOnLeft = true,
 					height = 50,
 					width = 50,
 					drawSwipe = true,

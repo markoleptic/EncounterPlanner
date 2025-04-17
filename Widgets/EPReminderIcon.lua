@@ -70,7 +70,6 @@ local function SetText(self, text, fontFile, size, flags)
 	self.text:SetText(text or "")
 	if fontFile and size then
 		self.text:SetFont(fontFile, size, flags)
-		self.cooldown:SetCountdownFont(fontFile)
 	end
 end
 
@@ -110,7 +109,6 @@ end
 local function SetFont(self, fontFile, size, flags)
 	if fontFile then
 		self.text:SetFont(fontFile, size, flags)
-		self.cooldown:SetCountdownFont(fontFile)
 	end
 end
 
@@ -160,7 +158,6 @@ local function Set(self, preferences, text, icon)
 	self.text:SetText(text or "")
 	if preferences.font and preferences.fontSize then
 		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-		self.cooldown:SetCountdownFont(preferences.font)
 	end
 	self.cooldown:SetDrawEdge(preferences.drawEdge)
 	self.cooldown:SetDrawSwipe(preferences.drawSwipe)
