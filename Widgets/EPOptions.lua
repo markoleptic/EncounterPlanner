@@ -527,6 +527,26 @@ local function handleRadioButtonToggled(radioButton, radioButtonGroup)
 	end
 end
 
+---@param descriptions string[]|fun():string[]
+---@return string[]
+local function GetDescriptions(descriptions)
+	if type(descriptions) == "function" then
+		return descriptions()
+	else
+		return descriptions
+	end
+end
+
+---@param labels string[]|fun():string[]
+---@return string[]
+local function GetLabels(labels)
+	if type(labels) == "function" then
+		return labels()
+	else
+		return labels
+	end
+end
+
 ---@param dropdown EPDropdown
 ---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
 ---@param option EPSettingOption
@@ -571,22 +591,37 @@ local function Update(updateMap)
 	end
 end
 
+---@param option EPSettingOption
+---@return string|nil
+local function GenerateKey(option)
+	if option.category then
+		return option.category
+	elseif option.label then
+		return option.label
+	elseif option.labels then
+		local labels = GetLabels(option.labels)
+		return labels[1] .. labels[2]
+	end
+end
+
 ---@param updateIndices table<string, table<integer, table<integer, fun()>>>
 ---@param option EPSettingOption
 ---@param func fun()
 local function UpdateUpdateIndices(updateIndices, option, index, func)
 	if type(func) == "function" then
 		if option.updateIndices then
-			local key = option.category or option.label or (option.labels[1] .. option.labels[2])
-			if not updateIndices[key] then
-				updateIndices[key] = {}
-			end
-			for _, relativeOptionIndex in pairs(option.updateIndices) do
-				local optionIndex = index + relativeOptionIndex
-				if not updateIndices[key][optionIndex] then
-					updateIndices[key][optionIndex] = {}
+			local key = GenerateKey(option)
+			if key then
+				if not updateIndices[key] then
+					updateIndices[key] = {}
 				end
-				tinsert(updateIndices[key][optionIndex], func)
+				for _, relativeOptionIndex in pairs(option.updateIndices) do
+					local optionIndex = index + relativeOptionIndex
+					if not updateIndices[key][optionIndex] then
+						updateIndices[key][optionIndex] = {}
+					end
+					tinsert(updateIndices[key][optionIndex], func)
+				end
 			end
 		end
 	end
@@ -631,7 +666,7 @@ local function CreateFrameChooser(self, option, index, label)
 	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(L["Choose"])
 	button:SetRelativeWidth(0.4)
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	button:SetCallback("Clicked", function()
 		if isChoosingFrame then
 			StopChoosingFrame(self.frameChooserFrame, self.frameChooserBox, nil, nil)
@@ -704,7 +739,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 	end
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	for i, child in ipairs(radioButtonGroup.children) do
 		if option.enabled and child.SetEnabled then
 			child:SetEnabled(option.enabled())
@@ -720,7 +755,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 		child:SetCallback("OnEnter", function(widget)
-			ShowTooltip(widget.frame, option.labels[i], option.descriptions[i])
+			ShowTooltip(widget.frame, GetLabels(option.labels)[i], GetDescriptions(option.descriptions)[i])
 		end)
 		child:SetCallback("OnLeave", function()
 			tooltip:Hide()
@@ -743,8 +778,9 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	local labelRelativeWidth = 0.05
 	local lineEditRelativeWidth = 0.45
 
+	local labels = GetLabels(option.labels)
 	local labelX = AceGUI:Create("EPLabel")
-	labelX:SetText(option.labels[1] .. ":", 0)
+	labelX:SetText(labels[1] .. ":", 0)
 	if labelX:GetText():len() > 5 then
 		labelRelativeWidth = 0.10
 		lineEditRelativeWidth = 0.40
@@ -756,7 +792,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	lineEditX:SetRelativeWidth(lineEditRelativeWidth)
 
 	local labelY = AceGUI:Create("EPLabel")
-	labelY:SetText(option.labels[2] .. ":", 0)
+	labelY:SetText(labels[2] .. ":", 0)
 	labelY:SetRelativeWidth(labelRelativeWidth)
 	labelY:SetFullHeight(true)
 
@@ -777,7 +813,7 @@ local function CreateDoubleLineEdit(self, option, index, label)
 			lineEditY:SetText(y)
 		end)
 	end
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	local function Callback()
 		local valueX, valueY = lineEditX:GetText(), lineEditY:GetText()
 		local valid, valueToRevertTo, valueToRevertToB = option.validate(valueX, valueY)
@@ -799,10 +835,10 @@ local function CreateDoubleLineEdit(self, option, index, label)
 	lineEditX:SetText(x)
 	lineEditY:SetText(y)
 	lineEditX:SetCallback("OnEnter", function()
-		ShowTooltip(lineEditX.frame, option.labels[1], option.descriptions[1])
+		ShowTooltip(lineEditX.frame, GetLabels(option.labels)[1], GetDescriptions(option.descriptions)[1])
 	end)
 	lineEditY:SetCallback("OnEnter", function()
-		ShowTooltip(lineEditY.frame, option.labels[2], option.descriptions[2])
+		ShowTooltip(lineEditY.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	lineEditX:SetCallback("OnLeave", function()
 		tooltip:Hide()
@@ -831,16 +867,17 @@ local function CreateDoubleColorPicker(self, option, index, label)
 	doubleColorPickerContainer:SetLayout("EPHorizontalLayout")
 	doubleColorPickerContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
 
+	local labels = GetLabels(option.labels)
 	local colorPickerOne = AceGUI:Create("EPColorPicker")
 	colorPickerOne:SetFullHeight(true)
 	colorPickerOne:SetRelativeWidth(0.5)
-	colorPickerOne:SetLabelText(option.labels[1] .. ":", spacingBetweenLabelAndWidget)
+	colorPickerOne:SetLabelText(labels[1] .. ":", spacingBetweenLabelAndWidget)
 	colorPickerOne:SetColor(option.get[1]())
 
 	local colorPickerTwo = AceGUI:Create("EPColorPicker")
 	colorPickerTwo:SetFullHeight(true)
 	colorPickerTwo:SetRelativeWidth(0.5)
-	colorPickerTwo:SetLabelText(option.labels[2] .. ":", spacingBetweenLabelAndWidget)
+	colorPickerTwo:SetLabelText(labels[2] .. ":", spacingBetweenLabelAndWidget)
 	colorPickerTwo:SetColor(option.get[2]())
 
 	if type(option.enabled) == "function" then
@@ -854,7 +891,7 @@ local function CreateDoubleColorPicker(self, option, index, label)
 			colorPickerTwo:SetColor(option.get[2]())
 		end)
 	end
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	colorPickerOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
@@ -871,10 +908,10 @@ local function CreateDoubleColorPicker(self, option, index, label)
 	end)
 
 	colorPickerOne:SetCallback("OnEnter", function()
-		ShowTooltip(colorPickerOne.frame, option.labels[1], option.descriptions[1])
+		ShowTooltip(colorPickerOne.frame, GetLabels(option.labels)[1], GetDescriptions(option.descriptions)[1])
 	end)
 	colorPickerTwo:SetCallback("OnEnter", function()
-		ShowTooltip(colorPickerTwo.frame, option.labels[2], option.descriptions[2])
+		ShowTooltip(colorPickerTwo.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	colorPickerOne:SetCallback("OnLeave", function()
 		tooltip:Hide()
@@ -903,16 +940,18 @@ local function CreateDoubleCheckBox(self, option, index, label)
 	doubleCheckBoxContainer:SetLayout("EPHorizontalLayout")
 	doubleCheckBoxContainer:SetSpacing(unpack(doubleLineEditContainerSpacing))
 
+	local labels = GetLabels(option.labels)
+
 	local checkBoxOne = AceGUI:Create("EPCheckBox")
 	checkBoxOne:SetFullHeight(true)
 	checkBoxOne:SetRelativeWidth(0.5)
-	checkBoxOne:SetText(option.labels[1])
+	checkBoxOne:SetText(labels[1])
 	checkBoxOne:SetChecked(option.get[1]())
 
 	local checkBoxTwo = AceGUI:Create("EPCheckBox")
 	checkBoxTwo:SetFullHeight(true)
 	checkBoxTwo:SetRelativeWidth(0.5)
-	checkBoxTwo:SetText(option.labels[2])
+	checkBoxTwo:SetText(labels[2])
 	checkBoxTwo:SetChecked(option.get[2]())
 
 	if type(option.enabled) == "function" then
@@ -926,7 +965,7 @@ local function CreateDoubleCheckBox(self, option, index, label)
 			checkBoxTwo:SetChecked(option.get[2]())
 		end)
 	end
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	checkBoxOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
@@ -943,10 +982,10 @@ local function CreateDoubleCheckBox(self, option, index, label)
 	end)
 
 	checkBoxOne:SetCallback("OnEnter", function()
-		ShowTooltip(checkBoxOne.frame, option.labels[1], option.descriptions[1])
+		ShowTooltip(checkBoxOne.frame, GetLabels(option.labels)[1], GetDescriptions(option.descriptions)[1])
 	end)
 	checkBoxTwo:SetCallback("OnEnter", function()
-		ShowTooltip(checkBoxTwo.frame, option.labels[2], option.descriptions[2])
+		ShowTooltip(checkBoxTwo.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	checkBoxOne:SetCallback("OnLeave", function()
 		tooltip:Hide()
@@ -999,7 +1038,7 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 			dropdown:SetValue(option.get[2]())
 		end)
 	end
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 	checkBox:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
@@ -1016,10 +1055,10 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 	end)
 
 	checkBox:SetCallback("OnEnter", function()
-		ShowTooltip(checkBox.frame, option.labels[1], option.descriptions[1])
+		ShowTooltip(checkBox.frame, GetLabels(option.labels)[1], GetDescriptions(option.descriptions)[1])
 	end)
 	dropdown:SetCallback("OnEnter", function()
-		ShowTooltip(dropdown.frame, option.labels[2], option.descriptions[2])
+		ShowTooltip(dropdown.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	checkBox:SetCallback("OnLeave", function()
 		tooltip:Hide()
@@ -1132,7 +1171,7 @@ local function CreateDropdownBesideButton(self, option, index)
 		end
 	end
 
-	local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+	local key = GenerateKey(option)
 
 	dropdown:SetCallback("OnValueChanged", function(_, _, value)
 		option.set(value)
@@ -1223,7 +1262,7 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 			end
 		end
 
-		local key = option.category or option.label or (option.labels[1] .. option.labels[2])
+		local key = GenerateKey(option)
 
 		if type(setWidgetValue) == "function" then
 			if option.updateIndices then
@@ -1598,12 +1637,12 @@ end
 
 ---@class EPSettingOption
 ---@field label string
----@field labels? string[]
+---@field labels? string[]|fun():string[]
 ---@field type EPSettingOptionType
 ---@field get GetFunction|{func1: GetFunction, func2:GetFunction}
 ---@field set SetFunction|{func1: SetFunction, func2:SetFunction}
 ---@field description? string
----@field descriptions? [string]
+---@field descriptions? string[]|fun():string[]
 ---@field validate? ValidateFunction|{func1: ValidateFunction, func2:ValidateFunction}
 ---@field category? string
 ---@field indent? boolean
