@@ -6,14 +6,13 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local floor = math.floor
 local GetTime = GetTime
+local min = math.min
 local next = next
 local unpack = unpack
 
 local defaultFrameHeight = 30
 local defaultFrameWidth = 30
 local defaultTextPadding = 4
-local defaultBackdropColor = { 0, 0, 0, 0 }
-local anchorModeBackdropColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 }
 local defaultDisplayTime = 2
 local defaultFadeDuration = 1.2
 local timerTickRate = 0.1
@@ -26,14 +25,6 @@ local greaterThanTenSecondsFormat = "%.0f"
 local lessThanTenSecondsFormat = "%.1f"
 
 local backdropBorderColor = { 0, 0, 0, 1 }
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 0,
-	edgeSize = 0,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
 
 ---@param self EPReminderIcon
 local function OnAcquire(self)
@@ -48,7 +39,6 @@ local function OnRelease(self)
 	self.currentThreshold = ""
 	self.running = false
 	self.showText = false
-	self:SetAnchorMode(false)
 end
 
 ---@param self EPReminderIcon
@@ -128,24 +118,26 @@ local function SetAlpha(self, alpha)
 end
 
 ---@param self EPReminderIcon
----@param anchorMode boolean
-local function SetAnchorMode(self, anchorMode)
-	if anchorMode then
-		self.frame:SetBackdropColor(unpack(anchorModeBackdropColor))
-	else
-		self.frame:SetBackdropColor(unpack(defaultBackdropColor))
-	end
-end
-
----@param self EPReminderIcon
 ---@param borderSize integer
 local function SetBorderSize(self, borderSize)
 	self.frame:ClearBackdrop()
-	frameBackdrop.edgeSize = borderSize
 	if borderSize > 1 then
-		self.frame:SetBackdrop(frameBackdrop)
+		self.frame:SetBackdrop({
+			edgeFile = "Interface\\BUTTONS\\White8x8",
+			edgeSize = borderSize,
+		})
 		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 	end
+	self.icon:SetPoint("TOPLEFT", borderSize, -borderSize)
+	self.icon:SetPoint("BOTTOMRIGHT", -borderSize, borderSize)
+end
+
+---@param self EPReminderIcon
+---@param drawEdge boolean
+---@param drawSwipe boolean
+local function SetDraw(self, drawEdge, drawSwipe)
+	self.cooldown:SetDrawEdge(drawEdge)
+	self.cooldown:SetDrawSwipe(drawSwipe)
 end
 
 ---@param self EPReminderIcon
@@ -159,9 +151,8 @@ local function Set(self, preferences, text, icon)
 	if preferences.font and preferences.fontSize then
 		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	end
-	self.cooldown:SetDrawEdge(preferences.drawEdge)
-	self.cooldown:SetDrawSwipe(preferences.drawSwipe)
-	self.frame:SetAlpha(preferences.alpha)
+	SetDraw(self, preferences.drawEdge, preferences.drawSwipe)
+	SetAlpha(self, preferences.alpha)
 	SetTextColor(self, unpack(preferences.textColor))
 	SetIcon(self, icon)
 	SetBorderSize(self, preferences.borderSize)
@@ -172,8 +163,10 @@ local function Constructor()
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(defaultBackdropColor))
+	frame:SetBackdrop({
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeSize = 2,
+	})
 	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
@@ -189,8 +182,8 @@ local function Constructor()
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	text:SetJustifyH("CENTER")
 	text:SetWordWrap(false)
-	text:SetPoint("TOPLEFT", cooldown, "BOTTOMLEFT", 0, -2)
-	text:SetPoint("TOPRIGHT", cooldown, "BOTTOMRIGHT", 0, -2)
+	text:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, -2)
+	text:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, -2)
 	text:Hide()
 
 	---@class EPReminderIcon : AceGUIWidget
@@ -201,13 +194,13 @@ local function Constructor()
 		SetIcon = SetIcon,
 		SetText = SetText,
 		SetFont = SetFont,
-		SetAnchorMode = SetAnchorMode,
 		Start = Start,
 		SetTextColor = SetTextColor,
 		SetAlpha = SetAlpha,
 		Set = Set,
 		SetShowText = SetShowText,
 		SetBorderSize = SetBorderSize,
+		SetDraw = SetDraw,
 		frame = frame,
 		cooldown = cooldown,
 		icon = icon,

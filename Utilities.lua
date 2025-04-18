@@ -2503,7 +2503,7 @@ do
 		container.frame:SetParent(UIParent)
 		container.frame:SetFrameStrata("MEDIUM")
 		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
-		container:SetSpacing(0, spacing or 0)
+		container:SetSpacing(spacing or 0, spacing or 0)
 		if preferences.orientation then
 			container.content.orientation = preferences.orientation
 			container.content.sortAscending = preferences.soonestExpirationOnBottom

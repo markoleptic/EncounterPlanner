@@ -399,7 +399,7 @@ do
 
 	local function AddDelayedIcon(time)
 		local timer = NewTimer(time, function()
-			iconManager:AddProgressBar()
+			iconManager:AddIcon()
 			tremove(timers, 1)
 		end)
 		tinsert(timers, timer)
@@ -703,9 +703,9 @@ local function ShowAnchor(anchorType)
 		end
 	elseif anchorType == AnchorType.Icon then
 		if iconAnchor then
-			iconAnchor.frame:Hide()
+			iconAnchor.frame:Show()
 			iconManager:CancelTimers()
-			iconAnchor:ReleaseChildren()
+			iconManager:AddIconsOnTimer()
 		end
 	end
 end
@@ -729,23 +729,9 @@ do
 		{ itemValue = "Shift-RightButton", text = L["Shift + Right Click"] },
 	}
 
-	local rowValues = {
-		{ itemValue = 2, text = "2" },
-		{ itemValue = 3, text = "3" },
-		{ itemValue = 4, text = "4" },
-		{ itemValue = 5, text = "5" },
-		{ itemValue = 6, text = "6" },
-		{ itemValue = 7, text = "7" },
-		{ itemValue = 8, text = "8" },
-		{ itemValue = 9, text = "9" },
-		{ itemValue = 10, text = "10" },
-		{ itemValue = 11, text = "11" },
-		{ itemValue = 12, text = "12" },
-	}
-
 	local horizontalSortingValues = {
-		{ itemValue = false, text = L["Soonest Expiration on Left"] },
-		{ itemValue = true, text = L["Soonest Expiration on Right"] },
+		{ itemValue = true, text = L["Soonest Expiration on Left"] },
+		{ itemValue = false, text = L["Soonest Expiration on Right"] },
 	}
 
 	local verticalSortingValues = {
@@ -1005,6 +991,9 @@ do
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.icons.enabled == true
 		end
+
+		local kMinIconSize = 5.0
+		local kMaxIconSize = 100.0
 		local kMaxProgressBarWidth = 1000.0
 		local kMaxProgressBarHeight = 100.0
 		local kMinSpacing = -1
@@ -1016,6 +1005,7 @@ do
 		local kMaxVolume = 100.0
 		local kOne = 1.0
 		local kZero = 0.0
+
 		return {
 			{
 				label = L["Enable Reminders"],
@@ -1235,101 +1225,36 @@ do
 				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Position"],
-				labels = { L["X"], L["Y"] },
-				type = "doubleLineEdit",
-				descriptions = {
-					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
-					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
-				},
+				label = L["Message Transparency"],
+				type = "lineEdit",
+				description = L["Transparency of Messages (0.0 - 1.0)."],
 				category = L["Messages"],
-				updateIndices = { 0, 1, 2, 3 },
 				get = function()
-					local preferences = GetMessagePreferences()
-					return preferences.x, preferences.y
+					return GetMessagePreferences().alpha
 				end,
-				set = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
-						local preferences = GetMessagePreferences()
-						preferences.x = x
-						preferences.y = y
-						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
-							or "UIParent"
-						local region = _G[regionName] or UIParent
-						if messageAnchor then
-							messageAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
-						end
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetMessagePreferences().alpha = value
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
+							message:SetAlpha(value)
+						end)
 					end
 				end,
 				enabled = enableMessageOption,
-				validate = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
-						return true
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kZero or value > kOne then
+							return false, Clamp(value, kZero, kOne)
+						else
+							return true
+						end
 					else
-						local preferences = GetMessagePreferences()
-						return false, preferences.x, preferences.y
+						return false, GetMessagePreferences().alpha
 					end
 				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Point"],
-				type = "dropdown",
-				description = L["Which spot on the Message container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
-				category = L["Messages"],
-				values = anchorPointValues,
-				updateIndices = { -1, 0, 1, 2 },
-				get = function()
-					return GetMessagePreferences().point
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						ApplyPointToAnchor(AnchorType.Message, key, messages.relativeTo, messages.relativePoint)
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Frame"],
-				type = "frameChooser",
-				description = L["The frame that the Message container is anchored to. Defaults to UIParent (screen)."],
-				category = L["Messages"],
-				updateIndices = { -2, -1, 0, 1 },
-				get = function()
-					return GetMessagePreferences().relativeTo
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						if messageAnchor and messageAnchor.frame:GetName() == key then
-							key = messages.relativeTo
-						end
-						ApplyPointToAnchor(AnchorType.Message, messages.point, key, messages.relativePoint)
-					end
-				end,
-				enabled = enableMessageOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Relative Anchor Point"],
-				type = "dropdown",
-				description = L["The anchor point on the frame that the Message container is anchored to."],
-				category = L["Messages"],
-				values = anchorPointValues,
-				updateIndices = { -3, -2, -1, 0 },
-				get = function()
-					return GetMessagePreferences().relativePoint
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local messages = GetMessagePreferences()
-						ApplyPointToAnchor(AnchorType.Message, messages.point, messages.relativeTo, key)
-					end
-				end,
-				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = "",
@@ -1437,36 +1362,110 @@ do
 				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Message Transparency"],
-				type = "lineEdit",
-				description = L["Transparency of Messages (0.0 - 1.0)."],
-				category = L["Messages"],
+				label = "",
 				get = function()
-					return GetMessagePreferences().alpha
+					return ""
 				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetMessagePreferences().alpha = value
-						CallAnchorFunction(AnchorType.Message, function(message)
-							---@cast message EPReminderMessage
-							message:SetAlpha(value)
-						end)
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Messages"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
+				},
+				category = L["Messages"],
+				updateIndices = { 0, 1, 2, 3 },
+				get = function()
+					local preferences = GetMessagePreferences()
+					return preferences.x, preferences.y
+				end,
+				set = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						local preferences = GetMessagePreferences()
+						preferences.x = x
+						preferences.y = y
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
+							or "UIParent"
+						local region = _G[regionName] or UIParent
+						if messageAnchor then
+							messageAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						end
 					end
 				end,
 				enabled = enableMessageOption,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < kZero or value > kOne then
-							return false, Clamp(value, kZero, kOne)
-						else
-							return true
-						end
+				validate = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						return true
 					else
-						return false, GetMessagePreferences().alpha
+						local preferences = GetMessagePreferences()
+						return false, preferences.x, preferences.y
 					end
 				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L["Which spot on the Message container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
+				category = L["Messages"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetMessagePreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						ApplyPointToAnchor(AnchorType.Message, key, messages.relativeTo, messages.relativePoint)
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Message container is anchored to. Defaults to UIParent (screen)."],
+				category = L["Messages"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetMessagePreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						if messageAnchor and messageAnchor.frame:GetName() == key then
+							key = messages.relativeTo
+						end
+						ApplyPointToAnchor(AnchorType.Message, messages.point, key, messages.relativePoint)
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Message container is anchored to."],
+				category = L["Messages"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetMessagePreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local messages = GetMessagePreferences()
+						ApplyPointToAnchor(AnchorType.Message, messages.point, messages.relativeTo, key)
+					end
+				end,
+				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Enable Progress Bars"],
@@ -1498,321 +1497,6 @@ do
 						ShowAnchor(AnchorType.ProgressBar)
 					end
 				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Position"],
-				labels = { L["X"], L["Y"] },
-				type = "doubleLineEdit",
-				descriptions = {
-					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
-					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
-				},
-				category = L["Progress Bars"],
-				updateIndices = { 0, 1, 2, 3 },
-				get = function()
-					return GetProgressBarPreferences().x, GetProgressBarPreferences().y
-				end,
-				set = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
-						local preferences = GetProgressBarPreferences()
-						preferences.x, preferences.y = x, y
-						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
-							or "UIParent"
-						local region = _G[regionName] or UIParent
-						if progressBarAnchor then
-							progressBarAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
-						end
-					end
-				end,
-				enabled = enableProgressBarOption,
-				validate = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
-						return true
-					else
-						local preferences = GetProgressBarPreferences()
-						return false, preferences.x, preferences.y
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Bar Order"],
-				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Sorts Progress Bars by ascending expiration time."],
-					L["Sorts Progress Bars by descending expiration time."],
-				},
-				category = L["Progress Bars"],
-				values = verticalSortingValues,
-				get = function()
-					return GetProgressBarPreferences().soonestExpirationOnBottom
-				end,
-				set = function(key)
-					if type(key) == "boolean" then
-						GetProgressBarPreferences().soonestExpirationOnBottom = key
-						if progressBarAnchor then
-							progressBarAnchor.content.sortAscending = key
-							progressBarAnchor:DoLayout()
-						end
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Point"],
-				type = "dropdown",
-				description = L["Which spot on the Progress Bar container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
-				category = L["Progress Bars"],
-				values = anchorPointValues,
-				updateIndices = { -1, 0, 1, 2 },
-				get = function()
-					return GetProgressBarPreferences().point
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						ApplyPointToAnchor(
-							AnchorType.ProgressBar,
-							key,
-							preferences.relativeTo,
-							preferences.relativePoint
-						)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Frame"],
-				type = "frameChooser",
-				description = L["The frame that the Progress Bar container is anchored to. Defaults to UIParent (screen)."],
-				category = L["Progress Bars"],
-				updateIndices = { -2, -1, 0, 1 },
-				get = function()
-					return GetProgressBarPreferences().relativeTo
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						if progressBarAnchor and progressBarAnchor.frame:GetName() == key then
-							key = preferences.relativeTo
-						end
-						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, key, preferences.relativePoint)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Relative Anchor Point"],
-				type = "dropdown",
-				description = L["The anchor point on the frame that the Progress Bar container is anchored to."],
-				category = L["Progress Bars"],
-				values = anchorPointValues,
-				updateIndices = { -3, -2, -1, 0 },
-				get = function()
-					return GetProgressBarPreferences().relativePoint
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, preferences.relativeTo, key)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = "",
-				get = function()
-					return ""
-				end,
-				set = function() end,
-				type = "horizontalLine",
-				category = L["Progress Bars"],
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Font"],
-				type = "dropdown",
-				itemsAreFonts = true,
-				description = L["Font to use for Progress Bar text."],
-				category = L["Progress Bars"],
-				values = fonts,
-				get = function()
-					return GetProgressBarPreferences().font
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						preferences.font = key
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-							progressBar:SetIconAndText(
-								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
-								L["Progress Bar Text"]
-							)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Font Size"],
-				type = "lineEdit",
-				description = L["Font size to use for Progress Bar text (8 - 64)."],
-				category = L["Progress Bars"],
-				get = function()
-					return GetProgressBarPreferences().fontSize
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						local preferences = GetProgressBarPreferences()
-						preferences.fontSize = value
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < kMinFontSize or value > kMaxFontSize then
-							return false, Clamp(value, kMinFontSize, kMaxFontSize)
-						else
-							return true
-						end
-					else
-						return false, GetProgressBarPreferences().fontSize
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Font Outline"],
-				type = "dropdown",
-				description = L["Font outline to use for Progress Bar text."],
-				category = L["Progress Bars"],
-				values = fontOutlineValues,
-				get = function()
-					return GetProgressBarPreferences().fontOutline
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						preferences.fontOutline = key
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = "",
-				get = function()
-					return ""
-				end,
-				set = function() end,
-				type = "horizontalLine",
-				category = L["Progress Bars"],
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Icon Position"],
-				labels = { L["Left"], L["Right"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Icon on left, text and duration on right."],
-					L["Icon on right, text and duration on left."],
-				},
-				category = L["Progress Bars"],
-				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
-				get = function()
-					return GetProgressBarPreferences().iconPosition
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						GetProgressBarPreferences().iconPosition = key
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetIconPosition(key)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Duration Position"],
-				labels = { L["Left"], L["Right"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Duration to the left of text."],
-					L["Duration to the right of text."],
-				},
-				category = L["Progress Bars"],
-				values = {
-					{ itemValue = "LEFT", text = L["Left"] },
-					{ itemValue = "RIGHT", text = L["Right"] },
-				},
-				get = function()
-					return GetProgressBarPreferences().durationAlignment
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						GetProgressBarPreferences().durationAlignment = key
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetDurationTextAlignment(key)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Bar Progress Type"],
-				labels = { L["Fill"], L["Drain"] },
-				type = "radioButtonGroup",
-				descriptions = {
-					L["Fills Progress Bars from left to right as the countdown progresses."],
-					L["Drains Progress Bars from right to left as the countdown progresses."],
-				},
-				category = L["Progress Bars"],
-				values = { { itemValue = "fill", text = L["Fill"] }, { itemValue = "drain", text = L["Drain"] } },
-				get = function()
-					if GetProgressBarPreferences().fill == true then
-						return "fill"
-					else
-						return "drain"
-					end
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local preferences = GetProgressBarPreferences()
-						if key == "fill" then
-							preferences.fill = true
-						else
-							preferences.fill = false
-						end
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetFill(preferences.fill)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = "",
-				get = function()
-					return ""
-				end,
-				set = function() end,
-				type = "horizontalLine",
-				category = L["Progress Bars"],
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Bar Size"],
@@ -1937,37 +1621,6 @@ do
 				enabled = enableProgressBarOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Bar Transparency"],
-				type = "lineEdit",
-				description = L["Transparency of Progress Bars (0.0 - 1.0)."],
-				category = L["Progress Bars"],
-				get = function()
-					return GetProgressBarPreferences().alpha
-				end,
-				set = function(key)
-					local value = tonumber(key)
-					if value then
-						GetProgressBarPreferences().alpha = value
-						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
-							---@cast progressBar EPProgressBar
-							progressBar:SetAlpha(value)
-						end)
-					end
-				end,
-				enabled = enableProgressBarOption,
-				validate = function(key)
-					local value = tonumber(key)
-					if value then
-						if value < kZero or value > kOne then
-							return false, Clamp(value, kZero, kOne)
-						else
-							return true
-						end
-					end
-					return false, GetProgressBarPreferences().alpha
-				end,
-			} --[[@as EPSettingOption]],
-			{
 				label = L["Bar Border"],
 				labels = { L["Show Border"], L["Show Icon Border"] },
 				type = "doubleCheckBox",
@@ -2038,6 +1691,352 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Bar Transparency"],
+				type = "lineEdit",
+				description = L["Transparency of Progress Bars (0.0 - 1.0)."],
+				category = L["Progress Bars"],
+				get = function()
+					return GetProgressBarPreferences().alpha
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetProgressBarPreferences().alpha = value
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetAlpha(value)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kZero or value > kOne then
+							return false, Clamp(value, kZero, kOne)
+						else
+							return true
+						end
+					end
+					return false, GetProgressBarPreferences().alpha
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Progress Bars"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Bar Order"],
+				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Sorts Progress Bars by ascending expiration time."],
+					L["Sorts Progress Bars by descending expiration time."],
+				},
+				category = L["Progress Bars"],
+				values = verticalSortingValues,
+				get = function()
+					return GetProgressBarPreferences().soonestExpirationOnBottom
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetProgressBarPreferences().soonestExpirationOnBottom = key
+						if progressBarAnchor then
+							progressBarAnchor.content.sortAscending = key
+							progressBarAnchor:DoLayout()
+						end
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Position"],
+				labels = { L["Left"], L["Right"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Icon on left, text and duration on right."],
+					L["Icon on right, text and duration on left."],
+				},
+				category = L["Progress Bars"],
+				values = { { itemValue = "LEFT", text = L["Left"] }, { itemValue = "RIGHT", text = L["Right"] } },
+				get = function()
+					return GetProgressBarPreferences().iconPosition
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						GetProgressBarPreferences().iconPosition = key
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetIconPosition(key)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Duration Position"],
+				labels = { L["Left"], L["Right"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Duration to the left of text."],
+					L["Duration to the right of text."],
+				},
+				category = L["Progress Bars"],
+				values = {
+					{ itemValue = "LEFT", text = L["Left"] },
+					{ itemValue = "RIGHT", text = L["Right"] },
+				},
+				get = function()
+					return GetProgressBarPreferences().durationAlignment
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						GetProgressBarPreferences().durationAlignment = key
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetDurationTextAlignment(key)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Bar Progress Type"],
+				labels = { L["Fill"], L["Drain"] },
+				type = "radioButtonGroup",
+				descriptions = {
+					L["Fills Progress Bars from left to right as the countdown progresses."],
+					L["Drains Progress Bars from right to left as the countdown progresses."],
+				},
+				category = L["Progress Bars"],
+				values = { { itemValue = "fill", text = L["Fill"] }, { itemValue = "drain", text = L["Drain"] } },
+				get = function()
+					if GetProgressBarPreferences().fill == true then
+						return "fill"
+					else
+						return "drain"
+					end
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						if key == "fill" then
+							preferences.fill = true
+						else
+							preferences.fill = false
+						end
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetFill(preferences.fill)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Progress Bars"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font"],
+				type = "dropdown",
+				itemsAreFonts = true,
+				description = L["Font to use for Progress Bar text."],
+				category = L["Progress Bars"],
+				values = fonts,
+				get = function()
+					return GetProgressBarPreferences().font
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						preferences.font = key
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							progressBar:SetIconAndText(
+								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
+								L["Progress Bar Text"]
+							)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font Size"],
+				type = "lineEdit",
+				description = L["Font size to use for Progress Bar text (8 - 64)."],
+				category = L["Progress Bars"],
+				get = function()
+					return GetProgressBarPreferences().fontSize
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						local preferences = GetProgressBarPreferences()
+						preferences.fontSize = value
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kMinFontSize or value > kMaxFontSize then
+							return false, Clamp(value, kMinFontSize, kMaxFontSize)
+						else
+							return true
+						end
+					else
+						return false, GetProgressBarPreferences().fontSize
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Font Outline"],
+				type = "dropdown",
+				description = L["Font outline to use for Progress Bar text."],
+				category = L["Progress Bars"],
+				values = fontOutlineValues,
+				get = function()
+					return GetProgressBarPreferences().fontOutline
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						preferences.fontOutline = key
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Progress Bars"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
+				},
+				category = L["Progress Bars"],
+				updateIndices = { 0, 1, 2, 3 },
+				get = function()
+					return GetProgressBarPreferences().x, GetProgressBarPreferences().y
+				end,
+				set = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						local preferences = GetProgressBarPreferences()
+						preferences.x, preferences.y = x, y
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
+							or "UIParent"
+						local region = _G[regionName] or UIParent
+						if progressBarAnchor then
+							progressBarAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						end
+					end
+				end,
+				enabled = enableProgressBarOption,
+				validate = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						return true
+					else
+						local preferences = GetProgressBarPreferences()
+						return false, preferences.x, preferences.y
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L["Which spot on the Progress Bar container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
+				category = L["Progress Bars"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetProgressBarPreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						ApplyPointToAnchor(
+							AnchorType.ProgressBar,
+							key,
+							preferences.relativeTo,
+							preferences.relativePoint
+						)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Progress Bar container is anchored to. Defaults to UIParent (screen)."],
+				category = L["Progress Bars"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetProgressBarPreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						if progressBarAnchor and progressBarAnchor.frame:GetName() == key then
+							key = preferences.relativeTo
+						end
+						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, key, preferences.relativePoint)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Progress Bar container is anchored to."],
+				category = L["Progress Bars"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetProgressBarPreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local preferences = GetProgressBarPreferences()
+						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, preferences.relativeTo, key)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Enable Cooldown Icons"],
 				type = "checkBoxBesideButton",
 				description = L["Whether to show cooldown-style icons for spell assignments (does not apply to text only assignments)."],
@@ -2069,9 +2068,166 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Cooldown Icon Grow Direction"],
+				label = L["Icon Size"],
+				labels = { L["Width"], L["Height"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The width of Cooldown Icons (5 - 100)."],
+					L["The height of Cooldown Icons (5 - 100)."],
+				},
+				category = L["Cooldown Icons"],
+				get = function()
+					local preferences = GetIconPreferences()
+					return preferences.width, preferences.height
+				end,
+				set = function(key, key2)
+					local width = tonumber(key)
+					local height = tonumber(key2)
+					if width and height then
+						local preferences = GetIconPreferences()
+						preferences.width = width
+						preferences.height = height
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon.frame:SetSize(preferences.width, preferences.height)
+						end)
+					end
+				end,
+				validate = function(key, key2)
+					local preferences = GetIconPreferences()
+					local width = tonumber(key)
+					local height = tonumber(key2)
+					if width and height then
+						if
+							width < kMinIconSize
+							or width > kMaxIconSize
+							or height < kMinIconSize
+							or height > kMaxIconSize
+						then
+							return false,
+								Clamp(width, kMinIconSize, kMaxIconSize),
+								Clamp(height, kMinIconSize, kMaxIconSize)
+						else
+							return true
+						end
+					else
+						return false, preferences.width, preferences.height
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Border Size"],
+				type = "lineEdit",
+				description = L["The size of the border of Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().borderSize
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						value = utilities.Round(value, 0)
+						GetIconPreferences().borderSize = value
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetBorderSize(value)
+						end)
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						value = utilities.Round(value, 0)
+						local preferences = GetIconPreferences()
+						local maxValue = min(preferences.width, preferences.height)
+						if value < kZero or value > maxValue then
+							return false, Clamp(value, kZero, maxValue)
+						else
+							return true
+						end
+					else
+						return false, GetIconPreferences().borderSize
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Spacing"],
+				type = "lineEdit",
+				description = L["Spacing between Cooldown Icons (-1 - 100)."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().spacing
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetIconPreferences().spacing = value
+						if iconAnchor then
+							iconAnchor:SetSpacing(value, value)
+							iconAnchor:DoLayout()
+						end
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kMinSpacing or value > kMaxSpacing then
+							return false, Clamp(value, kMinSpacing, kMaxSpacing)
+						else
+							return true
+						end
+					end
+					return false, GetIconPreferences().spacing
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Transparency"],
+				type = "lineEdit",
+				description = L["Transparency of Cooldown Icons (0.0 - 1.0)."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().alpha
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetIconPreferences().alpha = value
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPProgressBar
+							icon:SetAlpha(value)
+						end)
+					end
+				end,
+				validate = function(key)
+					local value = tonumber(key)
+					if value then
+						if value < kZero or value > kOne then
+							return false, Clamp(value, kZero, kOne)
+						else
+							return true
+						end
+					end
+					return false, GetProgressBarPreferences().alpha
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Cooldown Icons"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Icon Grow Direction"],
 				labels = { L["Horizontal"], L["Vertical"] },
 				type = "radioButtonGroup",
+				updateIndices = { 1 },
 				descriptions = {
 					L["Cooldown Icons grow horizontally."],
 					L["Cooldown Icons grow vertically."],
@@ -2094,7 +2250,7 @@ do
 				enabled = enableIconOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Cooldown Icon Order"],
+				label = L["Icon Order"],
 				labels = function()
 					if GetIconPreferences().orientation == "vertical" then
 						return { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] }
@@ -2103,12 +2259,19 @@ do
 					end
 				end,
 				type = "radioButtonGroup",
+				updateIndices = { -1 },
 				descriptions = {
 					L["Sorts Cooldown Icons by ascending expiration time."],
 					L["Sorts Cooldown Icons by descending expiration time."],
 				},
 				category = L["Cooldown Icons"],
-				values = verticalSortingValues,
+				values = function()
+					if GetIconPreferences().orientation == "vertical" then
+						return verticalSortingValues
+					else
+						return horizontalSortingValues
+					end
+				end,
 				get = function()
 					return GetIconPreferences().soonestExpirationOnBottom
 				end,
@@ -2124,97 +2287,41 @@ do
 				enabled = enableIconOption,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Position"],
-				labels = { L["X"], L["Y"] },
-				type = "doubleLineEdit",
-				descriptions = {
-					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
-					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
-				},
+				label = L["Show Edge"],
+				type = "checkBox",
+				description = L["Whether to show the edge indicator on Cooldown Icons."],
 				category = L["Cooldown Icons"],
-				updateIndices = { 0, 1, 2, 3 },
 				get = function()
-					local p = GetIconPreferences()
-					return p.x, p.y
+					return GetIconPreferences().drawEdge
 				end,
-				set = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
+				set = function(key)
+					if type(key) == "boolean" then
 						local preferences = GetIconPreferences()
-						preferences.x, preferences.y = x, y
-						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
-							or "UIParent"
-						local region = _G[regionName] or UIParent
-						if iconAnchor then
-							iconAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
-						end
+						preferences.drawEdge = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetDraw(preferences.drawEdge, preferences.drawSwipe)
+						end)
 					end
 				end,
 				enabled = enableIconOption,
-				validate = function(key, key2)
-					local x = tonumber(key)
-					local y = tonumber(key2)
-					if x and y then
-						return true
-					else
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Show Swipe"],
+				type = "checkBox",
+				description = L["Whether to show the radial swipe animation on Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().drawSwipe
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
 						local preferences = GetIconPreferences()
-						return false, preferences.x, preferences.y
-					end
-				end,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Point"],
-				type = "dropdown",
-				description = L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
-				category = L["Cooldown Icons"],
-				values = anchorPointValues,
-				updateIndices = { -1, 0, 1, 2 },
-				get = function()
-					return GetIconPreferences().point
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local icons = GetIconPreferences()
-						ApplyPointToAnchor(AnchorType.Icon, key, icons.relativeTo, icons.relativePoint)
-					end
-				end,
-				enabled = enableIconOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Anchor Frame"],
-				type = "frameChooser",
-				description = L["The frame that the Cooldown Icon container is anchored to. Defaults to UIParent (screen)."],
-				category = L["Cooldown Icons"],
-				updateIndices = { -2, -1, 0, 1 },
-				get = function()
-					return GetIconPreferences().relativeTo
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local icons = GetIconPreferences()
-						if iconAnchor and iconAnchor.frame:GetName() == key then
-							key = icons.relativeTo
-						end
-						ApplyPointToAnchor(AnchorType.Icon, icons.point, key, icons.relativePoint)
-					end
-				end,
-				enabled = enableIconOption,
-			} --[[@as EPSettingOption]],
-			{
-				label = L["Relative Anchor Point"],
-				type = "dropdown",
-				description = L["The anchor point on the frame that the Cooldown Icon container is anchored to."],
-				category = L["Cooldown Icons"],
-				values = anchorPointValues,
-				updateIndices = { -3, -2, -1, 0 },
-				get = function()
-					return GetIconPreferences().relativePoint
-				end,
-				set = function(key)
-					if type(key) == "string" then
-						local icons = GetIconPreferences()
-						ApplyPointToAnchor(AnchorType.Icon, icons.point, icons.relativeTo, key)
+						preferences.drawSwipe = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetDraw(preferences.drawEdge, preferences.drawSwipe)
+						end)
 					end
 				end,
 				enabled = enableIconOption,
@@ -2328,6 +2435,133 @@ do
 				enabled = function()
 					return enableIconOption() and GetIconPreferences().showText == true
 				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Text Color"],
+				type = "colorPicker",
+				description = L["Text color to use for text beneath Cooldown Icons."],
+				category = L["Cooldown Icons"],
+				get = function()
+					local r, g, b, a = unpack(GetIconPreferences().textColor)
+					return r, g, b, a
+				end,
+				set = function(r, g, b, a)
+					if type(r) == "number" and type(g) == "number" and type(b) == "number" and type(a) == "number" then
+						GetIconPreferences().textColor = { r, g, b, a }
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetTextColor(r, g, b, a)
+						end)
+					end
+				end,
+				enabled = function()
+					return enableIconOption() and GetIconPreferences().showText == true
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = "",
+				get = function()
+					return ""
+				end,
+				set = function() end,
+				type = "horizontalLine",
+				category = L["Cooldown Icons"],
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Position"],
+				labels = { L["X"], L["Y"] },
+				type = "doubleLineEdit",
+				descriptions = {
+					L["The horizontal offset from the Relative Anchor Point to the Anchor Point."],
+					L["The vertical offset from the Relative Anchor Point to the Anchor Point."],
+				},
+				category = L["Cooldown Icons"],
+				updateIndices = { 0, 1, 2, 3 },
+				get = function()
+					local p = GetIconPreferences()
+					return p.x, p.y
+				end,
+				set = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						local preferences = GetIconPreferences()
+						preferences.x, preferences.y = x, y
+						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
+							or "UIParent"
+						local region = _G[regionName] or UIParent
+						if iconAnchor then
+							iconAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						end
+					end
+				end,
+				enabled = enableIconOption,
+				validate = function(key, key2)
+					local x = tonumber(key)
+					local y = tonumber(key2)
+					if x and y then
+						return true
+					else
+						local preferences = GetIconPreferences()
+						return false, preferences.x, preferences.y
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Point"],
+				type = "dropdown",
+				description = L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
+				category = L["Cooldown Icons"],
+				values = anchorPointValues,
+				updateIndices = { -1, 0, 1, 2 },
+				get = function()
+					return GetIconPreferences().point
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						ApplyPointToAnchor(AnchorType.Icon, key, icons.relativeTo, icons.relativePoint)
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Anchor Frame"],
+				type = "frameChooser",
+				description = L["The frame that the Cooldown Icon container is anchored to. Defaults to UIParent (screen)."],
+				category = L["Cooldown Icons"],
+				updateIndices = { -2, -1, 0, 1 },
+				get = function()
+					return GetIconPreferences().relativeTo
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						if iconAnchor and iconAnchor.frame:GetName() == key then
+							key = icons.relativeTo
+						end
+						ApplyPointToAnchor(AnchorType.Icon, icons.point, key, icons.relativePoint)
+					end
+				end,
+				enabled = enableIconOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Relative Anchor Point"],
+				type = "dropdown",
+				description = L["The anchor point on the frame that the Cooldown Icon container is anchored to."],
+				category = L["Cooldown Icons"],
+				values = anchorPointValues,
+				updateIndices = { -3, -2, -1, 0 },
+				get = function()
+					return GetIconPreferences().relativePoint
+				end,
+				set = function(key)
+					if type(key) == "string" then
+						local icons = GetIconPreferences()
+						ApplyPointToAnchor(AnchorType.Icon, icons.point, icons.relativeTo, key)
+					end
+				end,
+				enabled = enableIconOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Play Text to Speech at Countdown Start"],
@@ -2913,7 +3147,7 @@ do
 
 		local cooldownOverrideTab = { L["Cooldown Overrides"], cooldownOverrideOptions }
 		local controlsTab = { L["Controls"], controlOptions, { L["Assignment Timeline"], L["Timeline"] } }
-		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Text to Speech"], L["Sound"] }
+		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Cooldown Icons"], L["Text to Speech"], L["Sound"] }
 		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
 		local viewTab = { L["View"], viewOptions, { L["Assignment Timeline"], L["Boss Ability Timeline"] } }
 		local profileTab = { L["Profile"], profileOptions }

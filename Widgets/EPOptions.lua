@@ -547,6 +547,16 @@ local function GetLabels(labels)
 	end
 end
 
+---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
+---@return table<integer, DropdownItemData>
+local function GetValues(values)
+	if type(values) == "function" then
+		return values()
+	else
+		return values
+	end
+end
+
 ---@param dropdown EPDropdown
 ---@param values table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
 ---@param option EPSettingOption
@@ -713,12 +723,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	radioButtonGroup:SetSpacing(unpack(radioButtonGroupSpacing))
 	radioButtonGroup:SetFullWidth(true)
 	local radioButtonGroupChildren = {}
-	local values = {}
-	if type(option.values) == "table" then
-		values = option.values --[[@as table]]
-	elseif type(option.values) == "function" then
-		values = option.values()
-	end
+	local values = GetValues(option.values)
 	local relativeWidth = 1.0 / #values
 	for _, itemValueAndText in pairs(values) do
 		local radioButton = AceGUI:Create("EPRadioButton")
@@ -734,6 +739,14 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
 	if option.updateIndices then
 		UpdateUpdateIndices(self.updateIndices, option, index, function()
+			if type(option.values) == "function" then
+				local v = GetValues(option.values)
+				for i, child in ipairs(radioButtonGroup.children) do
+					---@cast child EPRadioButton
+					child:SetLabelText(v[i].text)
+					child:SetUserData("key", v[i].itemValue)
+				end
+			end
 			for _, child in ipairs(radioButtonGroup.children) do
 				child:SetToggled(option.get() == child:GetUserData("key"))
 			end
