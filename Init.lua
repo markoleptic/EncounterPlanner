@@ -610,18 +610,18 @@ function Private.classes.RosterEntry:New(o)
 end
 
 ---@class KeyBindings
----@field pan MouseButtonKeyBinding
----@field zoom ScrollKeyBinding
----@field scroll ScrollKeyBinding
----@field editAssignment MouseButtonKeyBinding
----@field newAssignment MouseButtonKeyBinding
----@field duplicateAssignment MouseButtonKeyBinding
+---@field pan MouseButtonKeyBinding Controls panning the timeline left and right.
+---@field zoom ScrollKeyBinding Controls zooming in on the timeline.
+---@field scroll ScrollKeyBinding Controls scrolling the timeline up and down.
+---@field editAssignment MouseButtonKeyBinding Controls opening the assignment editor or dragging an assignment.
+---@field newAssignment MouseButtonKeyBinding Controls creating a new assignment and opening the assignment editor.
+---@field duplicateAssignment MouseButtonKeyBinding Controls duplicating an assignment and opening the assignment editor.
 
 ---@class TimelineRows
----@field numberOfAssignmentsToShow integer
----@field numberOfBossAbilitiesToShow integer
----@field assignmentHeight integer
----@field bossAbilityHeight integer
+---@field numberOfAssignmentsToShow integer Number of visible rows in the assignment timeline.
+---@field numberOfBossAbilitiesToShow integer Number of visible rows in the boss timeline.
+---@field assignmentHeight integer Height of individual rows in the assignment timeline.
+---@field bossAbilityHeight integer Height of individual rows in the boss timeline.
 
 ---@class Preferences
 ---@field lastOpenTab string
@@ -717,12 +717,12 @@ local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 ---@field version string
 
 ---@class TutorialData
----@field completed boolean
----@field lastStepName string
----@field skipped boolean
----@field revision integer
----@field firstSpell integer
----@field secondSpell integer
+---@field completed boolean Whether the tutorial was fully completed by any character.
+---@field lastStepName string The last successfully completed tutorial step.
+---@field skipped boolean Whether the tutorial was explicitly skipped or closed mid-tutorial..
+---@field revision integer Last saved tutorial revision.
+---@field firstSpell integer First custom spell chosen during the tutorial.
+---@field secondSpell integer Second custom spell chosen during the tutorial.
 
 ---@class GlobalProfile
 ---@field tutorial TutorialData

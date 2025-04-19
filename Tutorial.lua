@@ -2249,7 +2249,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				if not self.optionsMenu then
 					self:CreateOptionsMenu()
 				end
-				self.optionsMenu:SetCurrentTab(L["Reminder"])
+				self.optionsMenu:SetCurrentTab(L["Reminder"], L["Reminder"])
 				for _, widget in ipairs(self.optionsMenu.tabTitleContainer.children) do
 					if widget.type == "EPButton" and widget.button then
 						---@cast widget EPButton

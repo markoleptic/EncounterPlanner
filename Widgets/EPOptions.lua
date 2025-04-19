@@ -1832,8 +1832,12 @@ end
 
 ---@param self EPOptions
 ---@param tab string
-local function SetCurrentTab(self, tab)
+---@param fallbackTab string
+local function SetCurrentTab(self, tab, fallbackTab)
 	self.activeTab = ""
+	if not self.tabCategories[tab] then
+		tab = fallbackTab
+	end
 	for _, child in ipairs(self.tabTitleContainer.children) do
 		if child.button:GetText() == tab and not child:IsToggled() then
 			child:Toggle()

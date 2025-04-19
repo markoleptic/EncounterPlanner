@@ -3232,7 +3232,7 @@ function Private:CreateOptionsMenu()
 		optionsMenu:AddOptionTab(viewTab[1], viewTab[2], viewTab[3])
 		optionsMenu:AddOptionTab(profileTab[1], profileTab[2], profileTab[3])
 		optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab or L["Cooldown Overrides"])
+		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab, L["Cooldown Overrides"])
 		optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 		self.optionsMenu = optionsMenu
