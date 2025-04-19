@@ -2610,7 +2610,7 @@ do
 			{
 				label = L["Anchor Point"],
 				type = "dropdown",
-				description = L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."],
+				description = L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left expands to the right, Right expands to the left, Center from center."],
 				category = L["Cooldown Icons"],
 				values = anchorPointValues,
 				updateIndices = { -1, 0, 1, 2 },

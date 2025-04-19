@@ -547,7 +547,7 @@ L["Whether to show reminder text beneath Cooldown Icons."] = true
 L["Whether to show textures representing player spell cooldown durations."] = true
 L["Whether to show the edge indicator on Cooldown Icons."] = true
 L["Whether to show the radial swipe animation on Cooldown Icons."] = true
-L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."] =
+L["Which spot on the Cooldown Icon container is fixed; Bottom will expand upwards, Top downwards, Left expands to the right, Right expands to the left, Center from center."] =
 	true
 L["Which spot on the Message container is fixed; Bottom will expand upwards, Top downwards, Left/Right/Center from center."] =
 	true
