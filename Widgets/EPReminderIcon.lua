@@ -5,27 +5,12 @@ local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local floor = math.floor
-local GetTime = GetTime
-local min = math.min
-local next = next
 local unpack = unpack
 
 local defaultFrameHeight = 30
 local defaultFrameWidth = 30
-local defaultTextPadding = 4
-local defaultDisplayTime = 2
-local defaultFadeDuration = 1.2
-local timerTickRate = 0.1
-local timeThreshold = 0.1
-local secondsInMinute = 60.0
-local slightlyUnderSecondsInMinute = secondsInMinute - timeThreshold
-local slightlyUnderTenSeconds = 10.0 - timeThreshold
-local greaterThanMinuteFormat = "%d:%02d"
-local greaterThanTenSecondsFormat = "%.0f"
-local lessThanTenSecondsFormat = "%.1f"
-
 local backdropBorderColor = { 0, 0, 0, 1 }
-local kMinimumFontSize = 6
+local kMinimumFontSize = 8
 
 local testFontString = UIParent:CreateFontString(nil, "OVERLAY")
 testFontString:Hide()

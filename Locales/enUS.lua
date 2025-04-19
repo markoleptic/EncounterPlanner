@@ -529,6 +529,7 @@ L["Vertical"] = true
 L["View"] = true
 L["Number of Visible Rows"] = true
 L["Whether to attempt to shrink reminder text beneath Cooldown Icons to fit within the Cooldown Icon width."] = true
+L["Whether to attempt to shrink reminder text to fit within Progress Bars. Does not affect duration text size."] = true
 L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."] =
 	true
 L["Whether to enable reminders for assignments."] = true

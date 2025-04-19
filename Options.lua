@@ -1521,6 +1521,12 @@ do
 						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
 							---@cast progressBar EPProgressBar
 							progressBar:SetProgressBarSize(preferences.width, preferences.height)
+							progressBar:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit
+							)
 						end)
 					end
 				end,
@@ -1849,6 +1855,31 @@ do
 				category = L["Progress Bars"],
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Shrink Text to Fit"],
+				type = "checkBox",
+				description = L["Whether to attempt to shrink reminder text to fit within Progress Bars. Does not affect duration text size."],
+				category = L["Progress Bars"],
+				get = function()
+					return GetProgressBarPreferences().shrinkTextToFit
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetProgressBarPreferences()
+						preferences.shrinkTextToFit = key
+						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
+							---@cast progressBar EPProgressBar
+							progressBar:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit
+							)
+						end)
+					end
+				end,
+				enabled = enableProgressBarOption,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Font"],
 				type = "dropdown",
 				itemsAreFonts = true,
@@ -1864,7 +1895,12 @@ do
 						preferences.font = key
 						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
 							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							progressBar:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit
+							)
 							progressBar:SetIconAndText(
 								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
 								L["Progress Bar Text"]
@@ -1889,7 +1925,12 @@ do
 						preferences.fontSize = value
 						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
 							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							progressBar:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit
+							)
 						end)
 					end
 				end,
@@ -1922,7 +1963,12 @@ do
 						preferences.fontOutline = key
 						CallAnchorFunction(AnchorType.ProgressBar, function(progressBar)
 							---@cast progressBar EPProgressBar
-							progressBar:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							progressBar:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit
+							)
 						end)
 					end
 				end,

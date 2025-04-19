@@ -279,6 +279,7 @@
 ---@field color Color Foreground color for Progress Bars.
 ---@field backgroundColor Color Background color for Progress Bars.
 ---@field spacing integer Spacing between Progress Bars.
+---@field shrinkTextToFit boolean Whether to decrease font size to attempt to fit text without clipping.
 
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean If true, only shows Messages at expiration time.

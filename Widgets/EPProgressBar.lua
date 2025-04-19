@@ -79,6 +79,56 @@ end
 
 sharedUpdater:SetScript("OnLoop", SharedBarUpdate)
 
+local kMinimumFontSize = 8
+local testFontString = UIParent:CreateFontString(nil, "OVERLAY")
+testFontString:Hide()
+
+---@param text string
+---@param font string
+---@param fontHeight number
+---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+---@param maxWidth integer
+---@return integer
+local function CalculateFontSizeToFit(text, font, fontHeight, flags, maxWidth)
+	testFontString:SetFont(font, fontHeight, flags)
+	testFontString:SetText(text)
+
+	if testFontString:GetStringWidth() <= maxWidth then
+		return fontHeight
+	end
+
+	local minSize = kMinimumFontSize
+	local bestSize = minSize
+
+	while minSize <= fontHeight do
+		local mid = floor((minSize + fontHeight) / 2)
+		testFontString:SetFont(font, mid)
+		local width = testFontString:GetStringWidth()
+
+		if width <= maxWidth then
+			bestSize = mid
+			minSize = mid + 1
+		else
+			fontHeight = mid - 1
+		end
+	end
+
+	return bestSize
+end
+
+---@param text string
+---@param font string?
+---@param fontHeight number
+---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+---@return number
+local function GetRequiredWidthForText(text, font, fontHeight, flags)
+	if font then
+		testFontString:SetFont(font, fontHeight, flags)
+	end
+	testFontString:SetText(text)
+	return testFontString:GetStringWidth()
+end
+
 ---@param self EPProgressBar
 local function RestyleBar(self)
 	self.iconBackdrop:ClearAllPoints()
@@ -114,15 +164,19 @@ local function RestyleBar(self)
 	self.label:ClearAllPoints()
 	self.duration:ClearAllPoints()
 	if self.label:GetJustifyH() == "LEFT" and self.duration:GetJustifyH() == "RIGHT" then
-		local stringWidth = self.statusBar:GetWidth() - 4
-		self.label:SetWidth(stringWidth * 0.8)
-		self.duration:SetWidth(stringWidth * 0.2)
+		local stringWidth = self.statusBar:GetWidth()
+		local durationWidth = GetRequiredWidthForText("10.0", self.duration:GetFont()) - 2
+		local labelWidth = stringWidth - durationWidth - 2
+		self.label:SetWidth(labelWidth)
+		self.duration:SetWidth(durationWidth)
 		self.label:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
 		self.duration:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
 	elseif self.label:GetJustifyH() == "RIGHT" and self.duration:GetJustifyH() == "LEFT" then
-		local stringWidth = self.statusBar:GetWidth() - 4
-		self.label:SetWidth(stringWidth * 0.8)
-		self.duration:SetWidth(stringWidth * 0.2)
+		local stringWidth = self.statusBar:GetWidth()
+		local durationWidth = GetRequiredWidthForText("10.0", self.duration:GetFont()) - 2
+		local labelWidth = stringWidth - durationWidth - 2
+		self.label:SetWidth(labelWidth)
+		self.duration:SetWidth(durationWidth)
 		self.duration:SetPoint("LEFT", self.statusBar, "LEFT", 2, 0)
 		self.label:SetPoint("RIGHT", self.statusBar, "RIGHT", -2, 0)
 	else
@@ -168,10 +222,30 @@ local function OnRelease(self)
 	self.iconTexture = nil
 end
 
+-- Requires that the text already be set.
 ---@param self EPProgressBar
-local function SetFont(self, ...)
-	self.label:SetFont(...)
-	self.duration:SetFont(...)
+---@param fontFile string
+---@param size integer
+---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+---@param shrinkTextToFit boolean If true, the text will attempt to be shrunk to fit within the status bar.
+local function SetFont(self, fontFile, size, flags, shrinkTextToFit)
+	local labelFontSize, durationFontSize = size, size
+	if fontFile then
+		if shrinkTextToFit then
+			local availableLabelWidth = self.frame:GetWidth() - 2
+			local durationWidth = GetRequiredWidthForText("10.0", fontFile, durationFontSize, flags) - 2
+			availableLabelWidth = availableLabelWidth - durationWidth - 2
+			local frameHeight = self.frame:GetHeight()
+			if self.iconTexture then
+				availableLabelWidth = availableLabelWidth - frameHeight
+			end
+
+			labelFontSize =
+				CalculateFontSizeToFit(self.label:GetText(), fontFile, labelFontSize, flags, availableLabelWidth)
+		end
+	end
+	self.label:SetFont(fontFile, labelFontSize, flags)
+	self.duration:SetFont(fontFile, durationFontSize, flags)
 	if self.running then
 		RestyleBar(self)
 	end
@@ -325,12 +399,11 @@ local function Set(self, preferences, text, duration, icon)
 	self.iconPosition = preferences.iconPosition
 	self.fill = preferences.fill
 	self.frame:SetAlpha(preferences.alpha)
-	self.label:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-	self.duration:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	self.remaining = duration
 	self.iconTexture = icon
-	self.label:SetText(text)
 	self.icon:SetTexture(icon)
+	self.label:SetText(text)
+	SetFont(self, preferences.font, preferences.fontSize, preferences.fontOutline, preferences.shrinkTextToFit)
 end
 
 ---@param self EPProgressBar

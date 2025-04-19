@@ -519,6 +519,7 @@ local defaults = {
 					color = { ccA, ccR, ccB, 0.90 },
 					backgroundColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 },
 					spacing = 0,
+					shrinkTextToFit = true,
 				},
 				icons = {
 					enabled = true,
