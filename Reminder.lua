@@ -68,6 +68,7 @@ local combatLogEventMap = {
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
+local iconContainer = nil ---@type EPContainer|nil
 local messageContainer = nil ---@type EPContainer|nil
 local progressBarContainer = nil ---@type EPContainer|nil
 
@@ -83,7 +84,7 @@ local combatLogEventReminders = {} -- Table of active reminders for responding t
 
 ---@type table<integer, table<string, FunctionContainer>> -- Spell ID -> Timer ID -> Timer
 local cancelTimerIfCasted = {}
----@type table<integer, table<string, EPProgressBar|EPReminderMessage>> -- Spell ID -> Timer ID -> Widget
+---@type table<integer, table<string, EPProgressBar|EPReminderMessage|EPReminderIcon>> -- Spell ID -> Timer ID -> Widget
 local hideWidgetIfCasted = {}
 ---@type table<integer, table<string, {frame: Frame, targetGUID: integer|nil}>> -- Spell ID -> [{Frame, Target GUID}]
 local stopGlowIfCasted = {}
@@ -107,10 +108,19 @@ local updateTimerIterations = 30000
 local defaultNoSpellIDGlowDuration = 5.0
 local maxGlowDuration = 10.0
 local updateTimer = nil ---@type FunctionContainer|nil
-local messagesToAdd = {}
-local progressBarsToAdd = {}
-local messagesToRemove = {}
-local progressBarsToRemove = {}
+
+local iconsToAdd = {} ---@type table<integer, EPReminderIcon>
+local iconsToRemove = {} ---@type table<integer, EPReminderIcon>
+local progressBarsToAdd = {} ---@type table<integer, EPProgressBar>
+local progressBarsToRemove = {} ---@type table<integer, EPProgressBar>
+local messagesToAdd = {} ---@type table<integer, EPReminderMessage>
+local messagesToRemove = {} ---@type table<integer, EPReminderMessage>
+
+local widgetTypeToRemoveContainer = {
+	["EPProgressBar"] = progressBarsToRemove,
+	["EPReminderIcon"] = iconsToRemove,
+	["EPReminderMessage"] = messagesToRemove,
+}
 
 local function ResetLocalVariables()
 	if updateTimer and not updateTimer:IsCancelled() then
@@ -168,6 +178,12 @@ local function ResetLocalVariables()
 	wipe(bufferDurations)
 	wipe(activeBuffers)
 
+	for _, widget in ipairs(iconsToAdd) do
+		if widget then
+			AceGUI:Release(widget)
+		end
+	end
+
 	for _, widget in ipairs(messagesToAdd) do
 		if widget then
 			AceGUI:Release(widget)
@@ -180,16 +196,21 @@ local function ResetLocalVariables()
 		end
 	end
 
+	wipe(iconsToAdd)
+	wipe(iconsToRemove)
 	wipe(messagesToAdd)
-	wipe(progressBarsToAdd)
 	wipe(messagesToRemove)
+	wipe(progressBarsToAdd)
 	wipe(progressBarsToRemove)
 
 	if messageContainer then
-		messageContainer:Release()
+		AceGUI:Release(messageContainer)
 	end
 	if progressBarContainer then
-		progressBarContainer:Release()
+		AceGUI:Release(progressBarContainer)
+	end
+	if iconContainer then
+		AceGUI:Release(iconContainer)
 	end
 
 	isSimulating = false
@@ -233,12 +254,12 @@ local function CreateTimerWithCleanup(duration, func, ...)
 		end
 	end
 
-	local ID = GenerateUniqueID()
-	timer.ID = ID
+	local uniqueID = GenerateUniqueID()
+	timer.ID = uniqueID
 	for i = 1, args.n do
 		local tableRef = args[i]
 		if tableRef then
-			tableRef[ID] = timer
+			tableRef[uniqueID] = timer
 		end
 	end
 	return timer
@@ -257,9 +278,15 @@ local function ProcessNextOperation()
 		progressBarContainer:AddChildren(unpack(progressBarsToAdd))
 		progressBarsToAdd = {}
 	end
+	if iconContainer then
+		iconContainer:RemoveChildren(unpack(iconsToRemove))
+		iconsToRemove = {}
+		iconContainer:AddChildren(unpack(iconsToAdd))
+		iconsToAdd = {}
+	end
 end
 
--- Creates a container for adding progress bars to using preferences.
+-- Creates a container for adding messages to using preferences.
 ---@param preferences MessagePreferences
 local function CreateMessageContainer(preferences)
 	if not messageContainer then
@@ -281,7 +308,18 @@ local function CreateProgressBarContainer(preferences)
 	end
 end
 
----@param widget EPReminderMessage|EPProgressBar
+-- Creates a container for adding icons to using preferences.
+---@param preferences IconPreferences
+local function CreateIconContainer(preferences)
+	if not iconContainer then
+		iconContainer = CreateReminderContainer(preferences, preferences.spacing)
+		iconContainer:SetCallback("OnRelease", function()
+			iconContainer = nil
+		end)
+	end
+end
+
+---@param widget EPReminderMessage|EPProgressBar|EPReminderIcon
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
 ---@param isProgressBar boolean
@@ -335,6 +373,21 @@ local function AddMessage(assignment, duration, reminderText, icon, messagePrefe
 	message:Start(duration)
 end
 
+-- Creates an EPReminderIcon widget and schedules its cleanup based on completion. Starts the countdown.
+---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param duration number
+---@param reminderText string
+---@param icon integer
+---@param iconPreferences IconPreferences
+local function AddIcon(assignment, duration, reminderText, icon, iconPreferences)
+	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
+	local reminderIcon = AceGUI:Create("EPReminderIcon")
+	reminderIcon:Set(iconPreferences, reminderText, icon)
+	CreateReminderWidgetCallback(reminderIcon, assignment.spellID, bossPhaseOrderIndex, false)
+	tinsert(iconsToAdd, reminderIcon)
+	reminderIcon:Start(GetTime(), duration)
+end
+
 -- Starts glowing the frame for the unit and creates a timer to stop the glowing of the frame.
 ---@param unit string
 ---@param frame Frame
@@ -375,6 +428,9 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	local spellID = assignment.spellID
 	local icon = spellID > constants.kTextAssignmentSpellID and GetSpellTexture(spellID) or nil
 
+	if reminderPreferences.icons.enabled and icon then
+		AddIcon(assignment, duration, reminderText, icon, reminderPreferences.icons)
+	end
 	if reminderPreferences.progressBars.enabled then
 		AddProgressBar(assignment, duration, reminderText, icon, reminderPreferences.progressBars)
 	end
@@ -490,7 +546,9 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 	if not progressBarContainer then
 		CreateProgressBarContainer(preferences.progressBars)
 	end
-
+	if not iconContainer then
+		CreateIconContainer(preferences.icons)
+	end
 	for _, plan in pairs(plans) do
 		local roster = plan.roster
 		local assignments = plan.assignments
@@ -539,7 +597,7 @@ local function ApplyBuffer(spellID, combatLogEventType)
 	end, bufferTimers)
 end
 
--- Cancels active timers and releases active widgets associated with a spellID.
+-- Cancels active timers and queues widgets associated with a spellID for release.
 ---@param spellID integer
 local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	if type(cancelTimerIfCasted[spellID]) == "table" then
@@ -551,10 +609,8 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 	if type(hideWidgetIfCasted[spellID]) == "table" then
 		for _, widget in pairs(hideWidgetIfCasted[spellID]) do
-			if widget.type == "EPReminderMessage" then
-				tinsert(messagesToRemove, widget)
-			elseif widget.type == "EPProgressBar" then
-				tinsert(progressBarsToRemove, widget)
+			if widgetTypeToRemoveContainer[widget.type] then
+				tinsert(widgetTypeToRemoveContainer[widget.type], widget)
 			end
 		end
 		hideWidgetIfCasted[spellID] = nil
@@ -628,10 +684,10 @@ local function HandleCombatLogEventUnfiltered()
 				end
 			end
 			if stopGlowIfCasted[spellID] then
-				for ID, obj in pairs(stopGlowIfCasted[spellID]) do
+				for glowSpellID, obj in pairs(stopGlowIfCasted[spellID]) do
 					if destGUID == obj.targetGUID then
-						if frameGlowTimers[ID] and not frameGlowTimers[ID]:IsCancelled() then
-							frameGlowTimers[ID]:Invoke(frameGlowTimers[ID])
+						if frameGlowTimers[glowSpellID] and not frameGlowTimers[glowSpellID]:IsCancelled() then
+							frameGlowTimers[glowSpellID]:Invoke(frameGlowTimers[glowSpellID])
 						end
 					end
 				end
