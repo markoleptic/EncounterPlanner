@@ -249,11 +249,11 @@ do
 
 	---@return table<integer, integer>
 	function Utilities.GetSpecIDs()
-		local IDs = {}
+		local specIDs = {}
 		for specID, _ in pairs(specIDToType) do
-			tinsert(IDs, specID)
+			tinsert(specIDs, specID)
 		end
-		return IDs
+		return specIDs
 	end
 
 	---@param specID integer
@@ -353,11 +353,11 @@ function Utilities.CreateUniquePlanName(plans, newPlanName)
 end
 
 ---@param assignments table<integer, Assignment>
----@param ID integer
+---@param assignmentID integer
 ---@return Assignment|TimedAssignment|CombatLogEventAssignment|nil
-function Utilities.FindAssignmentByUniqueID(assignments, ID)
+function Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 	for _, assignment in pairs(assignments) do
-		if assignment.uniqueID == ID then
+		if assignment.uniqueID == assignmentID then
 			return assignment
 		end
 	end

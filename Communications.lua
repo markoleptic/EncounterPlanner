@@ -151,9 +151,9 @@ do
 	---@param serializedPlan SerializedPlan
 	---@return Plan
 	function planSerializer.DeserializePlan(serializedPlan)
-		local ID = serializedPlan[1]
+		local planID = serializedPlan[1]
 		local name = serializedPlan[2]
-		local plan = Plan:New({}, name, ID)
+		local plan = Plan:New({}, name, planID)
 		plan.dungeonEncounterID = serializedPlan[3]
 		plan.instanceID = serializedPlan[4]
 		for _, serializedAssignment in ipairs(serializedPlan[5]) do
@@ -307,8 +307,8 @@ do
 	local activePlanReceiveMessageBoxDataIDs = {} ---@type table<integer, string>
 
 	function commObject.Reset()
-		for _, ID in ipairs(activePlanReceiveMessageBoxDataIDs) do
-			RemoveFromMessageQueue(ID)
+		for _, uniqueID in ipairs(activePlanReceiveMessageBoxDataIDs) do
+			RemoveFromMessageQueue(uniqueID)
 		end
 		wipe(activePlanReceiveMessageBoxDataIDs)
 		for _, obj in pairs(activePlanIDsBeingSent) do
@@ -345,8 +345,8 @@ do
 
 	---@param IDToRemove string
 	local function RemoveFromActiveMessageBoxDataIDs(IDToRemove)
-		for index, ID in ipairs(activePlanReceiveMessageBoxDataIDs) do
-			if ID == IDToRemove then
+		for index, uniqueID in ipairs(activePlanReceiveMessageBoxDataIDs) do
+			if uniqueID == IDToRemove then
 				tremove(activePlanReceiveMessageBoxDataIDs, index)
 				break
 			end
@@ -356,9 +356,9 @@ do
 	---@param plan Plan
 	---@param sender string
 	local function CreateImportMessageBox(plan, sender)
-		local ID = Private.GenerateUniqueID()
+		local uniqueID = Private.GenerateUniqueID()
 		local messageBoxData = {
-			ID = ID,
+			ID = uniqueID,
 			isCommunication = true,
 			title = L["Plan Received"],
 			message = format(
@@ -376,11 +376,11 @@ do
 				if plan then
 					ImportPlan(plan, sender)
 				end
-				RemoveFromActiveMessageBoxDataIDs(ID)
+				RemoveFromActiveMessageBoxDataIDs(uniqueID)
 			end,
 			rejectButtonText = L["Reject"],
 			rejectButtonCallback = function()
-				RemoveFromActiveMessageBoxDataIDs(ID)
+				RemoveFromActiveMessageBoxDataIDs(uniqueID)
 			end,
 			buttonsToAdd = {
 				{
@@ -390,7 +390,7 @@ do
 						if plan then
 							ImportPlan(plan, sender)
 						end
-						RemoveFromActiveMessageBoxDataIDs(ID)
+						RemoveFromActiveMessageBoxDataIDs(uniqueID)
 					end,
 				},
 			},

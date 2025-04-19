@@ -191,9 +191,9 @@ local function SetAssignmentType(self, assignmentType)
 end
 
 ---@param self EPAssignmentEditor
----@param ID integer
-local function SetAssignmentID(self, ID)
-	self.assignmentID = ID
+---@param assignmentID integer
+local function SetAssignmentID(self, assignmentID)
+	self.assignmentID = assignmentID
 end
 
 ---@param self EPAssignmentEditor

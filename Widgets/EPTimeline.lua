@@ -577,8 +577,8 @@ end
 
 ---@param self EPTimeline
 local function ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
-	for _, ID in ipairs(selectedAssignmentIDsFromBossAbilityFrameEnter) do
-		self:ClearSelectedAssignment(ID, true)
+	for _, assignmentID in ipairs(selectedAssignmentIDsFromBossAbilityFrameEnter) do
+		self:ClearSelectedAssignment(assignmentID, true)
 	end
 	wipe(selectedAssignmentIDsFromBossAbilityFrameEnter)
 end
@@ -601,8 +601,8 @@ local function HandleBossAbilityBarEnter(self, frame)
 		end
 	end
 	self:SelectBossAbility(spellID, spellCount)
-	for _, ID in ipairs(selectedAssignmentIDsFromBossAbilityFrameEnter) do
-		self:SelectAssignment(ID)
+	for _, assignmentID in ipairs(selectedAssignmentIDsFromBossAbilityFrameEnter) do
+		self:SelectAssignment(assignmentID)
 	end
 end
 
