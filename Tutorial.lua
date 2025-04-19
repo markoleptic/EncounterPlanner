@@ -770,17 +770,6 @@ local function FormatText(...)
 	return concat(formatted, " ") .. "."
 end
 
----@class TutorialStep
----@field name string
----@field text string
----@field enableNextButton boolean|fun():boolean
----@field frame Frame|table|nil
----@field OnStepActivated nil|fun(self: TutorialStep):boolean
----@field PreStepDeactivated fun(self: TutorialStep, incrementing: boolean, cleanUp: boolean|nil)|nil
----@field HighlightFrameAndPositionTutorialFrame fun()|nil
----@field additionalVerticalOffset number|nil
----@field ignoreNextAssignmentEditorReleased boolean|nil
-
 ---@param self Private
 ---@param setCurrentStep fun(previousStepIndex: integer, currentStepIndex: integer)
 ---@return table<integer, TutorialStep>

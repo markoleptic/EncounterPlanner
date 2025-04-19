@@ -63,11 +63,6 @@ local combatLogEventMap = {
 	["UD"] = "UNIT_DIED",
 }
 
----@class CombatLogEventAssignmentData
----@field preferences ReminderPreferences
----@field assignment CombatLogEventAssignment
----@field roster table<string, RosterEntry>
-
 local iconContainer = nil ---@type EPContainer|nil
 local messageContainer = nil ---@type EPContainer|nil
 local progressBarContainer = nil ---@type EPContainer|nil

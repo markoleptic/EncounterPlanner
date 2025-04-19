@@ -788,22 +788,6 @@ do
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
 
-	---@class FailedInfo
-	---@field bossName string|nil
-	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
-
-	---@class FailTable
-	---@field bossName string|nil
-	---@field combatLogEventSpellIDs table<integer, table<integer, integer>>
-	---@field onlyInMaxCastTimeTable table<integer, table<integer, integer>>
-
-	---@class LoggedPlanInfo
-	---@field overlapCount integer
-	---@field pastDurationCount integer
-	---@field spellIDsCount integer
-	---@field spellCountsCount integer
-	---@field maxSpellCountsCount integer
-
 	local loggedPlanInfo = {} ---@type table<string, LoggedPlanInfo>
 
 	---@param spellID integer
