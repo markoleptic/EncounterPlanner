@@ -2506,11 +2506,10 @@ do
 		container:SetSpacing(spacing or 0, spacing or 0)
 		if preferences.orientation then
 			container.content.orientation = preferences.orientation
-			container.content.sortAscending = preferences.soonestExpirationOnBottom
 		else
 			container.content.orientation = "vertical"
-			container.content.sortAscending = preferences.soonestExpirationOnBottom
 		end
+		container.content.sortAscending = preferences.soonestExpirationOnBottom
 		local regionName = Utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 		local region = _G[regionName] or UIParent
 		local point, relativePoint = preferences.point, preferences.relativePoint

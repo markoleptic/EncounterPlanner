@@ -268,21 +268,21 @@ end
 local function ProcessNextOperation()
 	if messageContainer then
 		messageContainer:RemoveChildren(unpack(messagesToRemove))
-		messagesToRemove = {}
+		wipe(messagesToRemove)
 		messageContainer:AddChildren(unpack(messagesToAdd))
-		messagesToAdd = {}
+		wipe(messagesToAdd)
 	end
 	if progressBarContainer then
 		progressBarContainer:RemoveChildren(unpack(progressBarsToRemove))
-		progressBarsToRemove = {}
+		wipe(progressBarsToRemove)
 		progressBarContainer:AddChildren(unpack(progressBarsToAdd))
-		progressBarsToAdd = {}
+		wipe(progressBarsToAdd)
 	end
 	if iconContainer then
 		iconContainer:RemoveChildren(unpack(iconsToRemove))
-		iconsToRemove = {}
+		wipe(iconsToRemove)
 		iconContainer:AddChildren(unpack(iconsToAdd))
-		iconsToAdd = {}
+		wipe(iconsToAdd)
 	end
 end
 
@@ -322,19 +322,14 @@ end
 ---@param widget EPReminderMessage|EPProgressBar|EPReminderIcon
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
----@param isProgressBar boolean
-local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex, isProgressBar)
+local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex)
 	local uniqueID = GenerateUniqueID()
 
 	widget:SetCallback("Completed", function(w)
 		if hideWidgetIfCasted[spellID] then
 			hideWidgetIfCasted[spellID][uniqueID] = nil
 		end
-		if isProgressBar then
-			tinsert(progressBarsToRemove, w)
-		else
-			tinsert(messagesToRemove, w)
-		end
+		tinsert(widgetTypeToRemoveContainer[w.type], w)
 	end)
 
 	if hideIfAlreadyCasted and spellID > kTextAssignmentSpellID then
@@ -353,7 +348,7 @@ local function AddProgressBar(assignment, duration, reminderText, icon, progress
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local progressBar = AceGUI:Create("EPProgressBar")
 	progressBar:Set(progressBarPreferences, reminderText, duration, icon)
-	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex, true)
+	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex)
 	tinsert(progressBarsToAdd, progressBar)
 	progressBar:Start()
 end
@@ -368,7 +363,7 @@ local function AddMessage(assignment, duration, reminderText, icon, messagePrefe
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local message = AceGUI:Create("EPReminderMessage")
 	message:Set(messagePreferences, reminderText, icon)
-	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex, false)
+	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex)
 	tinsert(messagesToAdd, message)
 	message:Start(duration)
 end
@@ -383,7 +378,7 @@ local function AddIcon(assignment, duration, reminderText, icon, iconPreferences
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local reminderIcon = AceGUI:Create("EPReminderIcon")
 	reminderIcon:Set(iconPreferences, reminderText, icon)
-	CreateReminderWidgetCallback(reminderIcon, assignment.spellID, bossPhaseOrderIndex, false)
+	CreateReminderWidgetCallback(reminderIcon, assignment.spellID, bossPhaseOrderIndex)
 	tinsert(iconsToAdd, reminderIcon)
 	reminderIcon:Start(GetTime(), duration)
 end
@@ -540,13 +535,13 @@ end
 ---@param startTime number
 ---@param abilities table<integer, BossAbility>
 local function SetupReminders(plans, preferences, startTime, abilities)
-	if not messageContainer then
+	if not messageContainer and preferences.messages.enabled then
 		CreateMessageContainer(preferences.messages)
 	end
-	if not progressBarContainer then
+	if not progressBarContainer and preferences.progressBars.enabled then
 		CreateProgressBarContainer(preferences.progressBars)
 	end
-	if not iconContainer then
+	if not iconContainer and preferences.icons.enabled then
 		CreateIconContainer(preferences.icons)
 	end
 	for _, plan in pairs(plans) do
@@ -813,18 +808,21 @@ end
 ---@param roster table<string, RosterEntry>
 function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
 	isSimulating = true
-	local reminderPreferences = AddOn.db.profile.preferences.reminder
-	if reminderPreferences.enabled then
-		if not messageContainer then
-			CreateMessageContainer(reminderPreferences.messages)
+	local preferences = AddOn.db.profile.preferences.reminder
+	if preferences.enabled then
+		if not messageContainer and preferences.messages.enabled then
+			CreateMessageContainer(preferences.messages)
 		end
-		if not progressBarContainer then
-			CreateProgressBarContainer(reminderPreferences.progressBars)
+		if not progressBarContainer and preferences.progressBars.enabled then
+			CreateProgressBarContainer(preferences.progressBars)
+		end
+		if not iconContainer and preferences.icons.enabled then
+			CreateIconContainer(preferences.icons)
 		end
 
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
-			hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+			hideIfAlreadyCasted = preferences.cancelIfAlreadyCasted
 
 			local totalDuration = 0.0
 			for _, phaseData in pairs(boss.phases) do
@@ -832,11 +830,11 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 			end
 
 			local filtered
-			if reminderPreferences.onlyShowMe then
+			if preferences.onlyShowMe then
 				filtered = FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
 			end
 			for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
-				CreateSimulationTimer(timelineAssignment, roster, reminderPreferences, 0.0)
+				CreateSimulationTimer(timelineAssignment, roster, preferences, 0.0)
 			end
 			simulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
 			updateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
