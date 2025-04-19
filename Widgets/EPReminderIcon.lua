@@ -25,6 +25,43 @@ local greaterThanTenSecondsFormat = "%.0f"
 local lessThanTenSecondsFormat = "%.1f"
 
 local backdropBorderColor = { 0, 0, 0, 1 }
+local kMinimumFontSize = 6
+
+local testFontString = UIParent:CreateFontString(nil, "OVERLAY")
+testFontString:Hide()
+
+---@param text string
+---@param font string
+---@param fontHeight number
+---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
+---@param maxWidth integer
+---@return integer
+local function CalculateFontSizeToFit(text, font, fontHeight, flags, maxWidth)
+	testFontString:SetFont(font, fontHeight, flags)
+	testFontString:SetText(text)
+
+	if testFontString:GetStringWidth() <= maxWidth then
+		return fontHeight
+	end
+
+	local minSize = kMinimumFontSize
+	local bestSize = minSize
+
+	while minSize <= fontHeight do
+		local mid = floor((minSize + fontHeight) / 2)
+		testFontString:SetFont(font, mid)
+		local width = testFontString:GetStringWidth()
+
+		if width <= maxWidth then
+			bestSize = mid
+			minSize = mid + 1
+		else
+			fontHeight = mid - 1
+		end
+	end
+
+	return bestSize
+end
 
 ---@param self EPReminderIcon
 local function OnAcquire(self)
@@ -39,6 +76,7 @@ local function OnRelease(self)
 	self.currentThreshold = ""
 	self.running = false
 	self.showText = false
+	self.text:Hide()
 end
 
 ---@param self EPReminderIcon
@@ -48,18 +86,6 @@ local function SetIcon(self, iconID)
 		self.icon:SetTexture(iconID)
 	else
 		self.icon:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
-	end
-end
-
----@param self EPReminderIcon
----@param text string
----@param fontFile string|nil
----@param size integer|nil
----@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"|nil
-local function SetText(self, text, fontFile, size, flags)
-	self.text:SetText(text or "")
-	if fontFile and size then
-		self.text:SetFont(fontFile, size, flags)
 	end
 end
 
@@ -92,12 +118,18 @@ local function Start(self, start, duration)
 	self.running = true
 end
 
+-- Requires that the text already be set.
 ---@param self EPReminderIcon
 ---@param fontFile string
 ---@param size integer
 ---@param flags ""|"MONOCHROME"|"OUTLINE"|"THICKOUTLINE"
-local function SetFont(self, fontFile, size, flags)
+---@param shrinkTextToFit boolean If true, the text will attempt to be shrunk to fit within the icon width.
+---@param width integer Width of the EPReminderIcon
+local function SetFont(self, fontFile, size, flags, shrinkTextToFit, width)
 	if fontFile then
+		if self.showText and shrinkTextToFit then
+			size = CalculateFontSizeToFit(self.text:GetText(), fontFile, size, flags, width)
+		end
 		self.text:SetFont(fontFile, size, flags)
 	end
 end
@@ -147,10 +179,15 @@ end
 local function Set(self, preferences, text, icon)
 	self.frame:SetSize(preferences.width, preferences.height)
 	self.showText = preferences.showText
-	self.text:SetText(text or "")
-	if preferences.font and preferences.fontSize then
-		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-	end
+	self.text:SetText(text)
+	SetFont(
+		self,
+		preferences.font,
+		preferences.fontSize,
+		preferences.fontOutline,
+		preferences.shrinkTextToFit,
+		preferences.width
+	)
 	SetDraw(self, preferences.drawEdge, preferences.drawSwipe)
 	SetAlpha(self, preferences.alpha)
 	SetTextColor(self, unpack(preferences.textColor))
@@ -192,7 +229,6 @@ local function Constructor()
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		SetIcon = SetIcon,
-		SetText = SetText,
 		SetFont = SetFont,
 		Start = Start,
 		SetTextColor = SetTextColor,

@@ -992,7 +992,7 @@ do
 			return preferences.enabled == true and preferences.icons.enabled == true
 		end
 
-		local kMinIconSize = 5.0
+		local kMinIconSize = 10.0
 		local kMaxIconSize = 100.0
 		local kMaxProgressBarWidth = 1000.0
 		local kMaxProgressBarHeight = 100.0
@@ -1503,8 +1503,8 @@ do
 				labels = { L["Width"], L["Height"] },
 				type = "doubleLineEdit",
 				descriptions = {
-					L["The width of Progress Bars."],
-					L["The height of Progress Bars."],
+					L["The width of Progress Bars. Must be at least twice the font size and less than 1000."],
+					L["The height of Progress Bars. Must be at least the font size and less than 100."],
 				},
 				category = L["Progress Bars"],
 				get = function()
@@ -1531,14 +1531,15 @@ do
 					local height = tonumber(key2)
 					if width and height then
 						local minProgressBarHeight = preferences.fontSize
+						local minProgressBarWidth = minProgressBarHeight * 2
 						if
-							width < 0.0
+							width < minProgressBarWidth
 							or width > kMaxProgressBarWidth
 							or height < minProgressBarHeight
 							or height > kMaxProgressBarHeight
 						then
 							return false,
-								Clamp(width, 0.0, kMaxProgressBarWidth),
+								Clamp(width, minProgressBarWidth, kMaxProgressBarWidth),
 								Clamp(height, minProgressBarHeight, kMaxProgressBarHeight)
 						else
 							return true
@@ -2072,8 +2073,8 @@ do
 				labels = { L["Width"], L["Height"] },
 				type = "doubleLineEdit",
 				descriptions = {
-					L["The width of Cooldown Icons (5 - 100)."],
-					L["The height of Cooldown Icons (5 - 100)."],
+					L["The width of Cooldown Icons (10 - 100)."],
+					L["The height of Cooldown Icons (10 - 100)."],
 				},
 				category = L["Cooldown Icons"],
 				get = function()
@@ -2090,6 +2091,13 @@ do
 						CallAnchorFunction(AnchorType.Icon, function(icon)
 							---@cast icon EPReminderIcon
 							icon.frame:SetSize(preferences.width, preferences.height)
+							icon:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit,
+								preferences.width
+							)
 						end)
 					end
 				end,
@@ -2355,6 +2363,34 @@ do
 				enabled = enableIconOption,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Shrink Text to Fit"],
+				type = "checkBox",
+				description = L["Whether to attempt to shrink reminder text beneath Cooldown Icons to fit within the Cooldown Icon width."],
+				category = L["Cooldown Icons"],
+				get = function()
+					return GetIconPreferences().shrinkTextToFit
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetIconPreferences()
+						preferences.shrinkTextToFit = key
+						CallAnchorFunction(AnchorType.Icon, function(icon)
+							---@cast icon EPReminderIcon
+							icon:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit,
+								preferences.width
+							)
+						end)
+					end
+				end,
+				enabled = function()
+					return enableIconOption() and GetIconPreferences().showText == true
+				end,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Font"],
 				type = "dropdown",
 				itemsAreFonts = true,
@@ -2370,7 +2406,13 @@ do
 						preferences.font = key
 						CallAnchorFunction(AnchorType.Icon, function(icon)
 							---@cast icon EPReminderIcon
-							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							icon:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit,
+								preferences.width
+							)
 						end)
 					end
 				end,
@@ -2393,7 +2435,13 @@ do
 						preferences.fontSize = value
 						CallAnchorFunction(AnchorType.Icon, function(icon)
 							---@cast icon EPReminderIcon
-							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							icon:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit,
+								preferences.width
+							)
 						end)
 					end
 				end,
@@ -2428,7 +2476,13 @@ do
 						preferences.fontOutline = key
 						CallAnchorFunction(AnchorType.Icon, function(icon)
 							---@cast icon EPReminderIcon
-							icon:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+							icon:SetFont(
+								preferences.font,
+								preferences.fontSize,
+								preferences.fontOutline,
+								preferences.shrinkTextToFit,
+								preferences.width
+							)
 						end)
 					end
 				end,

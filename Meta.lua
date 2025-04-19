@@ -290,6 +290,7 @@
 ---@field drawSwipe boolean Whether to show the radial swipe animation on Cooldown Icons.
 ---@field drawEdge boolean Whether to show the edge indicator on Cooldown Icons.
 ---@field showText boolean Whether to show reminder text beneath Cooldown Icons.
+---@field shrinkTextToFit boolean Whether to decrease font size to attempt to fit text without clipping.
 ---@field textColor Color Text color to use for text beneath Cooldown Icons.
 ---@field borderSize integer The size of the border of Cooldown Icons.
 ---@field spacing integer Spacing between Cooldown Icons.

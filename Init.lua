@@ -537,6 +537,7 @@ local defaults = {
 					drawSwipe = true,
 					drawEdge = false,
 					showText = false,
+					shrinkTextToFit = true,
 					textColor = { 1, 0.82, 0, 0.95 },
 					borderSize = 2,
 					spacing = 2,

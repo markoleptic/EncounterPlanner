@@ -404,6 +404,7 @@ L["Show Spell Cooldown Duration"] = true
 L["Show Swipe"] = true
 L["Show Text Beneath Icon"] = true
 L["shows information and settings for the current plan"] = true
+L["Shrink Text to Fit"] = true
 L["Simulate Reminders"] = true
 L["Since the intermission is triggered by boss health, using timed assignments would be unreliable. Instead, the spell the boss casts before transitioning into intermission is used."] =
 	true
@@ -466,8 +467,8 @@ L["The frame that the Message container is anchored to. Defaults to UIParent (sc
 L["The frame that the Progress Bar container is anchored to. Defaults to UIParent (screen)."] = true
 L["The height of individual assignment rows in the timeline (16 - 48)."] = true
 L["The height of individual boss ability rows in the timeline (16 - 48)."] = true
-L["The height of Cooldown Icons (5 - 100)."] = true
-L["The height of Progress Bars."] = true
+L["The height of Cooldown Icons (10 - 100)."] = true
+L["The height of Progress Bars. Must be at least the font size and less than 100."] = true
 L["The horizontal offset from the Relative Anchor Point to the Anchor Point."] = true
 L["The new assignment is created using the matching spell."] = true
 L["The size of the border of Cooldown Icons."] = true
@@ -478,8 +479,8 @@ L["The time relative to the event stayed the same, but the icon moved forward si
 L["The vertical offset from the Relative Anchor Point to the Anchor Point."] = true
 L["The voice to use for Text to Speech."] = true
 L["The volume to use for Text to Speech."] = true
-L["The width of Cooldown Icons (5 - 100)."] = true
-L["The width of Progress Bars."] = true
+L["The width of Cooldown Icons (10 - 100)."] = true
+L["The width of Progress Bars. Must be at least twice the font size and less than 1000."] = true
 L["The yellow bell icon in the"] = true
 L["Thick Outline"] = true
 L["This optional interactive tutorial walks you through the key features of Encounter Planner. You can close this window at any time and resume where you left off by clicking the"] =
@@ -527,6 +528,7 @@ L["User Guide"] = true
 L["Vertical"] = true
 L["View"] = true
 L["Number of Visible Rows"] = true
+L["Whether to attempt to shrink reminder text beneath Cooldown Icons to fit within the Cooldown Icon width."] = true
 L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."] =
 	true
 L["Whether to enable reminders for assignments."] = true
