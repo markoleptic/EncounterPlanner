@@ -1205,8 +1205,8 @@ do
 				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
 				type = "radioButtonGroup",
 				descriptions = {
-					L["Sorts Messages by ascending expiration time."],
-					L["Sorts Messages by descending expiration time."],
+					L["Displayed in ascending order of expiration time, with the message expiring the soonest on top."],
+					L["Displayed in descending order of expiration time, with the message expiring the soonest on bottom."],
 				},
 				category = L["Messages"],
 				values = verticalSortingValues,
@@ -1742,8 +1742,8 @@ do
 				labels = { L["Soonest Expiration on Top"], L["Soonest Expiration on Bottom"] },
 				type = "radioButtonGroup",
 				descriptions = {
-					L["Sorts Progress Bars by ascending expiration time."],
-					L["Sorts Progress Bars by descending expiration time."],
+					L["Displayed in ascending order of expiration time, with the bar expiring the soonest on top."],
+					L["Displayed in descending order of expiration time, with the bar expiring the soonest on bottom."],
 				},
 				category = L["Progress Bars"],
 				values = verticalSortingValues,
@@ -2314,10 +2314,19 @@ do
 				end,
 				type = "radioButtonGroup",
 				updateIndices = { -1 },
-				descriptions = {
-					L["Sorts Cooldown Icons by ascending expiration time."],
-					L["Sorts Cooldown Icons by descending expiration time."],
-				},
+				descriptions = function()
+					if GetIconPreferences().orientation == "vertical" then
+						return {
+							L["Displayed in ascending order of expiration time, with the icon expiring the soonest on top."],
+							L["Displayed in descending order of expiration time, with the icon expiring the soonest on bottom."],
+						}
+					else
+						return {
+							L["Displayed in ascending order of expiration time, with the icon expiring the soonest on the left."],
+							L["Displayed in descending order of expiration time, with the icon expiring the soonest on the right."],
+						}
+					end
+				end,
 				category = L["Cooldown Icons"],
 				values = function()
 					if GetIconPreferences().orientation == "vertical" then
