@@ -661,8 +661,6 @@ do
 		end
 	end
 
-	local sort = table.sort
-
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
 	function InterfaceUpdater.RepopulatePlanWidgets()
 		if Private.mainFrame then
