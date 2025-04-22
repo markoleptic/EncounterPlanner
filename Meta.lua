@@ -31,13 +31,14 @@
 ---@field assignment Assignment The assignment.
 ---@field startTime number Time used to place the assignment on the timeline.
 ---@field order number The row of the assignment in the timeline.
----@field cooldownDuration number? The cooldown duration of the spell assignment, if applicable.
----@field maxCharges integer? The maximum number of charges the spell assignment, if applicable.
+---@field cooldownDuration number The cooldown duration of the spell assignment, or 0 if no spell.
+-- The maximum number of charges the spell assignment, or 1 if no spell or the spell does not have charges.
+---@field maxCharges integer
 -- The effective cooldown duration, which could be more or less than the actual cooldown duration depending on if
 -- multiple charges are coming back up.
----@field effectiveCooldownDuration number?
----@field relativeChargeRestoreTime number? Time relative to the start time in which a cooldown charge is restored.
----@field invalidChargeCast boolean? If specified, there were no spell charges available to cast.
+---@field effectiveCooldownDuration number
+---@field relativeChargeRestoreTime number|nil Time relative to the start time in which a cooldown charge is restored.
+---@field invalidChargeCast boolean|nil If specified, there were no spell charges available to cast.
 
 -- A raid or dungeon with a specific instanceID.
 ---@class DungeonInstance
@@ -386,6 +387,10 @@
 ---@field preferences ReminderPreferences
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
+
+---@class AssignmentTimelineRow
+---@field assignee string The row the assignment belongs to
+---@field spellID integer|nil If specified, the spell ID for the row. Otherwise, the row is only the assignee.
 
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS

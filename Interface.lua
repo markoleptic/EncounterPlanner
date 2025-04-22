@@ -1981,7 +1981,7 @@ function Private:CreateInterface()
 	timeline:SetPreferences(profile.preferences)
 	timeline.CalculateAssignmentTimeFromStart = HandleCalculateAssignmentTimeFromStart
 	timeline.GetMinimumCombatLogEventTime = HandleGetMinimumCombatLogEventTime
-
+	timeline.ComputeChargeStates = interfaceUpdater.ComputeChargeStates
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)

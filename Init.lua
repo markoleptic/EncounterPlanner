@@ -374,8 +374,11 @@ function Private.classes.TimelineAssignment:New(assignment)
 	assignment = assignment or Private.classes.Assignment:New(assignment)
 	local timelineAssignment = {
 		assignment = assignment,
-		startTime = 0,
+		startTime = 0.0,
 		order = 0,
+		cooldownDuration = 0.0,
+		maxCharges = 1,
+		effectiveCooldownDuration = 0.0,
 	}
 	setmetatable(timelineAssignment, self)
 	return timelineAssignment

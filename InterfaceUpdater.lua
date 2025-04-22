@@ -21,7 +21,6 @@ local bossUtilities = Private.bossUtilities
 local utilities = Private.utilities
 local AddIconBeforeText = utilities.AddIconBeforeText
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
-local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
 
 local AceGUI = LibStub("AceGUI-3.0")
@@ -214,13 +213,14 @@ do
 end
 
 do
-	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
+	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
 	local CreateReminderText = utilities.CreateReminderText
+	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 	local FindBossAbility = bossUtilities.FindBossAbility
 	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
-	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
 	local GetSpecializationInfoByID = GetSpecializationInfoByID
 	local GetSpellName = C_Spell.GetSpellName
+	local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 
 	local assignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
@@ -494,14 +494,16 @@ do
 		end
 	end
 
-	---@param timelineAssignmentsGroupedByAssignee table<string, table<integer, TimelineAssignment>>
-	local function ComputeChargeStates(timelineAssignmentsGroupedByAssignee)
-		for _, timelineAssignments in pairs(timelineAssignmentsGroupedByAssignee) do
-			local regenQueueBySpellID = {} -- Holds the future times when a charge comes up, relative to encounter start
+	-- Sets the effectiveCooldownDuration, relativeChargeRestoreTime, and invalidChargeCast fields on timeline
+	-- assignments.
+	---@param timelineAssignments table<integer, TimelineAssignment>
+	function InterfaceUpdater.ComputeChargeStates(timelineAssignments)
+		local regenQueueBySpellID = {} -- Holds the future times when a charge comes up, relative to encounter start
 
-			for _, timelineAssignment in ipairs(timelineAssignments) do
-				local maxCharges = timelineAssignment.maxCharges or 1
-				local spellID = timelineAssignment.assignment.spellID
+		for _, timelineAssignment in ipairs(timelineAssignments) do
+			local spellID = timelineAssignment.assignment.spellID
+			if spellID > constants.kTextAssignmentSpellID then
+				local maxCharges = timelineAssignment.maxCharges
 				local startTime = timelineAssignment.startTime
 				local cooldownDuration = timelineAssignment.cooldownDuration
 
@@ -520,9 +522,14 @@ do
 					local regenTime = max(startTime, lastRegenTime) + cooldownDuration
 					tinsert(regenQueue, regenTime)
 					timelineAssignment.effectiveCooldownDuration = regenTime - startTime
-				else -- Out of charges: Use last regen time as end
-					local lastRegenTime = regenQueue[#regenQueue] or startTime
-					timelineAssignment.effectiveCooldownDuration = max(0, lastRegenTime - startTime)
+					timelineAssignment.invalidChargeCast = false
+				else
+					if maxCharges > 1 then -- Out of charges, carry last regen time forward
+						local lastRegenTime = regenQueue[#regenQueue] or startTime
+						timelineAssignment.effectiveCooldownDuration = max(0, lastRegenTime - startTime)
+					else -- Spell doesn't have charges, use default cooldown duration
+						timelineAssignment.effectiveCooldownDuration = cooldownDuration
+					end
 					timelineAssignment.invalidChargeCast = true
 				end
 
@@ -556,7 +563,9 @@ do
 		local sortedTimelineAssignments = SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve)
 		local sortedWithSpellID, groupedByAssignee =
 			SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
-		ComputeChargeStates(groupedByAssignee)
+		for _, timelineAssignments in pairs(groupedByAssignee) do
+			InterfaceUpdater.ComputeChargeStates(timelineAssignments)
+		end
 		UpdateAssignmentList(sortedWithSpellID, firstUpdate)
 
 		local timeline = Private.mainFrame.timeline

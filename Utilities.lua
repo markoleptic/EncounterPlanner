@@ -31,7 +31,6 @@ local FindBossAbility = bossUtilities.FindBossAbility
 local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 local GetBoss = bossUtilities.GetBoss
 local GetBossName = bossUtilities.GetBossName
-local GetCumulativePhaseStartTime = bossUtilities.GetCumulativePhaseStartTime
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 local floor = math.floor
@@ -1286,14 +1285,16 @@ do
 	end
 end
 
--- Sorts the assignees based on the order of the timeline assignments, taking spellID into account.
+-- Sets the order field for timeline assignments and creates a sorted table for rows in the assignment timeline. Also
+-- returns a table where timeline assignments are grouped by assignee.
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
----@param collapsed table<string, boolean>
----@return table<integer, {assignee:string, spellID:integer|nil}>
----@return table<string, table<integer, TimelineAssignment>>
+---@param collapsed table<string, boolean> Table indicating if assignees are to appear collapsed on the timeline
+---@return table<integer, AssignmentTimelineRow> -- Sorted assignees and spells
+---@return table<string, table<integer, TimelineAssignment>> -- Timeline assignments grouped by assignee
 function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 	local assigneeIndices = {} ---@type table<integer, string>
 	local groupedByAssignee = {} ---@type table<string, table<integer, TimelineAssignment>>
+
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 		local assignee = timelineAssignment.assignment.assignee
 		if not groupedByAssignee[assignee] then
@@ -1316,15 +1317,17 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 					spellIDs = {},
 				}
 				tinsert(assigneeOrder, { assignee = assignee, spellID = nil })
-				order = order + 1
+				order = order + 1 -- Increase order each time a new assignee is added
 			end
+
 			if not assigneeMap[assignee].spellIDs[spellID] then
 				if not collapsed[assignee] then
-					order = order + 1
+					order = order + 1 -- Increase order each time a new spell is added
 				end
 				assigneeMap[assignee].spellIDs[spellID] = order
 				tinsert(assigneeOrder, { assignee = assignee, spellID = spellID })
 			end
+
 			timelineAssignment.order = assigneeMap[assignee].spellIDs[spellID]
 		end
 	end

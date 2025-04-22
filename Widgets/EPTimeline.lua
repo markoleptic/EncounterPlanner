@@ -88,7 +88,7 @@ local cooldownTextureAlpha = 0.5
 
 local assignmentIsDragging = false
 local assignmentBeingDuplicated = false
-local assignmentFrameBeingDragged = nil
+local assignmentFrameBeingDragged = nil ---@type AssignmentFrame|nil
 local horizontalCursorAssignmentFrameOffsetWhenClicked = 0
 local horizontalCursorPositionWhenAssignmentFrameClicked = 0
 local thumbPadding = { x = 2, y = 2 }
@@ -328,50 +328,6 @@ local function SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, fr
 		end
 		return a < b
 	end)
-end
-
----@param cdLeft number
----@param lastCdLeft number
----@param lastCdRight number
----@return AssignmentFrameOverlapType
-local function IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight)
-	if lastCdRight + assignmentOverlapTolerance > cdLeft then
-		if lastCdLeft < cdLeft + assignmentOverlapTolerance then
-			return 1
-		else
-			return 2
-		end
-	else
-		return 0
-	end
-end
-
--- Shows and hides assignment invalid textures based on cooldown overlapping.
----@param assignmentFrames table<integer, AssignmentFrame>
----@param frameIndices table<integer, integer>
-local function UpdateInvalidTextures(assignmentFrames, frameIndices)
-	local lastCdLeft, lastCdRight = nil, nil
-	SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
-	for _, assignmentFrameIndex in ipairs(frameIndices) do
-		local assignmentFrame = assignmentFrames[assignmentFrameIndex]
-		local cdLeft = assignmentFrame:GetLeft()
-		local cdWidth = assignmentFrame.cooldownWidth
-		local show = false
-		if cdLeft and cdWidth > 0 then
-			local cdRight = cdLeft + cdWidth
-			if lastCdLeft and lastCdRight then
-				if IsAssignmentFrameOverlapping(cdLeft, lastCdLeft, lastCdRight) > 0 then
-					show = true
-				end
-			end
-			lastCdLeft, lastCdRight = cdLeft, cdRight
-		end
-		if show then
-			assignmentFrame.invalidTexture:Show()
-		else
-			assignmentFrame.invalidTexture:Hide()
-		end
-	end
 end
 
 -- Updates the tick mark positions for the boss ability timeline and assignments timeline.
@@ -908,11 +864,36 @@ local function HandleAssignmentUpdate(self, frame)
 		local spellIDAssignmentFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices[order]
 		local assignmentFrames = self.assignmentFrames
 		local orderedAssignmentFrameIndices = {}
-
-		for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
-			UpdateInvalidTextures(assignmentFrames, assignmentFrameIndices)
+		local timelineAssignmentsInRow, matchingAssignmentFrameIndices = {}, {}
+		for spellID, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
 			for _, index in ipairs(assignmentFrameIndices) do
 				orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
+				if spellID == assignmentFrameBeingDragged.timelineAssignment.assignment.spellID then
+					matchingAssignmentFrameIndices[#matchingAssignmentFrameIndices + 1] = index
+					timelineAssignmentsInRow[#timelineAssignmentsInRow + 1] = self.timelineAssignments[index]
+				end
+			end
+		end
+
+		-- TODO: Invalid textures not properly updated
+
+		local time = ConvertTimelineOffsetToTime(assignmentFrameBeingDragged, self.bossAbilityTimeline.timelineFrame)
+		if time then
+			assignmentFrameBeingDragged.timelineAssignment.startTime = time
+			self.ComputeChargeStates(timelineAssignmentsInRow)
+			for i, timelineAssignmentInRow in ipairs(timelineAssignmentsInRow) do
+				self:DrawAssignment(
+					timelineAssignmentInRow.startTime,
+					timelineAssignmentInRow.assignment.spellID,
+					matchingAssignmentFrameIndices[i],
+					timelineAssignmentInRow.assignment.uniqueID,
+					timelineAssignmentInRow.order,
+					self.preferences.showSpellCooldownDuration
+						and not self.collapsed[timelineAssignmentInRow.assignment.assignee],
+					timelineAssignmentInRow.effectiveCooldownDuration,
+					timelineAssignmentInRow.relativeChargeRestoreTime,
+					timelineAssignmentInRow.invalidChargeCast
+				)
 			end
 		end
 
@@ -1141,7 +1122,6 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	assignment.assignmentFrame = timelineFrame
 	assignment.timelineAssignment = nil
 	assignment.spellID = spellID
-	assignment.chargeMarkers = {}
 
 	assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
 		HandleAssignmentMouseDown(self, frame, mouseButton)
@@ -1202,9 +1182,12 @@ local function DrawAssignment(
 	assignmentFrame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignmentFrame:Show()
 
-	assignmentFrame.outlineTexture:SetWidth(assignmentHeight)
-	assignmentFrame.spellTexture:SetWidth(assignmentHeight - 2)
+	if not assignmentFrame.selected then
+		assignmentFrame.outlineTexture:SetWidth(assignmentHeight)
+		assignmentFrame.spellTexture:SetWidth(assignmentHeight - 2)
+	end
 
+	local hideMarker = true
 	if spellID == constants.kInvalidAssignmentSpellID then
 		assignmentFrame.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
 	elseif spellID == constants.kTextAssignmentSpellID then
@@ -1219,20 +1202,29 @@ local function DrawAssignment(
 				assignmentFrame:SetWidth(max(assignmentHeight, assignmentFrame.cooldownWidth))
 				assignmentFrame.cooldownBackground:Show()
 				if relativeChargeRestoreTime then
-					local marker = assignmentFrame.chargeMarkers[1]
+					local marker = assignmentFrame.chargeMarker
 					if not marker then
 						marker = assignmentFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
 						marker:SetColorTexture(1, 0.82, 0, 0.75)
-						assignmentFrame.chargeMarkers[1] = marker
+						assignmentFrame.chargeMarker = marker
 					end
 					local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
 					marker:SetWidth(2)
 					marker:SetHeight(assignmentHeight - 2)
 					marker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
 					marker:Show()
+					hideMarker = false
 				end
 			end
 		end
+	end
+	if assignmentFrame.chargeMarker and hideMarker then
+		assignmentFrame.chargeMarker:Hide()
+	end
+	if invalidChargeCast == true then
+		assignmentFrame.invalidTexture:Show()
+	else
+		assignmentFrame.invalidTexture:Hide()
 	end
 end
 
@@ -1278,12 +1270,6 @@ local function UpdateAssignments(self)
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
 	end
 	local assignmentFrames = self.assignmentFrames
-
-	for _, indexedSpellIDs in pairs(orderedSpellIDFrameIndices) do
-		for _, assignmentFrameIndices in pairs(indexedSpellIDs) do
-			UpdateInvalidTextures(assignmentFrames, assignmentFrameIndices)
-		end
-	end
 	local timelineFrame = self.assignmentTimeline.timelineFrame
 	local timelineAssignments = self.timelineAssignments
 	local timelineFrameLevel = timelineFrame:GetFrameLevel()
@@ -1769,7 +1755,7 @@ end
 ---@field selectedByClicking boolean|nil
 ---@field selected boolean|nil
 ---@field uniqueAssignmentID integer
----@field chargeMarkers table<integer, Texture>
+---@field chargeMarker Texture|nil
 
 ---@class BossAbilityFrame : Frame
 ---@field assignmentFrame table|Frame
@@ -1814,6 +1800,7 @@ end
 ---@field zoomFactor number
 ---@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
 ---@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
+---@field ComputeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
 ---@field minTickInterval number
 
 ---@param self EPTimeline
@@ -2025,9 +2012,9 @@ local function OnRelease(self)
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
 		SetAssignmentFrameOutline(frame, false, 2)
-		for _, texture in pairs(frame.chargeMarkers) do
-			texture:ClearAllPoints()
-			texture:Hide()
+		if frame.chargeMarker then
+			frame.chargeMarker:ClearAllPoints()
+			frame.chargeMarker:Hide()
 		end
 
 		frame.spellID = nil
@@ -2091,7 +2078,7 @@ local function OnRelease(self)
 	self.preferences = nil
 	self.CalculateAssignmentTimeFromStart = nil
 	self.GetMinimumCombatLogEventTime = nil
-
+	self.ComputeChargeStates = nil
 	ResetLocalVariables()
 end
 
@@ -2435,9 +2422,9 @@ local function GetSelectedAssignments(self, clear)
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = nil
 			frame.selected = nil
-			for _, texture in pairs(frame.chargeMarkers) do
-				texture:ClearAllPoints()
-				texture:Hide()
+			if frame.chargeMarker then
+				frame.chargeMarker:ClearAllPoints()
+				frame.chargeMarker:Hide()
 			end
 		end
 	end
@@ -2793,6 +2780,7 @@ local function Constructor()
 		SetHorizontalScroll = SetHorizontalScroll,
 		SetAssignmentTimelineVerticalScroll = SetAssignmentTimelineVerticalScroll,
 		SetBossAbilityTimelineVerticalScroll = SetBossAbilityTimelineVerticalScroll,
+		DrawAssignment = DrawAssignment,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,
