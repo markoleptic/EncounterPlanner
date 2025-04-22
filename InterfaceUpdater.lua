@@ -215,6 +215,12 @@ end
 
 do
 	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
+	local CreateReminderText = utilities.CreateReminderText
+	local FindBossAbility = bossUtilities.FindBossAbility
+	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
+	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
+	local GetSpecializationInfoByID = GetSpecializationInfoByID
+	local GetSpellName = C_Spell.GetSpellName
 
 	local assignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
@@ -289,10 +295,6 @@ do
 		abilityEntry:SetAssigneeDropdownItems(items)
 		abilityEntry.dropdown:SetItemEnabled("Individual", enableIndividualItem)
 	end
-
-	local CreateReminderText = utilities.CreateReminderText
-	local FindBossAbility = bossUtilities.FindBossAbility
-	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapAssignee(abilityEntry, _, newAssignee)
@@ -379,8 +381,6 @@ do
 		InterfaceUpdater.CreateMessageBox(messageBoxData, false)
 	end
 
-	local GetSpellName = C_Spell.GetSpellName
-
 	---@param widget EPAbilityEntry
 	local function HandleAssigneeSpellRowDeleteButtonClicked(widget)
 		local spellEntryKey = widget:GetKey()
@@ -419,13 +419,10 @@ do
 		InterfaceUpdater.CreateMessageBox(messageBoxData, false)
 	end
 
-	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
-	local GetSpecializationInfoByID = GetSpecializationInfoByID
-
 	-- Clears and repopulates the list of assignments and spells.
 	---@param sortedAssigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
 	---@param firstUpdate boolean|nil
-	function InterfaceUpdater.UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
+	local function UpdateAssignmentList(sortedAssigneesAndSpells, firstUpdate)
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			local assignmentContainer = timeline:GetAssignmentContainer()
@@ -496,9 +493,7 @@ do
 			end
 		end
 	end
-end
 
-do
 	---@param timelineAssignmentsGroupedByAssignee table<string, table<integer, TimelineAssignment>>
 	local function ComputeChargeStates(timelineAssignmentsGroupedByAssignee)
 		for _, timelineAssignments in pairs(timelineAssignmentsGroupedByAssignee) do
@@ -544,29 +539,6 @@ do
 		end
 	end
 
-	-- Sets the assignments and assignees for the timeline and rerenders it.
-	---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
-	---@param sortedWithSpellID table<integer, { assignee: string, spellID: number|nil }>|nil
-	---@param firstUpdate boolean|nil
-	local function UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
-		local timeline = Private.mainFrame.timeline
-		if timeline then
-			local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-			if not sortedWithSpellID then
-				local timelineAssignmentsGroupedByAssignee
-				sortedWithSpellID, timelineAssignmentsGroupedByAssignee =
-					SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
-				ComputeChargeStates(timelineAssignmentsGroupedByAssignee)
-			end
-
-			timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
-			if not firstUpdate then
-				timeline:UpdateTimeline()
-				Private.mainFrame:DoLayout()
-			end
-		end
-	end
-
 	-- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 	-- dropdown.
 	---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
@@ -580,22 +552,27 @@ do
 		preserve
 	)
 		local currentPlan = GetCurrentPlan()
-		local sortedTimelineAssignments = SortAssignments(
-			currentPlan,
-			AddOn.db.profile.preferences.assignmentSortType,
-			bossDungeonEncounterID,
-			preserve
-		)
-		local sortedWithSpellID, buh = SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
-		ComputeChargeStates(buh)
-		InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
-		UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
+		local sortType = AddOn.db.profile.preferences.assignmentSortType
+		local sortedTimelineAssignments = SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve)
+		local sortedWithSpellID, groupedByAssignee =
+			SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
+		ComputeChargeStates(groupedByAssignee)
+		UpdateAssignmentList(sortedWithSpellID, firstUpdate)
+
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+			timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
+			if not firstUpdate then
+				timeline:UpdateTimeline()
+				Private.mainFrame:DoLayout()
+			end
+			-- Sometimes items in this container are invisible for unknown reasons..
+			timeline.assignmentTimeline.listContainer:DoLayout()
+		end
+
 		if updateAddAssigneeDropdown then
 			InterfaceUpdater.UpdateAddAssigneeDropdown()
-		end
-		local timeline = Private.mainFrame.timeline
-		if timeline then -- Sometimes items in this container are invisible for unknown reasons..
-			timeline.assignmentTimeline.listContainer:DoLayout()
 		end
 	end
 end
