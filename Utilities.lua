@@ -1158,21 +1158,28 @@ do
 		local timelineAssignments = {}
 		if AddOn.db then
 			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
+			-- local chargeOverrides = AddOn.db.profile.cooldownOverrides TODO
 			for _, assignment in pairs(plan.assignments) do
+				local timelineAssignment = TimelineAssignment:New(assignment)
 				local spellID = assignment.spellID
 				local overrideDuration = cooldownOverrides[spellID]
+				-- local overrideCharges = chargeOverrides[spellID] TODO
 				if overrideDuration then
-					assignment.cooldownDuration = overrideDuration
+					timelineAssignment.cooldownDuration = overrideDuration
+					timelineAssignment.maxCharges = 1
 				else
-					assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
+					timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
+						Utilities.GetSpellCooldownAndCharges(spellID)
 				end
-				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+				tinsert(timelineAssignments, timelineAssignment)
 			end
 		else
 			for _, assignment in pairs(plan.assignments) do
 				local spellID = assignment.spellID
-				assignment.cooldownDuration = Utilities.GetSpellCooldown(spellID)
-				tinsert(timelineAssignments, TimelineAssignment:New(assignment))
+				local timelineAssignment = TimelineAssignment:New(assignment)
+				timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
+					Utilities.GetSpellCooldownAndCharges(spellID)
+				tinsert(timelineAssignments, timelineAssignment)
 			end
 		end
 
@@ -1283,9 +1290,10 @@ end
 ---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 ---@param collapsed table<string, boolean>
 ---@return table<integer, {assignee:string, spellID:integer|nil}>
+---@return table<string, table<integer, TimelineAssignment>>
 function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
-	local assigneeIndices = {}
-	local groupedByAssignee = {}
+	local assigneeIndices = {} ---@type table<integer, string>
+	local groupedByAssignee = {} ---@type table<string, table<integer, TimelineAssignment>>
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 		local assignee = timelineAssignment.assignment.assignee
 		if not groupedByAssignee[assignee] then
@@ -1296,8 +1304,8 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 	end
 
 	local order = 0
-	local assigneeMap = {}
-	local assigneeOrder = {}
+	local assigneeMap = {} ---@type table<string, {order: integer, spellIDs: table<integer, integer>}>
+	local assigneeOrder = {} ---@type table<integer, {assignee: string, spellID: integer|nil}>
 
 	for _, assignee in ipairs(assigneeIndices) do
 		for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
@@ -1321,7 +1329,7 @@ function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed
 		end
 	end
 
-	return assigneeOrder
+	return assigneeOrder, groupedByAssignee
 end
 
 do
@@ -1349,6 +1357,9 @@ do
 			local spellIDA, spellIDB = a.assignment.spellID, b.assignment.spellID
 			if assignmentSortType == "Alphabetical" then
 				if assigneeA == assigneeB then
+					if spellIDA == spellIDB then
+						return a.startTime < b.startTime
+					end
 					return spellIDA < spellIDB
 				end
 				return assigneeA < assigneeB
@@ -2214,17 +2225,19 @@ function Utilities.FormatTime(time)
 end
 
 do
-	local cooldowns = {}
+	local cooldowns = {} ---@type table<integer, {duration: number, maxCharges: integer}>
 
 	---@param spellID integer
 	---@return number
-	function Utilities.GetSpellCooldown(spellID)
+	---@return integer
+	function Utilities.GetSpellCooldownAndCharges(spellID)
 		if not cooldowns[spellID] then
-			local duration = 0.0
+			local duration, maxCharges = 0.0, 1
 			if spellID > kTextAssignmentSpellID then
 				local chargeInfo = GetSpellCharges(spellID)
 				if chargeInfo then
 					duration = chargeInfo.cooldownDuration
+					maxCharges = chargeInfo.maxCharges
 				else
 					local cooldownMS, _ = GetSpellBaseCooldown(spellID)
 					if cooldownMS then
@@ -2238,9 +2251,12 @@ do
 					end
 				end
 			end
-			cooldowns[spellID] = duration
+			cooldowns[spellID] = {
+				duration = duration,
+				maxCharges = maxCharges,
+			}
 		end
-		return cooldowns[spellID]
+		return cooldowns[spellID].duration, cooldowns[spellID].maxCharges
 	end
 end
 

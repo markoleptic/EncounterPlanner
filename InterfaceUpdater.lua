@@ -27,7 +27,9 @@ local SortAssignments = utilities.SortAssignments
 local AceGUI = LibStub("AceGUI-3.0")
 local format = string.format
 local ipairs = ipairs
+local max, min = math.max, math.min
 local pairs = pairs
+local sort = table.sort
 local tinsert = table.insert
 local tonumber = tonumber
 local tostring = tostring
@@ -496,21 +498,104 @@ do
 	end
 end
 
--- Sets the assignments and assignees for the timeline and rerenders it.
----@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
----@param sortedWithSpellID table<integer, { assignee: string, spellID: number|nil }>|nil
----@param firstUpdate boolean|nil
-function InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
-	local timeline = Private.mainFrame.timeline
-	if timeline then
-		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-		if not sortedWithSpellID then
-			sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+do
+	---@param timelineAssignmentsGroupedByAssignee table<string, table<integer, TimelineAssignment>>
+	local function ComputeChargeStates(timelineAssignmentsGroupedByAssignee)
+		for _, timelineAssignments in pairs(timelineAssignmentsGroupedByAssignee) do
+			local regenQueueBySpellID = {} -- Holds the future times when a charge comes up, relative to encounter start
+
+			for _, timelineAssignment in ipairs(timelineAssignments) do
+				local maxCharges = timelineAssignment.maxCharges or 1
+				local spellID = timelineAssignment.assignment.spellID
+				local startTime = timelineAssignment.startTime
+				local cooldownDuration = timelineAssignment.cooldownDuration
+
+				regenQueueBySpellID[spellID] = regenQueueBySpellID[spellID] or {}
+				local regenQueue = regenQueueBySpellID[spellID]
+
+				-- Remove any regen events that have completed
+				while regenQueue[1] and regenQueue[1] <= startTime do
+					tremove(regenQueue, 1)
+				end
+
+				local currentCharges = maxCharges - #regenQueue
+
+				if currentCharges > 0 then -- Consume a charge by inserting into queue
+					local lastRegenTime = regenQueue[#regenQueue] or startTime
+					local regenTime = max(startTime, lastRegenTime) + cooldownDuration
+					tinsert(regenQueue, regenTime)
+					timelineAssignment.effectiveCooldownDuration = regenTime - startTime
+				else -- Out of charges: Use last regen time as end
+					local lastRegenTime = regenQueue[#regenQueue] or startTime
+					timelineAssignment.effectiveCooldownDuration = max(0, lastRegenTime - startTime)
+					timelineAssignment.invalidChargeCast = true
+				end
+
+				for _, regenTime in ipairs(regenQueue) do
+					if regenTime > startTime then
+						local relativeTime = regenTime - startTime
+						if relativeTime > 0 and relativeTime < timelineAssignment.effectiveCooldownDuration then
+							timelineAssignment.relativeChargeRestoreTime = relativeTime
+							break -- There can only ever be one
+						end
+					end
+				end
+			end
 		end
-		timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
-		if not firstUpdate then
-			timeline:UpdateTimeline()
-			Private.mainFrame:DoLayout()
+	end
+
+	-- Sets the assignments and assignees for the timeline and rerenders it.
+	---@param sortedTimelineAssignments table<integer, TimelineAssignment> A sorted list of timeline assignments
+	---@param sortedWithSpellID table<integer, { assignee: string, spellID: number|nil }>|nil
+	---@param firstUpdate boolean|nil
+	local function UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
+		local timeline = Private.mainFrame.timeline
+		if timeline then
+			local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+			if not sortedWithSpellID then
+				local timelineAssignmentsGroupedByAssignee
+				sortedWithSpellID, timelineAssignmentsGroupedByAssignee =
+					SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+				ComputeChargeStates(timelineAssignmentsGroupedByAssignee)
+			end
+
+			timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
+			if not firstUpdate then
+				timeline:UpdateTimeline()
+				Private.mainFrame:DoLayout()
+			end
+		end
+	end
+
+	-- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
+	-- dropdown.
+	---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
+	---@param bossDungeonEncounterID integer
+	---@param firstUpdate boolean|nil
+	---@param preserve boolean|nil Whether or not to preserve the current message log.
+	function InterfaceUpdater.UpdateAllAssignments(
+		updateAddAssigneeDropdown,
+		bossDungeonEncounterID,
+		firstUpdate,
+		preserve
+	)
+		local currentPlan = GetCurrentPlan()
+		local sortedTimelineAssignments = SortAssignments(
+			currentPlan,
+			AddOn.db.profile.preferences.assignmentSortType,
+			bossDungeonEncounterID,
+			preserve
+		)
+		local sortedWithSpellID, buh = SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
+		ComputeChargeStates(buh)
+		InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
+		UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
+		if updateAddAssigneeDropdown then
+			InterfaceUpdater.UpdateAddAssigneeDropdown()
+		end
+		local timeline = Private.mainFrame.timeline
+		if timeline then -- Sometimes items in this container are invisible for unknown reasons..
+			timeline.assignmentTimeline.listContainer:DoLayout()
 		end
 	end
 end
@@ -526,28 +611,6 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
 		addAssigneeDropdown:AddItems(items, "EPDropdownItemToggle", true)
 		addAssigneeDropdown:SetItemEnabled("Individual", enableIndividualItem)
-	end
-end
-
--- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
--- dropdown.
----@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
----@param bossDungeonEncounterID integer
----@param firstUpdate boolean|nil
----@param preserve boolean|nil Whether or not to preserve the current message log.
-function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, bossDungeonEncounterID, firstUpdate, preserve)
-	local currentPlan = GetCurrentPlan()
-	local sortedTimelineAssignments =
-		SortAssignments(currentPlan, AddOn.db.profile.preferences.assignmentSortType, bossDungeonEncounterID, preserve)
-	local sortedWithSpellID = SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
-	InterfaceUpdater.UpdateAssignmentList(sortedWithSpellID, firstUpdate)
-	InterfaceUpdater.UpdateTimelineAssignments(sortedTimelineAssignments, sortedWithSpellID, firstUpdate)
-	if updateAddAssigneeDropdown then
-		InterfaceUpdater.UpdateAddAssigneeDropdown()
-	end
-	local timeline = Private.mainFrame.timeline
-	if timeline then -- Sometimes items in this container are invisible for unknown reasons..
-		timeline.assignmentTimeline.listContainer:DoLayout()
 	end
 end
 

@@ -7,7 +7,6 @@
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellID integer The spell ID for the assignment.
 ---@field targetName string The target's name if the assignment has a '@'.
----@field cooldownDuration? number
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
@@ -32,6 +31,13 @@
 ---@field assignment Assignment The assignment.
 ---@field startTime number Time used to place the assignment on the timeline.
 ---@field order number The row of the assignment in the timeline.
+---@field cooldownDuration number? The cooldown duration of the spell assignment, if applicable.
+---@field maxCharges integer? The maximum number of charges the spell assignment, if applicable.
+-- The effective cooldown duration, which could be more or less than the actual cooldown duration depending on if
+-- multiple charges are coming back up.
+---@field effectiveCooldownDuration number?
+---@field relativeChargeRestoreTime number? Time relative to the start time in which a cooldown charge is restored.
+---@field invalidChargeCast boolean? If specified, there were no spell charges available to cast.
 
 -- A raid or dungeon with a specific instanceID.
 ---@class DungeonInstance

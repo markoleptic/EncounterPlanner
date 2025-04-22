@@ -24,7 +24,6 @@ local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
 local Round = utilities.Round
-local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 local SortAssignments = utilities.SortAssignments
 local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
 local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments

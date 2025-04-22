@@ -1141,6 +1141,7 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	assignment.assignmentFrame = timelineFrame
 	assignment.timelineAssignment = nil
 	assignment.spellID = spellID
+	assignment.chargeMarkers = {}
 
 	assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
 		HandleAssignmentMouseDown(self, frame, mouseButton)
@@ -1161,7 +1162,20 @@ end
 ---@param order number the relative order of the assignee of the assignment
 ---@param showCooldown boolean
 ---@param cooldownDuration number|nil
-local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, showCooldown, cooldownDuration)
+---@param relativeChargeRestoreTime number|nil
+---@param invalidChargeCast boolean|nil
+local function DrawAssignment(
+	self,
+	startTime,
+	spellID,
+	index,
+	uniqueID,
+	order,
+	showCooldown,
+	cooldownDuration,
+	relativeChargeRestoreTime,
+	invalidChargeCast
+)
 	if totalTimelineDuration <= 0.0 then
 		return
 	end
@@ -1204,6 +1218,19 @@ local function DrawAssignment(self, startTime, spellID, index, uniqueID, order, 
 			if showCooldown then
 				assignmentFrame:SetWidth(max(assignmentHeight, assignmentFrame.cooldownWidth))
 				assignmentFrame.cooldownBackground:Show()
+				if relativeChargeRestoreTime then
+					local marker = assignmentFrame.chargeMarkers[1]
+					if not marker then
+						marker = assignmentFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
+						marker:SetColorTexture(1, 0.82, 0, 0.75)
+						assignmentFrame.chargeMarkers[1] = marker
+					end
+					local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
+					marker:SetWidth(2)
+					marker:SetHeight(assignmentHeight - 2)
+					marker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
+					marker:Show()
+				end
 			end
 		end
 	end
@@ -1233,9 +1260,19 @@ local function UpdateAssignments(self)
 			orderedSpellIDFrameIndices[order][spellID] = {}
 		end
 		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assignee]
-		local startTime, duration = timelineAssignment.startTime, timelineAssignment.assignment.cooldownDuration
 
-		DrawAssignment(self, startTime, spellID, index, assignment.uniqueID, order, showCooldown, duration)
+		DrawAssignment(
+			self,
+			timelineAssignment.startTime,
+			spellID,
+			index,
+			assignment.uniqueID,
+			order,
+			showCooldown,
+			timelineAssignment.effectiveCooldownDuration,
+			timelineAssignment.relativeChargeRestoreTime,
+			timelineAssignment.invalidChargeCast
+		)
 
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
@@ -1732,6 +1769,7 @@ end
 ---@field selectedByClicking boolean|nil
 ---@field selected boolean|nil
 ---@field uniqueAssignmentID integer
+---@field chargeMarkers table<integer, Texture>
 
 ---@class BossAbilityFrame : Frame
 ---@field assignmentFrame table|Frame
@@ -1987,11 +2025,16 @@ local function OnRelease(self)
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
 		SetAssignmentFrameOutline(frame, false, 2)
+		for _, texture in pairs(frame.chargeMarkers) do
+			texture:ClearAllPoints()
+			texture:Hide()
+		end
 
 		frame.spellID = nil
 		frame.uniqueAssignmentID = nil
 		frame.timelineAssignment = nil
 		frame.selectedByClicking = nil
+		frame.cooldownWidth = 0
 	end
 
 	for _, frame in ipairs(self.bossAbilityFrames) do
@@ -2392,6 +2435,10 @@ local function GetSelectedAssignments(self, clear)
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = nil
 			frame.selected = nil
+			for _, texture in pairs(frame.chargeMarkers) do
+				texture:ClearAllPoints()
+				texture:Hide()
+			end
 		end
 	end
 	return selected, selectedByClicking
