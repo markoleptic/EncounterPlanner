@@ -753,7 +753,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 			end
 		end
 		self.fakeAssignmentFrame:SetWidth(self.preferences.timelineRows.assignmentHeight)
-		self.fakeAssignmentFrame.cooldownBackground:Hide()
+		self.fakeAssignmentFrame.cooldownFrame:Hide()
 		self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
 		self.fakeAssignmentFrame.spellID = nil
 		self.fakeAssignmentFrame.uniqueAssignmentID = nil
@@ -906,7 +906,7 @@ local function HandleAssignmentUpdate(self, frame)
 		for _, index in pairs(orderedAssignmentFrameIndices) do
 			local assignmentFrame = assignmentFrames[index]
 			assignmentFrame:SetFrameLevel(minFrameLevel)
-			assignmentFrame.cooldownBackground:SetPoint("LEFT", timelineFrame, left, 0)
+			assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
 	end
@@ -954,7 +954,6 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			local fakeAssignmentFrame = self.fakeAssignmentFrame
 			fakeAssignmentFrame:Hide()
 			fakeAssignmentFrame.spellID = frame.spellID
-			fakeAssignmentFrame.cooldownWidth = frame.cooldownWidth
 			fakeAssignmentFrame.uniqueAssignmentID = frame.uniqueAssignmentID
 			fakeAssignmentFrame:SetPoint(frame:GetPointByName("TOPLEFT"))
 			fakeAssignmentFrame:SetSize(frame:GetSize())
@@ -962,14 +961,13 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			fakeAssignmentFrame.spellTexture:SetTexture(frame.spellTexture:GetTexture())
 			fakeAssignmentFrame.outlineTexture:SetWidth(frame.outlineTexture:GetWidth())
 
-			if frame.cooldownBackground:GetWidth() > 0 then
+			if frame.cooldownFrame:IsShown() then
+				fakeAssignmentFrame.cooldownFrame:SetWidth(frame.cooldownFrame:GetWidth())
+				fakeAssignmentFrame.cooldownFrame:Show()
 				local left = -self.preferences.timelineRows.assignmentHeight * timelineAssignment.order
-				fakeAssignmentFrame.cooldownBackground:SetPoint("LEFT", self.assignmentTimeline.timelineFrame, left, 0)
-			end
-			if frame.cooldownBackground:IsShown() then
-				fakeAssignmentFrame.cooldownBackground:Show()
+				fakeAssignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
 			else
-				fakeAssignmentFrame.cooldownBackground:Hide()
+				fakeAssignmentFrame.cooldownFrame:Hide()
 			end
 			if frame.invalidTexture:IsShown() then
 				fakeAssignmentFrame.invalidTexture:Show()
@@ -1076,7 +1074,12 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	local assignment = CreateFrame("Frame", nil, timelineFrame)
 	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignment:SetSize(assignmentHeight, assignmentHeight)
-	assignment:SetClipsChildren(true)
+
+	local cooldownFrame = CreateFrame("Frame", nil, assignment)
+	cooldownFrame:SetPoint("TOPLEFT", assignment, "TOPRIGHT")
+	cooldownFrame:SetPoint("BOTTOMLEFT", assignment, "BOTTOMRIGHT")
+	cooldownFrame:SetClipsChildren(true)
+	cooldownFrame:EnableMouse(false)
 
 	local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
 	spellTexture:SetPoint("TOPLEFT", 1, -1)
@@ -1092,21 +1095,28 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 	outlineTexture:Show()
 
-	local cooldownBackground = assignment:CreateTexture(nil, "ARTWORK", nil, -2)
-	cooldownBackground:SetColorTexture(unpack(cooldownBackgroundColor))
-	cooldownBackground:SetPoint("TOPRIGHT", assignment, "TOPRIGHT")
-	cooldownBackground:SetPoint("BOTTOMRIGHT", assignment, "BOTTOMRIGHT")
-	cooldownBackground:Hide()
+	local cooldownParent = self.assignmentTimeline.scrollFrame:CreateTexture(nil, "BACKGROUND")
+	cooldownParent:SetPoint("TOPRIGHT", cooldownFrame, "TOPRIGHT")
+	cooldownParent:SetPoint("BOTTOMRIGHT", cooldownFrame, "BOTTOMRIGHT")
+	cooldownParent:SetAlpha(0)
+	cooldownParent:EnableMouse(false)
 
-	local cooldownTexture = assignment:CreateTexture(nil, "ARTWORK", nil, -1)
+	local cooldownBackground = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -2)
+	cooldownBackground:SetColorTexture(unpack(cooldownBackgroundColor))
+	cooldownBackground:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT")
+	cooldownBackground:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT")
+	cooldownBackground:EnableMouse(false)
+
+	local cooldownTexture = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -1)
 	cooldownTexture:SetTexture(cooldownTextureFile, "REPEAT", "REPEAT")
 	cooldownTexture:SetSnapToPixelGrid(false)
 	cooldownTexture:SetTexelSnappingBias(0)
 	cooldownTexture:SetHorizTile(true)
 	cooldownTexture:SetVertTile(true)
-	cooldownTexture:SetPoint("TOPLEFT", cooldownBackground, "TOPLEFT", cooldownPadding, -cooldownPadding)
-	cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownBackground, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
+	cooldownTexture:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT", cooldownPadding, -cooldownPadding)
+	cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT", -cooldownPadding, cooldownPadding)
 	cooldownTexture:SetAlpha(cooldownTextureAlpha)
+	cooldownTexture:EnableMouse(false)
 
 	local invalidTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
 	invalidTexture:SetAllPoints(spellTexture)
@@ -1118,10 +1128,11 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	assignment.outlineTexture = outlineTexture
 	assignment.cooldownBackground = cooldownBackground
 	assignment.cooldownTexture = cooldownTexture
-	assignment.cooldownWidth = 0
 	assignment.assignmentFrame = timelineFrame
 	assignment.timelineAssignment = nil
 	assignment.spellID = spellID
+	assignment.cooldownParent = cooldownParent
+	assignment.cooldownFrame = cooldownFrame
 
 	assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
 		HandleAssignmentMouseDown(self, frame, mouseButton)
@@ -1196,24 +1207,30 @@ local function DrawAssignment(
 		local iconID, _ = GetSpellTexture(spellID)
 		assignmentFrame.spellTexture:SetTexture(iconID)
 		if cooldownDuration and cooldownDuration > 0 then
-			local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
-			assignmentFrame.cooldownWidth = (cooldownEndPosition - timelineStartPosition) - cooldownWidthTolerance
 			if showCooldown then
-				assignmentFrame:SetWidth(max(assignmentHeight, assignmentFrame.cooldownWidth))
-				assignmentFrame.cooldownBackground:Show()
-				if relativeChargeRestoreTime then
-					local marker = assignmentFrame.chargeMarker
-					if not marker then
-						marker = assignmentFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
-						marker:SetColorTexture(1, 0.82, 0, 0.75)
-						assignmentFrame.chargeMarker = marker
+				local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
+				local cooldownWidth = (cooldownEndPosition - timelineStartPosition) - cooldownWidthTolerance
+				local visibleCooldownWidth = cooldownWidth - assignmentHeight
+				if visibleCooldownWidth > 0 then
+					local cooldownFrame = assignmentFrame.cooldownFrame
+					cooldownFrame:SetWidth(visibleCooldownWidth)
+					cooldownFrame:Show()
+					if relativeChargeRestoreTime then
+						local marker = assignmentFrame.chargeMarker
+						if not marker then
+							marker = cooldownFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
+							marker:SetSnapToPixelGrid(false)
+							marker:SetTexelSnappingBias(0)
+							marker:SetColorTexture(1, 0.82, 0, 0.75)
+							assignmentFrame.chargeMarker = marker
+						end
+						local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
+						marker:SetWidth(2)
+						marker:SetHeight(assignmentHeight - 2)
+						marker:SetPoint("LEFT", cooldownFrame, "LEFT", left - assignmentHeight - 1, 0)
+						marker:Show()
+						hideMarker = false
 					end
-					local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
-					marker:SetWidth(2)
-					marker:SetHeight(assignmentHeight - 2)
-					marker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
-					marker:Show()
-					hideMarker = false
 				end
 			end
 		end
@@ -1269,11 +1286,13 @@ local function UpdateAssignments(self)
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
 	end
+
 	local assignmentFrames = self.assignmentFrames
 	local timelineFrame = self.assignmentTimeline.timelineFrame
 	local timelineAssignments = self.timelineAssignments
 	local timelineFrameLevel = timelineFrame:GetFrameLevel()
 	local assignmentHeight = self.preferences.timelineRows.assignmentHeight
+
 	for order, assignmentFrameIndices in pairs(orderedFrameIndices) do
 		sort(assignmentFrameIndices, function(a, b)
 			return timelineAssignments[a].startTime < timelineAssignments[b].startTime
@@ -1283,7 +1302,7 @@ local function UpdateAssignments(self)
 		for _, index in ipairs(assignmentFrameIndices) do
 			local assignmentFrame = assignmentFrames[index]
 			assignmentFrame:SetFrameLevel(minFrameLevel)
-			assignmentFrame.cooldownBackground:SetPoint("LEFT", timelineFrame, left, 0)
+			assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
 	end
@@ -1746,9 +1765,10 @@ end
 ---@field spellTexture Texture
 ---@field invalidTexture Texture
 ---@field outlineTexture Texture
+---@field cooldownFrame Frame
+---@field cooldownParent Texture
 ---@field cooldownBackground Texture
 ---@field cooldownTexture Texture
----@field cooldownWidth number
 ---@field assignmentFrame Frame
 ---@field timelineAssignment TimelineAssignment|nil
 ---@field spellID integer
@@ -2007,21 +2027,17 @@ local function OnRelease(self)
 		frame:Hide()
 		frame:SetWidth(0)
 		frame:SetScript("OnUpdate", nil)
-		frame.cooldownBackground:SetWidth(0)
-		frame.cooldownBackground:Hide()
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
 		SetAssignmentFrameOutline(frame, false, 2)
 		if frame.chargeMarker then
 			frame.chargeMarker:ClearAllPoints()
-			frame.chargeMarker:Hide()
 		end
 
 		frame.spellID = nil
 		frame.uniqueAssignmentID = nil
 		frame.timelineAssignment = nil
 		frame.selectedByClicking = nil
-		frame.cooldownWidth = 0
 	end
 
 	for _, frame in ipairs(self.bossAbilityFrames) do
@@ -2056,7 +2072,7 @@ local function OnRelease(self)
 	self.fakeAssignmentFrame:SetParent(UIParent)
 	self.fakeAssignmentFrame:Hide()
 	self.fakeAssignmentFrame:SetWidth(0)
-	self.fakeAssignmentFrame.cooldownBackground:Hide()
+	self.fakeAssignmentFrame.cooldownFrame:Hide()
 	self.fakeAssignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
 	SetAssignmentFrameOutline(self.fakeAssignmentFrame, false, 2)
@@ -2414,9 +2430,7 @@ local function GetSelectedAssignments(self, clear)
 			frame:Hide()
 			frame:SetWidth(self.preferences.timelineRows.assignmentHeight)
 			frame.invalidTexture:Hide()
-			frame.cooldownBackground:SetWidth(0)
-			frame.cooldownBackground:Hide()
-			frame.cooldownWidth = 0
+			frame.cooldownFrame:Hide()
 			frame.uniqueAssignmentID = 0
 			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
