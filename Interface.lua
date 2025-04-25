@@ -1637,8 +1637,14 @@ local function HandleGetMinimumCombatLogEventTime(timelineAssignment)
 end
 
 ---@param timelineAssignment TimelineAssignment
+---@param newTimelineAssignment table
+local function HandleDuplicateAssignmentStart(_, _, timelineAssignment, newTimelineAssignment)
+	Private.DuplicateTimelineAssignment(timelineAssignment, newTimelineAssignment)
+end
+
+---@param timelineAssignment TimelineAssignment
 ---@param absoluteTime number
-local function HandleDuplicateAssignment(_, _, timelineAssignment, absoluteTime)
+local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTime)
 	local assignment = timelineAssignment.assignment
 	local newAssignment = Private.DuplicateAssignment(assignment)
 	tinsert(GetCurrentAssignments(), newAssignment)
@@ -1985,7 +1991,8 @@ function Private:CreateInterface()
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)
-	timeline:SetCallback("DuplicateAssignment", HandleDuplicateAssignment)
+	timeline:SetCallback("DuplicateAssignmentStart", HandleDuplicateAssignmentStart)
+	timeline:SetCallback("DuplicateAssignmentEnd", HandleDuplicateAssignmentEnd)
 	timeline:SetCallback("ResizeBoundsCalculated", HandleResizeBoundsCalculated)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)

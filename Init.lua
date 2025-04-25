@@ -145,7 +145,13 @@ Private.classes.PhasedAssignment = setmetatable({
 Private.classes.PhasedAssignment.__index = Private.classes.PhasedAssignment
 
 ---@class TimelineAssignment
-Private.classes.TimelineAssignment = {}
+Private.classes.TimelineAssignment = {
+	startTime = 0.0,
+	order = 0,
+	cooldownDuration = 0.0,
+	maxCharges = 1,
+	effectiveCooldownDuration = 0.0,
+}
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 
 ---@class DungeonInstance
@@ -246,7 +252,7 @@ function Private.DeepCopy(inTable)
 	local copy = {}
 	if type(inTable) == "table" then
 		for k, v in pairs(inTable) do
-			if k ~= "__index" then
+			if k ~= "__index" and k ~= "New" then
 				copy[k] = Private.DeepCopy(v)
 			end
 		end
@@ -369,19 +375,28 @@ end
 
 -- Creates a timeline assignment from an assignment.
 ---@param assignment Assignment
+---@param o any
 ---@return TimelineAssignment
-function Private.classes.TimelineAssignment:New(assignment)
-	assignment = assignment or Private.classes.Assignment:New(assignment)
-	local timelineAssignment = {
-		assignment = assignment,
-		startTime = 0.0,
-		order = 0,
-		cooldownDuration = 0.0,
-		maxCharges = 1,
-		effectiveCooldownDuration = 0.0,
-	}
-	setmetatable(timelineAssignment, self)
-	return timelineAssignment
+function Private.classes.TimelineAssignment:New(assignment, o)
+	local instance = CreateNewInstance(self, o)
+	instance.assignment = assignment or Private.classes.Assignment:New(assignment)
+	return instance
+end
+
+-- Creates a timeline assignment from an assignment.
+---@param timelineAssignmentToCopy TimelineAssignment
+---@param o any
+---@return TimelineAssignment
+function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, o)
+	o = o or {}
+	for key, value in pairs(Private.DeepCopy(timelineAssignmentToCopy)) do
+		if key ~= "assignment" then
+			o[key] = value
+		end
+	end
+	o.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment)
+	setmetatable(o, getmetatable(timelineAssignmentToCopy))
+	return o
 end
 
 ---@param o any

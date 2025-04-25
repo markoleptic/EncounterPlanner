@@ -533,6 +533,7 @@ do
 					timelineAssignment.invalidChargeCast = true
 				end
 
+				timelineAssignment.relativeChargeRestoreTime = nil
 				for _, regenTime in ipairs(regenQueue) do
 					if regenTime > startTime then
 						local relativeTime = regenTime - startTime

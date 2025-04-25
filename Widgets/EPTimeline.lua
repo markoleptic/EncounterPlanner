@@ -313,7 +313,7 @@ end
 
 ---@param assignmentFrames table<integer, AssignmentFrame>
 ---@param frameIndices table<integer, integer>
-local function SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, frameIndices)
+local function SortAssignmentFrameIndices(assignmentFrames, frameIndices)
 	sort(frameIndices, function(a, b)
 		local leftA, leftB = assignmentFrames[a]:GetLeft(), assignmentFrames[b]:GetLeft()
 		if leftA and leftB then
@@ -749,7 +749,7 @@ local function StopMovingAssignment(self, assignmentFrame)
 			end
 
 			if time then
-				self:Fire("DuplicateAssignment", timelineAssignment, time)
+				self:Fire("DuplicateAssignmentEnd", timelineAssignment, time)
 			end
 		end
 		self.fakeAssignmentFrame:SetWidth(self.preferences.timelineRows.assignmentHeight)
@@ -859,55 +859,66 @@ local function HandleAssignmentUpdate(self, frame)
 		-horizontalCursorAssignmentFrameOffsetWhenClicked
 	)
 	UpdateTimeLabels(self)
+
 	if assignmentFrameBeingDragged and assignmentFrameBeingDragged.timelineAssignment then
-		local order = assignmentFrameBeingDragged.timelineAssignment.order
-		local spellIDAssignmentFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices[order]
-		local assignmentFrames = self.assignmentFrames
-		local orderedAssignmentFrameIndices = {}
-		local timelineAssignmentsInRow, matchingAssignmentFrameIndices = {}, {}
-		for spellID, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
-			for _, index in ipairs(assignmentFrameIndices) do
-				orderedAssignmentFrameIndices[#orderedAssignmentFrameIndices + 1] = index
-				if spellID == assignmentFrameBeingDragged.timelineAssignment.assignment.spellID then
-					matchingAssignmentFrameIndices[#matchingAssignmentFrameIndices + 1] = index
-					timelineAssignmentsInRow[#timelineAssignmentsInRow + 1] = self.timelineAssignments[index]
-				end
-			end
-		end
-
-		-- TODO: Invalid textures not properly updated
-
 		local time = ConvertTimelineOffsetToTime(assignmentFrameBeingDragged, self.bossAbilityTimeline.timelineFrame)
 		if time then
 			assignmentFrameBeingDragged.timelineAssignment.startTime = time
-			self.ComputeChargeStates(timelineAssignmentsInRow)
-			for i, timelineAssignmentInRow in ipairs(timelineAssignmentsInRow) do
-				self:DrawAssignment(
-					timelineAssignmentInRow.startTime,
-					timelineAssignmentInRow.assignment.spellID,
-					matchingAssignmentFrameIndices[i],
-					timelineAssignmentInRow.assignment.uniqueID,
-					timelineAssignmentInRow.order,
-					self.preferences.showSpellCooldownDuration
-						and not self.collapsed[timelineAssignmentInRow.assignment.assignee],
-					timelineAssignmentInRow.effectiveCooldownDuration,
-					timelineAssignmentInRow.relativeChargeRestoreTime,
-					timelineAssignmentInRow.invalidChargeCast
-				)
+			local order = assignmentFrameBeingDragged.timelineAssignment.order
+			local spellIDAssignmentFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices[order]
+
+			local sortedAssignmentFrameIndices = {} ---@type table<integer,integer>
+			for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
+				for _, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
+					sortedAssignmentFrameIndices[#sortedAssignmentFrameIndices + 1] = assignmentFrameIndex
+				end
 			end
-		end
+			local assignmentFrames = self.assignmentFrames
+			-- Need to sort by offset due to the fake assignment frame
+			SortAssignmentFrameIndices(assignmentFrames, sortedAssignmentFrameIndices)
 
-		SortAssignmentFrameIndicesByHorizontalOffset(assignmentFrames, orderedAssignmentFrameIndices)
+			local spellID = assignmentFrameBeingDragged.timelineAssignment.assignment.spellID
+			local matchingSpellIDAssignmentFrameIndices = {} ---@type table<integer, integer>
+			local matchingTimelineAssignments = {} ---@type table<integer, TimelineAssignment>
 
-		local timelineFrame = self.assignmentTimeline.timelineFrame
-		local minFrameLevel = timelineFrame:GetFrameLevel() + 1
-		local left = (-self.preferences.timelineRows.assignmentHeight * order)
+			-- Only compute charge states for matching spellIDs
+			for _, index in ipairs(sortedAssignmentFrameIndices) do
+				if assignmentFrames[index].spellID == spellID then
+					local newIndex = #matchingSpellIDAssignmentFrameIndices + 1
+					matchingSpellIDAssignmentFrameIndices[newIndex] = index
+					matchingTimelineAssignments[newIndex] = assignmentFrames[index].timelineAssignment
+				end
+			end
+			self.ComputeChargeStates(matchingTimelineAssignments)
 
-		for _, index in pairs(orderedAssignmentFrameIndices) do
-			local assignmentFrame = assignmentFrames[index]
-			assignmentFrame:SetFrameLevel(minFrameLevel)
-			assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
-			minFrameLevel = minFrameLevel + 1
+			for _, assignmentFrameIndex in ipairs(matchingSpellIDAssignmentFrameIndices) do
+				local timelineAssignment = assignmentFrames[assignmentFrameIndex].timelineAssignment
+				if timelineAssignment then
+					self:DrawAssignment(
+						timelineAssignment.startTime,
+						timelineAssignment.assignment.spellID,
+						assignmentFrameIndex,
+						timelineAssignment.assignment.uniqueID,
+						timelineAssignment.order,
+						self.preferences.showSpellCooldownDuration
+							and not self.collapsed[timelineAssignment.assignment.assignee],
+						timelineAssignment.effectiveCooldownDuration,
+						timelineAssignment.relativeChargeRestoreTime,
+						timelineAssignment.invalidChargeCast
+					)
+				end
+			end
+
+			local timelineFrame = self.assignmentTimeline.timelineFrame
+			local minFrameLevel = timelineFrame:GetFrameLevel() + 1
+			local left = (-self.preferences.timelineRows.assignmentHeight * order)
+
+			for _, index in ipairs(sortedAssignmentFrameIndices) do
+				local assignmentFrame = assignmentFrames[index]
+				assignmentFrame:SetFrameLevel(minFrameLevel)
+				assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
+				minFrameLevel = minFrameLevel + 1
+			end
 		end
 	end
 end
@@ -941,10 +952,15 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			local spellID = timelineAssignment.assignment.spellID
 			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
 			local spellIDTable = orderTable[spellID]
+
+			local newTimelineAssignment = {}
+			self:Fire("DuplicateAssignmentStart", timelineAssignment, newTimelineAssignment)
+
 			for spellIDTablePositionIndex, assignmentFrameIndex in ipairs(spellIDTable) do
 				if assignmentFrameIndex == index then
 					local newIndex = #self.assignmentFrames + 1
 					self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
+					self.fakeAssignmentFrame.timelineAssignment = newTimelineAssignment
 					self.assignmentFrames[newIndex] = self.fakeAssignmentFrame
 					tinsert(spellIDTable, spellIDTablePositionIndex, newIndex)
 					break
@@ -1282,7 +1298,7 @@ local function UpdateAssignments(self)
 			timelineAssignment.relativeChargeRestoreTime,
 			timelineAssignment.invalidChargeCast
 		)
-
+		self.assignmentFrames[index].timelineAssignment = timelineAssignment
 		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
 		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
 	end
@@ -2436,6 +2452,7 @@ local function GetSelectedAssignments(self, clear)
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = nil
 			frame.selected = nil
+			frame.timelineAssignment = nil
 			if frame.chargeMarker then
 				frame.chargeMarker:ClearAllPoints()
 				frame.chargeMarker:Hide()
