@@ -139,6 +139,7 @@ L["Current Plan Bar"] = true
 L["Current Plan Roster"] = true
 L["Current Plan:"] = true
 L["Current Profile"] = true
+L["Custom Charges"] = true
 L["Custom Cooldown"] = true
 L["Custom Count"] = true
 L["Custom Duration"] = true

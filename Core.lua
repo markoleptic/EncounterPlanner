@@ -494,7 +494,19 @@ do -- Profile updating and refreshing
 						end
 					end
 				end
+
+				if noVersion or IsVersionLessThan(major, minor, patch, 1, 1, 2) then -- v1.1.1 or less
+					local cooldownOverrides = profile.cooldownOverrides --[[@as table<integer, number>]]
+					if cooldownOverrides then
+						for spellID, cooldownDuration in pairs(cooldownOverrides) do
+							profile.cooldownAndChargeOverrides[spellID] = { duration = cooldownDuration }
+						end
+						---@diagnostic disable-next-line: inject-field
+						profile.cooldownOverrides = nil
+					end
+				end
 			end
+
 			profile.version = currentVersionString
 
 			--@debug@

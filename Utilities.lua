@@ -1156,16 +1156,20 @@ do
 	function Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog)
 		local timelineAssignments = {}
 		if AddOn.db then
-			local cooldownOverrides = AddOn.db.profile.cooldownOverrides
-			-- local chargeOverrides = AddOn.db.profile.cooldownOverrides TODO
+			local cooldownAndChargeOverrides = AddOn.db.profile.cooldownAndChargeOverrides
 			for _, assignment in pairs(plan.assignments) do
 				local timelineAssignment = TimelineAssignment:New(assignment)
 				local spellID = assignment.spellID
-				local overrideDuration = cooldownOverrides[spellID]
-				-- local overrideCharges = chargeOverrides[spellID] TODO
-				if overrideDuration then
-					timelineAssignment.cooldownDuration = overrideDuration
-					timelineAssignment.maxCharges = 1
+				local cooldownAndChargeOverride = cooldownAndChargeOverrides[spellID]
+
+				if cooldownAndChargeOverride then
+					timelineAssignment.cooldownDuration = cooldownAndChargeOverride.duration
+					if cooldownAndChargeOverride.maxCharges then
+						timelineAssignment.maxCharges = cooldownAndChargeOverride.maxCharges
+					else
+						local _, charges = Utilities.GetSpellCooldownAndCharges(spellID)
+						timelineAssignment.maxCharges = charges
+					end
 				else
 					timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
 						Utilities.GetSpellCooldownAndCharges(spellID)

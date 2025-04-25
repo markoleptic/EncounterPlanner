@@ -181,7 +181,7 @@ end
 ---@class CooldownOverrideObject
 ---@field FormatTime fun(number): string,string
 ---@field GetSpellCooldown fun(integer): number
----@field cooldownDurations table<integer, number>
+---@field cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride>
 ---@field option EPSettingOption
 ---@field activeContainer EPContainer
 ---@field scrollFrame EPScrollFrame
@@ -212,9 +212,12 @@ do
 	end
 
 	local function CopyAndSet()
-		local copy = {}
-		for k, v in pairs(cooldownOverrideObject.cooldownDurations) do
-			copy[k] = v
+		local copy = {} ---@type table<integer, CooldownAndChargeOverride>
+		for k, v in pairs(cooldownOverrideObject.cooldownAndChargeOverrides) do
+			copy[k] = {
+				duration = v.duration,
+				maxCharges = v.maxCharges,
+			}
 		end
 		cooldownOverrideObject.option.set(copy)
 	end
@@ -223,7 +226,7 @@ do
 	---@param minLineEdit EPLineEdit
 	---@param secLineEdit EPLineEdit
 	local function UpdateCooldown(spellID, minLineEdit, secLineEdit)
-		local previousDuration = cooldownOverrideObject.cooldownDurations[spellID]
+		local previousDuration = cooldownOverrideObject.cooldownAndChargeOverrides[spellID].duration
 		local newDuration = previousDuration
 		local timeMinutes = tonumber(minLineEdit:GetText())
 		local timeSeconds = tonumber(secLineEdit:GetText())
@@ -232,7 +235,7 @@ do
 			local roundedSeconds = Round(timeSeconds, 1)
 			newDuration = roundedMinutes * 60 + roundedSeconds
 			newDuration = Clamp(newDuration, minDuration, cooldownOverrideObject.GetSpellCooldown(spellID) * 2.0)
-			cooldownOverrideObject.cooldownDurations[spellID] = newDuration
+			cooldownOverrideObject.cooldownAndChargeOverrides[spellID].duration = newDuration
 			if abs(previousDuration - newDuration) > 0.01 then
 				CopyAndSet()
 			end
@@ -243,6 +246,30 @@ do
 		secLineEdit:SetText(seconds)
 	end
 
+	---@param spellID integer
+	---@param maxChargesLineEdit EPLineEdit
+	local function UpdateMaxCharges(spellID, maxChargesLineEdit)
+		local previousMaxCharges = cooldownOverrideObject.cooldownAndChargeOverrides[spellID].maxCharges
+		local text = maxChargesLineEdit:GetText()
+		if text:trim():len() == 0 then
+			cooldownOverrideObject.cooldownAndChargeOverrides[spellID].maxCharges = nil
+			CopyAndSet()
+		else
+			local maxCharges = tonumber(text)
+			if maxCharges then
+				maxCharges = Round(maxCharges, 0)
+				maxCharges = Clamp(maxCharges, 1, 5)
+				cooldownOverrideObject.cooldownAndChargeOverrides[spellID].maxCharges = maxCharges
+				if maxCharges ~= previousMaxCharges then
+					CopyAndSet()
+				end
+			else
+				maxCharges = previousMaxCharges
+			end
+			maxChargesLineEdit:SetText(maxCharges)
+		end
+	end
+
 	local function SetRelativeLabelWidths()
 		local width = cooldownOverrideObject.scrollFrame.scrollFrameWrapper:GetWidth()
 		local labelContainer = cooldownOverrideObject.labelContainer
@@ -250,42 +277,43 @@ do
 		local containerWidth = cooldownOverrideObject.activeContainer.frame:GetWidth()
 		local widthDiff = width - 4 - containerWidth
 
-		local fullNonSpacingWidth = width - 3 * labelContainer.content.spacing.x
+		local fullNonSpacingWidth = width - 4 * labelContainer.content.spacing.x
 		local spacerWidth = (deleteButtonSize + widthDiff) / fullNonSpacingWidth
-		local firstThreeWidth = (fullNonSpacingWidth - deleteButtonSize - widthDiff) / 3.0
-		local firstThreeRelativeWidth = firstThreeWidth / fullNonSpacingWidth
+		local totalAvailableWidgetWidth = fullNonSpacingWidth - deleteButtonSize - widthDiff
 
-		labelContainer.children[1]:SetRelativeWidth(firstThreeRelativeWidth)
-		labelContainer.children[2]:SetRelativeWidth(firstThreeRelativeWidth)
-		labelContainer.children[3]:SetRelativeWidth(firstThreeRelativeWidth)
-		labelContainer.children[4]:SetRelativeWidth(spacerWidth)
+		labelContainer.children[1]:SetRelativeWidth(totalAvailableWidgetWidth * 0.4 / fullNonSpacingWidth)
+		labelContainer.children[2]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+		labelContainer.children[3]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+		labelContainer.children[4]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+		labelContainer.children[5]:SetRelativeWidth(spacerWidth)
 		labelContainer:DoLayout()
 	end
 
 	---@param container EPContainer
 	---@param width number
 	local function SetRelativeWidths(container, width)
-		local nonSpacingWidth = width - 3 * container.content.spacing.x
-		local firstThreeWidth = (nonSpacingWidth - deleteButtonSize) / 3.0
-		local firstThreeRelativeWidth = firstThreeWidth / nonSpacingWidth
+		local fullNonSpacingWidth = width - 4 * container.content.spacing.x
+		local totalAvailableWidgetWidth = fullNonSpacingWidth - deleteButtonSize
 
 		for _, widget in ipairs(container.children) do
-			if widget.children and #widget.children == 4 then
-				widget.children[1]:SetRelativeWidth(firstThreeRelativeWidth)
-				widget.children[2]:SetRelativeWidth(firstThreeRelativeWidth)
-				widget.children[3]:SetRelativeWidth(firstThreeRelativeWidth)
-				widget.children[4]:SetRelativeWidth(deleteButtonSize / nonSpacingWidth)
+			if widget.children and #widget.children == 5 then
+				widget.children[1]:SetRelativeWidth(totalAvailableWidgetWidth * 0.4 / fullNonSpacingWidth)
+				widget.children[2]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+				widget.children[3]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+				widget.children[4]:SetRelativeWidth(totalAvailableWidgetWidth * 0.2 / fullNonSpacingWidth)
+				widget.children[5]:SetRelativeWidth(deleteButtonSize / fullNonSpacingWidth)
 				widget:DoLayout()
 			end
 		end
 	end
 
 	---@param activeContainer EPContainer
-	---@param initialSpellID? integer
-	---@param duration? number
+	---@param initialSpellID integer?
+	---@param duration number?
+	---@param maxCharges integer?
 	---@return EPContainer
 	---@return EPSpacer
-	local function CreateEntry(activeContainer, initialSpellID, duration)
+	local function CreateEntry(activeContainer, initialSpellID, duration, maxCharges)
 		local currentSpellID = initialSpellID
 
 		local container = AceGUI:Create("EPContainer")
@@ -306,9 +334,14 @@ do
 		defaultContainer:SetLayout("EPHorizontalLayout")
 		defaultContainer:SetSpacing(0, 0)
 
+		local chargeContainer = AceGUI:Create("EPContainer")
+		chargeContainer:SetLayout("EPHorizontalLayout")
+		chargeContainer:SetSpacing(0, 0)
+
 		local defaultLabel = AceGUI:Create("EPLabel")
 		defaultLabel:SetHorizontalTextAlignment("CENTER")
 		defaultLabel:SetFullWidth(true)
+
 		if initialSpellID then
 			local spellCooldown = cooldownOverrideObject.GetSpellCooldown(initialSpellID)
 			defaultLabel:SetText(format("%s:%s", cooldownOverrideObject.FormatTime(spellCooldown)), 0)
@@ -349,6 +382,15 @@ do
 			end
 		end)
 
+		local chargeLineEdit = AceGUI:Create("EPLineEdit")
+		chargeLineEdit:SetFullWidth(true)
+		chargeLineEdit:SetCallback("OnTextSubmitted", function()
+			if type(currentSpellID) == "number" then
+				UpdateMaxCharges(currentSpellID, chargeLineEdit)
+			end
+		end)
+		chargeLineEdit:SetText(maxCharges)
+
 		local deleteButton = AceGUI:Create("EPButton")
 		deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 		deleteButton:SetIconPadding(0, 0)
@@ -359,10 +401,10 @@ do
 		spacer:SetFullWidth(true)
 		spacer:SetHeight(4)
 
-		local cooldownDurations = cooldownOverrideObject.cooldownDurations
+		local cooldownAndChargeOverrides = cooldownOverrideObject.cooldownAndChargeOverrides
 		deleteButton:SetCallback("Clicked", function()
 			if currentSpellID then
-				cooldownDurations[currentSpellID] = nil
+				cooldownAndChargeOverrides[currentSpellID] = nil
 				CopyAndSet()
 			end
 			activeContainer:RemoveChildNoDoLayout(container)
@@ -390,16 +432,17 @@ do
 					realDropdown:SetCallback("OnValueChanged", function(widget, _, value)
 						local _, text = widget:FindItemAndText(value)
 						if type(value) == "number" then
-							if not cooldownDurations[value] then
+							if not cooldownAndChargeOverrides[value] then
 								local cooldown = cooldownOverrideObject.GetSpellCooldown(value)
 								local m, s = cooldownOverrideObject.FormatTime(cooldown)
 								defaultLabel:SetText(format("%s:%s", m, s), 0)
 								minuteLineEdit:SetText(m)
 								secondLineEdit:SetText(s)
+								chargeLineEdit:SetText()
 								dropdown:SetText(text)
 								dropdown:SetEnabled(false)
 								currentSpellID = value
-								cooldownDurations[currentSpellID] = cooldown
+								cooldownAndChargeOverrides[currentSpellID] = { duration = cooldown }
 								CopyAndSet()
 							else
 								activeContainer:RemoveChildNoDoLayout(container)
@@ -423,22 +466,28 @@ do
 		dropdownContainer:AddChild(dropdown)
 		defaultContainer:AddChild(defaultLabel)
 		currentContainer:AddChildren(minuteLineEdit, separatorLabel, secondLineEdit)
-		container:AddChildren(dropdownContainer, defaultContainer, currentContainer, deleteButton)
+		chargeContainer:AddChild(chargeLineEdit)
+		container:AddChildren(dropdownContainer, defaultContainer, currentContainer, chargeContainer, deleteButton)
 
 		return container, spacer
 	end
 
-	---@param entries table<integer, number>
+	---@param entries table<integer, CooldownAndChargeOverride>
 	local function AddEntries(entries)
-		local cooldownDurations = cooldownOverrideObject.cooldownDurations
+		local cooldownDurations = cooldownOverrideObject.cooldownAndChargeOverrides
 		wipe(cooldownDurations)
 
 		local containersAndSpacers = {}
 		local activeContainer = cooldownOverrideObject.activeContainer
-		for spellID, duration in pairs(entries) do
-			cooldownDurations[spellID] = duration
+		for spellID, cooldownAndChargeOverride in pairs(entries) do
+			local duration = cooldownAndChargeOverride.duration
+			local maxCharges = cooldownAndChargeOverride.maxCharges
+			cooldownDurations[spellID] = {
+				duration = duration,
+				maxCharges = maxCharges,
+			}
 			local spellName = GetSpellName(spellID)
-			local container, spacer = CreateEntry(activeContainer, spellID, duration)
+			local container, spacer = CreateEntry(activeContainer, spellID, duration, maxCharges)
 			tinsert(containersAndSpacers, { container = container, spacer = spacer, spellName = spellName or "" })
 		end
 
@@ -472,21 +521,31 @@ do
 		columnTwoLabel:SetHorizontalTextAlignment("CENTER")
 		columnTwoLabel.text:SetTextColor(unpack(headingColor))
 
+		local columnThreeLabel = AceGUI:Create("EPLabel")
+		columnThreeLabel:SetText(L["Custom Charges"], 0)
+		columnThreeLabel:SetHorizontalTextAlignment("CENTER")
+		columnThreeLabel.text:SetTextColor(unpack(headingColor))
+
 		local spacer = AceGUI:Create("EPSpacer")
 		spacer:SetWidth(deleteButtonSize)
 		spacer:SetHeight(deleteButtonSize)
 
-		cooldownOverrideObject.labelContainer:AddChildren(columnZeroLabel, columnOneLabel, columnTwoLabel, spacer)
+		cooldownOverrideObject.labelContainer:AddChildren(
+			columnZeroLabel,
+			columnOneLabel,
+			columnTwoLabel,
+			columnThreeLabel,
+			spacer
+		)
 
 		local activeContainer = cooldownOverrideObject.activeContainer
-		local options = option.get()
 		local addEntryButton = AceGUI:Create("EPButton")
 		addEntryButton:SetText("+")
 		addEntryButton:SetHeight(deleteButtonSize)
 		addEntryButton:SetWidth(deleteButtonSize)
 		addEntryButton:SetColor(unpack(neutralButtonColor))
 		addEntryButton:SetCallback("Clicked", function()
-			local container, space = CreateEntry(activeContainer, nil, nil)
+			local container, space = CreateEntry(activeContainer, nil, nil, nil)
 			activeContainer:InsertChildren(addEntryButton, container, space)
 			SetRelativeWidths(activeContainer, activeContainer.content:GetWidth())
 			activeContainer:DoLayout()
@@ -494,7 +553,9 @@ do
 		end)
 
 		activeContainer:AddChild(addEntryButton)
+		local options = option.get()
 		if type(options) == "table" then
+			---@cast options table<integer, CooldownAndChargeOverride>
 			AddEntries(options)
 		end
 	end
@@ -1530,7 +1591,7 @@ local function PopulateActiveTab(self, tab)
 		cooldownOverrideObject.activeContainer = self.activeContainer
 		cooldownOverrideObject.scrollFrame = self.scrollFrame
 		cooldownOverrideObject.option = self.optionTabs[tab][1]
-		cooldownOverrideObject.cooldownDurations = {}
+		cooldownOverrideObject.cooldownAndChargeOverrides = {} ---@type table<integer, CooldownAndChargeOverride>
 		cooldownOverrideObject.realDropdown = AceGUI:Create("EPDropdown")
 		cooldownOverrideObject.realDropdown:AddItems(self.spellDropdownItems, "EPDropdownItemToggle")
 		cooldownOverrideObject.realDropdown.frame:Hide()
@@ -1547,12 +1608,11 @@ local function PopulateActiveTab(self, tab)
 
 		cooldownOverrideObject.FormatTime = nil
 		cooldownOverrideObject.GetSpellCooldown = nil
-		cooldownOverrideObject.cooldownDurations = nil
+		cooldownOverrideObject.cooldownAndChargeOverrides = nil
 		cooldownOverrideObject.labelContainer = nil
 		cooldownOverrideObject.activeContainer = nil
 		cooldownOverrideObject.scrollFrame = nil
 		cooldownOverrideObject.option = nil
-		cooldownOverrideObject.cooldownDurations = nil
 		if cooldownOverrideObject.realDropdown then
 			cooldownOverrideObject.realDropdown:Release()
 			cooldownOverrideObject.realDropdown = nil
@@ -1767,12 +1827,11 @@ local function OnRelease(self)
 
 	cooldownOverrideObject.FormatTime = nil
 	cooldownOverrideObject.GetSpellCooldown = nil
-	cooldownOverrideObject.cooldownDurations = nil
+	cooldownOverrideObject.cooldownAndChargeOverrides = nil
 	cooldownOverrideObject.labelContainer = nil
 	cooldownOverrideObject.activeContainer = nil
 	cooldownOverrideObject.scrollFrame = nil
 	cooldownOverrideObject.option = nil
-	cooldownOverrideObject.cooldownDurations = nil
 	if cooldownOverrideObject.realDropdown then
 		AceGUI:Release(cooldownOverrideObject.realDropdown)
 	end

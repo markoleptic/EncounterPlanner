@@ -3198,11 +3198,12 @@ do
 				type = "cooldownOverrides",
 				description = L["Override the default cooldown of player spells."],
 				get = function()
-					return AddOn.db.profile.cooldownOverrides
+					return AddOn.db.profile.cooldownAndChargeOverrides
 				end,
 				set = function(value)
 					if type(value) == "table" then
-						AddOn.db.profile.cooldownOverrides = value
+						---@cast value table<integer, CooldownAndChargeOverride>
+						AddOn.db.profile.cooldownAndChargeOverrides = value
 						if Private.mainFrame and Private.mainFrame.bossLabel then
 							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 							if bossDungeonEncounterID then
@@ -3318,7 +3319,7 @@ function Private:CreateOptionsMenu()
 		local optionsMenu = AceGUI:Create("EPOptions")
 		optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems().dropdownItemMenuData
 		optionsMenu.FormatTime = utilities.FormatTime
-		optionsMenu.GetSpellCooldown = utilities.GetSpellCooldown
+		optionsMenu.GetSpellCooldown = utilities.GetSpellCooldownAndCharges
 		optionsMenu.frame:SetParent(UIParent)
 		optionsMenu.frame:SetFrameStrata("DIALOG")
 		optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)

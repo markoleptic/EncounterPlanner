@@ -321,6 +321,10 @@
 ---@field textToSpeech ReminderTextToSpeechPreferences
 ---@field sound ReminderSoundPreferences
 
+---@class CooldownAndChargeOverride
+---@field duration number Overridden cooldown duration.
+---@field maxCharges integer|nil Optional overridden charge count.
+
 ---@class DefaultProfile
 ---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
 ---@field plans table<string, Plan> All plans.
@@ -330,7 +334,8 @@
 ---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
 ---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 ---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
----@field cooldownOverrides table<integer, number> Cooldown duration overrides for spells.
+-- Cooldown duration and charge overrides for spells.
+---@field cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride>
 ---@field activeText table<integer, string> External text send by the group leader on encounter start.
 ---@field preferences Preferences Settings.
 ---@field version string
@@ -491,10 +496,10 @@
 ---|7 Invalid boss
 
 ---@alias GetFunction
----| fun(): string|boolean|table<integer, number>|number,number?,number?,number?
+---| fun(): string|boolean|table<integer, number>|table<integer, CooldownAndChargeOverride>|number,number?,number?,number?
 
 ---@alias SetFunction
----| fun(value: string|boolean|number|table<integer, number>, value2?: string|boolean|number, value3?:number, value4?:number)
+---| fun(value: string|boolean|number|table<integer, number>|table<integer, CooldownAndChargeOverride>, value2?: string|boolean|number, value3?:number, value4?:number)
 
 ---@alias ValidateFunction
 ---| fun(value: string|number, value2?: string): boolean, string|number?,number?
