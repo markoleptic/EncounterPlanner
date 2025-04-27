@@ -498,7 +498,7 @@ do -- Profile updating and refreshing
 					end
 				end
 
-				if noVersion or IsVersionLessThan(major, minor, patch, 1, 1, 2) then -- v1.1.1 or less
+				if noVersion or IsVersionLessThan(major, minor, patch, 1, 2, 0) then -- v1.1.1 or less
 					local cooldownOverrides = profile.cooldownOverrides --[[@as table<integer, number>]]
 					if cooldownOverrides then
 						for spellID, cooldownDuration in pairs(cooldownOverrides) do

@@ -1,5 +1,5 @@
 ## Interface: 110105, 110007, 110100
-## Version: 1.1.1
+## Version: 1.2.0
 ## Title: Encounter Planner
 ## Notes: Assignment planning and reminder tool for mythic dungeon and raid boss encounters /ep
 ## Author: Markoleptic
