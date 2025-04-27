@@ -713,7 +713,8 @@ local function UpdateBossAbilityBars(self)
 	end
 end
 
--- Called when an assignment has stopped being dragged.
+-- Called when an assignment has stopped being dragged. Returns true if the assignment was duplicated, or the
+-- difference between the previous assignment time and the new assignment time if the assignment was only moved.
 ---@param self EPTimeline
 ---@param assignmentFrame AssignmentFrame
 ---@return boolean|number
@@ -792,7 +793,19 @@ local function HandleAssignmentUpdate(self, frame)
 	end
 
 	local horizontalCursorPosition = GetCursorPosition() / UIParent:GetEffectiveScale()
-	if abs(horizontalCursorPosition - horizontalCursorPositionWhenAssignmentFrameClicked) < 5 then
+	local difference = horizontalCursorPosition - horizontalCursorPositionWhenAssignmentFrameClicked
+	if abs(difference) < 5 then -- Use a threshold of 5 pixels before changing the time
+		UpdateLinePosition(
+			self.assignmentTimeline.frame,
+			self.assignmentTimeline.verticalPositionLine,
+			-horizontalCursorAssignmentFrameOffsetWhenClicked - difference
+		)
+		UpdateLinePosition(
+			self.bossAbilityTimeline.frame,
+			self.bossAbilityTimeline.verticalPositionLine,
+			-horizontalCursorAssignmentFrameOffsetWhenClicked - difference
+		)
+		UpdateTimeLabels(self)
 		return
 	end
 	horizontalCursorPositionWhenAssignmentFrameClicked = 0
@@ -1015,22 +1028,26 @@ local function HandleAssignmentMouseUp(self, frame, mouseButton)
 	if isSimulating then
 		return
 	end
-	local result = nil
+	local duplicatedOrAssignmentTimeDifference = nil
 	if assignmentIsDragging then
-		result = StopMovingAssignment(self, frame)
-		if type(result) == "boolean" and result == true then
+		duplicatedOrAssignmentTimeDifference = StopMovingAssignment(self, frame)
+		if type(duplicatedOrAssignmentTimeDifference) == "boolean" and duplicatedOrAssignmentTimeDifference == true then
+			self.bossAbilityTimeline.verticalPositionLine:Hide()
+			self.assignmentTimeline.verticalPositionLine:Hide()
 			UpdateTimeLabels(self)
 			return
 		end
 	end
 
-	if not IsValidKeyCombination(self.preferences.keyBindings.editAssignment, mouseButton) then
-		return
+	if IsValidKeyCombination(self.preferences.keyBindings.editAssignment, mouseButton) then
+		if frame.uniqueAssignmentID then
+			self:Fire("AssignmentClicked", frame.uniqueAssignmentID, duplicatedOrAssignmentTimeDifference)
+		end
 	end
 
-	if frame.uniqueAssignmentID then
-		self:Fire("AssignmentClicked", frame.uniqueAssignmentID, result)
-	end
+	self.bossAbilityTimeline.verticalPositionLine:Hide()
+	self.assignmentTimeline.verticalPositionLine:Hide()
+	UpdateTimeLabels(self)
 end
 
 ---@param self EPTimeline
@@ -1042,43 +1059,44 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 
 	if assignmentIsDragging and assignmentFrameBeingDragged then
 		StopMovingAssignment(self, assignmentFrameBeingDragged)
+		self.bossAbilityTimeline.verticalPositionLine:Hide()
+		self.assignmentTimeline.verticalPositionLine:Hide()
+		UpdateTimeLabels(self)
 		return
 	end
 
-	if not IsValidKeyCombination(self.preferences.keyBindings.newAssignment, mouseButton) then
-		return
-	end
+	if IsValidKeyCombination(self.preferences.keyBindings.newAssignment, mouseButton) then
+		local currentX, currentY = GetCursorPosition()
+		currentX = currentX / UIParent:GetEffectiveScale()
+		currentY = currentY / UIParent:GetEffectiveScale()
 
-	local currentX, currentY = GetCursorPosition()
-	currentX = currentX / UIParent:GetEffectiveScale()
-	currentY = currentY / UIParent:GetEffectiveScale()
+		local timelineFrame = self.bossAbilityTimeline.timelineFrame
+		local timelineWidth = timelineFrame:GetWidth()
+		local padding = timelineLinePadding.x
+		local newTimeOffset = currentX - timelineFrame:GetLeft()
+		local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
 
-	local timelineFrame = self.bossAbilityTimeline.timelineFrame
-	local timelineWidth = timelineFrame:GetWidth()
-	local padding = timelineLinePadding.x
-	local newTimeOffset = currentX - timelineFrame:GetLeft()
-	local time = (newTimeOffset - padding) * totalTimelineDuration / (timelineWidth - padding * 2)
+		if time < 0.0 or time > totalTimelineDuration then
+			return
+		end
 
-	if time < 0.0 or time > totalTimelineDuration then
-		return
-	end
-
-	local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
-	local totalAssignmentHeight = 0
-	local assignee, spellID = nil, nil
-	for _, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-		if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
-			totalAssignmentHeight = totalAssignmentHeight
-				+ (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
-			if totalAssignmentHeight >= relativeDistanceFromTop then
-				assignee, spellID = assigneeAndSpell.assignee, assigneeAndSpell.spellID
-				break
+		local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
+		local totalAssignmentHeight = 0
+		local assignee, spellID = nil, nil
+		for _, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
+			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
+				totalAssignmentHeight = totalAssignmentHeight
+					+ (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
+				if totalAssignmentHeight >= relativeDistanceFromTop then
+					assignee, spellID = assigneeAndSpell.assignee, assigneeAndSpell.spellID
+					break
+				end
 			end
 		end
-	end
 
-	if assignee then
-		self:Fire("CreateNewAssignment", assignee, spellID, time)
+		if assignee then
+			self:Fire("CreateNewAssignment", assignee, spellID, time)
+		end
 	end
 end
 
@@ -1555,9 +1573,9 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 
 	timelineFrameIsDragging = true
 	timelineFrameOffsetWhenDragStarted = GetCursorPosition()
+
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
-
 	UpdateTimeLabels(self)
 
 	local splitterScrollFrame = self.splitterScrollFrame
