@@ -331,7 +331,9 @@ L["Only shows Messages at the end of the countdown. Messages are displayed for 2
 L["Open Preferences"] = true
 L["Opens the assignment editor when this key is pressed when hovering over an assignment spell icon."] = true
 L["Outline"] = true
-L["Override the default cooldown of player spells."] = true
+L["Overrides the cooldown duration of the spell."] = true
+L["Overrides the max number of charges of the spell (1-5). If left empty, uses charges based on current talents."] =
+	true
 L["Overwrite"] = true
 L["Overwrite Current Plan"] = true
 L["Overwrite Plan Confirmation"] = true

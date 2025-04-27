@@ -3196,7 +3196,6 @@ do
 			{
 				label = L["Cooldown Overrides"],
 				type = "cooldownOverrides",
-				description = L["Override the default cooldown of player spells."],
 				get = function()
 					return AddOn.db.profile.cooldownAndChargeOverrides
 				end,
@@ -3319,7 +3318,7 @@ function Private:CreateOptionsMenu()
 		local optionsMenu = AceGUI:Create("EPOptions")
 		optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems().dropdownItemMenuData
 		optionsMenu.FormatTime = utilities.FormatTime
-		optionsMenu.GetSpellCooldown = utilities.GetSpellCooldownAndCharges
+		optionsMenu.GetSpellCooldownAndCharges = utilities.GetSpellCooldownAndCharges
 		optionsMenu.frame:SetParent(UIParent)
 		optionsMenu.frame:SetFrameStrata("DIALOG")
 		optionsMenu.frame:SetFrameLevel(kOptionsMenuFrameLevel)

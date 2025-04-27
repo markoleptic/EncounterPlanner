@@ -178,9 +178,21 @@ local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
 	end)
 end
 
+---@param frame Frame
+---@param label string
+---@param description string
+local function ShowTooltip(frame, label, description)
+	tooltip:SetOwner(frame, "ANCHOR_TOP")
+	tooltip:SetText(label, 1, 0.82, 0, true)
+	if type(description) == "string" then
+		tooltip:AddLine(description, 1, 1, 1, true)
+	end
+	tooltip:Show()
+end
+
 ---@class CooldownOverrideObject
 ---@field FormatTime fun(number): string,string
----@field GetSpellCooldown fun(integer): number
+---@field GetSpellCooldownAndCharges fun(integer): number, integer
 ---@field cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride>
 ---@field option EPSettingOption
 ---@field activeContainer EPContainer
@@ -234,7 +246,8 @@ do
 			local roundedMinutes = Round(timeMinutes, 0)
 			local roundedSeconds = Round(timeSeconds, 1)
 			newDuration = roundedMinutes * 60 + roundedSeconds
-			newDuration = Clamp(newDuration, minDuration, cooldownOverrideObject.GetSpellCooldown(spellID) * 2.0)
+			local maxDuration = cooldownOverrideObject.GetSpellCooldownAndCharges(spellID) * 2.0
+			newDuration = Clamp(newDuration, minDuration, maxDuration)
 			cooldownOverrideObject.cooldownAndChargeOverrides[spellID].duration = newDuration
 			if abs(previousDuration - newDuration) > 0.01 then
 				CopyAndSet()
@@ -343,7 +356,7 @@ do
 		defaultLabel:SetFullWidth(true)
 
 		if initialSpellID then
-			local spellCooldown = cooldownOverrideObject.GetSpellCooldown(initialSpellID)
+			local spellCooldown = cooldownOverrideObject.GetSpellCooldownAndCharges(initialSpellID)
 			defaultLabel:SetText(format("%s:%s", cooldownOverrideObject.FormatTime(spellCooldown)), 0)
 		else
 			defaultLabel:SetText("0:00")
@@ -381,6 +394,26 @@ do
 				UpdateCooldown(currentSpellID, minuteLineEdit, secondLineEdit)
 			end
 		end)
+		minuteLineEdit:SetCallback("OnEnter", function()
+			ShowTooltip(
+				currentContainer.frame,
+				L["Custom Cooldown"],
+				L["Overrides the cooldown duration of the spell."]
+			)
+		end)
+		secondLineEdit:SetCallback("OnEnter", function()
+			ShowTooltip(
+				currentContainer.frame,
+				L["Custom Cooldown"],
+				L["Overrides the cooldown duration of the spell."]
+			)
+		end)
+		minuteLineEdit:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
+		secondLineEdit:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
 
 		local chargeLineEdit = AceGUI:Create("EPLineEdit")
 		chargeLineEdit:SetFullWidth(true)
@@ -390,6 +423,16 @@ do
 			end
 		end)
 		chargeLineEdit:SetText(maxCharges)
+		chargeLineEdit:SetCallback("OnEnter", function()
+			ShowTooltip(
+				chargeContainer.frame,
+				L["Custom Charges"],
+				L["Overrides the max number of charges of the spell (1-5). If left empty, uses charges based on current talents."]
+			)
+		end)
+		chargeLineEdit:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
 
 		local deleteButton = AceGUI:Create("EPButton")
 		deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
@@ -433,7 +476,7 @@ do
 						local _, text = widget:FindItemAndText(value)
 						if type(value) == "number" then
 							if not cooldownAndChargeOverrides[value] then
-								local cooldown = cooldownOverrideObject.GetSpellCooldown(value)
+								local cooldown = cooldownOverrideObject.GetSpellCooldownAndCharges(value)
 								local m, s = cooldownOverrideObject.FormatTime(cooldown)
 								defaultLabel:SetText(format("%s:%s", m, s), 0)
 								minuteLineEdit:SetText(m)
@@ -696,18 +739,6 @@ local function UpdateUpdateIndices(updateIndices, option, index, func)
 			end
 		end
 	end
-end
-
----@param frame Frame
----@param label string
----@param description string
-local function ShowTooltip(frame, label, description)
-	tooltip:SetOwner(frame, "ANCHOR_TOP")
-	tooltip:SetText(label, 1, 0.82, 0, true)
-	if type(description) == "string" then
-		tooltip:AddLine(description, 1, 1, 1, true)
-	end
-	tooltip:Show()
 end
 
 ---@param self EPOptions
@@ -1586,7 +1617,7 @@ local function PopulateActiveTab(self, tab)
 		self.scrollFrame.frame:SetPoint("TOP", self.labelContainer.frame, "BOTTOM", 0, wrapperPadding)
 
 		cooldownOverrideObject.FormatTime = self.FormatTime
-		cooldownOverrideObject.GetSpellCooldown = self.GetSpellCooldown
+		cooldownOverrideObject.GetSpellCooldownAndCharges = self.GetSpellCooldownAndCharges
 		cooldownOverrideObject.labelContainer = self.labelContainer
 		cooldownOverrideObject.activeContainer = self.activeContainer
 		cooldownOverrideObject.scrollFrame = self.scrollFrame
@@ -1607,7 +1638,7 @@ local function PopulateActiveTab(self, tab)
 		self.labelContainer.frame:Hide()
 
 		cooldownOverrideObject.FormatTime = nil
-		cooldownOverrideObject.GetSpellCooldown = nil
+		cooldownOverrideObject.GetSpellCooldownAndCharges = nil
 		cooldownOverrideObject.cooldownAndChargeOverrides = nil
 		cooldownOverrideObject.labelContainer = nil
 		cooldownOverrideObject.activeContainer = nil
@@ -1749,7 +1780,7 @@ end
 ---@field scrollFrame EPScrollFrame
 ---@field spellDropdownItems table<integer, DropdownItemData>
 ---@field FormatTime fun(number): string,string
----@field GetSpellCooldown fun(integer): number
+---@field GetSpellCooldownAndCharges fun(integer): number, integer
 
 ---@param self EPOptions
 local function OnAcquire(self)
@@ -1852,7 +1883,7 @@ local function OnRelease(self)
 	self.updateIndices = nil
 	self.refreshMap = nil
 	self.FormatTime = nil
-	self.GetSpellCooldown = nil
+	self.GetSpellCooldownAndCharges = nil
 	self.spellDropdownItems = nil
 end
 
