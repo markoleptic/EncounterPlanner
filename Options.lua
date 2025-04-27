@@ -2973,10 +2973,10 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
-				label = L["Show Spell Cooldown Duration"],
+				label = L["Show Spell Cooldown Duration And Charges"],
 				type = "checkBox",
 				category = L["Assignment Timeline"],
-				description = L["Whether to show textures representing player spell cooldown durations."],
+				description = L["Whether to show textures representing player spell cooldown durations and charges."],
 				get = function()
 					return GetPreferences().showSpellCooldownDuration
 				end,

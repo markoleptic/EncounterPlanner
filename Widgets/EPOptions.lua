@@ -397,14 +397,14 @@ do
 		minuteLineEdit:SetCallback("OnEnter", function()
 			ShowTooltip(
 				currentContainer.frame,
-				L["Custom Cooldown"],
+				L["Custom Duration"],
 				L["Overrides the cooldown duration of the spell."]
 			)
 		end)
 		secondLineEdit:SetCallback("OnEnter", function()
 			ShowTooltip(
 				currentContainer.frame,
-				L["Custom Cooldown"],
+				L["Custom Duration"],
 				L["Overrides the cooldown duration of the spell."]
 			)
 		end)
@@ -555,12 +555,12 @@ do
 		columnZeroLabel.text:SetTextColor(unpack(headingColor))
 
 		local columnOneLabel = AceGUI:Create("EPLabel")
-		columnOneLabel:SetText(L["Default Cooldown"], 0)
+		columnOneLabel:SetText(L["Default Duration"], 0)
 		columnOneLabel:SetHorizontalTextAlignment("CENTER")
 		columnOneLabel.text:SetTextColor(unpack(headingColor))
 
 		local columnTwoLabel = AceGUI:Create("EPLabel")
-		columnTwoLabel:SetText(L["Custom Cooldown"], 0)
+		columnTwoLabel:SetText(L["Custom Duration"], 0)
 		columnTwoLabel:SetHorizontalTextAlignment("CENTER")
 		columnTwoLabel.text:SetTextColor(unpack(headingColor))
 
