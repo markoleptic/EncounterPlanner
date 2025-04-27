@@ -585,6 +585,7 @@ do -- Assignment Editor
 			local minutes, seconds = FormatTime(newTime)
 			assignmentEditor.timeMinuteLineEdit:SetText(minutes)
 			assignmentEditor.timeSecondLineEdit:SetText(seconds)
+			updateAssignments = true
 		elseif dataType == "OptionalText" then
 			assignment.text = value
 			if assignment.text:len() > 0 and assignment.spellID == constants.kInvalidAssignmentSpellID then

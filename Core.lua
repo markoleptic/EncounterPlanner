@@ -17,8 +17,11 @@ local utilities = Private.utilities
 local AceDB = LibStub("AceDB-3.0")
 local AddOnProfilerMetricEnum = Enum.AddOnProfilerMetric
 local format = string.format
+local GetConfigInfo = C_Traits.GetConfigInfo
+local TraitConfigType = Enum.TraitConfigType
 local GameTooltip = GameTooltip
 local ipairs = ipairs
+local NewTimer = C_Timer.NewTimer
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
@@ -562,6 +565,23 @@ function AddOn:OnInitialize()
 	self.OnInitialize = nil
 end
 
+---@param _ string
+---@param configID integer|nil
+local function HandlePlayerTalentUpdate(_, configID)
+	local configInfo = GetConfigInfo(configID)
+	if configInfo.type == TraitConfigType.Combat then
+		NewTimer(0, function()
+			utilities.RefreshCachedCooldowns()
+			if Private.mainFrame and Private.mainFrame.bossLabel then
+				local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
+				if bossDungeonEncounterID then
+					interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+				end
+			end
+		end)
+	end
+end
+
 function AddOn:OnEnable()
 	dungeonInstanceInitializer.InitializeDungeonInstances()
 	--@debug@
@@ -573,6 +593,7 @@ function AddOn:OnEnable()
 	if preferences.reminder.enabled then
 		Private:RegisterReminderEvents()
 	end
+	Private:RegisterEvent("TRAIT_CONFIG_UPDATED", HandlePlayerTalentUpdate)
 end
 
 function AddOn:OnDisable()

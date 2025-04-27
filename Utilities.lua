@@ -2237,33 +2237,49 @@ do
 	---@param spellID integer
 	---@return number
 	---@return integer
-	function Utilities.GetSpellCooldownAndCharges(spellID)
-		if not cooldowns[spellID] then
-			local duration, maxCharges = 0.0, 1
-			if spellID > kTextAssignmentSpellID then
-				local chargeInfo = GetSpellCharges(spellID)
-				if chargeInfo then
-					duration = chargeInfo.cooldownDuration
-					maxCharges = chargeInfo.maxCharges
-				else
-					local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-					if cooldownMS then
-						duration = cooldownMS / 1000
-					end
-				end
-				if duration <= 1 then
-					local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
-					if spellDBDuration then
-						duration = spellDBDuration
-					end
+	local function GetSpellCooldownAndCharges(spellID)
+		local duration, maxCharges = 0.0, 1
+		if spellID > kTextAssignmentSpellID then
+			local chargeInfo = GetSpellCharges(spellID)
+			if chargeInfo then
+				duration = chargeInfo.cooldownDuration
+				maxCharges = chargeInfo.maxCharges
+			else
+				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+				if cooldownMS then
+					duration = cooldownMS / 1000
 				end
 			end
+			if duration <= 1 then
+				local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
+				if spellDBDuration then
+					duration = spellDBDuration
+				end
+			end
+		end
+		return duration, maxCharges
+	end
+
+	---@param spellID integer
+	---@return number
+	---@return integer
+	function Utilities.GetSpellCooldownAndCharges(spellID)
+		if not cooldowns[spellID] then
+			local duration, maxCharges = GetSpellCooldownAndCharges(spellID)
 			cooldowns[spellID] = {
 				duration = duration,
 				maxCharges = maxCharges,
 			}
 		end
 		return cooldowns[spellID].duration, cooldowns[spellID].maxCharges
+	end
+
+	function Utilities.RefreshCachedCooldowns()
+		for spellID, cooldownInfo in pairs(cooldowns) do
+			local duration, maxCharges = GetSpellCooldownAndCharges(spellID)
+			cooldownInfo.duration = duration
+			cooldownInfo.maxCharges = maxCharges
+		end
 	end
 end
 

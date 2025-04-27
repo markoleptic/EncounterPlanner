@@ -498,7 +498,7 @@ do
 	-- assignments.
 	---@param timelineAssignments table<integer, TimelineAssignment>
 	function InterfaceUpdater.ComputeChargeStates(timelineAssignments)
-		local regenQueueBySpellID = {} -- Holds the future times when a charge comes up, relative to encounter start
+		local chargeQueueBySpellID = {} -- Holds the future times when a charge comes up, relative to encounter start
 
 		for _, timelineAssignment in ipairs(timelineAssignments) do
 			local spellID = timelineAssignment.assignment.spellID
@@ -507,38 +507,46 @@ do
 				local startTime = timelineAssignment.startTime
 				local cooldownDuration = timelineAssignment.cooldownDuration
 
-				regenQueueBySpellID[spellID] = regenQueueBySpellID[spellID] or {}
-				local regenQueue = regenQueueBySpellID[spellID]
+				timelineAssignment.effectiveCooldownDuration = cooldownDuration
+				timelineAssignment.relativeChargeRestoreTime = nil
 
-				-- Remove any regen events that have completed
-				while regenQueue[1] and regenQueue[1] <= startTime do
-					tremove(regenQueue, 1)
+				chargeQueueBySpellID[spellID] = chargeQueueBySpellID[spellID] or {}
+				local chargeQueue = chargeQueueBySpellID[spellID]
+
+				-- Restore charges that would have come up by the time this cast occurs
+				while chargeQueue[1] and chargeQueue[1].restorationTime <= startTime do
+					tremove(chargeQueue, 1)
 				end
 
-				local currentCharges = maxCharges - #regenQueue
-
+				local currentCharges = maxCharges - #chargeQueue
 				if currentCharges > 0 then -- Consume a charge by inserting into queue
-					local lastRegenTime = regenQueue[#regenQueue] or startTime
-					local regenTime = max(startTime, lastRegenTime) + cooldownDuration
-					tinsert(regenQueue, regenTime)
-					timelineAssignment.effectiveCooldownDuration = regenTime - startTime
+					local regentStartTime = startTime
+					local lastRegenQueueEntry = chargeQueue[#chargeQueue]
+					if lastRegenQueueEntry then
+						regentStartTime = max(regentStartTime, lastRegenQueueEntry.restorationTime)
+					end
+					local regenEndTime = regentStartTime + cooldownDuration
+					tinsert(chargeQueue, { restorationTime = regenEndTime, covered = false })
+					timelineAssignment.effectiveCooldownDuration = regenEndTime - startTime
 					timelineAssignment.invalidChargeCast = false
 				else
-					if maxCharges > 1 then -- Out of charges, carry last regen time forward
-						local lastRegenTime = regenQueue[#regenQueue] or startTime
-						timelineAssignment.effectiveCooldownDuration = max(0, lastRegenTime - startTime)
-					else -- Spell doesn't have charges, use default cooldown duration
-						timelineAssignment.effectiveCooldownDuration = cooldownDuration
-					end
 					timelineAssignment.invalidChargeCast = true
 				end
 
-				timelineAssignment.relativeChargeRestoreTime = nil
-				for _, regenTime in ipairs(regenQueue) do
-					if regenTime > startTime then
-						local relativeTime = regenTime - startTime
+				for _, regen in ipairs(chargeQueue) do
+					local restorationTime = regen.restorationTime
+					if restorationTime > startTime then
+						local relativeTime = restorationTime - startTime
 						if relativeTime > 0 and relativeTime < timelineAssignment.effectiveCooldownDuration then
-							timelineAssignment.relativeChargeRestoreTime = relativeTime
+							-- Charge will be restored during the duration of this cooldown
+							if maxCharges > 1 and not regen.covered then
+								timelineAssignment.relativeChargeRestoreTime = relativeTime
+								regen.covered = true -- Prevent repeat charge drawing
+							end
+							-- Don't extend cooldown duration past last valid duration
+							if timelineAssignment.invalidChargeCast then
+								timelineAssignment.effectiveCooldownDuration = 0
+							end
 							break -- There can only ever be one
 						end
 					end

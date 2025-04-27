@@ -42,7 +42,6 @@ local paddingBetweenTimelines = constants.timeline.kPaddingBetweenTimelines
 local paddingBetweenBossAbilityBars = 2
 local paddingBetweenTimelineAndScrollBar = constants.timeline.kPaddingBetweenTimelineAndScrollBar
 local assignmentTextureSubLevel = 0
-local assignmentOverlapTolerance = 0.001
 local cooldownWidthTolerance = 0.01
 local bossAbilityTextureSubLevel = 0
 local paddingBetweenAssignments = 2
@@ -84,6 +83,7 @@ local colors = {
 local cooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]]
 local cooldownPadding = 1
 local cooldownBackgroundColor = { 0.25, 0.25, 0.25, 1 }
+local spellChargeRestorationColor = { 0.4, 1, 0.8, 1 }
 local cooldownTextureAlpha = 0.5
 
 local assignmentIsDragging = false
@@ -234,16 +234,14 @@ end
 
 ---@param frame AssignmentFrame
 ---@param highlight boolean
----@param width number
-local function SetAssignmentFrameOutline(frame, highlight, width)
+---@param height number
+local function SetAssignmentFrameOutline(frame, highlight, height)
 	if highlight then
-		frame.spellTexture:SetPoint("TOPLEFT", 2, -2)
-		frame.spellTexture:SetPoint("BOTTOMLEFT", 2, 2)
-		frame.spellTexture:SetWidth(width - 4)
+		frame.spellTexture:SetSize(height - 4, height - 4)
+		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
 	else
-		frame.spellTexture:SetPoint("TOPLEFT", 1, -1)
-		frame.spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
-		frame.spellTexture:SetWidth(width - 2)
+		frame.spellTexture:SetSize(height - 2, height - 2)
+		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 	end
 end
 
@@ -453,6 +451,7 @@ local function CreatePhaseIndicatorTexture(self)
 	phaseIndicator:SetHorizTile(true)
 	phaseIndicator:SetVertexColor(unpack(phaseIndicatorColor))
 	phaseIndicator:SetWidth(phaseIndicatorWidth)
+	phaseIndicator:SetTexCoord(0.1, 1.1, 0, 1)
 	phaseIndicator:Hide()
 
 	local phaseIndicatorLabel = self.phaseNameFrame:CreateFontString(nil, "OVERLAY")
@@ -759,6 +758,9 @@ local function StopMovingAssignment(self, assignmentFrame)
 		self.fakeAssignmentFrame.uniqueAssignmentID = nil
 		self.fakeAssignmentFrame.timelineAssignment = nil
 		self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = nil
+		if self.fakeAssignmentFrame.chargeMarker then
+			self.fakeAssignmentFrame.chargeMarker:Hide()
+		end
 		return true
 	else
 		if time and timelineAssignment then
@@ -891,18 +893,21 @@ local function HandleAssignmentUpdate(self, frame)
 			end
 			self.ComputeChargeStates(matchingTimelineAssignments)
 
+			local showSpellCooldownDuration = self.preferences.showSpellCooldownDuration
+			local collapsed = self.collapsed
 			for _, assignmentFrameIndex in ipairs(matchingSpellIDAssignmentFrameIndices) do
 				local timelineAssignment = assignmentFrames[assignmentFrameIndex].timelineAssignment
 				if timelineAssignment then
+					local assignee = timelineAssignment.assignment.assignee
+					local showCooldown = showSpellCooldownDuration and not collapsed[assignee]
+					local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
 					self:DrawAssignment(
 						timelineAssignment.startTime,
 						timelineAssignment.assignment.spellID,
 						assignmentFrameIndex,
 						timelineAssignment.assignment.uniqueID,
 						timelineAssignment.order,
-						self.preferences.showSpellCooldownDuration
-							and not self.collapsed[timelineAssignment.assignment.assignee],
-						timelineAssignment.effectiveCooldownDuration,
+						cooldown,
 						timelineAssignment.relativeChargeRestoreTime,
 						timelineAssignment.invalidChargeCast
 					)
@@ -973,9 +978,8 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			fakeAssignmentFrame.uniqueAssignmentID = frame.uniqueAssignmentID
 			fakeAssignmentFrame:SetPoint(frame:GetPointByName("TOPLEFT"))
 			fakeAssignmentFrame:SetSize(frame:GetSize())
-			fakeAssignmentFrame.spellTexture:SetWidth(frame.spellTexture:GetWidth())
+			fakeAssignmentFrame.spellTexture:SetSize(frame.spellTexture:GetSize())
 			fakeAssignmentFrame.spellTexture:SetTexture(frame.spellTexture:GetTexture())
-			fakeAssignmentFrame.outlineTexture:SetWidth(frame.outlineTexture:GetWidth())
 
 			if frame.cooldownFrame:IsShown() then
 				fakeAssignmentFrame.cooldownFrame:SetWidth(frame.cooldownFrame:GetWidth())
@@ -995,7 +999,6 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 		end
 	end
 
-	frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
 	SetAssignmentFrameOutline(frame, true, self.preferences.timelineRows.assignmentHeight)
 	frame.selected = true
 	frame.timelineAssignment = timelineAssignment
@@ -1087,31 +1090,28 @@ end
 ---@return AssignmentFrame
 local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offsetY)
 	local assignmentHeight = self.preferences.timelineRows.assignmentHeight
-	local assignment = CreateFrame("Frame", nil, timelineFrame)
+	local assignment = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate")
+	assignment:SetBackdrop({
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeSize = 2,
+	})
+	assignment:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignment:SetSize(assignmentHeight, assignmentHeight)
 
 	local cooldownFrame = CreateFrame("Frame", nil, assignment)
-	cooldownFrame:SetPoint("TOPLEFT", assignment, "TOPRIGHT")
-	cooldownFrame:SetPoint("BOTTOMLEFT", assignment, "BOTTOMRIGHT")
+	cooldownFrame:SetPoint("LEFT", assignment, "RIGHT")
+	cooldownFrame:SetHeight(assignmentHeight + 0.01)
 	cooldownFrame:SetClipsChildren(true)
 	cooldownFrame:EnableMouse(false)
 
 	local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel)
-	spellTexture:SetPoint("TOPLEFT", 1, -1)
-	spellTexture:SetPoint("BOTTOMLEFT", 1, 1)
-	spellTexture:SetWidth(assignmentHeight - 2)
+	spellTexture:SetPoint("CENTER")
+	spellTexture:SetSize(assignmentHeight - 2, assignmentHeight - 2)
 	spellTexture:SetPassThroughButtons("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
 	spellTexture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
-	local outlineTexture = assignment:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel - 2)
-	outlineTexture:SetPoint("TOPLEFT")
-	outlineTexture:SetPoint("BOTTOMLEFT")
-	outlineTexture:SetWidth(assignmentHeight)
-	outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-	outlineTexture:Show()
-
-	local cooldownParent = self.assignmentTimeline.scrollFrame:CreateTexture(nil, "BACKGROUND")
+	local cooldownParent = self.frame:CreateTexture(nil, "BACKGROUND")
 	cooldownParent:SetPoint("TOPRIGHT", cooldownFrame, "TOPRIGHT")
 	cooldownParent:SetPoint("BOTTOMRIGHT", cooldownFrame, "BOTTOMRIGHT")
 	cooldownParent:SetAlpha(0)
@@ -1141,7 +1141,6 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 
 	assignment.spellTexture = spellTexture
 	assignment.invalidTexture = invalidTexture
-	assignment.outlineTexture = outlineTexture
 	assignment.cooldownBackground = cooldownBackground
 	assignment.cooldownTexture = cooldownTexture
 	assignment.assignmentFrame = timelineFrame
@@ -1167,7 +1166,6 @@ end
 ---@param index integer index of the AssignmentFrame to use to display the assignment
 ---@param uniqueID integer unique index of the assignment
 ---@param order number the relative order of the assignee of the assignment
----@param showCooldown boolean
 ---@param cooldownDuration number|nil
 ---@param relativeChargeRestoreTime number|nil
 ---@param invalidChargeCast boolean|nil
@@ -1178,7 +1176,6 @@ local function DrawAssignment(
 	index,
 	uniqueID,
 	order,
-	showCooldown,
 	cooldownDuration,
 	relativeChargeRestoreTime,
 	invalidChargeCast
@@ -1209,11 +1206,6 @@ local function DrawAssignment(
 	assignmentFrame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
 	assignmentFrame:Show()
 
-	if not assignmentFrame.selected then
-		assignmentFrame.outlineTexture:SetWidth(assignmentHeight)
-		assignmentFrame.spellTexture:SetWidth(assignmentHeight - 2)
-	end
-
 	local hideMarker = true
 	if spellID == constants.kInvalidAssignmentSpellID then
 		assignmentFrame.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
@@ -1222,32 +1214,34 @@ local function DrawAssignment(
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignmentFrame.spellTexture:SetTexture(iconID)
-		if cooldownDuration and cooldownDuration > 0 then
-			if showCooldown then
-				local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
-				local cooldownWidth = (cooldownEndPosition - timelineStartPosition) - cooldownWidthTolerance
-				local visibleCooldownWidth = cooldownWidth - assignmentHeight
-				if visibleCooldownWidth > 0 then
-					local cooldownFrame = assignmentFrame.cooldownFrame
-					cooldownFrame:SetWidth(visibleCooldownWidth)
-					cooldownFrame:Show()
-					if relativeChargeRestoreTime then
-						local marker = assignmentFrame.chargeMarker
-						if not marker then
-							marker = cooldownFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
-							marker:SetSnapToPixelGrid(false)
-							marker:SetTexelSnappingBias(0)
-							marker:SetColorTexture(1, 0.82, 0, 0.75)
-							assignmentFrame.chargeMarker = marker
-						end
-						local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
-						marker:SetWidth(2)
-						marker:SetHeight(assignmentHeight - 2)
-						marker:SetPoint("LEFT", cooldownFrame, "LEFT", left - assignmentHeight - 1, 0)
-						marker:Show()
-						hideMarker = false
-					end
+		if cooldownDuration then
+			local cooldownEndPosition = (startTime + cooldownDuration) / totalTimelineDuration * timelineWidth
+			local cooldownWidth = (cooldownEndPosition - timelineStartPosition) - cooldownWidthTolerance
+			local visibleCooldownWidth = cooldownWidth - assignmentHeight
+			local cooldownFrame = assignmentFrame.cooldownFrame
+			if visibleCooldownWidth > 0 then
+				cooldownFrame:SetWidth(visibleCooldownWidth)
+				cooldownFrame:Show()
+			else
+				cooldownFrame:SetWidth(0)
+				cooldownFrame:Hide()
+			end
+
+			if relativeChargeRestoreTime then
+				local chargeMarker = assignmentFrame.chargeMarker
+				if not chargeMarker then
+					chargeMarker = self.chargeFrame:CreateTexture(nil, "OVERLAY", nil, assignmentTextureSubLevel + 1)
+					chargeMarker:SetTexture(phaseIndicatorTexture, "REPEAT", "REPEAT")
+					chargeMarker:SetVertexColor(unpack(spellChargeRestorationColor))
+					chargeMarker:SetWidth(2)
+					assignmentFrame.chargeMarker = chargeMarker
 				end
+				local left = (relativeChargeRestoreTime / totalTimelineDuration) * timelineWidth
+				chargeMarker:SetHeight(assignmentHeight - 2)
+				chargeMarker:SetTexCoord(0.1, 0.4, 0, 4.5)
+				chargeMarker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
+				chargeMarker:Show()
+				hideMarker = false
 			end
 		end
 	end
@@ -1285,7 +1279,7 @@ local function UpdateAssignments(self)
 			orderedSpellIDFrameIndices[order][spellID] = {}
 		end
 		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assignee]
-
+		local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
 		DrawAssignment(
 			self,
 			timelineAssignment.startTime,
@@ -1293,8 +1287,7 @@ local function UpdateAssignments(self)
 			index,
 			assignment.uniqueID,
 			order,
-			showCooldown,
-			timelineAssignment.effectiveCooldownDuration,
+			cooldown,
 			timelineAssignment.relativeChargeRestoreTime,
 			timelineAssignment.invalidChargeCast
 		)
@@ -1309,6 +1302,7 @@ local function UpdateAssignments(self)
 	local timelineFrameLevel = timelineFrame:GetFrameLevel()
 	local assignmentHeight = self.preferences.timelineRows.assignmentHeight
 
+	local maxFrameLevel = 0
 	for order, assignmentFrameIndices in pairs(orderedFrameIndices) do
 		sort(assignmentFrameIndices, function(a, b)
 			return timelineAssignments[a].startTime < timelineAssignments[b].startTime
@@ -1321,7 +1315,10 @@ local function UpdateAssignments(self)
 			assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
 			minFrameLevel = minFrameLevel + 1
 		end
+		maxFrameLevel = max(maxFrameLevel, minFrameLevel)
 	end
+
+	self.chargeFrame:SetFrameLevel(maxFrameLevel)
 
 	for _, uniqueAssignmentID in ipairs(selected) do
 		self:SelectAssignment(uniqueAssignmentID, true)
@@ -1777,10 +1774,9 @@ end
 ---@class BossPhaseIndicatorTexture : Texture
 ---@field label FontString
 
----@class AssignmentFrame : Frame
+---@class AssignmentFrame : Frame,BackdropTemplate
 ---@field spellTexture Texture
 ---@field invalidTexture Texture
----@field outlineTexture Texture
 ---@field cooldownFrame Frame
 ---@field cooldownParent Texture
 ---@field cooldownBackground Texture
@@ -1921,6 +1917,9 @@ local function OnAcquire(self)
 	assignmentFrame:SetPoint("TOPLEFT", bossAbilityFrame, "BOTTOMLEFT", 0, -paddingBetweenTimelines)
 	assignmentFrame:SetPoint("TOPRIGHT", bossAbilityFrame, "BOTTOMRIGHT", 0, -paddingBetweenTimelines)
 
+	self.chargeFrame:SetPoint("TOPLEFT", self.assignmentTimeline.scrollFrame, "TOPLEFT")
+	self.chargeFrame:SetPoint("BOTTOMRIGHT", self.assignmentTimeline.scrollFrame, "BOTTOMRIGHT")
+
 	self.splitterScrollFrame:SetParent(self.contentFrame)
 	self.splitterScrollFrame:SetPoint("TOP", bossAbilityFrame, "BOTTOM")
 	self.splitterScrollFrame:SetPoint("LEFT", 210, 0)
@@ -2041,13 +2040,12 @@ local function OnRelease(self)
 	for _, frame in ipairs(self.assignmentFrames) do
 		frame:ClearAllPoints()
 		frame:Hide()
-		frame:SetWidth(0)
 		frame:SetScript("OnUpdate", nil)
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		frame.spellTexture:SetTexture(nil)
 		SetAssignmentFrameOutline(frame, false, 2)
 		if frame.chargeMarker then
 			frame.chargeMarker:ClearAllPoints()
+			frame.chargeMarker:Hide()
 		end
 
 		frame.spellID = nil
@@ -2089,9 +2087,12 @@ local function OnRelease(self)
 	self.fakeAssignmentFrame:Hide()
 	self.fakeAssignmentFrame:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownFrame:Hide()
-	self.fakeAssignmentFrame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
 	SetAssignmentFrameOutline(self.fakeAssignmentFrame, false, 2)
+	if self.fakeAssignmentFrame.chargeMarker then
+		self.fakeAssignmentFrame.chargeMarker:ClearAllPoints()
+		self.fakeAssignmentFrame.chargeMarker:Hide()
+	end
 	self.fakeAssignmentFrame.spellID = nil
 	self.fakeAssignmentFrame.uniqueAssignmentID = nil
 	self.fakeAssignmentFrame.timelineAssignment = nil
@@ -2416,7 +2417,7 @@ end
 local function SelectAssignment(self, assignmentID, selectedByClicking)
 	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
 	if frame then
-		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
 		if selectedByClicking then
 			SetAssignmentFrameOutline(frame, true, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = true
@@ -2448,7 +2449,6 @@ local function GetSelectedAssignments(self, clear)
 			frame.invalidTexture:Hide()
 			frame.cooldownFrame:Hide()
 			frame.uniqueAssignmentID = 0
-			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = nil
 			frame.selected = nil
@@ -2469,7 +2469,6 @@ local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelecte
 	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
 	if frame then
 		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
-			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 			frame.selectedByClicking = nil
 			frame.selected = nil
@@ -2510,7 +2509,6 @@ end
 ---@param self EPTimeline
 local function ClearSelectedAssignments(self)
 	for _, frame in ipairs(self.assignmentFrames) do
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
 		SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
 		frame.selectedByClicking = nil
 		frame.selected = nil
@@ -2777,6 +2775,9 @@ local function Constructor()
 	local phaseNameFrame = CreateFrame("Frame", nil, frame)
 	phaseNameFrame:SetClipsChildren(true)
 
+	local chargeFrame = CreateFrame("Frame", nil, frame)
+	chargeFrame:SetClipsChildren(true)
+
 	---@class EPTimeline
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -2820,6 +2821,7 @@ local function Constructor()
 		horizontalScrollBar = horizontalScrollBar,
 		thumb = thumb,
 		phaseNameFrame = phaseNameFrame,
+		chargeFrame = chargeFrame,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)
