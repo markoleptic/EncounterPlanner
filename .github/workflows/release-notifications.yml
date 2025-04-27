@@ -22,10 +22,6 @@ jobs:
         run: |
           git fetch --tags --force
 
-      - name: Generate Changelog
-        id: Changelog
-        run: ./generate_changelog.sh
-
       - name: Save Changelog in Variable
         uses: Stanzilla/cat@2.0.2
         id: readChangelog
