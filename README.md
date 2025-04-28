@@ -32,7 +32,7 @@ If you encounter bugs, unexpected behavior, inaccurate timers, or have any sugge
 
 **Assignments**
 
--   Collapse spells by assignee for a compact view or expand them to view cooldown durations. Customize cooldown durations if they don't match reality, or hide cooldowns altogether.
+-   Collapse spells by assignee for a compact view or expand them to view cooldown durations and charges. Customize cooldown durations and charges if they don't match reality, or hide cooldowns altogether.
 -   Add an assignment by left-clicking anywhere on the assignment timeline.
 -   Duplicate assignments by control-dragging an assignment spell icon.
 -   Change the time of an assignment by dragging an assignment spell icon.
@@ -41,8 +41,8 @@ If you encounter bugs, unexpected behavior, inaccurate timers, or have any sugge
 
 **Reminders**
 
--   The reminder system is highly configurable and includes over 45 individual settings, which operate independently of plans.
--   Receive visual cues for assignments with progress bars and/or message reminders.
+-   The reminder system is highly configurable and includes over 60 individual settings, which operate independently of plans.
+-   Receive visual cues for assignments with progress bars, messages, and/or icons.
 -   Receive auditory cues using text to speech and sounds.
 -   Target frames automatically receive a glow border for targeted assignments.
 -   Simulate reminders for plan from the main window.
