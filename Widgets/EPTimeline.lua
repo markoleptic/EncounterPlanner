@@ -126,10 +126,9 @@ local lastExecutionTime = 0.0
 ---@field uniqueAssignmentID integer
 ---@field chargeMarker Texture|nil
 
----@class BossAbilityFrame : Frame
+---@class BossAbilityFrame : Frame, BackdropTemplate
 ---@field assignmentFrame table|Frame
 ---@field spellTexture Texture
----@field outlineTexture Texture
 ---@field abilityInstance BossAbilityInstance
 ---@field selectionType BossAbilitySelectionType
 
@@ -650,7 +649,12 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
 	local frame = self.bossAbilityFrames[index]
 	if not frame then
-		frame = CreateFrame("Frame", nil, timelineFrame) --[[@as BossAbilityFrame]]
+		frame = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate") --[[@as BossAbilityFrame]]
+		frame:SetBackdrop({
+			edgeFile = "Interface\\BUTTONS\\White8x8",
+			edgeSize = 2,
+		})
+		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 		frame:SetScript("OnEnter", function(f)
 			HandleBossAbilityBarEnter(self, f --[[@as BossAbilityFrame]])
 		end)
@@ -666,14 +670,8 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 		spellTexture:SetPoint("TOPLEFT", 2, -2)
 		spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
 
-		local outlineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel - 1)
-		outlineTexture:SetAllPoints()
-		outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		outlineTexture:Show()
-
 		frame.assignmentFrame = timelineFrame
 		frame.spellTexture = spellTexture
-		frame.outlineTexture = outlineTexture
 		frame.selectionType = BossAbilitySelectionType.kNone
 		self.bossAbilityFrames[index] = frame
 	end
@@ -2086,7 +2084,7 @@ local function OnRelease(self)
 		frame:Hide()
 		frame.spellTexture:SetTexture(nil)
 		frame.abilityInstance = nil
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 		frame.selectionType = BossAbilitySelectionType.kNone
 	end
 
@@ -2518,12 +2516,12 @@ end
 local function SelectBossAbility(self, spellID, spellCount, selectionType)
 	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
-		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
+		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
 		if selectionType == BossAbilitySelectionType.kSelection then
 			local y = select(5, frame:GetPointByName("TOPLEFT"))
 			self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
-			frame.selectionType = selectionType
 		end
+		frame.selectionType = selectionType
 	end
 end
 
@@ -2535,7 +2533,7 @@ local function ClearSelectedBossAbility(self, spellID, spellCount, onlyClearIfNo
 	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
 		if not onlyClearIfNotSelectedByClicking or not (frame.selectionType == AssignmentSelectionType.kSelection) then
-			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+			frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 			frame.selectionType = BossAbilitySelectionType.kNone
 		end
 	end
@@ -2552,7 +2550,7 @@ end
 ---@param self EPTimeline
 local function ClearSelectedBossAbilities(self)
 	for _, frame in ipairs(self.bossAbilityFrames) do
-		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 		frame.selectionType = BossAbilitySelectionType.kNone
 	end
 end
