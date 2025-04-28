@@ -7,6 +7,8 @@ local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
+local AssignmentSelectionType = Private.constants.AssignmentSelectionType
+local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
 local kMessageBoxFrameLevel = constants.frameLevels.kMessageBoxFrameLevel
 local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
@@ -997,9 +999,13 @@ do
 				end
 				timeline:ClearSelectedAssignments()
 				timeline:ClearSelectedBossAbilities()
-				timeline:SelectAssignment(assignment.uniqueID, true)
+				timeline:SelectAssignment(assignment.uniqueID, AssignmentSelectionType.kSelection)
 				if assignment.combatLogEventSpellID and assignment.spellCount then
-					timeline:SelectBossAbility(assignment.combatLogEventSpellID, assignment.spellCount, true)
+					timeline:SelectBossAbility(
+						assignment.combatLogEventSpellID,
+						assignment.spellCount,
+						BossAbilitySelectionType.kSelection
+					)
 				end
 			end
 			if updateAssignments then

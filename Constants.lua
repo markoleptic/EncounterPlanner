@@ -49,4 +49,16 @@ Private.constants = {
 	kTopContainerHeight = 68,
 	kMinimumTimeBetweenAssignmentsBeforeWarning = 2.0,
 	kDefaultBossDungeonEncounterID = 3009, -- Vexie
+	---@enum AssignmentSelectionType
+	AssignmentSelectionType = {
+		kNone = {},
+		kSelection = {},
+		kBossAbilityHover = {},
+	},
+	---@enum BossAbilitySelectionType
+	BossAbilitySelectionType = {
+		kNone = {},
+		kSelection = {},
+		kAssignmentHover = {},
+	},
 }

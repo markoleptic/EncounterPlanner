@@ -4,6 +4,8 @@ local _, Namespace = ...
 local Private = Namespace
 
 local constants = Private.constants
+local AssignmentSelectionType = Private.constants.AssignmentSelectionType
+local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 
 local Type = "EPTimeline"
 local Version = 1
@@ -106,6 +108,76 @@ local simulationStartTime = 0.0
 
 local throttleInterval = 0.015 -- Minimum time between executions, in seconds
 local lastExecutionTime = 0.0
+
+---@class BossPhaseIndicatorTexture : Texture
+---@field label FontString
+
+---@class AssignmentFrame : Frame, BackdropTemplate
+---@field spellTexture Texture
+---@field invalidTexture Texture
+---@field cooldownFrame Frame
+---@field cooldownParent Texture
+---@field cooldownBackground Texture
+---@field cooldownTexture Texture
+---@field assignmentFrame Frame
+---@field timelineAssignment TimelineAssignment|nil
+---@field spellID integer
+---@field selectionType AssignmentSelectionType
+---@field uniqueAssignmentID integer
+---@field chargeMarker Texture|nil
+
+---@class BossAbilityFrame : Frame
+---@field assignmentFrame table|Frame
+---@field spellTexture Texture
+---@field outlineTexture Texture
+---@field abilityInstance BossAbilityInstance
+---@field selectionType BossAbilitySelectionType
+
+---@class FakeAssignmentFrame : AssignmentFrame
+---@field temporaryAssignmentFrameIndex integer
+
+---@class EPTimeline : AceGUIWidget
+---@field parent AceGUIContainer|nil
+---@field frame table|Frame
+---@field splitterFrame table|Frame
+---@field type string
+---@field assignmentTimeline EPTimelineSection
+---@field bossAbilityTimeline EPTimelineSection
+---@field timelineLabels table<integer, FontString>
+---@field contentFrame table|Frame
+---@field horizontalScrollBar table|Frame
+---@field thumb Button
+---@field addAssigneeDropdown EPDropdown
+---@field currentTimeLabel EPLabel
+---@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
+---@field assignmentFrames table<integer, AssignmentFrame>
+---@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
+---@field fakeAssignmentFrame FakeAssignmentFrame
+---@field bossAbilityInstances table<integer, BossAbilityInstance>
+---@field bossAbilityVisibility table<integer, boolean>
+---@field bossAbilityOrder table<integer, integer>
+---@field bossAbilityFrames table<integer, BossAbilityFrame>
+---@field bossPhaseIndicators table<integer, table<1|2, BossPhaseIndicatorTexture>>
+---@field bossPhaseOrder table<integer, integer>
+---@field bossPhases table<integer, BossPhase>
+---@field collapsed table<string, boolean>
+---@field timelineAssignments table<integer, TimelineAssignment>
+---@field allowHeightResizing boolean
+---@field bossAbilityDimensions {min: integer, max:integer, step:number}
+---@field assignmentDimensions {min: integer, max:integer, step:number}
+---@field preferences Preferences
+---@field zoomFactor number
+---@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
+---@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
+---@field ComputeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
+---@field minTickInterval number
+
+---@enum HighlightType
+local HighlightType = {
+	None = {},
+	Full = {},
+	Half = {},
+}
 
 local function ResetLocalVariables()
 	assignmentIsDragging = false
@@ -233,13 +305,16 @@ local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
 end
 
 ---@param frame AssignmentFrame
----@param highlight boolean
+---@param highlightType HighlightType
 ---@param height number
-local function SetAssignmentFrameOutline(frame, highlight, height)
-	if highlight then
+local function SetAssignmentFrameOutline(frame, highlightType, height)
+	if highlightType == HighlightType.Full then
 		frame.spellTexture:SetSize(height - 4, height - 4)
 		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
-	else
+	elseif highlightType == HighlightType.Half then
+		frame.spellTexture:SetSize(height - 2, height - 2)
+		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
+	elseif highlightType == HighlightType.None then
 		frame.spellTexture:SetSize(height - 2, height - 2)
 		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 	end
@@ -555,9 +630,9 @@ local function HandleBossAbilityBarEnter(self, frame)
 			end
 		end
 	end
-	self:SelectBossAbility(spellID, spellCount)
+	self:SelectBossAbility(spellID, spellCount, BossAbilitySelectionType.kSelection)
 	for _, assignmentID in ipairs(selectedAssignmentIDsFromBossAbilityFrameEnter) do
-		self:SelectAssignment(assignmentID)
+		self:SelectAssignment(assignmentID, AssignmentSelectionType.kBossAbilityHover)
 	end
 end
 
@@ -599,6 +674,7 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 		frame.assignmentFrame = timelineFrame
 		frame.spellTexture = spellTexture
 		frame.outlineTexture = outlineTexture
+		frame.selectionType = BossAbilitySelectionType.kNone
 		self.bossAbilityFrames[index] = frame
 	end
 
@@ -1011,9 +1087,7 @@ local function HandleAssignmentMouseDown(self, frame, mouseButton)
 			fakeAssignmentFrame:Show()
 		end
 	end
-
-	SetAssignmentFrameOutline(frame, true, self.preferences.timelineRows.assignmentHeight)
-	frame.selected = true
+	self:SelectAssignment(frame, AssignmentSelectionType.kSelection)
 	frame.timelineAssignment = timelineAssignment
 	assignmentFrameBeingDragged = frame
 	frame:SetScript("OnUpdate", function(f)
@@ -1166,6 +1240,7 @@ local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offs
 	assignment.spellID = spellID
 	assignment.cooldownParent = cooldownParent
 	assignment.cooldownFrame = cooldownFrame
+	assignment.selectionType = AssignmentSelectionType.kNone
 
 	assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
 		HandleAssignmentMouseDown(self, frame, mouseButton)
@@ -1277,7 +1352,7 @@ end
 ---@param self EPTimeline
 local function UpdateAssignments(self)
 	-- Clears/resets assignment frames
-	local selected, selectedByClicking = self:GetSelectedAssignments(true)
+	local selected = self:GetSelectedAssignments(true)
 
 	wipe(self.orderedWithSpellIDAssignmentFrameIndices)
 	local orderedFrameIndices = {}
@@ -1338,12 +1413,10 @@ local function UpdateAssignments(self)
 
 	self.chargeFrame:SetFrameLevel(maxFrameLevel)
 
-	for _, uniqueAssignmentID in ipairs(selected) do
-		self:SelectAssignment(uniqueAssignmentID, true)
-	end
-
-	for _, uniqueAssignmentID in ipairs(selectedByClicking) do
-		self:SelectAssignment(uniqueAssignmentID)
+	for assignmentSelectionType, uniqueAssignmentIDs in pairs(selected) do
+		for _, uniqueAssignmentID in ipairs(uniqueAssignmentIDs) do
+			self:SelectAssignment(uniqueAssignmentID, assignmentSelectionType)
+		end
 	end
 end
 
@@ -1789,70 +1862,6 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	UpdateResizeBounds(self)
 end
 
----@class BossPhaseIndicatorTexture : Texture
----@field label FontString
-
----@class AssignmentFrame : Frame,BackdropTemplate
----@field spellTexture Texture
----@field invalidTexture Texture
----@field cooldownFrame Frame
----@field cooldownParent Texture
----@field cooldownBackground Texture
----@field cooldownTexture Texture
----@field assignmentFrame Frame
----@field timelineAssignment TimelineAssignment|nil
----@field spellID integer
----@field selectedByClicking boolean|nil
----@field selected boolean|nil
----@field uniqueAssignmentID integer
----@field chargeMarker Texture|nil
-
----@class BossAbilityFrame : Frame
----@field assignmentFrame table|Frame
----@field spellTexture Texture
----@field outlineTexture Texture
----@field abilityInstance BossAbilityInstance
----@field selectedByClicking boolean|nil
-
----@class FakeAssignmentFrame : AssignmentFrame
----@field temporaryAssignmentFrameIndex integer
-
----@class EPTimeline : AceGUIWidget
----@field parent AceGUIContainer|nil
----@field frame table|Frame
----@field splitterFrame table|Frame
----@field type string
----@field assignmentTimeline EPTimelineSection
----@field bossAbilityTimeline EPTimelineSection
----@field timelineLabels table<integer, FontString>
----@field contentFrame table|Frame
----@field horizontalScrollBar table|Frame
----@field thumb Button
----@field addAssigneeDropdown EPDropdown
----@field currentTimeLabel EPLabel
----@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
----@field assignmentFrames table<integer, AssignmentFrame>
----@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
----@field fakeAssignmentFrame FakeAssignmentFrame
----@field bossAbilityInstances table<integer, BossAbilityInstance>
----@field bossAbilityVisibility table<integer, boolean>
----@field bossAbilityOrder table<integer, integer>
----@field bossAbilityFrames table<integer, BossAbilityFrame>
----@field bossPhaseIndicators table<integer, table<1|2, BossPhaseIndicatorTexture>>
----@field bossPhaseOrder table<integer, integer>
----@field bossPhases table<integer, BossPhase>
----@field collapsed table<string, boolean>
----@field timelineAssignments table<integer, TimelineAssignment>
----@field allowHeightResizing boolean
----@field bossAbilityDimensions {min: integer, max:integer, step:number}
----@field assignmentDimensions {min: integer, max:integer, step:number}
----@field preferences Preferences
----@field zoomFactor number
----@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
----@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
----@field ComputeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
----@field minTickInterval number
-
 ---@param self EPTimeline
 local function OnAcquire(self)
 	self.assignmentFrames = self.assignmentFrames or {}
@@ -2060,7 +2069,7 @@ local function OnRelease(self)
 		frame:Hide()
 		frame:SetScript("OnUpdate", nil)
 		frame.spellTexture:SetTexture(nil)
-		SetAssignmentFrameOutline(frame, false, 2)
+		SetAssignmentFrameOutline(frame, HighlightType.None, 2)
 		if frame.chargeMarker then
 			frame.chargeMarker:ClearAllPoints()
 			frame.chargeMarker:Hide()
@@ -2069,7 +2078,7 @@ local function OnRelease(self)
 		frame.spellID = nil
 		frame.uniqueAssignmentID = nil
 		frame.timelineAssignment = nil
-		frame.selectedByClicking = nil
+		frame.selectionType = AssignmentSelectionType.kNone
 	end
 
 	for _, frame in ipairs(self.bossAbilityFrames) do
@@ -2078,7 +2087,7 @@ local function OnRelease(self)
 		frame.spellTexture:SetTexture(nil)
 		frame.abilityInstance = nil
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.selectedByClicking = nil
+		frame.selectionType = BossAbilitySelectionType.kNone
 	end
 
 	for _, textureGroup in ipairs(self.bossPhaseIndicators) do
@@ -2106,7 +2115,7 @@ local function OnRelease(self)
 	self.fakeAssignmentFrame:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownFrame:Hide()
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
-	SetAssignmentFrameOutline(self.fakeAssignmentFrame, false, 2)
+	SetAssignmentFrameOutline(self.fakeAssignmentFrame, HighlightType.None, 2)
 	if self.fakeAssignmentFrame.chargeMarker then
 		self.fakeAssignmentFrame.chargeMarker:ClearAllPoints()
 		self.fakeAssignmentFrame.chargeMarker:Hide()
@@ -2430,36 +2439,43 @@ local function OnHeightSet(self, height)
 end
 
 ---@param self EPTimeline
----@param assignmentID integer
----@param selectedByClicking boolean|nil
-local function SelectAssignment(self, assignmentID, selectedByClicking)
-	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
+---@param assignmentIDOrAssignmentFrame integer|AssignmentFrame
+---@param assignmentSelectionType AssignmentSelectionType
+local function SelectAssignment(self, assignmentIDOrAssignmentFrame, assignmentSelectionType)
+	local frame = nil
+	if type(assignmentIDOrAssignmentFrame) == "table" then
+		frame = assignmentIDOrAssignmentFrame
+	else
+		frame = FindAssignmentFrame(self.assignmentFrames, assignmentIDOrAssignmentFrame)
+	end
+
 	if frame then
-		frame:SetBackdropBorderColor(unpack(assignmentSelectOutlineColor))
-		if selectedByClicking then
-			SetAssignmentFrameOutline(frame, true, self.preferences.timelineRows.assignmentHeight)
-			frame.selectedByClicking = true
-		elseif not frame.selectedByClicking then
-			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
+		if assignmentSelectionType == AssignmentSelectionType.kSelection then
+			SetAssignmentFrameOutline(frame, HighlightType.Full, self.preferences.timelineRows.assignmentHeight)
+			frame.selectionType = assignmentSelectionType
+		elseif assignmentSelectionType == AssignmentSelectionType.kBossAbilityHover then
+			if not (frame.selectionType == AssignmentSelectionType.kSelection) then
+				SetAssignmentFrameOutline(frame, HighlightType.Half, self.preferences.timelineRows.assignmentHeight)
+				frame.selectionType = assignmentSelectionType
+			end
+		elseif assignmentSelectionType == AssignmentSelectionType.kNone then
+			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			frame.selectionType = assignmentSelectionType
 		end
-		frame.selected = true
 	end
 end
 
 -- Returns tables of selected assignments and optionally resets assignment frames.
 ---@param self EPTimeline
 ---@param clear boolean If true, assignment frames are reset
----@return table<integer>
----@return table<integer>
+---@return table<AssignmentSelectionType, table<integer, integer>> -- Unique assignment IDs of the selected frames
 local function GetSelectedAssignments(self, clear)
-	local selected, selectedByClicking = {}, {}
+	local selection, bossAbilityHover = {}, {}
 	for _, frame in ipairs(self.assignmentFrames) do
-		if frame.selected then
-			if frame.selectedByClicking then
-				selected[#selected + 1] = frame.uniqueAssignmentID
-			else
-				selectedByClicking[#selectedByClicking + 1] = frame.uniqueAssignmentID
-			end
+		if frame.selectionType == AssignmentSelectionType.kSelection then
+			selection[#selection + 1] = frame.uniqueAssignmentID
+		elseif frame.selectionType == AssignmentSelectionType.kBossAbilityHover then
+			bossAbilityHover[#bossAbilityHover + 1] = frame.uniqueAssignmentID
 		end
 		if clear then
 			frame:Hide()
@@ -2467,9 +2483,8 @@ local function GetSelectedAssignments(self, clear)
 			frame.invalidTexture:Hide()
 			frame.cooldownFrame:Hide()
 			frame.uniqueAssignmentID = 0
-			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
-			frame.selectedByClicking = nil
-			frame.selected = nil
+			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			frame.selectionType = AssignmentSelectionType.kNone
 			frame.timelineAssignment = nil
 			if frame.chargeMarker then
 				frame.chargeMarker:ClearAllPoints()
@@ -2477,7 +2492,10 @@ local function GetSelectedAssignments(self, clear)
 			end
 		end
 	end
-	return selected, selectedByClicking
+	return {
+		[AssignmentSelectionType.kSelection] = selection,
+		[AssignmentSelectionType.kBossAbilityHover] = bossAbilityHover,
+	}
 end
 
 ---@param self EPTimeline
@@ -2486,10 +2504,9 @@ end
 local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelectedByClicking)
 	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
 	if frame then
-		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
-			SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
-			frame.selectedByClicking = nil
-			frame.selected = nil
+		if not onlyClearIfNotSelectedByClicking or not (frame.selectionType == AssignmentSelectionType.kSelection) then
+			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			frame.selectionType = AssignmentSelectionType.kNone
 		end
 	end
 end
@@ -2497,15 +2514,15 @@ end
 ---@param self EPTimeline
 ---@param spellID integer
 ---@param spellCount integer
----@param selectedByClicking boolean|nil
-local function SelectBossAbility(self, spellID, spellCount, selectedByClicking)
+---@param selectionType BossAbilitySelectionType
+local function SelectBossAbility(self, spellID, spellCount, selectionType)
 	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
 		frame.outlineTexture:SetColorTexture(unpack(assignmentSelectOutlineColor))
-		if selectedByClicking then
+		if selectionType == BossAbilitySelectionType.kSelection then
 			local y = select(5, frame:GetPointByName("TOPLEFT"))
 			self.bossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
-			frame.selectedByClicking = true
+			frame.selectionType = selectionType
 		end
 	end
 end
@@ -2517,9 +2534,9 @@ end
 local function ClearSelectedBossAbility(self, spellID, spellCount, onlyClearIfNotSelectedByClicking)
 	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
-		if not onlyClearIfNotSelectedByClicking or not frame.selectedByClicking then
+		if not onlyClearIfNotSelectedByClicking or not (frame.selectionType == AssignmentSelectionType.kSelection) then
 			frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-			frame.selectedByClicking = nil
+			frame.selectionType = BossAbilitySelectionType.kNone
 		end
 	end
 end
@@ -2527,9 +2544,8 @@ end
 ---@param self EPTimeline
 local function ClearSelectedAssignments(self)
 	for _, frame in ipairs(self.assignmentFrames) do
-		SetAssignmentFrameOutline(frame, false, self.preferences.timelineRows.assignmentHeight)
-		frame.selectedByClicking = nil
-		frame.selected = nil
+		SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+		frame.selectionType = AssignmentSelectionType.kNone
 	end
 end
 
@@ -2537,7 +2553,7 @@ end
 local function ClearSelectedBossAbilities(self)
 	for _, frame in ipairs(self.bossAbilityFrames) do
 		frame.outlineTexture:SetColorTexture(unpack(assignmentOutlineColor))
-		frame.selectedByClicking = nil
+		frame.selectionType = BossAbilitySelectionType.kNone
 	end
 end
 
