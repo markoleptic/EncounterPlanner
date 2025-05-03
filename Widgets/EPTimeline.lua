@@ -2452,7 +2452,7 @@ local function SelectAssignment(self, assignmentIDOrAssignmentFrame, assignmentS
 			SetAssignmentFrameOutline(frame, HighlightType.Full, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = assignmentSelectionType
 		elseif assignmentSelectionType == AssignmentSelectionType.kBossAbilityHover then
-			if not (frame.selectionType == AssignmentSelectionType.kSelection) then
+			if frame.selectionType ~= AssignmentSelectionType.kSelection then
 				SetAssignmentFrameOutline(frame, HighlightType.Half, self.preferences.timelineRows.assignmentHeight)
 				frame.selectionType = assignmentSelectionType
 			end
@@ -2502,7 +2502,7 @@ end
 local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelectedByClicking)
 	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
 	if frame then
-		if not onlyClearIfNotSelectedByClicking or not (frame.selectionType == AssignmentSelectionType.kSelection) then
+		if not onlyClearIfNotSelectedByClicking or frame.selectionType ~= AssignmentSelectionType.kSelection then
 			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = AssignmentSelectionType.kNone
 		end
@@ -2532,7 +2532,7 @@ end
 local function ClearSelectedBossAbility(self, spellID, spellCount, onlyClearIfNotSelectedByClicking)
 	local frame = FindBossAbilityFrame(self.bossAbilityFrames, spellID, spellCount)
 	if frame then
-		if not onlyClearIfNotSelectedByClicking or not (frame.selectionType == AssignmentSelectionType.kSelection) then
+		if not onlyClearIfNotSelectedByClicking or frame.selectionType ~= AssignmentSelectionType.kSelection then
 			frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
 			frame.selectionType = BossAbilitySelectionType.kNone
 		end
