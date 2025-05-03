@@ -43,6 +43,113 @@ function API.GetExternalTextAsTable()
 	return SplitStringTableByWhiteSpace(profile.activeText)
 end
 
+do
+	local error = error
+	local format = string.format
+	local geterrorhandler = geterrorhandler
+	local pairs = pairs
+	local type = type
+	local xpcall = xpcall
+	local concat = table.concat
+	local callbacks = {} ---@type table<CallbackName, table<table, string|fun(callbackName: CallbackName, ...: any)>>
+	local validCallbackNames = { ["ExternalTextSynced"] = true } ---@type table<CallbackName, boolean>
+	local errorLevel = 2
+	local validCallbackNamesString = ""
+
+	do
+		local names = {}
+		for callbackName, _ in pairs(validCallbackNames) do
+			callbacks[callbackName] = {}
+			tinsert(names, callbackName)
+		end
+		validCallbackNamesString = concat(names, "|")
+	end
+
+	---@param func fun(callbackName: CallbackName, ...: any)
+	---@param ... any
+	---@return boolean success
+	---@return any result
+	local function SafeCall(func, ...)
+		if func then
+			return xpcall(func, geterrorhandler(), ...)
+		end
+		return true
+	end
+
+	---@param functionName string
+	---@param parameterName string
+	---@param actualType string
+	---@param expectedType string
+	---@return string
+	local function FormatError(functionName, parameterName, actualType, expectedType)
+		return format("%s Usage: '%s' was '%s', expected '%s'.", functionName, parameterName, actualType, expectedType)
+	end
+
+	---@alias CallbackName
+	---| "ExternalTextSynced"
+
+	---@param callbackName CallbackName The name of the callback function to register.
+	---@param target table The target object to register the callback for. This is required so the callback can be unregistered later.
+	---@param callbackFunction string|fun(callbackName: CallbackName, ...: any) A function or string name of a function to receive the callback. If a string, the function must be a member on target.
+	function API.RegisterCallback(callbackName, target, callbackFunction)
+		local callbackNameType = type(callbackName)
+		local targetType = type(target)
+		local callbackFunctionType = type(callbackFunction)
+		if callbackNameType ~= "string" then
+			error(FormatError("RegisterCallback", "callbackName", callbackNameType, "string"), errorLevel)
+			return
+		end
+		if not validCallbackNames[callbackName] then
+			error(FormatError("RegisterCallback", "callbackName", callbackName, validCallbackNamesString), errorLevel)
+			return
+		end
+		if targetType ~= "table" then
+			error(FormatError("RegisterCallback", "target", targetType, "table"), errorLevel)
+			return
+		end
+		if callbackFunctionType ~= "string" and callbackFunctionType ~= "function" then
+			error(
+				FormatError("RegisterCallback", "callbackFunction", callbackFunctionType, "string|function"),
+				errorLevel
+			)
+			return
+		end
+		if callbackFunctionType == "string" then
+			if not target[callbackFunction] then
+				error("RegisterCallback Usage: Function must be a member on target when using a string argument.")
+				return
+			end
+		end
+
+		callbacks[callbackName][target] = callbackFunction
+	end
+
+	---@param callbackName CallbackName The name of the callback function to unregister.
+	---@param target table The target table to unregister the callback for.
+	function API.UnregisterCallback(callbackName, target)
+		if callbacks[callbackName] and callbacks[callbackName][target] then
+			callbacks[callbackName][target] = nil
+		end
+	end
+
+	---@param callbackName CallbackName
+	---@param ... any
+	function Private.ExecuteAPICallback(callbackName, ...)
+		if callbacks[callbackName] then
+			for obj, fun in pairs(callbacks[callbackName]) do
+				if type(fun) == "function" then
+					SafeCall(fun, callbackName, ...)
+				elseif obj and type(fun) == "string" then
+					local method = obj[fun]
+					if type(method) == "function" then
+						SafeCall(method, obj, callbackName, ...)
+					end
+				end
+			end
+		end
+	end
+end
+
 EncounterPlannerAPI = setmetatable({}, { __index = API, __newindex = function() end, __metatable = false })
 
 --@debug@
@@ -52,11 +159,12 @@ do
 	---@class TestUtilities
 	local testUtilities = Private.testUtilities
 
-	local TestEqual = testUtilities.TestEqual
+	local pcall = pcall
 	local RemoveTabs = testUtilities.RemoveTabs
+	local seterrorhandler = seterrorhandler
+	local TestEqual = testUtilities.TestEqual
 
 	-- cSpell:disable
-
 	do
 		local text = [[
             nsdispelstart
@@ -107,6 +215,165 @@ do
 
 			return "ExternalText"
 		end
+	end
+	-- cSpell:enable
+
+	function test.CallbackFunctions()
+		local originalErrorHandler = geterrorhandler()
+		seterrorhandler(function() end)
+
+		local called = {}
+		local object = {}
+
+		function object:OnExternalTextSyncedWithImplicitSelf(callbackName, ...)
+			called = { callbackName, ... }
+		end
+
+		do
+			EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, "OnExternalTextSyncedWithImplicitSelf")
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+
+			TestEqual(type(called), "table", "")
+			TestEqual(called[1], "ExternalTextSynced", "First argument correct")
+			TestEqual(called[2], "testArg", "Second argument correct")
+			TestEqual(called[3], 42, "Third argument correct")
+
+			wipe(called)
+
+			EncounterPlannerAPI.UnregisterCallback("ExternalTextSynced", object)
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+			TestEqual(called[1], nil, "Callback not executed after unregister")
+		end
+
+		function object.OnExternalTextSyncedWithExplicitSelf(self, callbackName, ...)
+			called = { callbackName, ... }
+		end
+
+		do
+			EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, "OnExternalTextSyncedWithExplicitSelf")
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+
+			TestEqual(type(called), "table", "")
+			TestEqual(called[1], "ExternalTextSynced", "First argument correct")
+			TestEqual(called[2], "testArg", "Second argument correct")
+			TestEqual(called[3], 42, "Third argument correct")
+
+			wipe(called)
+
+			EncounterPlannerAPI.UnregisterCallback("ExternalTextSynced", object)
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+			TestEqual(called[1], nil, "Callback not executed after unregister")
+		end
+
+		local function OnExternalTextSyncedLocalFunc(callbackName, ...)
+			called = { callbackName, ... }
+		end
+
+		do
+			EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, OnExternalTextSyncedLocalFunc)
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+
+			TestEqual(type(called), "table", "")
+			TestEqual(called[1], "ExternalTextSynced", "First argument correct")
+			TestEqual(called[2], "testArg", "Second argument correct")
+			TestEqual(called[3], 42, "Third argument correct")
+
+			wipe(called)
+
+			EncounterPlannerAPI.UnregisterCallback("ExternalTextSynced", object)
+			Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+			TestEqual(called[1], nil, "Callback not executed after unregister")
+		end
+
+		seterrorhandler(originalErrorHandler)
+
+		return "CallbackFunctions"
+	end
+
+	function test.InvalidRegisterCallbackArguments()
+		local originalErrorHandler = geterrorhandler()
+		seterrorhandler(function() end)
+
+		local object = {}
+		local function CallbackFunction() end
+
+		do
+			local _, err = pcall(function()
+				---@diagnostic disable-next-line: param-type-mismatch
+				EncounterPlannerAPI.RegisterCallback("Invalid", object, CallbackFunction)
+			end)
+			TestEqual(type(err), "string", "")
+			if err then
+				local foundInErrMessage = err:find(
+					"RegisterCallback Usage: 'callbackName' was 'Invalid', expected 'ExternalTextSynced'."
+				) ~= nil
+				TestEqual(foundInErrMessage, true, "Invalid callbackName")
+			end
+		end
+
+		do
+			local _, err = pcall(function()
+				---@diagnostic disable-next-line: param-type-mismatch
+				EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", nil, CallbackFunction)
+			end)
+			TestEqual(type(err), "string", "")
+			if err then
+				local foundInErrMessage = err:find("RegisterCallback Usage: 'target' was 'nil', expected 'table'.")
+					~= nil
+				TestEqual(foundInErrMessage, true, "Invalid target")
+			end
+		end
+
+		do
+			local _, err = pcall(function()
+				---@diagnostic disable-next-line: param-type-mismatch
+				EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, nil)
+			end)
+			TestEqual(type(err), "string", "")
+			if err then
+				local foundInErrMessage = err:find(
+					"RegisterCallback Usage: 'callbackFunction' was 'nil', expected 'string|function'."
+				) ~= nil
+				TestEqual(foundInErrMessage, true, "Invalid callbackFunction")
+			end
+		end
+
+		do
+			local _, err = pcall(function()
+				EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, "NonexistentFunction")
+			end)
+			TestEqual(type(err), "string", "")
+			if err then
+				local foundInErrMessage = err:find(
+					"RegisterCallback Usage: Function must be a member on target when using a string argument."
+				) ~= nil
+				TestEqual(foundInErrMessage, true, "Missing callbackFunction on target")
+			end
+		end
+
+		do
+			object.CallbackFunction = function() end
+			EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, "CallbackFunction")
+			object.CallbackFunction = nil
+			local _, err = pcall(function()
+				Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+			end)
+			TestEqual(err, nil, "No error after setting callback function to nil")
+		end
+
+		do
+			EncounterPlannerAPI.RegisterCallback("ExternalTextSynced", object, CallbackFunction)
+			---@diagnostic disable-next-line: cast-local-type
+			CallbackFunction = nil
+			local _, err = pcall(function()
+				Private.ExecuteAPICallback("ExternalTextSynced", "testArg", 42)
+			end)
+			TestEqual(err, nil, "No error after setting callback function to nil")
+		end
+
+		seterrorhandler(originalErrorHandler)
+
+		return "InvalidRegisterCallbackArguments"
 	end
 end
 --@end-debug@
