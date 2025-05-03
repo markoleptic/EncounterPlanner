@@ -29,14 +29,20 @@ end
 ---@class EncounterPlannerAPI
 local API = {}
 
----@return string
+-- Retrieve the synced external text as a string. The text is set on encounter start by sending an addon message to all
+-- raid members with the leader's external text from their "Designated External Plan" for the current boss. The text
+-- will be the same for all raid members with Encounter Planner installed.
+---@return string -- The current external text as a string, including newlines and spaces.
 ---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextasstring--string)
 function API.GetExternalTextAsString()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return join("\n", unpack(profile.activeText))
 end
 
----@return table<integer, table<integer, string>>
+-- Retrieve the synced external text as a table. The text is set on encounter start by sending an addon message to all
+-- raid members with the leader's external text from their "Designated External Plan" for the current boss. The text
+-- will be the same for all raid members with Encounter Planner installed.
+---@return table<integer, table<integer, string>> -- The current external text in a table format, where each word from each line is an entry in the table (table[RowNumber][WordNumber]).
 ---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextastable--tableinteger-tableinteger-string)
 function API.GetExternalTextAsTable()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
@@ -88,9 +94,10 @@ do
 	---@alias CallbackName
 	---| "ExternalTextSynced"
 
-	---@param callbackName CallbackName The name of the callback function to register.
-	---@param target table The target object to register the callback for. This is required so the callback can be unregistered later.
-	---@param callbackFunction string|fun(callbackName: CallbackName, ...: any) A function or string name of a function to receive the callback. If a string, the function must be a member on target.
+	-- Registers a callback function for the given callback name. Throws an error if parameters are invalid.
+	---@param callbackName CallbackName The name of the callback to register. Must be a valid callback name.
+	---@param target table The object to associate the callback with.
+	---@param callbackFunction string|fun(callbackName: CallbackName, ...: any) Either a method name on `target` or a direct function to be called.
 	function API.RegisterCallback(callbackName, target, callbackFunction)
 		local callbackNameType = type(callbackName)
 		local targetType = type(target)
@@ -124,8 +131,9 @@ do
 		callbacks[callbackName][target] = callbackFunction
 	end
 
-	---@param callbackName CallbackName The name of the callback function to unregister.
-	---@param target table The target table to unregister the callback for.
+	-- Unregisters a previously registered callback.
+	---@param callbackName CallbackName The name of the callback to unregister.
+	---@param target table The object the callback was registered with.
 	function API.UnregisterCallback(callbackName, target)
 		if callbacks[callbackName] and callbacks[callbackName][target] then
 			callbacks[callbackName][target] = nil
