@@ -33,7 +33,7 @@ local API = {}
 -- raid members with the leader's external text from their "Designated External Plan" for the current boss. The text
 -- will be the same for all raid members with Encounter Planner installed.
 ---@return string -- The current external text as a string, including newlines and spaces.
----[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextasstring--string)
+---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextasstring)
 function API.GetExternalTextAsString()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return join("\n", unpack(profile.activeText))
@@ -43,7 +43,7 @@ end
 -- raid members with the leader's external text from their "Designated External Plan" for the current boss. The text
 -- will be the same for all raid members with Encounter Planner installed.
 ---@return table<integer, table<integer, string>> -- The current external text in a table format, where each word from each line is an entry in the table (table[RowNumber][WordNumber]).
----[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextastable--tableinteger-tableinteger-string)
+---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapigetexternaltextastable)
 function API.GetExternalTextAsTable()
 	local profile = Private.addOn.db.profile ---@type DefaultProfile
 	return SplitStringTableByWhiteSpace(profile.activeText)
@@ -98,6 +98,7 @@ do
 	---@param callbackName CallbackName The name of the callback to register. Must be a valid callback name.
 	---@param target table The object to associate the callback with.
 	---@param callbackFunction string|fun(callbackName: CallbackName, ...: any) Either a method name on `target` or a direct function to be called.
+	---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapiregistercallbackcallbacknametargetcallbackfunction)
 	function API.RegisterCallback(callbackName, target, callbackFunction)
 		local callbackNameType = type(callbackName)
 		local targetType = type(target)
@@ -134,6 +135,7 @@ do
 	-- Unregisters a previously registered callback.
 	---@param callbackName CallbackName The name of the callback to unregister.
 	---@param target table The object the callback was registered with.
+	---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#encounterplannerapiunregistercallback)
 	function API.UnregisterCallback(callbackName, target)
 		if callbacks[callbackName] and callbacks[callbackName][target] then
 			callbacks[callbackName][target] = nil
