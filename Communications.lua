@@ -464,6 +464,7 @@ do
 		elseif prefix == kDistributeText then
 			local package = StringToTable(message, false)
 			self.db.profile.activeText = package --[[@as table]]
+			Private.ExecuteAPICallback("ExternalTextSynced")
 		end
 	end
 
@@ -514,19 +515,22 @@ do
 
 	---@param bossDungeonEncounterID integer
 	function Private.SendTextToGroup(bossDungeonEncounterID)
-		local plans = AddOn.db.profile.plans
-		local primaryPlan ---@type Plan|nil
-		for _, plan in pairs(plans) do
-			if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
-				primaryPlan = plan
-				break
+		if UnitIsGroupLeader("player") then
+			local plans = AddOn.db.profile.plans
+			local primaryPlan ---@type Plan|nil
+			for _, plan in pairs(plans) do
+				if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
+					primaryPlan = plan
+					break
+				end
 			end
-		end
-		if primaryPlan then
-			local groupType = GetGroupType()
-			if groupType then
-				local exportString = TableToString(primaryPlan.content, false)
-				AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
+			if primaryPlan then
+				local groupType = GetGroupType()
+				if groupType then
+					local exportString = TableToString(primaryPlan.content, false)
+					AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
+					Private.ExecuteAPICallback("ExternalTextSynced")
+				end
 			end
 		end
 	end

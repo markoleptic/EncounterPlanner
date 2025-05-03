@@ -92,12 +92,17 @@ do
 	end
 
 	---@alias CallbackName
-	---| "ExternalTextSynced"
+	---| "ExternalTextSynced" Executed after receiving external text from the group leader, or after sending external text if the group leader.
+
+	---@alias ExternalTextSyncedCallback fun(callbackName: "ExternalTextSynced")
+
+	---@alias CallbackSignature
+	---| ExternalTextSyncedCallback
 
 	-- Registers a callback function for the given callback name. Throws an error if parameters are invalid.
 	---@param callbackName CallbackName The name of the callback to register. Must be a valid callback name.
 	---@param target table The object to associate the callback with.
-	---@param callbackFunction string|fun(callbackName: CallbackName, ...: any) Either a method name on `target` or a direct function to be called.
+	---@param callbackFunction string | CallbackSignature Either a method name on `target` or a direct function to be called.
 	---[Documentation](https://github.com/markoleptic/EncounterPlanner/wiki/API#registercallback)
 	function API.RegisterCallback(callbackName, target, callbackFunction)
 		local callbackNameType = type(callbackName)
