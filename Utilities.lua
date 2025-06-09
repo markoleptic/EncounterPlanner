@@ -363,14 +363,13 @@ function Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 end
 
 do
-	local spellDropdownItems = nil
-	local racialDropdownItems = nil
-	local trinketDropdownItems = nil
+	local cache = setmetatable({}, { __mode = "kv" })
 
 	---@return DropdownItemData
 	function Utilities.GetOrCreateSpellDropdownItems()
-		if not spellDropdownItems then
-			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+		if not cache["spell"] then
+			cache["spell"] = {}--[[@as table<integer, DropdownItemData>]]
+			local dropdownItems = cache["spell"]
 			for className, classSpells in pairs(Private.spellDB.classes) do
 				local classDropdownData = {
 					itemValue = className,
@@ -409,15 +408,16 @@ do
 				tinsert(dropdownItems, classDropdownData)
 			end
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			spellDropdownItems = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
+			cache["spell"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
-		return spellDropdownItems
+		return cache["spell"]
 	end
 
 	---@return DropdownItemData
 	local function GetOrCreateRacialDropdownItems()
-		if not racialDropdownItems then
-			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+		if not cache["racial"] then
+			cache["racial"] = {} --[[@as table<integer, DropdownItemData>]]
+			local dropdownItems = cache["racial"]
 			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
 				local name = GetSpellName(racialInfo["spellID"])
 				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", racialInfo["icon"], name)
@@ -427,15 +427,16 @@ do
 				})
 			end
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			racialDropdownItems = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
+			cache["racial"] = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
 		end
-		return racialDropdownItems
+		return cache["racial"]
 	end
 
 	---@return DropdownItemData
 	local function GetOrCreateTrinketDropdownItems()
-		if not trinketDropdownItems then
-			local dropdownItems = {} --[[@as table<integer, DropdownItemData>]]
+		if not cache["trinket"] then
+			cache["trinket"] = {} --[[@as table<integer, DropdownItemData>]]
+			local dropdownItems = cache["trinket"]
 			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
 				local name = GetSpellName(trinketInfo["spellID"])
 				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", trinketInfo["icon"], name)
@@ -445,9 +446,9 @@ do
 				})
 			end
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			trinketDropdownItems = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
+			cache["trinket"] = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
 		end
-		return trinketDropdownItems
+		return cache["trinket"]
 	end
 
 	---@return DropdownItemData
