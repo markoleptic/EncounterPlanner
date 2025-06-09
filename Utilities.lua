@@ -2232,8 +2232,40 @@ function Utilities.FormatTime(time)
 	return formattedMinutes, formattedSeconds
 end
 
+local tooltipOwner = CreateFrame("Frame", "EPCooldownScannerTooltipOwnerFrame")
+tooltipOwner:Hide()
+
+local tooltip = CreateFrame("GameTooltip", "EPCooldownScannerTooltip", nil, "GameTooltipTemplate")
+tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
+tooltip:Hide()
+
+---@param spellID integer
+---@return number?
+local function GetCooldownDurationFromTooltip(spellID)
+	tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
+	tooltip:SetSpellByID(spellID)
+	tooltip:RefreshData()
+
+	for i = 2, tooltip:NumLines() do
+		local text = _G["EPCooldownScannerTooltipTextRight" .. i]:GetText()
+		if text then
+			local secondMatch = text:match("(%d+%.?%d*)%s+sec")
+			if secondMatch then
+				return tonumber(secondMatch)
+			end
+			local minuteMatch = text:match("(%d+%.?%d*)%s+min")
+			if minuteMatch then
+				return tonumber(minuteMatch) * 60.0
+			end
+		end
+	end
+
+	return nil
+end
+
 do
-	local cooldowns = {} ---@type table<integer, {duration: number, maxCharges: integer}>
+	---@type table<integer, {duration: number, maxCharges: integer}>
+	local cooldowns = setmetatable({}, { __mode = "kv" })
 
 	---@param spellID integer
 	---@return number
@@ -2246,12 +2278,18 @@ do
 				duration = chargeInfo.cooldownDuration
 				maxCharges = chargeInfo.maxCharges
 			else
-				local cooldownMS, _ = GetSpellBaseCooldown(spellID)
-				if cooldownMS then
-					duration = cooldownMS / 1000
+				local durationFromTooltip = GetCooldownDurationFromTooltip(spellID)
+				if durationFromTooltip then
+					duration = durationFromTooltip
+				else
+					local cooldownMS, _ = GetSpellBaseCooldown(spellID)
+					if cooldownMS then
+						duration = cooldownMS / 1000
+					end
 				end
 			end
-			if duration <= 1 then
+
+			if duration <= 1 then -- Last resort, use spell DB
 				local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
 				if spellDBDuration then
 					duration = spellDBDuration
@@ -2725,6 +2763,12 @@ do
 			testUtilities.TestEqual(lastExistingEncounterID, defaultPlanEncounterID, context)
 
 			return "DeletePlan"
+		end
+
+		function test.CooldownDurationTooltip()
+			local duration = GetCooldownDurationFromTooltip(342245)
+			testUtilities.TestEqual(duration, 50.0, "Shortened duration from talent")
+			return "CooldownDurationTooltip"
 		end
 	end
 end
