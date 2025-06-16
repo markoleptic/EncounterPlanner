@@ -763,7 +763,7 @@ do
 				if item then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-					item:SetCustomTexture(customTexture, color)
+					item:SetCustomTexture(customTexture, color, false)
 				end
 			end
 		end

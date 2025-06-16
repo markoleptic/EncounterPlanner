@@ -310,7 +310,7 @@
 ---@field enabled boolean
 ---@field onlyShowMe boolean Whether to only show assignment reminders that are relevant to the player.
 ---@field removeDueToPhaseChange boolean Not currently used.
---  If an assignment is a spell and it already on cooldown, the reminder will not be shown. If the spell is cast during
+-- If an assignment is a spell and it already on cooldown, the reminder will not be shown. If the spell is cast during
 -- the reminder countdown, it will be cancelled.
 ---@field cancelIfAlreadyCasted boolean
 ---@field countdownLength number How far ahead to begin showing reminders.
@@ -331,6 +331,7 @@
 ---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
 ---@field lastOpenPlan string The last open plan.
 ---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
+---@field favoritedSpellAssignments table<integer, DropdownItemData> Favorited spells.
 ---@field trustedCharacters table<integer, string> Characters that may bypass the import warning.
 ---@field windowSize {x: number, y: number}|nil Size of main frame when the addon was closed last.
 ---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.

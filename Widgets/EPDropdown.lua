@@ -111,9 +111,12 @@ end
 ---@field itemValue string|number the internal value used to index a dropdown item
 ---@field text string the value shown in the dropdown
 ---@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
----@field selectable? boolean
----@field customTexture? string|integer
----@field customTextureVertexColor? number[]
+---@field selectable? boolean If true, the dropdown item can be selected and a check can be shown
+---@field customTexture? string|integer A custom texture to add beside the check or checked indicator
+---@field customTextureVertexColor? number[] The color of the texture
+-- Whether or not the custom texture should be allowed to fire the CustomTextureClicked callback after user left mouse
+-- button mouse up
+---@field customTextureSelectable? boolean
 
 do
 	---@class EPDropdownPullout : AceGUIWidget
@@ -853,6 +856,7 @@ do
 	---@param neverShowItemsAsSelected boolean?
 	---@param customTexture? string|integer
 	---@param customTextureVertexColor? number[]
+	---@param customTextureSelectable? boolean
 	local function AddItem(
 		self,
 		itemValue,
@@ -861,7 +865,8 @@ do
 		dropdownItemData,
 		neverShowItemsAsSelected,
 		customTexture,
-		customTextureVertexColor
+		customTextureVertexColor,
+		customTextureSelectable
 	)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
@@ -895,7 +900,12 @@ do
 			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
 			dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
 			if customTexture and customTextureVertexColor then
-				dropdownItemToggle:SetCustomTexture(customTexture, customTextureVertexColor)
+				dropdownItemToggle:SetCustomTexture(customTexture, customTextureVertexColor, customTextureSelectable)
+			end
+			if customTextureSelectable then
+				dropdownItemToggle:SetCallback("Clicked", function()
+					self:Fire("CustomTextureClicked", itemValue)
+				end)
 			end
 			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 			self.pullout:AddItem(dropdownItemToggle)
@@ -949,7 +959,8 @@ do
 						nil,
 						neverShowItemsAsSelected or itemData.selectable == false,
 						itemData.customTexture,
-						itemData.customTextureVertexColor
+						itemData.customTextureVertexColor,
+						itemData.customTextureSelectable
 					)
 				end
 			end
@@ -1122,19 +1133,20 @@ do
 		self.itemHorizontalPadding = size
 	end
 
-	-- Sorts the immediate children of the pullout.
+	-- Sorts the immediate children of the pullout matching value. If value is nil, the top level pullout is sorted.
 	---@param self EPDropdown
 	---@param value any
-	local function Sort(self, value)
+	---@param byText boolean|nil If true, items are sorted by text appearing after an icon, otherwise by item value.
+	local function Sort(self, value, byText)
 		if value then
 			local item, _ = FindItemAndText(self, value, true)
 			if item then
 				if item.type == "EPDropdownItemMenu" then
-					item.childPullout:Sort()
+					item.childPullout:Sort(byText)
 				end
 			end
 		else
-			self.pullout:Sort()
+			self.pullout:Sort(byText)
 		end
 	end
 

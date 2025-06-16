@@ -624,13 +624,6 @@ do -- Assignment Editor
 		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		assignmentEditor:SetLayout("EPVerticalLayout")
 		assignmentEditor:SetCallback("OnRelease", function()
-			local recent = Private.assignmentEditor.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent")
-			for _, dropdownItemData in ipairs(recent) do
-				tinsert(AddOn.db.profile.recentSpellAssignments, dropdownItemData)
-			end
-			while #AddOn.db.profile.recentSpellAssignments > maxNumberOfRecentItems do
-				tremove(AddOn.db.profile.recentSpellAssignments, 1)
-			end
 			if Private.mainFrame then
 				local timeline = Private.mainFrame.timeline
 				if timeline then
@@ -649,8 +642,14 @@ do -- Assignment Editor
 			Private.assignmentEditor:Release()
 			UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 		end)
+		assignmentEditor:SetCallback("RecentItemsChanged", function(_, _, recentItems)
+			AddOn.db.profile.recentSpellAssignments = recentItems
+		end)
+		assignmentEditor:SetCallback("FavoriteItemsChanged", function(_, _, favoriteItems)
+			AddOn.db.profile.favoritedSpellAssignments = favoriteItems
+		end)
 		assignmentEditor.spellAssignmentDropdown:AddItems(
-			GetOrCreateSpellAssignmentDropdownItems(),
+			GetOrCreateSpellAssignmentDropdownItems(true),
 			"EPDropdownItemToggle"
 		)
 		local roster = GetCurrentRoster()
@@ -662,9 +661,17 @@ do -- Assignment Editor
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
+		assignmentEditor.spellAssignmentDropdown:SetItemEnabled(
+			"Favorite",
+			#AddOn.db.profile.favoritedSpellAssignments > 0
+		)
 		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 			"Recent",
 			AddOn.db.profile.recentSpellAssignments
+		)
+		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+			"Favorite",
+			AddOn.db.profile.favoritedSpellAssignments
 		)
 		local dropdownItems = {}
 		local itemsToDisable = {}

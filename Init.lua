@@ -467,6 +467,7 @@ local defaults = {
 		sharedRoster = {},
 		lastOpenPlan = "",
 		recentSpellAssignments = {},
+		favoritedSpellAssignments = {},
 		trustedCharacters = {},
 		cooldownAndChargeOverrides = {},
 		activeText = {},

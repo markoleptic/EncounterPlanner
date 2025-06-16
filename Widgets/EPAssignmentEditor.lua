@@ -168,9 +168,39 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 			{ { itemValue = value, text = itemText } },
 			1
 		)
+		self.spellAssignmentDropdown:SetItemEnabled("Recent", true)
 	end
+
 	self.spellAssignmentDropdown:SetTextFromValue()
 	self:Fire("DataChanged", "SpellAssignment", value)
+	self:Fire("RecentItemsChanged", self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent"))
+end
+
+---@param self EPAssignmentEditor
+local function HandleCustomTextureClicked(self, value)
+	local favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")
+	local addNewFavorite = true
+	if #favorites > 0 then
+		for i = #favorites, 1, -1 do
+			if favorites[i].itemValue == value then
+				addNewFavorite = false
+				break
+			end
+		end
+	end
+	if addNewFavorite then
+		local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
+		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+			"Favorite",
+			{ { itemValue = value, text = itemText } }
+		)
+		self.spellAssignmentDropdown:Sort("Favorite", true)
+	end
+	favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")
+	self.spellAssignmentDropdown:SetItemEnabled("Favorite", #favorites > 0)
+	if addNewFavorite then
+		self:Fire("FavoriteItemsChanged", favorites)
+	end
 end
 
 ---@param self EPAssignmentEditor
@@ -368,8 +398,14 @@ local function OnAcquire(self)
 		self.spellAssignmentDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleSpellAssignmentDropdownValueChanged(self, value)
 		end)
+		self.spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, value)
+			HandleCustomTextureClicked(self, value)
+		end)
+		self.spellAssignmentDropdown:AddItem("Favorite", L["Favorite"], "EPDropdownItemMenu", {}, true)
+		self.spellAssignmentDropdown:SetItemEnabled("Favorite", false)
 		self.spellAssignmentDropdown:AddItem("Recent", L["Recent"], "EPDropdownItemMenu", {}, true)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
+
 		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)
 	end
 

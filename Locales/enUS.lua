@@ -200,6 +200,7 @@ L["External Text"] = true
 L["External Text Editor"] = true
 L["Failed to import"] = true
 L["failed to update"] = true
+L["Favorite"] = true
 L["Fill"] = true
 L["Fill from Current Plan Roster"] = true
 L["Fill from Shared Roster"] = true

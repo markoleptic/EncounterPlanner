@@ -365,10 +365,31 @@ end
 do
 	local cache = setmetatable({}, { __mode = "kv" })
 
+	---@param dropdownItemMenuData table<integer, DropdownItemData>
+	---@param visible boolean
+	local function setFavoriteTextureVisibility(dropdownItemMenuData, visible)
+		for _, data in ipairs(dropdownItemMenuData) do
+			if not data.dropdownItemMenuData then
+				if visible then
+					data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]]
+					data.customTextureVertexColor = { 1, 1, 1, 1 }
+					data.customTextureSelectable = true
+				else
+					data.customTexture = nil
+					data.customTextureVertexColor = nil
+					data.customTextureSelectable = nil
+				end
+			else
+				setFavoriteTextureVisibility(data.dropdownItemMenuData, visible)
+			end
+		end
+	end
+
+	---@param showFavoriteTexture boolean
 	---@return DropdownItemData
-	function Utilities.GetOrCreateSpellDropdownItems()
+	function Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture)
 		if not cache["spell"] then
-			cache["spell"] = {}--[[@as table<integer, DropdownItemData>]]
+			cache["spell"] = {}--[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["spell"]
 			for className, classSpells in pairs(Private.spellDB.classes) do
 				local classDropdownData = {
@@ -410,13 +431,15 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["spell"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
+		setFavoriteTextureVisibility(cache["spell"].dropdownItemMenuData, showFavoriteTexture)
 		return cache["spell"]
 	end
 
+	---@param showFavoriteTexture boolean
 	---@return DropdownItemData
-	local function GetOrCreateRacialDropdownItems()
+	local function GetOrCreateRacialDropdownItems(showFavoriteTexture)
 		if not cache["racial"] then
-			cache["racial"] = {} --[[@as table<integer, DropdownItemData>]]
+			cache["racial"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["racial"]
 			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
 				local name = GetSpellName(racialInfo["spellID"])
@@ -429,13 +452,15 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["racial"] = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
 		end
+		setFavoriteTextureVisibility(cache["racial"].dropdownItemMenuData, showFavoriteTexture)
 		return cache["racial"]
 	end
 
+	---@param showFavoriteTexture boolean
 	---@return DropdownItemData
-	local function GetOrCreateTrinketDropdownItems()
+	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture)
 		if not cache["trinket"] then
-			cache["trinket"] = {} --[[@as table<integer, DropdownItemData>]]
+			cache["trinket"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["trinket"]
 			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
 				local name = GetSpellName(trinketInfo["spellID"])
@@ -448,15 +473,17 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["trinket"] = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
 		end
+		setFavoriteTextureVisibility(cache["trinket"].dropdownItemMenuData, showFavoriteTexture)
 		return cache["trinket"]
 	end
 
+	---@param showFavoriteTexture boolean
 	---@return DropdownItemData
-	function Utilities.GetOrCreateSpellAssignmentDropdownItems()
+	function Utilities.GetOrCreateSpellAssignmentDropdownItems(showFavoriteTexture)
 		return {
-			Utilities.GetOrCreateSpellDropdownItems(),
-			GetOrCreateRacialDropdownItems(),
-			GetOrCreateTrinketDropdownItems(),
+			Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture),
+			GetOrCreateRacialDropdownItems(showFavoriteTexture),
+			GetOrCreateTrinketDropdownItems(showFavoriteTexture),
 		}
 	end
 end

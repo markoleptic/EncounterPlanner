@@ -72,10 +72,12 @@ end
 
 local function HandleItemBaseFrameLeave(frame)
 	local self = frame.obj
-	self.highlight:Hide()
-	self:Fire("OnLeave")
-	if self.specialOnLeave then
-		self.specialOnLeave(self)
+	if not self.customTextureFrame:IsMouseOver() then
+		self.highlight:Hide()
+		self:Fire("OnLeave")
+		if self.specialOnLeave then
+			self.specialOnLeave(self)
+		end
 	end
 end
 
@@ -112,8 +114,8 @@ function EPItemBase.OnRelease(self)
 	self.frame:SetParent(nil)
 	self.frame:ClearAllPoints()
 	self.frame:Hide()
+	self.customTextureFrame:Hide()
 	self.customTexture:SetTexture(nil)
-	self.customTexture:Hide()
 	if self.changedFont then
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		local _, size, _ = self.text:GetFont()
@@ -181,12 +183,18 @@ end
 ---@param self EPItemBase
 ---@param texture string|integer
 ---@param vertexColor number[]
-function EPItemBase.SetCustomTexture(self, texture, vertexColor)
+---@param customTextureClickable boolean
+function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureClickable)
 	self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize * 2, 0)
 	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
 	self.customTexture:SetTexture(texture)
 	self.customTexture:SetVertexColor(unpack(vertexColor))
-	self.customTexture:Show()
+	if customTextureClickable then
+		self.customTextureFrame:RegisterForClicks("LeftButtonUp")
+	else
+		self.customTextureFrame:RegisterForClicks()
+	end
+	self.customTextureFrame:Show()
 end
 
 -- This is called by a Dropdown-Pullout. Do not call this method directly
@@ -233,11 +241,14 @@ function EPItemBase.Create(type)
 	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	check:Hide()
 
-	local customTexture = frame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
-	customTexture:SetWidth(checkSize)
-	customTexture:SetHeight(checkSize)
-	customTexture:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
-	customTexture:Hide()
+	local customTextureFrame = CreateFrame("Button", type .. "CustomTextureFrame" .. count, frame)
+	customTextureFrame:SetWidth(checkSize)
+	customTextureFrame:SetHeight(checkSize)
+	customTextureFrame:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
+	customTextureFrame:Hide()
+
+	local customTexture = customTextureFrame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
+	customTexture:SetAllPoints(customTextureFrame)
 
 	local childSelectedIndicator = frame:CreateTexture(type .. "ChildSelectedIndicator" .. count, "OVERLAY")
 	childSelectedIndicator:SetWidth(subHeight)
@@ -263,6 +274,7 @@ function EPItemBase.Create(type)
 		highlight = highlight,
 		text = text,
 		customTexture = customTexture,
+		customTextureFrame = customTextureFrame,
 		enabled = true,
 		OnAcquire = EPItemBase.OnAcquire,
 		OnRelease = EPItemBase.OnRelease,
@@ -283,6 +295,17 @@ function EPItemBase.Create(type)
 		checkOffsetX = checkOffsetX,
 		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
 	}
+
+	customTextureFrame:SetScript("OnClick", function()
+		if widget.enabled then
+			widget:Fire("Clicked")
+		end
+	end)
+	customTextureFrame:SetScript("OnLeave", function()
+		if not frame:IsMouseOver() then
+			HandleItemBaseFrameLeave(frame)
+		end
+	end)
 
 	frame.obj = widget
 
@@ -579,7 +602,16 @@ do
 				dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 				if itemData.customTexture and itemData.customTextureVertexColor then
-					dropdownItemToggle:SetCustomTexture(itemData.customTexture, itemData.customTextureVertexColor)
+					dropdownItemToggle:SetCustomTexture(
+						itemData.customTexture,
+						itemData.customTextureVertexColor,
+						itemData.customTextureSelectable
+					)
+				end
+				if itemData.customTextureSelectable then
+					dropdownItemToggle:SetCallback("Clicked", function()
+						dropdownParent:Fire("CustomTextureClicked", itemData.itemValue)
+					end)
 				end
 				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 				self.childPullout:AddItem(dropdownItemToggle)
@@ -632,7 +664,16 @@ do
 					dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 					if itemData.customTexture and itemData.customTextureVertexColor then
-						dropdownItemToggle:SetCustomTexture(itemData.customTexture, itemData.customTextureVertexColor)
+						dropdownItemToggle:SetCustomTexture(
+							itemData.customTexture,
+							itemData.customTextureVertexColor,
+							itemData.customTextureSelectable
+						)
+					end
+					if itemData.customTextureSelectable then
+						dropdownItemToggle:SetCallback("Clicked", function()
+							dropdownParent:Fire("CustomTextureClicked", itemData.itemValue)
+						end)
 					end
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
 					if currentIndex then
