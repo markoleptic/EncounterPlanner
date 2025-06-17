@@ -649,7 +649,7 @@ do -- Assignment Editor
 			AddOn.db.profile.favoritedSpellAssignments = favoriteItems
 		end)
 		assignmentEditor.spellAssignmentDropdown:AddItems(
-			GetOrCreateSpellAssignmentDropdownItems(true),
+			GetOrCreateSpellAssignmentDropdownItems(true, AddOn.db.profile.favoritedSpellAssignments),
 			"EPDropdownItemToggle"
 		)
 		local roster = GetCurrentRoster()

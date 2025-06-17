@@ -609,8 +609,8 @@ do
 					)
 				end
 				if itemData.customTextureSelectable then
-					dropdownItemToggle:SetCallback("Clicked", function()
-						dropdownParent:Fire("CustomTextureClicked", itemData.itemValue)
+					dropdownItemToggle:SetCallback("Clicked", function(widget)
+						dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
 					end)
 				end
 				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
@@ -671,8 +671,8 @@ do
 						)
 					end
 					if itemData.customTextureSelectable then
-						dropdownItemToggle:SetCallback("Clicked", function()
-							dropdownParent:Fire("CustomTextureClicked", itemData.itemValue)
+						dropdownItemToggle:SetCallback("Clicked", function(widget)
+							dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
 						end)
 					end
 					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)

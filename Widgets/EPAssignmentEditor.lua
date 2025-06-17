@@ -177,30 +177,35 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 end
 
 ---@param self EPAssignmentEditor
-local function HandleCustomTextureClicked(self, value)
+---@param widget EPDropdownItemToggle
+local function HandleCustomTextureClicked(self, widget, value)
 	local favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")
-	local addNewFavorite = true
+	local dropdownItemDataToRemove = nil
 	if #favorites > 0 then
 		for i = #favorites, 1, -1 do
 			if favorites[i].itemValue == value then
-				addNewFavorite = false
+				dropdownItemDataToRemove = favorites[i]
 				break
 			end
 		end
 	end
-	if addNewFavorite then
+
+	if dropdownItemDataToRemove == nil then -- Add new favorite to favorite menu and update texture
 		local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
 		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 			"Favorite",
 			{ { itemValue = value, text = itemText } }
 		)
 		self.spellAssignmentDropdown:Sort("Favorite", true)
+		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]])
+	else
+		self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Favorite", { dropdownItemDataToRemove })
+		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
 	end
+
 	favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")
 	self.spellAssignmentDropdown:SetItemEnabled("Favorite", #favorites > 0)
-	if addNewFavorite then
-		self:Fire("FavoriteItemsChanged", favorites)
-	end
+	self:Fire("FavoriteItemsChanged", favorites)
 end
 
 ---@param self EPAssignmentEditor
@@ -398,8 +403,8 @@ local function OnAcquire(self)
 		self.spellAssignmentDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleSpellAssignmentDropdownValueChanged(self, value)
 		end)
-		self.spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, value)
-			HandleCustomTextureClicked(self, value)
+		self.spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, widget, value)
+			HandleCustomTextureClicked(self, widget, value)
 		end)
 		self.spellAssignmentDropdown:AddItem("Favorite", L["Favorite"], "EPDropdownItemMenu", {}, true)
 		self.spellAssignmentDropdown:SetItemEnabled("Favorite", false)

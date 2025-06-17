@@ -367,11 +367,16 @@ do
 
 	---@param dropdownItemMenuData table<integer, DropdownItemData>
 	---@param visible boolean
-	local function setFavoriteTextureVisibility(dropdownItemMenuData, visible)
+	---@param favoritedItemsMap? table<integer, boolean>
+	local function SetFavoriteTextureVisibility(dropdownItemMenuData, visible, favoritedItemsMap)
 		for _, data in ipairs(dropdownItemMenuData) do
 			if not data.dropdownItemMenuData then
 				if visible then
-					data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]]
+					if favoritedItemsMap and favoritedItemsMap[data.itemValue] then
+						data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]]
+					else
+						data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]]
+					end
 					data.customTextureVertexColor = { 1, 1, 1, 1 }
 					data.customTextureSelectable = true
 				else
@@ -380,14 +385,15 @@ do
 					data.customTextureSelectable = nil
 				end
 			else
-				setFavoriteTextureVisibility(data.dropdownItemMenuData, visible)
+				SetFavoriteTextureVisibility(data.dropdownItemMenuData, visible)
 			end
 		end
 	end
 
 	---@param showFavoriteTexture boolean
+	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
-	function Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture)
+	function Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["spell"] then
 			cache["spell"] = {}--[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["spell"]
@@ -431,13 +437,14 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["spell"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
-		setFavoriteTextureVisibility(cache["spell"].dropdownItemMenuData, showFavoriteTexture)
+		SetFavoriteTextureVisibility(cache["spell"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
 		return cache["spell"]
 	end
 
 	---@param showFavoriteTexture boolean
+	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
-	local function GetOrCreateRacialDropdownItems(showFavoriteTexture)
+	local function GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["racial"] then
 			cache["racial"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["racial"]
@@ -452,13 +459,14 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["racial"] = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
 		end
-		setFavoriteTextureVisibility(cache["racial"].dropdownItemMenuData, showFavoriteTexture)
+		SetFavoriteTextureVisibility(cache["racial"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
 		return cache["racial"]
 	end
 
 	---@param showFavoriteTexture boolean
+	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
-	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture)
+	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["trinket"] then
 			cache["trinket"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["trinket"]
@@ -473,17 +481,24 @@ do
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
 			cache["trinket"] = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
 		end
-		setFavoriteTextureVisibility(cache["trinket"].dropdownItemMenuData, showFavoriteTexture)
+		SetFavoriteTextureVisibility(cache["trinket"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
 		return cache["trinket"]
 	end
 
 	---@param showFavoriteTexture boolean
+	---@param favoritedItems? table<integer, DropdownItemData>
 	---@return DropdownItemData
-	function Utilities.GetOrCreateSpellAssignmentDropdownItems(showFavoriteTexture)
+	function Utilities.GetOrCreateSpellAssignmentDropdownItems(showFavoriteTexture, favoritedItems)
+		local favoritedItemsMap = {}
+		if favoritedItems then
+			for _, v in ipairs(favoritedItems) do
+				favoritedItemsMap[v.itemValue] = true
+			end
+		end
 		return {
-			Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture),
-			GetOrCreateRacialDropdownItems(showFavoriteTexture),
-			GetOrCreateTrinketDropdownItems(showFavoriteTexture),
+			Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap),
 		}
 	end
 end

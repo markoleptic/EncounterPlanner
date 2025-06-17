@@ -903,8 +903,8 @@ do
 				dropdownItemToggle:SetCustomTexture(customTexture, customTextureVertexColor, customTextureSelectable)
 			end
 			if customTextureSelectable then
-				dropdownItemToggle:SetCallback("Clicked", function()
-					self:Fire("CustomTextureClicked", itemValue)
+				dropdownItemToggle:SetCallback("Clicked", function(widget)
+					self:Fire("CustomTextureClicked", widget, itemValue)
 				end)
 			end
 			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
@@ -982,8 +982,8 @@ do
 
 	-- Removes items from a dropdown menu item's immediate children.
 	---@param self EPDropdown
-	---@param existingItemValue any the internal value used to index an item
-	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data
+	---@param existingItemValue any the internal value used to index a dropdown menu item
+	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data to remove from existing menu
 	local function RemoveItemsFromExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
 		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
 		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
