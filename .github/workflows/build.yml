@@ -20,6 +20,13 @@ jobs:
               with:
                 fetch-depth: 0
 
+            - name: Checkout latest tag
+              run: |
+                git fetch --tags
+                latest_tag=$(git tag --sort=-creatordate | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+                echo "Checking out tag: $latest_tag"
+                git checkout $latest_tag
+
             - name: Package
               uses: BigWigsMods/packager@master
               env:
