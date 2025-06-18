@@ -102,8 +102,11 @@ end
 
 ---@param self EPItemBase
 function EPItemBase.OnAcquire(self)
+	self.checkOffsetX = textOffsetX
+	self.textOffsetX = textOffsetX
 	self.frame:SetToplevel(true)
 	self.frame:SetFrameStrata("DIALOG")
+	self.text:SetPoint("LEFT", self.frame, "LEFT", self.textOffsetX, 0)
 	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX, 0)
 end
 
@@ -114,6 +117,9 @@ function EPItemBase.OnRelease(self)
 	self.frame:SetParent(nil)
 	self.frame:ClearAllPoints()
 	self.frame:Hide()
+	self.text:ClearAllPoints()
+	self.check:ClearAllPoints()
+	self.highlight:Hide()
 	self.customTextureFrame:Hide()
 	self.customTexture:SetTexture(nil)
 	if self.changedFont then
@@ -184,8 +190,13 @@ end
 ---@param texture string|integer
 ---@param vertexColor number[]
 ---@param customTextureClickable boolean
-function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureClickable)
-	self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize * 2, 0)
+---@param neverChecked? boolean
+function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureClickable, neverChecked)
+	if neverChecked then
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+	else
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize * 2, 0)
+	end
 	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
 	self.customTexture:SetTexture(texture)
 	self.customTexture:SetVertexColor(unpack(vertexColor))
@@ -605,7 +616,8 @@ do
 					dropdownItemToggle:SetCustomTexture(
 						itemData.customTexture,
 						itemData.customTextureVertexColor,
-						itemData.customTextureSelectable
+						itemData.customTextureSelectable,
+						self.neverShowItemsAsSelected
 					)
 				end
 				if itemData.customTextureSelectable then
@@ -667,7 +679,8 @@ do
 						dropdownItemToggle:SetCustomTexture(
 							itemData.customTexture,
 							itemData.customTextureVertexColor,
-							itemData.customTextureSelectable
+							itemData.customTextureSelectable,
+							self.neverShowItemsAsSelected
 						)
 					end
 					if itemData.customTextureSelectable then

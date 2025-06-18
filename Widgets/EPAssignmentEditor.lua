@@ -192,15 +192,28 @@ local function HandleCustomTextureClicked(self, widget, value)
 
 	if dropdownItemDataToRemove == nil then -- Add new favorite to favorite menu and update texture
 		local _, itemText = self.spellAssignmentDropdown:FindItemAndText(value)
-		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
-			"Favorite",
-			{ { itemValue = value, text = itemText } }
-		)
+		self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Favorite", {
+			{
+				itemValue = value,
+				text = itemText,
+				customTextureSelectable = true,
+				customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
+				customTextureVertexColor = { 1, 1, 1, 1 },
+			},
+		})
 		self.spellAssignmentDropdown:Sort("Favorite", true)
 		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]])
-	else
+	else -- Remove favorite from favorite menu and update texture
+		local parentItemMenu = widget:GetUserDataTable().parentItemMenu
+		if parentItemMenu:GetValue() == "Favorite" then
+			local item = self.spellAssignmentDropdown:FindItemAndText(value)
+			if item then
+				item.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
+			end
+		else
+			widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
+		end
 		self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Favorite", { dropdownItemDataToRemove })
-		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
 	end
 
 	favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")

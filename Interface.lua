@@ -648,31 +648,36 @@ do -- Assignment Editor
 		assignmentEditor:SetCallback("FavoriteItemsChanged", function(_, _, favoriteItems)
 			AddOn.db.profile.favoritedSpellAssignments = favoriteItems
 		end)
-		assignmentEditor.spellAssignmentDropdown:AddItems(
-			GetOrCreateSpellAssignmentDropdownItems(true, AddOn.db.profile.favoritedSpellAssignments),
-			"EPDropdownItemToggle"
-		)
+
 		local roster = GetCurrentRoster()
 		local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
 		local updatedDropdownItems, enableIndividualItem =
 			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
+
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 		assignmentEditor.targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
-		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
-		assignmentEditor.spellAssignmentDropdown:SetItemEnabled(
-			"Favorite",
-			#AddOn.db.profile.favoritedSpellAssignments > 0
+
+		local favoritedSpellAssignments = AddOn.db.profile.favoritedSpellAssignments
+		assignmentEditor.spellAssignmentDropdown:AddItems(
+			GetOrCreateSpellAssignmentDropdownItems(true, favoritedSpellAssignments),
+			"EPDropdownItemToggle"
 		)
+		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
+		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Favorite", #favoritedSpellAssignments > 0)
 		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
 			"Recent",
 			AddOn.db.profile.recentSpellAssignments
 		)
-		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
-			"Favorite",
-			AddOn.db.profile.favoritedSpellAssignments
-		)
+		local favoritedItems = Private.DeepCopy(favoritedSpellAssignments)
+		for _, data in ipairs(favoritedItems) do
+			data.customTextureSelectable = true
+			data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
+			data.customTextureVertexColor = { 1, 1, 1, 1 }
+		end
+		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Favorite", favoritedItems)
+
 		local dropdownItems = {}
 		local itemsToDisable = {}
 		local boss = GetCurrentBoss()

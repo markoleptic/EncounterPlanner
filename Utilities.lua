@@ -385,7 +385,7 @@ do
 					data.customTextureSelectable = nil
 				end
 			else
-				SetFavoriteTextureVisibility(data.dropdownItemMenuData, visible)
+				SetFavoriteTextureVisibility(data.dropdownItemMenuData, visible, favoritedItemsMap)
 			end
 		end
 	end
@@ -442,7 +442,7 @@ do
 	end
 
 	---@param showFavoriteTexture boolean
-	---@param favoritedItemsMap? table<integer, boolean>
+	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
 	local function GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["racial"] then
@@ -464,7 +464,7 @@ do
 	end
 
 	---@param showFavoriteTexture boolean
-	---@param favoritedItemsMap? table<integer, boolean>
+	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
 	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["trinket"] then

@@ -199,10 +199,43 @@ do
 				break
 			end
 		end
-		local h = #self.items * self.dropdownItemHeight
-		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
-		self:FixScroll()
+		local previousFrame = nil
+		for _, item in ipairs(self.items) do
+			if previousFrame then
+				item:SetPoint("TOPLEFT", previousFrame, "BOTTOMLEFT")
+				item:SetPoint("TOPRIGHT", previousFrame, "BOTTOMRIGHT")
+			else
+				item:SetPoint("TOPLEFT", self.itemFrame, "TOPLEFT")
+				item:SetPoint("TOPRIGHT", self.itemFrame, "TOPRIGHT")
+			end
+			previousFrame = item.frame
+		end
+
+		local height = #self.items * self.dropdownItemHeight
+		self.itemFrame:SetHeight(height)
+
+		if height + edgeSize * 2 > self.maxHeight then
+			local halfHeight = self.dropdownItemHeight / 2.0
+			self.frame:SetHeight(self.maxHeight + halfHeight)
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + edgeSize)
+			self.scrollIndicatorFrame:SetHeight(halfHeight)
+			self.scrollIndicator:SetSize(halfHeight, halfHeight)
+			self.scrollIndicatorFrame:Show()
+			self:SetScroll(self.scrollFrame:GetVerticalScroll())
+		else
+			self.frame:SetHeight(min(height + edgeSize * 2, self.maxHeight))
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, edgeSize)
+			self.scrollIndicatorFrame:Hide()
+			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
+		end
+
+		for _, item in ipairs(self.items) do
+			if item.frame:IsMouseOver() then
+				item.highlight:Show()
+			else
+				item.highlight:Hide()
+			end
+		end
 	end
 
 	---@param self EPDropdownPullout
@@ -235,8 +268,8 @@ do
 				elseif not item.neverShowItemsAsSelected then
 					width = width + item.check:GetWidth() + item.checkOffsetX
 				end
-				if item.customTexture:IsShown() then
-					width = width + item.customTexture:GetWidth() + item.checkOffsetX
+				if item.customTextureFrame:IsShown() then
+					width = width + item.customTextureFrame:GetWidth() + item.checkOffsetX
 				end
 				maxItemWidth = max(maxItemWidth, width)
 			end
@@ -321,19 +354,8 @@ do
 	local function SetScroll(self, value)
 		local scrollFrameHeight = self.scrollFrame:GetHeight()
 		local itemFrameHeight = self.itemFrame:GetHeight()
-
 		local maxVerticalScroll = itemFrameHeight - scrollFrameHeight
-		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
-		local snapValue = self.dropdownItemHeight
-		local currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
-
-		if value > 0 then
-			currentSnapValue = currentSnapValue - 1
-		elseif value < 0 then
-			currentSnapValue = currentSnapValue + 1
-		end
-
-		local newVerticalScroll = max(min(currentSnapValue * snapValue, maxVerticalScroll), 0)
+		local newVerticalScroll = max(min(value, maxVerticalScroll), 0)
 		self.scrollFrame:SetVerticalScroll(newVerticalScroll)
 
 		if maxVerticalScroll > 0 and abs(newVerticalScroll - maxVerticalScroll) > 0.1 then
@@ -344,17 +366,6 @@ do
 		if self.itemFrame:GetWidth() ~= self.scrollFrame:GetWidth() then
 			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 		end
-	end
-
-	---@param self EPDropdownPullout
-	local function FixScroll(self)
-		local scrollFrameHeight = self.scrollFrame:GetHeight()
-		local itemFrameHeight = self.itemFrame:GetHeight()
-		local maxVerticalScroll = itemFrameHeight - scrollFrameHeight
-		local currentVerticalScroll = self.scrollFrame:GetVerticalScroll()
-
-		local newVerticalScroll = max(min(currentVerticalScroll, maxVerticalScroll), 0)
-		self:SetScroll(newVerticalScroll)
 	end
 
 	---@param self EPDropdownPullout
@@ -422,7 +433,6 @@ do
 			SetMaxVisibleItems = SetMaxVisibleItems,
 			SetItemHeight = SetItemHeight,
 			SetScroll = SetScroll,
-			FixScroll = FixScroll,
 			SetAutoWidth = SetAutoWidth,
 			Sort = Sort,
 			scrollIndicator = scrollIndicator,
@@ -438,10 +448,20 @@ do
 		}
 
 		scrollFrame:SetScript("OnMouseWheel", function(_, delta)
-			widget:SetScroll(delta)
+			local snapValue = widget.dropdownItemHeight
+			local currentVerticalScroll = widget.scrollFrame:GetVerticalScroll()
+			local currentSnapValue
+			if delta > 0 then
+				currentSnapValue = floor(currentVerticalScroll / snapValue) - 1
+			elseif delta < 0 then
+				currentSnapValue = ceil(currentVerticalScroll / snapValue) + 1
+			else
+				currentSnapValue = floor((currentVerticalScroll / snapValue) + 0.5)
+			end
+			widget:SetScroll(currentSnapValue * snapValue)
 		end)
 		scrollFrame:SetScript("OnSizeChanged", function()
-			widget:FixScroll()
+			widget:SetScroll(widget.scrollFrame:GetVerticalScroll())
 		end)
 
 		return AceGUI:RegisterAsWidget(widget)
@@ -900,7 +920,12 @@ do
 			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
 			dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
 			if customTexture and customTextureVertexColor then
-				dropdownItemToggle:SetCustomTexture(customTexture, customTextureVertexColor, customTextureSelectable)
+				dropdownItemToggle:SetCustomTexture(
+					customTexture,
+					customTextureVertexColor,
+					customTextureSelectable,
+					neverShowItemsAsSelected == true
+				)
 			end
 			if customTextureSelectable then
 				dropdownItemToggle:SetCallback("Clicked", function(widget)
