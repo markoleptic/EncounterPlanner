@@ -152,13 +152,13 @@ do
 		self.maxItems = defaultMaxItems
 	end
 
-	---@param item EPDropdownItemToggle|EPDropdownItemMenu
-	local function OnEnter(item)
-		local self = item.parentPullout
-		for _, v in ipairs(self.items) do
-			if v.CloseMenu and v ~= item then
-				---@cast v EPDropdownItemMenu
-				v:CloseMenu()
+	---@param enteredItem EPDropdownItemToggle|EPDropdownItemMenu
+	local function OnEnter(enteredItem)
+		local self = enteredItem.parentPullout
+		for _, siblingItem in ipairs(self.items) do
+			if siblingItem.CloseMenu and siblingItem ~= enteredItem then
+				---@cast siblingItem EPDropdownItemMenu
+				siblingItem:CloseMenu()
 			end
 		end
 	end
@@ -547,13 +547,11 @@ do
 		end
 	end
 
-	---@param pullout EPDropdownPullout
-	local function HandlePulloutOpen(pullout)
-		local self = pullout:GetUserDataTable().obj
-		---@cast self EPDropdown
+	---@param self EPDropdown
+	local function HandlePulloutOpen(self)
 		local value = self.value
 		if not self.multiselect then
-			for _, item in ipairs(pullout.items) do
+			for _, item in ipairs(self.pullout.items) do
 				item:SetIsSelected(item:GetValue() == value)
 			end
 		end
@@ -564,10 +562,8 @@ do
 		self:Fire("OnOpened")
 	end
 
-	---@param pullout EPDropdownPullout
-	local function HandlePulloutClose(pullout)
-		local self = pullout:GetUserDataTable().obj
-		---@cast self EPDropdown
+	---@param self EPDropdown
+	local function HandlePulloutClose(self)
 		self.open = nil
 		self.button:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
 		self.button:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
@@ -606,19 +602,18 @@ do
 		return searchItems(self.pullout.items)
 	end
 
+	---@param self EPDropdown
 	---@param dropdownItem EPDropdownItemMenu
-	---@param _ string
 	---@param selected boolean
 	---@param value any
-	---@param text string
-	local function HandleMenuItemValueChanged(dropdownItem, _, selected, value, text)
-		local self = dropdownItem:GetUserDataTable().obj
+	---@param pathText string
+	local function HandleMenuItemValueChanged(self, dropdownItem, selected, value, pathText)
 		if self.multiselect then
 			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue())
 		else
 			self:SetValue(value)
 			if self.showPathText then
-				self:SetText(text)
+				self:SetText(pathText)
 			end
 			self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
 			if self.open then
@@ -627,11 +622,10 @@ do
 		end
 	end
 
+	---@param self EPDropdown
 	---@param dropdownItem EPDropdownItemToggle
-	---@param _ string
 	---@param selected boolean
-	local function HandleItemValueChanged(dropdownItem, _, selected)
-		local self = dropdownItem:GetUserDataTable().obj
+	local function HandleItemValueChanged(self, dropdownItem, selected)
 		if self.multiselect then
 			if dropdownItem.neverShowItemsAsSelected then
 				self:Fire("OnValueChanged", dropdownItem:GetValue())
@@ -670,8 +664,12 @@ do
 		self.textHorizontalPadding = defaultHorizontalItemPadding
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:GetUserDataTable().obj = self
-		self.pullout:SetCallback("OnClose", HandlePulloutClose)
-		self.pullout:SetCallback("OnOpen", HandlePulloutOpen)
+		self.pullout:SetCallback("OnClose", function()
+			HandlePulloutClose(self)
+		end)
+		self.pullout:SetCallback("OnOpen", function()
+			HandlePulloutOpen(self)
+		end)
 		self.pullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		self.pullout:SetAutoWidth(true)
 		FixLevels(self.pullout.frame, self.pullout.frame:GetChildren())
@@ -903,7 +901,9 @@ do
 			dropdownMenuItem:SetFontSize(self.itemTextFontSize)
 			dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding)
 			dropdownMenuItem:SetMultiselect(self.multiselect)
-			dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
+			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value, pathText)
+				HandleMenuItemValueChanged(self, widget, selected, value, pathText)
+			end)
 			self.pullout:AddItem(dropdownMenuItem)
 			if neverShowItemsAsSelected == true then
 				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
@@ -932,7 +932,9 @@ do
 					self:Fire("CustomTextureClicked", widget, itemValue)
 				end)
 			end
-			dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
+			dropdownItemToggle:SetCallback("OnValueChanged", function(widget, _, selected)
+				HandleItemValueChanged(self, widget, selected)
+			end)
 			self.pullout:AddItem(dropdownItemToggle)
 			if neverShowItemsAsSelected == true then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)

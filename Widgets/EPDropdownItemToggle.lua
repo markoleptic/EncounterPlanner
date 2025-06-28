@@ -334,9 +334,8 @@ do
 		end
 	end
 
-	local function HandleFrameClick(frame, _)
-		local self = frame.obj
-		---@cast self EPDropdownItemToggle
+	---@param self EPDropdownItemToggle
+	local function HandleFrameClick(self)
 		if not self.enabled then
 			return
 		end
@@ -396,7 +395,6 @@ do
 	local function Constructor()
 		---@class EPDropdownItemToggle
 		local widget = EPItemBase.Create(widgetType)
-		widget.frame:SetScript("OnClick", HandleFrameClick)
 		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease
 		widget.GetIsSelected = GetIsSelected
@@ -404,8 +402,12 @@ do
 		widget.SetValue = SetValue
 		widget.GetValue = GetValue
 		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
-		AceGUI:RegisterAsWidget(widget)
-		return widget
+
+		widget.frame:SetScript("OnClick", function()
+			HandleFrameClick(widget)
+		end)
+
+		return AceGUI:RegisterAsWidget(widget)
 	end
 
 	AceGUI:RegisterWidgetType(widgetType, Constructor, widgetVersion + EPItemBase.version)
@@ -422,9 +424,8 @@ do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
 
-	local function HandleFrameEnter(frame)
-		local self = frame.obj
-		---@cast self EPDropdownItemMenu
+	---@param self EPDropdownItemMenu
+	local function HandleFrameEnter(self)
 		if self.specialOnEnter then
 			self.specialOnEnter(self)
 		end
@@ -439,19 +440,17 @@ do
 		end
 	end
 
-	local function HandleFrameHide(frame)
-		local self = frame.obj
-		---@cast self EPDropdownItemMenu
+	---@param self EPDropdownItemMenu
+	local function HandleFrameHide(self)
 		if self.childPullout then
 			self.childPullout:Close()
 			self.childPullout.frame:ClearAllPoints()
 		end
 	end
 
+	---@param self EPDropdownItemMenu
 	---@param childPullout EPDropdownPullout
-	local function HandleChildPulloutOpen(childPullout)
-		local self = childPullout:GetUserDataTable().obj
-		---@cast self EPDropdownItemMenu
+	local function HandleChildPulloutOpen(self, childPullout)
 		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
 		if not self.multiselect then
 			for _, pulloutItem in ipairs(childPullout.items) do
@@ -462,10 +461,8 @@ do
 		self:Fire("OnOpened")
 	end
 
-	---@param childPullout EPDropdownPullout
-	local function HandleChildPulloutClose(childPullout)
-		local self = childPullout:GetUserDataTable().obj
-		---@cast self EPDropdownItemMenu
+	---@param self EPDropdownItemMenu
+	local function HandleChildPulloutClose(self)
 		self.open = false
 		self:Fire("OnClosed")
 	end
@@ -477,22 +474,23 @@ do
 		local childPullout = AceGUI:Create("EPDropdownPullout")
 		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
 		childPullout:GetUserDataTable().obj = self
-		childPullout:SetCallback("OnOpen", HandleChildPulloutOpen)
-		childPullout:SetCallback("OnClose", HandleChildPulloutClose)
+		childPullout:SetCallback("OnOpen", function(widget)
+			HandleChildPulloutOpen(self, widget)
+		end)
+		childPullout:SetCallback("OnClose", function()
+			HandleChildPulloutClose(self)
+		end)
 		childPullout:SetItemHeight(height)
 		childPullout:SetAutoWidth(autoWidth)
 		childPullout:SetMaxVisibleItems(dropdownParent.maxItems)
 		return childPullout
 	end
 
-	---@param dropdownItem EPDropdownItemMenu
-	---@param event string
+	---@param self EPDropdownItemMenu
 	---@param selected boolean
 	---@param value any
 	---@param textLevels table<string>
-	local function HandleMenuItemValueChanged(dropdownItem, event, selected, value, textLevels)
-		local self = dropdownItem:GetUserDataTable().parentItemMenu
-		---@cast self EPDropdownItemMenu
+	local function HandleMenuItemValueChanged(self, selected, value, textLevels)
 		self:SetChildValue(value)
 
 		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
@@ -543,34 +541,88 @@ do
 		end
 	end
 
+	---@param self EPDropdownItemMenu
 	---@param dropdownItem EPDropdownItemToggle
-	---@param event string
-	---@param selected boolean
-	local function HandleItemValueChanged(dropdownItem, event, selected)
-		local self = dropdownItem:GetUserDataTable().parentItemMenu
-		---@cast self EPDropdownItemMenu
-		self:SetChildValue(dropdownItem:GetValue())
+	local function HandleItemValueChanged(self, dropdownItem)
+		local childValue = dropdownItem:GetValue()
+		local childSelected = dropdownItem.selected
+		self:SetChildValue(childValue)
+
 		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
 			local combinedLevelString = self:GetText() .. rightArrow .. dropdownItem:GetText()
-			self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue(), combinedLevelString)
+			self:Fire("OnValueChanged", childSelected, childValue, combinedLevelString)
 		elseif not self.neverShowItemsAsSelected then
-			self:Fire(
-				"OnValueChanged",
-				dropdownItem.selected,
-				dropdownItem:GetValue(),
-				{ self:GetText(), dropdownItem:GetText() }
-			)
+			self:Fire("OnValueChanged", childSelected, childValue, { self:GetText(), dropdownItem:GetText() })
 		else
-			self:Fire("OnValueChanged", dropdownItem.selected, dropdownItem:GetValue())
+			self:Fire("OnValueChanged", childSelected, childValue)
 		end
 		if self.neverShowItemsAsSelected == true then
 			dropdownItem:SetIsSelected(false)
 		else
-			dropdownItem:SetIsSelected(dropdownItem.selected)
+			dropdownItem:SetIsSelected(childSelected)
 		end
 
 		if self.open and not self.multiselect then
 			self.parentPullout:Close()
+		end
+	end
+
+	---@param self EPDropdownItemMenu
+	---@param dropdownParent EPDropdown
+	---@param itemData DropdownItemData
+	local function CreateDropdownItemMenu(self, dropdownParent, itemData)
+		local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
+		dropdownMenuItem:SetValue(itemData.itemValue)
+		dropdownMenuItem:SetText(itemData.text)
+		dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
+		dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
+		dropdownMenuItem:GetUserDataTable().obj = dropdownParent
+		dropdownMenuItem:GetUserDataTable().parentItemMenu = self
+		dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
+		dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
+		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value, textLevels)
+			HandleMenuItemValueChanged(self, selected, value, textLevels)
+		end)
+		self.childPullout:AddItem(dropdownMenuItem)
+		dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
+	end
+
+	---@param self EPDropdownItemMenu
+	---@param dropdownParent EPDropdown
+	---@param itemData DropdownItemData
+	---@param insertIndex? integer
+	local function CreateDropdownItemToggle(self, dropdownParent, itemData, insertIndex)
+		local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
+		dropdownItemToggle:SetValue(itemData.itemValue)
+		dropdownItemToggle:SetText(itemData.text)
+		dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
+		dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
+		dropdownItemToggle:GetUserDataTable().obj = dropdownParent
+		dropdownItemToggle:GetUserDataTable().parentItemMenu = self
+		dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
+		dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
+		if itemData.customTexture and itemData.customTextureVertexColor then
+			dropdownItemToggle:SetCustomTexture(
+				itemData.customTexture,
+				itemData.customTextureVertexColor,
+				itemData.customTextureSelectable,
+				self.neverShowItemsAsSelected
+			)
+		end
+		if itemData.customTextureSelectable then
+			dropdownItemToggle:SetCallback("Clicked", function(widget)
+				dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
+			end)
+		end
+		dropdownItemToggle:SetCallback("OnValueChanged", function(widget)
+			HandleItemValueChanged(self, widget)
+		end)
+		if insertIndex then
+			self.childPullout:InsertItem(dropdownItemToggle, insertIndex)
+		else
+			self.childPullout:AddItem(dropdownItemToggle)
 		end
 	end
 
@@ -581,45 +633,9 @@ do
 		self.childPullout = CreateChildPullout(self, dropdownParent)
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
-				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
-				dropdownMenuItem:SetValue(itemData.itemValue)
-				dropdownMenuItem:SetText(itemData.text)
-				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
-				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
-				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
-				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
-				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
-				dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
-				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
-				self.childPullout:AddItem(dropdownMenuItem)
-				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
+				CreateDropdownItemMenu(self, dropdownParent, itemData)
 			else
-				local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
-				dropdownItemToggle:SetValue(itemData.itemValue)
-				dropdownItemToggle:SetText(itemData.text)
-				dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
-				dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
-				dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
-				dropdownItemToggle:GetUserDataTable().obj = dropdownParent
-				dropdownItemToggle:GetUserDataTable().parentItemMenu = self
-				dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
-				dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-				if itemData.customTexture and itemData.customTextureVertexColor then
-					dropdownItemToggle:SetCustomTexture(
-						itemData.customTexture,
-						itemData.customTextureVertexColor,
-						itemData.customTextureSelectable,
-						self.neverShowItemsAsSelected
-					)
-				end
-				if itemData.customTextureSelectable then
-					dropdownItemToggle:SetCallback("Clicked", function(widget)
-						dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
-					end)
-				end
-				dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
-				self.childPullout:AddItem(dropdownItemToggle)
+				CreateDropdownItemToggle(self, dropdownParent, itemData)
 			end
 		end
 		FixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
@@ -636,19 +652,7 @@ do
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
-				local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
-				dropdownMenuItem:SetValue(itemData.itemValue)
-				dropdownMenuItem:SetText(itemData.text)
-				dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
-				dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
-				dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
-				dropdownMenuItem:GetUserDataTable().obj = dropdownParent
-				dropdownMenuItem:GetUserDataTable().parentItemMenu = self
-				dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
-				dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-				dropdownMenuItem:SetCallback("OnValueChanged", HandleMenuItemValueChanged)
-				self.childPullout:AddItem(dropdownMenuItem)
-				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
+				CreateDropdownItemMenu(self, dropdownParent, itemData)
 			else
 				local alreadyExists = false
 				for _, item in ipairs(self.childPullout.items) do
@@ -658,35 +662,9 @@ do
 					end
 				end
 				if not alreadyExists then
-					local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
-					dropdownItemToggle:SetValue(itemData.itemValue)
-					dropdownItemToggle:SetText(itemData.text)
-					dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
-					dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
-					dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
-					dropdownItemToggle:GetUserDataTable().obj = dropdownParent
-					dropdownItemToggle:GetUserDataTable().parentItemMenu = self
-					dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
-					dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-					if itemData.customTexture and itemData.customTextureVertexColor then
-						dropdownItemToggle:SetCustomTexture(
-							itemData.customTexture,
-							itemData.customTextureVertexColor,
-							itemData.customTextureSelectable,
-							self.neverShowItemsAsSelected
-						)
-					end
-					if itemData.customTextureSelectable then
-						dropdownItemToggle:SetCallback("Clicked", function(widget)
-							dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
-						end)
-					end
-					dropdownItemToggle:SetCallback("OnValueChanged", HandleItemValueChanged)
+					CreateDropdownItemToggle(self, dropdownParent, itemData, currentIndex)
 					if currentIndex then
-						self.childPullout:InsertItem(dropdownItemToggle, currentIndex)
 						currentIndex = currentIndex + 1
-					else
-						self.childPullout:AddItem(dropdownItemToggle)
 					end
 				end
 			end
@@ -816,8 +794,6 @@ do
 		---@class EPDropdownItemMenu
 		local widget = EPItemBase.Create(widgetType)
 		widget.childSelectedIndicator:Show()
-		widget.frame:SetScript("OnEnter", HandleFrameEnter)
-		widget.frame:SetScript("OnHide", HandleFrameHide)
 		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease
 		widget.SetIsSelectedBasedOnChildValue = SetIsSelectedBasedOnChildValue
@@ -834,8 +810,15 @@ do
 		widget.CloseMenu = CloseMenu
 		widget.Clear = Clear
 		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
-		AceGUI:RegisterAsWidget(widget)
-		return widget
+
+		widget.frame:SetScript("OnEnter", function()
+			HandleFrameEnter(widget)
+		end)
+		widget.frame:SetScript("OnHide", function()
+			HandleFrameHide(widget)
+		end)
+
+		return AceGUI:RegisterAsWidget(widget)
 	end
 
 	AceGUI:RegisterWidgetType(widgetType, Constructor, widgetVersion + EPItemBase.version)
