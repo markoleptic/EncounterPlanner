@@ -1100,6 +1100,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		return
 	end
 
+	local assignments = GetCurrentAssignments()
 	for _, assignment in pairs(GetCurrentAssignments()) do
 		if assignment.assignee == value then
 			dropdown:SetText(addAssigneeText)
@@ -1109,12 +1110,12 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 
 	local assignment = TimedAssignment:New()
 	assignment.assignee = value
-	local assignments = GetCurrentAssignments()
 	if #assignments == 0 then
 		local timelineRows = AddOn.db.profile.preferences.timelineRows
 		timelineRows.numberOfAssignmentsToShow = max(timelineRows.numberOfAssignmentsToShow, 2)
 	end
-	tinsert(GetCurrentAssignments(), assignment)
+
+	tinsert(assignments, assignment)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(addAssigneeText)

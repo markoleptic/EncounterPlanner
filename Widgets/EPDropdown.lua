@@ -642,7 +642,7 @@ do
 				self:Fire("OnValueChanged", dropdownItem:GetValue(), selected)
 			end
 		else
-			if selected then
+			if dropdownItem.neverShowItemsAsSelected or selected then
 				local newValue = dropdownItem:GetValue()
 				self:SetValue(newValue)
 				self:Fire("OnValueChanged", newValue)
