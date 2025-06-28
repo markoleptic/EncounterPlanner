@@ -59,25 +59,20 @@ local EPItemBase = {
 	counter = 0,
 }
 
-local function HandleItemBaseFrameEnter(frame)
-	local self = frame.obj
+---@param self EPItemBase
+local function HandleItemBaseFrameEnter(self)
 	if self.useHighlight then
 		self.highlight:Show()
 	end
-	self:Fire("OnEnter")
 	if self.specialOnEnter then
 		self.specialOnEnter(self)
 	end
 end
 
-local function HandleItemBaseFrameLeave(frame)
-	local self = frame.obj
-	if not self.customTextureFrame:IsMouseOver() then
+---@param self EPItemBase
+local function HandleItemBaseFrameLeave(self)
+	if not self.customTextureFrame:IsShown() or not self.customTextureFrame:IsMouseOver() then
 		self.highlight:Hide()
-		self:Fire("OnLeave")
-		if self.specialOnLeave then
-			self.specialOnLeave(self)
-		end
 	end
 end
 
@@ -209,11 +204,6 @@ function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureCl
 end
 
 -- This is called by a Dropdown-Pullout. Do not call this method directly
-function EPItemBase.SetOnLeave(self, func)
-	self.specialOnLeave = func
-end
-
--- This is called by a Dropdown-Pullout. Do not call this method directly
 function EPItemBase.SetOnEnter(self, func)
 	self.specialOnEnter = func
 end
@@ -224,8 +214,6 @@ function EPItemBase.Create(type)
 	local frame = CreateFrame("Button", type .. count)
 	frame:SetHeight(dropdownItemHeight)
 	frame:SetFrameStrata("DIALOG")
-	frame:SetScript("OnEnter", HandleItemBaseFrameEnter)
-	frame:SetScript("OnLeave", HandleItemBaseFrameLeave)
 
 	local text = frame:CreateFontString(type .. "Text" .. count, "OVERLAY", "GameFontNormalSmall")
 	text:SetTextColor(1, 1, 1)
@@ -296,7 +284,6 @@ function EPItemBase.Create(type)
 		SetPoint = EPItemBase.SetPoint,
 		Show = EPItemBase.Show,
 		Hide = EPItemBase.Hide,
-		SetOnLeave = EPItemBase.SetOnLeave,
 		SetOnEnter = EPItemBase.SetOnEnter,
 		SetFontSize = EPItemBase.SetFontSize,
 		SetHorizontalPadding = EPItemBase.SetHorizontalPadding,
@@ -307,6 +294,13 @@ function EPItemBase.Create(type)
 		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
 	}
 
+	frame:SetScript("OnEnter", function()
+		HandleItemBaseFrameEnter(widget)
+	end)
+	frame:SetScript("OnLeave", function()
+		HandleItemBaseFrameLeave(widget)
+	end)
+
 	customTextureFrame:SetScript("OnClick", function()
 		if widget.enabled then
 			widget:Fire("Clicked")
@@ -314,7 +308,7 @@ function EPItemBase.Create(type)
 	end)
 	customTextureFrame:SetScript("OnLeave", function()
 		if not frame:IsMouseOver() then
-			HandleItemBaseFrameLeave(frame)
+			widget.highlight:Hide()
 		end
 	end)
 
@@ -431,7 +425,6 @@ do
 	local function HandleFrameEnter(frame)
 		local self = frame.obj
 		---@cast self EPDropdownItemMenu
-		self:Fire("OnEnter")
 		if self.specialOnEnter then
 			self.specialOnEnter(self)
 		end
