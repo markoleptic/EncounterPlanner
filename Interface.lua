@@ -1014,18 +1014,34 @@ local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 	end
 end
 
+---@param dropdown EPDropdown
 ---@param value string
-local function HandlePlanDropdownValueChanged(_, _, value)
-	ClosePlanDependentWidgets()
-	AddOn.db.profile.lastOpenPlan = value
-	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-	local bossDungeonEncounterID = plan.dungeonEncounterID
+local function HandlePlanDropdownValueChanged(dropdown, _, value)
+	if AddOn.db.profile.plans[value] then
+		ClosePlanDependentWidgets()
+		AddOn.db.profile.lastOpenPlan = value
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local bossDungeonEncounterID = plan.dungeonEncounterID
 
-	UpdateBoss(bossDungeonEncounterID, true)
-	UpdateAllAssignments(true, bossDungeonEncounterID)
-	interfaceUpdater.UpdatePlanCheckBoxes(plan)
-	Private.mainFrame:DoLayout()
-	Private.callbacks:Fire("PlanChanged")
+		UpdateBoss(bossDungeonEncounterID, true)
+		UpdateAllAssignments(true, bossDungeonEncounterID)
+		interfaceUpdater.UpdatePlanCheckBoxes(plan)
+		Private.mainFrame:DoLayout()
+		Private.callbacks:Fire("PlanChanged")
+	else
+		dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
+		local numberValue = tonumber(value)
+		if numberValue and Private.dungeonInstances[numberValue] then
+			local _, boss = next(Private.dungeonInstances[numberValue].bosses)
+			---@cast boss Boss
+			Private.CreateNewPlanDialog(boss.dungeonEncounterID)
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
+			end
+		else
+			error(format("The plan '%s' does not exist.", value))
+		end
+	end
 end
 
 ---@param lineEdit EPLineEdit
@@ -1308,7 +1324,9 @@ do -- Plan Menu Button Handlers
 			Private.exportEditBox:HighlightTextAndFocus()
 		end
 	end
-	function Private.CreateNewPlanDialog()
+
+	---@param bossDungeonEncounterID integer|nil
+	function Private.CreateNewPlanDialog(bossDungeonEncounterID)
 		if not Private.newPlanDialog then
 			local newPlanDialog = AceGUI:Create("EPNewPlanDialog")
 			newPlanDialog:SetCallback("OnRelease", function()
@@ -1326,32 +1344,36 @@ do -- Plan Menu Button Handlers
 					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogClosed")
 				end
 			end)
-			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, bossDungeonEncounterID)
-				local newBossName = GetBossName(bossDungeonEncounterID) --[[@as string]]
+			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, currentBossDungeonEncounterID)
+				local newBossName = GetBossName(currentBossDungeonEncounterID) --[[@as string]]
 				widget:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
 				widget:SetCreateButtonEnabled(true)
 				if Private.activeTutorialCallbackName then
 					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
 				end
 			end)
-			newPlanDialog:SetCallback("CreateButtonClicked", function(widget, _, bossDungeonEncounterID, planName)
-				planName = planName:trim()
-				if planName == "" or AddOn.db.profile.plans[planName] then
-					widget:SetCreateButtonEnabled(false)
-				else
-					ClosePlanDependentWidgets()
-					widget:Release()
-					local newPlan = utilities.CreatePlan(AddOn.db.profile.plans, planName, bossDungeonEncounterID)
-					AddOn.db.profile.lastOpenPlan = newPlan.name
-					AddPlanToDropdown(newPlan, true)
-					UpdateBoss(bossDungeonEncounterID, true)
-					UpdateAllAssignments(true, bossDungeonEncounterID)
-					Private.callbacks:Fire("PlanChanged")
-					if Private.activeTutorialCallbackName then
-						Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogPlanCreated")
+			newPlanDialog:SetCallback(
+				"CreateButtonClicked",
+				function(widget, _, currentBossDungeonEncounterID, planName)
+					planName = planName:trim()
+					if planName == "" or AddOn.db.profile.plans[planName] then
+						widget:SetCreateButtonEnabled(false)
+					else
+						ClosePlanDependentWidgets()
+						widget:Release()
+						local newPlan =
+							utilities.CreatePlan(AddOn.db.profile.plans, planName, currentBossDungeonEncounterID)
+						AddOn.db.profile.lastOpenPlan = newPlan.name
+						AddPlanToDropdown(newPlan, true)
+						UpdateBoss(currentBossDungeonEncounterID, true)
+						UpdateAllAssignments(true, currentBossDungeonEncounterID)
+						Private.callbacks:Fire("PlanChanged")
+						if Private.activeTutorialCallbackName then
+							Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogPlanCreated")
+						end
 					end
 				end
-			end)
+			)
 			newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
 				planName = planName:trim()
 				if planName == "" or AddOn.db.profile.plans[planName] then
@@ -1363,7 +1385,9 @@ do -- Plan Menu Button Handlers
 					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
 				end
 			end)
-			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			if not bossDungeonEncounterID then
+				bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			end
 			newPlanDialog.frame:SetParent(UIParent)
 			newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
 			newPlanDialog:SetBossDropdownItems(utilities.GetOrCreateBossDropdownItems(), bossDungeonEncounterID)
