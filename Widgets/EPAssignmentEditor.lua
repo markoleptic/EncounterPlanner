@@ -204,8 +204,8 @@ local function HandleCustomTextureClicked(self, widget, value)
 		self.spellAssignmentDropdown:Sort("Favorite", true)
 		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]])
 	else -- Remove favorite from favorite menu and update texture
-		local parentItemMenu = widget:GetUserDataTable().parentItemMenu
-		if parentItemMenu:GetValue() == "Favorite" then
+		local parentItemMenu = widget.parentDropdownItemMenu
+		if parentItemMenu and parentItemMenu:GetValue() == "Favorite" then
 			local item = self.spellAssignmentDropdown:FindItemAndText(value)
 			if item then
 				item.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])

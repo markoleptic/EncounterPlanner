@@ -52,9 +52,12 @@ local dropdownBackdrop = {
 }
 local edgeSize = dropdownBackdrop.edgeSize
 
+---@param parent Frame
+---@param ... [Frame]
 local function FixLevels(parent, ...)
 	local i = 1
 	local child = select(i, ...)
+	---@cast child Frame
 	while child do
 		child:SetFrameLevel(parent:GetFrameLevel() + 1)
 		FixLevels(child, child:GetChildren())
@@ -63,9 +66,14 @@ local function FixLevels(parent, ...)
 	end
 end
 
+---@param strata FrameStrata
+---@param parent Frame
+---@param ... [Frame]
 local function FixStrata(strata, parent, ...)
 	local i = 1
+
 	local child = select(i, ...)
+	---@cast child Frame
 	parent:SetFrameStrata(strata)
 	while child do
 		FixStrata(strata, child, child:GetChildren())
@@ -244,12 +252,12 @@ do
 	---@param relPoint string
 	---@param x number
 	---@param y number
-	local function Open(self, point, relFrame, relPoint, x, y)
-		local parent = self:GetUserDataTable().obj
-		local maxItemWidth = minimumPulloutWidth
-		if parent.type == "EPDropdown" then
-			maxItemWidth = parent.frame:GetWidth()
+	---@param maxItemWidth? number
+	local function Open(self, point, relFrame, relPoint, x, y, maxItemWidth)
+		if not maxItemWidth then
+			maxItemWidth = minimumPulloutWidth
 		end
+
 		self.frame:SetPoint(point, relFrame, relPoint, x, y)
 		local previousFrame = nil
 		for _, item in ipairs(self.items) do
@@ -490,7 +498,6 @@ do
 	---@field multiselect boolean|nil
 	---@field pulloutWidth number
 	---@field dropdownItemHeight number
-	---@field obj any|nil
 	---@field showHighlight boolean
 	---@field itemTextFontSize number
 	---@field itemHorizontalPadding number
@@ -541,8 +548,7 @@ do
 			AceGUI:ClearFocus()
 		else
 			self.open = true
-			self.pullout:SetWidth(self.pulloutWidth or self.frame:GetWidth())
-			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, 1)
+			self.pullout:Open("TOPLEFT", self.frame, "BOTTOMLEFT", 0, 1, self.frame:GetWidth())
 			AceGUI:SetFocus(self)
 		end
 	end
@@ -663,7 +669,6 @@ do
 		self.dropdownItemHeight = defaultDropdownItemHeight
 		self.textHorizontalPadding = defaultHorizontalItemPadding
 		self.pullout = AceGUI:Create("EPDropdownPullout")
-		self.pullout:GetUserDataTable().obj = self
 		self.pullout:SetCallback("OnClose", function()
 			HandlePulloutClose(self)
 		end)
@@ -748,7 +753,7 @@ do
 		local item, itemText = self:FindItemAndText(self.value)
 		while item do
 			tinsert(textLevels, 1, itemText)
-			item = item:GetUserDataTable().parentItemMenu
+			item = item.parentDropdownItemMenu
 			if item then
 				itemText = item:GetText()
 			end
@@ -772,7 +777,7 @@ do
 		local textLevels = {}
 		local item, text = self:FindItemAndText(value)
 		while item do -- Follow chain of parents up to dropdown
-			local menuItemParent = item:GetUserDataTable().parentItemMenu
+			local menuItemParent = item.parentDropdownItemMenu
 			if self.showPathText then
 				tinsert(textLevels, 1, text)
 				if menuItemParent then
@@ -894,7 +899,8 @@ do
 
 		if itemType == "EPDropdownItemMenu" then
 			local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
-			dropdownMenuItem:GetUserDataTable().obj = self
+			dropdownMenuItem.parentDropdown = self
+			dropdownMenuItem.parentDropdownItemMenu = nil
 			dropdownMenuItem:GetUserDataTable().level = 1
 			dropdownMenuItem:SetValue(itemValue)
 			dropdownMenuItem:SetText(text)
@@ -913,7 +919,8 @@ do
 			end
 		elseif itemType == "EPDropdownItemToggle" then
 			local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
-			dropdownItemToggle:GetUserDataTable().obj = self
+			dropdownItemToggle.parentDropdown = self
+			dropdownItemToggle.parentDropdownItemMenu = nil
 			dropdownItemToggle:GetUserDataTable().level = 1
 			dropdownItemToggle:SetValue(itemValue)
 			dropdownItemToggle:SetText(text)

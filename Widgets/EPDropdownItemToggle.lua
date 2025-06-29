@@ -50,9 +50,10 @@ end
 ---@field check Texture
 ---@field childSelectedIndicator Texture
 ---@field enabled boolean
----@field parent table|Frame
 ---@field specialOnEnter function
 ---@field changedFont boolean|nil
+---@field parentDropdownItemMenu EPDropdownItemMenu|nil
+---@field parentDropdown EPDropdown|nil
 
 local EPItemBase = {
 	version = 1000,
@@ -109,6 +110,8 @@ end
 function EPItemBase.OnRelease(self)
 	self:SetEnabled(true)
 	self.parentPullout = nil
+	self.parentDropdown = nil
+	self.parentDropdownItemMenu = nil
 	self.frame:SetParent(nil)
 	self.frame:ClearAllPoints()
 	self.frame:Hide()
@@ -133,7 +136,6 @@ function EPItemBase.SetPullout(self, pullout)
 	self.parentPullout = pullout
 	self.frame:SetParent(nil)
 	self.frame:SetParent(pullout.itemFrame)
-	self.parent = pullout.itemFrame
 	FixLevels(pullout.itemFrame, pullout.itemFrame:GetChildren())
 end
 
@@ -312,8 +314,6 @@ function EPItemBase.Create(type)
 		end
 	end)
 
-	frame.obj = widget
-
 	return widget
 end
 
@@ -435,8 +435,7 @@ do
 			self.highlight:Hide()
 		end
 		if self.enabled and self.childPullout then
-			self.childPullout:SetWidth(self:GetUserDataTable().obj.pulloutWidth or self.frame:GetWidth())
-			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 1)
+			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 1, nil)
 		end
 	end
 
@@ -444,27 +443,24 @@ do
 	local function HandleFrameHide(self)
 		if self.childPullout then
 			self.childPullout:Close()
-			self.childPullout.frame:ClearAllPoints()
 		end
 	end
 
 	---@param self EPDropdownItemMenu
 	---@param childPullout EPDropdownPullout
 	local function HandleChildPulloutOpen(self, childPullout)
-		local value = self:GetUserDataTable().obj.value -- EPDropdown's value
+		local value = self.parentDropdown.value
 		if not self.multiselect then
 			for _, pulloutItem in ipairs(childPullout.items) do
 				pulloutItem:SetIsSelected(pulloutItem:GetValue() == value)
 			end
 		end
 		self.open = true
-		self:Fire("OnOpened")
 	end
 
 	---@param self EPDropdownItemMenu
 	local function HandleChildPulloutClose(self)
 		self.open = false
-		self:Fire("OnClosed")
 	end
 
 	---@param self EPDropdownItemMenu
@@ -473,7 +469,6 @@ do
 		local autoWidth, height = dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight
 		local childPullout = AceGUI:Create("EPDropdownPullout")
 		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
-		childPullout:GetUserDataTable().obj = self
 		childPullout:SetCallback("OnOpen", function(widget)
 			HandleChildPulloutOpen(self, widget)
 		end)
@@ -493,10 +488,9 @@ do
 	local function HandleMenuItemValueChanged(self, selected, value, textLevels)
 		self:SetChildValue(value)
 
-		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
-			local parent = self:GetUserDataTable().obj
-			---@cast parent EPDropdown
-			if parent.showPathText then
+		if not self.parentDropdownItemMenu and not self.neverShowItemsAsSelected then
+			local parent = self.parentDropdown
+			if parent and parent.showPathText then
 				tinsert(textLevels, 1, self:GetText())
 				local combinedLevelString = ""
 				local levelsToInclude = parent.levelsToInclude
@@ -548,7 +542,7 @@ do
 		local childSelected = dropdownItem.selected
 		self:SetChildValue(childValue)
 
-		if not self:GetUserDataTable().parentItemMenu and not self.neverShowItemsAsSelected then
+		if not self.parentDropdownItemMenu and not self.neverShowItemsAsSelected then
 			local combinedLevelString = self:GetText() .. rightArrow .. dropdownItem:GetText()
 			self:Fire("OnValueChanged", childSelected, childValue, combinedLevelString)
 		elseif not self.neverShowItemsAsSelected then
@@ -577,8 +571,8 @@ do
 		dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
 		dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 		dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
-		dropdownMenuItem:GetUserDataTable().obj = dropdownParent
-		dropdownMenuItem:GetUserDataTable().parentItemMenu = self
+		dropdownMenuItem.parentDropdown = dropdownParent
+		dropdownMenuItem.parentDropdownItemMenu = self
 		dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
 		dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value, textLevels)
@@ -599,8 +593,8 @@ do
 		dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
 		dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
 		dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
-		dropdownItemToggle:GetUserDataTable().obj = dropdownParent
-		dropdownItemToggle:GetUserDataTable().parentItemMenu = self
+		dropdownItemToggle.parentDropdown = dropdownParent
+		dropdownItemToggle.parentDropdownItemMenu = self
 		dropdownItemToggle:GetUserDataTable().level = self:GetUserDataTable().level + 1
 		dropdownItemToggle:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 		if itemData.customTexture and itemData.customTextureVertexColor then
@@ -688,11 +682,15 @@ do
 		end
 	end
 
+	--- Updates the selected indicator color based on if the parent and child values are equal.
 	---@param self EPDropdownItemMenu
-	---@param selected boolean
-	local function SetIsSelected(self, selected)
+	---@param _ boolean
+	local function SetIsSelected(self, _)
 		local childValue = self:GetChildValue()
-		local parentValue = self:GetUserDataTable().obj.value
+		local parentValue
+		if self.parentDropdown then
+			parentValue = self.parentDropdown:GetValue()
+		end
 		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
 		if childValue ~= nil and childValue == parentValue and not neverShowItemsAsSelected then
 			self.childSelectedIndicator:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
@@ -704,7 +702,10 @@ do
 	---@param self EPDropdownItemMenu
 	local function GetIsSelected(self)
 		local childValue = self:GetChildValue()
-		local parentValue = self:GetUserDataTable().obj.value
+		local parentValue
+		if self.parentDropdown then
+			parentValue = self.parentDropdown:GetValue()
+		end
 		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
 		if childValue ~= nil and childValue == parentValue and not neverShowItemsAsSelected then
 			return true
