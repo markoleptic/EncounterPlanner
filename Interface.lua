@@ -1017,6 +1017,7 @@ end
 ---@param dropdown EPDropdown
 ---@param value string
 local function HandlePlanDropdownValueChanged(dropdown, _, value)
+	print(value)
 	if AddOn.db.profile.plans[value] then
 		ClosePlanDependentWidgets()
 		AddOn.db.profile.lastOpenPlan = value
@@ -1029,16 +1030,17 @@ local function HandlePlanDropdownValueChanged(dropdown, _, value)
 		Private.mainFrame:DoLayout()
 		Private.callbacks:Fire("PlanChanged")
 	else
-		dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
 		local numberValue = tonumber(value)
 		if numberValue and Private.dungeonInstances[numberValue] then
 			local _, boss = next(Private.dungeonInstances[numberValue].bosses)
 			---@cast boss Boss
 			Private.CreateNewPlanDialog(boss.dungeonEncounterID)
+			dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
 			if Private.activeTutorialCallbackName then
 				Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
 			end
 		else
+			value = value or "nil"
 			error(format("The plan '%s' does not exist.", value))
 		end
 	end

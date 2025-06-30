@@ -419,6 +419,7 @@ end
 ---@field neverShowItemsAsSelected boolean
 ---@field multiselect boolean|nil
 ---@field open boolean
+---@field clickable boolean|nil
 
 do
 	local widgetType = "EPDropdownItemMenu"
@@ -755,14 +756,27 @@ do
 	end
 
 	---@param self EPDropdownItemMenu
+	---@param clickable boolean
+	local function SetClickable(self, clickable)
+		self.clickable = clickable
+		if clickable then
+			self.frame:SetScript("OnClick", function()
+				if self.enabled then
+					self:Fire("OnValueChanged", nil, nil)
+				end
+			end)
+		else
+			self.frame:SetScript("OnClick", nil)
+		end
+	end
+
+	---@param self EPDropdownItemMenu
 	local function OnAcquire(self)
 		EPItemBase.OnAcquire(self)
 		self.open = false
 		self.selected = false
 		self.multiselect = false
 		self.neverShowItemsAsSelected = false
-		self:SetValue(nil)
-		self:SetChildValue(nil)
 	end
 
 	---@param self EPDropdownItemMenu
@@ -773,6 +787,7 @@ do
 		self.childPullout = nil
 		self:SetValue(nil)
 		self:SetChildValue(nil)
+		self:SetClickable(false)
 		EPItemBase.OnRelease(self)
 		self.open = false
 		self.selected = false
@@ -811,6 +826,7 @@ do
 		widget.CloseMenu = CloseMenu
 		widget.Clear = Clear
 		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected
+		widget.SetClickable = SetClickable
 
 		widget.frame:SetScript("OnEnter", function()
 			HandleFrameEnter(widget)

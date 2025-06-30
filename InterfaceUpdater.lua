@@ -669,6 +669,7 @@ do
 				local plans = AddOn.db.profile.plans
 				for _, dropdownData in pairs(instanceDropdownData) do
 					dropdownData.dropdownItemMenuData = {}
+					dropdownData.itemMenuClickable = true
 				end
 				for planName, plan in pairs(plans) do
 					local instanceID = plan.instanceID
@@ -698,7 +699,7 @@ do
 						return a.text < b.text
 					end)
 				end
-				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")
+				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemMenu")
 				planDropdown:SetValue(lastOpenPlan)
 			end
 			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])

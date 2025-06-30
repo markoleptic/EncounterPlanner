@@ -125,6 +125,7 @@ end
 -- Whether or not the custom texture should be allowed to fire the CustomTextureClicked callback after user left mouse
 -- button mouse up
 ---@field customTextureSelectable? boolean
+---@field itemMenuClickable? boolean If true, item menus can be clicked and trigger OnValueChanged
 
 do
 	---@class EPDropdownPullout : AceGUIWidget
@@ -617,11 +618,16 @@ do
 		if self.multiselect then
 			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue())
 		else
-			self:SetValue(value)
-			if self.showPathText then
-				self:SetText(pathText)
+			if dropdownItem.clickable and value == nil then
+				self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().initialValue)
+			else
+				self:SetValue(value)
+				if self.showPathText then
+					self:SetText(pathText)
+				end
+				self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
 			end
-			self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
+
 			if self.open then
 				self.pullout:Close()
 			end
@@ -880,6 +886,7 @@ do
 	---@param customTexture? string|integer
 	---@param customTextureVertexColor? number[]
 	---@param customTextureSelectable? boolean
+	---@param menuItemClickable? boolean
 	local function AddItem(
 		self,
 		itemValue,
@@ -889,7 +896,8 @@ do
 		neverShowItemsAsSelected,
 		customTexture,
 		customTextureVertexColor,
-		customTextureSelectable
+		customTextureSelectable,
+		menuItemClickable
 	)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
@@ -902,6 +910,7 @@ do
 			dropdownMenuItem.parentDropdown = self
 			dropdownMenuItem.parentDropdownItemMenu = nil
 			dropdownMenuItem:GetUserDataTable().level = 1
+			dropdownMenuItem:GetUserDataTable().initialValue = itemValue
 			dropdownMenuItem:SetValue(itemValue)
 			dropdownMenuItem:SetText(text)
 			dropdownMenuItem:SetFontSize(self.itemTextFontSize)
@@ -910,6 +919,7 @@ do
 			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value, pathText)
 				HandleMenuItemValueChanged(self, widget, selected, value, pathText)
 			end)
+			dropdownMenuItem:SetClickable(menuItemClickable)
 			self.pullout:AddItem(dropdownMenuItem)
 			if neverShowItemsAsSelected == true then
 				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
@@ -968,14 +978,15 @@ do
 
 	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
-	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType the type of item to create for leaf items
+	-- The type of item to create for direct children of the dropdown. Ignored if any top level itemData has child data
+	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType
 	---@param neverShowItemsAsSelected boolean? If true, items will not be selectable
 	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected)
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
 				self:AddItem(index, itemData, leafType)
 			elseif type(itemData) == "table" then
-				if type(itemData.dropdownItemMenuData) == "table" and #itemData.dropdownItemMenuData > 0 then
+				if type(itemData.dropdownItemMenuData) == "table" then
 					self:AddItem(
 						itemData.itemValue,
 						itemData.text,
@@ -983,18 +994,21 @@ do
 						itemData.dropdownItemMenuData,
 						neverShowItemsAsSelected or itemData.selectable == false,
 						itemData.customTexture,
-						itemData.customTextureVertexColor
+						itemData.customTextureVertexColor,
+						nil,
+						itemData.itemMenuClickable
 					)
 				else
 					self:AddItem(
 						itemData.itemValue,
 						itemData.text,
 						leafType,
-						nil,
+						itemData.dropdownItemMenuData,
 						neverShowItemsAsSelected or itemData.selectable == false,
 						itemData.customTexture,
 						itemData.customTextureVertexColor,
-						itemData.customTextureSelectable
+						itemData.customTextureSelectable,
+						itemData.itemMenuClickable
 					)
 				end
 			end
