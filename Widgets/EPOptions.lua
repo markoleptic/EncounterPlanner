@@ -705,37 +705,23 @@ local function Update(updateMap)
 	end
 end
 
----@param option EPSettingOption
----@return string|nil
-local function GenerateKey(option)
-	if option.category then
-		return option.category
-	elseif option.label then
-		return option.label
-	elseif option.labels then
-		local labels = GetLabels(option.labels)
-		return labels[1] .. labels[2]
-	end
-end
-
 ---@param updateIndices table<string, table<integer, table<integer, fun()>>>
 ---@param option EPSettingOption
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param func fun()
-local function UpdateUpdateIndices(updateIndices, option, index, func)
+local function UpdateUpdateIndices(updateIndices, option, optionGroupKey, optionIndex, func)
 	if type(func) == "function" then
 		if option.updateIndices then
-			local key = GenerateKey(option)
-			if key then
-				if not updateIndices[key] then
-					updateIndices[key] = {}
+			if not updateIndices[optionGroupKey] then
+				updateIndices[optionGroupKey] = {}
+			end
+			for _, indexOffset in ipairs(option.updateIndices) do
+				local relativeOptionIndex = optionIndex + indexOffset
+				if not updateIndices[optionGroupKey][relativeOptionIndex] then
+					updateIndices[optionGroupKey][relativeOptionIndex] = {}
 				end
-				for _, relativeOptionIndex in pairs(option.updateIndices) do
-					local optionIndex = index + relativeOptionIndex
-					if not updateIndices[key][optionIndex] then
-						updateIndices[key][optionIndex] = {}
-					end
-					tinsert(updateIndices[key][optionIndex], func)
-				end
+				tinsert(updateIndices[optionGroupKey][relativeOptionIndex], func)
 			end
 		end
 	end
@@ -743,10 +729,11 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param label EPLabel
 ---@return EPContainer
-local function CreateFrameChooser(self, option, index, label)
+local function CreateFrameChooser(self, option, optionGroupKey, optionIndex, label)
 	local frameChooserContainer = AceGUI:Create("EPContainer")
 	frameChooserContainer:SetFullWidth(true)
 	frameChooserContainer:SetLayout("EPHorizontalLayout")
@@ -759,7 +746,7 @@ local function CreateFrameChooser(self, option, index, label)
 	valueLineEdit:SetReadOnly(true)
 
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			valueLineEdit:SetText(option.get() --[[@as string]])
 		end)
 	end
@@ -768,7 +755,6 @@ local function CreateFrameChooser(self, option, index, label)
 	button:SetColor(unpack(neutralButtonColor))
 	button:SetText(L["Choose"])
 	button:SetRelativeWidth(0.4)
-	local key = GenerateKey(option)
 	button:SetCallback("Clicked", function()
 		if isChoosingFrame then
 			StopChoosingFrame(self.frameChooserFrame, self.frameChooserBox, nil, nil)
@@ -779,8 +765,8 @@ local function CreateFrameChooser(self, option, index, label)
 					option.set(value)
 					valueLineEdit:SetText(value)
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[key] and self.updateIndices[key][index] then
-						Update(self.updateIndices[key][index])
+					if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+						Update(self.updateIndices[optionGroupKey][optionIndex])
 					end
 				end
 				button:SetText(L["Choose"])
@@ -806,10 +792,11 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param label EPLabel
 ---@return EPContainer
-local function CreateRadioButtonGroup(self, option, index, label)
+local function CreateRadioButtonGroup(self, option, optionGroupKey, optionIndex, label)
 	local radioButtonGroup = AceGUI:Create("EPContainer")
 	radioButtonGroup:SetLayout("EPHorizontalLayout")
 	radioButtonGroup:SetSpacing(unpack(radioButtonGroupSpacing))
@@ -830,7 +817,7 @@ local function CreateRadioButtonGroup(self, option, index, label)
 	end
 	radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			if type(option.values) == "function" then
 				local v = GetValues(option.values)
 				for i, child in ipairs(radioButtonGroup.children) do
@@ -844,7 +831,6 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			end
 		end)
 	end
-	local key = GenerateKey(option)
 	for i, child in ipairs(radioButtonGroup.children) do
 		if option.enabled and child.SetEnabled then
 			child:SetEnabled(option.enabled())
@@ -855,8 +841,8 @@ local function CreateRadioButtonGroup(self, option, index, label)
 			local value = radioButton:GetUserData("key")
 			option.set(value)
 			RefreshEnabledStates(self.refreshMap)
-			if self.updateIndices[key] and self.updateIndices[key][index] then
-				Update(self.updateIndices[key][index])
+			if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+				Update(self.updateIndices[optionGroupKey][optionIndex])
 			end
 		end)
 		child:SetCallback("OnEnter", function(widget)
@@ -871,10 +857,11 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param label EPLabel
 ---@return EPContainer
-local function CreateDoubleLineEdit(self, option, index, label)
+local function CreateDoubleLineEdit(self, option, optionGroupKey, optionIndex, label)
 	local doubleLineEditContainer = AceGUI:Create("EPContainer")
 	doubleLineEditContainer:SetFullWidth(true)
 	doubleLineEditContainer:SetLayout("EPHorizontalLayout")
@@ -912,13 +899,12 @@ local function CreateDoubleLineEdit(self, option, index, label)
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			local x, y = option.get()
 			lineEditX:SetText(x)
 			lineEditY:SetText(y)
 		end)
 	end
-	local key = GenerateKey(option)
 	local function Callback()
 		local valueX, valueY = lineEditX:GetText(), lineEditY:GetText()
 		local valid, valueToRevertTo, valueToRevertToB = option.validate(valueX, valueY)
@@ -930,8 +916,8 @@ local function CreateDoubleLineEdit(self, option, index, label)
 			option.set(valueX, valueY)
 		end
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end
 	lineEditX:SetCallback("OnTextSubmitted", Callback)
@@ -957,10 +943,11 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param label EPLabel
 ---@return EPContainer
-local function CreateDoubleColorPicker(self, option, index, label)
+local function CreateDoubleColorPicker(self, option, optionGroupKey, optionIndex, label)
 	if not option.set[1] or not option.set[2] then
 		error("No set functions for double color picker.")
 	end
@@ -991,24 +978,23 @@ local function CreateDoubleColorPicker(self, option, index, label)
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			colorPickerOne:SetColor(option.get[1]())
 			colorPickerTwo:SetColor(option.get[2]())
 		end)
 	end
-	local key = GenerateKey(option)
 	colorPickerOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 	colorPickerTwo:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 
@@ -1030,10 +1016,11 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param label EPLabel
 ---@return EPContainer
-local function CreateDoubleCheckBox(self, option, index, label)
+local function CreateDoubleCheckBox(self, option, optionGroupKey, optionIndex, label)
 	if not option.set[1] or not option.set[2] then
 		error("No set functions for double check box.")
 	end
@@ -1065,24 +1052,23 @@ local function CreateDoubleCheckBox(self, option, index, label)
 		tinsert(self.refreshMap, { widget = label, enabled = option.enabled })
 	end
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			checkBoxOne:SetChecked(option.get[1]())
 			checkBoxTwo:SetChecked(option.get[2]())
 		end)
 	end
-	local key = GenerateKey(option)
 	checkBoxOne:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 	checkBoxTwo:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 
@@ -1104,9 +1090,10 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@return EPContainer
-local function CreateCheckBoxWithDropdown(self, option, index)
+local function CreateCheckBoxWithDropdown(self, option, optionGroupKey, optionIndex)
 	if not option.set[1] or not option.set[2] then
 		error("No set functions for check box with dropdown.")
 	end
@@ -1138,24 +1125,23 @@ local function CreateCheckBoxWithDropdown(self, option, index)
 		tinsert(self.refreshMap, { widget = dropdown, enabled = option.enabled[2] })
 	end
 	if option.updateIndices then
-		UpdateUpdateIndices(self.updateIndices, option, index, function()
+		UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 			checkBox:SetChecked(option.get[1]())
 			dropdown:SetValue(option.get[2]())
 		end)
 	end
-	local key = GenerateKey(option)
 	checkBox:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[1](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 	dropdown:SetCallback("OnValueChanged", function(_, _, ...)
 		option.set[2](...)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 
@@ -1238,9 +1224,10 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@return EPContainer
-local function CreateDropdownBesideButton(self, option, index)
+local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIndex)
 	local container = AceGUI:Create("EPContainer")
 	container:SetFullWidth(true)
 	container:SetLayout("EPHorizontalLayout")
@@ -1264,25 +1251,23 @@ local function CreateDropdownBesideButton(self, option, index)
 
 	if option.updateIndices then
 		if type(option.values) == "function" then
-			UpdateUpdateIndices(self.updateIndices, option, index, function()
+			UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 				dropdown:Clear()
 				dropdown:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
 				dropdown:SetValue(option.get())
 			end)
 		else
-			UpdateUpdateIndices(self.updateIndices, option, index, function()
+			UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 				dropdown:SetValue(option.get())
 			end)
 		end
 	end
 
-	local key = GenerateKey(option)
-
 	dropdown:SetCallback("OnValueChanged", function(_, _, value)
 		option.set(value)
 		RefreshEnabledStates(self.refreshMap)
-		if self.updateIndices[key] and self.updateIndices[key][index] then
-			Update(self.updateIndices[key][index])
+		if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+			Update(self.updateIndices[optionGroupKey][optionIndex])
 		end
 	end)
 
@@ -1307,8 +1292,8 @@ local function CreateDropdownBesideButton(self, option, index)
 						option.buttonCallback()
 					end
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[key] and self.updateIndices[key][index] then
-						Update(self.updateIndices[key][index])
+					if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+						Update(self.updateIndices[optionGroupKey][optionIndex])
 					end
 				end)
 				messageBox:SetCallback("Rejected", function()
@@ -1351,11 +1336,12 @@ end
 ---@param self EPOptions
 ---@param widget any
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@param callbackName string
 ---@param setWidgetValue fun(...:any)?
 ---@param label EPLabel?
-local function SetCallbacks(self, widget, option, index, callbackName, setWidgetValue, label)
+local function SetCallbacks(self, widget, option, optionGroupKey, optionIndex, callbackName, setWidgetValue, label)
 	if widget and callbackName then
 		if type(setWidgetValue) == "function" then
 			setWidgetValue(widget, option.get())
@@ -1367,18 +1353,16 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 			end
 		end
 
-		local key = GenerateKey(option)
-
 		if type(setWidgetValue) == "function" then
 			if option.updateIndices then
 				if option.type == "dropdown" and type(option.values) == "function" then
-					UpdateUpdateIndices(self.updateIndices, option, index, function()
+					UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 						widget:Clear()
 						widget:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
 						setWidgetValue(widget, option.get())
 					end)
 				else
-					UpdateUpdateIndices(self.updateIndices, option, index, function()
+					UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 						setWidgetValue(widget, option.get())
 					end)
 				end
@@ -1397,8 +1381,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 						option.set(...)
 					end
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[key] and self.updateIndices[key][index] then
-						Update(self.updateIndices[key][index])
+					if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+						Update(self.updateIndices[optionGroupKey][optionIndex])
 					end
 				end)
 			elseif option.confirm then
@@ -1421,8 +1405,10 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 							messageBox = nil
 							option.set(value1, value2, value3, value4)
 							RefreshEnabledStates(self.refreshMap)
-							if self.updateIndices[key] and self.updateIndices[key][index] then
-								Update(self.updateIndices[key][index])
+							if
+								self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex]
+							then
+								Update(self.updateIndices[optionGroupKey][optionIndex])
 							end
 						end)
 						messageBox:SetCallback("Rejected", function()
@@ -1438,8 +1424,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 				widget:SetCallback(callbackName, function(_, _, ...)
 					option.set(...)
 					RefreshEnabledStates(self.refreshMap)
-					if self.updateIndices[key] and self.updateIndices[key][index] then
-						Update(self.updateIndices[key][index])
+					if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+						Update(self.updateIndices[optionGroupKey][optionIndex])
 					end
 				end)
 			end
@@ -1460,8 +1446,8 @@ local function SetCallbacks(self, widget, option, index, callbackName, setWidget
 					option.set(...)
 				end
 				RefreshEnabledStates(self.refreshMap)
-				if self.updateIndices[key] and self.updateIndices[key][index] then
-					Update(self.updateIndices[key][index])
+				if self.updateIndices[optionGroupKey] and self.updateIndices[optionGroupKey][optionIndex] then
+					Update(self.updateIndices[optionGroupKey][optionIndex])
 				end
 			end)
 		end
@@ -1476,9 +1462,10 @@ end
 
 ---@param self EPOptions
 ---@param option EPSettingOption
----@param index integer
+---@param optionGroupKey string
+---@param optionIndex integer
 ---@return EPContainer
-local function CreateOptionWidget(self, option, index)
+local function CreateOptionWidget(self, option, optionGroupKey, optionIndex)
 	local container = AceGUI:Create("EPContainer")
 	container:SetLayout("EPHorizontalLayout")
 	container:SetSpacing(spacingBetweenLabelAndWidget, 0)
@@ -1493,15 +1480,15 @@ local function CreateOptionWidget(self, option, index)
 		local widget = AceGUI:Create("EPCheckBox")
 		widget:SetFullWidth(true)
 		widget:SetText(option.label)
-		SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetChecked, nil)
+		SetCallbacks(self, widget, option, optionGroupKey, optionIndex, "OnValueChanged", widget.SetChecked, nil)
 		tinsert(containerChildren, widget)
 	elseif option.type == "checkBoxBesideButton" then
 		local checkBoxBesideButtonContainer, widget, setWidgetValue, callbackName =
 			CreateCheckBoxBesideButton(self, option)
-		SetCallbacks(self, widget, option, index, callbackName, setWidgetValue, nil)
+		SetCallbacks(self, widget, option, optionGroupKey, optionIndex, callbackName, setWidgetValue, nil)
 		tinsert(containerChildren, checkBoxBesideButtonContainer)
 	elseif option.type == "checkBoxWithDropdown" then
-		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, index))
+		tinsert(containerChildren, CreateCheckBoxWithDropdown(self, option, optionGroupKey, optionIndex))
 	elseif option.type == "centeredButton" then
 		tinsert(containerChildren, CreateCenteredButton(self, option))
 	else
@@ -1517,30 +1504,30 @@ local function CreateOptionWidget(self, option, index)
 			local widget = AceGUI:Create("EPDropdown")
 			widget:SetFullWidth(true)
 			AddDropdownValues(widget, option.values, option)
-			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetValue, label)
+			SetCallbacks(self, widget, option, optionGroupKey, optionIndex, "OnValueChanged", widget.SetValue, label)
 			tinsert(containerChildren, widget)
 		elseif option.type == "lineEdit" then
 			local widget = AceGUI:Create("EPLineEdit")
 			widget:SetFullWidth(true)
-			SetCallbacks(self, widget, option, index, "OnTextSubmitted", widget.SetText, label)
+			SetCallbacks(self, widget, option, optionGroupKey, optionIndex, "OnTextSubmitted", widget.SetText, label)
 			tinsert(containerChildren, widget)
 		elseif option.type == "colorPicker" then
 			local widget = AceGUI:Create("EPColorPicker")
 			widget:SetFullWidth(true)
-			SetCallbacks(self, widget, option, index, "OnValueChanged", widget.SetColor, label)
+			SetCallbacks(self, widget, option, optionGroupKey, optionIndex, "OnValueChanged", widget.SetColor, label)
 			tinsert(containerChildren, widget)
 		elseif option.type == "doubleColorPicker" then
-			tinsert(containerChildren, CreateDoubleColorPicker(self, option, index, label))
+			tinsert(containerChildren, CreateDoubleColorPicker(self, option, optionGroupKey, optionIndex, label))
 		elseif option.type == "doubleCheckBox" then
-			tinsert(containerChildren, CreateDoubleCheckBox(self, option, index, label))
+			tinsert(containerChildren, CreateDoubleCheckBox(self, option, optionGroupKey, optionIndex, label))
 		elseif option.type == "radioButtonGroup" then
-			tinsert(containerChildren, CreateRadioButtonGroup(self, option, index, label))
+			tinsert(containerChildren, CreateRadioButtonGroup(self, option, optionGroupKey, optionIndex, label))
 		elseif option.type == "doubleLineEdit" then
-			tinsert(containerChildren, CreateDoubleLineEdit(self, option, index, label))
+			tinsert(containerChildren, CreateDoubleLineEdit(self, option, optionGroupKey, optionIndex, label))
 		elseif option.type == "frameChooser" then
-			tinsert(containerChildren, CreateFrameChooser(self, option, index, label))
+			tinsert(containerChildren, CreateFrameChooser(self, option, optionGroupKey, optionIndex, label))
 		elseif option.type == "dropdownBesideButton" then
-			tinsert(containerChildren, CreateDropdownBesideButton(self, option, index))
+			tinsert(containerChildren, CreateDropdownBesideButton(self, option, optionGroupKey, optionIndex))
 		end
 	end
 
@@ -1552,11 +1539,12 @@ end
 ---@param tab string
 ---@return EPContainer|nil
 local function CreateUncategorizedOptionWidgets(self, tab)
+	local optionGroupKey = tab .. "_u"
 	local uncategorizedContainerChildren = {}
 	local labels = {}
 	local maxLabelWidth = 0
 
-	for index, option in ipairs(self.optionTabs[tab]) do
+	for optionIndex, option in ipairs(self.optionTabs[tab]) do
 		if not option.category and not option.uncategorizedBottom then
 			if option.type == "horizontalLine" then
 				local line = AceGUI:Create("EPSpacer")
@@ -1566,7 +1554,7 @@ local function CreateUncategorizedOptionWidgets(self, tab)
 				line:SetHeight(2 + spacingBetweenOptions)
 				tinsert(uncategorizedContainerChildren, line)
 			else
-				local container = CreateOptionWidget(self, option, index)
+				local container = CreateOptionWidget(self, option, optionGroupKey, optionIndex)
 				if #container.children >= 2 and container.children[1].type == "EPLabel" then
 					maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
 					tinsert(labels, container.children[1])
@@ -1677,11 +1665,12 @@ local function PopulateActiveTab(self, tab)
 				categoryContainer:SetPadding(unpack(categoryPadding))
 				categoryContainer:SetBackdrop(groupBoxBackdrop, { 0, 0, 0, 0 }, groupBoxBorderColor)
 
+				local optionGroupKey = tab .. categoryIndex
 				local categoryContainerChildren = {}
 				local labels = {}
 				local maxLabelWidth = 0
 
-				for index, option in ipairs(self.optionTabs[tab]) do
+				for optionIndex, option in ipairs(self.optionTabs[tab]) do
 					if option.category == category then
 						if option.type == "horizontalLine" then
 							local line = AceGUI:Create("EPSpacer")
@@ -1691,7 +1680,7 @@ local function PopulateActiveTab(self, tab)
 							line:SetHeight(2 + spacingBetweenOptions)
 							tinsert(categoryContainerChildren, line)
 						else
-							local container = CreateOptionWidget(self, option, index)
+							local container = CreateOptionWidget(self, option, optionGroupKey, optionIndex)
 							if #container.children >= 2 and container.children[1].type == "EPLabel" then
 								maxLabelWidth = max(maxLabelWidth, container.children[1].frame:GetWidth())
 								tinsert(labels, container.children[1])
@@ -1716,12 +1705,15 @@ local function PopulateActiveTab(self, tab)
 			end
 		end
 
-		for index, option in ipairs(self.optionTabs[tab]) do
+		local optionGroupKey = tab .. "_ub"
+
+		for optionIndex, option in ipairs(self.optionTabs[tab]) do
 			if option.uncategorizedBottom and not option.category then
 				local categorySpacer = AceGUI:Create("EPSpacer")
 				categorySpacer:SetHeight(spacingBetweenCategories)
 				tinsert(activeContainerChildren, categorySpacer)
-				local container = CreateOptionWidget(self, option, index)
+
+				local container = CreateOptionWidget(self, option, optionGroupKey, optionIndex)
 				tinsert(activeContainerChildren, container)
 			end
 		end

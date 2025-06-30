@@ -1017,7 +1017,6 @@ end
 ---@param dropdown EPDropdown
 ---@param value string
 local function HandlePlanDropdownValueChanged(dropdown, _, value)
-	print(value)
 	if AddOn.db.profile.plans[value] then
 		ClosePlanDependentWidgets()
 		AddOn.db.profile.lastOpenPlan = value
