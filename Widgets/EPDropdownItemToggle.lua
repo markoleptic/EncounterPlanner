@@ -435,7 +435,7 @@ do
 		else
 			self.highlight:Hide()
 		end
-		if self.enabled and self.childPullout then
+		if self.enabled and self.childPullout and #self.childPullout.items > 0 then
 			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 1, nil)
 		end
 	end
