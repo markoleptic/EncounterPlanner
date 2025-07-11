@@ -1592,6 +1592,24 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					allowedCombatLogEventTypes = { "SCC" },
 					defaultHidden = true,
 				}),
+				[469327] = BossAbility:New({ -- Giga Blast
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 17.4 },
+							repeatInterval = 57.0,
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 37.55 + 12.0, 47.99 + 12.0, 42.0 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 54.0 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					defaultHidden = false,
+				}),
 				[1222831] = BossAbility:New({ -- Overloaded Coils
 					phases = {
 						[6] = BossAbilityPhase:New({
