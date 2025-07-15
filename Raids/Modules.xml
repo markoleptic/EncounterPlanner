@@ -5,4 +5,7 @@
     <Script file="NerubarPalace.lua" />
     <!--@end-debug@-->
     <Script file="LiberationOfUndermine.lua" />
+    <!--@debug@-->
+    <Script file="ManaforgeOmega.lua" />
+    <!--@end-debug@-->
 </Ui>

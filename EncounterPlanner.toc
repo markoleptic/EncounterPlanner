@@ -38,6 +38,7 @@ Tests\TestUtilities.lua
 
 Raids\Modules.xml
 TheWarWithinSeasonTwo\Modules.xml
+TheWarWithinSeasonThree\Modules.xml
 
 BossUtilities.lua
 Utilities.lua

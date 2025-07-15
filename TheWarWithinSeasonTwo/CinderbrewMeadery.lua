@@ -16,7 +16,7 @@ local DungeonInstance = Private.classes.DungeonInstance
 Private.dungeonInstances[2661] = DungeonInstance:New({
 	journalInstanceID = 1272,
 	instanceID = 2661,
-	customGroup = "TheWarWithinSeasonTwo",
+	customGroups = { "TheWarWithinSeasonTwo" },
 	bosses = {
 		Boss:New({ -- Brew Master Aldryr
 			bossIDs = { 210271 },

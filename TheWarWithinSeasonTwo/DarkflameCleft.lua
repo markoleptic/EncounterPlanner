@@ -16,7 +16,7 @@ local DungeonInstance = Private.classes.DungeonInstance
 Private.dungeonInstances[2651] = DungeonInstance:New({
 	journalInstanceID = 1210,
 	instanceID = 2651,
-	customGroup = "TheWarWithinSeasonTwo",
+	customGroups = { "TheWarWithinSeasonTwo" },
 	bosses = {
 		Boss:New({ -- Ol' Waxbeard
 			bossIDs = {

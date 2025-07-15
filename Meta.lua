@@ -46,7 +46,7 @@
 --  The journal instance ID of the raid or dungeon. All bosses share the same JournalInstanceID.
 ---@field journalInstanceID number
 ---@field instanceID number The instance ID for the zone. All bosses share the same instanceID.
----@field customGroup string? Custom group to use when populating dropdowns.
+---@field customGroups string[]? Custom group to use when populating dropdowns.
 ---@field bosses table<integer, Boss> List of bosses for the instance.
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
 ---@field executeAndNil fun()|nil
