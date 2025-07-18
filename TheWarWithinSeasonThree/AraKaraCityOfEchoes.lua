@@ -29,12 +29,45 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 			journalEncounterID = 2583,
 			dungeonEncounterID = 2926,
 			instanceID = 2660,
-			preferredCombatLogEventAbilities = {},
-			abilities = {},
+			abilities = {
+				[438471] = BossAbility:New({ -- Voracious Bite
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 3.59 },
+							repeatInterval = { 14.52, 25.68 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[438473] = BossAbility:New({ -- Gossamer Onslaught
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 31.50 },
+							repeatInterval = { 39.99 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[438476] = BossAbility:New({ -- Alerting Shrill
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 8.30 },
+							repeatInterval = { 39.99 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
+					duration = 180.0,
+					defaultDuration = 180.0,
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
@@ -53,12 +86,99 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 			journalEncounterID = 2584,
 			dungeonEncounterID = 2906,
 			instanceID = 2660,
-			preferredCombatLogEventAbilities = {},
-			abilities = {},
+			abilities = {
+				[433740] = BossAbility:New({ -- Infestation
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								0.01,
+								10.69,
+								12.37,
+								14.96,
+								8.48,
+								8.51,
+								8.49,
+								10.91,
+								12.20,
+								10.79,
+							},
+							repeatInterval = { 20.81, 9.19, 8.53, 8.73, 9.60, 11.97, 12.71 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[433766] = BossAbility:New({ -- Eye of the Swarm
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.64 },
+							repeatInterval = { 82.53, 82.19 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 7.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[434408] = BossAbility:New({ -- Eye of the Swarm (channeled buff)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 38.02 },
+							repeatInterval = { 82.47, 82.14 },
+						}),
+					},
+					duration = 25.0, -- Channel
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[435012] = BossAbility:New({ -- Impale
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								5.0,
+							},
+							repeatInterval = {
+								14.53,
+								5.00,
+								17.23,
+								8.52,
+								8.53,
+								9.65,
+								14.74,
+								5.14,
+								15.43,
+								16.72,
+								10.59,
+								8.24,
+								9.27,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[439506] = BossAbility:New({ -- Burrow Charge
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								15.34,
+							},
+							repeatInterval = {
+								63.58,
+								61.70,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
+					duration = 180.0,
+					defaultDuration = 180.0,
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
@@ -77,11 +197,45 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 			dungeonEncounterID = 2901,
 			instanceID = 2660,
 			preferredCombatLogEventAbilities = {},
-			abilities = {},
+			abilities = {
+				[432117] = BossAbility:New({ -- Cosmic Singularity
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 28.67 },
+							repeatInterval = { 47.47 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 7.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[432130] = BossAbility:New({ -- Erupting Webs
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 6.76 },
+							repeatInterval = { 18.40, 19.49, 18.26, 20.65, 18.27 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[461487] = BossAbility:New({ -- Cultivated Poisons
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 14.68, 29.39 },
+							repeatInterval = { 24.31, 23.14, 23.02, 24.52 },
+						}),
+					},
+					duration = 8.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
+					duration = 180.0,
+					defaultDuration = 180.0,
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
