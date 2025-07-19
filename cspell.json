@@ -108,6 +108,7 @@
 		"Hooktail",
 		"Horiz",
 		"Hylbrande",
+		"Hyperlight",
 		"icetroll",
 		"Ilyssa",
 		"Jumpstart",
@@ -174,6 +175,7 @@
 		"Shadowblast",
 		"Shadowcrown",
 		"Shadowguard",
+		"Shuri",
 		"Sicon",
 		"Sikran",
 		"Sikran's",
@@ -253,5 +255,8 @@
 		".github/",
 		".pkgmeta"
 	],
-	"enableFiletypes": ["lua", "toc"]
+	"enableFiletypes": [
+		"lua",
+		"toc"
+	]
 }
