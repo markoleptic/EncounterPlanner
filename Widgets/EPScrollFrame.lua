@@ -132,8 +132,10 @@ local function HandleVerticalThumbUpdate(self)
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
-	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-	SetVerticalScroll(self, max(minScroll, scrollOffset))
+	if maxThumbPosition ~= 0 then
+		local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+		SetVerticalScroll(self, max(minScroll, scrollOffset))
+	end
 end
 
 ---@param self EPScrollFrame
@@ -340,10 +342,17 @@ local function UpdateThumbPositionAndSize(self)
 		if scrollChild then
 			local scrollChildHeight = scrollChild:GetHeight()
 			local currentScroll = self.currentScroll
-			local scrollPercentage = currentScroll / (scrollChildHeight - scrollFrameHeight)
-			local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+			local heightDifference = scrollChildHeight - scrollFrameHeight
+			local scrollPercentage = 0
+			if heightDifference ~= 0 then
+				scrollPercentage = currentScroll / (scrollChildHeight - scrollFrameHeight)
+			end
 
-			local thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
+			local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+			local thumbHeight = minThumbSize
+			if scrollChildHeight ~= 0 then
+				thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
+			end
 			thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
 			self.thumb:SetHeight(thumbHeight)
 

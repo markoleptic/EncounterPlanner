@@ -472,16 +472,18 @@ do
 	---@param sent integer
 	---@param total integer
 	local function CallbackProgress(planID, sent, total)
-		local progress = sent / total
-		if progress >= 1.0 then
-			LogMessage(L["Plan sent"] .. ".")
-			if activePlanIDsBeingSent[planID] then
-				activePlanIDsBeingSent[planID].timer = NewTimer(10, function()
-					local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
-					local playerString = count == 1 and L["player"] or L["players"]
-					LogMessage(format("%s %d %s.", L["Plan received by"], count, playerString))
-					activePlanIDsBeingSent[planID] = nil
-				end)
+		if total > 0 then
+			local progress = sent / total
+			if progress >= 1.0 then
+				LogMessage(L["Plan sent"] .. ".")
+				if activePlanIDsBeingSent[planID] then
+					activePlanIDsBeingSent[planID].timer = NewTimer(10, function()
+						local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
+						local playerString = count == 1 and L["player"] or L["players"]
+						LogMessage(format("%s %d %s.", L["Plan received by"], count, playerString))
+						activePlanIDsBeingSent[planID] = nil
+					end)
+				end
 			end
 		end
 	end

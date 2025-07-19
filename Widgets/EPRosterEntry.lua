@@ -10,6 +10,7 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
+local max = math.max
 
 local mainFrameWidth = 400
 local mainFrameHeight = 400
@@ -116,7 +117,7 @@ local function SetData(self, name, class, role)
 end
 
 local function SetRelativeWidths(self, width)
-	local nonSpacingWidth = width - 3 * self.content.spacing.x
+	local nonSpacingWidth = max(1, width - 3 * self.content.spacing.x)
 	local firstThreeWidth = (nonSpacingWidth - widgetHeight) / 3.0
 	local firstThreeRelativeWidth = firstThreeWidth / nonSpacingWidth
 	self.nameLineEdit:SetRelativeWidth(firstThreeRelativeWidth)

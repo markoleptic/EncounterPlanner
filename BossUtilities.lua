@@ -510,7 +510,9 @@ function BossUtilities.CalculateMaxPhaseDuration(encounterID, phaseIndex, maxTot
 			end
 		end
 		local phaseCount = boss.phases[phaseIndex].count
-		return (maxTotalDuration - totalDurationWithoutPhaseDuration) / phaseCount
+		if phaseCount > 0 then
+			return (maxTotalDuration - totalDurationWithoutPhaseDuration) / phaseCount
+		end
 	end
 end
 

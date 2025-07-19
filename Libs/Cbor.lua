@@ -23,7 +23,7 @@ local m_huge = math.huge
 local m_max = math.max
 local maxint = 9007199254740992
 local minint = -9007199254740992
-local NaN = 0 / 0
+local NaN = nil
 local m_frexp = math.frexp
 local m_ldexp = math.ldexp or function(x, exp)
 	return x * 2.0 ^ exp

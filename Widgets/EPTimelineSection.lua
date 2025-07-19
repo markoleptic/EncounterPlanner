@@ -47,9 +47,11 @@ local function HandleVerticalThumbUpdate(self)
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
-	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-	scrollFrame:SetVerticalScroll(scrollOffset)
-	self.listScrollFrame:SetVerticalScroll(scrollOffset)
+	if maxThumbPosition ~= 0 then
+		local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+		scrollFrame:SetVerticalScroll(scrollOffset)
+		self.listScrollFrame:SetVerticalScroll(scrollOffset)
+	end
 end
 
 ---@param self EPTimelineSection
@@ -252,16 +254,18 @@ end
 local function UpdateVerticalScroll(self)
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
 	local timelineHeight = self.timelineFrame:GetHeight()
-	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
-	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+	if timelineHeight ~= 0 and (timelineHeight - scrollFrameHeight) ~= 0 then
+		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
+		local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
-	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
-	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
-	self.thumb:SetHeight(thumbHeight)
+		local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
+		thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
+		self.thumb:SetHeight(thumbHeight)
 
-	local maxThumbPosition = availableThumbHeight - thumbHeight
-	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
-	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
+		local maxThumbPosition = availableThumbHeight - thumbHeight
+		local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
+		self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
+	end
 end
 
 ---@param self EPTimelineSection
@@ -296,6 +300,7 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
+	frame:SetSize(100, 100)
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 	scrollFrame:SetPoint("TOPLEFT")
@@ -303,10 +308,11 @@ local function Constructor()
 
 	local listScrollFrame = CreateFrame("ScrollFrame", Type .. "ListScrollFrame" .. count, frame)
 	listScrollFrame:SetPoint("TOPLEFT")
-	listScrollFrame:SetWidth(listFrameWidth)
+	listScrollFrame:SetSize(listFrameWidth, 1)
 	listScrollFrame:EnableMouseWheel(true)
 
 	local timelineFrame = CreateFrame("Frame", Type .. "TimelineFrame" .. count, scrollFrame)
+	timelineFrame:SetSize(100, 100)
 	timelineFrame:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	timelineFrame:EnableMouse(true)
 	timelineFrame:RegisterForDrag("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")

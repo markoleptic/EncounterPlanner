@@ -1589,10 +1589,13 @@ local function HandleThumbMouseDown(self)
 		-- Calculate the scroll frame's horizontal scroll based on the thumb's position
 		local maxThumbPosition = currentScrollBarWidth - currentWidth - (2 * paddingX)
 		local maxScroll = bossAbilityTimelineFrame:GetWidth() - bossAbilityScrollFrame:GetWidth()
-		local scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
-		bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
-		assignmentScrollFrame:SetHorizontalScroll(scrollOffset)
-		splitterScrollFrame:SetHorizontalScroll(scrollOffset)
+		local scrollOffset = 0
+		if maxThumbPosition ~= 0 then
+			scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
+			bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
+			assignmentScrollFrame:SetHorizontalScroll(scrollOffset)
+			splitterScrollFrame:SetHorizontalScroll(scrollOffset)
+		end
 	end)
 end
 
