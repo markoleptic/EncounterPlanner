@@ -12,6 +12,8 @@ local BossAbilityPhase = Private.classes.BossAbilityPhase
 local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
+---@class EventTrigger
+local EventTrigger = Private.classes.EventTrigger
 
 Private.dungeonInstances[2660] = DungeonInstance:New({
 	journalInstanceID = 1271,
@@ -90,19 +92,13 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 				[433740] = BossAbility:New({ -- Infestation
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = {
-								0.01,
-								10.69,
-								12.37,
-								14.96,
-								8.48,
-								8.51,
-								8.49,
-								10.91,
-								12.20,
-								10.79,
-							},
-							repeatInterval = { 20.81, 9.19, 8.53, 8.73, 9.60, 11.97, 12.71 },
+							castTimes = { 0.01, 10.69, 12.37, 14.96, 8.48, 8.51 },
+						}),
+					},
+					eventTriggers = {
+						[434408] = EventTrigger:New({ -- Eye of the Swarm (channeled buff)
+							combatLogEventType = "SAR",
+							castTimes = { 0.48, 10.88, 12.20, 10.79, 20.82, 8.53, 7.34 },
 						}),
 					},
 					duration = 5.0,
@@ -134,24 +130,13 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 				[435012] = BossAbility:New({ -- Impale
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = {
-								5.0,
-							},
-							repeatInterval = {
-								14.53,
-								5.00,
-								17.23,
-								8.52,
-								8.53,
-								9.65,
-								14.74,
-								5.14,
-								15.43,
-								16.72,
-								10.59,
-								8.24,
-								9.27,
-							},
+							castTimes = { 5.0, 14.53, 5.00, 17.23, 8.52, 8.40 },
+						}),
+					},
+					eventTriggers = {
+						[434408] = EventTrigger:New({ -- Eye of the Swarm (channeled buff)
+							combatLogEventType = "SAR",
+							castTimes = { 5.20, 14.87, 4.95, 15.55, 16.52, 10.74, 8.25 },
 						}),
 					},
 					duration = 0.0,
@@ -161,13 +146,13 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 				[439506] = BossAbility:New({ -- Burrow Charge
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = {
-								15.34,
-							},
-							repeatInterval = {
-								63.58,
-								61.70,
-							},
+							castTimes = { 14.49 },
+						}),
+					},
+					eventTriggers = {
+						[434408] = EventTrigger:New({ -- Eye of the Swarm (channeled buff)
+							combatLogEventType = "SAR",
+							castTimes = { 15.41, 30.80 },
 						}),
 					},
 					duration = 0.0,
