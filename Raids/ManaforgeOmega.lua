@@ -315,17 +315,111 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			journalEncounterID = 2686,
 			dungeonEncounterID = 3131,
 			instanceID = 2810,
-			preferredCombatLogEventAbilities = {
-				[1] = nil,
+			abilities = {
+				[1227782] = BossAbility:New({ -- Arcane Outrage
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 17.26 },
+							repeatInterval = { 20.00 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227784] = BossAbility:New({ -- Arcane Outrage
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 19.27 },
+							repeatInterval = { 20.00 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1237272] = BossAbility:New({ -- Lair Weaving
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.52 },
+							repeatInterval = { 7.02, 36.46, 7.00, 34.51 },
+						}),
+					},
+					duration = 5.0, -- Channel
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1226395] = BossAbility:New({ -- Overinfusion Burst
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 75.94 },
+							repeatInterval = { 85.0 },
+						}),
+					},
+					duration = 8.0, -- Channel
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1227263] = BossAbility:New({ -- Piercing Strand
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 12.58 },
+							repeatInterval = { 3.96, 39.52, 4.95, 36.55 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227261] = BossAbility:New({ -- Piercing Strand
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.58 },
+							repeatInterval = { 3.96, 39.52, 4.95, 36.55 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					defaultHidden = true,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1227227] = BossAbility:New({ -- Writhing Wave
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 14.27 },
+							repeatInterval = { 20.0 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1227226] = BossAbility:New({ -- Writhing Wave
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 10.27 },
+							repeatInterval = { 20.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
 			},
-			abilities = {},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 180.0,
+					defaultDuration = 180.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
+				}),
+				[2] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2 (50%)",
 				}),
 			},
 		}),
