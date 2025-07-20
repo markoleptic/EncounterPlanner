@@ -1092,14 +1092,45 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			journalEncounterID = 2747,
 			dungeonEncounterID = 3133,
 			instanceID = 2810,
-			preferredCombatLogEventAbilities = {
-				[1] = nil,
+			abilities = {
+				[1233416] = BossAbility:New({ -- Crystalline Eruption
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 14.74, 20.48, 29.92, 20.69, 30.25, 20.61 },
+							repeatInterval = { 20.6, 30.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220394] = BossAbility:New({ -- Shattering Backhand
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 48.6 },
+							repeatInterval = { 50.9 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1231871] = BossAbility:New({ -- Shockwave Slam TODO Separate rows
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.43 },
+							repeatInterval = { 50.9 },
+						}),
+					},
+					duration = 55.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
 			},
-			abilities = {},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 300.0,
+					defaultDuration = 300.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
