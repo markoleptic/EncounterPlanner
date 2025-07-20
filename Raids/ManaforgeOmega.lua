@@ -559,17 +559,173 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			journalEncounterID = 2687,
 			dungeonEncounterID = 3132,
 			instanceID = 2810,
-			preferredCombatLogEventAbilities = {
-				[1] = nil,
+			preferredCombatLogEventAbilities = {},
+			abilities = {
+				[1227631] = BossAbility:New({ -- Arcane Expulsion
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 155.00 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 141.73 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1230231] = BossAbility:New({ -- Phase Transition P1 -> P2
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					signifiesPhaseStart = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1235338] = BossAbility:New({ -- Phase Transition
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.00 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					signifiesPhaseStart = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1228216] = BossAbility:New({ -- Arcane Obliteration
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 31.08, 44.92 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 70.84 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1231720] = BossAbility:New({ -- Invoke Collector
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.0, 44.0, 44.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 25.78, 22.0, 44.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1231719] = BossAbility:New({ -- Invoke Collector
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 11.0, 44.0, 44.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 27.82, 22.0, 44.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					defaultHidden = true,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1230529] = BossAbility:New({ -- Mana Sacrifice
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 2.05 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 1.97 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1228502] = BossAbility:New({ -- Overwhelming Power
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 4.0 },
+							repeatInterval = { 22.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 22.0 },
+							repeatInterval = { 22.0 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 28.55 },
+							repeatInterval = { 22.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.2,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1228161] = BossAbility:New({ -- Silencing Tempest
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 63.0, 44.0, 23.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 59.82, 43.89, 21.02 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 36.55, 43.24, 21.02 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
 			},
-			abilities = {},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 160.0,
+					defaultDuration = 160.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
+				}),
+				[2] = BossPhase:New({
+					duration = 40.0,
+					defaultDuration = 40.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+				}),
+				[3] = BossPhase:New({
+					duration = 146.7,
+					defaultDuration = 146.7,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+				[4] = BossPhase:New({
+					duration = 54.0,
+					defaultDuration = 54.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+				}),
+				[5] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
 				}),
 			},
 		}),
