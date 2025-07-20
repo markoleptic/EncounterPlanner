@@ -439,14 +439,100 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			journalEncounterID = 2685,
 			dungeonEncounterID = 3130,
 			instanceID = 2810,
-			preferredCombatLogEventAbilities = {
-				[1] = nil,
+			abilities = {
+				[1242088] = BossAbility:New({ -- Arcane Expulsion
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 41.0 },
+							repeatInterval = { 38.0, 67.0, 45.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224025] = BossAbility:New({ -- Mythic Lash (Targeting)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 4.0 },
+							repeatInterval = { 41.0, 38.0, 40.0, 31.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1241100] = BossAbility:New({ -- Mythic Lash (Cast)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+							repeatInterval = { 41.0, 38.0, 40.0, 31.0 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1225582] = BossAbility:New({ -- Soul Calling
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 13.0 },
+							repeatInterval = { 150.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225616] = BossAbility:New({ -- Soulfire Convergence
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 16.0 },
+							repeatInterval = { 37.0, 38.0, 75.0 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1227276] = BossAbility:New({ -- Soulfray Annihilation (Targeting)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 26.0 },
+							repeatInterval = { 37.0, 37.0, 76.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1227279] = BossAbility:New({ -- Soulfray Annihilation (Cast)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.0 },
+							repeatInterval = { 37.0, 37.0, 76.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1245422] = BossAbility:New({ -- Tsunami of Arcane
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 40.0 },
+							repeatInterval = { 38.0, 67.0, 45.0 },
+						}),
+					},
+					duration = 5.2,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
 			},
-			abilities = {},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 300.0,
+					defaultDuration = 300.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
