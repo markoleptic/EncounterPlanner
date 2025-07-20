@@ -1,7 +1,7 @@
 local _, Namespace = ...
 
 local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live
-if not isElevenDotTwo then
+if true then
 	return
 end
 
@@ -42,12 +42,263 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			instanceID = 2810,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
+				[2] = { combatLogEventSpellID = 1220618, combatLogEventType = "SAA" },
+				[3] = { combatLogEventSpellID = 1220618, combatLogEventType = "SAR" },
+				[4] = { combatLogEventSpellID = 1220981, combatLogEventType = "SAA" },
+				[5] = { combatLogEventSpellID = 1220981, combatLogEventType = "SAR" },
+				[6] = { combatLogEventSpellID = 1220982, combatLogEventType = "SAA" },
+				[7] = { combatLogEventSpellID = 1220982, combatLogEventType = "SAR" },
 			},
-			abilities = {},
+			abilities = {
+				[1234733] = BossAbility:New({ -- Cleanse the Chamber
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.02 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 29.76 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 29.89 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 63.39 },
+							repeatInterval = { 7.03, 10.37 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1232543] = BossAbility:New({ -- Energy Overload
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 61.00 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 95.84 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 96.47 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1219531] = BossAbility:New({ -- Eradicating Salvo
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 41.08 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 20.81, 32.73, 32.59 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 20.89, 32.61, 32.88 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 20.96 },
+							repeatInterval = { 33.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1219450] = BossAbility:New({ -- Manifest Matrices
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.03, 29.09 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 5.23, 25.86, 25.94, 25.03 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 5.28, 25.52, 26.25, 25.23 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 5.30, 23.50, 26.33, 33.28 },
+							repeatInterval = { 30.87 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1219263] = BossAbility:New({ -- Obliteration Arcanocannon
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 21.84, 30.57 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 13.49, 28.63, 28.60 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 13.60, 28.77, 28.71 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 13.71, 28.81, 30.21 },
+							repeatInterval = { 30.21 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1223364] = BossAbility:New({ -- Powered Automaton
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.02 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 1.57 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 1.66 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 1.65 },
+						}),
+					},
+					durationLastsUntilEndOfPhase = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1227639] = BossAbility:New({ -- Static Lightning
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 62.46 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 95.67 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 96.17 },
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1220618] = BossAbility:New({ -- Protocol: Purge (Buff 1)
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1220981] = BossAbility:New({ -- Protocol: Purge (Buff 2)
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1220982] = BossAbility:New({ -- Protocol: Purge (Buff 3)
+					phases = {
+						[6] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1220489] = BossAbility:New({ -- Protocol: Purge (Cast 1)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 60.84 },
+						}),
+					},
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220553] = BossAbility:New({ -- Protocol: Purge (Cast 2)
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 93.98 },
+						}),
+					},
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220555] = BossAbility:New({ -- Protocol: Purge (Cast 3)
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 94.53 },
+						}),
+					},
+					signifiesPhaseEnd = true,
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 65.8,
+					defaultDuration = 65.8,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+				[2] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+				}),
+				[3] = BossPhase:New({
+					duration = 100.5,
+					defaultDuration = 100.5,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+				[4] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+				}),
+				[5] = BossPhase:New({
+					duration = 100.5,
+					defaultDuration = 100.5,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+				[6] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int3",
+				}),
+				[7] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
