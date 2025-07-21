@@ -226,7 +226,7 @@ do -- Raid instance initialization
 	local function CreatePhaseName(nameOrNumber)
 		if type(nameOrNumber) == "string" then
 			-- Match "Int" or "P" followed by a number, optional content in parenthesis
-			local phaseType, number, value = nameOrNumber:match("^(%a+)(%d+)%s*%(([^)]+)%)$")
+			local phaseType, number, extra = nameOrNumber:match("^(%a+)(%d+)%s*%(([^)]+)%)$")
 			if not phaseType then
 				phaseType, number = nameOrNumber:match("^(%a+)(%d+)$")
 			end
@@ -240,12 +240,15 @@ do -- Raid instance initialization
 				shortName = format("%s%d", L["P"], number)
 			end
 
-			if value then
-				local energy = value:match("^(%d+) Energy$")
+			if extra then
+				local energy = extra:match("^(%d+) Energy$")
+				local health = extra:match("^(%d+) Health$")
 				if energy then
-					phaseName = format("%s (%d %s)", phaseName, energy, L["Energy"])
+					phaseName = format("%s (%d%% %s)", phaseName, energy, L["Energy"])
+				elseif health then
+					phaseName = format("%s (%d%% %s)", phaseName, health, L["Health"])
 				else
-					phaseName = format("%s (%s)", phaseName, value)
+					phaseName = format("%s (%s)", phaseName, extra)
 				end
 			end
 

@@ -233,6 +233,7 @@ L["Group"] = true
 L["Group Number"] = true
 L["has sent you the plan"] = true
 L["Healer"] = true
+L["Health"] = true
 L["Height"] = true
 L["Hide or Cancel if Spell on Cooldown"] = true
 L["Hide or Cancel on Phase Change"] = true
