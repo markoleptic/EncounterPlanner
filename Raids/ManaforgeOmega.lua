@@ -1,7 +1,7 @@
 local _, Namespace = ...
 
 local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live
-if true then
+if not isElevenDotTwo then
 	return
 end
 
@@ -187,10 +187,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
@@ -199,10 +199,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
@@ -211,10 +211,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[6] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
@@ -223,9 +223,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 60.84 },
+							signifiesPhaseEnd = true,
 						}),
 					},
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -234,9 +234,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[3] = BossAbilityPhase:New({
 							castTimes = { 93.98 },
+							signifiesPhaseEnd = true,
 						}),
 					},
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -245,9 +245,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[5] = BossAbilityPhase:New({
 							castTimes = { 94.53 },
+							signifiesPhaseEnd = true,
 						}),
 					},
-					signifiesPhaseEnd = true,
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -578,12 +578,13 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
@@ -592,12 +593,13 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[3] = BossAbilityPhase:New({
 							castTimes = { 0.00 },
+							signifiesPhaseStart = true,
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
@@ -757,9 +759,12 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 26.1 },
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 25.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC", "SAA" },
@@ -768,9 +773,12 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 28.6 },
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 24.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA" },
@@ -793,13 +801,13 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[6] = BossAbilityPhase:New({
 							castTimes = { 0.0, 9.0, 9.0 },
+							signifiesPhaseStart = true,
 						}),
 						[7] = BossAbilityPhase:New({
 							castTimes = { 28.4 },
 							repeatInterval = { 9.0 },
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
@@ -814,6 +822,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 						[6] = BossAbilityPhase:New({
 							castTimes = { 0.73, 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 24.0,
@@ -911,6 +920,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						[5] = BossAbilityPhase:New({
 							castTimes = { 91.45 },
 						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 20.40 },
+						}),
 					},
 					duration = 0.0,
 					castTime = 4.0,
@@ -927,6 +939,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						[5] = BossAbilityPhase:New({
 							castTimes = { 91.75 },
 						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 21.04 },
+						}),
 					},
 					duration = 0.0,
 					castTime = 4.0,
@@ -942,6 +957,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 90.81 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 21.34 },
 						}),
 					},
 					duration = 0.0,
@@ -1175,9 +1193,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 119.5 },
+							signifiesPhaseEnd = true, -- End of P1
 						}),
 					},
-					signifiesPhaseEnd = true, -- End of P1
 					duration = 0.0,
 					castTime = 6.2,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -1186,9 +1204,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 32.25 },
+							signifiesPhaseEnd = true, -- End of P2
 						}),
 					},
-					signifiesPhaseEnd = true, -- End of P2
 					duration = 0.0,
 					castTime = 4.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -1197,11 +1215,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[5] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							repeatInterval = {},
+							signifiesPhaseStart = true, -- End of Int1
+							signifiesPhaseEnd = true, -- End of Int2
 						}),
 					},
-					signifiesPhaseStart = true, -- End of Int1
-					signifiesPhaseEnd = true, -- End of Int2
 					duration = 30.0,
 					castTime = 6.2,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
@@ -1210,18 +1227,17 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
-							repeatInterval = {},
 						}),
 					},
+					defaultHidden = true,
 					duration = 30.0,
-					castTime = 6.0,
+					castTime = 6.2,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1225010] = BossAbility:New({ -- Command: Behead
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 34.52, 37.97 },
-							repeatInterval = {},
 						}),
 					},
 					duration = 0.0,
@@ -1263,7 +1279,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 14.61, 5.69, 5.46 },
-							repeatInterval = {},
 						}),
 					},
 					duration = 4.0,
@@ -1274,7 +1289,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 115.0 },
-							repeatInterval = {},
 						}),
 					},
 					duration = 0.0,
@@ -1285,7 +1299,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				-- 	phases = {
 				-- 		[1] = BossAbilityPhase:New({
 				-- 			castTimes = {},
-				-- 			repeatInterval = {},
 				-- 		}),
 				-- 	},
 				-- 	duration = 0.0,
@@ -1296,7 +1309,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				-- 	phases = {
 				-- 		[1] = BossAbilityPhase:New({
 				-- 			castTimes = {},
-				-- 			repeatInterval = {},
 				-- 		}),
 				-- 	},
 				-- 	duration = 0.0,
@@ -1308,7 +1320,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				-- 	phases = {
 				-- 		[1] = BossAbilityPhase:New({
 				-- 			castTimes = {},
-				-- 			repeatInterval = {},
 				-- 		}),
 				-- 	},
 				-- 	duration = 0.0,
@@ -1329,7 +1340,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[3] = BossAbilityPhase:New({
 							castTimes = { 50.0, 0.0 },
-							repeatInterval = {},
 						}),
 					},
 					duration = 0.0,
@@ -1350,7 +1360,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[3] = BossAbilityPhase:New({
 							castTimes = { 13.96 },
-							repeatInterval = {},
 						}),
 					},
 					duration = 0.0,
@@ -1422,34 +1431,34 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Dimensius, the All-Devouring
-			bossIDs = {
-				233824, -- Dimensius
-				245255, -- Artoshion
-				245222, -- Pargoth
-			},
-			journalEncounterCreatureIDsToBossIDs = {
-				[5951] = 233824, -- Dimensius
-				[5952] = 245255, -- Artoshion
-				[5950] = 245222, -- Pargoth
-			},
-			journalEncounterID = 2691,
-			dungeonEncounterID = 3135,
-			instanceID = 2810,
-			preferredCombatLogEventAbilities = {
-				[1] = nil,
-			},
-			abilities = {},
-			phases = {
-				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
-					count = 1,
-					defaultCount = 1,
-					name = "P1",
-				}),
-			},
-		}),
+		-- Boss:New({ -- Dimensius, the All-Devouring
+		-- 	bossIDs = {
+		-- 		233824, -- Dimensius
+		-- 		245255, -- Artoshion
+		-- 		245222, -- Pargoth
+		-- 	},
+		-- 	journalEncounterCreatureIDsToBossIDs = {
+		-- 		[5951] = 233824, -- Dimensius
+		-- 		[5952] = 245255, -- Artoshion
+		-- 		[5950] = 245222, -- Pargoth
+		-- 	},
+		-- 	journalEncounterID = 2691,
+		-- 	dungeonEncounterID = 3135,
+		-- 	instanceID = 2810,
+		-- 	preferredCombatLogEventAbilities = {
+		-- 		[1] = nil,
+		-- 	},
+		-- 	abilities = {},
+		-- 	phases = {
+		-- 		[1] = BossPhase:New({
+		-- 			duration = 120.0,
+		-- 			defaultDuration = 120.0,
+		-- 			count = 1,
+		-- 			defaultCount = 1,
+		-- 			name = "P1",
+		-- 		}),
+		-- 	},
+		-- }),
 	},
 	-- executeAndNil = function()
 	-- 	EJ_SelectInstance(Private.dungeonInstances[2769].journalInstanceID)
