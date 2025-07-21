@@ -1160,14 +1160,265 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
 			},
-			abilities = {},
+			abilities = {
+				[1227529] = BossAbility:New({ -- Banishment
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 32.94, 15.71, 23.17, 14.68 },
+						}),
+					},
+					duration = 8.0,
+					castTime = 1.35,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227734] = BossAbility:New({ -- Coalesce Voidwing
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 119.5 },
+						}),
+					},
+					signifiesPhaseEnd = true, -- End of P1
+					duration = 0.0,
+					castTime = 6.2,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1228065] = BossAbility:New({ -- Rally the Shadowguard
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 32.25 },
+						}),
+					},
+					signifiesPhaseEnd = true, -- End of P2
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1228265] = BossAbility:New({ -- King's Hunger
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = {},
+						}),
+					},
+					signifiesPhaseStart = true, -- End of Int1
+					signifiesPhaseEnd = true, -- End of Int2
+					duration = 30.0,
+					castTime = 6.2,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1228317] = BossAbility:New({ -- King's Hunger
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 30.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225010] = BossAbility:New({ -- Command: Behead
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 34.52, 37.97 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225016] = BossAbility:New({ -- Command: Besiege
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.17, 39.9 },
+							repeatInterval = { 39.9 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224787] = BossAbility:New({ -- Conquer
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.23, 8.04, 31.83, 7.13, 33.36, 5.79 },
+						}),
+					},
+					duration = 20.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1234529] = BossAbility:New({ -- Cosmic Maw
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 9.28 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 1.25,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1237068] = BossAbility:New({ -- Dimensional Breath
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 14.61, 5.69, 5.46 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 4.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1224906] = BossAbility:New({ -- Invoke the Oath
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 115.0 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				-- [1230263] = BossAbility:New({ -- Netherblast
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 			repeatInterval = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 2.0,
+				-- 	allowedCombatLogEventTypes = { "SCS", "SCC" },
+				-- }),
+				-- [1228113] = BossAbility:New({ -- Netherbreaker
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 			repeatInterval = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- 	defaultHidden = true,
+				-- 	allowedCombatLogEventTypes = { "SCC" },
+				-- }),
+				-- [1228115] = BossAbility:New({ -- Netherbreaker
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 			repeatInterval = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 2.0,
+				-- 	allowedCombatLogEventTypes = { "SCS", "SCC" },
+				-- }),
+				[1232327] = BossAbility:New({ -- Seal the Forge
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 1.00 },
+						}),
+					},
+					duration = 0.0, -- Maybe inf
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1230302] = BossAbility:New({ -- Self-Destruct
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 50.0, 0.0 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224812] = BossAbility:New({ -- Vanquish
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.26, 7.55, 33.14, 5.60, 33.59, 4.90 },
+						}),
+					},
+					duration = 20.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1237105] = BossAbility:New({ -- Twilight Barrier
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 13.96 },
+							repeatInterval = {},
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225319] = BossAbility:New({ -- Galactic Smash
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 7.3 },
+							repeatInterval = { 55.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 8.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1226024] = BossAbility:New({ -- Starkiller Swing
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 40.5 },
+							repeatInterval = { 55.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 120.0,
-					defaultDuration = 120.0,
+					duration = 125.2,
+					defaultDuration = 125.2,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 36.25,
+					defaultDuration = 36.25,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+					fixedDuration = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedDuration = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 30.0,
+					defaultDuration = 30.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+					fixedDuration = true,
+				}),
+				[5] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P3",
 				}),
 			},
 		}),
