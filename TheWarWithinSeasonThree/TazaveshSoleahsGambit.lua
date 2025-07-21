@@ -110,7 +110,6 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					durationLastsUntilEndOfPhase = true,
-
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),

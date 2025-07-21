@@ -332,7 +332,7 @@ Private.dungeonInstances[2287] = DungeonInstance:New({
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
-					name = "P2 (70%)",
+					name = "P2 (70% Health)",
 				}),
 				[3] = BossPhase:New({
 					duration = 60.0,
@@ -340,7 +340,7 @@ Private.dungeonInstances[2287] = DungeonInstance:New({
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
-					name = "P3 (40%)",
+					name = "P3 (40% Health)",
 				}),
 			},
 		}),

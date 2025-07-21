@@ -117,7 +117,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
-					name = "P2 (50%)",
+					name = "P2 (50% Health)",
 				}),
 			},
 		}),
