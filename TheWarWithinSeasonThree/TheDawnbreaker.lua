@@ -270,11 +270,11 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
 					duration = 0.0,
 					castTime = 5.0,
-					signifiesPhaseStart = true,
 					allowedCombatLogEventTypes = { "SCS" },
 				}),
 				[434089] = BossAbility:New({ -- Spinneret's Strands

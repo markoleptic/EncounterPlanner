@@ -99,15 +99,18 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
 						}),
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 0.0,
 					durationLastsUntilEndOfPhase = true,
-					signifiesPhaseStart = true,
-					signifiesPhaseEnd = true,
+
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
@@ -239,9 +242,9 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
-					signifiesPhaseStart = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
