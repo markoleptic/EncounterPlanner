@@ -58,6 +58,7 @@ do
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	local GenerateBossTables = bossUtilities.GenerateBossTables
 	local GetBoss = bossUtilities.GetBoss
+	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
 	local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
@@ -67,8 +68,6 @@ do
 	local instanceAndBossPadding = 4
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
-	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
-	local tankIcon = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":14:14:0:0:64:64:0:19:22:41|t"
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
@@ -113,52 +112,22 @@ do
 				if activeBossAbilities[abilityID] == nil then
 					activeBossAbilities[abilityID] = not boss.abilities[abilityID].defaultHidden
 				end
-				local placeholderName, bossDeathName, context = nil, nil, nil
-				if Private:HasPlaceholderBossSpellID(abilityID) then
-					placeholderName = Private:GetPlaceholderBossName(abilityID)
-					if boss.abilities[abilityID].onlyRelevantForTanks then
-						placeholderName = placeholderName .. " " .. tankIcon
-					end
-				end
-				if boss.hasBossDeath and boss.abilities[abilityID].bossNpcID then
-					local bossNpcID = boss.abilities[abilityID].bossNpcID
-					bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
-				end
 
-				if boss.abilities[abilityID].additionalContext then
-					context = format("(%s)", boss.abilities[abilityID].additionalContext)
+				local icon, text
+				if activeBossAbilities[abilityID] == true or updateBossAbilitySelectDropdown then
+					icon, text = GetBossAbilityIconAndLabel(boss, abilityID)
 				end
 
 				if activeBossAbilities[abilityID] == true then
 					local abilityEntry = AceGUI:Create("EPAbilityEntry")
 					abilityEntry:SetFullWidth(true)
-					if placeholderName then
-						if context then
-							placeholderName = format("%s (%s)", placeholderName, context)
-						end
-						abilityEntry:SetNullAbility(tostring(abilityID), placeholderName)
-					elseif bossDeathName then
-						if context then
-							bossDeathName = format("%s (%s)", bossDeathName, context)
-						end
-						abilityEntry:SetText(bossDeathName, tostring(abilityID), 4)
-						abilityEntry.label:SetIcon(deathIcon, 2, 2, 0)
-					else
-						if boss.abilities[abilityID].onlyRelevantForTanks then
-							if context then
-								tankIcon = tankIcon .. " " .. context
-							end
-							abilityEntry:SetAbility(abilityID, tostring(abilityID), tankIcon)
-						else
-							abilityEntry:SetAbility(abilityID, tostring(abilityID), context)
-						end
-					end
+					abilityEntry:SetBossAbility(abilityID, text, icon)
 					abilityEntry:HideCheckBox()
 					abilityEntry:SetHeight(bossAbilityHeight)
 					tinsert(children, abilityEntry)
 				end
 				if updateBossAbilitySelectDropdown then
-					tinsert(bossAbilitySelectItems, CreateAbilityDropdownItemData(boss, abilityID))
+					tinsert(bossAbilitySelectItems, CreateAbilityDropdownItemData(abilityID, icon, text))
 				end
 			end
 

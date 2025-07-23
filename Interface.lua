@@ -615,6 +615,7 @@ do -- Assignment Editor
 	end
 
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
+	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 
 	function Private.CreateAssignmentEditor()
 		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
@@ -683,7 +684,8 @@ do -- Assignment Editor
 		local boss = GetCurrentBoss()
 		if boss then
 			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
-				tinsert(dropdownItems, CreateAbilityDropdownItemData(boss, abilityID))
+				local icon, text = GetBossAbilityIconAndLabel(boss, abilityID)
+				tinsert(dropdownItems, CreateAbilityDropdownItemData(abilityID, icon, text))
 				if #boss.abilities[abilityID].allowedCombatLogEventTypes == 0 then
 					tinsert(itemsToDisable, abilityID)
 				end

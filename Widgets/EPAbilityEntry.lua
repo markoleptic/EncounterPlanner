@@ -174,16 +174,35 @@ end
 ---@param self EPAbilityEntry
 ---@param spellID number
 ---@param key string|table|nil
----@param textToAppend string|nil
-local function SetAbility(self, spellID, key, textToAppend)
+local function SetAbility(self, spellID, key)
 	local spellName = GetSpellName(spellID)
 	local iconID = GetSpellTexture(spellID)
 	if spellName and iconID then
-		if textToAppend then
-			self.label:SetText(spellName .. " " .. textToAppend, padding.x * 2)
-		else
-			self.label:SetText(spellName, padding.x * 2)
-		end
+		self.label:SetText(spellName, padding.x * 2)
+		self.label:SetIcon(iconID, padding.x, padding.y, spellID)
+	else
+		self.label:SetText(L["Unknown"], padding.x * 2)
+		self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+	end
+	self.key = key
+end
+
+---@param self EPAbilityEntry
+---@param key string|table|nil
+local function SetGeneralAbility(self, key)
+	self.label:SetText(L["Text"], padding.x * 2)
+	self.label:SetIcon(textAssignmentTexture, padding.x, padding.y, 0)
+	self.key = key
+end
+
+---@param self EPAbilityEntry
+---@param spellID number
+---@param text string
+---@param iconID number
+---@param key string|table|nil
+local function SetBossAbility(self, spellID, text, iconID, key)
+	if text and iconID then
+		self.label:SetText(text, padding.x * 2)
 		self.label:SetIcon(iconID, padding.x, padding.y, spellID)
 	else
 		self.label:SetIcon(nil)
@@ -197,14 +216,6 @@ end
 local function SetNullAbility(self, key, text)
 	self.label:SetText(text or L["Unknown"], padding.x * 2)
 	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", padding.x, padding.y, 0)
-	self.key = key
-end
-
----@param self EPAbilityEntry
----@param key string|table|nil
-local function SetGeneralAbility(self, key)
-	self.label:SetText(L["Text"], padding.x * 2)
-	self.label:SetIcon(textAssignmentTexture, padding.x, padding.y, 0)
 	self.key = key
 end
 
@@ -462,6 +473,7 @@ local function Constructor()
 		SetCheckedTexture = SetCheckedTexture,
 		SetAbility = SetAbility,
 		SetGeneralAbility = SetGeneralAbility,
+		SetBossAbility = SetBossAbility,
 		SetNullAbility = SetNullAbility,
 		SetLeftIndent = SetLeftIndent,
 		SetCollapsible = SetCollapsible,

@@ -82,6 +82,7 @@
 -- Preferred abilities to use for each boss phase.
 ---@field preferredCombatLogEventAbilities table<integer, PreferredCombatLogEventAbility|nil>|nil
 ---@field hasBossDeath boolean|nil If specified, at least one ability corresponds to a boss death.
+---@field customSpells table<integer, {text: string, iconID: string|number}>|nil
 
 -- A stage/phase in a boss encounter.
 ---@class BossPhase

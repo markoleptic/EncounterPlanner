@@ -789,38 +789,12 @@ function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeD
 	return assignmentTypes, individualEmpty
 end
 
-do
-	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
-	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
-
-	---@param boss Boss
-	---@param abilityID integer
-	---@return DropdownItemData
-	function Utilities.CreateAbilityDropdownItemData(boss, abilityID)
-		local placeholderName, bossDeathName = nil, nil
-		if Private:HasPlaceholderBossSpellID(abilityID) then
-			placeholderName = Private:GetPlaceholderBossName(abilityID)
-		end
-		if boss.hasBossDeath and boss.abilities[abilityID].bossNpcID then
-			local bossNpcID = boss.abilities[abilityID].bossNpcID
-			bossDeathName = boss.bossNames[bossNpcID] .. " " .. L["Death"]
-		end
-		local iconText
-		if placeholderName then
-			iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", unknownIcon, placeholderName)
-		elseif bossDeathName then
-			iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", deathIcon, bossDeathName)
-		else
-			local iconID = GetSpellTexture(abilityID)
-			local spellName = GetSpellName(abilityID)
-			if iconID and spellName then
-				iconText = format("|T%d:16:16:0:0:64:64:5:59:5:59|t %s", iconID, spellName)
-			else
-				iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", unknownIcon, L["Unknown"])
-			end
-		end
-		return { itemValue = abilityID, text = iconText }
-	end
+---@param icon string|integer
+---@param text string
+---@return DropdownItemData
+function Utilities.CreateAbilityDropdownItemData(abilityID, icon, text)
+	local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", icon, text)
+	return { itemValue = abilityID, text = iconText }
 end
 
 -- Updates a timeline assignment's start time.
@@ -933,6 +907,7 @@ do
 							startTime = startTime + ability.castTime
 						end
 						timelineAssignment.startTime = startTime
+						print(startTime)
 						if wasMax then
 							onlyInMax[spellID] = onlyInMax[spellID] or {}
 							onlyInMax[spellID][spellCount] = true

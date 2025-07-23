@@ -3,6 +3,8 @@ local _, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+local L = Private.L
+
 ---@class Utilities
 local Utilities = Private.utilities
 
@@ -145,6 +147,55 @@ function BossUtilities.FindBossAbility(encounterID, spellID)
 				end
 			end
 		end
+	end
+end
+
+do
+	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
+	local tankIcon = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":14:14:0:0:64:64:0:19:22:41|t"
+	local GetSpellName = C_Spell.GetSpellName
+	local GetSpellTexture = C_Spell.GetSpellTexture
+
+	---@param boss Boss
+	---@param abilityID integer
+	---@return string|integer, string
+	function BossUtilities.GetBossAbilityIconAndLabel(boss, abilityID)
+		local icon, label = unknownIcon, ""
+
+		if boss.hasBossDeath and boss.abilities[abilityID].bossNpcID then
+			icon = deathIcon
+			local bossNpcID = boss.abilities[abilityID].bossNpcID
+			label = boss.bossNames[bossNpcID] .. " " .. L["Death"]
+		else
+			if boss.customSpells and boss.customSpells[abilityID] then
+				label = boss.customSpells[abilityID].text
+				icon = boss.customSpells[abilityID].iconID
+			else
+				local spellTexture = GetSpellTexture(abilityID)
+				local spellName = GetSpellName(abilityID)
+				if spellTexture and spellName then
+					icon = tostring(spellTexture)
+					label = spellName
+				elseif Private:HasPlaceholderBossSpellID(abilityID) then
+					label = Private:GetPlaceholderBossName(abilityID)
+				end
+			end
+		end
+
+		if label == "" then
+			label = L["Unknown"]
+		end
+
+		if boss.abilities[abilityID].onlyRelevantForTanks then
+			label = label .. " " .. tankIcon
+		end
+
+		if boss.abilities[abilityID].additionalContext then
+			label = label .. " " .. format("(%s)", boss.abilities[abilityID].additionalContext)
+		end
+
+		return icon, label
 	end
 end
 
@@ -1733,7 +1784,7 @@ do
 
 	local kMaxBossDuration = Private.constants.kMaxBossDuration
 
-	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			local encounterID = boss.dungeonEncounterID
 			BossUtilities.GenerateBossTables(boss)
@@ -1753,7 +1804,7 @@ do
 
 		do
 			function test.CompareSpellCastTimeTables()
-				for _, dungeonInstance in pairs(Private.dungeonInstances) do
+				for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 					for _, boss in ipairs(dungeonInstance.bosses) do
 						phaseCountDurationMap = GeneratePhaseCountDurationMap(boss)
 						local castTimeTable = {}
@@ -1770,7 +1821,7 @@ do
 						for bossAbilitySpellID, spellCount in pairs(absoluteSpellCastStartTables[encounterID]) do
 							for spellOccurrence, castStartAndOrder in ipairs(spellCount) do
 								local castStart = castTimeTable[bossAbilitySpellID][spellOccurrence]
-								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
+								local _, spellName = BossUtilities.GetBossAbilityIconAndLabel(boss, bossAbilitySpellID)
 								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
 						end
@@ -1778,7 +1829,7 @@ do
 							for spellOccurrence, castStart in ipairs(spellCount) do
 								local castStartAndOrder =
 									absoluteSpellCastStartTables[encounterID][bossAbilitySpellID][spellOccurrence]
-								local spellName = C_Spell.GetSpellName(bossAbilitySpellID) or "Boss Death"
+								local _, spellName = BossUtilities.GetBossAbilityIconAndLabel(boss, bossAbilitySpellID)
 								TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
 							end
 						end
@@ -1791,7 +1842,7 @@ do
 
 		do
 			function test.ValidateMaxPhaseCounts()
-				for _, dungeonInstance in pairs(Private.dungeonInstances) do
+				for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 					for _, boss in ipairs(dungeonInstance.bosses) do
 						local encounterID = boss.dungeonEncounterID
 						local maxPhaseCounts = CalculateMaxPhaseCounts(encounterID, kMaxBossDuration)
