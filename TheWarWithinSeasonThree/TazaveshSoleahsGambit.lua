@@ -49,25 +49,6 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 				[5] = { combatLogEventSpellID = 346766, combatLogEventType = "SAR" },
 			},
 			abilities = {
-				[346116] = BossAbility:New({ -- Shearing Swings
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 8.49 },
-							repeatInterval = { 10.85, 11.93 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 16.14 },
-							repeatInterval = { 11.07, 12.03, 10.94, 12.00 },
-						}),
-						[5] = BossAbilityPhase:New({
-							castTimes = { 16.14 },
-							repeatInterval = { 11.07, 12.03, 10.94, 12.00 },
-						}),
-					},
-					duration = 2.6, -- Channeled
-					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCC" },
-				}),
 				[353312] = BossAbility:New({ -- Purifying Burst
 					phases = {
 						[1] = BossAbilityPhase:New({
@@ -86,6 +67,25 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[346116] = BossAbility:New({ -- Shearing Swings
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 8.49 },
+							repeatInterval = { 10.85, 11.93 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 16.14 },
+							repeatInterval = { 11.07, 12.03, 10.94, 12.00 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 16.14 },
+							repeatInterval = { 11.07, 12.03, 10.94, 12.00 },
+						}),
+					},
+					duration = 2.6, -- Channeled
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
 				}),
 				[347094] = BossAbility:New({ -- Titanic Crash
 					phases = {
@@ -186,6 +186,10 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					name = "P1",
 				}),
 			},
+			customSpells = { [181113] = {
+				iconID = 136051,
+				text = "Vault Purifier Spawn",
+			} },
 		}),
 		Boss:New({ -- Timecap'n Hooktail
 			bossIDs = {
@@ -199,7 +203,6 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 			dungeonEncounterID = 2419,
 			instanceID = 2441,
 			mapChallengeModeID = 392,
-			preferredCombatLogEventAbilities = {},
 			abilities = {
 				[347149] = BossAbility:New({ -- Infinite Breath
 					phases = {
@@ -219,6 +222,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 							repeatInterval = { 20.0, 25.0, 15.0 },
 						}),
 					},
+					halfHeight = true,
 					duration = 30.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCS" },
@@ -247,18 +251,29 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 			instanceID = 2441,
 			mapChallengeModeID = 392,
 			preferredCombatLogEventAbilities = {
-				[2] = { combatLogEventSpellID = 351086, combatLogEventType = "SAR" },
+				[2] = { combatLogEventSpellID = 351086, combatLogEventType = "SAA" },
 			},
 			abilities = {
-				[181089] = BossAbility:New({ -- Encounter Event
+				[351124] = BossAbility:New({ -- Summon Assassins
 					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
+						[1] = BossAbilityPhase:New({
+							castTimes = { 5.78, 42.64, 42.33 },
+							repeatInterval = { 42.5 },
 						}),
 					},
 					duration = 0.0,
-					castTime = 0.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[350796] = BossAbility:New({ -- Hyperlight Spark
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 11.74 },
+							repeatInterval = { 15.90 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[353635] = BossAbility:New({ -- Collapsing Star
@@ -287,17 +302,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[350875] = BossAbility:New({ -- Hyperlight Jolt
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 5.0, 70.0 },
-							repeatInterval = { 70.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 6.0,
-					allowedCombatLogEventTypes = {},
-				}),
+
 				[351646] = BossAbility:New({ -- Hyperlight Nova
 					phases = {
 						[2] = BossAbilityPhase:New({
@@ -309,27 +314,17 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					castTime = 3.5,
 					allowedCombatLogEventTypes = {},
 				}),
-				[350796] = BossAbility:New({ -- Hyperlight Spark
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 11.74 },
-							repeatInterval = { 15.90 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
-				}),
 				[351086] = BossAbility:New({ -- Power Overwhelming
 					phases = {
-						[1] = BossAbilityPhase:New({
+						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
 							repeatInterval = { 75.0 },
+							signifiesPhaseStart = true,
 						}),
 					},
-					duration = 10.0,
+					duration = 11.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[351057] = BossAbility:New({ -- Relocation
 					eventTriggers = {
@@ -343,16 +338,24 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					castTime = 0.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[351124] = BossAbility:New({ -- Summon Assassins
+				[350875] = BossAbility:New({ -- Hyperlight Jolt
 					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 5.78, 42.64, 42.33 },
-							repeatInterval = { 42.5 },
+						[2] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+						}),
+					},
+					eventTriggers = {
+						[466459] = EventTrigger:New({ -- Power Overwhelming
+							combatLogEventType = "SAA",
+							castTimes = { 0.0 },
+							cast = function(count)
+								return count > 1
+							end,
 						}),
 					},
 					duration = 0.0,
-					castTime = 1.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					castTime = 6.0,
+					allowedCombatLogEventTypes = {},
 				}),
 			},
 			phases = {
@@ -370,7 +373,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
-					name = "P2",
+					name = "P2 (40% Health)",
 				}),
 			},
 		}),
