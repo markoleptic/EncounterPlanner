@@ -74,6 +74,7 @@ L["Boss ability spell casts are added when the duration is increased and removed
 L["Boss Ability Timeline"] = true
 L["Boss phase durations and counts can be customized here. These settings are unique to each plan. If a boss phase has a fixed timer, it will not be editable. Similarly, if a boss phase does not repeat, its count will not be editable."] =
 	true
+L["Boss Spawn"] = true
 L["Bottom"] = true
 L["Bottom Left"] = true
 L["Bottom Right"] = true
@@ -530,6 +531,7 @@ L["Updated matching plan"] = true
 L["Use /ep minimap to show the minimap icon again."] = true
 L["Use {6262} at {circle}"] = true
 L["User Guide"] = true
+L["Vault Purifier Spawn"] = true
 L["Vertical"] = true
 L["View"] = true
 L["Number of Visible Rows"] = true

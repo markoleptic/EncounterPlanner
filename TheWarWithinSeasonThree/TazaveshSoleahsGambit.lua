@@ -2,6 +2,7 @@ local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 ---@class Boss
 local Boss = Private.classes.Boss
 ---@class BossAbility
@@ -188,7 +189,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 			},
 			customSpells = { [181113] = {
 				iconID = 136051,
-				text = "Vault Purifier Spawn",
+				text = L["Vault Purifier Spawn"],
 			} },
 		}),
 		Boss:New({ -- Timecap'n Hooktail
