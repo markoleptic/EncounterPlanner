@@ -14,6 +14,9 @@ local interfaceUpdater = Private.interfaceUpdater
 ---@class Utilities
 local utilities = Private.utilities
 
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
 local AceDB = LibStub("AceDB-3.0")
 local AddOnProfilerMetricEnum = Enum.AddOnProfilerMetric
 local format = string.format
@@ -258,17 +261,26 @@ do -- Raid instance initialization
 		end
 	end
 
+	local GetMapUIInfo = C_ChallengeMode.GetMapUIInfo
+
 	-- Initializes names and icons for raid instances.
 	function dungeonInstanceInitializer.InitializeDungeonInstances()
-		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			if dungeonInstance.executeAndNil then
 				dungeonInstance.executeAndNil()
 				dungeonInstance.executeAndNil = nil
 			end
+
 			EJ_SelectInstance(dungeonInstance.journalInstanceID)
-			local instanceName, _, _, _, _, buttonImage2, _, _, _, _ =
-				EJ_GetInstanceInfo(dungeonInstance.journalInstanceID)
-			dungeonInstance.name, dungeonInstance.icon = instanceName, buttonImage2
+			if dungeonInstance.mapChallengeModeID then
+				local name, _, _, texture, _ = GetMapUIInfo(dungeonInstance.mapChallengeModeID)
+				dungeonInstance.name, dungeonInstance.icon = name, texture
+			else
+				local instanceName, _, _, _, _, buttonImage2, _, _, _, _ =
+					EJ_GetInstanceInfo(dungeonInstance.journalInstanceID)
+				dungeonInstance.name, dungeonInstance.icon = instanceName, buttonImage2
+			end
+
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
@@ -300,8 +312,6 @@ do -- Profile updating and refreshing
 	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 	---@class Plan
 	local Plan = Private.classes.Plan
-	---@class BossUtilities
-	local bossUtilities = Private.bossUtilities
 
 	---@param assignment CombatLogEventAssignment
 	---@param absoluteSpellCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
@@ -346,7 +356,7 @@ do -- Profile updating and refreshing
 			"Test End",
 		}
 		-- cSpell:enable
-		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectInstance(dungeonInstance.journalInstanceID)
 				EJ_SelectEncounter(boss.journalEncounterID)

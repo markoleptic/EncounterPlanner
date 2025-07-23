@@ -84,8 +84,17 @@ do
 			end
 			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
 			local dungeonInstance = Private.dungeonInstances[boss.instanceID]
+			if dungeonInstance.isSplit and boss.mapChallengeModeID then
+				dungeonInstance = dungeonInstance.splitDungeonInstances[boss.mapChallengeModeID]
+				instanceLabel:SetText(
+					dungeonInstance.name,
+					instanceAndBossPadding,
+					{ dungeonInstanceID = dungeonInstance.instanceID, mapChallengeModeID = boss.mapChallengeModeID }
+				)
+			else
+				instanceLabel:SetText(dungeonInstance.name, instanceAndBossPadding, dungeonInstance.instanceID)
+			end
 
-			instanceLabel:SetText(dungeonInstance.name, instanceAndBossPadding, dungeonInstance.instanceID)
 			instanceLabel:SetIcon(dungeonInstance.icon, 0, 2, 0, 0, 2)
 			instanceLabel:SetFrameWidthFromText()
 
@@ -676,9 +685,21 @@ do
 					local customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = plan.remindersEnabled and reminderEnabledIconColor or reminderDisabledIconColor
 					for _, dropdownData in pairs(instanceDropdownData) do
-						if dropdownData.itemValue == instanceID then
+						local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
+						local currentInstanceID, mapChallengeModeID
+						if boss then
+							currentInstanceID, mapChallengeModeID = boss.instanceID, boss.mapChallengeModeID
+						end
+
+						local same = false
+						if type(dropdownData.itemValue) == "table" then
+							same = dropdownData.itemValue.dungeonInstanceID == currentInstanceID
+								and dropdownData.itemValue.mapChallengeModeID == mapChallengeModeID
+						else
+							same = dropdownData.itemValue == instanceID
+						end
+						if same then
 							local text
-							local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
 							if boss then
 								text = format("|T%s:16|t %s", boss.icon, planName)
 							else
@@ -725,17 +746,28 @@ do
 					else
 						text = plan.name
 					end
-					planDropdown:AddItemsToExistingDropdownItemMenu(plan.instanceID, {
-						{
-							itemValue = plan.name,
-							text = text,
-							customTexture = customTexture,
-							customTextureVertexColor = color,
-						},
-					})
-					planDropdown:Sort(plan.instanceID)
+					local dropdownItemData = {
+						itemValue = plan.name,
+						text = text,
+						customTexture = customTexture,
+						customTextureVertexColor = color,
+					}
+					if boss and boss.mapChallengeModeID then
+						planDropdown:AddItemsToExistingDropdownItemMenu({
+							dungeonInstanceID = plan.instanceID,
+							mapChallengeModeID = boss.mapChallengeModeID,
+						}, { dropdownItemData })
+						planDropdown:Sort({
+							dungeonInstanceID = plan.instanceID,
+							mapChallengeModeID = boss.mapChallengeModeID,
+						})
+					else
+						planDropdown:AddItemsToExistingDropdownItemMenu(plan.instanceID, { dropdownItemData })
+						planDropdown:Sort(plan.instanceID)
+					end
 				end
 				if select then
+					print(plan.name)
 					planDropdown:SetValue(plan.name)
 				end
 			end

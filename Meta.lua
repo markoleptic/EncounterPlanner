@@ -44,13 +44,18 @@
 ---@class DungeonInstance
 ---@field name string The name of the raid or dungeon.
 --  The journal instance ID of the raid or dungeon. All bosses share the same JournalInstanceID.
----@field journalInstanceID number
----@field instanceID number The instance ID for the zone. All bosses share the same instanceID.
----@field customGroups string[]? Custom group to use when populating dropdowns.
----@field bosses table<integer, Boss> List of bosses for the instance.
+---@field journalInstanceID integer
+---@field instanceID integer The instance ID for the zone. All bosses share the same instanceID.
+---@field mapChallengeModeID integer|nil If part of a split dungeon instance, the map challenge mode ID.
+---@field customGroups string[]|nil Custom group to use when populating dropdowns.
+---@field bosses table<integer, Boss>|nil List of bosses for the instance. Nil if split.
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
 ---@field executeAndNil fun()|nil
 ---@field isRaid boolean|nil
+---@field isSplit boolean|nil Whether the dungeon is split into groups (Mega-dungeons).
+-- If split into groups (Mega-dungeons), this holds the actual dungeon instances, where the keys are map challenge mode
+-- IDs.
+---@field splitDungeonInstances table<integer, DungeonInstance>|nil
 
 ---@class PreferredCombatLogEventAbility
 ---@field combatLogEventSpellID integer
@@ -65,7 +70,8 @@
 ---@field bossNames table<integer, string> Maps boss Npc IDs to individual boss names.
 ---@field journalEncounterID integer Journal encounter ID of the boss encounter.
 ---@field dungeonEncounterID integer Dungeon encounter ID of the boss encounter.
----@field instanceID number The instance ID for the zone the boss is located in.
+---@field instanceID integer The instance ID for the zone the boss is located in.
+---@field mapChallengeModeID integer|nil If part of a split dungeon instance, map challenge mode id for dungeon.
 ---@field phases table<integer, BossPhase> A list of phases and their durations.
 ---@field abilities table<integer, BossAbility> A list of abilities where the keys are spell IDs.
 ---@field sortedAbilityIDs table<integer, integer> An ordered list of abilities sorted by first appearance.

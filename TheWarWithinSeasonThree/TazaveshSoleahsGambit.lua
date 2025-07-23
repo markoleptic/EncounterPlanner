@@ -15,9 +15,19 @@ local DungeonInstance = Private.classes.DungeonInstance
 ---@class EventTrigger
 local EventTrigger = Private.classes.EventTrigger
 
-Private.dungeonInstances[2441] = DungeonInstance:New({
+if not Private.dungeonInstances[2441] then
+	Private.dungeonInstances[2441] = DungeonInstance:New({
+		journalInstanceID = 1194,
+		instanceID = 2441,
+		isSplit = true,
+		splitDungeonInstances = {},
+	})
+end
+
+Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New({
 	journalInstanceID = 1194,
 	instanceID = 2441,
+	mapChallengeModeID = 392,
 	customGroups = { "TheWarWithinSeasonThree" },
 	bosses = {
 		Boss:New({ -- Hylbrande
@@ -31,6 +41,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2448,
 			dungeonEncounterID = 2426,
 			instanceID = 2441,
+			mapChallengeModeID = 392,
 			preferredCombatLogEventAbilities = {
 				[2] = { combatLogEventSpellID = 346766, combatLogEventType = "SCS" },
 				[3] = { combatLogEventSpellID = 346766, combatLogEventType = "SAR" },
@@ -187,6 +198,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2449,
 			dungeonEncounterID = 2419,
 			instanceID = 2441,
+			mapChallengeModeID = 392,
 			preferredCombatLogEventAbilities = {},
 			abilities = {
 				[347149] = BossAbility:New({ -- Infinite Breath
@@ -233,6 +245,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2455,
 			dungeonEncounterID = 2442,
 			instanceID = 2441,
+			mapChallengeModeID = 392,
 			preferredCombatLogEventAbilities = {
 				[2] = { combatLogEventSpellID = 351086, combatLogEventType = "SAR" },
 			},

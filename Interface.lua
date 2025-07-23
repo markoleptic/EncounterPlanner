@@ -1015,7 +1015,7 @@ local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 end
 
 ---@param dropdown EPDropdown
----@param value string
+---@param value any
 local function HandlePlanDropdownValueChanged(dropdown, _, value)
 	if AddOn.db.profile.plans[value] then
 		ClosePlanDependentWidgets()
@@ -1029,14 +1029,23 @@ local function HandlePlanDropdownValueChanged(dropdown, _, value)
 		Private.mainFrame:DoLayout()
 		Private.callbacks:Fire("PlanChanged")
 	else
-		local numberValue = tonumber(value)
-		if numberValue and Private.dungeonInstances[numberValue] then
-			local _, boss = next(Private.dungeonInstances[numberValue].bosses)
-			---@cast boss Boss
-			Private.CreateNewPlanDialog(boss.dungeonEncounterID)
-			dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
-			if Private.activeTutorialCallbackName then
-				Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
+		local dungeonInstanceID, mapChallengeModeID = nil, nil
+		if type(value) == "number" then
+			dungeonInstanceID = value
+		elseif type(value) == "table" then
+			dungeonInstanceID, mapChallengeModeID = value.dungeonInstanceID, value.mapChallengeModeID
+		end
+
+		if dungeonInstanceID then
+			local dungeonInstance = bossUtilities.FindDungeonInstance(dungeonInstanceID, mapChallengeModeID)
+			if dungeonInstance then
+				local _, boss = next(dungeonInstance.bosses)
+				---@cast boss Boss
+				Private.CreateNewPlanDialog(boss.dungeonEncounterID)
+				dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
+				end
 			end
 		else
 			value = value or "nil"

@@ -116,7 +116,7 @@ local function CreateCombinedLevelString(levelsToInclude, textLevels)
 end
 
 ---@class DropdownItemData
----@field itemValue string|number the internal value used to index a dropdown item
+---@field itemValue string|number|table the internal value used to index a dropdown item
 ---@field text string the value shown in the dropdown
 ---@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
 ---@field selectable? boolean If true, the dropdown item can be selected and a check can be shown
@@ -594,9 +594,24 @@ do
 		local function searchItems(items)
 			for _, item in ipairs(items) do
 				if includeNeverShowItemsAsSelectedItems or not item.neverShowItemsAsSelected then
-					if item:GetValue() == value then
-						return item, item.text:GetText()
+					local itemValue = item:GetValue()
+					if type(value) == "table" and type(itemValue) == "table" then
+						local allEqual = true
+						for k, v in pairs(itemValue) do
+							if v ~= value[k] then
+								allEqual = false
+								break
+							end
+						end
+						if allEqual then
+							return item, item.text:GetText()
+						end
+					else
+						if item:GetValue() == value then
+							return item, item.text:GetText()
+						end
 					end
+
 					if item.childPullout and item.childPullout.items and #item.childPullout.items > 0 then
 						local foundItem, foundText = searchItems(item.childPullout.items)
 						if foundItem and foundText then

@@ -652,13 +652,28 @@ do
 	---@param a DropdownItemData
 	---@param b DropdownItemData
 	local function SortInstances(a, b)
-		if Private.dungeonInstances[a.itemValue].isRaid then
-			if not Private.dungeonInstances[b.itemValue].isRaid then
-				return true
-			end
-		elseif Private.dungeonInstances[b.itemValue].isRaid then
-			return false
+		local aInstance, bInstance
+		if type(a.itemValue) == "table" then
+			aInstance = bossUtilities.FindDungeonInstance(a.itemValue.dungeonInstanceID, a.itemValue.mapChallengeModeID)
+		else
+			aInstance = bossUtilities.FindDungeonInstance(a.itemValue)
 		end
+		if type(b.itemValue) == "table" then
+			bInstance = bossUtilities.FindDungeonInstance(b.itemValue.dungeonInstanceID, b.itemValue.mapChallengeModeID)
+		else
+			bInstance = bossUtilities.FindDungeonInstance(b.itemValue)
+		end
+
+		if aInstance and bInstance then
+			if aInstance.isRaid then
+				if not bInstance.isRaid then
+					return true
+				end
+			elseif bInstance.isRaid then
+				return false
+			end
+		end
+
 		return a.text:match(spellIconRegex) < b.text:match(spellIconRegex)
 	end
 
@@ -669,10 +684,22 @@ do
 	function Utilities.GetOrCreateBossDropdownItems()
 		if not instanceAndBossDropdownItems then
 			instanceAndBossDropdownItems = {}
-			for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-				local instanceDropdownData =
-					{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				local instanceDropdownData
+				if dungeonInstance.mapChallengeModeID then
+					instanceDropdownData = {
+						itemValue = {
+							dungeonInstanceID = dungeonInstance.instanceID,
+							mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+						},
+						text = instanceIconText,
+						dropdownItemMenuData = {},
+					}
+				else
+					instanceDropdownData =
+						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				end
 				for _, boss in ipairs(dungeonInstance.bosses) do
 					local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
 					tinsert(
@@ -694,10 +721,22 @@ do
 	function Utilities.GetOrCreateInstanceDropdownItems()
 		if not instanceDropdownItems then
 			instanceDropdownItems = {}
-			for _, dungeonInstance in pairs(Private.dungeonInstances) do
+			for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-				local instanceDropdownData =
-					{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				local instanceDropdownData
+				if dungeonInstance.mapChallengeModeID then
+					instanceDropdownData = {
+						itemValue = {
+							dungeonInstanceID = dungeonInstance.instanceID,
+							mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+						},
+						text = instanceIconText,
+						dropdownItemMenuData = {},
+					}
+				else
+					instanceDropdownData =
+						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				end
 				tinsert(instanceDropdownItems, instanceDropdownData)
 			end
 			sort(instanceDropdownItems, SortInstances)
@@ -2125,27 +2164,47 @@ do
 		end
 
 		if table[instanceID] then
-			if table[instanceID][encounterID] then
+			if table[instanceID][encounterID] then -- Other plans available from same boss
 				sort(table[instanceID][encounterID])
 				return table[instanceID][encounterID][1]
 			end
+			local mapChallengeModeID
+			local boss = bossUtilities.GetBoss(encounterID)
+			if boss then
+				mapChallengeModeID = boss.mapChallengeModeID
+			end
+
 			for _, instanceDropdownData in ipairs(sortedBossIDs) do
-				local currentInstanceID = instanceDropdownData.itemValue
-				if instanceID == currentInstanceID then
-					for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
-						local currentEncounterID = bossDropdownData.itemValue
-						if table[instanceID][currentEncounterID] then
-							sort(table[instanceID][currentEncounterID])
-							return table[instanceID][currentEncounterID][1]
+				local currentInstanceID, currentMapChallengeModeID
+				if type(instanceDropdownData.itemValue) == "table" then
+					currentInstanceID = instanceDropdownData.itemValue.dungeonInstanceID
+					currentMapChallengeModeID = instanceDropdownData.itemValue.mapChallengeModeID
+				else
+					currentInstanceID = instanceDropdownData.itemValue
+				end
+
+				if not mapChallengeModeID or mapChallengeModeID == currentMapChallengeModeID then
+					if instanceID == currentInstanceID then
+						for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
+							local currentEncounterID = bossDropdownData.itemValue
+							if table[instanceID][currentEncounterID] then
+								sort(table[instanceID][currentEncounterID])
+								return table[instanceID][currentEncounterID][1]
+							end
 						end
+						break
 					end
-					break
 				end
 			end
 		end
 
 		for _, instanceDropdownData in ipairs(sortedBossIDs) do
-			local currentInstanceID = instanceDropdownData.itemValue
+			local currentInstanceID
+			if type(instanceDropdownData.itemValue) == "table" then
+				currentInstanceID = instanceDropdownData.itemValue.dungeonInstanceID
+			else
+				currentInstanceID = instanceDropdownData.itemValue
+			end
 			for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
 				local currentEncounterID = bossDropdownData.itemValue
 				if table[currentInstanceID] and table[currentInstanceID][currentEncounterID] then

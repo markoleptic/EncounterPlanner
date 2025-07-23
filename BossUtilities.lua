@@ -49,37 +49,80 @@ do
 	end
 end
 
+---@return fun(): DungeonInstance?
+function BossUtilities.IterateDungeonInstances()
+	local mainIndex, mainInstance = next(Private.dungeonInstances)
+	local splitIndex, splitInstance = nil, nil
+	return function()
+		while mainIndex do
+			if mainInstance and mainInstance.splitDungeonInstances then
+				splitIndex, splitInstance = next(mainInstance.splitDungeonInstances, splitIndex)
+				if splitIndex then
+					return splitInstance
+				end
+			else
+				if mainInstance then
+					local result = mainInstance
+					mainIndex, mainInstance = next(Private.dungeonInstances, mainIndex)
+					return result
+				end
+			end
+
+			-- Finished splits or current item — advance to next main
+			mainIndex, mainInstance = next(Private.dungeonInstances, mainIndex)
+			splitIndex, splitInstance = nil, nil
+		end
+
+		return nil
+	end
+end
+
+---@param dungeonInstanceID integer Instance ID of the dungeon.
+---@param mapChallengeModeID integer? Map challenge mode ID of the dungeon if split.
+---@return DungeonInstance?
+function BossUtilities.FindDungeonInstance(dungeonInstanceID, mapChallengeModeID)
+	if Private.dungeonInstances[dungeonInstanceID] then
+		if not Private.dungeonInstances[dungeonInstanceID].isSplit then
+			return Private.dungeonInstances[dungeonInstanceID]
+		else
+			for _, dungeonInstance in pairs(Private.dungeonInstances[dungeonInstanceID].splitDungeonInstances) do
+				if dungeonInstance.mapChallengeModeID == mapChallengeModeID then
+					return dungeonInstance
+				end
+			end
+		end
+	end
+end
+
 ---@param encounterID integer Boss dungeon encounter ID
 ---@return string|nil
 function BossUtilities.GetBossName(encounterID)
-	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				return boss.name
 			end
 		end
 	end
-	return nil
 end
 
 ---@param encounterID integer Boss dungeon encounter ID
 ---@return Boss|nil
 function BossUtilities.GetBoss(encounterID)
-	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				return boss
 			end
 		end
 	end
-	return nil
 end
 
 ---@param spellID integer
 ---@return integer|nil
 function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID)
 	if spellID > 0 then
-		for _, dungeonInstance in pairs(Private.dungeonInstances) do
+		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				if boss.abilities[spellID] then
 					return boss.dungeonEncounterID
@@ -94,17 +137,15 @@ end
 ---@param spellID number
 ---@return BossAbility|nil
 function BossUtilities.FindBossAbility(encounterID, spellID)
-	for _, dungeonInstance in pairs(Private.dungeonInstances) do
+	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			if boss.dungeonEncounterID == encounterID then
 				if boss.abilities[spellID] then
 					return boss.abilities[spellID]
 				end
-				break
 			end
 		end
 	end
-	return nil
 end
 
 -- Accumulates cast times for a boss ability until it reaches spellCount occurrences.

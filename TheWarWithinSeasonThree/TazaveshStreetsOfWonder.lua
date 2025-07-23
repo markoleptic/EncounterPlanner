@@ -13,9 +13,19 @@ local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
 
-Private.dungeonInstances[2441] = DungeonInstance:New({
+if not Private.dungeonInstances[2441] then
+	Private.dungeonInstances[2441] = DungeonInstance:New({
+		journalInstanceID = 1194,
+		instanceID = 2441,
+		isSplit = true,
+		splitDungeonInstances = {},
+	})
+end
+
+Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New({
 	journalInstanceID = 1194,
 	instanceID = 2441,
+	mapChallengeModeID = 391,
 	customGroups = { "TheWarWithinSeasonThree" },
 	bosses = {
 		-- Boss:New({ -- Zo'phex the Sentinel
@@ -111,6 +121,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2454,
 			dungeonEncounterID = 2441,
 			instanceID = 2441,
+			mapChallengeModeID = 391,
 			preferredCombatLogEventAbilities = {
 				[2] = { combatLogEventSpellID = 181089, combatLogEventType = "SCC" },
 				[3] = { combatLogEventSpellID = 181089, combatLogEventType = "SCC" },
@@ -248,6 +259,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2436,
 			dungeonEncounterID = 2424,
 			instanceID = 2441,
+			mapChallengeModeID = 391,
 			preferredCombatLogEventAbilities = {},
 			abilities = {
 				[346286] = BossAbility:New({ -- Hazardous Liquids
@@ -319,6 +331,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2452,
 			dungeonEncounterID = 2440,
 			instanceID = 2441,
+			mapChallengeModeID = 391,
 			preferredCombatLogEventAbilities = {
 				[2] = { combatLogEventSpellID = 181089, combatLogEventType = "SCC" },
 			},
@@ -395,6 +408,7 @@ Private.dungeonInstances[2441] = DungeonInstance:New({
 			journalEncounterID = 2451,
 			dungeonEncounterID = 2437,
 			instanceID = 2441,
+			mapChallengeModeID = 391,
 			preferredCombatLogEventAbilities = {},
 			abilities = {
 				[1248209] = BossAbility:New({ -- Phase Slash
