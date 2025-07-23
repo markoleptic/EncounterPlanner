@@ -907,7 +907,6 @@ do
 							startTime = startTime + ability.castTime
 						end
 						timelineAssignment.startTime = startTime
-						print(startTime)
 						if wasMax then
 							onlyInMax[spellID] = onlyInMax[spellID] or {}
 							onlyInMax[spellID][spellCount] = true

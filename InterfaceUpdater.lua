@@ -736,7 +736,6 @@ do
 					end
 				end
 				if select then
-					print(plan.name)
 					planDropdown:SetValue(plan.name)
 				end
 			end

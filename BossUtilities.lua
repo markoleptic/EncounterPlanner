@@ -1591,7 +1591,7 @@ do
 	local function GenerateBossAbilityInstances(boss, orderedBossPhaseTable, spellCount)
 		spellCount = spellCount or {}
 		local visitedPhaseCounts = {}
-		local abilityInstances = {}
+		local abilityInstances = {} --[[@type table<integer, BossAbilityInstance>]]
 		local cumulativePhaseStartTime = 0.0
 		local bossAbilityInstanceIndex = 1
 		local eventTriggerDependencies = BuildEventTriggerDependencies(boss.abilities)
@@ -1618,15 +1618,16 @@ do
 				for _, bossAbilitySpellID in ipairs(boss.sortedAbilityIDs) do
 					local bossAbility = boss.abilities[bossAbilitySpellID]
 					local bossAbilityPhase = bossAbility.phases[bossPhaseIndex]
-					local overlaps = {}
-					local currentCastIndex = 1
+
+					local currentPhaseCastIndex = 1
 					local function castCallback(spellID, castStart, castEnd, effectEnd)
+						local overlaps = nil
 						spellCount[spellID] = spellCount[spellID] or {}
 						tinsert(spellCount[spellID], castStart)
-						if boss.abilities[spellID].halfHeight and not overlaps[currentCastIndex] then
-							overlaps[currentCastIndex] = {
+						if boss.abilities[spellID].halfHeight then
+							overlaps = {
 								heightMultiplier = 0.5,
-								offset = ((currentCastIndex + 1) % 2) * 0.5,
+								offset = ((currentPhaseCastIndex + 1) % 2) * 0.5, -- Alternates 0 and 0.5
 							}
 						end
 						tinsert(abilityInstances, {
@@ -1647,38 +1648,18 @@ do
 							frameLevel = 1,
 							signifiesPhaseStart = bossAbilityPhase
 								and bossAbilityPhase.signifiesPhaseStart
-								and currentCastIndex == 1,
+								and currentPhaseCastIndex == 1,
 							signifiesPhaseEnd = bossAbilityPhase
 								and bossAbilityPhase.signifiesPhaseEnd
 								and nextBossPhaseName
-								and currentCastIndex == #bossAbilityPhase.castTimes,
-							overlaps = overlaps[currentCastIndex],
+								and currentPhaseCastIndex == #bossAbilityPhase.castTimes,
+							overlaps = overlaps,
 							-- alpha = bossAbilityPhase.durationLastsUntilEndOfNextPhase and 0.5 or 1.0,
 						} --[[@as BossAbilityInstance]])
-						bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
-						currentCastIndex = currentCastIndex + 1
+						bossAbilityInstanceIndex = 0 -- Updated later in function
+						currentPhaseCastIndex = currentPhaseCastIndex + 1
 					end
 					if bossAbilityPhase then
-						local consecutiveOverlaps = 0
-						for castIndex, castTime in ipairs(bossAbilityPhase.castTimes) do
-							if cumulativePhaseStartTime + castTime < phaseEndTime then
-								if castIndex > 1 and castTime == 0.0 then
-									consecutiveOverlaps = consecutiveOverlaps + 1
-									local currentOffset = consecutiveOverlaps
-									local heightMultiplier = 1.0 / (consecutiveOverlaps + 1)
-									for i = castIndex, castIndex - consecutiveOverlaps, -1 do
-										overlaps[i] = {
-											heightMultiplier = heightMultiplier,
-											offset = currentOffset * heightMultiplier,
-										}
-										currentOffset = currentOffset - 1
-									end
-								else
-									consecutiveOverlaps = 0
-								end
-							end
-						end
-
 						local cumulativePhaseCastTime = cumulativePhaseStartTime
 						local phaseOccurrence = not bossAbilityPhase.phaseOccurrences
 							or bossAbilityPhase.phaseOccurrences[visitedPhaseCounts[bossPhaseIndex]]
@@ -1727,19 +1708,51 @@ do
 		end)
 
 		bossAbilityInstanceIndex = 1
-		local currentSpellID = nil
+		local currentSpellID = -hugeNumber
 		local frameLevel = 1
+		---@type table<integer, number> [bossAbilitySpellID, castStart]
+		local lastCastStartTimes = {}
+		---@type table<integer, table<integer, integer>> [bossAbilitySpellID, [abilityInstanceIndex]]
+		local consecutiveOverlapIndices = {}
+		---@type table<integer, number> [bossAbilitySpellID, overlap count]
+		local consecutiveOverlaps = {}
 
-		for _, instance in ipairs(abilityInstances) do
-			if instance.bossAbilitySpellID ~= currentSpellID then
-				currentSpellID = instance.bossAbilitySpellID
+		for index, abilityInstance in ipairs(abilityInstances) do
+			-- Update frame levels and bossAbilityInstanceIndex
+			if abilityInstance.bossAbilitySpellID ~= currentSpellID then
+				currentSpellID = abilityInstance.bossAbilitySpellID
 				frameLevel = 1
 			end
-			instance.bossAbilityInstanceIndex = bossAbilityInstanceIndex
-			instance.frameLevel = frameLevel
+			abilityInstance.bossAbilityInstanceIndex = bossAbilityInstanceIndex
+			abilityInstance.frameLevel = frameLevel
 
 			bossAbilityInstanceIndex = bossAbilityInstanceIndex + 1
 			frameLevel = frameLevel + 1
+
+			-- Update overlaps so that abilities get split vertically if cast at the same time
+			local castStart = abilityInstance.castStart
+			if not consecutiveOverlaps[currentSpellID] then
+				consecutiveOverlaps[currentSpellID] = 0
+				consecutiveOverlapIndices[currentSpellID] = { index }
+			else
+				if lastCastStartTimes[currentSpellID] == castStart then
+					consecutiveOverlaps[currentSpellID] = consecutiveOverlaps[currentSpellID] + 1
+					tinsert(consecutiveOverlapIndices[currentSpellID], index)
+					local currentOffset = consecutiveOverlaps[currentSpellID]
+					local heightMultiplier = 1.0 / (currentOffset + 1)
+					for _, overlappingAbilityIndex in ipairs(consecutiveOverlapIndices[currentSpellID]) do
+						abilityInstances[overlappingAbilityIndex].overlaps = {
+							heightMultiplier = heightMultiplier,
+							offset = currentOffset * heightMultiplier,
+						}
+						currentOffset = currentOffset - 1
+					end
+				else
+					consecutiveOverlaps[currentSpellID] = 0
+					consecutiveOverlapIndices[currentSpellID] = { index }
+				end
+			end
+			lastCastStartTimes[currentSpellID] = abilityInstance.castStart
 		end
 
 		return abilityInstances
