@@ -13,6 +13,8 @@ local BossAbilityPhase = Private.classes.BossAbilityPhase
 local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
+---@class EventTrigger
+local EventTrigger = Private.classes.EventTrigger
 
 if not Private.dungeonInstances[2441] then
 	Private.dungeonInstances[2441] = DungeonInstance:New({
@@ -22,6 +24,13 @@ if not Private.dungeonInstances[2441] then
 		splitDungeonInstances = {},
 	})
 end
+
+Private:RegisterPlaceholderBossSpellID(1236348, "Phase Slash")
+Private:RegisterPlaceholderBossSpellID(1241023, "Final Warning")
+Private:RegisterPlaceholderBossSpellID(1248209, "Charged Slash")
+Private:RegisterPlaceholderBossSpellID(1245579, "Shuri")
+Private:RegisterPlaceholderBossSpellID(1245634, "Divide")
+Private:RegisterPlaceholderBossSpellID(1245669, "Double Technique")
 
 Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New({
 	journalInstanceID = 1194,
@@ -41,54 +50,59 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 			instanceID = 2441,
 			mapChallengeModeID = 391,
 			abilities = {
-				[346006] = BossAbility:New({ -- Impound Contraband
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 1.0,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
-				}),
 				[346204] = BossAbility:New({ -- Armed Security
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
+							castTimes = { 7.5 },
+							repeatInterval = { 45.0 },
 						}),
 					},
 					duration = 1.5,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[348350] = BossAbility:New({ -- Interrogation
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = {},
-						}),
-					},
-					duration = 0.0,
-					castTime = 1.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
-				}),
-				[348128] = BossAbility:New({ -- Fully Armed
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 1.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
-				}),
 				[1236348] = BossAbility:New({ -- Charged Slash
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
+					eventTriggers = {
+						[346204] = EventTrigger:New({ -- Armed Security
+							combatLogEventType = "SCC",
+							castTimes = { 3.7, 20.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[346006] = BossAbility:New({ -- Impound Contraband
+					eventTriggers = {
+						[346204] = EventTrigger:New({ -- Armed Security
+							combatLogEventType = "SCC",
+							castTimes = { 11.1, 30.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[348128] = BossAbility:New({ -- Fully Armed
+					eventTriggers = {
+						[346204] = EventTrigger:New({ -- Armed Security
+							combatLogEventType = "SCC",
+							castTimes = { 20.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[348350] = BossAbility:New({ -- Interrogation
+					eventTriggers = {
+						[346204] = EventTrigger:New({ -- Armed Security
+							combatLogEventType = "SCC",
+							castTimes = { 31.1 }, -- Varies based on if someone immuned last one
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
@@ -336,8 +350,45 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 			mapChallengeModeID = 391,
 			preferredCombatLogEventAbilities = {
 				[2] = { combatLogEventSpellID = 181089, combatLogEventType = "SCC" },
+				[3] = { combatLogEventSpellID = 1241023, combatLogEventType = "SAA" },
+				[4] = { combatLogEventSpellID = 1241023, combatLogEventType = "SAR" },
+				[5] = { combatLogEventSpellID = 1241023, combatLogEventType = "SAA" },
+				[6] = { combatLogEventSpellID = 1241023, combatLogEventType = "SAR" },
 			},
 			abilities = {
+				[350916] = BossAbility:New({ -- Security Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 23.0, 0.4, 26.8, 14.0, 17.3, 11.1 },
+						}),
+					},
+					onlyRelevantForTanks = true,
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {}, -- Extremely inconsistent
+				}),
+				[350922] = BossAbility:New({ -- Menacing Shout
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 29.0, 0.3, 41.1 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 12.4 },
+							repeatInterval = { 21.9 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 12.4 },
+							repeatInterval = { 21.9 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 12.4 },
+							repeatInterval = { 21.9 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {}, -- Unreliable since cast in two phases
+				}),
 				[181089] = BossAbility:New({ -- Encounter Event
 					phases = {
 						[2] = BossAbilityPhase:New({
@@ -349,37 +400,80 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
 				}),
-				[359028] = BossAbility:New({ -- Security Slam
+				[359028] = BossAbility:New({ -- Security Slam (Zo'gron)
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 8.51, 47.09, 43.48 },
-							repeatInterval = { 43.48 },
+							castTimes = { 8.51 },
+							repeatInterval = { 20.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 11.7 },
+							repeatInterval = { 20.0 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 13.5 },
+							repeatInterval = { 20.0 },
 						}),
 					},
+					onlyRelevantForTanks = true,
 					duration = 0.0,
 					castTime = 1.5,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					allowedCombatLogEventTypes = {}, -- Unreliable
 				}),
 				[350919] = BossAbility:New({ -- Crowd Control
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 38.38, 37.77, 24.70 },
-							repeatInterval = { 30.07 },
+							castTimes = { 26.7 },
+							repeatInterval = { 20.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 6.0 },
+							repeatInterval = { 20.0 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 6.0 },
+							repeatInterval = { 20.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 1.0,
-					allowedCombatLogEventTypes = { "SCS" },
+					allowedCombatLogEventTypes = {}, -- Unreliable
 				}),
 				[1241023] = BossAbility:New({ -- Final Warning (66%, 33%)
 					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 24.79, 40.10 },
+						[3] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
 						}),
 					},
 					duration = 20.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[355438] = BossAbility:New({ -- Suppression Spark
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 19.60 },
+							repeatInterval = { 41.5 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 14.5 },
+							repeatInterval = { 41.5 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 14.5 },
+							repeatInterval = { 20.0 },
+						}),
+					},
+					duration = 0.0,
 					castTime = 1.0,
-					allowedCombatLogEventTypes = { "SCS", "SAA", "SAR" },
+					allowedCombatLogEventTypes = {}, -- Unreliable
 				}),
 			},
 			phases = {
@@ -392,8 +486,40 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					name = "P1",
 				}),
 				[2] = BossPhase:New({
-					duration = 90.0,
-					defaultDuration = 90.0,
+					duration = 25.0,
+					defaultDuration = 25.0,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "P2",
+				}),
+				[3] = BossPhase:New({
+					duration = 20.0,
+					defaultDuration = 20.0,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "Int1 (66% Health)",
+				}),
+				[4] = BossPhase:New({
+					duration = 25.0,
+					defaultDuration = 25.0,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "P2",
+				}),
+				[5] = BossPhase:New({
+					duration = 20.0,
+					defaultDuration = 20.0,
+					count = 1,
+					defaultCount = 1,
+					fixedCount = true,
+					name = "Int2 (33% Health)",
+				}),
+				[6] = BossPhase:New({
+					duration = 30.0,
+					defaultDuration = 30.0,
 					count = 1,
 					defaultCount = 1,
 					fixedCount = true,
