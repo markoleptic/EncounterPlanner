@@ -379,8 +379,11 @@ do
 
 	---@param self EPDropdownPullout
 	---@param byText boolean|nil
-	local function Sort(self, byText)
-		if byText then
+	---@param sortFunction? fun(a: EPItemBase, b: EPItemBase):boolean
+	local function Sort(self, byText, sortFunction)
+		if sortFunction then
+			sort(self.items, sortFunction)
+		elseif byText then
 			sort(self.items, function(a, b)
 				return a:GetText():match(spellIconRegex) < b:GetText():match(spellIconRegex)
 			end)
@@ -1200,16 +1203,17 @@ do
 	---@param self EPDropdown
 	---@param value any
 	---@param byText boolean|nil If true, items are sorted by text appearing after an icon, otherwise by item value.
-	local function Sort(self, value, byText)
+	---@param sortFunction? fun(a: EPItemBase, b: EPItemBase):boolean
+	local function Sort(self, value, byText, sortFunction)
 		if value then
 			local item, _ = FindItemAndText(self, value, true)
 			if item then
 				if item.type == "EPDropdownItemMenu" then
-					item.childPullout:Sort(byText)
+					item.childPullout:Sort(byText, sortFunction)
 				end
 			end
 		else
-			self.pullout:Sort(byText)
+			self.pullout:Sort(byText, sortFunction)
 		end
 	end
 

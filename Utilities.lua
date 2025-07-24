@@ -2672,6 +2672,40 @@ do
 	end
 end
 
+do
+	local spellIconRegex = "|T.-|t%s(.+)"
+	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
+
+	---@param boss Boss
+	---@return fun(a: EPItemBase, b: EPItemBase):boolean
+	function Utilities.CreatePlanSorter(boss)
+		local instanceBossOrder
+		if boss.mapChallengeModeID then
+			instanceBossOrder = GetInstanceBossOrder(boss.instanceID)[boss.mapChallengeModeID]
+		else
+			instanceBossOrder = GetInstanceBossOrder(boss.instanceID)
+		end
+		local plans = Private.addOn.db.profile.plans
+
+		return function(a, b)
+			---@cast a EPItemBase
+			---@cast b EPItemBase
+			local aOrder, bOrder
+			if instanceBossOrder then
+				local aPlan, bPlan = plans[a:GetUserDataTable().value], plans[b:GetUserDataTable().value]
+				if aPlan and bPlan then
+					aOrder = instanceBossOrder[aPlan.dungeonEncounterID]
+					bOrder = instanceBossOrder[aPlan.dungeonEncounterID]
+				end
+			end
+			if aOrder ~= bOrder then
+				return aOrder < bOrder
+			end
+			return a:GetText():match(spellIconRegex) < b:GetText():match(spellIconRegex)
+		end
+	end
+end
+
 --@debug@
 do
 	---@class Test

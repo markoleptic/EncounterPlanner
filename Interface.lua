@@ -1099,7 +1099,7 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 				newText = newPlanName
 			end
 			planDropdown:EditItemValueAndText(currentPlanName, newPlanName, newText)
-			planDropdown:Sort(AddOn.db.profile.plans[newPlanName].instanceID)
+			planDropdown:Sort(AddOn.db.profile.plans[newPlanName].instanceID, nil, utilities.CreatePlanSorter(boss))
 		end
 	end
 end

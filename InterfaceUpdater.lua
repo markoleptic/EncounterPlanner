@@ -23,6 +23,7 @@ local bossUtilities = Private.bossUtilities
 local utilities = Private.utilities
 local AddIconBeforeText = utilities.AddIconBeforeText
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
+local GetBoss = bossUtilities.GetBoss
 local SortAssignments = utilities.SortAssignments
 
 local AceGUI = LibStub("AceGUI-3.0")
@@ -57,7 +58,6 @@ end
 do
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	local GenerateBossTables = bossUtilities.GenerateBossTables
-	local GetBoss = bossUtilities.GetBoss
 	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
@@ -636,6 +636,8 @@ do
 		end
 	end
 
+	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
+
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
 	function InterfaceUpdater.RepopulatePlanWidgets()
 		if Private.mainFrame then
@@ -654,15 +656,15 @@ do
 					local customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = plan.remindersEnabled and reminderEnabledIconColor or reminderDisabledIconColor
 					for _, dropdownData in pairs(instanceDropdownData) do
-						local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
-						local currentInstanceID, mapChallengeModeID
+						local boss = GetBoss(plan.dungeonEncounterID)
+						local dungeonInstanceID, mapChallengeModeID
 						if boss then
-							currentInstanceID, mapChallengeModeID = boss.instanceID, boss.mapChallengeModeID
+							dungeonInstanceID, mapChallengeModeID = boss.instanceID, boss.mapChallengeModeID
 						end
 
 						local same = false
 						if type(dropdownData.itemValue) == "table" then
-							same = dropdownData.itemValue.dungeonInstanceID == currentInstanceID
+							same = dropdownData.itemValue.dungeonInstanceID == dungeonInstanceID
 								and dropdownData.itemValue.mapChallengeModeID == mapChallengeModeID
 						else
 							same = dropdownData.itemValue == instanceID
@@ -679,15 +681,46 @@ do
 								text = text,
 								customTexture = customTexture,
 								customTextureVertexColor = color,
+								mapChallengeModeID = mapChallengeModeID,
+								dungeonEncounterID = plan.dungeonEncounterID,
 							})
 							break
 						end
 					end
 				end
 				for _, dropdownData in pairs(instanceDropdownData) do
-					sort(dropdownData.dropdownItemMenuData, function(a, b)
-						return a.text < b.text
-					end)
+					local dungeonInstanceID
+					if type(dropdownData.itemValue) == "table" then
+						dungeonInstanceID = dropdownData.itemValue.dungeonInstanceID
+					else
+						dungeonInstanceID = dropdownData.itemValue
+					end
+					local instanceBossOrder = GetInstanceBossOrder(dungeonInstanceID)
+					if instanceBossOrder then
+						---@param a DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
+						---@param b DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
+						---@return boolean
+						local function sortPlans(a, b)
+							local aOrder, bOrder = nil, nil
+							if a.mapChallengeModeID then
+								aOrder = instanceBossOrder[a.mapChallengeModeID][a.dungeonEncounterID]
+							else
+								aOrder = instanceBossOrder[a.dungeonEncounterID]
+							end
+							if b.mapChallengeModeID then
+								bOrder = instanceBossOrder[b.mapChallengeModeID][b.dungeonEncounterID]
+							else
+								bOrder = instanceBossOrder[b.dungeonEncounterID]
+							end
+							if aOrder and bOrder then
+								if aOrder ~= bOrder then
+									return aOrder < bOrder
+								end
+							end
+							return a.text < b.text
+						end
+						sort(dropdownData.dropdownItemMenuData, sortPlans)
+					end
 				end
 				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemMenu")
 				planDropdown:SetValue(lastOpenPlan)
@@ -695,6 +728,8 @@ do
 			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])
 		end
 	end
+
+	local CreatePlanSorter = utilities.CreatePlanSorter
 
 	-- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
 	---@param plan Plan
@@ -709,7 +744,7 @@ do
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
 					local text
-					local boss = bossUtilities.GetBoss(plan.dungeonEncounterID)
+					local boss = GetBoss(plan.dungeonEncounterID)
 					if boss then
 						text = format("|T%s:16|t %s", boss.icon, plan.name)
 					else
@@ -721,6 +756,7 @@ do
 						customTexture = customTexture,
 						customTextureVertexColor = color,
 					}
+
 					if boss and boss.mapChallengeModeID then
 						planDropdown:AddItemsToExistingDropdownItemMenu({
 							dungeonInstanceID = plan.instanceID,
@@ -729,10 +765,10 @@ do
 						planDropdown:Sort({
 							dungeonInstanceID = plan.instanceID,
 							mapChallengeModeID = boss.mapChallengeModeID,
-						})
-					else
+						}, nil, CreatePlanSorter(boss))
+					elseif boss then
 						planDropdown:AddItemsToExistingDropdownItemMenu(plan.instanceID, { dropdownItemData })
-						planDropdown:Sort(plan.instanceID)
+						planDropdown:Sort(plan.instanceID, nil, CreatePlanSorter(boss))
 					end
 				end
 				if select then

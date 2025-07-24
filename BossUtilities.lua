@@ -35,6 +35,10 @@ local orderedBossPhases = {}
 ---@type table<integer, table<integer, integer>>
 local maxOrderedBossPhases = {}
 
+--- Dungeon Instance ID -> [dungeonInstance.mapChallengeModeID, [Boss dungeon encounter ID, order]] | [Boss dungeon encounter ID, order]
+---@type table<integer, table<integer, table<integer, integer>>|table<integer, integer>>
+local instanceBossOrder = {}
+
 do
 	local ceil = math.ceil
 
@@ -148,6 +152,12 @@ function BossUtilities.FindBossAbility(encounterID, spellID)
 			end
 		end
 	end
+end
+
+---@param dungeonInstanceID integer Dungeon instance ID
+---@return table<integer, integer>|table<integer, table<integer, integer>>|nil
+function BossUtilities.GetInstanceBossOrder(dungeonInstanceID)
+	return instanceBossOrder[dungeonInstanceID]
 end
 
 do
@@ -1795,9 +1805,27 @@ do
 		wipe(phaseCountDurationMap)
 	end
 
+	---@param dungeonInstance DungeonInstance
+	---@param order table
+	local function GenerateInstanceBossOrder(dungeonInstance, order)
+		local dungeonInstanceID = dungeonInstance.instanceID
+		order[dungeonInstanceID] = order[dungeonInstanceID] or {}
+		if dungeonInstance.mapChallengeModeID then
+			order[dungeonInstanceID][dungeonInstance.mapChallengeModeID] = {}
+			for index, boss in ipairs(dungeonInstance.bosses) do
+				order[dungeonInstanceID][dungeonInstance.mapChallengeModeID][boss.dungeonEncounterID] = index
+			end
+		else
+			for index, boss in ipairs(dungeonInstance.bosses) do
+				order[dungeonInstanceID][boss.dungeonEncounterID] = index
+			end
+		end
+	end
+
 	local kMaxBossDuration = Private.constants.kMaxBossDuration
 
 	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
+		GenerateInstanceBossOrder(dungeonInstance, instanceBossOrder)
 		for _, boss in ipairs(dungeonInstance.bosses) do
 			local encounterID = boss.dungeonEncounterID
 			BossUtilities.GenerateBossTables(boss)
