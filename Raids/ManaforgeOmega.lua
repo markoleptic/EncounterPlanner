@@ -1507,14 +1507,5 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 		-- 	},
 		-- }),
 	},
-	-- executeAndNil = function()
-	-- 	EJ_SelectInstance(Private.dungeonInstances[2769].journalInstanceID)
-	-- 	local journalEncounterID = Private.dungeonInstances[2769].bosses[2].journalEncounterID
-	-- 	EJ_SelectEncounter(journalEncounterID)
-	-- 	local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, journalEncounterID)
-	-- 	Private.dungeonInstances[2769].bosses[2].abilities[465863].additionalContext = bossName:match("^(%S+)")
-	-- 	_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
-	-- 	Private.dungeonInstances[2769].bosses[2].abilities[465872].additionalContext = bossName:match("^(%S+)")
-	-- end,
 	isRaid = true,
 })

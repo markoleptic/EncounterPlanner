@@ -25,12 +25,12 @@ if not Private.dungeonInstances[2441] then
 	})
 end
 
-Private:RegisterPlaceholderBossSpellID(1236348, "Phase Slash")
-Private:RegisterPlaceholderBossSpellID(1241023, "Final Warning")
-Private:RegisterPlaceholderBossSpellID(1248209, "Charged Slash")
-Private:RegisterPlaceholderBossSpellID(1245579, "Shuri")
-Private:RegisterPlaceholderBossSpellID(1245634, "Divide")
-Private:RegisterPlaceholderBossSpellID(1245669, "Double Technique")
+Private:RegisterPlaceholderBossSpellID(1236348, L["Phase Slash"])
+Private:RegisterPlaceholderBossSpellID(1241023, L["Final Warning"])
+Private:RegisterPlaceholderBossSpellID(1248209, L["Charged Slash"])
+Private:RegisterPlaceholderBossSpellID(1245579, L["Shuri"])
+Private:RegisterPlaceholderBossSpellID(1245634, L["Divide"])
+Private:RegisterPlaceholderBossSpellID(1245669, L["Double Technique"])
 
 Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New({
 	journalInstanceID = 1194,

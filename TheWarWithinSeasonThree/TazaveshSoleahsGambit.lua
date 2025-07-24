@@ -25,6 +25,8 @@ if not Private.dungeonInstances[2441] then
 	})
 end
 
+Private:RegisterPlaceholderBossSpellID(1240102, L["Time Bombs"])
+
 Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New({
 	journalInstanceID = 1194,
 	instanceID = 2441,
