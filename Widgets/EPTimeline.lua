@@ -129,6 +129,7 @@ local lastExecutionTime = 0.0
 ---@class BossAbilityFrame : Frame, BackdropTemplate
 ---@field assignmentFrame table|Frame
 ---@field spellTexture Texture
+---@field lineTexture Texture
 ---@field abilityInstance BossAbilityInstance
 ---@field selectionType BossAbilitySelectionType
 
@@ -659,20 +660,25 @@ local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width
 			HandleBossAbilityBarEnter(self, f --[[@as BossAbilityFrame]])
 		end)
 		frame:SetScript("OnLeave", function(f)
-			self:ClearSelectedBossAbility(
-				f--[[@as BossAbilityFrame]].abilityInstance.bossAbilitySpellID,
-				f--[[@as BossAbilityFrame]].abilityInstance.spellCount,
-				true
-			)
+			---@cast f BossAbilityFrame
+			self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellCount, true)
 			ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 		end)
 		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
 		spellTexture:SetPoint("TOPLEFT", 2, -2)
 		spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
 
+		local lineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel + 1)
+		lineTexture:SetTexture(phaseIndicatorTexture, "REPEAT", "REPEAT")
+		lineTexture:SetVertexColor(unpack(cooldownBackgroundColor))
+		lineTexture:SetWidth(2)
+		lineTexture:Hide()
+
 		frame.assignmentFrame = timelineFrame
 		frame.spellTexture = spellTexture
 		frame.selectionType = BossAbilitySelectionType.kNone
+		frame.lineTexture = lineTexture
+
 		self.bossAbilityFrames[index] = frame
 	end
 
@@ -744,9 +750,11 @@ local function UpdateBossAbilityBars(self)
 			local verticalOffset = offsets[entry.bossAbilitySpellID]
 			local height = bossAbilityHeight
 			local color = colors[((entry.bossAbilityOrderIndex - 1) % #colors) + 1]
+			local heightMultiplier = 1.0
 			if entry.overlaps then
 				verticalOffset = verticalOffset + entry.overlaps.offset * height
 				height = height * entry.overlaps.heightMultiplier
+				heightMultiplier = entry.overlaps.heightMultiplier
 			end
 			local frameLevel = baseFrameLevel + entry.frameLevel
 			DrawBossAbilityBar(
@@ -760,6 +768,24 @@ local function UpdateBossAbilityBars(self)
 				frameLevel,
 				currentIndex
 			)
+
+			if
+				width > minimumBossAbilityWidth
+				and entry.castEnd > entry.castStart
+				and entry.castEnd < entry.effectEnd
+			then
+				local totalDuration = entry.effectEnd - entry.castStart
+				local percentOffset = min((entry.castEnd - entry.castStart) / totalDuration, 1)
+				local lineOffset = percentOffset * width - 1
+				local bossAbilityFrame = self.bossAbilityFrames[currentIndex]
+				local line = bossAbilityFrame.lineTexture
+				line:SetHeight(height - 4)
+				line:SetTexCoord(0.1, 0.4, 0, 4.5 * heightMultiplier)
+				line:SetPoint("LEFT", bossAbilityFrame, "LEFT", lineOffset, 0)
+				self.bossAbilityFrames[currentIndex].lineTexture:Show()
+			else
+				self.bossAbilityFrames[currentIndex].lineTexture:Hide()
+			end
 			currentIndex = currentIndex + 1
 		end
 	end
