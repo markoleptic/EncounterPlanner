@@ -1025,9 +1025,11 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 1.19, 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 						[4] = BossAbilityPhase:New({
 							castTimes = { 0.73, 0.0 },
+							signifiesPhaseEnd = true,
 						}),
 						[6] = BossAbilityPhase:New({
 							castTimes = { 0.73, 0.0 },
@@ -1136,7 +1138,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					defaultDuration = 60.0,
 					count = 1,
 					defaultCount = 1,
-					name = "P1",
+					name = "P2",
 				}),
 			},
 		}),
