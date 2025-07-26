@@ -372,11 +372,16 @@ end
 ---@param timelineFrame Frame
 ---@param verticalPositionLine Texture
 ---@param offset? number Optional offset to add
-local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset)
-	local newTimeOffset = (GetCursorPosition() / UIParent:GetEffectiveScale()) - (timelineFrame:GetLeft() or 0)
-
-	if offset then
-		newTimeOffset = newTimeOffset + offset
+---@param override? number Optional override offset from the timeline frame
+local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset, override)
+	local newTimeOffset
+	if override then
+		newTimeOffset = override
+	else
+		newTimeOffset = (GetCursorPosition() / UIParent:GetEffectiveScale()) - (timelineFrame:GetLeft() or 0)
+		if offset then
+			newTimeOffset = newTimeOffset + offset
+		end
 	end
 
 	verticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT", newTimeOffset, 0)
@@ -963,15 +968,20 @@ local function HandleAssignmentUpdate(self, frame)
 	local verticalOffsetFromTimelineFrameTop = (frame.timelineAssignment.order - 1)
 		* (self.preferences.timelineRows.assignmentHeight + paddingBetweenAssignments)
 	frame:SetPoint("TOPLEFT", assignmentFrameOffsetFromTimelineFrameLeft, -verticalOffsetFromTimelineFrameTop)
+
+	local frameTimelineFrameDifference = timelineFrameLeft - (self.assignmentTimeline.frame:GetLeft() or 0)
+	local overrideLineLeft = assignmentFrameOffsetFromTimelineFrameLeft + frameTimelineFrameDifference
 	UpdateLinePosition(
 		self.assignmentTimeline.frame,
 		self.assignmentTimeline.verticalPositionLine,
-		-horizontalCursorAssignmentFrameOffsetWhenClicked
+		nil,
+		overrideLineLeft
 	)
 	UpdateLinePosition(
 		self.bossAbilityTimeline.frame,
 		self.bossAbilityTimeline.verticalPositionLine,
-		-horizontalCursorAssignmentFrameOffsetWhenClicked
+		nil,
+		overrideLineLeft
 	)
 	UpdateTimeLabels(self)
 
