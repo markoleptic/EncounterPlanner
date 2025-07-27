@@ -47,11 +47,17 @@ local function HandleVerticalThumbUpdate(self)
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
-	if maxThumbPosition ~= 0 then
-		local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-		scrollFrame:SetVerticalScroll(scrollOffset)
-		self.listScrollFrame:SetVerticalScroll(scrollOffset)
+
+	if maxScroll <= 0 or maxThumbPosition <= 0 then
+		-- No scrollable content or thumb fills the scroll bar
+		scrollFrame:SetVerticalScroll(0)
+		self.listScrollFrame:SetVerticalScroll(0)
+		return
 	end
+
+	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	scrollFrame:SetVerticalScroll(scrollOffset)
+	self.listScrollFrame:SetVerticalScroll(scrollOffset)
 end
 
 ---@param self EPTimelineSection
@@ -216,8 +222,8 @@ local function OnHeightSet(self, height)
 	self.scrollBar:SetHeight(height)
 	local heightDifference = self.timelineFrame:GetHeight() - height
 	if heightDifference > 0 then
-		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / heightDifference
-		if scrollPercentage > 1.0 then
+		local currentScroll = self.scrollFrame:GetVerticalScroll()
+		if currentScroll > heightDifference then
 			self.scrollFrame:SetVerticalScroll(heightDifference)
 			self.listScrollFrame:SetVerticalScroll(heightDifference)
 		end
@@ -254,18 +260,25 @@ end
 local function UpdateVerticalScroll(self)
 	local scrollFrameHeight = self.scrollFrame:GetHeight()
 	local timelineHeight = self.timelineFrame:GetHeight()
-	if timelineHeight ~= 0 and (timelineHeight - scrollFrameHeight) ~= 0 then
-		local scrollPercentage = self.scrollFrame:GetVerticalScroll() / (timelineHeight - scrollFrameHeight)
-		local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
 
-		local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
-		thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
-		self.thumb:SetHeight(thumbHeight)
-
-		local maxThumbPosition = availableThumbHeight - thumbHeight
-		local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
-		self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
+	local scrollRange = timelineHeight - scrollFrameHeight
+	if scrollRange <= 0 then
+		-- No scrolling needed, reset thumb
+		self.thumb:SetHeight(self.scrollBar:GetHeight() - totalVerticalThumbPadding)
+		self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+		return
 	end
+
+	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / scrollRange
+	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+
+	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
+	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
+	self.thumb:SetHeight(thumbHeight)
+
+	local maxThumbPosition = availableThumbHeight - thumbHeight
+	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
+	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
 ---@param self EPTimelineSection

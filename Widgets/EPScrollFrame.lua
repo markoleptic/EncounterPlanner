@@ -132,10 +132,15 @@ local function HandleVerticalThumbUpdate(self)
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
 	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
-	if maxThumbPosition ~= 0 then
-		local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
-		SetVerticalScroll(self, max(minScroll, scrollOffset))
+
+	if maxScroll <= 0 or maxThumbPosition <= 0 then
+		-- No scrollable content or thumb fills the scroll bar
+		SetVerticalScroll(self, 0)
+		return
 	end
+
+	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	SetVerticalScroll(self, max(minScroll, scrollOffset))
 end
 
 ---@param self EPScrollFrame
@@ -336,32 +341,38 @@ end
 
 ---@param self EPScrollFrame
 local function UpdateThumbPositionAndSize(self)
-	if self.scrollBar:IsShown() then
-		local scrollFrameHeight = self.scrollFrame:GetHeight()
-		local scrollChild = self.scrollChild
-		if scrollChild then
-			local scrollChildHeight = scrollChild:GetHeight()
-			local currentScroll = self.currentScroll
-			local heightDifference = scrollChildHeight - scrollFrameHeight
-			local scrollPercentage = 0
-			if heightDifference ~= 0 then
-				scrollPercentage = currentScroll / (scrollChildHeight - scrollFrameHeight)
-			end
-
-			local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
-			local thumbHeight = minThumbSize
-			if scrollChildHeight ~= 0 then
-				thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
-			end
-			thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
-			self.thumb:SetHeight(thumbHeight)
-
-			local maxThumbPosition = availableThumbHeight - thumbHeight
-			local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition)
-				+ thumbPadding.y
-			self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
-		end
+	if not self.scrollBar:IsShown() then
+		return
 	end
+
+	local scrollFrameHeight = self.scrollFrame:GetHeight()
+	local scrollChild = self.scrollChild
+	if not scrollChild then
+		return
+	end
+
+	local scrollChildHeight = scrollChild:GetHeight()
+	local currentScroll = self.currentScroll
+	local heightDifference = scrollChildHeight - scrollFrameHeight
+
+	if heightDifference <= 0 then
+		-- No scrolling needed, reset thumb
+		local fullThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+		self.thumb:SetHeight(fullThumbHeight)
+		self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+		return
+	end
+
+	local scrollPercentage = currentScroll / heightDifference
+	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+
+	local thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
+	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
+	self.thumb:SetHeight(thumbHeight)
+
+	local maxThumbPosition = availableThumbHeight - thumbHeight
+	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
+	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
 ---@param self EPScrollFrame

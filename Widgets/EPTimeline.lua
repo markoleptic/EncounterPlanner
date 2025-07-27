@@ -1609,25 +1609,28 @@ local function HandleThumbMouseDown(self)
 			return
 		end
 
-		local paddingX = thumbPadding.x
 		local currentOffset = thumbOffsetWhenThumbClicked
 		local currentWidth = thumbWidthWhenThumbClicked
 		local currentScrollBarWidth = scrollBarWidthWhenThumbClicked
-		local newOffset = GetCursorPosition() / UIParent:GetEffectiveScale()
-			- horizontalScrollBar:GetLeft()
-			- currentOffset
+		local xPosition = GetCursorPosition() / UIParent:GetEffectiveScale()
+		local newOffset = -horizontalScrollBar:GetLeft() + xPosition - currentOffset
 
-		local minAllowedOffset = paddingX
-		local maxAllowedOffset = currentScrollBarWidth - currentWidth - paddingX
+		local minAllowedOffset = thumbPadding.x
+		local maxAllowedOffset = currentScrollBarWidth - currentWidth - thumbPadding.x
 		newOffset = Clamp(newOffset, minAllowedOffset, maxAllowedOffset)
 		thumb:SetPoint("LEFT", newOffset, 0)
 
-		-- Calculate the scroll frame's horizontal scroll based on the thumb's position
-		local maxThumbPosition = currentScrollBarWidth - currentWidth - (2 * paddingX)
 		local maxScroll = bossAbilityTimelineFrame:GetWidth() - bossAbilityScrollFrame:GetWidth()
-		local scrollOffset = 0
-		if maxThumbPosition ~= 0 then
-			scrollOffset = ((newOffset - paddingX) / maxThumbPosition) * maxScroll
+		-- Calculate the scroll frame's horizontal scroll based on the thumb's position
+		local maxThumbPosition = currentScrollBarWidth - currentWidth - (2 * thumbPadding.x)
+
+		if maxScroll <= 0 or maxThumbPosition <= 0 then
+			-- No scrollable content or thumb fills the scroll bar
+			bossAbilityScrollFrame:SetHorizontalScroll(0)
+			assignmentScrollFrame:SetHorizontalScroll(0)
+			splitterScrollFrame:SetHorizontalScroll(0)
+		else
+			local scrollOffset = ((newOffset - thumbPadding.x) / maxThumbPosition) * maxScroll
 			bossAbilityScrollFrame:SetHorizontalScroll(scrollOffset)
 			assignmentScrollFrame:SetHorizontalScroll(scrollOffset)
 			splitterScrollFrame:SetHorizontalScroll(scrollOffset)
