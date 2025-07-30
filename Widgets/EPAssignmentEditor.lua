@@ -170,8 +170,7 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 		)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", true)
 	end
-
-	self.spellAssignmentDropdown:SetTextFromValue()
+	self.spellAssignmentDropdown:ClearHighlightsForExistingDropdownItemMenu("Recent")
 	self:Fire("DataChanged", "SpellAssignment", value)
 	self:Fire("RecentItemsChanged", self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent"))
 end
@@ -419,9 +418,15 @@ local function OnAcquire(self)
 		self.spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, widget, value)
 			HandleCustomTextureClicked(self, widget, value)
 		end)
-		self.spellAssignmentDropdown:AddItem("Favorite", L["Favorite"], "EPDropdownItemMenu", {}, true)
+		self.spellAssignmentDropdown:AddItem(
+			{ itemValue = "Favorite", text = L["Favorite"], selectable = false },
+			"EPDropdownItemMenu"
+		)
 		self.spellAssignmentDropdown:SetItemEnabled("Favorite", false)
-		self.spellAssignmentDropdown:AddItem("Recent", L["Recent"], "EPDropdownItemMenu", {}, true)
+		self.spellAssignmentDropdown:AddItem(
+			{ itemValue = "Recent", text = L["Recent"], selectable = false },
+			"EPDropdownItemMenu"
+		)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
 
 		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)

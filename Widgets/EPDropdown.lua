@@ -126,6 +126,9 @@ end
 -- button mouse up
 ---@field customTextureSelectable? boolean
 ---@field itemMenuClickable? boolean If true, item menus can be clicked and trigger OnValueChanged
+---@field neverHasChildren? boolean If true, a EPDropdownItemToggle is created instead of an EPDropdownItemMenu
+---@field indent? integer
+---@field clickable? boolean
 
 do
 	---@class EPDropdownPullout : AceGUIWidget
@@ -591,6 +594,50 @@ do
 	---@param self EPDropdown
 	---@param value any
 	---@param includeNeverShowItemsAsSelectedItems boolean?
+	---@return table<integer, { item: EPDropdownItemToggle|EPDropdownItemMenu, text: string }>
+	local function FindItems(self, value, includeNeverShowItemsAsSelectedItems)
+		local results = {}
+
+		---@param items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
+		local function searchItems(items)
+			for _, item in ipairs(items) do
+				if includeNeverShowItemsAsSelectedItems or not item.neverShowItemsAsSelected then
+					local itemValue = item:GetValue()
+					local isMatch = false
+
+					if type(value) == "table" and type(itemValue) == "table" then
+						isMatch = true
+						for k, v in pairs(itemValue) do
+							if v ~= value[k] then
+								isMatch = false
+								break
+							end
+						end
+					else
+						isMatch = (itemValue == value)
+					end
+
+					if isMatch then
+						tinsert(results, { item = item, text = item.text:GetText() })
+					end
+
+					if item.childPullout and item.childPullout.items then
+						searchItems(item.childPullout.items)
+					end
+				end
+			end
+		end
+
+		if self.pullout and self.pullout.items then
+			searchItems(self.pullout.items)
+		end
+
+		return results
+	end
+
+	---@param self EPDropdown
+	---@param value any
+	---@param includeNeverShowItemsAsSelectedItems boolean?
 	---@return EPDropdownItemMenu|EPDropdownItemToggle|nil, string|nil
 	local function FindItemAndText(self, value, includeNeverShowItemsAsSelectedItems)
 		---@param items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
@@ -631,8 +678,7 @@ do
 	---@param dropdownItem EPDropdownItemMenu
 	---@param selected boolean
 	---@param value any
-	---@param pathText string
-	local function HandleMenuItemValueChanged(self, dropdownItem, selected, value, pathText)
+	local function HandleMenuItemValueChanged(self, dropdownItem, selected, value)
 		if self.multiselect then
 			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue())
 		else
@@ -640,9 +686,6 @@ do
 				self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().initialValue)
 			else
 				self:SetValue(value)
-				if self.showPathText then
-					self:SetText(pathText)
-				end
 				self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
 			end
 
@@ -771,6 +814,8 @@ do
 		self.text:SetText(text or "")
 	end
 
+	-- Only searches for the first match of the current value. Does not include items which are set to
+	-- neverShowItemsAsSelected.
 	---@param self EPDropdown
 	local function SetTextFromValue(self)
 		local textLevels = {}
@@ -798,31 +843,47 @@ do
 	---@param self EPDropdown
 	---@param value any
 	local function SetValue(self, value)
-		local textLevels = {}
-		local item, text = self:FindItemAndText(value)
-		while item do -- Follow chain of parents up to dropdown
-			local menuItemParent = item.parentDropdownItemMenu
-			if self.showPathText then
-				tinsert(textLevels, 1, text)
+		self.value = value
+		local text = ""
+		local textLevels = nil
+
+		local itemDataTable = FindItems(self, value, false)
+
+		if #itemDataTable > 0 then
+			text = itemDataTable[1].text
+		end
+
+		for _, itemData in ipairs(itemDataTable) do
+			local currentItem = itemData.item
+			local textStack = {}
+
+			while currentItem do
+				-- Build textLevels once using first matching path
+				if self.showPathText and not textLevels then
+					tinsert(textStack, 1, currentItem:GetText())
+				end
+
+				local menuItemParent = currentItem.parentDropdownItemMenu
 				if menuItemParent then
-					text = menuItemParent:GetText()
+					menuItemParent:SetChildValue(value)
+					menuItemParent:SetIsSelectedBasedOnChildValue()
+					currentItem = menuItemParent
+				else
+					break
 				end
 			end
-			if not menuItemParent then
-				break
+
+			-- Save the first matching path's text
+			if self.showPathText and not textLevels then
+				textLevels = textStack
 			end
-			menuItemParent:SetChildValue(value)
-			menuItemParent:SetIsSelectedBasedOnChildValue()
-			item = menuItemParent
 		end
-		if self.showPathText then
+
+		if self.showPathText and textLevels then
 			text = CreateCombinedLevelString(self.levelsToInclude, textLevels)
 		end
-		if not text then
-			text = ""
-		end
+
 		self:SetText(text)
-		self.value = value
 	end
 
 	---@param self EPDropdown
@@ -836,13 +897,15 @@ do
 	---@param newValue any
 	---@param newText string
 	local function EditItemValueAndText(self, currentValue, newValue, newText)
-		local item, _ = self:FindItemAndText(currentValue)
-		if item then
-			item:SetValue(newValue)
-			item:SetText(newText)
-			if self.value == currentValue then
-				self:SetValue(newValue)
+		local itemDataTable = FindItems(self, currentValue)
+		for _, itemData in ipairs(itemDataTable) do
+			if itemData.item then
+				itemData.item:SetValue(newValue)
+				itemData.item:SetText(newText)
 			end
+		end
+		if self.value == currentValue then
+			self:SetValue(newValue)
 		end
 	end
 
@@ -862,10 +925,15 @@ do
 	---@param existingItemValue? any If specified, the dropdown item menu matching this value is searched for and its children are used for selection.
 	local function SetSelectedItems(self, itemValuesToSelect, existingItemValue)
 		if existingItemValue then
-			local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
-			if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-				for _, pulloutItem in ipairs(existingDropdownMenuItem.childPullout.items) do
-					pulloutItem:SetIsSelected(itemValuesToSelect[pulloutItem:GetValue()] == true)
+			local itemDataTable = FindItems(self, existingItemValue, true)
+			for _, itemData in ipairs(itemDataTable) do
+				local item = itemData.item
+				if item then
+					if item.type == "EPDropdownItemMenu" then
+						for _, pulloutItem in ipairs(item.childPullout.items) do
+							pulloutItem:SetIsSelected(itemValuesToSelect[pulloutItem:GetValue()] == true)
+						end
+					end
 				end
 			end
 		else
@@ -881,9 +949,11 @@ do
 	---@param searchMenuItems? boolean If specified, all nested children are searched.
 	local function SetItemIsSelected(self, itemValue, selected, searchMenuItems)
 		if searchMenuItems then
-			local existingPulloutItem, _ = FindItemAndText(self, itemValue, true)
-			if existingPulloutItem then
-				existingPulloutItem:SetIsSelected(selected)
+			local itemDataTable = FindItems(self, itemValue, true)
+			for _, itemData in ipairs(itemDataTable) do
+				if itemData.item then
+					itemData.item:SetIsSelected(selected)
+				end
 			end
 		else
 			for _, pulloutItem in ipairs(self.pullout.items) do
@@ -896,27 +966,9 @@ do
 	end
 
 	---@param self EPDropdown
-	---@param itemValue any the internal value used to index an item
-	---@param text string the value shown on the item
+	---@param itemData DropdownItemData
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
-	---@param dropdownItemData table<integer, DropdownItemData>? optional table of nested dropdown item menus
-	---@param neverShowItemsAsSelected boolean?
-	---@param customTexture? string|integer
-	---@param customTextureVertexColor? number[]
-	---@param customTextureSelectable? boolean
-	---@param menuItemClickable? boolean
-	local function AddItem(
-		self,
-		itemValue,
-		text,
-		itemType,
-		dropdownItemData,
-		neverShowItemsAsSelected,
-		customTexture,
-		customTextureVertexColor,
-		customTextureSelectable,
-		menuItemClickable
-	)
+	local function AddItem(self, itemData, itemType)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -928,61 +980,72 @@ do
 			dropdownMenuItem.parentDropdown = self
 			dropdownMenuItem.parentDropdownItemMenu = nil
 			dropdownMenuItem:GetUserDataTable().level = 1
-			dropdownMenuItem:GetUserDataTable().initialValue = itemValue
-			dropdownMenuItem:SetValue(itemValue)
-			dropdownMenuItem:SetText(text)
+			dropdownMenuItem:GetUserDataTable().initialValue = itemData.itemValue
+			dropdownMenuItem:SetValue(itemData.itemValue)
+			dropdownMenuItem:SetText(itemData.text)
 			dropdownMenuItem:SetFontSize(self.itemTextFontSize)
-			dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding)
+			if itemData.indent then
+				dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding + itemData.indent)
+			else
+				dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding)
+			end
 			dropdownMenuItem:SetMultiselect(self.multiselect)
-			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value, pathText)
-				HandleMenuItemValueChanged(self, widget, selected, value, pathText)
+			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value)
+				HandleMenuItemValueChanged(self, widget, selected, value)
 			end)
-			dropdownMenuItem:SetClickable(menuItemClickable)
+			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
 			self.pullout:AddItem(dropdownMenuItem)
-			if neverShowItemsAsSelected == true then
+			if itemData.selectable == false then
 				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
 			end
-			if dropdownItemData then
-				dropdownMenuItem:SetMenuItems(dropdownItemData, self)
+			if itemData.dropdownItemMenuData then
+				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, self)
 			end
 		elseif itemType == "EPDropdownItemToggle" then
 			local dropdownItemToggle = AceGUI:Create("EPDropdownItemToggle")
 			dropdownItemToggle.parentDropdown = self
 			dropdownItemToggle.parentDropdownItemMenu = nil
 			dropdownItemToggle:GetUserDataTable().level = 1
-			dropdownItemToggle:SetValue(itemValue)
-			dropdownItemToggle:SetText(text)
+			dropdownItemToggle:SetValue(itemData.itemValue)
+			dropdownItemToggle:SetText(itemData.text)
 			dropdownItemToggle:SetFontSize(self.itemTextFontSize)
-			dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
-			if customTexture and customTextureVertexColor then
+			if itemData.indent then
+				dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding + itemData.indent)
+			else
+				dropdownItemToggle:SetHorizontalPadding(self.itemHorizontalPadding)
+			end
+			if itemData.customTexture and itemData.customTextureVertexColor then
 				dropdownItemToggle:SetCustomTexture(
-					customTexture,
-					customTextureVertexColor,
-					customTextureSelectable,
-					neverShowItemsAsSelected == true
+					itemData.customTexture,
+					itemData.customTextureVertexColor,
+					itemData.customTextureSelectable,
+					itemData.selectable == false
 				)
 			end
-			if customTextureSelectable then
+			if itemData.customTextureSelectable then
+				local itemValue = itemData.itemValue
 				dropdownItemToggle:SetCallback("Clicked", function(widget)
 					self:Fire("CustomTextureClicked", widget, itemValue)
 				end)
 			end
-			dropdownItemToggle:SetCallback("OnValueChanged", function(widget, _, selected)
-				HandleItemValueChanged(self, widget, selected)
-			end)
-			self.pullout:AddItem(dropdownItemToggle)
-			if neverShowItemsAsSelected == true then
+			if itemData.clickable == nil or itemData.clickable == true then
+				dropdownItemToggle:SetCallback("OnValueChanged", function(widget, _, selected)
+					HandleItemValueChanged(self, widget, selected)
+				end)
+			end
+			if itemData.selectable == false then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
 			end
+			self.pullout:AddItem(dropdownItemToggle)
 		end
 	end
 
 	---@param self EPDropdown
 	---@param itemValue any the internal value used to index an item
 	local function RemoveItem(self, itemValue)
-		local item, _ = FindItemAndText(self, itemValue, true)
-		if item then
-			item.parentPullout:RemoveItem(itemValue)
+		local itemDataTable = FindItems(self, itemValue, true)
+		for _, itemData in ipairs(itemDataTable) do
+			itemData.item.parentPullout:RemoveItem(itemValue)
 		end
 	end
 
@@ -1002,32 +1065,17 @@ do
 	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected)
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
-				self:AddItem(index, itemData, leafType)
+				self:AddItem({ itemValue = index, text = itemData }, leafType)
 			elseif type(itemData) == "table" then
+				if neverShowItemsAsSelected == true then
+					itemData.selectable = false
+				elseif neverShowItemsAsSelected == false then
+					itemData.selectable = true
+				end
 				if type(itemData.dropdownItemMenuData) == "table" then
-					self:AddItem(
-						itemData.itemValue,
-						itemData.text,
-						"EPDropdownItemMenu",
-						itemData.dropdownItemMenuData,
-						neverShowItemsAsSelected or itemData.selectable == false,
-						itemData.customTexture,
-						itemData.customTextureVertexColor,
-						nil,
-						itemData.itemMenuClickable
-					)
+					self:AddItem(itemData, "EPDropdownItemMenu")
 				else
-					self:AddItem(
-						itemData.itemValue,
-						itemData.text,
-						leafType,
-						itemData.dropdownItemMenuData,
-						neverShowItemsAsSelected or itemData.selectable == false,
-						itemData.customTexture,
-						itemData.customTextureVertexColor,
-						itemData.customTextureSelectable,
-						itemData.itemMenuClickable
-					)
+					self:AddItem(itemData, leafType)
 				end
 			end
 		end
@@ -1037,12 +1085,13 @@ do
 	---@param self EPDropdown
 	---@param existingItemValue any the internal value used to index an item
 	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data
-	---@param index integer? item index to insert into
+	---@param index integer? item index to insert into. Only valid if only one item exists with existingItemValue.
 	local function AddItemsToExistingDropdownItemMenu(self, existingItemValue, dropdownItemData, index)
-		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
-		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			---@cast existingDropdownMenuItem EPDropdownItemMenu
-			existingDropdownMenuItem:AddMenuItems(dropdownItemData, self, index)
+		local itemDataTable = FindItems(self, existingItemValue, true)
+		for _, itemData in ipairs(itemDataTable) do
+			if itemData.item.type == "EPDropdownItemMenu" then
+				itemData.item:AddMenuItems(dropdownItemData, self, index)
+			end
 		end
 	end
 
@@ -1051,16 +1100,18 @@ do
 	---@param existingItemValue any the internal value used to index a dropdown menu item
 	---@param dropdownItemData table<integer, DropdownItemData> table of dropdown item data to remove from existing menu
 	local function RemoveItemsFromExistingDropdownItemMenu(self, existingItemValue, dropdownItemData)
-		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
-		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			---@cast existingDropdownMenuItem EPDropdownItemMenu
-			for _, data in ipairs(dropdownItemData) do
-				existingDropdownMenuItem.childPullout:RemoveItem(data.itemValue)
+		local itemDataTable = FindItems(self, existingItemValue, true)
+		for _, itemData in ipairs(itemDataTable) do
+			local item = itemData.item
+			if item.type == "EPDropdownItemMenu" then
+				for _, data in ipairs(dropdownItemData) do
+					item.childPullout:RemoveItem(data.itemValue)
+				end
 			end
 		end
 	end
 
-	-- Returns a list of a dropdown item menu's immediate child values.
+	-- Returns a list of a dropdown item menu's immediate child values. Only valid if only one item exists with itemValue.
 	---@param self EPDropdown
 	---@param itemValue any the internal value used to index an item
 	---@return table<integer, DropdownItemData>
@@ -1080,10 +1131,25 @@ do
 	---@param self EPDropdown
 	---@param existingItemValue any the internal value used to index an item
 	local function ClearExistingDropdownItemMenu(self, existingItemValue)
-		local existingDropdownMenuItem, _ = FindItemAndText(self, existingItemValue, true)
-		if existingDropdownMenuItem and existingDropdownMenuItem.type == "EPDropdownItemMenu" then
-			---@cast existingDropdownMenuItem EPDropdownItemMenu
-			existingDropdownMenuItem:Clear()
+		local itemDataTable = FindItems(self, existingItemValue, true)
+		for _, itemData in ipairs(itemDataTable) do
+			if itemData.item.type == "EPDropdownItemMenu" then
+				itemData.item:Clear()
+			end
+		end
+	end
+
+	-- Hides the highlight texture for any existing dropdown item menu children.
+	---@param self EPDropdown
+	---@param existingItemValue any the internal value used to index an item
+	local function ClearHighlightsForExistingDropdownItemMenu(self, existingItemValue)
+		local itemDataTable = FindItems(self, existingItemValue, true)
+		for _, itemData in ipairs(itemDataTable) do
+			if itemData.item.type == "EPDropdownItemMenu" and itemData.item.childPullout then
+				for _, childPulloutItem in ipairs(itemData.item.childPullout.items) do
+					childPulloutItem.highlight:Hide()
+				end
+			end
 		end
 	end
 
@@ -1206,10 +1272,10 @@ do
 	---@param sortFunction? fun(a: EPItemBase, b: EPItemBase):boolean
 	local function Sort(self, value, byText, sortFunction)
 		if value then
-			local item, _ = FindItemAndText(self, value, true)
-			if item then
-				if item.type == "EPDropdownItemMenu" then
-					item.childPullout:Sort(byText, sortFunction)
+			local itemDataTable = FindItems(self, value, true)
+			for _, itemData in ipairs(itemDataTable) do
+				if itemData.item.type == "EPDropdownItemMenu" then
+					itemData.item.childPullout:Sort(byText, sortFunction)
 				end
 			end
 		else
@@ -1321,6 +1387,7 @@ do
 			OnRelease = OnRelease,
 			SetEnabled = SetEnabled,
 			ClearFocus = ClearFocus,
+			FindItems = FindItems,
 			FindItemAndText = FindItemAndText,
 			SetText = SetText,
 			SetTextCentered = SetTextCentered,
@@ -1336,6 +1403,7 @@ do
 			GetItemsFromDropdownItemMenu = GetItemsFromDropdownItemMenu,
 			RemoveItemsFromExistingDropdownItemMenu = RemoveItemsFromExistingDropdownItemMenu,
 			ClearExistingDropdownItemMenu = ClearExistingDropdownItemMenu,
+			ClearHighlightsForExistingDropdownItemMenu = ClearHighlightsForExistingDropdownItemMenu,
 			SetMultiselect = SetMultiselect,
 			GetMultiselect = GetMultiselect,
 			SetPulloutWidth = SetPulloutWidth,

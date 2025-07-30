@@ -329,7 +329,7 @@ do -- Roster Editor
 
 			local previousValue = assigneeTypeDropdown:GetValue()
 			assigneeTypeDropdown:Clear()
-			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle", false)
 			assigneeTypeDropdown:SetValue(previousValue)
 			assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
@@ -652,9 +652,10 @@ do -- Assignment Editor
 
 		local roster = GetCurrentRoster()
 		local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
+
 		local updatedDropdownItems, enableIndividualItem =
 			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
-		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle", false)
 		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
 		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")

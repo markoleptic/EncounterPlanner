@@ -485,52 +485,9 @@ do
 	---@param self EPDropdownItemMenu
 	---@param selected boolean
 	---@param value any
-	---@param textLevels table<string>
-	local function HandleMenuItemValueChanged(self, selected, value, textLevels)
+	local function HandleMenuItemValueChanged(self, selected, value)
 		self:SetChildValue(value)
-
-		if not self.parentDropdownItemMenu and not self.neverShowItemsAsSelected then
-			local parent = self.parentDropdown
-			if parent and parent.showPathText then
-				tinsert(textLevels, 1, self:GetText())
-				local combinedLevelString = ""
-				local levelsToInclude = parent.levelsToInclude
-				if #levelsToInclude == 0 then
-					for _, textLevel in ipairs(textLevels) do
-						if combinedLevelString:len() == 0 then
-							combinedLevelString = textLevel
-						else
-							combinedLevelString = combinedLevelString .. rightArrow .. textLevel
-						end
-					end
-				else
-					for _, levelToInclude in ipairs(levelsToInclude) do
-						if levelToInclude == "n" then
-							if combinedLevelString:len() == 0 then
-								combinedLevelString = textLevels[#textLevels]
-							else
-								combinedLevelString = combinedLevelString .. rightArrow .. textLevels[#textLevels]
-							end
-						elseif textLevels[levelToInclude] then
-							if combinedLevelString:len() == 0 then
-								combinedLevelString = textLevels[levelToInclude]
-							else
-								combinedLevelString = combinedLevelString .. rightArrow .. textLevels[levelToInclude]
-							end
-						end
-					end
-				end
-				self:Fire("OnValueChanged", selected, value, combinedLevelString)
-			else
-				self:Fire("OnValueChanged", selected, value)
-			end
-		elseif not self.neverShowItemsAsSelected then
-			tinsert(textLevels, 1, self:GetText())
-			self:Fire("OnValueChanged", selected, value, textLevels)
-		else
-			self:Fire("OnValueChanged", selected, value)
-		end
-
+		self:Fire("OnValueChanged", selected, value)
 		if self.open and not self.multiselect then
 			self.parentPullout:Close()
 		end
@@ -541,21 +498,13 @@ do
 	local function HandleItemValueChanged(self, dropdownItem)
 		local childValue = dropdownItem:GetValue()
 		local childSelected = dropdownItem.selected
-		self:SetChildValue(childValue)
-
-		if not self.parentDropdownItemMenu and not self.neverShowItemsAsSelected then
-			local combinedLevelString = self:GetText() .. rightArrow .. dropdownItem:GetText()
-			self:Fire("OnValueChanged", childSelected, childValue, combinedLevelString)
-		elseif not self.neverShowItemsAsSelected then
-			self:Fire("OnValueChanged", childSelected, childValue, { self:GetText(), dropdownItem:GetText() })
-		else
-			self:Fire("OnValueChanged", childSelected, childValue)
-		end
 		if self.neverShowItemsAsSelected == true then
 			dropdownItem:SetIsSelected(false)
 		else
 			dropdownItem:SetIsSelected(childSelected)
 		end
+		self:SetChildValue(childValue)
+		self:Fire("OnValueChanged", childSelected, childValue)
 
 		if self.open and not self.multiselect then
 			self.parentPullout:Close()
@@ -570,14 +519,18 @@ do
 		dropdownMenuItem:SetValue(itemData.itemValue)
 		dropdownMenuItem:SetText(itemData.text)
 		dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
-		dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		if itemData.indent then
+			dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding + itemData.indent)
+		else
+			dropdownMenuItem:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		end
 		dropdownMenuItem:SetHeight(dropdownParent.dropdownItemHeight)
 		dropdownMenuItem.parentDropdown = dropdownParent
 		dropdownMenuItem.parentDropdownItemMenu = self
 		dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
 		dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value, textLevels)
-			HandleMenuItemValueChanged(self, selected, value, textLevels)
+		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value)
+			HandleMenuItemValueChanged(self, selected, value)
 		end)
 		self.childPullout:AddItem(dropdownMenuItem)
 		dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
@@ -592,7 +545,11 @@ do
 		dropdownItemToggle:SetValue(itemData.itemValue)
 		dropdownItemToggle:SetText(itemData.text)
 		dropdownItemToggle:SetFontSize(dropdownParent.itemTextFontSize)
-		dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		if itemData.indent then
+			dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding + itemData.indent)
+		else
+			dropdownItemToggle:SetHorizontalPadding(dropdownParent.itemHorizontalPadding)
+		end
 		dropdownItemToggle:SetHeight(dropdownParent.dropdownItemHeight)
 		dropdownItemToggle.parentDropdown = dropdownParent
 		dropdownItemToggle.parentDropdownItemMenu = self

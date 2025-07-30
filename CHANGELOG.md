@@ -14,3 +14,4 @@
 -   Plans for a dungeon or raid are now sorted by their appearance in the instance, falling back to alphabetical.
 -   Boss abilities which have both a cast time and duration effect now show a vertical line where the cast ends and the duration begins.
 -   The vertical line indicating the time is now clamped to an assignment when dragging an assignment.
+-   Dungeons are now grouped by season in the plan dropdown menu.

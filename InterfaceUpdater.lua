@@ -648,8 +648,10 @@ do
 				local instanceDropdownData = utilities.GetOrCreateInstanceDropdownItems()
 				local plans = AddOn.db.profile.plans
 				for _, dropdownData in pairs(instanceDropdownData) do
-					dropdownData.dropdownItemMenuData = {}
-					dropdownData.itemMenuClickable = true
+					if not dropdownData.neverHasChildren then
+						dropdownData.dropdownItemMenuData = {}
+						dropdownData.itemMenuClickable = true
+					end
 				end
 				for planName, plan in pairs(plans) do
 					local instanceID = plan.instanceID
@@ -722,7 +724,7 @@ do
 						sort(dropdownData.dropdownItemMenuData, sortPlans)
 					end
 				end
-				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemMenu")
+				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")
 				planDropdown:SetValue(lastOpenPlan)
 			end
 			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])
@@ -738,9 +740,9 @@ do
 		if Private.mainFrame then
 			local planDropdown = Private.mainFrame.planDropdown
 			if planDropdown then
-				local item, _ = planDropdown:FindItemAndText(plan.name)
+				local items = planDropdown:FindItems(plan.name)
 				local enabled = plan.remindersEnabled
-				if not item then
+				if #items == 0 then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
 					local text
@@ -796,11 +798,11 @@ do
 		if Private.mainFrame then
 			local planDropdown = Private.mainFrame.planDropdown
 			if planDropdown then
-				local item, _ = planDropdown:FindItemAndText(planName)
-				if item then
-					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
-					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-					item:SetCustomTexture(customTexture, color, false)
+				local items = planDropdown:FindItems(planName)
+				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
+				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+				for _, itemData in pairs(items) do
+					itemData.item:SetCustomTexture(customTexture, color, false)
 				end
 			end
 		end

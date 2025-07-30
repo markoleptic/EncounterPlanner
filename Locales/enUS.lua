@@ -396,6 +396,7 @@ L["Row Height"] = true
 L["Scroll"] = true
 L["Scrolls the timeline up and down."] = true
 L["Season 2 M+"] = true
+L["Season 3 M+"] = true
 L["section"] = true
 L["section of the"] = true
 L["section of the Preferences Menu"] = true

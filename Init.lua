@@ -678,6 +678,10 @@ end
 
 Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
 Private.customDungeonInstanceGroups = {
+	["TheWarWithinSeasonThree"] = {
+		instanceIDToUseForIcon = 2660,
+		instanceName = Private.L["Season 3 M+"],
+	},
 	["TheWarWithinSeasonTwo"] = {
 		instanceIDToUseForIcon = 2661,
 		instanceName = Private.L["Season 2 M+"],
