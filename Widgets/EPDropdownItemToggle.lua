@@ -729,7 +729,6 @@ do
 			HandleChildPulloutClose(self)
 		end)
 		self.childPullout = childPullout
-		print(self.childPullout)
 		UpdateMenuIndicator(self)
 	end
 
