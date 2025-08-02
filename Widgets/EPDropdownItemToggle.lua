@@ -9,23 +9,23 @@ local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pairs = pairs
 local select = select
-local tinsert = table.insert
 local unpack = unpack
 local pi = math.pi
 
 local textOffsetX = 4
 local checkOffsetX = 2
-local childSelectedIndicatorOffsetX = 3
-local childSelectedIndicatorOffsetY = 1
+local menuIndicatorOffsetX = 3
+local menuIndicatorOffsetY = 1
 local checkSize = 16
 local fontSize = 14
 local dropdownItemHeight = 24
 local subHeight = 18
 local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
 local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
+local disabledVertexColor = { 0.5, 0.5, 0.5, 1 }
 local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
 local enabledTextColor = { 1, 1, 1, 1 }
-local rightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t "
+local uncheckedVertexColor = { 1, 1, 1, 1 }
 
 local function FixLevels(parent, ...)
 	local i = 1
@@ -42,18 +42,23 @@ end
 ---@field type string
 ---@field version integer
 ---@field counter integer
----@field frame Frame
----@field parentPullout EPDropdownPullout
----@field highlight Texture
----@field useHighlight boolean
----@field text FontString
----@field check Texture
----@field childSelectedIndicator Texture
+---@field count integer
 ---@field enabled boolean
----@field specialOnEnter function
----@field changedFont boolean|nil
----@field parentDropdownItemMenu EPDropdownItemMenu|nil
----@field parentDropdown EPDropdown|nil
+---@field frame Frame
+---@field customTexture Texture Optional custom texture owned by customTextureFrame
+---@field customTextureFrame Button Allows for the custom texture to be clicked, causing the OnClick signal to be fired.
+---@field specialOnEnter function Executed when frame is entered.
+---@field parentPullout EPDropdownPullout Reference to the owning dropdown pullout of this item.
+---@field highlight Texture Texture that is shown when the mouse is hovering over an item.
+---@field useHighlight boolean Whether to show the highlight when the mouse is hovering over an item.
+---@field text FontString Main text of the item.
+---@field check Texture Shown if an item is selected and neverShowItemsAsSelected is false/nil.
+---@field changedFont? boolean If true, the font was changed and needs to be changed back to default on release.
+---@field parentDropdownItemMenu? EPDropdownItemMenu Reference to the owning item menu of the parentPullout.
+---@field parentDropdown? EPDropdown Reference to the top-level dropdown parent.
+-- If true, the child selected indicator will never be visible and child pullout items will never be set to selected
+-- (never show check mark).
+---@field neverShowItemsAsSelected boolean
 
 local EPItemBase = {
 	version = 1000,
@@ -119,6 +124,7 @@ function EPItemBase.OnRelease(self)
 	self.check:ClearAllPoints()
 	self.highlight:Hide()
 	self.customTextureFrame:Hide()
+	self.customTextureFrame:RegisterForClicks()
 	self.customTexture:SetTexture(nil)
 	if self.changedFont then
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -205,7 +211,7 @@ function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureCl
 	self.customTextureFrame:Show()
 end
 
--- This is called by a Dropdown-Pullout. Do not call this method directly
+-- This is called by an EPDropdownPullout.
 function EPItemBase.SetOnEnter(self, func)
 	self.specialOnEnter = func
 end
@@ -251,27 +257,12 @@ function EPItemBase.Create(type)
 	local customTexture = customTextureFrame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
 	customTexture:SetAllPoints(customTextureFrame)
 
-	local childSelectedIndicator = frame:CreateTexture(type .. "ChildSelectedIndicator" .. count, "OVERLAY")
-	childSelectedIndicator:SetWidth(subHeight)
-	childSelectedIndicator:SetHeight(subHeight)
-	childSelectedIndicator:SetPoint(
-		"RIGHT",
-		frame,
-		"RIGHT",
-		-childSelectedIndicatorOffsetX,
-		-childSelectedIndicatorOffsetY
-	)
-	childSelectedIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	childSelectedIndicator:SetRotation(pi / 2)
-	childSelectedIndicator:Hide()
-
 	---@class EPItemBase
 	local widget = {
 		frame = frame,
 		type = type,
 		useHighlight = true,
 		check = check,
-		childSelectedIndicator = childSelectedIndicator,
 		highlight = highlight,
 		text = text,
 		customTexture = customTexture,
@@ -293,7 +284,6 @@ function EPItemBase.Create(type)
 		SetTextColor = EPItemBase.SetTextColor,
 		textOffsetX = textOffsetX,
 		checkOffsetX = checkOffsetX,
-		childSelectedIndicatorOffsetX = childSelectedIndicatorOffsetX,
 	}
 
 	frame:SetScript("OnEnter", function()
@@ -414,28 +404,46 @@ do
 end
 
 ---@class EPDropdownItemMenu : EPItemBase
----@field childPullout EPDropdownPullout
----@field selected boolean
----@field neverShowItemsAsSelected boolean
----@field multiselect boolean|nil
----@field open boolean
----@field clickable boolean|nil
-
+---@field childPullout EPDropdownPullout Child dropdown pullout.
+---@field multiselect boolean|nil Whether multiple child pullout items can be selected at once.
+---@field open boolean True if the child pullout is open.
+---@field clickable boolean|nil If true, clicking on the frame will fire the OnValueChanged signal with no arguments.
+-- Indicates the dropdown menu has children. Vertex color updated if selected. Attached to base frame.
+---@field menuIndicator Texture
+---@field menuIndicatorOffsetX integer Horizontal offset of the menuIndicator.
 do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
+
+	---@param self EPDropdownItemMenu
+	---@param override? [number]
+	local function UpdateMenuIndicator(self, override)
+		if override then
+			self.menuIndicator:SetVertexColor(unpack(override))
+		else
+			if self.enabled and #self.childPullout.items > 0 then
+				if self:GetIsSelected() then
+					self.menuIndicator:SetVertexColor(unpack(checkedVertexColor))
+				else
+					self.menuIndicator:SetVertexColor(unpack(uncheckedVertexColor))
+				end
+			else
+				self.menuIndicator:SetVertexColor(unpack(disabledVertexColor))
+			end
+		end
+	end
 
 	---@param self EPDropdownItemMenu
 	local function HandleFrameEnter(self)
 		if self.specialOnEnter then
 			self.specialOnEnter(self)
 		end
-		if self.useHighlight then
+		if self.enabled and self.useHighlight then
 			self.highlight:Show()
 		else
 			self.highlight:Hide()
 		end
-		if self.enabled and self.childPullout and #self.childPullout.items > 0 then
+		if self.enabled and #self.childPullout.items > 0 then
 			self.childPullout:Open("TOPLEFT", self.frame, "TOPRIGHT", -1, 1, nil)
 		end
 	end
@@ -466,20 +474,11 @@ do
 
 	---@param self EPDropdownItemMenu
 	---@param dropdownParent EPDropdown
-	local function CreateChildPullout(self, dropdownParent)
+	local function InitializeChildPullout(self, dropdownParent)
 		local autoWidth, height = dropdownParent.pullout.autoWidth, dropdownParent.dropdownItemHeight
-		local childPullout = AceGUI:Create("EPDropdownPullout")
-		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
-		childPullout:SetCallback("OnOpen", function(widget)
-			HandleChildPulloutOpen(self, widget)
-		end)
-		childPullout:SetCallback("OnClose", function()
-			HandleChildPulloutClose(self)
-		end)
-		childPullout:SetItemHeight(height)
-		childPullout:SetAutoWidth(autoWidth)
-		childPullout:SetMaxVisibleItems(dropdownParent.maxItems)
-		return childPullout
+		self.childPullout:SetItemHeight(height)
+		self.childPullout:SetAutoWidth(autoWidth)
+		self.childPullout:SetMaxVisibleItems(dropdownParent.maxItems)
 	end
 
 	---@param self EPDropdownItemMenu
@@ -582,7 +581,7 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData>
 	---@param dropdownParent EPDropdown
 	local function SetMenuItems(self, dropdownItemData, dropdownParent)
-		self.childPullout = CreateChildPullout(self, dropdownParent)
+		InitializeChildPullout(self, dropdownParent)
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
 				CreateDropdownItemMenu(self, dropdownParent, itemData)
@@ -591,6 +590,7 @@ do
 			end
 		end
 		FixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		UpdateMenuIndicator(self)
 	end
 
 	---@param self EPDropdownItemMenu
@@ -598,9 +598,7 @@ do
 	---@param dropdownParent EPDropdown
 	---@param index integer?
 	local function AddMenuItems(self, dropdownItemData, dropdownParent, index)
-		if not self.childPullout then
-			self.childPullout = CreateChildPullout(self, dropdownParent)
-		end
+		InitializeChildPullout(self, dropdownParent)
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
 			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
@@ -622,6 +620,16 @@ do
 			end
 		end
 		FixLevels(self.childPullout.frame, self.childPullout.frame:GetChildren())
+		UpdateMenuIndicator(self)
+	end
+
+	---@param self EPDropdownItemMenu
+	---@param dropdownItemData table<integer, DropdownItemData>
+	local function RemoveMenuItems(self, dropdownItemData)
+		for _, itemData in ipairs(dropdownItemData) do
+			self.childPullout:RemoveItem(itemData.itemValue)
+		end
+		UpdateMenuIndicator(self)
 	end
 
 	---@param self EPDropdownItemMenu
@@ -629,32 +637,11 @@ do
 		self.childPullout:Close()
 	end
 
-	---@param self EPDropdownItemMenu
-	local function SetIsSelectedBasedOnChildValue(self)
-		local childValue = self:GetChildValue()
-		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
-		if childValue ~= nil and not neverShowItemsAsSelected then
-			self.childSelectedIndicator:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
-		else
-			self.childSelectedIndicator:SetVertexColor(1, 1, 1, 1)
-		end
-	end
-
 	--- Updates the selected indicator color based on if the parent and child values are equal.
 	---@param self EPDropdownItemMenu
 	---@param _ boolean
 	local function SetIsSelected(self, _)
-		local childValue = self:GetChildValue()
-		local parentValue
-		if self.parentDropdown then
-			parentValue = self.parentDropdown:GetValue()
-		end
-		local neverShowItemsAsSelected = self.neverShowItemsAsSelected
-		if childValue ~= nil and childValue == parentValue and not neverShowItemsAsSelected then
-			self.childSelectedIndicator:SetVertexColor(unpack(checkedVertexColor)) -- indicate that a child item is selected
-		else
-			self.childSelectedIndicator:SetVertexColor(1, 1, 1, 1)
-		end
+		UpdateMenuIndicator(self)
 	end
 
 	---@param self EPDropdownItemMenu
@@ -731,13 +718,24 @@ do
 	local function OnAcquire(self)
 		EPItemBase.OnAcquire(self)
 		self.open = false
-		self.selected = false
 		self.multiselect = false
 		self.neverShowItemsAsSelected = false
+		local childPullout = AceGUI:Create("EPDropdownPullout")
+		childPullout.frame:SetFrameLevel(self.frame:GetFrameLevel() + 1)
+		childPullout:SetCallback("OnOpen", function(widget)
+			HandleChildPulloutOpen(self, widget)
+		end)
+		childPullout:SetCallback("OnClose", function()
+			HandleChildPulloutClose(self)
+		end)
+		self.childPullout = childPullout
+		print(self.childPullout)
+		UpdateMenuIndicator(self)
 	end
 
 	---@param self EPDropdownItemMenu
 	local function OnRelease(self)
+		EPItemBase.OnRelease(self)
 		if self.childPullout then
 			self.childPullout:Release()
 		end
@@ -745,31 +743,43 @@ do
 		self:SetValue(nil)
 		self:SetChildValue(nil)
 		self:SetClickable(false)
-		EPItemBase.OnRelease(self)
 		self.open = false
-		self.selected = false
 		self.neverShowItemsAsSelected = false
 	end
 
 	---@param self EPDropdownItemMenu
 	local function Clear(self)
-		if self.childPullout then
-			self.childPullout:Release()
-		end
-		self.childPullout = nil
+		self.childPullout:Clear()
 		self:SetChildValue(nil)
 		self.open = false
-		self.selected = false
 		self.neverShowItemsAsSelected = false
+		UpdateMenuIndicator(self)
+	end
+
+	---@param self EPDropdownItemMenu
+	---@param enabled boolean
+	local function SetEnabled(self, enabled)
+		EPItemBase.SetEnabled(self, enabled)
+		UpdateMenuIndicator(self)
 	end
 
 	local function Constructor()
 		---@class EPDropdownItemMenu
 		local widget = EPItemBase.Create(widgetType)
-		widget.childSelectedIndicator:Show()
+		local count = AceGUI:GetNextWidgetNum(widgetType)
+
+		local menuIndicator = widget.frame:CreateTexture(widget.type .. "MenuIndicator" .. count, "OVERLAY")
+		menuIndicator:SetWidth(subHeight)
+		menuIndicator:SetHeight(subHeight)
+		menuIndicator:SetPoint("RIGHT", widget.frame, "RIGHT", -menuIndicatorOffsetX, -menuIndicatorOffsetY)
+		menuIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+		menuIndicator:SetRotation(pi / 2)
+
+		widget.menuIndicatorOffsetX = menuIndicatorOffsetX
+		widget.menuIndicator = menuIndicator
 		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease
-		widget.SetIsSelectedBasedOnChildValue = SetIsSelectedBasedOnChildValue
+		widget.SetEnabled = SetEnabled
 		widget.SetIsSelected = SetIsSelected
 		widget.GetIsSelected = GetIsSelected
 		widget.SetValue = SetValue
@@ -780,6 +790,7 @@ do
 		widget.GetChildValue = GetChildValue
 		widget.SetMenuItems = SetMenuItems
 		widget.AddMenuItems = AddMenuItems
+		widget.RemoveMenuItems = RemoveMenuItems
 		widget.CloseMenu = CloseMenu
 		widget.Clear = Clear
 		widget.SetNeverShowItemsAsSelected = SetNeverShowItemsAsSelected

@@ -275,8 +275,9 @@ do
 			item:Show()
 			if self.autoWidth then
 				local width = item.text:GetStringWidth() + item.textOffsetX * 2
-				if item.childSelectedIndicator:IsShown() then
-					width = width + item.childSelectedIndicator:GetWidth() + item.childSelectedIndicatorOffsetX
+				if item.menuIndicator then
+					---@cast item EPDropdownItemMenu
+					width = width + item.menuIndicator:GetWidth() + item.menuIndicatorOffsetX
 				elseif not item.neverShowItemsAsSelected then
 					width = width + item.check:GetWidth() + item.checkOffsetX
 				end
@@ -863,10 +864,11 @@ do
 					tinsert(textStack, 1, currentItem:GetText())
 				end
 
+				---@type EPDropdownItemMenu
 				local menuItemParent = currentItem.parentDropdownItemMenu
 				if menuItemParent then
 					menuItemParent:SetChildValue(value)
-					menuItemParent:SetIsSelectedBasedOnChildValue()
+					menuItemParent:SetIsSelected(true)
 					currentItem = menuItemParent
 				else
 					break
@@ -928,11 +930,10 @@ do
 			local itemDataTable = FindItems(self, existingItemValue, true)
 			for _, itemData in ipairs(itemDataTable) do
 				local item = itemData.item
-				if item then
-					if item.type == "EPDropdownItemMenu" then
-						for _, pulloutItem in ipairs(item.childPullout.items) do
-							pulloutItem:SetIsSelected(itemValuesToSelect[pulloutItem:GetValue()] == true)
-						end
+				if item and item.type == "EPDropdownItemMenu" then
+					---@cast item EPDropdownItemMenu
+					for _, pulloutItem in ipairs(item.childPullout.items) do
+						pulloutItem:SetIsSelected(itemValuesToSelect[pulloutItem:GetValue()] == true)
 					end
 				end
 			end
@@ -1090,7 +1091,9 @@ do
 		local itemDataTable = FindItems(self, existingItemValue, true)
 		for _, itemData in ipairs(itemDataTable) do
 			if itemData.item.type == "EPDropdownItemMenu" then
-				itemData.item:AddMenuItems(dropdownItemData, self, index)
+				local item = itemData.item
+				---@cast item EPDropdownItemMenu
+				item:AddMenuItems(dropdownItemData, self, index)
 			end
 		end
 	end
@@ -1104,9 +1107,8 @@ do
 		for _, itemData in ipairs(itemDataTable) do
 			local item = itemData.item
 			if item.type == "EPDropdownItemMenu" then
-				for _, data in ipairs(dropdownItemData) do
-					item.childPullout:RemoveItem(data.itemValue)
-				end
+				---@cast item EPDropdownItemMenu
+				item:RemoveMenuItems(dropdownItemData)
 			end
 		end
 	end
@@ -1133,8 +1135,10 @@ do
 	local function ClearExistingDropdownItemMenu(self, existingItemValue)
 		local itemDataTable = FindItems(self, existingItemValue, true)
 		for _, itemData in ipairs(itemDataTable) do
-			if itemData.item.type == "EPDropdownItemMenu" then
-				itemData.item:Clear()
+			local item = itemData.item
+			if item.type == "EPDropdownItemMenu" then
+				---@cast item EPDropdownItemMenu
+				item:Clear()
 			end
 		end
 	end
@@ -1145,8 +1149,10 @@ do
 	local function ClearHighlightsForExistingDropdownItemMenu(self, existingItemValue)
 		local itemDataTable = FindItems(self, existingItemValue, true)
 		for _, itemData in ipairs(itemDataTable) do
-			if itemData.item.type == "EPDropdownItemMenu" and itemData.item.childPullout then
-				for _, childPulloutItem in ipairs(itemData.item.childPullout.items) do
+			local item = itemData.item
+			if item.type == "EPDropdownItemMenu" and item.childPullout then
+				---@cast item EPDropdownItemMenu
+				for _, childPulloutItem in ipairs(item.childPullout.items) do
 					childPulloutItem.highlight:Hide()
 				end
 			end
