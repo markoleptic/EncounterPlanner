@@ -58,6 +58,7 @@ local titleBarBackdrop = {
 ---@field closeButton EPButton
 ---@field container EPContainer
 ---@field buttonContainer EPContainer
+---@field planNameManuallyChanged boolean
 
 ---@param container EPContainer
 local function SetButtonWidths(container)
@@ -73,6 +74,7 @@ end
 ---@param self EPNewPlanDialog
 local function OnAcquire(self)
 	self.frame:SetSize(defaultWidth, defaultHeight)
+	self.planNameManuallyChanged = false
 
 	local edgeSize = frameBackdrop.edgeSize
 	local buttonSize = windowBarHeight - 2 * edgeSize
@@ -120,7 +122,9 @@ local function OnAcquire(self)
 	self.bossDropdown:SetHeight(dropdownHeight)
 	self.bossDropdown:SetDropdownItemHeight(dropdownHeight)
 	self.bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		self:Fire("CreateNewPlanName", value)
+		if not self.planNameManuallyChanged then
+			self:Fire("CreateNewPlanName", value)
+		end
 	end)
 
 	local planNameContainer = AceGUI:Create("EPContainer")
@@ -138,6 +142,7 @@ local function OnAcquire(self)
 		self.planNameLineEdit:SetFont(font, defaultFontSize, flags)
 	end
 	self.planNameLineEdit:SetCallback("OnTextChanged", function(_, _, value)
+		self.planNameManuallyChanged = true
 		self:Fire("ValidatePlanName", value)
 	end)
 
