@@ -13,6 +13,7 @@ local interfaceUpdater = Private.interfaceUpdater
 
 ---@class Utilities
 local utilities = Private.utilities
+local CreatePlan = utilities.CreatePlan
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
@@ -361,7 +362,7 @@ do -- Profile updating and refreshing
 				EJ_SelectInstance(dungeonInstance.journalInstanceID)
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
-				local plan = utilities.CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
+				local plan = CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
 				plan.roster[name] = entry
 				plan.content = textTable
 				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID)
@@ -526,7 +527,7 @@ do -- Profile updating and refreshing
 			profile.version = currentVersionString
 
 			--@debug@
-			-- CreateTestPlans(profile)
+			CreateTestPlans(profile)
 			--@end-debug@
 		end
 	end
@@ -543,10 +544,8 @@ do -- Profile updating and refreshing
 			local plans = profile.plans
 			local lastOpenPlan = profile.lastOpenPlan
 			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
-				local defaultPlanName = L["Default"]
-				plans[defaultPlanName] = Plan:New(nil, defaultPlanName)
-				ChangePlanBoss(plans, defaultPlanName, constants.kDefaultBossDungeonEncounterID)
-				profile.lastOpenPlan = defaultPlanName
+				local newPlan = CreatePlan(plans, nil, constants.kDefaultBossDungeonEncounterID)
+				profile.lastOpenPlan = newPlan.name
 			end
 			local timeline = Private.mainFrame.timeline
 			if timeline then
