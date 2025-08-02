@@ -526,7 +526,7 @@ do -- Profile updating and refreshing
 			profile.version = currentVersionString
 
 			--@debug@
-			CreateTestPlans(profile)
+			-- CreateTestPlans(profile)
 			--@end-debug@
 		end
 	end

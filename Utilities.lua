@@ -615,10 +615,15 @@ do
 	local spellIconRegex = "|T.-|t%s(.+)"
 	local kCustomGroupIndent = 10
 
-	---@param a DropdownItemData
-	---@param b DropdownItemData
+	---@param a DropdownItemData|{order:integer}
+	---@param b DropdownItemData|{order:integer}
 	local function SortInstances(a, b)
 		local aInstance, bInstance
+
+		if a.order and b.order then
+			return a.order < b.order
+		end
+
 		if type(a.itemValue) == "table" then
 			aInstance = bossUtilities.FindDungeonInstance(a.itemValue.dungeonInstanceID, a.itemValue.mapChallengeModeID)
 		else
@@ -645,23 +650,28 @@ do
 
 	---@return table<integer, DropdownItemData>
 	local function CreateInstanceDropdownData()
-		local instanceDropdownItems = {}
-		local customInstanceDropdownItems = {}
-		local customInstanceDropdownItemChildren = {}
+		local customInstanceDropdownItems = {} ---@type table<integer, DropdownItemData>
+		local customInstanceDropdownItemChildren = {} ---@type table<string, table<integer, DropdownItemData>>
+
 		for _, customDungeonInstanceGroup in pairs(Private.customDungeonInstanceGroups) do
 			local instanceName = customDungeonInstanceGroup.instanceName
 			local instanceToUseForIcon = Private.dungeonInstances[customDungeonInstanceGroup.instanceIDToUseForIcon]
 			local instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
-			customInstanceDropdownItems[instanceName] = {
-				itemValue = customDungeonInstanceGroup.instanceName,
-				text = instanceIconText,
-				neverHasChildren = true,
-				selectable = false,
-				clickable = false,
-			}
+			tinsert(
+				customInstanceDropdownItems,
+				{
+					itemValue = customDungeonInstanceGroup.instanceName,
+					text = instanceIconText,
+					neverHasChildren = true,
+					selectable = false,
+					clickable = false,
+					order = customDungeonInstanceGroup.order,
+				} ---@type DropdownItemData|{order:integer}
+			)
 			customInstanceDropdownItemChildren[instanceName] = {}
 		end
 
+		local instanceDropdownItems = {} ---@type table<integer, DropdownItemData>
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
 			local instanceDropdownData
@@ -693,13 +703,12 @@ do
 		for _, children in pairs(customInstanceDropdownItemChildren) do
 			sort(children, SortInstances)
 		end
-		sort(customInstanceDropdownItems, SortInstances)
 		sort(instanceDropdownItems, SortInstances)
-
-		for name, dropdownItemData in pairs(customInstanceDropdownItems) do
+		sort(customInstanceDropdownItems, SortInstances)
+		for _, dropdownItemData in ipairs(customInstanceDropdownItems) do
 			tinsert(instanceDropdownItems, dropdownItemData)
-			for _, child in pairs(customInstanceDropdownItemChildren[name]) do
-				tinsert(instanceDropdownItems, child)
+			for _, children in pairs(customInstanceDropdownItemChildren[dropdownItemData.itemValue]) do
+				tinsert(instanceDropdownItems, children)
 			end
 		end
 

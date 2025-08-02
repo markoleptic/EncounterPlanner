@@ -405,6 +405,11 @@
 ---@field assignee string The row the assignment belongs to
 ---@field spellID integer|nil If specified, the spell ID for the row. Otherwise, the row is only the assignee.
 
+---@class CustomDungeonInstanceGroup
+---@field instanceName string Custom text to use as the group name in a dropdown.
+---@field instanceIDToUseForIcon integer An existing dungeon instance ID to use for the icon beside the text.
+---@field order integer The sort index when comparing against other custom groups.
+
 ---@class DropdownItemData
 ---@field itemValue string|number|table the internal value used to index a dropdown item
 ---@field text string the value shown in the dropdown

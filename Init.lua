@@ -679,14 +679,16 @@ end
 Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
 Private.customDungeonInstanceGroups = {
 	["TheWarWithinSeasonThree"] = {
-		instanceIDToUseForIcon = 2660,
-		instanceName = Private.L["Season 3 M+"],
+		instanceIDToUseForIcon = 2810,
+		instanceName = Private.L["TWW Season 3"],
+		order = 0,
 	},
 	["TheWarWithinSeasonTwo"] = {
-		instanceIDToUseForIcon = 2661,
-		instanceName = Private.L["Season 2 M+"],
+		instanceIDToUseForIcon = 2769,
+		instanceName = Private.L["TWW Season 2"],
+		order = 1,
 	},
-}
+} --@type table<string, CustomDungeonInstanceGroup>
 Private.interfaceUpdater = {}
 Private.bossUtilities = {}
 Private.utilities = {}

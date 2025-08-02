@@ -23,6 +23,7 @@ local DungeonInstance = Private.classes.DungeonInstance
 Private.dungeonInstances[2810] = DungeonInstance:New({
 	journalInstanceID = 1302,
 	instanceID = 2810,
+	customGroups = { "TheWarWithinSeasonThree" },
 	bosses = {
 		Boss:New({ -- Plexus Sentinel
 			bossIDs = {

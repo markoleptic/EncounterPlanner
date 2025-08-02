@@ -18,6 +18,7 @@ local DungeonInstance = Private.classes.DungeonInstance
 Private.dungeonInstances[2769] = DungeonInstance:New({
 	journalInstanceID = 1296,
 	instanceID = 2769,
+	customGroups = { "TheWarWithinSeasonTwo" },
 	bosses = {
 		Boss:New({ -- Vexie and the Geargrinders
 			bossIDs = {
