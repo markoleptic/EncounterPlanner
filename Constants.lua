@@ -48,7 +48,7 @@ Private.constants = {
 	kMainFrameSpacing = { 0, 22 },
 	kTopContainerHeight = 68,
 	kMinimumTimeBetweenAssignmentsBeforeWarning = 2.0,
-	kDefaultBossDungeonEncounterID = 3009, -- Vexie
+	kDefaultBossDungeonEncounterID = 3129, -- Plexus Sentinel
 	---@enum AssignmentSelectionType
 	AssignmentSelectionType = {
 		kNone = {},
