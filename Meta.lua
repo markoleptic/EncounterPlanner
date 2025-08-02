@@ -405,6 +405,21 @@
 ---@field assignee string The row the assignment belongs to
 ---@field spellID integer|nil If specified, the spell ID for the row. Otherwise, the row is only the assignee.
 
+---@class DropdownItemData
+---@field itemValue string|number|table the internal value used to index a dropdown item
+---@field text string the value shown in the dropdown
+---@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
+---@field selectable? boolean If true, the dropdown item can be selected and a check can be shown
+---@field customTexture? string|integer A custom texture to add beside the check or checked indicator
+---@field customTextureVertexColor? number[] The color of the texture
+-- Whether or not the custom texture should be allowed to fire the CustomTextureClicked callback after user left mouse
+-- button mouse up
+---@field customTextureSelectable? boolean
+---@field itemMenuClickable? boolean If true, item menus can be clicked and trigger OnValueChanged
+---@field neverHasChildren? boolean If true, a EPDropdownItemToggle is created instead of an EPDropdownItemMenu
+---@field indent? integer
+---@field clickable? boolean
+
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS
 ---| "SCS" SPELL_CAST_START
