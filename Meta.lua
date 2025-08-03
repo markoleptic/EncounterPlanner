@@ -83,6 +83,11 @@
 ---@field preferredCombatLogEventAbilities table<integer, PreferredCombatLogEventAbility|nil>|nil
 ---@field hasBossDeath boolean|nil If specified, at least one ability corresponds to a boss death.
 ---@field customSpells table<integer, {text: string, iconID: string|number}>|nil
+---@field preferredCombatLogEventAbilitiesHeroic table<integer, PreferredCombatLogEventAbility|nil>|nil
+---@field abilitiesHeroic table<integer, BossAbility>
+---@field phasesHeroic table<integer, BossPhase>
+---@field sortedAbilityIDsHeroic table<integer, integer>
+---@field abilityInstancesHeroic table<integer, BossAbilityInstance>
 
 -- A stage/phase in a boss encounter.
 ---@class BossPhase
@@ -179,6 +184,7 @@
 ---@field name string Name of the plan.
 ---@field dungeonEncounterID integer Dungeon encounter ID for the boss the plan is associated with.
 ---@field instanceID integer Instance ID for the boss the plan is associated with.
+---@field difficulty DifficultyType Difficulty type (either mythic or heroic)
 ---@field content table<integer, string> Miscellaneous text that other addons or WeakAuras can use for the encounter.
 ---@field assignments table<integer, Assignment> Assignments for the plan.
 ---@field roster table<string, RosterEntry> Roster for the plan.
@@ -192,9 +198,10 @@
 ---@field [2] string name
 ---@field [3] integer dungeonEncounterID
 ---@field [4] integer instanceID
----@field [5] table<integer, SerializedAssignment> assignments
----@field [6] table<string, SerializedRosterEntry> roster
----@field [7] table<integer, string> content
+---@field [5] DifficultyType difficulty
+---@field [6] table<integer, SerializedAssignment> assignments
+---@field [7] table<string, SerializedRosterEntry> roster
+---@field [8] table<integer, string> content
 
 ---@class SerializedAssignment
 ---@field [1] string assignee
@@ -334,6 +341,7 @@
 
 ---@class DefaultProfile
 ---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
+---@field activeBossAbilitiesHeroic table<integer, table<integer, boolean>> Heroic abilities to show on the timeline.
 ---@field plans table<string, Plan> All plans.
 ---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
 ---@field lastOpenPlan string The last open plan.

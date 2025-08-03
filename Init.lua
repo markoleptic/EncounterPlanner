@@ -111,6 +111,12 @@ Private.GenerateUniqueID = GenerateUniqueID
 
 Private.classes = {}
 
+---@enum DifficultyType
+Private.classes.DifficultyType = {
+	Heroic = 15,
+	Mythic = 16,
+}
+
 ---@class Assignment
 Private.classes.Assignment = {
 	uniqueID = 0,
@@ -235,6 +241,7 @@ Private.classes.Plan = {
 	name = "",
 	dungeonEncounterID = 0,
 	instanceID = 0,
+	difficulty = Private.classes.DifficultyType.Mythic,
 	content = {},
 	assignments = {},
 	roster = {},
@@ -463,6 +470,7 @@ local ccA, ccR, ccB, _ = GetClassColor(playerClass)
 local defaults = {
 	profile = {
 		activeBossAbilities = {},
+		activeBossAbilitiesHeroic = {},
 		plans = {},
 		sharedRoster = {},
 		lastOpenPlan = "",

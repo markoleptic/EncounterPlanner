@@ -18,6 +18,8 @@ local CreatePlan = utilities.CreatePlan
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
+local DifficultyType = Private.classes.DifficultyType
+
 local AceDB = LibStub("AceDB-3.0")
 local AddOnProfilerMetricEnum = Enum.AddOnProfilerMetric
 local format = string.format
@@ -263,6 +265,7 @@ do -- Raid instance initialization
 	end
 
 	local GetMapUIInfo = C_ChallengeMode.GetMapUIInfo
+	local GetBossPhases = bossUtilities.GetBossPhases
 
 	-- Initializes names and icons for raid instances.
 	function dungeonInstanceInitializer.InitializeDungeonInstances()
@@ -298,10 +301,17 @@ do -- Raid instance initialization
 						index = index + 1
 					end
 				end
-				for phaseIndex, phase in ipairs(boss.phases) do
+				for phaseIndex, phase in ipairs(GetBossPhases(boss, DifficultyType.Mythic)) do
 					local long, short = CreatePhaseName(phase.name or phaseIndex)
 					phase.name = long
 					phase.shortName = short
+				end
+				if boss.abilitiesHeroic then
+					for phaseIndex, phase in ipairs(GetBossPhases(boss, DifficultyType.Heroic)) do
+						local long, short = CreatePhaseName(phase.name or phaseIndex)
+						phase.name = long
+						phase.shortName = short
+					end
 				end
 			end
 		end
@@ -357,51 +367,62 @@ do -- Profile updating and refreshing
 			"Test End",
 		}
 		-- cSpell:enable
+
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				EJ_SelectInstance(dungeonInstance.journalInstanceID)
 				EJ_SelectEncounter(boss.journalEncounterID)
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
-				local plan = CreatePlan(testPlans, encounterName .. "-" .. "Test", boss.dungeonEncounterID)
-				plan.roster[name] = entry
-				plan.content = textTable
-				local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID)
-				---@cast instances table<integer, BossAbilityInstance>
-				for _, abilityInstance in ipairs(instances) do
-					local types = boss.abilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
-					if #types > 0 then
-						local allowedType = types[random(1, #types)]
-						local assignment = CombatLogEventAssignment:New()
-						assignment.assignee = name
-						assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
-						assignment.phase = abilityInstance.bossPhaseIndex
-						assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
-						assignment.combatLogEventType = allowedType
-						assignment.spellCount = abilityInstance.spellCount
-						assignment.time = 8.00
-						assignment.spellID = 1
-						assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
-						tinsert(plan.assignments, assignment)
+				for difficultyName, difficulty in pairs(Private.classes.DifficultyType) do
+					if
+						difficulty == DifficultyType.Mythic
+						or (boss.abilitiesHeroic and difficulty == DifficultyType.Heroic)
+					then
+						local planName = encounterName .. "-" .. difficultyName .. "-Test"
+						local plan = CreatePlan(testPlans, planName, boss.dungeonEncounterID, difficulty)
+						plan.roster[name] = entry
+						plan.content = textTable
+						local instances =
+							bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID, plan.difficulty)
+						local bossAbilities = bossUtilities.GetBossAbilities(boss, plan.difficulty)
+						---@cast instances table<integer, BossAbilityInstance>
+						for _, abilityInstance in ipairs(instances) do
+							local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
+							if #types > 0 then
+								local allowedType = types[random(1, #types)]
+								local assignment = CombatLogEventAssignment:New()
+								assignment.assignee = name
+								assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+								assignment.phase = abilityInstance.bossPhaseIndex
+								assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
+								assignment.combatLogEventType = allowedType
+								assignment.spellCount = abilityInstance.spellCount
+								assignment.time = 8.00
+								assignment.spellID = 1
+								assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
+								tinsert(plan.assignments, assignment)
+							end
+						end
+						local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
+						do
+							local assignment = Private.classes.TimedAssignment:New()
+							assignment.assignee = name
+							assignment.time = 0
+							assignment.spellID = 1
+							assignment.text = "Timed " .. 0
+							tinsert(plan.assignments, assignment)
+						end
+						for i = 5, floor(d * 0.6), 30 do
+							local assignment = Private.classes.TimedAssignment:New()
+							assignment.assignee = name
+							assignment.time = i
+							assignment.spellID = 1
+							assignment.text = "Timed " .. i
+							tinsert(plan.assignments, assignment)
+						end
+						testPlans[plan.name] = plan
 					end
 				end
-				local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID)
-				do
-					local assignment = Private.classes.TimedAssignment:New()
-					assignment.assignee = name
-					assignment.time = 0
-					assignment.spellID = 1
-					assignment.text = "Timed " .. 0
-					tinsert(plan.assignments, assignment)
-				end
-				for i = 5, floor(d * 0.6), 30 do
-					local assignment = Private.classes.TimedAssignment:New()
-					assignment.assignee = name
-					assignment.time = i
-					assignment.spellID = 1
-					assignment.text = "Timed " .. i
-					tinsert(plan.assignments, assignment)
-				end
-				testPlans[plan.name] = plan
 			end
 		end
 		for _, testPlan in pairs(testPlans) do
@@ -418,12 +439,27 @@ do -- Profile updating and refreshing
 	local GenerateBossTables = bossUtilities.GenerateBossTables
 	local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 	local GetBoss = bossUtilities.GetBoss
+	local GetBossAbilities = bossUtilities.GetBossAbilities
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 	local SetPhaseCounts = bossUtilities.SetPhaseCounts
 	local SetPhaseDurations = bossUtilities.SetPhaseDurations
 
 	local ChangePlanBoss = utilities.ChangePlanBoss
 	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
+
+	local function RemoveInvalidActiveBossAbilities(activeBossAbilities, difficulty)
+		for dungeonEncounterID, activeBossAbilitiesForEncounterID in pairs(activeBossAbilities) do
+			local boss = GetBoss(dungeonEncounterID)
+			if boss then
+				local bossAbilities = GetBossAbilities(boss, difficulty)
+				for bossAbilityID, _ in pairs(activeBossAbilitiesForEncounterID) do
+					if not bossAbilities[bossAbilityID] then
+						activeBossAbilitiesForEncounterID[bossAbilityID] = nil
+					end
+				end
+			end
+		end
+	end
 
 	-- Sets the metatables for assignments and performs a small amount of assignment validation.
 	---@param profile DefaultProfile
@@ -442,13 +478,17 @@ do -- Profile updating and refreshing
 				local dungeonEncounterID = plan.dungeonEncounterID
 				boss = GetBoss(dungeonEncounterID) --[[@as Boss]]
 
-				SetPhaseDurations(dungeonEncounterID, plan.customPhaseDurations)
-				plan.customPhaseCounts =
-					SetPhaseCounts(dungeonEncounterID, plan.customPhaseCounts, constants.kMaxBossDuration)
+				SetPhaseDurations(dungeonEncounterID, plan.customPhaseDurations, plan.difficulty)
+				plan.customPhaseCounts = SetPhaseCounts(
+					dungeonEncounterID,
+					plan.customPhaseCounts,
+					constants.kMaxBossDuration,
+					plan.difficulty
+				)
 
-				GenerateBossTables(boss)
-				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID)
-				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID)
+				GenerateBossTables(boss, plan.difficulty)
+				local absoluteSpellCastTimeTable = GetAbsoluteSpellCastTimeTable(dungeonEncounterID, plan.difficulty)
+				local orderedBossPhaseTable = GetOrderedBossPhases(dungeonEncounterID, plan.difficulty)
 
 				if absoluteSpellCastTimeTable and orderedBossPhaseTable then
 					for _, assignment in ipairs(plan.assignments) do
@@ -478,16 +518,8 @@ do -- Profile updating and refreshing
 				profile.sharedRoster[name] = entry
 			end
 
-			for dungeonEncounterID, activeBossAbilities in pairs(profile.activeBossAbilities) do
-				local boss = GetBoss(dungeonEncounterID)
-				if boss then
-					for bossAbilityID, _ in pairs(activeBossAbilities) do
-						if not boss.abilities[bossAbilityID] then
-							activeBossAbilities[bossAbilityID] = nil
-						end
-					end
-				end
-			end
+			RemoveInvalidActiveBossAbilities(profile.activeBossAbilities, DifficultyType.Mythic)
+			RemoveInvalidActiveBossAbilities(profile.activeBossAbilitiesHeroic, DifficultyType.Heroic)
 
 			local currentMajor, currentMinor, currentPatch = ParseVersion(currentVersionString)
 			local major, minor, patch = ParseVersion(profile.version)
@@ -544,7 +576,7 @@ do -- Profile updating and refreshing
 			local plans = profile.plans
 			local lastOpenPlan = profile.lastOpenPlan
 			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
-				local newPlan = CreatePlan(plans, nil, constants.kDefaultBossDungeonEncounterID)
+				local newPlan = CreatePlan(plans, nil, constants.kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
 				profile.lastOpenPlan = newPlan.name
 			end
 			local timeline = Private.mainFrame.timeline

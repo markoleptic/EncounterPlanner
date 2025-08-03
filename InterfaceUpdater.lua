@@ -24,42 +24,56 @@ local utilities = Private.utilities
 local AddIconBeforeText = utilities.AddIconBeforeText
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
 local GetBoss = bossUtilities.GetBoss
+local GetCurrentPlan = utilities.GetCurrentPlan
+local GetCurrentRoster = utilities.GetCurrentRoster
 local SortAssignments = utilities.SortAssignments
 
+local DifficultyType = Private.classes.DifficultyType
+
 local AceGUI = LibStub("AceGUI-3.0")
+
 local format = string.format
 local ipairs = ipairs
-local max, min = math.max, math.min
+local max = math.max
+
 local pairs = pairs
 local sort = table.sort
 local tinsert = table.insert
 local tonumber = tonumber
-local tostring = tostring
 local tremove = table.remove
 local type = type
 local unpack = unpack
 local wipe = table.wipe
 
----@return table<string, RosterEntry>
-local function GetCurrentRoster()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].roster
-end
-
----@return table<integer, Assignment>
-local function GetCurrentAssignments()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].assignments
-end
-
----@return Plan
-local function GetCurrentPlan()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-end
-
 do
+	local floor = math.floor
+	local mod = math.fmod
+
+	---@param difficulty DifficultyType
+	---@return number, number, number, number
+	local function GetTextCoordsFromDifficulty(difficulty)
+		local iconIndex
+		if difficulty == DifficultyType.Heroic then
+			iconIndex = 3
+		else
+			iconIndex = 12
+		end
+		local iconSize = 32
+		local columns = 256 / iconSize
+		local padding = 8
+		local l = (mod(iconIndex, columns) * iconSize + padding) / 256
+		local r = ((mod(iconIndex, columns) + 1) * iconSize - padding) / 256
+		local t = (floor(iconIndex / columns) * iconSize + padding) / 64
+		local b = ((floor(iconIndex / columns) + 1) * iconSize - padding) / 64
+		return l, r, t, b
+	end
+
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	local GenerateBossTables = bossUtilities.GenerateBossTables
+	local GetBossAbilities = bossUtilities.GetBossAbilities
 	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local GetSortedBossAbilityIDs = bossUtilities.GetSortedBossAbilityIDs
 	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
 	local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
 	local SetPhaseCounts = bossUtilities.SetPhaseCounts
@@ -73,15 +87,29 @@ do
 	---@param boss Boss
 	---@param timeline EPTimeline
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
-	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
+	---@param difficulty DifficultyType
+	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown, difficulty)
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossLabel = Private.mainFrame.bossLabel
 		local instanceLabel = Private.mainFrame.instanceLabel
+		local difficultyLabel = Private.mainFrame.difficultyLabel
 		if bossAbilityContainer and bossLabel and instanceLabel then
-			if AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] == nil then
-				AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID] = {}
+			local dungeonEncounterID = boss.dungeonEncounterID
+			local profile = AddOn.db.profile
+
+			local activeBossAbilities
+			if difficulty == DifficultyType.Heroic then
+				if profile.activeBossAbilitiesHeroic[dungeonEncounterID] == nil then
+					profile.activeBossAbilitiesHeroic[dungeonEncounterID] = {}
+				end
+				activeBossAbilities = profile.activeBossAbilitiesHeroic[dungeonEncounterID]
+			else
+				if profile.activeBossAbilities[dungeonEncounterID] == nil then
+					profile.activeBossAbilities[dungeonEncounterID] = {}
+				end
+				activeBossAbilities = AddOn.db.profile.activeBossAbilities[dungeonEncounterID]
 			end
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
+
 			local dungeonInstance = Private.dungeonInstances[boss.instanceID]
 			if dungeonInstance.isSplit and boss.mapChallengeModeID then
 				dungeonInstance = dungeonInstance.splitDungeonInstances[boss.mapChallengeModeID]
@@ -93,29 +121,37 @@ do
 			else
 				instanceLabel:SetText(dungeonInstance.name, instanceAndBossPadding, dungeonInstance.instanceID)
 			end
-
 			instanceLabel:SetIcon(dungeonInstance.icon, 0, 2, 0, 0, 2)
 			instanceLabel:SetFrameWidthFromText()
 
-			bossLabel:SetText(boss.name, instanceAndBossPadding, boss.dungeonEncounterID)
+			bossLabel:SetText(boss.name, instanceAndBossPadding, dungeonEncounterID)
 			bossLabel:SetIcon(boss.icon, 0, 2, 0, 0, 2)
 			bossLabel:SetFrameWidthFromText()
+
+			if difficulty == DifficultyType.Heroic then
+				difficultyLabel:SetText(L["Heroic"], instanceAndBossPadding, difficulty)
+			else
+				difficultyLabel:SetText(L["Mythic"], instanceAndBossPadding, difficulty)
+			end
+			difficultyLabel.icon:SetTexCoord(GetTextCoordsFromDifficulty(difficulty))
+			difficultyLabel:SetFrameWidthFromText()
 
 			Private.mainFrame:UpdateHorizontalResizeBounds()
 			bossAbilityContainer:ReleaseChildren()
 
-			local bossAbilityHeight = AddOn.db.profile.preferences.timelineRows.bossAbilityHeight
+			local bossAbilityHeight = profile.preferences.timelineRows.bossAbilityHeight
 
 			local children = {}
 			local bossAbilitySelectItems = {}
-			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
+			local bossAbilities = GetBossAbilities(boss, difficulty)
+			for _, abilityID in ipairs(GetSortedBossAbilityIDs(boss, difficulty)) do
 				if activeBossAbilities[abilityID] == nil then
-					activeBossAbilities[abilityID] = not boss.abilities[abilityID].defaultHidden
+					activeBossAbilities[abilityID] = not bossAbilities[abilityID].defaultHidden
 				end
 
 				local icon, text
 				if activeBossAbilities[abilityID] == true or updateBossAbilitySelectDropdown then
-					icon, text = GetBossAbilityIconAndLabel(boss, abilityID)
+					icon, text = GetBossAbilityIconAndLabel(boss, abilityID, difficulty)
 				end
 
 				if activeBossAbilities[abilityID] == true then
@@ -149,20 +185,22 @@ do
 		end
 	end
 
+	local GetBossAbilityInstances = bossUtilities.GetBossAbilityInstances
+	local GetBossPhases = bossUtilities.GetBossPhases
+
 	-- Sets the boss abilities for the timeline and rerenders it.
 	---@param boss Boss
 	---@param timeline EPTimeline
-	local function UpdateTimelineBossAbilities(boss, timeline)
-		local bossPhaseTable = GetOrderedBossPhases(boss.dungeonEncounterID)
+	---@param difficulty DifficultyType
+	local function UpdateTimelineBossAbilities(boss, timeline, difficulty)
+		local bossDungeonEncounterID = boss.dungeonEncounterID
+		local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID, difficulty)
 		if bossPhaseTable then
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
-			timeline:SetBossAbilities(
-				boss.abilityInstances,
-				boss.sortedAbilityIDs,
-				boss.phases,
-				bossPhaseTable,
-				activeBossAbilities
-			)
+			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
+			local abilityInstances = GetBossAbilityInstances(bossDungeonEncounterID, difficulty)
+			local sortedAbilityIDs = GetSortedBossAbilityIDs(boss, difficulty)
+			local phases = GetBossPhases(boss, difficulty)
+			timeline:SetBossAbilities(abilityInstances, sortedAbilityIDs, phases, bossPhaseTable, activeBossAbilities)
 			timeline:UpdateTimeline()
 			Private.mainFrame:DoLayout()
 		end
@@ -172,21 +210,23 @@ do
 	---@param bossDungeonEncounterID integer
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
+		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local difficulty = plan.difficulty
 		if lastBossDungeonEncounterID ~= 0 then
-			ResetBossPhaseTimings(lastBossDungeonEncounterID)
-			ResetBossPhaseCounts(lastBossDungeonEncounterID)
+			ResetBossPhaseTimings(lastBossDungeonEncounterID, difficulty)
+			ResetBossPhaseCounts(lastBossDungeonEncounterID, difficulty)
 		end
 		lastBossDungeonEncounterID = bossDungeonEncounterID
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
-			local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-			SetPhaseDurations(bossDungeonEncounterID, plan.customPhaseDurations)
-			plan.customPhaseCounts = SetPhaseCounts(bossDungeonEncounterID, plan.customPhaseCounts, kMaxBossDuration)
-			GenerateBossTables(boss)
+			SetPhaseDurations(bossDungeonEncounterID, plan.customPhaseDurations, difficulty)
+			plan.customPhaseCounts =
+				SetPhaseCounts(bossDungeonEncounterID, plan.customPhaseCounts, kMaxBossDuration, difficulty)
+			GenerateBossTables(boss, difficulty)
 			local timeline = Private.mainFrame.timeline
 			if timeline then
-				UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown)
-				UpdateTimelineBossAbilities(boss, timeline)
+				UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown, difficulty)
+				UpdateTimelineBossAbilities(boss, timeline, difficulty)
 			end
 		end
 	end
@@ -238,10 +278,7 @@ do
 				end
 				plan.collapsed[assignee] = nil
 			end
-			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-			if bossDungeonEncounterID then
-				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-			end
+			InterfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
 			local assignmentString = removed == 1 and L["Assignment"]:lower() or L["assignments"]
 			InterfaceUpdater.LogMessage(format("%s %d %s.", L["Removed"], removed, assignmentString))
 			if Private.activeTutorialCallbackName then
@@ -281,7 +318,7 @@ do
 		local key = abilityEntry:GetKey()
 		if key then
 			local plan = GetCurrentPlan()
-			local assignments = GetCurrentAssignments()
+			local assignments = plan.assignments
 			if type(key) == "string" then
 				for _, assignment in ipairs(assignments) do
 					if assignment.assignee == key then
@@ -299,22 +336,22 @@ do
 				end
 				plan.collapsed[assignee] = nil
 			end
-			local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-			if bossDungeonEncounterID then
-				InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-			end
+			local bossDungeonEncounterID = plan.dungeonEncounterID
+			local difficulty = plan.difficulty
+			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
 			if Private.assignmentEditor then
 				local assignmentEditor = Private.assignmentEditor
 				local assignmentID = assignmentEditor:GetAssignmentID()
 				if assignmentID then
-					local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+					local assignment = FindAssignmentByUniqueID(assignments, assignmentID)
 					if assignment then
-						local previewText = CreateReminderText(assignment, GetCurrentRoster(), true)
-						local availableCombatLogEventTypes = GetAvailableCombatLogEventTypes(bossDungeonEncounterID)
+						local previewText = CreateReminderText(assignment, plan.roster, true)
+						local availableCombatLogEventTypes =
+							GetAvailableCombatLogEventTypes(bossDungeonEncounterID, difficulty)
 						local spellSpecificCombatLogEventTypes = nil
 						local combatLogEventSpellID = assignment.combatLogEventSpellID
 						if combatLogEventSpellID then
-							local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID)
+							local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID, difficulty)
 							if ability then
 								spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 							end
@@ -549,7 +586,8 @@ do
 	)
 		local currentPlan = GetCurrentPlan()
 		local sortType = AddOn.db.profile.preferences.assignmentSortType
-		local sortedTimelineAssignments = SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve)
+		local sortedTimelineAssignments =
+			SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve, currentPlan.difficulty)
 		local sortedWithSpellID, groupedByAssignee =
 			SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
 		for _, timelineAssignments in pairs(groupedByAssignee) do
@@ -994,20 +1032,23 @@ do
 	---@param updateFields boolean If true, updates all fields in the Assignment Editor from the assignment.
 	---@param updateTimeline boolean If true, the timeline assignment start time is updated, UpdateTimeline is called, and selected boss abilities are updated.
 	---@param updateAssignments boolean If true, UpdateAllAssignments is called, and assignment is scrolled into view.
+	---@param difficulty DifficultyType
 	function InterfaceUpdater.UpdateFromAssignment(
 		dungeonEncounterID,
 		assignment,
 		updateFields,
 		updateTimeline,
-		updateAssignments
+		updateAssignments,
+		difficulty
 	)
 		if updateFields and Private.assignmentEditor then
 			local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
-			local availableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID)
+			local availableCombatLogEventTypes =
+				bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID, difficulty)
 			local spellSpecificCombatLogEventTypes = nil
 			local combatLogEventSpellID = assignment.combatLogEventSpellID
 			if combatLogEventSpellID then
-				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID)
+				local ability = bossUtilities.FindBossAbility(dungeonEncounterID, combatLogEventSpellID, difficulty)
 				if ability then
 					spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 				end
@@ -1030,7 +1071,11 @@ do
 				if not updateAssignments then
 					for _, timelineAssignment in pairs(timeline:GetAssignments()) do
 						if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-							utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID)
+							utilities.UpdateTimelineAssignmentStartTime(
+								timelineAssignment,
+								dungeonEncounterID,
+								difficulty
+							)
 							break
 						end
 					end

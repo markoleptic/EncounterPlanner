@@ -13,12 +13,18 @@ local TimedAssignment = Private.classes.TimedAssignment
 
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
+local GetBoss = bossUtilities.GetBoss
+local GetBossPhases = bossUtilities.GetBossPhases
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
 
 ---@class Utilities
 local utilities = Private.utilities
+local GetCurrentAssignments = utilities.GetCurrentAssignments
+local GetCurrentBossDungeonEncounterID = utilities.GetCurrentBossDungeonEncounterID
+local GetCurrentDifficulty = utilities.GetCurrentDifficulty
+local GetCurrentRoster = utilities.GetCurrentRoster
 
 local UIParent = UIParent
 local abs = math.abs
@@ -50,25 +56,6 @@ highlightBorderFrame:SetBackdrop({
 highlightBorderFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
 highlightBorderFrame:EnableMouse(false)
 highlightBorderFrame:Hide()
-
----@return table<string, RosterEntry>
-local function GetCurrentRoster()
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	local plan = AddOn.db.profile.plans[lastOpenPlan]
-	return plan.roster
-end
-
----@return table<integer, Assignment>
-local function GetCurrentAssignments()
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	local plan = AddOn.db.profile.plans[lastOpenPlan]
-	return plan.assignments
-end
-
----@return integer
-local function GetCurrentBossDungeonEncounterID()
-	return Private.mainFrame.bossLabel:GetValue()
-end
 
 ---@param frame Frame
 local function HighlightFrame(frame)
@@ -156,7 +143,14 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 	for _, assignment in ipairs(assignments) do
 		if assignment.assignee == playerName then
 			needToCreateNewAssignment = false
-			interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
+			interfaceUpdater.UpdateFromAssignment(
+				GetCurrentBossDungeonEncounterID(),
+				assignment,
+				true,
+				true,
+				true,
+				GetCurrentDifficulty()
+			)
 			break
 		end
 	end
@@ -169,7 +163,14 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 		local assignment = TimedAssignment:New()
 		assignment.assignee = name
 		tinsert(GetCurrentAssignments(), assignment)
-		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
+		interfaceUpdater.UpdateFromAssignment(
+			GetCurrentBossDungeonEncounterID(),
+			assignment,
+			true,
+			true,
+			true,
+			GetCurrentDifficulty()
+		)
 	end
 end
 
@@ -324,10 +325,11 @@ local timeValues = { [1] = 15.0, [2] = 20.0, [3] = 120.0 }
 ---@param allowUnknown boolean|nil
 ---@return Assignment|CombatLogEventAssignment|TimedAssignment|nil
 local function FindPhaseOneAssignment(assignmentNumber, setTime, allowUnknown)
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	local assignments = GetCurrentAssignments()
 	if boss then
-		local phaseOneDuration = boss.phases[1].duration
+		local phases = GetBossPhases(boss, GetCurrentDifficulty())
+		local phaseOneDuration = phases[1].duration
 		local firstSpell = AddOn.db.global.tutorial.firstSpell
 		local secondSpell = AddOn.db.global.tutorial.secondSpell
 		local encounteredSecondSpell = false
@@ -425,9 +427,10 @@ end
 
 ---@return boolean
 local function TwoPhaseOneAssignmentsExist()
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
-		local phaseOneDuration = boss.phases[1].duration
+		local phases = GetBossPhases(boss, GetCurrentDifficulty())
+		local phaseOneDuration = phases[1].duration
 		local count = 0
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.TimedAssignment then
@@ -448,9 +451,10 @@ end
 ---@param limitToInIntermission boolean Whether to only count as valid if the time is less than intermission duration.
 ---@return boolean
 local function IntermissionAssignmentExists(combatLogEventType, limitToInIntermission)
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
-		local phaseTwoDuration = boss.phases[2].duration
+		local phases = GetBossPhases(boss, GetCurrentDifficulty())
+		local phaseTwoDuration = phases[2].duration
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
@@ -470,7 +474,7 @@ end
 
 ---@return boolean
 local function TwoIntermissionAssignmentsExist()
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
 		local count = 0
 		for _, assignment in ipairs(GetCurrentAssignments()) do
@@ -509,9 +513,10 @@ local function FindOrCreateIntermissionAssignment(
 	limitToInIntermission,
 	time
 )
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss then
-		local phaseTwoDuration = boss.phases[2].duration
+		local phases = GetBossPhases(boss, GetCurrentDifficulty())
+		local phaseTwoDuration = phases[2].duration
 		local encounteredFirstAssignment = false
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
@@ -579,13 +584,13 @@ end
 ---@return number
 local function GetPhaseOffsets(self, startPhaseIndex, endPhaseIndex)
 	local leftOffset, rightOffset = 0.0, 0.0
-	local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+	local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 	if boss and self.mainFrame and self.mainFrame.timeline then
 		local startTime = 0.0
 		local endTime = 0.0
-
-		if boss.phases[startPhaseIndex] then
-			for index, phase in ipairs(boss.phases) do
+		local phases = GetBossPhases(boss, GetCurrentDifficulty())
+		if phases[startPhaseIndex] then
+			for index, phase in ipairs(phases) do
 				if index == startPhaseIndex then
 					break
 				end
@@ -593,14 +598,14 @@ local function GetPhaseOffsets(self, startPhaseIndex, endPhaseIndex)
 			end
 		end
 		if endPhaseIndex > startPhaseIndex then
-			for index, phase in ipairs(boss.phases) do
+			for index, phase in ipairs(phases) do
 				endTime = endTime + phase.duration
 				if index == endPhaseIndex then
 					break
 				end
 			end
-		elseif boss.phases[endPhaseIndex] then
-			endTime = startTime + boss.phases[endPhaseIndex].duration
+		elseif phases[endPhaseIndex] then
+			endTime = startTime + phases[endPhaseIndex].duration
 		end
 		local startOffsetFromLeft = self.mainFrame.timeline:GetOffsetFromTime(startTime)
 		local endOffsetFromLeft = self.mainFrame.timeline:GetOffsetFromTime(endTime)
@@ -667,7 +672,14 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 			FindOrCreatePhaseOneAssignment(2, true, true)
 		end
 		local assignment = FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime, allowUnknown)
-		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
+		interfaceUpdater.UpdateFromAssignment(
+			GetCurrentBossDungeonEncounterID(),
+			assignment,
+			true,
+			true,
+			true,
+			GetCurrentDifficulty()
+		)
 		if not openAssignmentEditor then
 			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
@@ -736,7 +748,14 @@ local function IntermissionOkay(
 			limitToInIntermission,
 			time
 		)
-		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, true)
+		interfaceUpdater.UpdateFromAssignment(
+			GetCurrentBossDungeonEncounterID(),
+			assignment,
+			true,
+			true,
+			true,
+			GetCurrentDifficulty()
+		)
 		if not openAssignmentEditor then
 			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
@@ -776,7 +795,7 @@ end
 local function CreateTutorialSteps(self, setCurrentStep)
 	local createdTutorialPlan = false
 	local cinderBrewMeaderyName = self.dungeonInstances[2661].name
-	local brewmasterAldryrName = bossUtilities.GetBoss(kBrewmasterAldryrEncounterID).name
+	local brewmasterAldryrName = GetBoss(kBrewmasterAldryrEncounterID).name
 
 	---@type table<integer, TutorialStep>
 	return {
@@ -2046,9 +2065,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "editPhaseOneBossPhaseDuration",
 			text = L["Change the duration of Phase 1 to 1:30."],
 			enableNextButton = function()
-				local boss = bossUtilities.GetBoss(GetCurrentBossDungeonEncounterID())
+				local boss = GetBoss(GetCurrentBossDungeonEncounterID())
 				if boss then
-					if abs(boss.phases[1].duration - 90.0) < 0.01 then
+					local phases = GetBossPhases(boss, GetCurrentDifficulty())
+					if abs(phases[1].duration - 90.0) < 0.01 then
 						return true
 					end
 				end

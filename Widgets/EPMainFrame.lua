@@ -94,6 +94,7 @@ end
 ---@field statusBar EPStatusBar
 ---@field instanceLabel EPLabel
 ---@field bossLabel EPLabel
+---@field difficultyLabel EPLabel
 ---@field bossMenuButton EPDropdown
 ---@field planDropdown EPDropdown
 ---@field timeline EPTimeline
@@ -333,6 +334,7 @@ local function OnRelease(self)
 
 	self.instanceLabel = nil
 	self.bossLabel = nil
+	self.difficultyLabel = nil
 	self.bossMenuButton = nil
 	self.planDropdown = nil
 	self.timeline = nil

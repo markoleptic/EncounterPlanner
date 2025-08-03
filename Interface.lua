@@ -22,6 +22,12 @@ local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTy
 local CreateUniquePlanName = utilities.CreateUniquePlanName
 local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 local FormatTime = utilities.FormatTime
+local GetCurrentAssignments = utilities.GetCurrentAssignments
+local GetCurrentBoss = utilities.GetCurrentBoss
+local GetCurrentBossDungeonEncounterID = utilities.GetCurrentBossDungeonEncounterID
+local GetCurrentDifficulty = utilities.GetCurrentDifficulty
+local GetCurrentPlan = utilities.GetCurrentPlan
+local GetCurrentRoster = utilities.GetCurrentRoster
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
 local Round = utilities.Round
 local SortAssignments = utilities.SortAssignments
@@ -41,6 +47,8 @@ local AddPlanToDropdown = interfaceUpdater.AddPlanToDropdown
 local CreateMessageBox = interfaceUpdater.CreateMessageBox
 local UpdateAllAssignments = interfaceUpdater.UpdateAllAssignments
 local UpdateBoss = interfaceUpdater.UpdateBoss
+
+local DifficultyType = Private.classes.DifficultyType
 
 local abs = math.abs
 local AceGUI = LibStub("AceGUI-3.0")
@@ -161,35 +169,6 @@ do -- Boss Menu Items
 		end
 		return bossMenuItems
 	end
-end
-
----@return table<string, RosterEntry>
-local function GetCurrentRoster()
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	local plan = AddOn.db.profile.plans[lastOpenPlan]
-	return plan.roster
-end
-
----@return table<integer, Assignment>
-local function GetCurrentAssignments()
-	local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-	local plan = AddOn.db.profile.plans[lastOpenPlan]
-	return plan.assignments
-end
-
----@return Plan
-local function GetCurrentPlan()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-end
-
----@return Boss|nil
-local function GetCurrentBoss()
-	return GetBoss(Private.mainFrame.bossLabel:GetValue())
-end
-
----@return integer
-local function GetCurrentBossDungeonEncounterID()
-	return Private.mainFrame.bossLabel:GetValue()
 end
 
 local function ClosePlanDependentWidgets()
@@ -499,12 +478,13 @@ do -- Assignment Editor
 		end
 
 		local dungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		local difficulty = GetCurrentDifficulty()
 		local updateFields = false
 		local updateAssignments = false
 
 		if dataType == "AssignmentType" then
 			---@cast assignment CombatLogEventAssignment|TimedAssignment
-			ChangeAssignmentType(assignment, dungeonEncounterID, value)
+			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty)
 			updateFields = true
 			updateAssignments = true
 		elseif dataType == "CombatLogEventSpellID" then
@@ -512,7 +492,7 @@ do -- Assignment Editor
 				---@cast assignment CombatLogEventAssignment
 				local spellID = tonumber(value)
 				if spellID then
-					utilities.ChangeAssignmentCombatLogEventSpellID(assignment, dungeonEncounterID, spellID)
+					utilities.ChangeAssignmentCombatLogEventSpellID(assignment, dungeonEncounterID, spellID, difficulty)
 				end
 				updateFields = true
 			end
@@ -522,11 +502,11 @@ do -- Assignment Editor
 				local spellCount = tonumber(value)
 				if spellCount then
 					local spellID = assignment.combatLogEventSpellID
-					if IsValidSpellCount(dungeonEncounterID, spellID, spellCount) then
+					if IsValidSpellCount(dungeonEncounterID, spellID, spellCount, nil, difficulty) then
 						assignment.spellCount = spellCount
-						UpdateAssignmentBossPhase(assignment, dungeonEncounterID)
+						UpdateAssignmentBossPhase(assignment, dungeonEncounterID, difficulty)
 					else
-						local clamped = ClampSpellCount(dungeonEncounterID, spellID, spellCount)
+						local clamped = ClampSpellCount(dungeonEncounterID, spellID, spellCount, difficulty)
 						if clamped then
 							assignment.spellCount = clamped
 						end
@@ -601,7 +581,14 @@ do -- Assignment Editor
 			updateFields = true
 		end
 
-		interfaceUpdater.UpdateFromAssignment(dungeonEncounterID, assignment, updateFields, true, updateAssignments)
+		interfaceUpdater.UpdateFromAssignment(
+			dungeonEncounterID,
+			assignment,
+			updateFields,
+			true,
+			updateAssignments,
+			difficulty
+		)
 		if
 			dataType == "SpellAssignment"
 			or dataType == "OptionalText"
@@ -616,6 +603,8 @@ do -- Assignment Editor
 
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
+	local GetBossAbilities = bossUtilities.GetBossAbilities
+	local GetSortedBossAbilityIDs = bossUtilities.GetSortedBossAbilityIDs
 
 	function Private.CreateAssignmentEditor()
 		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
@@ -683,11 +672,14 @@ do -- Assignment Editor
 		local dropdownItems = {}
 		local itemsToDisable = {}
 		local boss = GetCurrentBoss()
+
 		if boss then
-			for _, abilityID in ipairs(boss.sortedAbilityIDs) do
-				local icon, text = GetBossAbilityIconAndLabel(boss, abilityID)
+			local difficulty = GetCurrentDifficulty()
+			local bossAbilities = GetBossAbilities(boss, difficulty)
+			for _, abilityID in ipairs(GetSortedBossAbilityIDs(boss, difficulty)) do
+				local icon, text = GetBossAbilityIconAndLabel(boss, abilityID, difficulty)
 				tinsert(dropdownItems, CreateAbilityDropdownItemData(abilityID, icon, text))
-				if #boss.abilities[abilityID].allowedCombatLogEventTypes == 0 then
+				if #bossAbilities[abilityID].allowedCombatLogEventTypes == 0 then
 					tinsert(itemsToDisable, abilityID)
 				end
 			end
@@ -704,6 +696,7 @@ end
 
 do -- Phase Length Editor
 	local CalculateMaxPhaseDuration = bossUtilities.CalculateMaxPhaseDuration
+	local GetBossPhases = bossUtilities.GetBossPhases
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local SetPhaseDuration = bossUtilities.SetPhaseDuration
 	local SetPhaseDurations = bossUtilities.SetPhaseDurations
@@ -715,7 +708,8 @@ do -- Phase Length Editor
 
 	local function UpdateTotalTime()
 		if Private.phaseLengthEditor then
-			local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
+			local totalCustomTime, totalDefaultTime =
+				GetTotalDurations(GetCurrentBossDungeonEncounterID(), GetCurrentDifficulty())
 			local totalCustomMinutes, totalCustomSeconds = FormatTime(totalCustomTime)
 			local totalCustomTimeString = totalCustomMinutes .. ":" .. totalCustomSeconds
 			local totalDefaultMinutes, totalDefaultSeconds = FormatTime(totalDefaultTime)
@@ -731,10 +725,12 @@ do -- Phase Length Editor
 		local boss = GetCurrentBoss()
 		if boss then
 			local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+			local difficulty = GetCurrentDifficulty()
+			local phases = GetBossPhases(boss, difficulty)
 
-			local previousDuration = boss.phases[phaseIndex].duration
+			local previousDuration = phases[phaseIndex].duration
 			if boss.treatAsSinglePhase then
-				local totalCustomTime, _ = GetTotalDurations(bossDungeonEncounterID)
+				local totalCustomTime, _ = GetTotalDurations(bossDungeonEncounterID, difficulty)
 				previousDuration = totalCustomTime
 			end
 
@@ -746,7 +742,8 @@ do -- Phase Length Editor
 				local roundedMinutes = Round(timeMinutes, 0)
 				local roundedSeconds = Round(timeSeconds, 1)
 				newDuration = roundedMinutes * 60 + roundedSeconds
-				local maxPhaseDuration = CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration)
+				local maxPhaseDuration =
+					CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration, difficulty)
 				if maxPhaseDuration then
 					if boss.treatAsSinglePhase then
 						maxPhaseDuration = kMaxBossDuration
@@ -768,7 +765,7 @@ do -- Phase Length Editor
 				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
 				if boss.treatAsSinglePhase then
 					local cumulativePhaseTime = 0.0
-					for index, phase in ipairs(boss.phases) do
+					for index, phase in ipairs(phases) do
 						if cumulativePhaseTime + phase.defaultDuration <= newDuration then
 							cumulativePhaseTime = cumulativePhaseTime + phase.defaultDuration
 							customPhaseDurations[index] = phase.defaultDuration
@@ -780,13 +777,13 @@ do -- Phase Length Editor
 						end
 					end
 					if cumulativePhaseTime < newDuration then
-						customPhaseDurations[#boss.phases] = (customPhaseDurations[#boss.phases] or 0)
+						customPhaseDurations[#phases] = (customPhaseDurations[#phases] or 0)
 							+ newDuration
 							- cumulativePhaseTime
 					end
-					SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations)
+					SetPhaseDurations(bossDungeonEncounterID, customPhaseDurations, difficulty)
 				else
-					SetPhaseDuration(bossDungeonEncounterID, phaseIndex, newDuration)
+					SetPhaseDuration(bossDungeonEncounterID, phaseIndex, newDuration, difficulty)
 					customPhaseDurations[phaseIndex] = newDuration
 				end
 
@@ -816,7 +813,9 @@ do -- Phase Length Editor
 		local boss = GetCurrentBoss()
 		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
 		if boss then
-			local previousCount = boss.phases[phaseIndex].count
+			local difficulty = GetCurrentDifficulty()
+			local phases = GetBossPhases(boss, difficulty)
+			local previousCount = phases[phaseIndex].count
 			local newCount = tonumber(text)
 			if newCount then
 				newCount = floor(newCount)
@@ -824,7 +823,8 @@ do -- Phase Length Editor
 				widget:SetText(tostring(previousCount))
 				return
 			end
-			local validatedPhaseCounts = SetPhaseCount(bossDungeonEncounterID, phaseIndex, newCount, kMaxBossDuration)
+			local validatedPhaseCounts =
+				SetPhaseCount(bossDungeonEncounterID, phaseIndex, newCount, kMaxBossDuration, difficulty)
 			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
 			for index, count in ipairs(validatedPhaseCounts) do
 				customPhaseCounts[index] = count
@@ -863,13 +863,16 @@ do -- Phase Length Editor
 
 			local boss = GetCurrentBoss()
 			if boss then
-				local totalCustomTime, totalDefaultTime = GetTotalDurations(GetCurrentBossDungeonEncounterID())
+				local difficulty = GetCurrentDifficulty()
+				local totalCustomTime, totalDefaultTime =
+					GetTotalDurations(GetCurrentBossDungeonEncounterID(), difficulty)
+				local phases = GetBossPhases(boss, difficulty)
 				if boss.treatAsSinglePhase then
 					local phaseData = {}
 					tinsert(phaseData, {
 						name = L["Phase"] .. " 1",
 						defaultDuration = totalDefaultTime,
-						fixedDuration = boss.phases[1].fixedDuration,
+						fixedDuration = phases[1].fixedDuration,
 						duration = totalCustomTime,
 						count = 1,
 						defaultCount = 1,
@@ -877,7 +880,7 @@ do -- Phase Length Editor
 					})
 					phaseLengthEditor:AddEntries(phaseData)
 				else
-					phaseLengthEditor:AddEntries(boss.phases)
+					phaseLengthEditor:AddEntries(phases)
 				end
 
 				local totalCustomMinutes, totalCustomSeconds = FormatTime(totalCustomTime)
@@ -910,9 +913,10 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, convers
 	local newBoss = GetBoss(newBossDungeonEncounterID)
 	local currentAssignments = plan.assignments
 	if currentBoss and newBoss then
+		local difficulty = plan.difficulty
 		ClosePlanDependentWidgets()
 		if conversionMethod then
-			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod)
+			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod, difficulty)
 		end
 		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID)
 		interfaceUpdater.RepopulatePlanWidgets()
@@ -1117,7 +1121,14 @@ local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifferen
 		if not Private.assignmentEditor then
 			Private.CreateAssignmentEditor()
 		end
-		interfaceUpdater.UpdateFromAssignment(GetCurrentBossDungeonEncounterID(), assignment, true, true, false)
+		interfaceUpdater.UpdateFromAssignment(
+			GetCurrentBossDungeonEncounterID(),
+			assignment,
+			true,
+			true,
+			false,
+			GetCurrentDifficulty()
+		)
 		if Private.activeTutorialCallbackName and widget then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, timeDifference)
 		end
@@ -1158,7 +1169,7 @@ end
 ---@param time number
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local encounterID = GetCurrentBossDungeonEncounterID()
-	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID)
+	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID, GetCurrentDifficulty())
 	if assignment then
 		tinsert(GetCurrentAssignments(), assignment)
 		UpdateAllAssignments(false, encounterID)
@@ -1357,25 +1368,44 @@ do -- Plan Menu Button Handlers
 					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogClosed")
 				end
 			end)
-			newPlanDialog:SetCallback("CreateNewPlanName", function(widget, _, currentBossDungeonEncounterID)
-				local newBossName = GetBossName(currentBossDungeonEncounterID) --[[@as string]]
-				widget:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
-				widget:SetCreateButtonEnabled(true)
-				if Private.activeTutorialCallbackName then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
+			newPlanDialog:SetCallback("BossChanged", function(widget, _, currentBossDungeonEncounterID)
+				---@cast widget EPNewPlanDialog
+				local boss = GetBoss(currentBossDungeonEncounterID)
+				if boss then
+					local hasHeroicAbilities = boss.abilitiesHeroic ~= nil
+					widget.difficultyDropdown:SetEnabled(hasHeroicAbilities)
+					if not hasHeroicAbilities then
+						if not widget.difficultyDropdown:GetValue() == DifficultyType.Mythic then
+							widget.difficultyDropdown:SetValue(DifficultyType.Mythic)
+						end
+					end
+					if not widget.planNameManuallyChanged then
+						local newBossName = boss.name
+						widget:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, newBossName))
+						widget:SetCreateButtonEnabled(true)
+						if Private.activeTutorialCallbackName then
+							Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogValidate")
+						end
+					end
 				end
 			end)
 			newPlanDialog:SetCallback(
 				"CreateButtonClicked",
-				function(widget, _, currentBossDungeonEncounterID, planName)
+				function(widget, _, currentBossDungeonEncounterID, planName, difficulty)
+					---@cast widget EPNewPlanDialog
 					planName = planName:trim()
 					if planName == "" or AddOn.db.profile.plans[planName] then
 						widget:SetCreateButtonEnabled(false)
 					else
 						ClosePlanDependentWidgets()
 						widget:Release()
-						local newPlan =
-							utilities.CreatePlan(AddOn.db.profile.plans, planName, currentBossDungeonEncounterID)
+
+						local newPlan = utilities.CreatePlan(
+							AddOn.db.profile.plans,
+							planName,
+							currentBossDungeonEncounterID,
+							difficulty
+						)
 						AddOn.db.profile.lastOpenPlan = newPlan.name
 						AddPlanToDropdown(newPlan, true)
 						UpdateBoss(currentBossDungeonEncounterID, true)
@@ -1388,6 +1418,7 @@ do -- Plan Menu Button Handlers
 				end
 			)
 			newPlanDialog:SetCallback("ValidatePlanName", function(widget, _, planName)
+				---@cast widget EPNewPlanDialog
 				planName = planName:trim()
 				if planName == "" or AddOn.db.profile.plans[planName] then
 					widget:SetCreateButtonEnabled(false)
@@ -1404,11 +1435,18 @@ do -- Plan Menu Button Handlers
 			newPlanDialog.frame:SetParent(UIParent)
 			newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
 			newPlanDialog:SetBossDropdownItems(utilities.GetOrCreateBossDropdownItems(), bossDungeonEncounterID)
+			newPlanDialog.difficultyDropdown:SetValue(DifficultyType.Mythic)
 			newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 			newPlanDialog:Resize()
 			newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
-			local bossName = GetBossName(bossDungeonEncounterID) --[[@as string]]
-			newPlanDialog:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, bossName))
+
+			local boss = GetBoss(bossDungeonEncounterID)
+			if boss then
+				local hasHeroicAbilities = boss.abilitiesHeroic ~= nil
+				newPlanDialog.difficultyDropdown:SetEnabled(hasHeroicAbilities)
+				newPlanDialog:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, boss.name))
+			end
+
 			Private.newPlanDialog = newPlanDialog
 		end
 	end
@@ -1548,12 +1586,20 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 	else
 		ClosePlanDependentWidgets()
 		simulateReminderButton:SetText(L["Stop Simulating"])
+		local currentPlan = GetCurrentPlan()
 		local sortedTimelineAssignments = SortAssignments(
-			GetCurrentPlan(),
+			currentPlan,
 			AddOn.db.profile.preferences.assignmentSortType,
-			GetCurrentBossDungeonEncounterID()
+			currentPlan.dungeonEncounterID,
+			nil,
+			currentPlan.difficulty
 		)
-		Private:SimulateBoss(GetCurrentBossDungeonEncounterID(), sortedTimelineAssignments, GetCurrentRoster())
+		Private:SimulateBoss(
+			currentPlan.dungeonEncounterID,
+			sortedTimelineAssignments,
+			currentPlan.roster,
+			currentPlan.difficulty
+		)
 	end
 	local isSimulatingBoss = not wasSimulatingBoss
 	local timeline = Private.mainFrame.timeline
@@ -1663,7 +1709,8 @@ local function HandleCalculateAssignmentTimeFromStart(timelineAssignment)
 			GetCurrentBossDungeonEncounterID(),
 			assignment.combatLogEventSpellID,
 			assignment.spellCount,
-			assignment.combatLogEventType
+			assignment.combatLogEventType,
+			GetCurrentDifficulty()
 		)
 	else
 		return nil
@@ -1680,7 +1727,8 @@ local function HandleGetMinimumCombatLogEventTime(timelineAssignment)
 			GetCurrentBossDungeonEncounterID(),
 			assignment.combatLogEventSpellID,
 			assignment.spellCount,
-			assignment.combatLogEventType
+			assignment.combatLogEventType,
+			GetCurrentDifficulty()
 		)
 	else
 		return nil
@@ -1711,7 +1759,8 @@ local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTi
 			encounterID,
 			assignment.combatLogEventSpellID,
 			assignment.spellCount,
-			assignment.combatLogEventType
+			assignment.combatLogEventType,
+			GetCurrentDifficulty()
 		)
 	end
 	if relativeTime then
@@ -1745,31 +1794,35 @@ local function HandleCloseButtonClicked()
 end
 
 local function HandleCollapseAllButtonClicked()
-	local currentBossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+	local currentPlan = GetCurrentPlan()
 	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentPlan(),
+		currentPlan,
 		AddOn.db.profile.preferences.assignmentSortType,
-		currentBossDungeonEncounterID
+		currentPlan.dungeonEncounterID,
+		nil,
+		currentPlan.difficulty
 	)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 		collapsed[timelineAssignment.assignment.assignee] = true
 	end
-	UpdateAllAssignments(false, currentBossDungeonEncounterID)
+	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
 end
 
 local function HandleExpandAllButtonClicked()
-	local currentBossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+	local currentPlan = GetCurrentPlan()
 	local sortedTimelineAssignments = SortAssignments(
-		GetCurrentPlan(),
+		currentPlan,
 		AddOn.db.profile.preferences.assignmentSortType,
-		currentBossDungeonEncounterID
+		currentPlan.dungeonEncounterID,
+		nil,
+		currentPlan.difficulty
 	)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
 	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
 		collapsed[timelineAssignment.assignment.assignee] = false
 	end
-	UpdateAllAssignments(false, currentBossDungeonEncounterID)
+	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
 	Private.mainFrame.timeline:SetMaxAssignmentHeight()
 	Private.mainFrame:DoLayout()
 	if Private.activeTutorialCallbackName then
@@ -1828,7 +1881,7 @@ function Private:CreateInterface()
 		encounterID = plans[lastOpenPlan].dungeonEncounterID
 	else
 		local defaultPlanName = L["Default"]
-		utilities.CreatePlan(plans, defaultPlanName, encounterID)
+		utilities.CreatePlan(plans, defaultPlanName, encounterID, DifficultyType.Mythic)
 		profile.lastOpenPlan = defaultPlanName
 		if MRTLoadingOrLoaded or MRTLoaded then
 			if VMRT and VMRT.Note and VMRT.Note.Text1 then
@@ -1878,40 +1931,54 @@ function Private:CreateInterface()
 	local instanceLabelContainer = AceGUI:Create("EPContainer")
 	instanceLabelContainer:SetLayout("EPVerticalLayout")
 	instanceLabelContainer:SetSpacing(0, 0)
-	instanceLabelContainer:SetPadding(0, 2, 0, 2)
+	instanceLabelContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabelLabel = AceGUI:Create("EPLabel")
 	instanceLabelLabel:SetFontSize(topContainerWidgetFontSize)
-	instanceLabelLabel:SetHeight(topContainerWidgetHeight)
+	instanceLabelLabel:SetHeight(16)
 	instanceLabelLabel:SetText(L["Instance"] .. ":", 0)
 	instanceLabelLabel:SetFrameWidthFromText()
 
 	local bossLabelLabel = AceGUI:Create("EPLabel")
 	bossLabelLabel:SetFontSize(topContainerWidgetFontSize)
-	bossLabelLabel:SetHeight(topContainerWidgetHeight)
+	bossLabelLabel:SetHeight(16)
 	bossLabelLabel:SetText(L["Boss"] .. ":", 0)
 	bossLabelLabel:SetFrameWidthFromText()
 
+	local difficultyLabelLabel = AceGUI:Create("EPLabel")
+	difficultyLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	difficultyLabelLabel:SetHeight(16)
+	difficultyLabelLabel:SetText(L["Difficulty"] .. ":", 0)
+	difficultyLabelLabel:SetFrameWidthFromText()
+
 	local instanceBossLabelWidth = max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth())
+	instanceBossLabelWidth = max(instanceBossLabelWidth, difficultyLabelLabel.frame:GetWidth())
 	instanceLabelLabel:SetWidth(instanceBossLabelWidth)
 	bossLabelLabel:SetWidth(instanceBossLabelWidth)
-	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel)
+	difficultyLabelLabel:SetWidth(instanceBossLabelWidth)
+	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel, difficultyLabelLabel)
 
 	local instanceBossContainer = AceGUI:Create("EPContainer")
 	instanceBossContainer:SetLayout("EPVerticalLayout")
 	instanceBossContainer:SetSpacing(0, 0)
-	instanceBossContainer:SetPadding(0, 2, 0, 2)
+	instanceBossContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabel = AceGUI:Create("EPLabel")
 	instanceLabel:SetFontSize(topContainerWidgetFontSize)
 	instanceLabel:SetWidth(topContainerDropdownWidth)
-	instanceLabel:SetHeight(topContainerWidgetHeight)
+	instanceLabel:SetHeight(16)
 
 	local bossLabel = AceGUI:Create("EPLabel")
 	bossLabel:SetFontSize(topContainerWidgetFontSize)
 	bossLabel:SetWidth(topContainerDropdownWidth)
-	bossLabel:SetHeight(topContainerWidgetHeight)
-	instanceBossContainer:AddChildren(instanceLabel, bossLabel)
+	bossLabel:SetHeight(16)
+
+	local difficultyLabel = AceGUI:Create("EPLabel")
+	difficultyLabel:SetFontSize(topContainerWidgetFontSize)
+	difficultyLabel:SetHeight(16)
+	difficultyLabel:SetWidth(topContainerDropdownWidth)
+	difficultyLabel:SetIcon([[Interface/EncounterJournal/UI-EJ-Icons]], 0, 2, 0, 0, 2)
+	instanceBossContainer:AddChildren(instanceLabel, bossLabel, difficultyLabel)
 
 	local planLabel = AceGUI:Create("EPLabel")
 	planLabel:SetFontSize(topContainerWidgetFontSize)
@@ -2053,6 +2120,7 @@ function Private:CreateInterface()
 
 	mainFrame.instanceLabel = instanceLabel
 	mainFrame.bossLabel = bossLabel
+	mainFrame.difficultyLabel = difficultyLabel
 	mainFrame.bossMenuButton = bossMenuButton
 	mainFrame.planDropdown = planDropdown
 	mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox

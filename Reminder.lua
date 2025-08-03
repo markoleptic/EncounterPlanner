@@ -697,10 +697,16 @@ local function HandleBigWigsEvent(event, addon, ...)
 	-- print(event, addon, ...)
 end
 
-local kMythicRaidID = 16
+local GetBossAbilities = bossUtilities.GetBossAbilities
 local kMythicDungeonID = 23
 local kMythicPlusDungeonID = 8
-local difficulties = { [kMythicRaidID] = true, [kMythicDungeonID] = true, [kMythicPlusDungeonID] = true }
+local DifficultyType = Private.classes.DifficultyType
+local difficulties = {
+	[DifficultyType.Heroic] = true,
+	[DifficultyType.Mythic] = true,
+	[kMythicDungeonID] = true,
+	[kMythicPlusDungeonID] = true,
+}
 
 ---@param encounterID integer
 ---@param encounterName string
@@ -715,6 +721,12 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
         --@end-non-debug@]===]
 		local boss = GetBoss(encounterID)
 		if boss then
+			local difficultyType
+			if difficultyID == DifficultyType.Heroic then
+				difficultyType = DifficultyType.Heroic
+			else
+				difficultyType = DifficultyType.Mythic
+			end
 			if UnitIsGroupLeader("player") then
 				Private.SendTextToGroup(encounterID)
 			end
@@ -724,12 +736,14 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			local activePlans = {}
 			for _, plan in pairs(plans) do
 				if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
-					tinsert(activePlans, plan)
+					if plan.difficulty == difficultyType then
+						tinsert(activePlans, plan)
+					end
 				end
 			end
 			if #activePlans > 0 then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-				SetupReminders(activePlans, reminderPreferences, startTime, boss.abilities)
+				SetupReminders(activePlans, reminderPreferences, startTime, GetBossAbilities(boss, difficultyType))
 				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 			end
 		end
@@ -801,7 +815,8 @@ end
 ---@param bossDungeonEncounterID integer
 ---@param timelineAssignments table<integer, TimelineAssignment>
 ---@param roster table<string, RosterEntry>
-function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster)
+---@param difficulty DifficultyType
+function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roster, difficulty)
 	isSimulating = true
 	local preferences = AddOn.db.profile.preferences.reminder
 	if preferences.enabled then
@@ -820,7 +835,7 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 			hideIfAlreadyCasted = preferences.cancelIfAlreadyCasted
 
 			local totalDuration = 0.0
-			for _, phaseData in pairs(boss.phases) do
+			for _, phaseData in pairs(bossUtilities.GetBossPhases(boss, difficulty)) do
 				totalDuration = totalDuration + (phaseData.duration * phaseData.count)
 			end
 

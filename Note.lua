@@ -15,6 +15,8 @@ local Plan = Private.classes.Plan
 ---@class TimedAssignment
 local TimedAssignment = Private.classes.TimedAssignment
 
+local DifficultyType = Private.classes.DifficultyType
+
 ---@class Constants
 local constants = Private.constants
 local kInvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID
@@ -153,14 +155,16 @@ local function ProcessCombatEventLogEventOption(option, time, assignments, deriv
 		local spellID = tonumber(spellIDStr)
 		local spellCount = tonumber(spellCountStr)
 		if spellID then
-			local bossDungeonEncounterID = GetBossDungeonEncounterIDFromSpellID(spellID)
+			local bossDungeonEncounterID = GetBossDungeonEncounterIDFromSpellID(spellID, DifficultyType.Mythic)
 			if bossDungeonEncounterID then
 				encounterIDs[bossDungeonEncounterID] = encounterIDs[bossDungeonEncounterID]
 					or { assignmentIDs = {}, string = option }
 				local replacedInvalidSpellCount = false
 				if spellCount then
-					if not IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount, true) then
-						spellCount = ClampSpellCount(bossDungeonEncounterID, spellID, spellCount)
+					if
+						not IsValidSpellCount(bossDungeonEncounterID, spellID, spellCount, true, DifficultyType.Mythic)
+					then
+						spellCount = ClampSpellCount(bossDungeonEncounterID, spellID, spellCount, DifficultyType.Mythic)
 						if spellCount then
 							tinsert(replaced, {
 								reason = 4,
@@ -379,7 +383,8 @@ function Private.ParseNote(plan, text, test)
 			if spellID then
 				spellIDNumber = tonumber(spellID)
 				if spellIDNumber then
-					local bossDungeonEncounterID = GetBossDungeonEncounterIDFromSpellID(spellIDNumber)
+					local bossDungeonEncounterID =
+						GetBossDungeonEncounterIDFromSpellID(spellIDNumber, DifficultyType.Mythic)
 					if bossDungeonEncounterID then
 						lowerPriorityEncounterIDs[bossDungeonEncounterID] = (
 							lowerPriorityEncounterIDs[bossDungeonEncounterID] or 0
@@ -437,13 +442,19 @@ function Private.ParseNote(plan, text, test)
 	end
 
 	if determinedBossDungeonEncounterID then
-		local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(determinedBossDungeonEncounterID)
-		local bossPhaseTable = bossUtilities.GetOrderedBossPhases(determinedBossDungeonEncounterID)
+		local castTimeTable =
+			bossUtilities.GetAbsoluteSpellCastTimeTable(determinedBossDungeonEncounterID, DifficultyType.Mythic)
+		local bossPhaseTable =
+			bossUtilities.GetOrderedBossPhases(determinedBossDungeonEncounterID, DifficultyType.Mythic)
 		if castTimeTable and bossPhaseTable then
 			for _, assignment in ipairs(plan.assignments) do
 				if getmetatable(assignment) == CombatLogEventAssignment then
 					---@cast assignment CombatLogEventAssignment
-					utilities.UpdateAssignmentBossPhase(assignment, determinedBossDungeonEncounterID)
+					utilities.UpdateAssignmentBossPhase(
+						assignment,
+						determinedBossDungeonEncounterID,
+						DifficultyType.Mythic
+					)
 				end
 			end
 		end
@@ -540,7 +551,7 @@ do
 	---@param bossDungeonEncounterID integer
 	---@return string
 	function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
-		local timelineAssignments = CreateTimelineAssignments(plan, bossDungeonEncounterID)
+		local timelineAssignments = CreateTimelineAssignments(plan, bossDungeonEncounterID, nil, DifficultyType.Mythic)
 		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assignee < b.assignment.assignee
@@ -616,7 +627,7 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 	local plans = AddOn.db.profile.plans
 
 	if not plans[planName] then
-		utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID)
+		utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID, DifficultyType.Mythic)
 	end
 	local plan = plans[planName]
 

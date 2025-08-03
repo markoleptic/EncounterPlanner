@@ -134,17 +134,18 @@ do
 		serializedPlan[2] = plan.name
 		serializedPlan[3] = plan.dungeonEncounterID
 		serializedPlan[4] = plan.instanceID
-		serializedPlan[5] = {}
-		local assignments = serializedPlan[5]
+		serializedPlan[5] = plan.difficulty
+		serializedPlan[6] = {}
+		local assignments = serializedPlan[6]
 		for _, assignment in ipairs(plan.assignments) do
 			assignments[#assignments + 1] = SerializeAssignment(assignment)
 		end
-		serializedPlan[6] = {}
-		local roster = serializedPlan[6]
+		serializedPlan[7] = {}
+		local roster = serializedPlan[7]
 		for name, rosterInfo in pairs(plan.roster) do
 			roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
 		end
-		serializedPlan[7] = plan.content
+		serializedPlan[8] = plan.content
 		return serializedPlan
 	end
 
@@ -156,14 +157,16 @@ do
 		local plan = Plan:New({}, name, planID)
 		plan.dungeonEncounterID = serializedPlan[3]
 		plan.instanceID = serializedPlan[4]
-		for _, serializedAssignment in ipairs(serializedPlan[5]) do
+		plan.difficulty = serializedPlan[5]
+		for _, serializedAssignment in ipairs(serializedPlan[6]) do
 			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
 		end
-		for _, serializedRosterEntry in ipairs(serializedPlan[6]) do
+		for _, serializedRosterEntry in ipairs(serializedPlan[7]) do
+			---@cast serializedRosterEntry SerializedRosterEntry
 			local rosterEntryName, rosterEntry = DeserializeRosterEntry(serializedRosterEntry)
 			plan.roster[rosterEntryName] = rosterEntry
 		end
-		plan.content = serializedPlan[7]
+		plan.content = serializedPlan[8]
 		return plan
 	end
 end

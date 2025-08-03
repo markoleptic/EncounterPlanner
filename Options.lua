@@ -16,6 +16,7 @@ local OptionsModule = Private.addOn.optionsModule
 local utilities = Private.utilities
 local IsValidRegionName = utilities.IsValidRegionName
 local Round = utilities.Round
+local GetCurrentPlan = utilities.GetCurrentPlan
 
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
@@ -167,11 +168,6 @@ end
 ---@return string
 local function GetCurrentProfile()
 	return AddOn.db:GetCurrentProfile()
-end
-
----@return Plan
-local function GetCurrentPlan()
-	return AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 end
 
 ---@param noCurrent boolean

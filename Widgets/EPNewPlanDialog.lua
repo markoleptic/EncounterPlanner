@@ -6,6 +6,7 @@ local L = Private.L
 
 ---@class Constants
 local constants = Private.constants
+local DifficultyType = Private.classes.DifficultyType
 
 local Type = "EPNewPlanDialog"
 local Version = 1
@@ -47,11 +48,16 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
+local difficultyDropdownItemData = {
+	{ itemValue = DifficultyType.Heroic, text = L["Heroic"] },
+	{ itemValue = DifficultyType.Mythic, text = L["Mythic"] },
+}
 
 ---@class EPNewPlanDialog : AceGUIWidget
 ---@field frame table|Frame|BackdropTemplate
 ---@field type string
 ---@field bossDropdown EPDropdown
+---@field difficultyDropdown EPDropdown
 ---@field planNameLineEdit EPLineEdit
 ---@field createButton EPButton
 ---@field cancelButton EPButton
@@ -121,11 +127,28 @@ local function OnAcquire(self)
 	self.bossDropdown:SetItemHorizontalPadding(dropdownHorizontalPadding)
 	self.bossDropdown:SetHeight(dropdownHeight)
 	self.bossDropdown:SetDropdownItemHeight(dropdownHeight)
+	self.bossDropdown:SetMaxVisibleItems(10)
 	self.bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
-		if not self.planNameManuallyChanged then
-			self:Fire("CreateNewPlanName", value)
-		end
+		self:Fire("BossChanged", value)
 	end)
+
+	local difficultyContainer = AceGUI:Create("EPContainer")
+	difficultyContainer:SetLayout("EPHorizontalLayout")
+	difficultyContainer:SetFullWidth(true)
+
+	local difficultyLabel = AceGUI:Create("EPLabel")
+	difficultyLabel:SetText(L["Difficulty"] .. ":")
+	difficultyLabel:SetFrameWidthFromText()
+
+	self.difficultyDropdown = AceGUI:Create("EPDropdown")
+	self.difficultyDropdown:SetWidth(dropdownWidth)
+	self.difficultyDropdown:SetTextFontSize(defaultFontSize)
+	self.difficultyDropdown:SetItemTextFontSize(defaultFontSize)
+	self.difficultyDropdown:SetTextHorizontalPadding(dropdownHorizontalPadding)
+	self.difficultyDropdown:SetItemHorizontalPadding(dropdownHorizontalPadding)
+	self.difficultyDropdown:SetHeight(dropdownHeight)
+	self.difficultyDropdown:SetDropdownItemHeight(dropdownHeight)
+	self.difficultyDropdown:AddItems(difficultyDropdownItemData, "EPDropdownItemToggle")
 
 	local planNameContainer = AceGUI:Create("EPContainer")
 	planNameContainer:SetLayout("EPHorizontalLayout")
@@ -146,13 +169,15 @@ local function OnAcquire(self)
 		self:Fire("ValidatePlanName", value)
 	end)
 
-	local labelWidth = max(planNameLabel.frame:GetWidth(), bossLabel.frame:GetWidth())
+	local labelWidth = max(planNameLabel.frame:GetWidth(), bossLabel.frame:GetWidth(), difficultyLabel.frame:GetWidth())
 	planNameLabel.frame:SetWidth(labelWidth)
 	bossLabel.frame:SetWidth(labelWidth)
+	difficultyLabel.frame:SetWidth(labelWidth)
 
 	bossContainer:AddChildren(bossLabel, self.bossDropdown)
+	difficultyContainer:AddChildren(difficultyLabel, self.difficultyDropdown)
 	planNameContainer:AddChildren(planNameLabel, self.planNameLineEdit)
-	self.container:AddChildren(bossContainer, planNameContainer)
+	self.container:AddChildren(bossContainer, difficultyContainer, planNameContainer)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
@@ -167,7 +192,12 @@ local function OnAcquire(self)
 	self.createButton:SetWidthFromText()
 	self.createButton:SetColor(unpack(neutralButtonColor))
 	self.createButton:SetCallback("Clicked", function()
-		self:Fire("CreateButtonClicked", self.bossDropdown:GetValue(), self.planNameLineEdit:GetText())
+		self:Fire(
+			"CreateButtonClicked",
+			self.bossDropdown:GetValue(),
+			self.planNameLineEdit:GetText(),
+			self.difficultyDropdown:GetValue()
+		)
 	end)
 
 	self.cancelButton = AceGUI:Create("EPButton")
