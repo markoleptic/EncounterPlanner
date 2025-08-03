@@ -805,6 +805,75 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					name = "P1",
 				}),
 			},
+			abilitiesHeroic = {
+				[1224025] = BossAbility:New({ -- Mythic Lash (Targeting)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 5.0 },
+							repeatInterval = { 150.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1241100] = BossAbility:New({ -- Mythic Lash (Cast)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 6.0 },
+							repeatInterval = { 40.0, 40.0, 37.9, 31.0 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1225616] = BossAbility:New({ -- Soulfire Convergence
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.0 },
+							repeatInterval = { 23.9, 16.0, 24.0, 41.0, 45.0, 24.0 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1227276] = BossAbility:New({ -- Soulfray Annihilation (Targeting)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 20.1 },
+							repeatInterval = { 40.9, 40.0, 69.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1227279] = BossAbility:New({ -- Soulfray Annihilation (Cast)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 24.1 },
+							repeatInterval = { 40.9, 40.0, 69.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1245422] = BossAbility:New({ -- Tsunami of Arcane
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 41.0 },
+							repeatInterval = { 40.0, 64.0, 46.0 },
+						}),
+					},
+					duration = 5.2,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+			},
+			phasesHeroic = {},
 		}),
 		Boss:New({ -- Forgeweaver Araz
 			bossIDs = {
@@ -1775,3 +1844,6 @@ dungeonInstance.bosses[2].abilitiesHeroic[1227226] = dungeonInstance.bosses[2].a
 dungeonInstance.bosses[2].abilitiesHeroic[1227227] = dungeonInstance.bosses[2].abilities[1227227]
 dungeonInstance.bosses[2].abilitiesHeroic[1227782] = dungeonInstance.bosses[2].abilities[1227782]
 dungeonInstance.bosses[2].abilitiesHeroic[1227784] = dungeonInstance.bosses[2].abilities[1227784]
+
+dungeonInstance.bosses[3].abilitiesHeroic[1225582] = dungeonInstance.bosses[3].abilities[1225582]
+dungeonInstance.bosses[3].phasesHeroic = Private.DeepCopy(dungeonInstance.bosses[3].phases)
