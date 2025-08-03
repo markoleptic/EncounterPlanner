@@ -1164,6 +1164,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						[5] = BossAbilityPhase:New({
 							castTimes = { 3.52, 31.90, 31.91 },
 						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 3.52 },
+							repeatInterval = { 31.90 },
+						}),
 					},
 					duration = 0.0,
 					castTime = 2.5,
@@ -1180,6 +1184,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						[5] = BossAbilityPhase:New({
 							castTimes = { 7.76, 31.91, 31.92 },
 						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 7.76 },
+							repeatInterval = { 31.90 },
+						}),
 					},
 					duration = 4.0,
 					castTime = 2.0,
@@ -1195,6 +1203,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 14.16, 31.89, 31.96 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 14.16 },
+							repeatInterval = { 31.90 },
 						}),
 					},
 					duration = 25.0,
@@ -1228,6 +1240,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						[5] = BossAbilityPhase:New({
 							castTimes = { 19.46, 31.91, 31.91 },
 						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 19.46 },
+							repeatInterval = { 31.90 },
+						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
@@ -1242,6 +1258,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 26.38, 31.92 },
 						}),
 						[5] = BossAbilityPhase:New({
+							castTimes = { 26.37, 31.92 },
+						}),
+						[7] = BossAbilityPhase:New({
 							castTimes = { 26.37, 31.92 },
 						}),
 					},
@@ -1427,7 +1446,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 						[7] = BossAbilityPhase:New({
 							castTimes = { 30.71 },
-							repeatInterval = { 9.0 },
+							repeatInterval = { 9.0, 9.0, 30.7 },
 						}),
 					},
 					duration = 4.5,
@@ -1442,7 +1461,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 						[7] = BossAbilityPhase:New({
 							castTimes = { 28.4 },
-							repeatInterval = { 9.0 },
+							repeatInterval = { 9.0, 9.0, 28.4 },
 						}),
 					},
 					duration = 0.0,
@@ -1500,6 +1519,163 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[7] = BossPhase:New({ -- 380.70
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+				}),
+			},
+			preferredCombatLogEventAbilitiesHeroic = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAA" },
+				[3] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAR" },
+				[4] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAA" },
+				[5] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAR" },
+				[6] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAA" },
+				[7] = { combatLogEventSpellID = 1242133, combatLogEventType = "SAR" },
+			},
+			abilitiesHeroic = {
+				[1227355] = BossAbility:New({ -- Voidstep
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 31.76, 28.86, 26.38 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 20.04, 28.93, 26.30 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 19.96, 29.09, 26.21 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 9.8 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1242133] = BossAbility:New({ -- Soul Engorgement
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0, 0.0 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0, 0.0 },
+						}),
+						[6] = BossAbilityPhase:New({
+							castTimes = { 0.0, 0.0 },
+						}),
+					},
+					duration = 24.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1233093] = BossAbility:New({ -- Collapsing Star
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 26.1 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA" },
+				}),
+				[1233863] = BossAbility:New({ -- Fel Rush
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 28.3 },
+						}),
+					},
+					duration = 24.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA" },
+				}),
+				[1227117] = BossAbility:New({ -- Fel Devastation
+					phases = {
+						[6] = BossAbilityPhase:New({
+							castTimes = { 1.3, 9.0, 9.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 30.2 },
+							repeatInterval = { 9.0, 9.0, 30.2 },
+						}),
+					},
+					duration = 4.5,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1233672] = BossAbility:New({ -- Infernal Strike
+					phases = {
+						[6] = BossAbilityPhase:New({
+							castTimes = { 0.0, 9.0, 9.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 28.4 },
+							repeatInterval = { 9.0, 9.0, 28.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 110.2,
+					defaultDuration = 110.2,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedDuration = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 98.5,
+					defaultDuration = 98.5,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+					fixedDuration = true,
+				}),
+				[5] = BossPhase:New({
+					duration = 98.5,
+					defaultDuration = 98.5,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[6] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int3",
+					fixedDuration = true,
+				}),
+				[7] = BossPhase:New({
 					duration = 60.0,
 					defaultDuration = 60.0,
 					count = 1,
@@ -1921,3 +2097,12 @@ copyMythicAbilityToHeroic(4, 1228216)
 copyMythicAbilityToHeroic(4, 1228161)
 copyMythicAbilityToHeroic(4, 1230231)
 copyMythicAbilityToHeroic(4, 1235338)
+
+copyMythicAbilityToHeroic(5, 1241833)
+copyMythicAbilityToHeroic(5, 1218103)
+copyMythicAbilityToHeroic(5, 1225130)
+copyMythicAbilityToHeroic(5, 1227809)
+copyMythicAbilityToHeroic(5, 1227823)
+copyMythicAbilityToHeroic(5, 1232569)
+copyMythicAbilityToHeroic(5, 1231501)
+copyMythicAbilityToHeroic(5, 1232568)
