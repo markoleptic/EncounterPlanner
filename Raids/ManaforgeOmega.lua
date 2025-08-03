@@ -1739,6 +1739,42 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					name = "P1",
 				}),
 			},
+			abilitiesHeroic = {
+				[1233416] = BossAbility:New({ -- Crystalline Eruption
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.50, 17.11, 22.56, 16.39, 22.33, 17.13, 22.05 },
+							repeatInterval = { 17.0, 22.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1231871] = BossAbility:New({ -- Shockwave Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.7 },
+							repeatInterval = { 40.0 },
+						}),
+					},
+					halfHeight = true,
+					duration = 55.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220394] = BossAbility:New({ -- Shattering Backhand
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 37.66 },
+							repeatInterval = { 40.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
 		}),
 		Boss:New({ -- Nexus-King Salhadaar
 			bossIDs = {
@@ -2106,3 +2142,5 @@ copyMythicAbilityToHeroic(5, 1227823)
 copyMythicAbilityToHeroic(5, 1232569)
 copyMythicAbilityToHeroic(5, 1231501)
 copyMythicAbilityToHeroic(5, 1232568)
+
+copyMythicPhasesToHeroic(6)
