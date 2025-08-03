@@ -866,11 +866,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 			abilities = {
 				[460181] = BossAbility:New({ -- Pay-Line
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+						[1] = BossAbilityPhase:New({
 							castTimes = { 3.3, 26.7, 40.1, 34.0, 25.9, 24.3, 26.7 },
 							repeatInterval = 26.7,
 						}),
-						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+						[2] = BossAbilityPhase:New({
 							castTimes = { 7.0, 31.7, 29.2 }, -- Heroic timers
 						}),
 					},
@@ -892,11 +892,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 				[469993] = BossAbility:New({ -- Foul Exhaust
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Mildly inconsistent
+						[1] = BossAbilityPhase:New({
 							castTimes = { 8.2, 34.0, 15.8, 31.6, 19.4, 32.8, 18.2, 32.8 },
 							repeatInterval = { 18.2, 32.8 },
 						}),
-						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+						[2] = BossAbilityPhase:New({
 							castTimes = { 1.1, 25.7, 25.7, 25.7 }, -- Heroic timers
 						}),
 					},
@@ -906,11 +906,11 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 				}),
 				[460472] = BossAbility:New({ -- The Big Hit
 					phases = {
-						[1] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+						[1] = BossAbilityPhase:New({
 							castTimes = { 17.9, 18.2, 39.0, 20.6, 19.4, 20.6 },
 							repeatInterval = { 39.0, 20.6, 19.4, 20.6 },
 						}),
-						[2] = BossAbilityPhase:New({ -- TODO: Inconsistent, prob wrong
+						[2] = BossAbilityPhase:New({
 							castTimes = { 11.0, 19.4, 19.4, 19.4 },
 						}),
 					},
@@ -1082,7 +1082,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					name = "P1",
 					fixedCount = true,
 				}),
-				[2] = BossPhase:New({ -- TODO: Not sure what actual mythic duration is
+				[2] = BossPhase:New({
 					duration = 93.0,
 					defaultDuration = 93.0,
 					count = 1,

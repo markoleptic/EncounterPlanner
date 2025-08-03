@@ -387,7 +387,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
-					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {},
 				}),
 				[323608] = BossAbility:New({ -- Dark Devastation
 					phases = {
@@ -402,7 +402,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
-					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {},
 				}),
 				[323825] = BossAbility:New({ -- Grasping Rift
 					phases = {
@@ -417,7 +417,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 2.5,
-					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {},
 				}),
 				[324449] = BossAbility:New({ -- Manifest Death
 					phases = {
@@ -432,7 +432,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
+					allowedCombatLogEventTypes = {},
 				}),
 				[339573] = BossAbility:New({ -- Echoes of Carnage
 					phases = {
