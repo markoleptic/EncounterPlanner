@@ -1375,7 +1375,7 @@ do -- Plan Menu Button Handlers
 					local hasHeroicAbilities = boss.abilitiesHeroic ~= nil
 					widget.difficultyDropdown:SetEnabled(hasHeroicAbilities)
 					if not hasHeroicAbilities then
-						if not widget.difficultyDropdown:GetValue() == DifficultyType.Mythic then
+						if widget.difficultyDropdown:GetValue() ~= DifficultyType.Mythic then
 							widget.difficultyDropdown:SetValue(DifficultyType.Mythic)
 						end
 					end

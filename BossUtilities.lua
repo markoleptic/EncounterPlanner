@@ -554,7 +554,7 @@ end
 ---@param phases table<integer, BossPhase>
 ---@param counts table<integer, integer>
 ---@return boolean
-local function FixedCountsSatisfied(phases, counts, difficulty)
+local function FixedCountsSatisfied(phases, counts)
 	for phaseIndex, phase in ipairs(phases) do
 		if phase.fixedCount then
 			if not counts[phaseIndex] or counts[phaseIndex] < phase.defaultCount then
@@ -738,7 +738,6 @@ function BossUtilities.GetTotalDurations(encounterID, difficulty)
 	local totalCustomDuration, totalDefaultDuration = 0.0, 0.0
 	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
-		local phases ---@type table<integer, BossPhase>
 		local phases = BossUtilities.GetBossPhases(boss, difficulty)
 		for _, phase in pairs(phases) do
 			totalCustomDuration = totalCustomDuration + (phase.duration * phase.count)
