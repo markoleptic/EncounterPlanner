@@ -154,7 +154,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1220489] = BossAbility:New({ -- Protocol: Purge (Cast 1)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 60.84 },
+							castTimes = { 60.8 },
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -210,7 +210,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1220553] = BossAbility:New({ -- Protocol: Purge (Cast 2)
 					phases = {
 						[3] = BossAbilityPhase:New({
-							castTimes = { 93.98 },
+							castTimes = { 94.0 },
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -233,7 +233,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1220555] = BossAbility:New({ -- Protocol: Purge (Cast 3)
 					phases = {
 						[5] = BossAbilityPhase:New({
-							castTimes = { 94.53 },
+							castTimes = { 94.5 },
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -253,6 +253,23 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
+				[1241303] = BossAbility:New({ -- Arcanoshield
+					eventTriggers = {
+						[1220618] = EventTrigger:New({ -- Protocol: Purge (Buff 1)
+							combatLogEventType = "SAA",
+						}),
+						[1220981] = EventTrigger:New({ -- Protocol: Purge (Buff 2)
+							combatLogEventType = "SAA",
+						}),
+						[1220982] = EventTrigger:New({ -- Protocol: Purge (Buff 2)
+							combatLogEventType = "SAA",
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
@@ -264,44 +281,233 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[2] = BossPhase:New({
-					duration = 50.0,
-					defaultDuration = 50.0,
+					duration = 40.0,
+					defaultDuration = 40.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int1",
-					fixedDuration = true,
+					fixedDuration = false,
 				}),
 				[3] = BossPhase:New({
-					duration = 100.5,
-					defaultDuration = 100.5,
+					duration = 99.0,
+					defaultDuration = 99.0,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
 				[4] = BossPhase:New({
-					duration = 50.0,
-					defaultDuration = 50.0,
+					duration = 40.0,
+					defaultDuration = 40.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int2",
-					fixedDuration = true,
+					fixedDuration = false,
 				}),
 				[5] = BossPhase:New({
-					duration = 100.5,
-					defaultDuration = 100.5,
+					duration = 99.5,
+					defaultDuration = 99.5,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
 				[6] = BossPhase:New({
-					duration = 50.0,
-					defaultDuration = 50.0,
+					duration = 40.0,
+					defaultDuration = 40.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int3",
+					fixedDuration = false,
+				}),
+				[7] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+			},
+			abilitiesHeroic = {
+				[1223364] = BossAbility:New({ -- Powered Automaton
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.02 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 1.59 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 1.66 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 1.61 },
+						}),
+					},
+					durationLastsUntilEndOfPhase = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1219450] = BossAbility:New({ -- Manifest Matrices
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.77, 33.70 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 6.47, 35.36, 35.40 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 6.53, 35.31, 35.30 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 6.48, 35.41, 35.46 },
+							repeatInterval = { 35.46 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1219263] = BossAbility:New({ -- Obliteration Arcanocannon
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 21.76, 32.82 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 19.22, 34.33, 34.07 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 19.19, 34.20, 34.03 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 18.98, 33.88 },
+							repeatInterval = { 33.88 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1219531] = BossAbility:New({ -- Eradicating Salvo
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.46, 31.71 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 28.38, 34.30, 34.91 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 28.41, 34.50, 33.57 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 28.41, 38.02 },
+							repeatInterval = { 38.02 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220489] = BossAbility:New({ -- Protocol: Purge (Cast 1)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 64.8 },
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227639] = BossAbility:New({ -- Static Lightning
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 66.5 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 97.4 },
+						}),
+						[5] = BossAbilityPhase:New({
+							castTimes = { 97.7 },
+						}),
+					},
+					durationLastsUntilEndOfNextPhase = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1220553] = BossAbility:New({ -- Protocol: Purge (Cast 2)
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 95.7 },
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1220555] = BossAbility:New({ -- Protocol: Purge (Cast 3)
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 95.5 },
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 69.8,
+					defaultDuration = 69.8,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
 					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedDuration = false,
+				}),
+				[3] = BossPhase:New({
+					duration = 100.7,
+					defaultDuration = 100.7,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+					fixedDuration = false,
+				}),
+				[5] = BossPhase:New({
+					duration = 100.5,
+					defaultDuration = 101.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[6] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int3",
+					fixedDuration = false,
 				}),
 				[7] = BossPhase:New({
 					duration = 60.0,
@@ -1512,3 +1718,14 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 	},
 	isRaid = true,
 })
+
+Private.dungeonInstances[2810].bosses[1].preferredCombatLogEventAbilitiesHeroic =
+	Private.dungeonInstances[2810].bosses[1].preferredCombatLogEventAbilities
+Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220618] =
+	Private.dungeonInstances[2810].bosses[1].abilities[1220618]
+Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220981] =
+	Private.dungeonInstances[2810].bosses[1].abilities[1220981]
+Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220982] =
+	Private.dungeonInstances[2810].bosses[1].abilities[1220982]
+Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1241303] =
+	Private.dungeonInstances[2810].bosses[1].abilities[1241303]
