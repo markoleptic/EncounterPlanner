@@ -495,7 +495,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 				[5] = BossPhase:New({
 					duration = 100.5,
-					defaultDuration = 101.0,
+					defaultDuration = 100.5,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
@@ -1929,47 +1929,27 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 1.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[1230302] = BossAbility:New({ -- Self-Destruct
+				-- [1237107] = BossAbility:New({ -- Twilight Massacre TODO
+				-- 	phases = {
+				-- 		[3] = BossAbilityPhase:New({
+				-- 			castTimes = {},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 1.0,
+				-- 	allowedCombatLogEventTypes = { "SCS", "SCC" },
+				-- }),
+				[1228075] = BossAbility:New({ -- Nexus Beams
 					phases = {
 						[3] = BossAbilityPhase:New({
-							castTimes = { 50.0, 0.0 },
+							castTimes = { 16.0 },
 						}),
 					},
-					duration = 0.0,
-					castTime = 10.0,
+					defaultHidden = true,
+					duration = 7.0,
+					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				-- [1230263] = BossAbility:New({ -- Netherblast
-				-- 	phases = {
-				-- 		[3] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 2.0,
-				-- 	allowedCombatLogEventTypes = { "SCS", "SCC" },
-				-- }),
-				-- [1228113] = BossAbility:New({ -- Netherbreaker
-				-- 	phases = {
-				-- 		[3] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- 	defaultHidden = true,
-				-- 	allowedCombatLogEventTypes = { "SCC" },
-				-- }),
-				-- [1228115] = BossAbility:New({ -- Netherbreaker
-				-- 	phases = {
-				-- 		[3] = BossAbilityPhase:New({
-				-- 			castTimes = {},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 2.0,
-				-- 	allowedCombatLogEventTypes = { "SCS", "SCC" },
-				-- }),
 				[1228265] = BossAbility:New({ -- King's Hunger
 					phases = {
 						[4] = BossAbilityPhase:New({
@@ -2004,15 +1984,37 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 8.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[1226024] = BossAbility:New({ -- Starkiller Swing
+				[1226024] = BossAbility:New({ -- Starkiller Swing (All full casts, inc. from images)
 					phases = {
 						[5] = BossAbilityPhase:New({
-							castTimes = { 40.5 },
-							repeatInterval = { 55.0 },
+							castTimes = { 36.9, 0.0, 0.0 },
+							repeatInterval = { 15.0, 0.0, 0.0, 40.0, 0.0, 0.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 6.0,
+					defaultHidden = true,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1226442] = BossAbility:New({ -- Starkiller Swing (Signaling cast?)
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 36.9 },
+							repeatInterval = { 15.0, 40.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225634] = BossAbility:New({ -- World in Twilight
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 170.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
@@ -2020,6 +2022,123 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1] = BossPhase:New({
 					duration = 125.2,
 					defaultDuration = 125.2,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 36.25,
+					defaultDuration = 36.25,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+					fixedDuration = true,
+				}),
+				[3] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					fixedDuration = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 30.0,
+					defaultDuration = 30.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
+					fixedDuration = true,
+				}),
+				[5] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P3",
+				}),
+			},
+			abilitiesHeroic = {
+				[1225016] = BossAbility:New({ -- Command: Besiege
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 49.44, 39.62 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224787] = BossAbility:New({ -- Conquer
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.1, 7.1, 33.1, 7.4, 32.2, 6.3 },
+						}),
+					},
+					halfHeight = true,
+					duration = 20.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1224812] = BossAbility:New({ -- Vanquish
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.5, 6.4, 33.7, 6.4, 33.4, 5.1 },
+						}),
+					},
+					halfHeight = true,
+					duration = 20.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227529] = BossAbility:New({ -- Banishment
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 31.5, 16.0, 24.3, 14.7 },
+						}),
+					},
+					duration = 8.0,
+					castTime = 1.35,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1225010] = BossAbility:New({ -- Command: Behead
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 33.5, 39.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227734] = BossAbility:New({ -- Coalesce Voidwing
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 114.1 },
+							signifiesPhaseEnd = true, -- End of P1
+						}),
+					},
+					duration = 0.0,
+					castTime = 6.2,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1234529] = BossAbility:New({ -- Cosmic Maw
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 18.5 },
+						}),
+					},
+					onlyRelevantForTanks = true,
+					duration = 10.0,
+					castTime = 1.25,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 120.3,
+					defaultDuration = 120.3,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
@@ -2144,3 +2263,15 @@ copyMythicAbilityToHeroic(5, 1231501)
 copyMythicAbilityToHeroic(5, 1232568)
 
 copyMythicPhasesToHeroic(6)
+
+copyMythicAbilityToHeroic(7, 1224906)
+copyMythicAbilityToHeroic(7, 1228065)
+copyMythicAbilityToHeroic(7, 1232327)
+copyMythicAbilityToHeroic(7, 1228075)
+copyMythicAbilityToHeroic(7, 1228265)
+copyMythicAbilityToHeroic(7, 1228317)
+copyMythicAbilityToHeroic(7, 1225319)
+copyMythicAbilityToHeroic(7, 1226024)
+copyMythicAbilityToHeroic(7, 1226442)
+copyMythicAbilityToHeroic(7, 1225634)
+copyMythicPreferredAbilitiesToHeroic(7)
