@@ -62,3 +62,8 @@ Private.constants = {
 		kAssignmentHover = {},
 	},
 }
+
+local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live
+if not isElevenDotTwo then
+	Private.constants.kDefaultBossDungeonEncounterID = 3009
+end
