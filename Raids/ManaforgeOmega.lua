@@ -544,7 +544,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
-				[1227263] = BossAbility:New({ -- Piercing Strand
+				[1227263] = BossAbility:New({ -- Piercing Strand (Cast)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 12.58 },
@@ -555,7 +555,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[1227261] = BossAbility:New({ -- Piercing Strand
+				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 15.58 },
@@ -587,6 +587,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 0.0,
+					durationLastsUntilEndOfPhase = true,
 					allowedCombatLogEventTypes = { "SAA" },
 				}),
 				[1227226] = BossAbility:New({ -- Writhing Wave
@@ -612,7 +613,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
-				[1227782] = BossAbility:New({ -- Arcane Outrage
+				[1227782] = BossAbility:New({ -- Arcane Outrage (Cast)
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 17.26 },
@@ -623,7 +624,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[1227784] = BossAbility:New({ -- Arcane Outrage
+				[1227784] = BossAbility:New({ -- Arcane Outrage (Channel)
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 19.27 },
@@ -651,6 +652,43 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					name = "P2 (50% Health)",
 				}),
 			},
+			abilitiesHeroic = {
+				[1237272] = BossAbility:New({ -- Lair Weaving
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.7 },
+							repeatInterval = { 43.5 },
+						}),
+					},
+					duration = 5.0, -- Channel
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1227263] = BossAbility:New({ -- Piercing Strand (Cast)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.6 },
+							repeatInterval = { 7.0, 39.6, 5.0, 33.6 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 12.6 },
+							repeatInterval = { 7.0, 39.6, 5.0, 33.6 },
+						}),
+					},
+					halfHeight = true,
+					duration = 45.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+			},
+			phasesHeroic = {},
 		}),
 		Boss:New({ -- Soulbinder Naazindhri
 			bossIDs = {
@@ -1719,13 +1757,21 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 	isRaid = true,
 })
 
-Private.dungeonInstances[2810].bosses[1].preferredCombatLogEventAbilitiesHeroic =
-	Private.dungeonInstances[2810].bosses[1].preferredCombatLogEventAbilities
-Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220618] =
-	Private.dungeonInstances[2810].bosses[1].abilities[1220618]
-Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220981] =
-	Private.dungeonInstances[2810].bosses[1].abilities[1220981]
-Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1220982] =
-	Private.dungeonInstances[2810].bosses[1].abilities[1220982]
-Private.dungeonInstances[2810].bosses[1].abilitiesHeroic[1241303] =
-	Private.dungeonInstances[2810].bosses[1].abilities[1241303]
+local dungeonInstance = Private.dungeonInstances[2810]
+
+dungeonInstance.bosses[1].preferredCombatLogEventAbilitiesHeroic =
+	dungeonInstance.bosses[1].preferredCombatLogEventAbilities
+dungeonInstance.bosses[1].abilitiesHeroic[1220618] = dungeonInstance.bosses[1].abilities[1220618]
+dungeonInstance.bosses[1].abilitiesHeroic[1220981] = dungeonInstance.bosses[1].abilities[1220981]
+dungeonInstance.bosses[1].abilitiesHeroic[1220982] = dungeonInstance.bosses[1].abilities[1220982]
+dungeonInstance.bosses[1].abilitiesHeroic[1241303] = dungeonInstance.bosses[1].abilities[1241303]
+
+dungeonInstance.bosses[2].preferredCombatLogEventAbilitiesHeroic =
+	dungeonInstance.bosses[2].preferredCombatLogEventAbilities
+dungeonInstance.bosses[2].phasesHeroic = Private.DeepCopy(dungeonInstance.bosses[2].phases)
+dungeonInstance.bosses[2].abilitiesHeroic[1226395] = dungeonInstance.bosses[2].abilities[1226395]
+dungeonInstance.bosses[2].abilitiesHeroic[1228070] = dungeonInstance.bosses[2].abilities[1228070]
+dungeonInstance.bosses[2].abilitiesHeroic[1227226] = dungeonInstance.bosses[2].abilities[1227226]
+dungeonInstance.bosses[2].abilitiesHeroic[1227227] = dungeonInstance.bosses[2].abilities[1227227]
+dungeonInstance.bosses[2].abilitiesHeroic[1227782] = dungeonInstance.bosses[2].abilities[1227782]
+dungeonInstance.bosses[2].abilitiesHeroic[1227784] = dungeonInstance.bosses[2].abilities[1227784]
