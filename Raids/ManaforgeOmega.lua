@@ -1024,10 +1024,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1230529] = BossAbility:New({ -- Mana Sacrifice
 					phases = {
 						[3] = BossAbilityPhase:New({
-							castTimes = { 2.05 },
+							castTimes = { 2.0 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 1.97 },
+							castTimes = { 2.0 },
 						}),
 					},
 					duration = 5.0,
@@ -1050,7 +1050,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					count = 1,
 					defaultCount = 1,
 					name = "Int1",
-					fixedDuration = true,
 				}),
 				[3] = BossPhase:New({
 					duration = 146.7,
@@ -1066,7 +1065,60 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					count = 1,
 					defaultCount = 1,
 					name = "Int2",
+				}),
+				[5] = BossPhase:New({
+					duration = 60.0,
+					defaultDuration = 60.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+				}),
+			},
+			abilitiesHeroic = {
+				[1227631] = BossAbility:New({ -- Arcane Expulsion
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 150.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 141.73 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 150.0,
+					defaultDuration = 150.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
 					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+				}),
+				[3] = BossPhase:New({
+					duration = 146.9,
+					defaultDuration = 146.9,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+					fixedDuration = true,
+				}),
+				[4] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int2",
 				}),
 				[5] = BossPhase:New({
 					duration = 60.0,
@@ -1827,23 +1879,45 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 })
 
 local dungeonInstance = Private.dungeonInstances[2810]
+local bosses = dungeonInstance.bosses ---@cast bosses table<integer, Boss>
 
-dungeonInstance.bosses[1].preferredCombatLogEventAbilitiesHeroic =
-	dungeonInstance.bosses[1].preferredCombatLogEventAbilities
-dungeonInstance.bosses[1].abilitiesHeroic[1220618] = dungeonInstance.bosses[1].abilities[1220618]
-dungeonInstance.bosses[1].abilitiesHeroic[1220981] = dungeonInstance.bosses[1].abilities[1220981]
-dungeonInstance.bosses[1].abilitiesHeroic[1220982] = dungeonInstance.bosses[1].abilities[1220982]
-dungeonInstance.bosses[1].abilitiesHeroic[1241303] = dungeonInstance.bosses[1].abilities[1241303]
+---@param bossIndex integer
+---@param abilityID integer
+local function copyMythicAbilityToHeroic(bossIndex, abilityID)
+	bosses[bossIndex].abilitiesHeroic[abilityID] = bosses[bossIndex].abilities[abilityID]
+end
 
-dungeonInstance.bosses[2].preferredCombatLogEventAbilitiesHeroic =
-	dungeonInstance.bosses[2].preferredCombatLogEventAbilities
-dungeonInstance.bosses[2].phasesHeroic = Private.DeepCopy(dungeonInstance.bosses[2].phases)
-dungeonInstance.bosses[2].abilitiesHeroic[1226395] = dungeonInstance.bosses[2].abilities[1226395]
-dungeonInstance.bosses[2].abilitiesHeroic[1228070] = dungeonInstance.bosses[2].abilities[1228070]
-dungeonInstance.bosses[2].abilitiesHeroic[1227226] = dungeonInstance.bosses[2].abilities[1227226]
-dungeonInstance.bosses[2].abilitiesHeroic[1227227] = dungeonInstance.bosses[2].abilities[1227227]
-dungeonInstance.bosses[2].abilitiesHeroic[1227782] = dungeonInstance.bosses[2].abilities[1227782]
-dungeonInstance.bosses[2].abilitiesHeroic[1227784] = dungeonInstance.bosses[2].abilities[1227784]
+---@param bossIndex integer
+local function copyMythicPreferredAbilitiesToHeroic(bossIndex)
+	bosses[bossIndex].preferredCombatLogEventAbilitiesHeroic = bosses[bossIndex].preferredCombatLogEventAbilities
+end
 
-dungeonInstance.bosses[3].abilitiesHeroic[1225582] = dungeonInstance.bosses[3].abilities[1225582]
-dungeonInstance.bosses[3].phasesHeroic = Private.DeepCopy(dungeonInstance.bosses[3].phases)
+local function copyMythicPhasesToHeroic(bossIndex)
+	bosses[bossIndex].phasesHeroic = Private.DeepCopy(bosses[bossIndex].phases)
+end
+
+copyMythicAbilityToHeroic(1, 1220618)
+copyMythicAbilityToHeroic(1, 1220981)
+copyMythicAbilityToHeroic(1, 1220982)
+copyMythicAbilityToHeroic(1, 1241303)
+copyMythicPreferredAbilitiesToHeroic(1)
+
+copyMythicAbilityToHeroic(2, 1226395)
+copyMythicAbilityToHeroic(2, 1228070)
+copyMythicAbilityToHeroic(2, 1227226)
+copyMythicAbilityToHeroic(2, 1227227)
+copyMythicAbilityToHeroic(2, 1227782)
+copyMythicAbilityToHeroic(2, 1227784)
+copyMythicPreferredAbilitiesToHeroic(2)
+copyMythicPhasesToHeroic(2)
+
+copyMythicAbilityToHeroic(3, 1225582)
+copyMythicPhasesToHeroic(3)
+
+copyMythicAbilityToHeroic(4, 1228502)
+copyMythicAbilityToHeroic(4, 1231720)
+copyMythicAbilityToHeroic(4, 1231719)
+copyMythicAbilityToHeroic(4, 1228216)
+copyMythicAbilityToHeroic(4, 1228161)
+copyMythicAbilityToHeroic(4, 1230231)
+copyMythicAbilityToHeroic(4, 1235338)
