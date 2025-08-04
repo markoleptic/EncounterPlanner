@@ -472,11 +472,23 @@ do -- Profile updating and refreshing
 
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then
-					ChangePlanBoss(profile.plans, plan.name, constants.kDefaultBossDungeonEncounterID)
+					ChangePlanBoss(
+						profile.plans,
+						plan.name,
+						constants.kDefaultBossDungeonEncounterID,
+						DifficultyType.Mythic
+					)
 				end
-
-				local dungeonEncounterID = plan.dungeonEncounterID
-				boss = GetBoss(dungeonEncounterID) --[[@as Boss]]
+				boss = GetBoss(plan.dungeonEncounterID)--[[@as Boss]]
+				if not boss.abilitiesHeroic and plan.difficulty == DifficultyType.Heroic then
+					ChangePlanBoss(
+						profile.plans,
+						plan.name,
+						constants.kDefaultBossDungeonEncounterID,
+						DifficultyType.Mythic
+					)
+				end
+				local dungeonEncounterID = boss.dungeonEncounterID
 
 				SetPhaseDurations(dungeonEncounterID, plan.customPhaseDurations, plan.difficulty)
 				plan.customPhaseCounts = SetPhaseCounts(
