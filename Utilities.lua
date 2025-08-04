@@ -320,6 +320,7 @@ end
 
 do
 	local AddOn = Private.addOn
+	local DifficultyType = Private.classes.DifficultyType
 
 	---@return table<string, RosterEntry>
 	function Utilities.GetCurrentRoster()
@@ -353,6 +354,23 @@ do
 	---@return DifficultyType
 	function Utilities.GetCurrentDifficulty()
 		return Private.mainFrame.difficultyLabel:GetValue()
+	end
+
+	---@param dungeonEncounterID integer
+	---@param difficultyType DifficultyType
+	---@return table<integer, boolean>
+	function Utilities.GetActiveBossAbilities(dungeonEncounterID, difficultyType)
+		if difficultyType == DifficultyType.Heroic then
+			if AddOn.db.profile.activeBossAbilitiesHeroic[dungeonEncounterID] == nil then
+				AddOn.db.profile.activeBossAbilitiesHeroic[dungeonEncounterID] = {}
+			end
+			return AddOn.db.profile.activeBossAbilitiesHeroic[dungeonEncounterID]
+		else
+			if AddOn.db.profile.activeBossAbilities[dungeonEncounterID] == nil then
+				AddOn.db.profile.activeBossAbilities[dungeonEncounterID] = {}
+			end
+			return AddOn.db.profile.activeBossAbilities[dungeonEncounterID]
+		end
 	end
 end
 
@@ -651,6 +669,7 @@ end
 
 do
 	local spellIconRegex = "|T.-|t%s(.+)"
+	local kUnknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
 	local kCustomGroupIndent = 10
 
 	---@param a DropdownItemData|{order:integer}
@@ -694,7 +713,13 @@ do
 		for _, customDungeonInstanceGroup in pairs(Private.customDungeonInstanceGroups) do
 			local instanceName = customDungeonInstanceGroup.instanceName
 			local instanceToUseForIcon = Private.dungeonInstances[customDungeonInstanceGroup.instanceIDToUseForIcon]
-			local instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
+			local instanceIconText
+			if instanceToUseForIcon then
+				instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
+			else
+				instanceIconText = format("|T%s:16|t %s", kUnknownIcon, instanceName)
+			end
+
 			tinsert(
 				customInstanceDropdownItems,
 				{
