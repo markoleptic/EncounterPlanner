@@ -2234,11 +2234,13 @@ end
 ---@return boolean -- True if another plan with the same dungeonEncounterID was the Designated External Plan.
 function Utilities.SetDesignatedExternalPlan(plans, newDesignatedExternalPlan)
 	local changedPrimaryPlan = false
-	for _, plan in pairs(plans) do
-		if plan.dungeonEncounterID == newDesignatedExternalPlan.dungeonEncounterID then
-			if plan.isPrimaryPlan and plan ~= newDesignatedExternalPlan then
-				plan.isPrimaryPlan = false
-				changedPrimaryPlan = true
+	for _, currentPlan in pairs(plans) do
+		if currentPlan.dungeonEncounterID == newDesignatedExternalPlan.dungeonEncounterID then
+			if currentPlan.difficulty == newDesignatedExternalPlan.difficulty then
+				if currentPlan.isPrimaryPlan and currentPlan ~= newDesignatedExternalPlan then
+					currentPlan.isPrimaryPlan = false
+					changedPrimaryPlan = true
+				end
 			end
 		end
 	end
@@ -2384,20 +2386,24 @@ do
 		return nil
 	end
 
-	-- Reassigns a primary plan for the encounterID only if none exist.
+	-- Reassigns a primary plan for the encounterID and difficulty only if none exist.
 	---@param plans table<string, Plan>
 	---@param encounterID integer
-	local function SwapDesignatedExternalPlanIfNeeded(plans, encounterID)
+	---@param difficulty DifficultyType
+	local function SwapDesignatedExternalPlanIfNeeded(plans, encounterID, difficulty)
 		local primaryPlanExists = false
 		local candidatePlan = nil
 
-		for _, plan in pairs(plans) do
-			if plan.isPrimaryPlan and plan.dungeonEncounterID == encounterID then
-				primaryPlanExists = true
-				break
-			end
-			if plan.dungeonEncounterID == encounterID and not candidatePlan then
-				candidatePlan = plan
+		for _, currentPlan in pairs(plans) do
+			local matching = currentPlan.dungeonEncounterID == encounterID and currentPlan.difficulty == difficulty
+			if matching then
+				if currentPlan.isPrimaryPlan then
+					primaryPlanExists = true
+					break
+				end
+				if not candidatePlan then
+					candidatePlan = currentPlan
+				end
 			end
 		end
 
@@ -2416,7 +2422,9 @@ do
 			local newBossHasPrimaryPlan = false
 
 			for _, currentPlan in pairs(plans) do
-				if currentPlan.dungeonEncounterID == newEncounterID then
+				local matching = currentPlan.dungeonEncounterID == newEncounterID
+					and currentPlan.difficulty == newDifficulty
+				if matching then
 					if currentPlan.isPrimaryPlan and currentPlan ~= plan then
 						newBossHasPrimaryPlan = true
 						break
@@ -2425,6 +2433,7 @@ do
 			end
 
 			local previousEncounterID = plan.dungeonEncounterID
+			local previousDifficulty = plan.difficulty
 
 			plan.difficulty = newDifficulty
 			plan.dungeonEncounterID = newEncounterID
@@ -2433,8 +2442,12 @@ do
 			wipe(plan.customPhaseDurations)
 			wipe(plan.customPhaseCounts)
 
-			if previousEncounterID > 0 and previousEncounterID ~= newEncounterID then
-				SwapDesignatedExternalPlanIfNeeded(plans, previousEncounterID)
+			if
+				previousEncounterID > 0
+				and previousEncounterID ~= newEncounterID
+				and previousDifficulty == newDifficulty
+			then
+				SwapDesignatedExternalPlanIfNeeded(plans, previousEncounterID, previousDifficulty)
 			end
 		end
 	end
@@ -2450,6 +2463,7 @@ do
 
 			local instanceID = plans[planToDeleteName].instanceID
 			local encounterID = plans[planToDeleteName].dungeonEncounterID
+			local difficulty = plans[planToDeleteName].dungeonEncounterID
 
 			plans[planToDeleteName] = nil
 
@@ -2463,7 +2477,7 @@ do
 				end
 			end
 
-			SwapDesignatedExternalPlanIfNeeded(plans, encounterID)
+			SwapDesignatedExternalPlanIfNeeded(plans, encounterID, difficulty)
 		end
 	end
 end
@@ -2992,7 +3006,6 @@ do
 			local planTwo = Utilities.CreatePlan(plans, planName, testEncounterIDOne, DifficultyType.Mythic)
 			local planThree = Utilities.CreatePlan(plans, planName, testEncounterIDTwo, DifficultyType.Mythic)
 			local planFour = Utilities.CreatePlan(plans, planName, testEncounterIDTwo, DifficultyType.Mythic)
-
 			return plans, planOne, planTwo, planThree, planFour
 		end
 
