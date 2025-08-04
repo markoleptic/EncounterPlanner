@@ -633,7 +633,7 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 
 	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
 	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
-	ChangePlanBoss(plans, plan.name, plan.dungeonEncounterID)
+	ChangePlanBoss(plans, plan.name, plan.dungeonEncounterID, plan.difficulty)
 
 	UpdateRosterFromAssignments(plan.assignments, plan.roster)
 	UpdateRosterDataFromGroup(plan.roster)
@@ -1027,7 +1027,7 @@ do
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID or bossDungeonEncounterID
-			ChangePlanBoss({ plan }, plan.name, plan.dungeonEncounterID)
+			ChangePlanBoss({ plan }, plan.name, plan.dungeonEncounterID, plan.difficulty)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
 			local exportString = Private:ExportPlanToNote(plan, bossDungeonEncounterID) --[[@as string]]

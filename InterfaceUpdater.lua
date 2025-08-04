@@ -46,33 +46,12 @@ local unpack = unpack
 local wipe = table.wipe
 
 do
-	local floor = math.floor
-	local mod = math.fmod
-
-	---@param difficulty DifficultyType
-	---@return number, number, number, number
-	local function GetTextCoordsFromDifficulty(difficulty)
-		local iconIndex
-		if difficulty == DifficultyType.Heroic then
-			iconIndex = 3
-		else
-			iconIndex = 12
-		end
-		local iconSize = 32
-		local columns = 256 / iconSize
-		local padding = 8
-		local l = (mod(iconIndex, columns) * iconSize + padding) / 256
-		local r = ((mod(iconIndex, columns) + 1) * iconSize - padding) / 256
-		local t = (floor(iconIndex / columns) * iconSize + padding) / 64
-		local b = ((floor(iconIndex / columns) + 1) * iconSize - padding) / 64
-		return l, r, t, b
-	end
-
 	local CreateAbilityDropdownItemData = utilities.CreateAbilityDropdownItemData
 	local GenerateBossTables = bossUtilities.GenerateBossTables
 	local GetBossAbilities = bossUtilities.GetBossAbilities
 	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
+	local GetTextCoordsFromDifficulty = utilities.GetTextCoordsFromDifficulty
 	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
 	local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
 	local SetPhaseCounts = bossUtilities.SetPhaseCounts
@@ -129,7 +108,7 @@ do
 			else
 				difficultyLabel:SetText(L["Mythic"], instanceAndBossPadding, difficulty)
 			end
-			difficultyLabel.icon:SetTexCoord(GetTextCoordsFromDifficulty(difficulty))
+			difficultyLabel.icon:SetTexCoord(GetTextCoordsFromDifficulty(difficulty, true))
 			difficultyLabel:SetFrameWidthFromText()
 
 			Private.mainFrame:UpdateHorizontalResizeBounds()

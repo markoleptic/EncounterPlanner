@@ -1222,16 +1222,18 @@ do
 	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
 	---@param oldID integer Old boss dungeon encounter ID
 	---@param newID integer New boss dungeon encounter ID
-	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@param bossPhaseTable table<integer, integer>
-	---@param difficulty DifficultyType
+	---@param oldDifficulty DifficultyType
+	---@param newDifficulty DifficultyType
+	---@param newCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param newBossPhaseTable table<integer, integer>
 	local function ReplaceCombatLogEventAssignmentSpells(
 		assignments,
 		oldID,
 		newID,
-		castTimeTable,
-		bossPhaseTable,
-		difficulty
+		oldDifficulty,
+		newDifficulty,
+		newCastTimeTable,
+		newBossPhaseTable
 	)
 		for _, assignment in ipairs(assignments) do
 			if getmetatable(assignment) == CombatLogEventAssignment then
@@ -1243,7 +1245,7 @@ do
 					spellID,
 					spellCount,
 					eventType,
-					difficulty
+					oldDifficulty
 				)
 				if absoluteTime then
 					local newSpellID, newSpellCount, newTime = BossUtilities.FindNearestPreferredCombatLogEventAbility(
@@ -1251,17 +1253,18 @@ do
 						newID,
 						nil,
 						eventType,
-						difficulty
+						newDifficulty
 					)
 					if not newSpellID then
 						newSpellID, newSpellCount, newTime =
-							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true, difficulty)
+							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true, newDifficulty)
 					end
 					if newSpellID and newSpellCount and newTime then
-						if castTimeTable[newSpellID] and castTimeTable[newSpellID][newSpellCount] then
-							local orderedBossPhaseIndex = castTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
+						if newCastTimeTable[newSpellID] and newCastTimeTable[newSpellID][newSpellCount] then
+							local orderedBossPhaseIndex =
+								newCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
 							assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-							assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+							assignment.phase = newBossPhaseTable[orderedBossPhaseIndex]
 						end
 						assignment.time = Utilities.Round(newTime, 1)
 						assignment.combatLogEventSpellID = newSpellID
@@ -1278,23 +1281,32 @@ do
 	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
 	---@param oldBoss Boss
 	---@param newBoss Boss
+	---@param oldDifficulty DifficultyType
+	---@param newDifficulty DifficultyType
 	---@param conversionMethod AssignmentConversionMethod
-	---@param difficulty DifficultyType
-	function BossUtilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, conversionMethod, difficulty)
+	function BossUtilities.ConvertAssignmentsToNewBoss(
+		assignments,
+		oldBoss,
+		newBoss,
+		oldDifficulty,
+		newDifficulty,
+		conversionMethod
+	)
 		local oldID, newID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
 		if conversionMethod == 1 then
-			ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldID, difficulty)
+			ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldID, oldDifficulty)
 		elseif conversionMethod == 2 then
-			local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newID, difficulty)
-			local bossPhaseTable = BossUtilities.GetOrderedBossPhases(newID, difficulty)
-			if castTimeTable and bossPhaseTable then
+			local newCastTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newID, newDifficulty)
+			local newBossPhaseTable = BossUtilities.GetOrderedBossPhases(newID, newDifficulty)
+			if newCastTimeTable and newBossPhaseTable then
 				ReplaceCombatLogEventAssignmentSpells(
 					assignments,
 					oldID,
 					newID,
-					castTimeTable,
-					bossPhaseTable,
-					difficulty
+					oldDifficulty,
+					newDifficulty,
+					newCastTimeTable,
+					newBossPhaseTable
 				)
 			end
 		end

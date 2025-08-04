@@ -664,15 +664,16 @@ do
 	---@param dropdownItem EPDropdownItemMenu
 	---@param selected boolean
 	---@param value any
-	local function HandleMenuItemValueChanged(self, dropdownItem, selected, value)
+	---@param valueOwningDropdownItemMenu? EPDropdownItemMenu The parent dropdown item menu owning the item with value
+	local function HandleMenuItemValueChanged(self, dropdownItem, selected, value, valueOwningDropdownItemMenu)
 		if self.multiselect then
-			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue())
+			self:Fire("OnValueChanged", value, selected, dropdownItem:GetValue(), valueOwningDropdownItemMenu)
 		else
 			if dropdownItem.clickable and value == nil then
 				self:Fire("OnValueChanged", dropdownItem:GetUserDataTable().initialValue)
 			else
 				self:SetValue(value)
-				self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue())
+				self:Fire("OnValueChanged", value, nil, dropdownItem:GetValue(), valueOwningDropdownItemMenu)
 			end
 
 			if self.open then
@@ -976,8 +977,8 @@ do
 				dropdownMenuItem:SetHorizontalPadding(self.itemHorizontalPadding)
 			end
 			dropdownMenuItem:SetMultiselect(self.multiselect)
-			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value)
-				HandleMenuItemValueChanged(self, widget, selected, value)
+			dropdownMenuItem:SetCallback("OnValueChanged", function(widget, _, selected, value, owningDropdownMenuItem)
+				HandleMenuItemValueChanged(self, widget, selected, value, owningDropdownMenuItem)
 			end)
 			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
 			self.pullout:AddItem(dropdownMenuItem)

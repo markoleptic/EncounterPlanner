@@ -33,6 +33,8 @@ local GetBoss = bossUtilities.GetBoss
 local GetBossName = bossUtilities.GetBossName
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
+local DifficultyType = Private.classes.DifficultyType
+
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
@@ -320,7 +322,6 @@ end
 
 do
 	local AddOn = Private.addOn
-	local DifficultyType = Private.classes.DifficultyType
 
 	---@return table<string, RosterEntry>
 	function Utilities.GetCurrentRoster()
@@ -415,6 +416,40 @@ function Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 		if assignment.uniqueID == assignmentID then
 			return assignment
 		end
+	end
+end
+
+do
+	local mod = math.fmod
+	local kIconSize = 32
+
+	---@param difficulty DifficultyType
+	---@param fraction boolean
+	---@param padding? integer
+	---@return number, number, number, number
+	function Utilities.GetTextCoordsFromDifficulty(difficulty, fraction, padding)
+		local iconIndex
+		if difficulty == DifficultyType.Heroic then
+			iconIndex = 3
+		else
+			iconIndex = 12
+		end
+		local columns = 256 / kIconSize
+		padding = padding or 8
+
+		local l = (mod(iconIndex, columns) * kIconSize + padding) / 4
+		local r = ((mod(iconIndex, columns) + 1) * kIconSize - padding) / 4
+		local t = (floor(iconIndex / columns) * kIconSize + padding)
+		local b = ((floor(iconIndex / columns) + 1) * kIconSize - padding)
+
+		if fraction then
+			l = l / 64
+			r = r / 64
+			t = t / 64
+			b = b / 64
+		end
+
+		return l, r, t, b
 	end
 end
 
@@ -813,6 +848,72 @@ do
 			sort(instanceAndBossDropdownItems, SortInstances)
 		end
 		return instanceAndBossDropdownItems
+	end
+
+	local kFormatDifficultyString = "|T%s:16:16:0:0:64:64:%d:%d:%d:%d|t %s"
+	local kEncounterJournalIcon = [[Interface/EncounterJournal/UI-EJ-Icons]]
+	local instanceAndBossDropdownItemsWithDifficulty
+
+	-- Creates dropdown item data for instances and bosses
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateBossDropdownItemsWithDifficulty()
+		if not instanceAndBossDropdownItemsWithDifficulty then
+			local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
+			local heroicIconText = format(kFormatDifficultyString, kEncounterJournalIcon, l, r, t, b, L["Heroic"])
+			l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
+			local mythicIconText = format(kFormatDifficultyString, kEncounterJournalIcon, l, r, t, b, L["Mythic"])
+
+			instanceAndBossDropdownItemsWithDifficulty = {}
+			for dungeonInstance in bossUtilities.IterateDungeonInstances() do
+				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
+				local instanceDropdownData
+				if dungeonInstance.mapChallengeModeID then
+					instanceDropdownData = {
+						itemValue = {
+							dungeonInstanceID = dungeonInstance.instanceID,
+							mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+						},
+						text = instanceIconText,
+						dropdownItemMenuData = {},
+					}
+				else
+					instanceDropdownData =
+						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				end
+
+				if dungeonInstance.hasHeroic then
+					instanceDropdownData.dropdownItemMenuData = {
+						{
+							itemValue = DifficultyType.Heroic,
+							text = heroicIconText,
+							dropdownItemMenuData = {},
+						},
+						{
+							itemValue = DifficultyType.Mythic,
+							text = mythicIconText,
+							dropdownItemMenuData = {},
+						},
+					}
+					for _, boss in ipairs(dungeonInstance.bosses) do
+						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
+						local data = { itemValue = boss.dungeonEncounterID, text = iconText }
+						tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
+						tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
+					end
+				else
+					for _, boss in ipairs(dungeonInstance.bosses) do
+						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
+						tinsert(
+							instanceDropdownData.dropdownItemMenuData,
+							{ itemValue = boss.dungeonEncounterID, text = iconText }
+						)
+					end
+				end
+				tinsert(instanceAndBossDropdownItemsWithDifficulty, instanceDropdownData)
+			end
+			sort(instanceAndBossDropdownItemsWithDifficulty, SortInstances)
+		end
+		return instanceAndBossDropdownItemsWithDifficulty
 	end
 
 	local instanceDropdownItems = nil
@@ -2183,7 +2284,7 @@ function Utilities.CreatePlan(plans, newPlanName, encounterID, difficulty)
 	local plan = Plan:New({}, newPlanName)
 	plan.difficulty = difficulty
 	plans[newPlanName] = plan
-	Utilities.ChangePlanBoss(plans, newPlanName, encounterID)
+	Utilities.ChangePlanBoss(plans, newPlanName, encounterID, difficulty)
 	local unitName, entry = Utilities.CreateRosterEntryForSelf()
 	plan.roster[unitName] = entry
 	return plan
@@ -2214,8 +2315,6 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 end
 
 do
-	local DifficultyType = Private.classes.DifficultyType
-
 	---@param plans table<string, Plan>
 	---@param instanceID integer
 	---@param encounterID integer
@@ -2310,7 +2409,8 @@ do
 	---@param plans table<string, Plan>
 	---@param planName string
 	---@param newEncounterID integer New boss dungeon encounter ID
-	function Utilities.ChangePlanBoss(plans, planName, newEncounterID)
+	---@param newDifficulty DifficultyType
+	function Utilities.ChangePlanBoss(plans, planName, newEncounterID, newDifficulty)
 		if plans[planName] then
 			local plan = plans[planName]
 			local newBossHasPrimaryPlan = false
@@ -2325,15 +2425,13 @@ do
 			end
 
 			local previousEncounterID = plan.dungeonEncounterID
-			local boss = GetBoss(newEncounterID)
-			if boss then
-				plan.dungeonEncounterID = boss.dungeonEncounterID
-				plan.instanceID = boss.instanceID
-				wipe(plan.customPhaseDurations)
-				wipe(plan.customPhaseCounts)
-			end
 
+			plan.difficulty = newDifficulty
+			plan.dungeonEncounterID = newEncounterID
+			plan.instanceID = GetBoss(newEncounterID).instanceID
 			plan.isPrimaryPlan = not newBossHasPrimaryPlan
+			wipe(plan.customPhaseDurations)
+			wipe(plan.customPhaseCounts)
 
 			if previousEncounterID > 0 and previousEncounterID ~= newEncounterID then
 				SwapDesignatedExternalPlanIfNeeded(plans, previousEncounterID)
@@ -2884,7 +2982,6 @@ do
 		local testEncounterIDOne = constants.kDefaultBossDungeonEncounterID
 		local testEncounterIDTwo = 3010
 		local testEncounterIDThree = 3011
-		local DifficultyType = Private.classes.DifficultyType
 
 		---@return table<string, Plan>, Plan, Plan, Plan, Plan
 		local function CreateTestPlans()
@@ -2943,21 +3040,21 @@ do
 		function test.ChangePlanBoss()
 			local plans, planOne, planTwo, planThree, planFour = CreateTestPlans()
 
-			Utilities.ChangePlanBoss(plans, planOne.name, constants.kDefaultBossDungeonEncounterID)
-			Utilities.ChangePlanBoss(plans, planThree.name, testEncounterIDTwo)
+			Utilities.ChangePlanBoss(plans, planOne.name, constants.kDefaultBossDungeonEncounterID, planOne.difficulty)
+			Utilities.ChangePlanBoss(plans, planThree.name, testEncounterIDTwo, planThree.difficulty)
 			local truthTable = { true, false, true, false }
 			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "No change")
 
-			Utilities.ChangePlanBoss(plans, planTwo.name, testEncounterIDThree)
+			Utilities.ChangePlanBoss(plans, planTwo.name, testEncounterIDThree, planTwo.difficulty)
 			truthTable = { true, true, true, false }
 			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Set new primary when no primary exist")
 
-			Utilities.ChangePlanBoss(plans, planFour.name, testEncounterIDTwo)
+			Utilities.ChangePlanBoss(plans, planFour.name, testEncounterIDTwo, planFour.difficulty)
 			truthTable = { true, true, true, false }
 			local context = "Preserve primary when primary already exists"
 			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, context)
 
-			Utilities.ChangePlanBoss(plans, planOne.name, testEncounterIDTwo)
+			Utilities.ChangePlanBoss(plans, planOne.name, testEncounterIDTwo, planOne.difficulty)
 			truthTable = { false, true, true, false }
 			context = context .. " 2"
 			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, context)

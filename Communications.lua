@@ -630,7 +630,7 @@ do
 			local textTable = RemoveTabs(SplitStringIntoTable(text))
 			local bossDungeonEncounterID = Private.ParseNote(plan, textTable, true) --[[@as integer]]
 			plan.dungeonEncounterID = bossDungeonEncounterID
-			ChangePlanBoss({ [plan.name] = plan }, plan.name, plan.dungeonEncounterID)
+			ChangePlanBoss({ [plan.name] = plan }, plan.name, plan.dungeonEncounterID, plan.difficulty)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
 			local export = TableToString(planSerializer.SerializePlan(plan), false)

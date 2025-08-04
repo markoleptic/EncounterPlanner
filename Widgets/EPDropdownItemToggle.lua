@@ -484,9 +484,10 @@ do
 	---@param self EPDropdownItemMenu
 	---@param selected boolean
 	---@param value any
-	local function HandleMenuItemValueChanged(self, selected, value)
+	---@param dropdownItemMenu EPDropdownItemMenu
+	local function HandleMenuItemValueChanged(self, selected, value, dropdownItemMenu)
 		self:SetChildValue(value)
-		self:Fire("OnValueChanged", selected, value)
+		self:Fire("OnValueChanged", selected, value, dropdownItemMenu)
 		if self.open and not self.multiselect then
 			self.parentPullout:Close()
 		end
@@ -516,6 +517,7 @@ do
 	local function CreateDropdownItemMenu(self, dropdownParent, itemData)
 		local dropdownMenuItem = AceGUI:Create("EPDropdownItemMenu")
 		dropdownMenuItem:SetValue(itemData.itemValue)
+		dropdownMenuItem:GetUserDataTable().initialValue = itemData.itemValue
 		dropdownMenuItem:SetText(itemData.text)
 		dropdownMenuItem:SetFontSize(dropdownParent.itemTextFontSize)
 		if itemData.indent then
@@ -528,8 +530,12 @@ do
 		dropdownMenuItem.parentDropdownItemMenu = self
 		dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
 		dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
-		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value)
-			HandleMenuItemValueChanged(self, selected, value)
+		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value, childDropdownMenuItem)
+			if childDropdownMenuItem then
+				HandleMenuItemValueChanged(self, selected, value, childDropdownMenuItem)
+			else
+				HandleMenuItemValueChanged(self, selected, value, dropdownMenuItem)
+			end
 		end)
 		self.childPullout:AddItem(dropdownMenuItem)
 		dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)

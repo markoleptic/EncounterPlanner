@@ -66,13 +66,15 @@ local tremove = table.remove
 local unpack = unpack
 local wipe = table.wipe
 
-local Create = {}
-local Handle = {}
+local Creator = {}
+local Handler = {}
 
-local addAssigneeText =
+local kAddAssigneeText =
 	utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
-local maxNumberOfRecentItems = 10
-local menuButtonHorizontalPadding = 8
+
+local kTopContainerDropdownWidth = 200
+local kTopContainerWidgetFontSize = 14
+local kMaxVisibleDropdownItems = 10
 
 do -- Plan Menu Items
 	local AddIconBeforeText = utilities.AddIconBeforeText
@@ -80,7 +82,7 @@ do -- Plan Menu Items
 	local planMenuItems = nil
 
 	---@return table<integer, DropdownItemData>
-	function Create.PlanMenuItems()
+	function Creator.PlanMenuItems()
 		if not planMenuItems then
 			planMenuItems = {
 				{
@@ -142,13 +144,13 @@ do -- Boss Menu Items
 	local bossMenuItems = nil
 
 	---@return table<integer, DropdownItemData>
-	function Create.BossMenuItems()
+	function Creator.BossMenuItems()
 		if not bossMenuItems then
 			bossMenuItems = {
 				{
 					itemValue = "Change Boss",
 					text = L["Change Boss"],
-					dropdownItemMenuData = utilities.GetOrCreateBossDropdownItems(),
+					dropdownItemMenuData = utilities.GetOrCreateBossDropdownItemsWithDifficulty(),
 				},
 				{
 					itemValue = "Edit Phase Timings",
@@ -190,7 +192,8 @@ end
 do -- Menu Button
 	local autoOpenNextMenuButtonEntered = nil
 	local menuButtonToClose = nil
-	local menuButtonFontSize = 16
+	local kMenuButtonFontSize = 16
+	local kMenuButtonHorizontalPadding = 8
 
 	---@param menuButton EPDropdown
 	local function HandleMenuButtonEntered(menuButton)
@@ -218,18 +221,17 @@ do -- Menu Button
 	---@param text string
 	---@param height number
 	---@return EPDropdown
-	function Create.DropdownMenuButton(text, height)
+	function Creator.DropdownMenuButton(text, height)
 		local menuButton = AceGUI:Create("EPDropdown")
 		menuButton:SetTextCentered(true)
 		menuButton:SetAutoItemWidth(true)
 		menuButton:SetText(text)
-		menuButton:SetTextFontSize(menuButtonFontSize)
-		menuButton:SetItemTextFontSize(menuButtonFontSize)
-		menuButton:SetItemHorizontalPadding(menuButtonHorizontalPadding)
-		menuButton:SetWidth(menuButton.text:GetStringWidth() + 2 * menuButtonHorizontalPadding)
-		menuButton:SetDropdownItemHeight(height)
+		menuButton:SetTextFontSize(kMenuButtonFontSize)
+		menuButton:SetWidth(menuButton.text:GetStringWidth() + 2 * kMenuButtonHorizontalPadding)
+		menuButton:SetHeight(height)
 		menuButton:SetButtonVisibility(false)
 		menuButton:SetShowHighlight(true)
+		menuButton:SetMaxVisibleItems(kMaxVisibleDropdownItems)
 		menuButton:SetCallback("OnEnter", HandleMenuButtonEntered)
 		menuButton:SetCallback("OnOpened", HandleMenuButtonOpened)
 		menuButton:SetCallback("OnClosed", HandleMenuButtonClosed)
@@ -250,11 +252,11 @@ do -- Menu Button
 	---@param height number
 	---@param clickedCallback fun()
 	---@return EPButton
-	function Create.MenuButton(text, height, clickedCallback)
+	function Creator.MenuButton(text, height, clickedCallback)
 		local menuButton = AceGUI:Create("EPButton")
 		menuButton:SetText(text)
-		menuButton:SetFontSize(menuButtonFontSize)
-		local width = menuButton.button:GetFontString():GetStringWidth() + 2 * menuButtonHorizontalPadding
+		menuButton:SetFontSize(kMenuButtonFontSize)
+		local width = menuButton.button:GetFontString():GetStringWidth() + 2 * kMenuButtonHorizontalPadding
 		menuButton:SetWidth(width)
 		menuButton:SetHeight(height)
 		menuButton:SetBackdrop(menuButtonBackdrop, menuButtonBackdropColor, menuButtonBackdropBorderColor)
@@ -906,19 +908,30 @@ end
 
 ---@param plan Plan
 ---@param newBossDungeonEncounterID integer
+---@param newDifficulty DifficultyType
 ---@param conversionMethod integer|nil
-local function HandleConvertAssignments(plan, newBossDungeonEncounterID, conversionMethod)
+local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, conversionMethod)
 	local currentBossDungeonEncounterID = plan.dungeonEncounterID
 	local currentBoss = GetBoss(currentBossDungeonEncounterID)
 	local newBoss = GetBoss(newBossDungeonEncounterID)
 	local currentAssignments = plan.assignments
 	if currentBoss and newBoss then
-		local difficulty = plan.difficulty
 		ClosePlanDependentWidgets()
+		local oldDifficulty = plan.difficulty
+		print(currentBoss, newBoss, oldDifficulty, newDifficulty)
 		if conversionMethod then
-			ConvertAssignmentsToNewBoss(currentAssignments, currentBoss, newBoss, conversionMethod, difficulty)
+			ConvertAssignmentsToNewBoss(
+				currentAssignments,
+				currentBoss,
+				newBoss,
+				oldDifficulty,
+				newDifficulty,
+				conversionMethod
+			)
 		end
-		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID)
+		print(plan.difficulty)
+		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID, newDifficulty)
+		print(plan.difficulty)
 		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(newBossDungeonEncounterID, true)
 		UpdateAllAssignments(false, newBossDungeonEncounterID)
@@ -926,9 +939,10 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, convers
 end
 
 ---@param value number|string
-local function HandleChangeBossDropdownValueChanged(value)
-	local bossDungeonEncounterID = tonumber(value)
-	if bossDungeonEncounterID then
+---@param newDifficulty DifficultyType
+local function HandleChangeBossDropdownValueChanged(value, newDifficulty)
+	local newBossDungeonEncounterID = tonumber(value)
+	if newBossDungeonEncounterID then
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local containsCombatLogEventAssignment = false
 		for _, assignment in ipairs(plan.assignments) do
@@ -952,7 +966,7 @@ local function HandleChangeBossDropdownValueChanged(value)
 				),
 				acceptButtonText = L["Convert to Timed Assignments"],
 				acceptButtonCallback = function()
-					HandleConvertAssignments(plan, bossDungeonEncounterID, 1)
+					HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, 1)
 				end,
 				rejectButtonText = L["Cancel"],
 				rejectButtonCallback = nil,
@@ -961,14 +975,14 @@ local function HandleChangeBossDropdownValueChanged(value)
 						beforeButtonIndex = 2,
 						buttonText = L["Replace Spells"],
 						callback = function()
-							HandleConvertAssignments(plan, bossDungeonEncounterID, 2)
+							HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, 2)
 						end,
 					},
 				},
 			} --[[@as MessageBoxData]]
 			CreateMessageBox(messageBoxData, false)
 		else
-			HandleConvertAssignments(plan, bossDungeonEncounterID, nil)
+			HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, nil)
 		end
 	end
 end
@@ -1134,14 +1148,14 @@ local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifferen
 end
 
 local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
-	if value == addAssigneeText then
+	if value == kAddAssigneeText then
 		return
 	end
 
 	local assignments = GetCurrentAssignments()
 	for _, assignment in pairs(GetCurrentAssignments()) do
 		if assignment.assignee == value then
-			dropdown:SetText(addAssigneeText)
+			dropdown:SetText(kAddAssigneeText)
 			return
 		end
 	end
@@ -1156,7 +1170,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	tinsert(assignments, assignment)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-	dropdown:SetText(addAssigneeText)
+	dropdown:SetText(kAddAssigneeText)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "assigneeAdded")
 	end
@@ -1451,7 +1465,7 @@ do -- Plan Menu Button Handlers
 
 	---@param planMenuButton EPDropdown
 	---@param value any
-	function Handle.PlanMenuButtonClicked(planMenuButton, _, value)
+	function Handler.PlanMenuButtonClicked(planMenuButton, _, value)
 		if value == "Plan" then
 			return
 		end
@@ -1495,7 +1509,17 @@ end
 
 ---@param bossMenuButton EPDropdown
 ---@param value any
-local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, topLevelItemValue)
+---@param selected boolean
+---@param topLevelItemValue any Value of the top level dropdown item menu
+---@param valueOwningDropdownItemMenu? EPDropdownItemMenu The parent dropdown item menu owning the item with value
+local function HandleBossMenuButtonClicked(
+	bossMenuButton,
+	_,
+	value,
+	selected,
+	topLevelItemValue,
+	valueOwningDropdownItemMenu
+)
 	if value == "Boss" then
 		return
 	elseif value == "Edit Phase Timings" then
@@ -1504,7 +1528,15 @@ local function HandleBossMenuButtonClicked(bossMenuButton, _, value, selected, t
 		bossMenuButton:SetText("Boss")
 	elseif topLevelItemValue == "Change Boss" then
 		bossMenuButton:Close()
-		HandleChangeBossDropdownValueChanged(value)
+		local newDifficulty = GetCurrentDifficulty()
+		if valueOwningDropdownItemMenu then
+			print(valueOwningDropdownItemMenu:GetUserDataTable().initialValue)
+			local initialValue = valueOwningDropdownItemMenu:GetUserDataTable().initialValue
+			if initialValue == DifficultyType.Heroic or initialValue == DifficultyType.Mythic then
+				newDifficulty = initialValue
+			end
+		end
+		HandleChangeBossDropdownValueChanged(value, newDifficulty)
 		bossMenuButton:SetValue("Boss")
 		bossMenuButton:SetText("Boss")
 	elseif topLevelItemValue == "Filter Spells" then
@@ -1863,8 +1895,6 @@ local function HandleMainFrameReleased()
 end
 
 function Private:CreateInterface()
-	local topContainerDropdownWidth = 200
-	local topContainerWidgetFontSize = 14
 	local topContainerWidgetHeight = 22
 	local topContainerSpacing = { 4, 4 }
 	local mainFramePadding = constants.kMainFramePadding
@@ -1910,19 +1940,19 @@ function Private:CreateInterface()
 
 	local menuButtonHeight = mainFrame.windowBar:GetHeight() - 2
 
-	local planMenuButton = Create.DropdownMenuButton(L["Plan"], menuButtonHeight)
-	planMenuButton:AddItems(Create.PlanMenuItems(), "EPDropdownItemToggle", true)
-	planMenuButton:SetCallback("OnValueChanged", Handle.PlanMenuButtonClicked)
+	local planMenuButton = Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
+	planMenuButton:AddItems(Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
+	planMenuButton:SetCallback("OnValueChanged", Handler.PlanMenuButtonClicked)
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
-	local bossMenuButton = Create.DropdownMenuButton(L["Boss"], menuButtonHeight)
+	local bossMenuButton = Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)
 	bossMenuButton:SetMultiselect(true)
-	bossMenuButton:AddItems(Create.BossMenuItems(), "EPDropdownItemToggle")
+	bossMenuButton:AddItems(Creator.BossMenuItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
-	local rosterMenuButton = Create.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)
+	local rosterMenuButton = Creator.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)
 	local preferencesMenuButton =
-		Create.MenuButton(L["Preferences"], menuButtonHeight, HandlePreferencesMenuButtonClicked)
+		Creator.MenuButton(L["Preferences"], menuButtonHeight, HandlePreferencesMenuButtonClicked)
 
 	mainFrame.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
@@ -1932,19 +1962,19 @@ function Private:CreateInterface()
 	instanceLabelContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabelLabel = AceGUI:Create("EPLabel")
-	instanceLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	instanceLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
 	instanceLabelLabel:SetHeight(16)
 	instanceLabelLabel:SetText(L["Instance"] .. ":", 0)
 	instanceLabelLabel:SetFrameWidthFromText()
 
 	local bossLabelLabel = AceGUI:Create("EPLabel")
-	bossLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	bossLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
 	bossLabelLabel:SetHeight(16)
 	bossLabelLabel:SetText(L["Boss"] .. ":", 0)
 	bossLabelLabel:SetFrameWidthFromText()
 
 	local difficultyLabelLabel = AceGUI:Create("EPLabel")
-	difficultyLabelLabel:SetFontSize(topContainerWidgetFontSize)
+	difficultyLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
 	difficultyLabelLabel:SetHeight(16)
 	difficultyLabelLabel:SetText(L["Difficulty"] .. ":", 0)
 	difficultyLabelLabel:SetFrameWidthFromText()
@@ -1962,40 +1992,34 @@ function Private:CreateInterface()
 	instanceBossContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabel = AceGUI:Create("EPLabel")
-	instanceLabel:SetFontSize(topContainerWidgetFontSize)
-	instanceLabel:SetWidth(topContainerDropdownWidth)
+	instanceLabel:SetFontSize(kTopContainerWidgetFontSize)
+	instanceLabel:SetWidth(kTopContainerDropdownWidth)
 	instanceLabel:SetHeight(16)
 
 	local bossLabel = AceGUI:Create("EPLabel")
-	bossLabel:SetFontSize(topContainerWidgetFontSize)
-	bossLabel:SetWidth(topContainerDropdownWidth)
+	bossLabel:SetFontSize(kTopContainerWidgetFontSize)
+	bossLabel:SetWidth(kTopContainerDropdownWidth)
 	bossLabel:SetHeight(16)
 
 	local difficultyLabel = AceGUI:Create("EPLabel")
-	difficultyLabel:SetFontSize(topContainerWidgetFontSize)
+	difficultyLabel:SetFontSize(kTopContainerWidgetFontSize)
 	difficultyLabel:SetHeight(16)
-	difficultyLabel:SetWidth(topContainerDropdownWidth)
+	difficultyLabel:SetWidth(kTopContainerDropdownWidth)
 	difficultyLabel:SetIcon([[Interface/EncounterJournal/UI-EJ-Icons]], 0, 2, 0, 0, 2)
 	instanceBossContainer:AddChildren(instanceLabel, bossLabel, difficultyLabel)
 
 	local planLabel = AceGUI:Create("EPLabel")
-	planLabel:SetFontSize(topContainerWidgetFontSize)
+	planLabel:SetFontSize(kTopContainerWidgetFontSize)
 	planLabel:SetText(L["Current Plan:"], 0)
 	planLabel:SetHeight(topContainerWidgetHeight)
 	planLabel:SetFrameWidthFromText()
 
 	local planDropdown = AceGUI:Create("EPDropdown")
-	planDropdown:SetWidth(topContainerDropdownWidth - 10)
+	planDropdown:SetWidth(kTopContainerDropdownWidth - 10)
 	planDropdown:SetAutoItemWidth(true)
-	planDropdown:SetTextFontSize(topContainerWidgetFontSize)
-	planDropdown:SetItemTextFontSize(topContainerWidgetFontSize)
-	planDropdown:SetTextHorizontalPadding(menuButtonHorizontalPadding / 2)
-	planDropdown:SetItemHorizontalPadding(menuButtonHorizontalPadding / 2)
-	planDropdown:SetDropdownItemHeight(topContainerWidgetHeight)
 	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
-	local maxVisiblePlanDropdownItems = 10
-	planDropdown:SetMaxVisibleItems(maxVisiblePlanDropdownItems)
+	planDropdown:SetMaxVisibleItems(kMaxVisibleDropdownItems)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanNameChanged)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 
@@ -2112,7 +2136,7 @@ function Private:CreateInterface()
 	timeline:SetCallback("ResizeBoundsCalculated", HandleResizeBoundsCalculated)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
-	addAssigneeDropdown:SetText(addAssigneeText)
+	addAssigneeDropdown:SetText(kAddAssigneeText)
 	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
 

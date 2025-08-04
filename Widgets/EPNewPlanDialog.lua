@@ -21,8 +21,6 @@ local unpack = unpack
 local defaultHeight = 400
 local defaultWidth = 400
 local dropdownWidth = 200
-local dropdownHeight = 26
-local dropdownHorizontalPadding = 4
 local defaultFontSize = 14
 local contentFramePadding = { x = 15, y = 15 }
 local otherPadding = { x = 10, y = 10 }
@@ -123,10 +121,6 @@ local function OnAcquire(self)
 	self.bossDropdown:SetWidth(dropdownWidth)
 	self.bossDropdown:SetTextFontSize(defaultFontSize)
 	self.bossDropdown:SetItemTextFontSize(defaultFontSize)
-	self.bossDropdown:SetTextHorizontalPadding(dropdownHorizontalPadding)
-	self.bossDropdown:SetItemHorizontalPadding(dropdownHorizontalPadding)
-	self.bossDropdown:SetHeight(dropdownHeight)
-	self.bossDropdown:SetDropdownItemHeight(dropdownHeight)
 	self.bossDropdown:SetMaxVisibleItems(10)
 	self.bossDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("BossChanged", value)
@@ -144,10 +138,6 @@ local function OnAcquire(self)
 	self.difficultyDropdown:SetWidth(dropdownWidth)
 	self.difficultyDropdown:SetTextFontSize(defaultFontSize)
 	self.difficultyDropdown:SetItemTextFontSize(defaultFontSize)
-	self.difficultyDropdown:SetTextHorizontalPadding(dropdownHorizontalPadding)
-	self.difficultyDropdown:SetItemHorizontalPadding(dropdownHorizontalPadding)
-	self.difficultyDropdown:SetHeight(dropdownHeight)
-	self.difficultyDropdown:SetDropdownItemHeight(dropdownHeight)
 	self.difficultyDropdown:AddItems(difficultyDropdownItemData, "EPDropdownItemToggle")
 
 	local planNameContainer = AceGUI:Create("EPContainer")
