@@ -1352,6 +1352,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1231501] = BossAbility:New({ -- Meta (Velaryn)
@@ -1371,6 +1372,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1232568] = BossAbility:New({ -- Meta (Ilyssa)
@@ -1390,6 +1392,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1233093] = BossAbility:New({ -- Collapsing Star
@@ -1821,8 +1824,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 17.23, 8.04, 31.83, 7.13, 33.36, 5.79 },
 						}),
 					},
-					halfHeight = true,
-					duration = 20.0,
+					duration = 0.0,
 					castTime = 4.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
@@ -1832,8 +1834,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 18.26, 7.55, 33.14, 5.60, 33.59, 4.90 },
 						}),
 					},
-					halfHeight = true,
-					duration = 20.0,
+					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
@@ -1865,6 +1866,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.0,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1227734] = BossAbility:New({ -- Coalesce Voidwing
@@ -1945,9 +1947,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 16.0 },
 						}),
 					},
-					defaultHidden = true,
 					duration = 7.0,
 					castTime = 3.0,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1228265] = BossAbility:New({ -- King's Hunger
@@ -1968,9 +1970,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 0.0 },
 						}),
 					},
-					defaultHidden = true,
 					duration = 30.0,
 					castTime = 6.2,
+					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[1225319] = BossAbility:New({ -- Galactic Smash
