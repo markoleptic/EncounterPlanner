@@ -978,44 +978,42 @@ end
 ---@param selected boolean
 local function HandleActiveBossAbilitiesChanged(dropdown, value, selected)
 	if type(value) == "number" then
-		local boss = GetBoss(Private.mainFrame.bossLabel:GetValue())
-		if boss then
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[boss.dungeonEncounterID]
-			local atLeastOneSelected = false
-			for currentAbilityID, currentSelected in pairs(activeBossAbilities) do
-				if currentAbilityID ~= value and currentSelected then
-					atLeastOneSelected = true
-					break
+		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+		local activeBossAbilities = utilities.GetActiveBossAbilities(bossDungeonEncounterID, GetCurrentDifficulty())
+		local atLeastOneSelected = false
+		for currentAbilityID, currentSelected in pairs(activeBossAbilities) do
+			if currentAbilityID ~= value and currentSelected then
+				atLeastOneSelected = true
+				break
+			end
+		end
+
+		local enabledCount = 0
+		if Private.activeTutorialCallbackName then
+			for _, currentSelected in pairs(activeBossAbilities) do
+				if currentSelected == true then
+					enabledCount = enabledCount + 1
 				end
 			end
+		end
 
-			local enabledCount = 0
-			if Private.activeTutorialCallbackName then
-				for _, currentSelected in pairs(activeBossAbilities) do
-					if currentSelected == true then
-						enabledCount = enabledCount + 1
-					end
+		if atLeastOneSelected then
+			activeBossAbilities[value] = selected
+			UpdateBoss(bossDungeonEncounterID, false)
+		else
+			dropdown:SetItemIsSelected(value, true, true)
+			activeBossAbilities[value] = true
+		end
+
+		if Private.activeTutorialCallbackName then
+			local newEnabledCount = 0
+			for _, currentSelected in pairs(activeBossAbilities) do
+				if currentSelected == true then
+					newEnabledCount = newEnabledCount + 1
 				end
 			end
-
-			if atLeastOneSelected then
-				activeBossAbilities[value] = selected
-				UpdateBoss(boss.dungeonEncounterID, false)
-			else
-				dropdown:SetItemIsSelected(value, true, true)
-				activeBossAbilities[value] = true
-			end
-
-			if Private.activeTutorialCallbackName then
-				local newEnabledCount = 0
-				for _, currentSelected in pairs(activeBossAbilities) do
-					if currentSelected == true then
-						newEnabledCount = newEnabledCount + 1
-					end
-				end
-				if newEnabledCount < enabledCount then
-					Private.callbacks:Fire(Private.activeTutorialCallbackName, "bossAbilityHidden")
-				end
+			if newEnabledCount < enabledCount then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "bossAbilityHidden")
 			end
 		end
 	end

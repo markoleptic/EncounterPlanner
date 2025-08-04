@@ -73,7 +73,6 @@ do
 	local GetBossAbilities = bossUtilities.GetBossAbilities
 	local GetBossAbilityIconAndLabel = bossUtilities.GetBossAbilityIconAndLabel
 	local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
-	local GetSortedBossAbilityIDs = bossUtilities.GetSortedBossAbilityIDs
 	local ResetBossPhaseCounts = bossUtilities.ResetBossPhaseCounts
 	local ResetBossPhaseTimings = bossUtilities.ResetBossPhaseTimings
 	local SetPhaseCounts = bossUtilities.SetPhaseCounts
@@ -82,13 +81,23 @@ do
 	local instanceAndBossPadding = 4
 	local kMaxBossDuration = constants.kMaxBossDuration
 	local lastBossDungeonEncounterID = 0
+	local lastDifficulty = DifficultyType.Mythic
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
 	---@param timeline EPTimeline
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
+	---@param activeBossAbilities table<integer, boolean>
+	---@param sortedAbilityIDs table<integer, integer>
 	---@param difficulty DifficultyType
-	local function UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown, difficulty)
+	local function UpdateBossAbilityList(
+		boss,
+		timeline,
+		updateBossAbilitySelectDropdown,
+		activeBossAbilities,
+		sortedAbilityIDs,
+		difficulty
+	)
 		local bossAbilityContainer = timeline:GetBossAbilityContainer()
 		local bossLabel = Private.mainFrame.bossLabel
 		local instanceLabel = Private.mainFrame.instanceLabel
@@ -96,19 +105,6 @@ do
 		if bossAbilityContainer and bossLabel and instanceLabel then
 			local dungeonEncounterID = boss.dungeonEncounterID
 			local profile = AddOn.db.profile
-
-			local activeBossAbilities
-			if difficulty == DifficultyType.Heroic then
-				if profile.activeBossAbilitiesHeroic[dungeonEncounterID] == nil then
-					profile.activeBossAbilitiesHeroic[dungeonEncounterID] = {}
-				end
-				activeBossAbilities = profile.activeBossAbilitiesHeroic[dungeonEncounterID]
-			else
-				if profile.activeBossAbilities[dungeonEncounterID] == nil then
-					profile.activeBossAbilities[dungeonEncounterID] = {}
-				end
-				activeBossAbilities = AddOn.db.profile.activeBossAbilities[dungeonEncounterID]
-			end
 
 			local dungeonInstance = Private.dungeonInstances[boss.instanceID]
 			if dungeonInstance.isSplit and boss.mapChallengeModeID then
@@ -144,7 +140,7 @@ do
 			local children = {}
 			local bossAbilitySelectItems = {}
 			local bossAbilities = GetBossAbilities(boss, difficulty)
-			for _, abilityID in ipairs(GetSortedBossAbilityIDs(boss, difficulty)) do
+			for _, abilityID in ipairs(sortedAbilityIDs) do
 				if activeBossAbilities[abilityID] == nil then
 					activeBossAbilities[abilityID] = not bossAbilities[abilityID].defaultHidden
 				end
@@ -191,20 +187,23 @@ do
 	-- Sets the boss abilities for the timeline and rerenders it.
 	---@param boss Boss
 	---@param timeline EPTimeline
+	---@param activeBossAbilities table<integer, boolean>
+	---@param sortedAbilityIDs table<integer, integer>
 	---@param difficulty DifficultyType
-	local function UpdateTimelineBossAbilities(boss, timeline, difficulty)
+	local function UpdateTimelineBossAbilities(boss, timeline, activeBossAbilities, sortedAbilityIDs, difficulty)
 		local bossDungeonEncounterID = boss.dungeonEncounterID
 		local bossPhaseTable = GetOrderedBossPhases(bossDungeonEncounterID, difficulty)
 		if bossPhaseTable then
-			local activeBossAbilities = AddOn.db.profile.activeBossAbilities[bossDungeonEncounterID]
 			local abilityInstances = GetBossAbilityInstances(bossDungeonEncounterID, difficulty)
-			local sortedAbilityIDs = GetSortedBossAbilityIDs(boss, difficulty)
 			local phases = GetBossPhases(boss, difficulty)
 			timeline:SetBossAbilities(abilityInstances, sortedAbilityIDs, phases, bossPhaseTable, activeBossAbilities)
 			timeline:UpdateTimeline()
 			Private.mainFrame:DoLayout()
 		end
 	end
+
+	local GetActiveBossAbilities = utilities.GetActiveBossAbilities
+	local GetSortedBossAbilityIDs = bossUtilities.GetSortedBossAbilityIDs
 
 	-- Updates the list of boss abilities and the boss ability timeline.
 	---@param bossDungeonEncounterID integer
@@ -213,10 +212,11 @@ do
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local difficulty = plan.difficulty
 		if lastBossDungeonEncounterID ~= 0 then
-			ResetBossPhaseTimings(lastBossDungeonEncounterID, difficulty)
-			ResetBossPhaseCounts(lastBossDungeonEncounterID, difficulty)
+			ResetBossPhaseTimings(lastBossDungeonEncounterID, lastDifficulty)
+			ResetBossPhaseCounts(lastBossDungeonEncounterID, lastDifficulty)
 		end
 		lastBossDungeonEncounterID = bossDungeonEncounterID
+		lastDifficulty = difficulty
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			SetPhaseDurations(bossDungeonEncounterID, plan.customPhaseDurations, difficulty)
@@ -225,8 +225,17 @@ do
 			GenerateBossTables(boss, difficulty)
 			local timeline = Private.mainFrame.timeline
 			if timeline then
-				UpdateBossAbilityList(boss, timeline, updateBossAbilitySelectDropdown, difficulty)
-				UpdateTimelineBossAbilities(boss, timeline, difficulty)
+				local sortedAbilityIDs = GetSortedBossAbilityIDs(boss, difficulty)
+				local activeBossAbilities = GetActiveBossAbilities(bossDungeonEncounterID, difficulty)
+				UpdateBossAbilityList(
+					boss,
+					timeline,
+					updateBossAbilitySelectDropdown,
+					activeBossAbilities,
+					sortedAbilityIDs,
+					difficulty
+				)
+				UpdateTimelineBossAbilities(boss, timeline, activeBossAbilities, sortedAbilityIDs, difficulty)
 			end
 		end
 	end
