@@ -54,7 +54,7 @@ Private.dungeonInstances[2287] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[322943] = BossAbility:New({ -- Heave Debris
 					phases = {

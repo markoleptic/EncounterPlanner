@@ -264,7 +264,7 @@ do
 			label = L["Unknown"]
 		end
 
-		if bossAbilities[abilityID].onlyRelevantForTanks then
+		if bossAbilities[abilityID].tankAbility then
 			label = label .. " " .. tankIcon
 		end
 

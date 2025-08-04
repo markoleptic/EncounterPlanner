@@ -100,7 +100,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					duration = 7.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 			},
 			phases = {
@@ -165,7 +165,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[452127] = BossAbility:New({ -- Animate Shadows
 					phases = {

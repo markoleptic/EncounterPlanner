@@ -57,7 +57,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					duration = 5.0,
 					castTime = 1.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[320182] = BossAbility:New({ -- Noxious Spores (Paceran)
 					phases = {
@@ -190,7 +190,7 @@ Private.dungeonInstances[2293] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[318406] = BossAbility:New({ -- Tenderizing Smash

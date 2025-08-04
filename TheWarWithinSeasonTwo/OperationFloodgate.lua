@@ -51,7 +51,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 10.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = {}, -- TODO: Phase timings can cause inconsistent results
 				}),
 				[473220] = BossAbility:New({ -- Sonic Boom
@@ -124,7 +124,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[459779] = BossAbility:New({ -- Barreling Charge
@@ -272,7 +272,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[470039] = BossAbility:New({ -- Razorchoke Vines
@@ -346,7 +346,7 @@ Private.dungeonInstances[2773] = DungeonInstance:New({
 					},
 					duration = 4.0,
 					castTime = 2.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 			},

@@ -114,7 +114,7 @@
 -- Restrict creating combat log event assignments to only these types.
 ---@field allowedCombatLogEventTypes table<integer, CombatLogEventType>
 ---@field additionalContext string|nil Additional context to append to boss ability names.
----@field onlyRelevantForTanks boolean|nil If true, is a tank buster or similar.
+---@field tankAbility boolean|nil If true, is a tank buster or similar.
 ---@field bossNpcID integer|nil If defined, the ability represents a boss's death with the given npc ID.
 -- If true, a buffer will be applied after the each combat log event to prevent successive events from triggering it
 -- again.

@@ -109,7 +109,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 25.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					halfHeight = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
@@ -290,7 +290,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
-					onlyRelevantForTanks = true, -- Also affects players
+					tankAbility = true, -- Also affects players
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[474159] = BossAbility:New({ -- Static Charge
@@ -344,7 +344,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 4.0,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 			},
@@ -562,7 +562,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 50.0,
 					castTime = 0.0,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[1217954] = BossAbility:New({ -- Meltdown
@@ -574,7 +574,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 3.0,
 					castTime = 1.0,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[467117] = BossAbility:New({ -- Overdrive
@@ -743,7 +743,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 6.0,
 					castTime = 3.0,
-					onlyRelevantForTanks = true, -- Also relevant for everyone else
+					tankAbility = true, -- Also relevant for everyone else
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[465232] = BossAbility:New({ -- Sonic Ba-Boom
@@ -917,7 +917,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					duration = 30.0,
 					castTime = 2.5,
 					halfHeight = true,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[461060] = BossAbility:New({ -- Spin To Win!
@@ -1205,7 +1205,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 2.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
 				[466460] = BossAbility:New({ -- Head Honcho: Zee
@@ -1425,7 +1425,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = {},
 					defaultHidden = true,
 				}),
@@ -1496,7 +1496,7 @@ Private.dungeonInstances[2769] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 15.0,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = {},
 				}),
 				[1218546] = BossAbility:New({ -- Biggest Baddest Bomb Barrage

@@ -93,7 +93,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					duration = 0.0,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[348350] = BossAbility:New({ -- Interrogation
 					eventTriggers = {
@@ -199,7 +199,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					duration = 5.0,
 					castTime = 1.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[349987] = BossAbility:New({ -- Venting Protocol
 					phases = {
@@ -366,7 +366,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					duration = 0.0,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = {}, -- Extremely inconsistent
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[350922] = BossAbility:New({ -- Menacing Shout
 					phases = {
@@ -419,7 +419,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[391] = DungeonInstance:New(
 					duration = 0.0,
 					castTime = 1.5,
 					allowedCombatLogEventTypes = {}, -- Unreliable
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[350919] = BossAbility:New({ -- Crowd Control
 					phases = {

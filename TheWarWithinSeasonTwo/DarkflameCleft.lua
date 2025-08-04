@@ -37,7 +37,7 @@ Private.dungeonInstances[2651] = DungeonInstance:New({
 					durationIsPlayerDebuff = true,
 					duration = 6.0,
 					castTime = 1.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[423693] = BossAbility:New({ -- Luring Candleflame

@@ -54,7 +54,7 @@ Private.dungeonInstances[2649] = DungeonInstance:New({
 					},
 					duration = 10.0,
 					castTime = 2.5,
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 					allowedCombatLogEventTypes = { "SCC", "SCS" },
 				}),
 				[447439] = BossAbility:New({ -- Savage Mauling

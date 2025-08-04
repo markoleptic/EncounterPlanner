@@ -89,7 +89,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					duration = 2.6, -- Channeled
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[347094] = BossAbility:New({ -- Titanic Crash
 					phases = {
@@ -218,7 +218,7 @@ Private.dungeonInstances[2441].splitDungeonInstances[392] = DungeonInstance:New(
 					duration = 3.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS" },
-					onlyRelevantForTanks = true,
+					tankAbility = true,
 				}),
 				[1240102] = BossAbility:New({ -- Time Bombs
 					phases = {
