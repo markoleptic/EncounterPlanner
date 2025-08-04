@@ -628,6 +628,7 @@ end
 
 function AddOn:OnEnable()
 	dungeonInstanceInitializer.InitializeDungeonInstances()
+	bossUtilities.Initialize()
 	--@debug@
 	Private.testRunner.RunTests()
 	--@end-debug@
