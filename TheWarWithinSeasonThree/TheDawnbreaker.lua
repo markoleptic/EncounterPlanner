@@ -86,7 +86,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
-				[453212] = BossAbility:New({ -- Obsidian Beam
+				[453212] = BossAbility:New({ -- Obsidian Blast
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 9.49, 32.45, 25.38, 28.29 },
@@ -100,6 +100,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					duration = 7.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 			},
 			phases = {
@@ -164,6 +165,7 @@ Private.dungeonInstances[2662] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[452127] = BossAbility:New({ -- Animate Shadows
 					phases = {

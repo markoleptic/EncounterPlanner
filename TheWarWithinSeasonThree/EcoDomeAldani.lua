@@ -103,6 +103,7 @@ Private.dungeonInstances[2830] = DungeonInstance:New({
 					duration = 8.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1236130] = BossAbility:New({ -- Binding Javelin
 					phases = {

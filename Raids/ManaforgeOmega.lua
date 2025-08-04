@@ -130,6 +130,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 6.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1219531] = BossAbility:New({ -- Eradicating Salvo
 					phases = {
@@ -388,6 +389,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 6.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1219531] = BossAbility:New({ -- Eradicating Salvo
 					phases = {
@@ -554,6 +556,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
 					phases = {
@@ -674,6 +677,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
 					phases = {
@@ -717,6 +721,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1241100] = BossAbility:New({ -- Mythic Lash (Cast)
 					phases = {
@@ -728,6 +733,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 5.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+					onlyRelevantForTanks = true,
 				}),
 				[1225582] = BossAbility:New({ -- Soul Calling
 					phases = {
@@ -921,6 +927,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 1.2,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1231720] = BossAbility:New({ -- Invoke Collector
 					phases = {
@@ -1172,6 +1179,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1218103] = BossAbility:New({ -- Eye Beam
 					phases = {
@@ -1192,6 +1200,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 4.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1225130] = BossAbility:New({ -- Felblade
 					phases = {
@@ -1720,6 +1729,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 55.0,
 					castTime = 4.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1220394] = BossAbility:New({ -- Shattering Backhand
 					phases = {
@@ -1827,6 +1837,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 4.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1224812] = BossAbility:New({ -- Vanquish
 					phases = {
@@ -1837,6 +1848,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[1227529] = BossAbility:New({ -- Banishment
 					phases = {

@@ -42,6 +42,7 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[438473] = BossAbility:New({ -- Gossamer Onslaught
 					phases = {
@@ -142,6 +143,7 @@ Private.dungeonInstances[2660] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					onlyRelevantForTanks = true,
 				}),
 				[439506] = BossAbility:New({ -- Burrow Charge
 					phases = {
