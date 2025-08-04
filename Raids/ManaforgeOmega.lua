@@ -2221,6 +2221,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 		-- }),
 	},
 	isRaid = true,
+	hasHeroic = true,
 })
 
 local dungeonInstance = Private.dungeonInstances[2810]
