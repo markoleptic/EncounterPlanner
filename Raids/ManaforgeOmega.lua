@@ -44,12 +44,12 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			instanceID = 2810,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 1220618, combatLogEventType = "SAA" },
-				[3] = { combatLogEventSpellID = 1220618, combatLogEventType = "SAR" },
-				[4] = { combatLogEventSpellID = 1220981, combatLogEventType = "SAA" },
-				[5] = { combatLogEventSpellID = 1220981, combatLogEventType = "SAR" },
-				[6] = { combatLogEventSpellID = 1220982, combatLogEventType = "SAA" },
-				[7] = { combatLogEventSpellID = 1220982, combatLogEventType = "SAR" },
+				[2] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAA" },
+				[3] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAR" },
+				[4] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAA" },
+				[5] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAR" },
+				[6] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAA" },
+				[7] = { combatLogEventSpellID = 1241303, combatLogEventType = "SAR" },
 			},
 			abilities = {
 				[1234733] = BossAbility:New({ -- Cleanse the Chamber
@@ -205,7 +205,8 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					durationLastsUntilEndOfNextPhase = true,
+					defaultHidden = true,
+					durationLastsUntilEndOfPhase = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
@@ -230,7 +231,8 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					durationLastsUntilEndOfNextPhase = true,
+					defaultHidden = true,
+					durationLastsUntilEndOfPhase = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
@@ -255,25 +257,26 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							signifiesPhaseEnd = true,
 						}),
 					},
-					durationLastsUntilEndOfNextPhase = true,
+					defaultHidden = true,
+					durationLastsUntilEndOfPhase = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
 					additionalContext = L["Buff"] .. " 3",
 				}),
 				[1241303] = BossAbility:New({ -- Arcanoshield
-					eventTriggers = {
-						[1220618] = EventTrigger:New({ -- Protocol: Purge (Buff 1)
-							combatLogEventType = "SAA",
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
 						}),
-						[1220981] = EventTrigger:New({ -- Protocol: Purge (Buff 2)
-							combatLogEventType = "SAA",
+						[4] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
 						}),
-						[1220982] = EventTrigger:New({ -- Protocol: Purge (Buff 2)
-							combatLogEventType = "SAA",
+						[6] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
 						}),
 					},
-					durationLastsUntilEndOfNextPhase = true,
+					durationLastsUntilEndOfPhase = true,
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
