@@ -185,12 +185,15 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 62.46 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[3] = BossAbilityPhase:New({
 							castTimes = { 95.67 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 96.17 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
@@ -437,12 +440,15 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 66.5 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[3] = BossAbilityPhase:New({
 							castTimes = { 97.4 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 97.7 },
+							durationLastsUntilEndOfNextPhase = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
@@ -570,6 +576,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 					tankAbility = true,
+					additionalContext = L["Cast"],
 				}),
 				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
 					phases = {
@@ -582,6 +589,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 45.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Effect"],
 				}),
 				[1226395] = BossAbility:New({ -- Overinfusion Burst
 					phases = {
@@ -616,6 +624,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 4.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1227227] = BossAbility:New({ -- Writhing Wave
 					phases = {
@@ -628,6 +637,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 25.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+					additionalContext = L["Effect"],
 				}),
 				[1227782] = BossAbility:New({ -- Arcane Outrage (Cast)
 					phases = {
@@ -639,6 +649,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1227784] = BossAbility:New({ -- Arcane Outrage (Channel)
 					phases = {
@@ -650,6 +661,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 4.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Channel"],
 				}),
 			},
 			phases = {
@@ -691,6 +703,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 					tankAbility = true,
+					additionalContext = L["Cast"],
 				}),
 				[1227261] = BossAbility:New({ -- Piercing Strand (Duration)
 					phases = {
@@ -703,6 +716,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 45.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Effect"],
 				}),
 			},
 			phasesHeroic = {},
@@ -731,9 +745,9 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							repeatInterval = { 41.0, 38.0, 40.0, 31.0 },
 						}),
 					},
-					duration = 0.0,
+					duration = 5.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCC" },
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 					tankAbility = true,
 				}),
 				[1241100] = BossAbility:New({ -- Mythic Lash (Cast)
@@ -743,6 +757,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							repeatInterval = { 41.0, 38.0, 40.0, 31.0 },
 						}),
 					},
+					defaultHidden = true,
 					duration = 5.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
@@ -780,6 +795,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Targeting"],
 				}),
 				[1227279] = BossAbility:New({ -- Soulfray Annihilation (Cast)
 					phases = {
@@ -791,6 +807,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1245422] = BossAbility:New({ -- Tsunami of Arcane
 					phases = {
@@ -868,6 +885,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Targeting"],
 				}),
 				[1227279] = BossAbility:New({ -- Soulfray Annihilation (Cast)
 					phases = {
@@ -879,6 +897,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1245422] = BossAbility:New({ -- Tsunami of Arcane
 					phases = {
@@ -1307,6 +1326,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 6.0,
 					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Targeting"],
 				}),
 				[1227823] = BossAbility:New({ -- The Hunt (Casts)
 					phases = {
@@ -1324,6 +1344,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1245743] = BossAbility:New({ -- Eradicate (Targeting)
 					phases = {
@@ -1340,6 +1361,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 2.5,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Targeting"],
 				}),
 				[1245726] = BossAbility:New({ -- Eradicate (Casts)
 					phases = {
@@ -1356,6 +1378,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1232569] = BossAbility:New({ -- Meta (Adarus)
 					phases = {
@@ -2011,6 +2034,18 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 8.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
+				[1226347] = BossAbility:New({ -- Starkiller Swing (First event from boss)
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 34.9, 0.0, 0.0 },
+							repeatInterval = { 15.0, 0.0, 0.0, 40.0, 0.0, 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+					additionalContext = L["Targeting"],
+				}),
 				[1226024] = BossAbility:New({ -- Starkiller Swing (All full casts, inc. from images)
 					phases = {
 						[5] = BossAbilityPhase:New({
@@ -2018,21 +2053,11 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							repeatInterval = { 15.0, 0.0, 0.0, 40.0, 0.0, 0.0 },
 						}),
 					},
-					duration = 0.0,
-					castTime = 6.0,
 					defaultHidden = true,
-					allowedCombatLogEventTypes = { "SCS", "SCC" },
-				}),
-				[1226442] = BossAbility:New({ -- Starkiller Swing (Signaling cast?)
-					phases = {
-						[5] = BossAbilityPhase:New({
-							castTimes = { 36.9 },
-							repeatInterval = { 15.0, 40.0 },
-						}),
-					},
 					duration = 0.0,
 					castTime = 6.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"],
 				}),
 				[1225634] = BossAbility:New({ -- World in Twilight
 					phases = {
@@ -2235,6 +2260,22 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 	},
 	isRaid = true,
 	hasHeroic = true,
+	executeAndNil = function()
+		local dungeonInstance = Private.dungeonInstances[2810]
+		EJ_SelectInstance(dungeonInstance.journalInstanceID)
+		local boss = dungeonInstance.bosses[5]
+		local journalEncounterID = boss.journalEncounterID
+		EJ_SelectEncounter(journalEncounterID)
+		local _, bossName, _, _, _, _ = EJ_GetCreatureInfo(1, journalEncounterID)
+		boss.abilities[1232569].additionalContext = bossName:match("^(%S+)")
+		boss.abilitiesHeroic[1232569].additionalContext = bossName:match("^(%S+)")
+		_, bossName, _, _, _, _ = EJ_GetCreatureInfo(2, journalEncounterID)
+		boss.abilities[1231501].additionalContext = bossName:match("^(%S+)")
+		boss.abilitiesHeroic[1231501].additionalContext = bossName:match("^(%S+)")
+		_, bossName, _, _, _, _ = EJ_GetCreatureInfo(3, journalEncounterID)
+		boss.abilities[1232568].additionalContext = bossName:match("^(%S+)")
+		boss.abilitiesHeroic[1232568].additionalContext = bossName:match("^(%S+)")
+	end,
 })
 
 local dungeonInstance = Private.dungeonInstances[2810]
