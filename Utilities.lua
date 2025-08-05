@@ -2472,7 +2472,7 @@ do
 				if newPlanName then
 					profile.lastOpenPlan = newPlanName
 				else
-					local newPlan = Utilities.CreatePlan(plans, nil, encounterID, DifficultyType.Mythic)
+					local newPlan = Utilities.CreatePlan(plans, nil, encounterID, difficulty)
 					profile.lastOpenPlan = newPlan.name
 				end
 			end
