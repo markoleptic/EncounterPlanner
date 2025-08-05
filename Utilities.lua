@@ -2235,12 +2235,12 @@ end
 function Utilities.SetDesignatedExternalPlan(plans, newDesignatedExternalPlan)
 	local changedPrimaryPlan = false
 	for _, currentPlan in pairs(plans) do
-		if currentPlan.dungeonEncounterID == newDesignatedExternalPlan.dungeonEncounterID then
-			if currentPlan.difficulty == newDesignatedExternalPlan.difficulty then
-				if currentPlan.isPrimaryPlan and currentPlan ~= newDesignatedExternalPlan then
-					currentPlan.isPrimaryPlan = false
-					changedPrimaryPlan = true
-				end
+		local matching = currentPlan.dungeonEncounterID == newDesignatedExternalPlan.dungeonEncounterID
+			and currentPlan.difficulty == newDesignatedExternalPlan.difficulty
+		if matching then
+			if currentPlan.isPrimaryPlan == true and currentPlan ~= newDesignatedExternalPlan then
+				currentPlan.isPrimaryPlan = false
+				changedPrimaryPlan = true
 			end
 		end
 	end
@@ -2397,7 +2397,7 @@ do
 		for _, currentPlan in pairs(plans) do
 			local matching = currentPlan.dungeonEncounterID == encounterID and currentPlan.difficulty == difficulty
 			if matching then
-				if currentPlan.isPrimaryPlan then
+				if currentPlan.isPrimaryPlan == true then
 					primaryPlanExists = true
 					break
 				end
@@ -2425,7 +2425,7 @@ do
 				local matching = currentPlan.dungeonEncounterID == newEncounterID
 					and currentPlan.difficulty == newDifficulty
 				if matching then
-					if currentPlan.isPrimaryPlan and currentPlan ~= plan then
+					if currentPlan.isPrimaryPlan == true and currentPlan ~= plan then
 						newBossHasPrimaryPlan = true
 						break
 					end
