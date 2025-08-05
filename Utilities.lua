@@ -2463,7 +2463,7 @@ do
 
 			local instanceID = plans[planToDeleteName].instanceID
 			local encounterID = plans[planToDeleteName].dungeonEncounterID
-			local difficulty = plans[planToDeleteName].dungeonEncounterID
+			local difficulty = plans[planToDeleteName].difficulty
 
 			plans[planToDeleteName] = nil
 
