@@ -7,6 +7,7 @@ end
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 ---@class EventTrigger
 local EventTrigger = Private.classes.EventTrigger
 ---@class Boss
@@ -162,6 +163,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 1",
 				}),
 				[1232543] = BossAbility:New({ -- Energy Overload
 					phases = {
@@ -207,6 +209,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					additionalContext = L["Buff"] .. " 1",
 				}),
 				[1220553] = BossAbility:New({ -- Protocol: Purge (Cast 2)
 					phases = {
@@ -218,6 +221,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 2",
 				}),
 				[1220981] = BossAbility:New({ -- Protocol: Purge (Buff 2)
 					phases = {
@@ -230,6 +234,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					additionalContext = L["Buff"] .. " 2",
 				}),
 				[1220555] = BossAbility:New({ -- Protocol: Purge (Cast 3)
 					phases = {
@@ -241,6 +246,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 3",
 				}),
 				[1220982] = BossAbility:New({ -- Protocol: Purge (Buff 3)
 					phases = {
@@ -253,6 +259,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 0.0,
 					allowedCombatLogEventTypes = { "SAA", "SAR" },
+					additionalContext = L["Buff"] .. " 3",
 				}),
 				[1241303] = BossAbility:New({ -- Arcanoshield
 					eventTriggers = {
@@ -421,6 +428,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 1",
 				}),
 				[1227639] = BossAbility:New({ -- Static Lightning
 					phases = {
@@ -449,6 +457,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 2",
 				}),
 				[1220555] = BossAbility:New({ -- Protocol: Purge (Cast 3)
 					phases = {
@@ -460,6 +469,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					duration = 0.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
+					additionalContext = L["Cast"] .. " 3",
 				}),
 			},
 			phasesHeroic = {
