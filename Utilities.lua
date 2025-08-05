@@ -2996,17 +2996,15 @@ do
 		local testEncounterIDOne = constants.kDefaultBossDungeonEncounterID
 		local testEncounterIDTwo = 3010
 		local testEncounterIDThree = 3011
+		local kTestPlanName = "Test"
+		local plans = {}
 
-		---@return table<string, Plan>, Plan, Plan, Plan, Plan
 		local function CreateTestPlans()
-			local planName = "Test"
-			local plans = {}
-
-			local planOne = Utilities.CreatePlan(plans, planName, testEncounterIDOne, DifficultyType.Mythic)
-			local planTwo = Utilities.CreatePlan(plans, planName, testEncounterIDOne, DifficultyType.Mythic)
-			local planThree = Utilities.CreatePlan(plans, planName, testEncounterIDTwo, DifficultyType.Mythic)
-			local planFour = Utilities.CreatePlan(plans, planName, testEncounterIDTwo, DifficultyType.Mythic)
-			return plans, planOne, planTwo, planThree, planFour
+			wipe(plans)
+			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDOne, DifficultyType.Mythic)
+			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDOne, DifficultyType.Mythic)
+			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDTwo, DifficultyType.Mythic)
+			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDTwo, DifficultyType.Mythic)
 		end
 
 		---@param planOne Plan
@@ -3022,83 +3020,103 @@ do
 			testUtilities.TestEqual(planFour.isPrimaryPlan, truthTable[4], context .. " Index " .. 4)
 		end
 
+		---@param index integer
+		---@return Plan
+		local function GetPlan(index)
+			if index == 1 then
+				return plans[kTestPlanName]
+			else
+				return plans[kTestPlanName .. " " .. tostring(index)]
+			end
+		end
+
 		function test.SetDesignatedExternalPlan()
-			local plans, planOne, planTwo, planThree, planFour = CreateTestPlans()
-			testUtilities.TestEqual(planOne.isPrimaryPlan, true, "Correct primary plan after creation")
-			testUtilities.TestEqual(planThree.isPrimaryPlan, true, "Correct primary plan after creation")
-			planOne.isPrimaryPlan = false
-			planThree.isPrimaryPlan = false
+			CreateTestPlans()
+			testUtilities.TestEqual(GetPlan(1).isPrimaryPlan, true, "Correct primary plan after creation")
+			testUtilities.TestEqual(GetPlan(3).isPrimaryPlan, true, "Correct primary plan after creation")
+			GetPlan(1).isPrimaryPlan = false
+			GetPlan(3).isPrimaryPlan = false
 
-			Utilities.SetDesignatedExternalPlan(plans, planOne)
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(1))
 			local truthTable = { true, false, false, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Set primary when none exist")
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "Set primary when none exist")
 
-			Utilities.SetDesignatedExternalPlan(plans, planThree)
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(3))
 			truthTable = { true, false, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Set primary when none exist")
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "Set primary when none exist")
 
-			Utilities.SetDesignatedExternalPlan(plans, planOne)
-			Utilities.SetDesignatedExternalPlan(plans, planThree)
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(1))
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(3))
 			truthTable = { true, false, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Do nothing when primary exists")
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "Do nothing when primary exists")
 
-			Utilities.SetDesignatedExternalPlan(plans, planTwo)
-			Utilities.SetDesignatedExternalPlan(plans, planFour)
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(2))
+			Utilities.SetDesignatedExternalPlan(plans, GetPlan(4))
 			truthTable = { false, true, false, true }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Switch primary")
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "Switch primary")
 
 			return "SetDesignatedExternalPlan"
 		end
 
 		function test.ChangePlanBoss()
-			local plans, planOne, planTwo, planThree, planFour = CreateTestPlans()
+			CreateTestPlans()
 
-			Utilities.ChangePlanBoss(plans, planOne.name, constants.kDefaultBossDungeonEncounterID, planOne.difficulty)
-			Utilities.ChangePlanBoss(plans, planThree.name, testEncounterIDTwo, planThree.difficulty)
+			Utilities.ChangePlanBoss(
+				plans,
+				GetPlan(1).name,
+				constants.kDefaultBossDungeonEncounterID,
+				GetPlan(1).difficulty
+			)
+			Utilities.ChangePlanBoss(plans, GetPlan(3).name, testEncounterIDTwo, GetPlan(3).difficulty)
 			local truthTable = { true, false, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "No change")
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "No change")
 
-			Utilities.ChangePlanBoss(plans, planTwo.name, testEncounterIDThree, planTwo.difficulty)
+			Utilities.ChangePlanBoss(plans, GetPlan(2).name, testEncounterIDThree, GetPlan(2).difficulty)
 			truthTable = { true, true, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Set new primary when no primary exist")
+			local context = "Set new primary when no primary exist"
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, context)
 
-			Utilities.ChangePlanBoss(plans, planFour.name, testEncounterIDTwo, planFour.difficulty)
+			Utilities.ChangePlanBoss(plans, GetPlan(4).name, testEncounterIDTwo, GetPlan(4).difficulty)
 			truthTable = { true, true, true, false }
-			local context = "Preserve primary when primary already exists"
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, context)
+			context = "Preserve primary when primary already exists"
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, context)
 
-			Utilities.ChangePlanBoss(plans, planOne.name, testEncounterIDTwo, planOne.difficulty)
+			Utilities.ChangePlanBoss(plans, GetPlan(1).name, testEncounterIDTwo, GetPlan(1).difficulty)
 			truthTable = { false, true, true, false }
 			context = context .. " 2"
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, context)
+			TestPlansEqual(GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), truthTable, context)
 
 			return "ChangePlanBoss"
 		end
 
 		function test.DeletePlan()
-			local plans, planOne, planTwo, planThree, planFour = CreateTestPlans()
-			local profile = { plans = plans, lastOpenPlan = planOne.name }
+			CreateTestPlans()
+			local profile = { plans = plans, lastOpenPlan = GetPlan(1).name }
 
+			local planOne = GetPlan(1)
 			Utilities.DeletePlan(profile, planOne.name)
 			testUtilities.TestEqual(profile.plans[planOne.name], nil, "Successfully removed correct plan")
-			testUtilities.TestEqual(profile.plans[planTwo.name], planTwo, "Successfully removed correct plan")
-			testUtilities.TestEqual(profile.plans[planThree.name], planThree, "Successfully removed correct plan")
-			testUtilities.TestEqual(profile.plans[planFour.name], planFour, "Successfully removed correct plan")
+			testUtilities.TestEqual(profile.plans[GetPlan(2).name], GetPlan(2), "Successfully removed correct plan")
+			testUtilities.TestEqual(profile.plans[GetPlan(3).name], GetPlan(3), "Successfully removed correct plan")
+			testUtilities.TestEqual(profile.plans[GetPlan(4).name], GetPlan(4), "Successfully removed correct plan")
 
 			planOne.isPrimaryPlan = false
 			local truthTable = { false, true, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Primary swapped after deleting")
+			TestPlansEqual(planOne, GetPlan(2), GetPlan(3), GetPlan(4), truthTable, "Primary swapped after deleting")
 
+			local planFour = GetPlan(4)
 			Utilities.DeletePlan(profile, planFour.name)
 			testUtilities.TestEqual(profile.plans[planOne.name], nil, "Successfully removed correct plan 2")
-			testUtilities.TestEqual(profile.plans[planTwo.name], planTwo, "Successfully removed correct plan 2")
-			testUtilities.TestEqual(profile.plans[planThree.name], planThree, "Successfully removed correct plan 2")
+			testUtilities.TestEqual(profile.plans[GetPlan(2).name], GetPlan(2), "Successfully removed correct plan 2")
+			testUtilities.TestEqual(profile.plans[GetPlan(3).name], GetPlan(3), "Successfully removed correct plan 2")
 			testUtilities.TestEqual(profile.plans[planFour.name], nil, "Successfully removed correct plan 2")
 
 			planFour.isPrimaryPlan = false
 			truthTable = { false, true, true, false }
-			TestPlansEqual(planOne, planTwo, planThree, planFour, truthTable, "Preserve primary")
+			TestPlansEqual(planOne, GetPlan(2), GetPlan(3), planFour, truthTable, "Preserve primary")
 
+			local planTwo = GetPlan(2)
+			local planThree = GetPlan(3)
 			Utilities.DeletePlan(profile, planTwo.name)
 			Utilities.DeletePlan(profile, planThree.name)
 			testUtilities.TestEqual(profile.plans[planTwo.name], nil, "Successfully removed all plans but one")
