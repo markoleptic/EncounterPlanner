@@ -31,6 +31,7 @@ local FindBossAbility = bossUtilities.FindBossAbility
 local GetAbsoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable
 local GetBoss = bossUtilities.GetBoss
 local GetBossName = bossUtilities.GetBossName
+local GetBossPhases = bossUtilities.GetBossPhases
 local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 local DifficultyType = Private.classes.DifficultyType
@@ -993,19 +994,18 @@ function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDun
 		if absoluteSpellCastStartTable then
 			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
 			if spellIDSpellCastStartTable then
-				local spellCastStartTable = spellIDSpellCastStartTable[assignment.spellCount]
-				if spellCastStartTable then
-					local startTime = spellCastStartTable.castStart + assignment.time
+				local spellCastStartTableEntry = spellIDSpellCastStartTable[assignment.spellCount]
+				if spellCastStartTableEntry then
 					local ability =
 						FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID, difficulty)
-					if ability then
-						if assignment.combatLogEventType == "SAR" then
-							startTime = startTime + ability.duration + ability.castTime
-						elseif assignment.combatLogEventType == "SCC" or assignment.combatLogEventType == "SAA" then
-							startTime = startTime + ability.castTime
-						end
-					end
-					timelineAssignment.startTime = startTime
+					local abilityStartTime = bossUtilities.GetAdjustedStartTime(
+						bossDungeonEncounterID,
+						spellCastStartTableEntry,
+						difficulty,
+						assignment.combatLogEventType,
+						ability
+					)
+					timelineAssignment.startTime = abilityStartTime + assignment.time
 					return true
 				end
 			end
@@ -1032,25 +1032,26 @@ do
 
 	---@param spellID integer
 	---@param spellCount integer
-	---@param absolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@param maxAbsolute table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@return number|nil
-	---@return boolean|nil wasMax
-	local function FindCastStart(spellID, spellCount, absolute, maxAbsolute)
+	---@param absolute table<integer, table<integer, SpellCastStartTableEntry>>
+	---@param maxAbsolute table<integer, table<integer, SpellCastStartTableEntry>>
+	---@return SpellCastStartTableEntry|nil spellCastStartTableEntry
+	---@return boolean wasMax
+	local function FindBossPhaseOrderIndexAndCastStart(spellID, spellCount, absolute, maxAbsolute)
 		local castStartTable = absolute[spellID]
 		if castStartTable then
-			local spellCastInfoTable = castStartTable[spellCount]
-			if spellCastInfoTable then
-				return spellCastInfoTable.castStart
+			local spellCastStartTableEntry = castStartTable[spellCount]
+			if spellCastStartTableEntry then
+				return spellCastStartTableEntry, false
 			end
 		end
 		castStartTable = maxAbsolute[spellID]
 		if castStartTable then
-			local spellCastInfoTable = castStartTable[spellCount]
-			if spellCastInfoTable then
-				return spellCastInfoTable.castStart, true
+			local spellCastStartTableEntry = castStartTable[spellCount]
+			if spellCastStartTableEntry then
+				return spellCastStartTableEntry, true
 			end
 		end
+		return nil, false
 	end
 
 	-- Updates multiple timeline assignments' start times.
@@ -1082,17 +1083,18 @@ do
 				local spellID = assignment.combatLogEventSpellID
 				if absolute[spellID] and maxAbsolute[spellID] then
 					local spellCount = assignment.spellCount
-					local castStart, wasMax = FindCastStart(spellID, spellCount, absolute, maxAbsolute)
-					if castStart then
-						local startTime = castStart + assignment.time
+					local spellCastStartTableEntry, wasMax =
+						FindBossPhaseOrderIndexAndCastStart(spellID, spellCount, absolute, maxAbsolute)
+					if spellCastStartTableEntry then
 						local ability = FindBossAbility(bossDungeonEncounterID, spellID, difficulty) --[[@as BossAbility]]
-						local combatLogEventType = assignment.combatLogEventType
-						if combatLogEventType == "SAR" then
-							startTime = startTime + ability.duration + ability.castTime
-						elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
-							startTime = startTime + ability.castTime
-						end
-						timelineAssignment.startTime = startTime
+						local abilityStartTime = bossUtilities.GetAdjustedStartTime(
+							bossDungeonEncounterID,
+							spellCastStartTableEntry,
+							difficulty,
+							assignment.combatLogEventType,
+							ability
+						)
+						timelineAssignment.startTime = abilityStartTime + assignment.time
 						if wasMax then
 							onlyInMax[spellID] = onlyInMax[spellID] or {}
 							onlyInMax[spellID][spellCount] = true
@@ -2752,7 +2754,6 @@ end
 do
 	local FindNearestPreferredCombatLogEventAbility = bossUtilities.FindNearestPreferredCombatLogEventAbility
 	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
-	local GetBossPhases = bossUtilities.GetBossPhases
 
 	---@param encounterID integer
 	---@param time number Time from the start of the boss encounter

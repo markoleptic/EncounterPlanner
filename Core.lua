@@ -325,7 +325,7 @@ do -- Profile updating and refreshing
 	local Plan = Private.classes.Plan
 
 	---@param assignment CombatLogEventAssignment
-	---@param absoluteSpellCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param absoluteSpellCastTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
 	---@param orderedBossPhaseTable table<integer, integer>
 	local function UpdateCombatLogEventAssignment(assignment, absoluteSpellCastTimeTable, orderedBossPhaseTable)
 		local spellIDSpellCastStartTable = absoluteSpellCastTimeTable[assignment.combatLogEventSpellID]

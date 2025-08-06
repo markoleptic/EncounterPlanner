@@ -918,7 +918,6 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDiff
 	if currentBoss and newBoss then
 		ClosePlanDependentWidgets()
 		local oldDifficulty = plan.difficulty
-		print(currentBoss, newBoss, oldDifficulty, newDifficulty)
 		if conversionMethod then
 			ConvertAssignmentsToNewBoss(
 				currentAssignments,
@@ -929,9 +928,7 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDiff
 				conversionMethod
 			)
 		end
-		print(plan.difficulty)
 		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID, newDifficulty)
-		print(plan.difficulty)
 		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(newBossDungeonEncounterID, true)
 		UpdateAllAssignments(false, newBossDungeonEncounterID)
@@ -1530,7 +1527,6 @@ local function HandleBossMenuButtonClicked(
 		bossMenuButton:Close()
 		local newDifficulty = GetCurrentDifficulty()
 		if valueOwningDropdownItemMenu then
-			print(valueOwningDropdownItemMenu:GetUserDataTable().initialValue)
 			local initialValue = valueOwningDropdownItemMenu:GetUserDataTable().initialValue
 			if initialValue == DifficultyType.Heroic or initialValue == DifficultyType.Mythic then
 				newDifficulty = initialValue

@@ -27,11 +27,11 @@ local wipe = table.wipe
 ---@type table<integer, table<integer, table<integer, integer>>|table<integer, integer>>
 local instanceBossOrder = {}
 
--- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
----@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>
+-- Boss dungeon encounter ID -> boss ability spell ID -> SpellCastStartTableEntry
+---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 local absoluteSpellCastStartTables = {}
 
----@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>
+---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 local maxAbsoluteSpellCastStartTables = {}
 
 -- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
@@ -42,10 +42,10 @@ local orderedBossPhases = {}
 local maxOrderedBossPhases = {}
 
 -- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
----@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>
+---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 local absoluteSpellCastStartTablesHeroic = {}
 
----@type table<integer, table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>>
+---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 local maxAbsoluteSpellCastStartTablesHeroic = {}
 
 -- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
@@ -361,7 +361,7 @@ end
 -- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
+---@return table<integer, table<integer, SpellCastStartTableEntry>>|nil
 function BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return absoluteSpellCastStartTablesHeroic[encounterID]
@@ -374,7 +374,7 @@ end
 -- is created using the maximum allowed phase counts rather than the current phase counts.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>|nil
+---@return table<integer, table<integer, SpellCastStartTableEntry>>|nil
 function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return maxAbsoluteSpellCastStartTablesHeroic[encounterID]
@@ -782,6 +782,52 @@ function BossUtilities.SetPhaseDurations(encounterID, phaseDurations, difficulty
 	end
 end
 
+---@param encounterID integer Boss dungeon encounter ID
+---@param spellCastStartTableEntry SpellCastStartTableEntry
+---@param difficulty DifficultyType
+---@param combatLogEventType CombatLogEventType
+---@param ability BossAbility
+---@return number -- Offset
+function BossUtilities.GetAdjustedStartTime(
+	encounterID,
+	spellCastStartTableEntry,
+	difficulty,
+	combatLogEventType,
+	ability
+)
+	local adjustedStartTime = spellCastStartTableEntry.castStart
+	local boss = BossUtilities.GetBoss(encounterID)
+	if boss then
+		if combatLogEventType == "SAR" then
+			local bossPhaseOrderIndex = spellCastStartTableEntry.bossPhaseOrderIndex
+			---@type table<integer, integer>
+			local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
+			local phases = BossUtilities.GetBossPhases(boss, difficulty)
+			local duration = ability.duration
+			if ability.durationLastsUntilEndOfPhase then
+				duration = phases[orderedBossPhaseTable[bossPhaseOrderIndex]].duration
+			elseif ability.durationLastsUntilEndOfNextPhase then
+				local cumPhaseTime = 0.0
+				for currentOrderIndex = 1, bossPhaseOrderIndex do
+					local phaseIndex = orderedBossPhaseTable[currentOrderIndex]
+					cumPhaseTime = cumPhaseTime + phases[phaseIndex].duration
+				end
+				local nextBossPhaseOrderIndex = bossPhaseOrderIndex + 1
+				local nextPhaseIndex = orderedBossPhaseTable[nextBossPhaseOrderIndex]
+				if nextPhaseIndex then
+					local nextPhaseDuration = phases[nextPhaseIndex].duration
+					cumPhaseTime = cumPhaseTime + nextPhaseDuration
+				end
+				duration = cumPhaseTime - spellCastStartTableEntry.castStart
+			end
+			adjustedStartTime = adjustedStartTime + duration + ability.castTime
+		elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
+			adjustedStartTime = adjustedStartTime + ability.castTime
+		end
+	end
+	return adjustedStartTime
+end
+
 ---@param time number Time relative to the combat log event
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer Combat log event spell ID
@@ -800,16 +846,15 @@ function BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
 	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if absoluteSpellCastStartTable then
 		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
-			local adjustedTime = absoluteSpellCastStartTable[spellID][spellCount].castStart + time
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if ability then
-				if combatLogEventType == "SAR" then
-					adjustedTime = adjustedTime + ability.duration + ability.castTime
-				elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
-					adjustedTime = adjustedTime + ability.castTime
-				end
-			end
-			return adjustedTime
+			return time
+				+ BossUtilities.GetAdjustedStartTime(
+					encounterID,
+					absoluteSpellCastStartTable[spellID][spellCount],
+					difficulty,
+					combatLogEventType,
+					ability
+				)
 		end
 	end
 	return nil
@@ -819,7 +864,7 @@ end
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer Combat log event spell ID
 ---@param spellCount integer Combat log event spell count
----@param eventType CombatLogEventType
+---@param combatLogEventType CombatLogEventType
 ---@param difficulty DifficultyType
 ---@return number|nil
 function BossUtilities.ConvertAbsoluteTimeToCombatLogEventTime(
@@ -827,22 +872,21 @@ function BossUtilities.ConvertAbsoluteTimeToCombatLogEventTime(
 	encounterID,
 	spellID,
 	spellCount,
-	eventType,
+	combatLogEventType,
 	difficulty
 )
 	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if absoluteSpellCastStartTable then
 		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
-			local adjustedTime = time - absoluteSpellCastStartTable[spellID][spellCount].castStart
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if ability then
-				if eventType == "SAR" then
-					adjustedTime = adjustedTime - ability.duration - ability.castTime
-				elseif eventType == "SCC" or eventType == "SAA" then
-					adjustedTime = adjustedTime - ability.castTime
-				end
-			end
-			return adjustedTime
+			return time
+				- BossUtilities.GetAdjustedStartTime(
+					encounterID,
+					absoluteSpellCastStartTable[spellID][spellCount],
+					difficulty,
+					combatLogEventType,
+					ability
+				)
 		end
 	end
 	return nil
@@ -851,23 +895,21 @@ end
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer Combat log event spell ID
 ---@param spellCount integer Combat log event spell count
----@param eventType CombatLogEventType
+---@param combatLogEventType CombatLogEventType
 ---@param difficulty DifficultyType
 ---@return number|nil
-function BossUtilities.GetMinimumCombatLogEventTime(encounterID, spellID, spellCount, eventType, difficulty)
+function BossUtilities.GetMinimumCombatLogEventTime(encounterID, spellID, spellCount, combatLogEventType, difficulty)
 	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if absoluteSpellCastStartTable then
 		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
-			local time = absoluteSpellCastStartTable[spellID][spellCount].castStart
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if ability then
-				if eventType == "SAR" then
-					time = time + ability.duration + ability.castTime
-				elseif eventType == "SCC" or eventType == "SAA" then
-					time = time + ability.castTime
-				end
-			end
-			return time
+			return BossUtilities.GetAdjustedStartTime(
+				encounterID,
+				absoluteSpellCastStartTable[spellID][spellCount],
+				difficulty,
+				combatLogEventType,
+				ability
+			)
 		end
 	end
 	return nil
@@ -876,8 +918,8 @@ end
 do
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
-	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
-	---@param eventType CombatLogEventType|nil
+	---@param castTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
+	---@param eventType CombatLogEventType
 	---@param difficulty DifficultyType
 	---@return integer|nil spellID
 	---@return integer|nil spellCount
@@ -889,27 +931,27 @@ do
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if
-				not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType, difficulty)
-			then
-				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-					local adjustedTime = indexAndCastStart.castStart
+			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType, difficulty) then
+				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
+					local currentTime = spellCastStartTableEntry.castStart
 					if ability then
-						if eventType == "SAR" then
-							adjustedTime = adjustedTime + ability.duration + ability.castTime
-						elseif eventType == "SCC" or eventType == "SAA" then
-							adjustedTime = adjustedTime + ability.castTime
-						end
+						currentTime = BossUtilities.GetAdjustedStartTime(
+							encounterID,
+							spellCastStartTableEntry,
+							difficulty,
+							eventType,
+							ability
+						)
 					end
-					if adjustedTime <= time then
-						local difference = time - adjustedTime
+					if currentTime <= time then
+						local difference = time - currentTime
 						if difference < minTime then
 							minTime = difference
 							spellIDForMinTime = spellID
 							spellCountForMinTime = spellCount
 						end
 					else
-						local difference = adjustedTime - time
+						local difference = currentTime - time
 						if difference < minTimeBefore then
 							minTimeBefore = difference
 							spellIDForMinTimeBefore = spellID
@@ -929,7 +971,7 @@ do
 
 	---@param time number The time from the beginning of the boss encounter
 	---@param encounterID integer Boss dungeon encounter ID
-	---@param castTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param castTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
 	---@param eventType CombatLogEventType|nil
 	---@param difficulty DifficultyType
 	---@return integer|nil spellID
@@ -944,17 +986,19 @@ do
 			if
 				not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType, difficulty)
 			then
-				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-					local adjustedTime = indexAndCastStart.castStart
+				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
+					local currentTime = spellCastStartTableEntry.castStart
 					if ability then
-						if eventType == "SAR" then
-							adjustedTime = adjustedTime + ability.duration + ability.castTime
-						elseif eventType == "SCC" or eventType == "SAA" then
-							adjustedTime = adjustedTime + ability.castTime
-						end
+						currentTime = BossUtilities.GetAdjustedStartTime(
+							encounterID,
+							spellCastStartTableEntry,
+							difficulty,
+							eventType,
+							ability
+						)
 					end
-					if adjustedTime <= time then
-						local difference = time - adjustedTime
+					if currentTime <= time then
+						local difference = time - currentTime
 						if difference < minTime then
 							minTime = difference
 							spellIDForMinTime = spellID
@@ -989,33 +1033,44 @@ do
 end
 
 do
-	---@param time number
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param difficulty DifficultyType
+	---@param time number Time from beginning of boss encounter.
 	---@param ability BossAbility
-	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
+	---@param castTimeTable table<integer, SpellCastStartTableEntry>
 	---@param currentEventType CombatLogEventType
 	---@return integer|nil spellCount
 	---@return number leftoverTime
-	local function FindNearestSpellCountAllowingBefore(time, ability, castTimeTable, currentEventType)
+	local function FindNearestSpellCountAllowingBefore(
+		encounterID,
+		difficulty,
+		time,
+		ability,
+		castTimeTable,
+		currentEventType
+	)
 		local minTime, minTimeBefore = hugeNumber, hugeNumber
 		local spellCountForMinTime, spellCountForMinTimeBefore = nil, nil
 
-		for spellCount, indexAndCastStart in pairs(castTimeTable) do
-			local adjustedTime = indexAndCastStart.castStart
+		for spellCount, spellCastStartTableEntry in pairs(castTimeTable) do
+			local currentTime = spellCastStartTableEntry.castStart
 			if ability then
-				if currentEventType == "SAR" then
-					adjustedTime = adjustedTime + ability.duration + ability.castTime
-				elseif currentEventType == "SCC" or currentEventType == "SAA" then
-					adjustedTime = adjustedTime + ability.castTime
-				end
+				currentTime = BossUtilities.GetAdjustedStartTime(
+					encounterID,
+					spellCastStartTableEntry,
+					difficulty,
+					currentEventType,
+					ability
+				)
 			end
-			if adjustedTime <= time then
-				local difference = time - adjustedTime
+			if currentTime <= time then
+				local difference = time - currentTime
 				if difference < minTime then
 					minTime = difference
 					spellCountForMinTime = spellCount
 				end
 			else
-				local difference = adjustedTime - time
+				local difference = currentTime - time
 				if difference < minTimeBefore then
 					minTimeBefore = difference
 					spellCountForMinTimeBefore = spellCount
@@ -1029,27 +1084,38 @@ do
 		return spellCountForMinTime, minTime
 	end
 
-	---@param time number
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param difficulty DifficultyType
+	---@param time number Time from beginning of boss encounter.
 	---@param ability BossAbility
-	---@param castTimeTable table<integer, { castStart: number, bossPhaseOrderIndex: integer }>
+	---@param castTimeTable table<integer, SpellCastStartTableEntry>
 	---@param currentEventType CombatLogEventType
 	---@return integer|nil spellCount
 	---@return number leftoverTime
-	local function FindNearestSpellCountNoBefore(time, ability, castTimeTable, currentEventType)
+	local function FindNearestSpellCountNoBefore(
+		encounterID,
+		difficulty,
+		time,
+		ability,
+		castTimeTable,
+		currentEventType
+	)
 		local minTime = hugeNumber
 		local spellCountForMinTime = nil
 
-		for spellCount, indexAndCastStart in pairs(castTimeTable) do
-			local adjustedTime = indexAndCastStart.castStart
+		for spellCount, spellCastStartTableEntry in pairs(castTimeTable) do
+			local currentTime = spellCastStartTableEntry.castStart
 			if ability then
-				if currentEventType == "SAR" then
-					adjustedTime = adjustedTime + ability.duration + ability.castTime
-				elseif currentEventType == "SCC" or currentEventType == "SAA" then
-					adjustedTime = adjustedTime + ability.castTime
-				end
+				currentTime = BossUtilities.GetAdjustedStartTime(
+					encounterID,
+					spellCastStartTableEntry,
+					difficulty,
+					currentEventType,
+					ability
+				)
 			end
-			if adjustedTime <= time then
-				local difference = time - adjustedTime
+			if currentTime <= time then
+				local difference = time - currentTime
 				if difference < minTime then
 					minTime = difference
 					spellCountForMinTime = spellCount
@@ -1092,15 +1158,29 @@ do
 		end
 		local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 		if absoluteSpellCastStartTable and absoluteSpellCastStartTable[newSpellID] then
-			local spellCountAndTime = absoluteSpellCastStartTable[newSpellID]
+			local castTimeTable = absoluteSpellCastStartTable[newSpellID]
 			local ability = BossUtilities.FindBossAbility(encounterID, newSpellID, difficulty)
 			if not ability then
 				return nil
 			end
 			if allowBefore then
-				return FindNearestSpellCountAllowingBefore(absoluteTime, ability, spellCountAndTime, currentEventType)
+				return FindNearestSpellCountAllowingBefore(
+					encounterID,
+					difficulty,
+					absoluteTime,
+					ability,
+					castTimeTable,
+					currentEventType
+				)
 			else
-				return FindNearestSpellCountNoBefore(absoluteTime, ability, spellCountAndTime, currentEventType)
+				return FindNearestSpellCountNoBefore(
+					encounterID,
+					difficulty,
+					absoluteTime,
+					ability,
+					castTimeTable,
+					currentEventType
+				)
 			end
 		end
 		return nil
@@ -1136,14 +1216,16 @@ function BossUtilities.FindNearestPreferredCombatLogEventAbility(
 			local minTime = hugeNumber
 			local spellCountForMinTime = nil
 
-			for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-				local adjustedTime = indexAndCastStart.castStart
+			for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
+				local adjustedTime = spellCastStartTableEntry.castStart
 				if ability then
-					if eventType == "SAR" then
-						adjustedTime = adjustedTime + ability.duration + ability.castTime
-					elseif eventType == "SCC" or eventType == "SAA" then
-						adjustedTime = adjustedTime + ability.castTime
-					end
+					adjustedTime = BossUtilities.GetAdjustedStartTime(
+						encounterID,
+						spellCastStartTableEntry,
+						difficulty,
+						eventType,
+						ability
+					)
 				end
 				if adjustedTime <= absoluteTime then
 					local difference = absoluteTime - adjustedTime
@@ -1165,17 +1247,19 @@ function BossUtilities.FindNearestPreferredCombatLogEventAbility(
 				not eventType
 				or BossUtilities.IsValidCombatLogEventType(encounterID, currentSpellID, eventType, difficulty)
 			then
-				for spellCount, indexAndCastStart in pairs(spellCountAndTime) do
-					local adjustedTime = indexAndCastStart.castStart
+				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
+					local currentTime = spellCastStartTableEntry.castStart
 					if ability then
-						if eventType == "SAR" then
-							adjustedTime = adjustedTime + ability.duration + ability.castTime
-						elseif eventType == "SCC" or eventType == "SAA" then
-							adjustedTime = adjustedTime + ability.castTime
-						end
+						currentTime = BossUtilities.GetAdjustedStartTime(
+							encounterID,
+							spellCastStartTableEntry,
+							difficulty,
+							eventType,
+							ability
+						)
 					end
-					if adjustedTime <= absoluteTime then
-						local difference = absoluteTime - adjustedTime
+					if currentTime <= absoluteTime then
+						local difference = absoluteTime - currentTime
 						if difference < minTime then
 							minTime = difference
 							spellIDForMinTime = spellID
@@ -1224,7 +1308,7 @@ do
 	---@param newID integer New boss dungeon encounter ID
 	---@param oldDifficulty DifficultyType
 	---@param newDifficulty DifficultyType
-	---@param newCastTimeTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param newCastTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
 	---@param newBossPhaseTable table<integer, integer>
 	local function ReplaceCombatLogEventAssignmentSpells(
 		assignments,
@@ -1382,6 +1466,8 @@ do
 		return orderedBossPhaseTable
 	end
 
+	-- Special case where the ability duration will be up to date, due to being called in
+	-- GenerateAbsoluteSpellCastTimeTable.
 	---@param eventType CombatLogEventType
 	---@param ability BossAbility
 	---@return number
@@ -1430,14 +1516,16 @@ do
 	local phaseCountDurationMap = {} ---@type table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
 
 	---@param time number
-	---@return integer,integer count
+	---@return integer count
+	---@return integer index
+	---@return number endTime
 	local function GetCurrentPhaseCountAndIndex(time)
 		for _, tbl in ipairs(phaseCountDurationMap) do
 			if tbl.endTime > time and tbl.startTime <= time then
-				return tbl.count, tbl.index
+				return tbl.count, tbl.index, tbl.endTime
 			end
 		end
-		return 0, 0
+		return 0, 0, 0.0
 	end
 
 	local abilityIterator = {}
@@ -1582,12 +1670,14 @@ do
 		end
 	end
 
+	local select = select
+
 	---@param spellID integer
 	---@param ability BossAbility
 	---@param abilityPhase BossAbilityPhase|EventTrigger
 	---@param startTime number Cumulative phase start time.
 	---@param endTime number Phase end time.
-	---@param castCallback fun(spellID:integer, castStart: number, castEnd: number, effectEnd: number)
+	---@param castCallback fun(spellID: integer, castStart: number, castEnd: number, effectEnd: number)
 	---@param dependencies table<integer,table<integer,integer>>|nil
 	---@param abilities table<integer, BossAbility>
 	---@return number cumulativePhaseCastTime
@@ -1617,16 +1707,29 @@ do
 					end
 				end
 
-				if abilityPhase.signifiesPhaseEnd and castIndex == #abilityPhase.castTimes then
+				local lastUntilEnd = abilityPhase.signifiesPhaseEnd
+					or ability.durationLastsUntilEndOfPhase
+					or ability.castTimeLastsUntilEndOfPhase
+				if lastUntilEnd and castIndex == #abilityPhase.castTimes then
 					if castEnd < endTime then
 						effectEnd = endTime -- Extend duration until end of phase
 					else
 						castEnd = endTime -- Clamp cast time to end of phase
 					end
 				end
+
 				castEnd = min(castEnd, endTime)
-				-- if not abilityPhase.durationLastsUntilEndOfNextPhase then end
-				effectEnd = min(effectEnd, endTime)
+				if ability.durationLastsUntilEndOfNextPhase then
+					local nextPhaseEndTime = select(3, GetCurrentPhaseCountAndIndex(endTime + 1))
+					if nextPhaseEndTime > 0.0 then
+						effectEnd = nextPhaseEndTime
+					else
+						effectEnd = endTime
+					end
+				else
+					effectEnd = min(effectEnd, endTime)
+				end
+
 				castCallback(spellID, castStart, castEnd, effectEnd)
 
 				self:HandleDependencies(
@@ -1676,9 +1779,9 @@ do
 	---@param boss Boss
 	---@param orderedBossPhaseTable table<integer, integer>
 	---@param difficulty DifficultyType
-	---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+	---@return table<integer, table<integer, SpellCastStartTableEntry>>
 	local function GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhaseTable, difficulty)
-		---@type table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+		---@type table<integer, table<integer, SpellCastStartTableEntry>>
 		local spellCount = {}
 		local visitedPhaseCounts = {}
 
@@ -1713,14 +1816,14 @@ do
 								bossAbility.duration = bossPhase.duration - bossAbilityPhase.castTimes[1]
 							elseif bossAbility.castTimeLastsUntilEndOfPhase then
 								bossAbility.castTime = bossPhase.duration - bossAbilityPhase.castTimes[1]
-								-- elseif bossAbilityPhase.durationLastsUntilEndOfNextPhase then
-								-- 	local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
-								-- 	if nextBossPhaseIndex then
-								-- 		local nextPhaseDuration = phases[nextBossPhaseIndex].duration
-								-- 		bossAbility.duration = bossPhase.duration
-								-- 			+ nextPhaseDuration
-								-- 			- bossAbilityPhase.castTimes[1]
-								-- 	end
+							elseif bossAbility.durationLastsUntilEndOfNextPhase then
+								local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
+								if nextBossPhaseIndex then
+									local nextPhaseDuration = phases[nextBossPhaseIndex].duration
+									bossAbility.duration = bossPhase.duration
+										- bossAbilityPhase.castTimes[1]
+										+ nextPhaseDuration
+								end
 							end
 
 							cumulativePhaseCastTime = abilityIterator:IterateAbilityCastTimes(
@@ -1762,9 +1865,9 @@ do
 	-- for the longest possible phase durations and counts.
 	---@param encounterID integer
 	---@param difficulty DifficultyType
-	---@return table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+	---@return table<integer, table<integer, SpellCastStartTableEntry>>
 	local function GenerateMaxAbsoluteSpellCastTimeTable(encounterID, difficulty)
-		---@type table<integer, table<integer, {castStart: number, bossPhaseOrderIndex: integer}>>
+		---@type table<integer, table<integer, SpellCastStartTableEntry>>
 		local spellCount = {}
 		local boss = BossUtilities.GetBoss(encounterID)
 		local kMinBossPhaseDuration = Private.constants.kMinBossPhaseDuration
@@ -1885,7 +1988,6 @@ do
 								and nextBossPhaseName
 								and currentPhaseCastIndex == #bossAbilityPhase.castTimes,
 							overlaps = overlaps,
-							-- alpha = bossAbilityPhase.durationLastsUntilEndOfNextPhase and 0.5 or 1.0,
 						} --[[@as BossAbilityInstance]])
 						bossAbilityInstanceIndex = 0 -- Updated later in function
 						currentPhaseCastIndex = currentPhaseCastIndex + 1
@@ -1990,7 +2092,7 @@ do
 	end
 
 	-- Creates a sorted table of boss spell IDs based on their earliest cast times.
-	---@param absoluteSpellCastStartTable table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+	---@param absoluteSpellCastStartTable table<integer, table<integer, SpellCastStartTableEntry>>
 	---@return table<integer, integer>
 	local function GenerateSortedBossAbilities(absoluteSpellCastStartTable)
 		local earliestCastTimes = {}
@@ -2105,7 +2207,7 @@ do
 				sort(spellOccurrenceNumbers)
 			end
 
-			---@type table<integer, table<integer, { castStart: number, bossPhaseOrderIndex: integer }>>
+			---@type table<integer, table<integer, SpellCastStartTableEntry>>
 			local absoluteAtEncounterID = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 
 			TestEqual(#absoluteAtEncounterID, #castTimeTable, "Cast Time Table Size Equal")

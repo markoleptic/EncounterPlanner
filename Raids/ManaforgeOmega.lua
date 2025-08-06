@@ -440,15 +440,12 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 66.5 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[3] = BossAbilityPhase:New({
 							castTimes = { 97.4 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 97.7 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,

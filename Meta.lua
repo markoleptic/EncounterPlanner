@@ -111,6 +111,7 @@
 ---@field duration number Usually how long the ability effect lasts.
 ---@field durationLastsUntilEndOfPhase boolean|nil If true, duration lasts until end of phase.
 ---@field castTimeLastsUntilEndOfPhase boolean|nil If true, castTime lasts until end of phase.
+---@field durationLastsUntilEndOfNextPhase boolean|nil If true, duration lasts until end of next phase.
 ---@field castTime number The actual cast time of the ability.
 -- Restrict creating combat log event assignments to only these types.
 ---@field allowedCombatLogEventTypes table<integer, CombatLogEventType>
@@ -132,7 +133,6 @@
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
 ---@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
----@field durationLastsUntilEndOfNextPhase boolean|nil Not currently used, implementation commented out.
 -- If specified, casts will only be created if the phase occurrence number is in the table.
 ---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil
 
@@ -433,6 +433,10 @@
 ---@field neverHasChildren? boolean If true, a EPDropdownItemToggle is created instead of an EPDropdownItemMenu
 ---@field indent? integer
 ---@field clickable? boolean
+
+---@class SpellCastStartTableEntry
+---@field castStart number
+---@field bossPhaseOrderIndex integer
 
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS
