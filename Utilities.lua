@@ -981,46 +981,48 @@ function Utilities.CreateAbilityDropdownItemData(abilityID, icon, text)
 	return { itemValue = abilityID, text = iconText }
 end
 
--- Updates a timeline assignment's start time.
----@param timelineAssignment TimelineAssignment
----@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
----@param difficulty DifficultyType
----@return boolean -- Whether or not the update succeeded
-function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID, difficulty)
-	local assignment = timelineAssignment.assignment
-	if getmetatable(assignment) == CombatLogEventAssignment then
-		---@cast assignment CombatLogEventAssignment
-		local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID, difficulty)
-		if absoluteSpellCastStartTable then
-			local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
-			if spellIDSpellCastStartTable then
-				local spellCastStartTableEntry = spellIDSpellCastStartTable[assignment.spellCount]
-				if spellCastStartTableEntry then
-					local ability =
-						FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID, difficulty)
-					local abilityStartTime = bossUtilities.GetAdjustedStartTime(
-						bossDungeonEncounterID,
-						spellCastStartTableEntry,
-						difficulty,
-						assignment.combatLogEventType,
-						ability
-					)
-					timelineAssignment.startTime = abilityStartTime + assignment.time
-					return true
+do
+	local GetAdjustedStartTime = bossUtilities.GetAdjustedStartTime
+
+	-- Updates a timeline assignment's start time.
+	---@param timelineAssignment TimelineAssignment
+	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it.
+	---@param difficulty DifficultyType
+	---@return boolean -- Whether or not the update succeeded
+	function Utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, bossDungeonEncounterID, difficulty)
+		local assignment = timelineAssignment.assignment
+		if getmetatable(assignment) == CombatLogEventAssignment then
+			---@cast assignment CombatLogEventAssignment
+			local absoluteSpellCastStartTable = GetAbsoluteSpellCastTimeTable(bossDungeonEncounterID, difficulty)
+			if absoluteSpellCastStartTable then
+				local spellIDSpellCastStartTable = absoluteSpellCastStartTable[assignment.combatLogEventSpellID]
+				if spellIDSpellCastStartTable then
+					local spellCastStartTableEntry = spellIDSpellCastStartTable[assignment.spellCount]
+					if spellCastStartTableEntry then
+						local ability =
+							FindBossAbility(bossDungeonEncounterID, assignment.combatLogEventSpellID, difficulty)
+						local abilityStartTime = GetAdjustedStartTime(
+							bossDungeonEncounterID,
+							spellCastStartTableEntry,
+							difficulty,
+							assignment.combatLogEventType,
+							ability
+						)
+						timelineAssignment.startTime = abilityStartTime + assignment.time
+						return true
+					end
 				end
 			end
+			return false
+		elseif getmetatable(assignment) == TimedAssignment then
+			---@cast assignment TimedAssignment
+			timelineAssignment.startTime = assignment.time
+			return true
+		else
+			return false
 		end
-		return false
-	elseif getmetatable(assignment) == TimedAssignment then
-		---@cast assignment TimedAssignment
-		timelineAssignment.startTime = assignment.time
-		return true
-	else
-		return false
 	end
-end
 
-do
 	local AddOn = Private.addOn
 	local concat = table.concat
 	local next = next
@@ -1087,7 +1089,7 @@ do
 						FindBossPhaseOrderIndexAndCastStart(spellID, spellCount, absolute, maxAbsolute)
 					if spellCastStartTableEntry then
 						local ability = FindBossAbility(bossDungeonEncounterID, spellID, difficulty) --[[@as BossAbility]]
-						local abilityStartTime = bossUtilities.GetAdjustedStartTime(
+						local abilityStartTime = GetAdjustedStartTime(
 							bossDungeonEncounterID,
 							spellCastStartTableEntry,
 							difficulty,
