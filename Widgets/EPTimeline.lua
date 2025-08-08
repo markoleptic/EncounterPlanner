@@ -130,6 +130,10 @@ local lastExecutionTime = 0.0
 ---@field assignmentFrame table|Frame
 ---@field spellTexture Texture
 ---@field lineTexture Texture
+---@field cooldownFrame Frame
+---@field cooldownParent Texture
+---@field cooldownBackground Texture
+---@field cooldownTexture Texture
 ---@field abilityInstance BossAbilityInstance
 ---@field selectionType BossAbilitySelectionType
 
@@ -641,59 +645,149 @@ local function HandleBossAbilityBarEnter(self, frame)
 	end
 end
 
+---@param self EPTimeline
+---@param width number
+---@param height number
+---@param color integer[]
+---@return BossAbilityFrame
+local function CreateBossAbilityBar(self, width, height, color)
+	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+	local frame = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate") --[[@as BossAbilityFrame]]
+	frame:SetSize(width, height)
+	local borderSize = 2
+	frame:SetBackdrop({
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeSize = borderSize,
+	})
+	frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
+
+	frame:SetScript("OnEnter", function(f)
+		HandleBossAbilityBarEnter(self, f --[[@as BossAbilityFrame]])
+	end)
+	frame:SetScript("OnLeave", function(f)
+		---@cast f BossAbilityFrame
+		self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellCount, true)
+		ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
+	end)
+
+	local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
+	spellTexture:SetPoint("TOPLEFT", borderSize, -borderSize)
+	spellTexture:SetPoint("BOTTOMRIGHT", -borderSize, borderSize)
+	spellTexture:SetPassThroughButtons("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
+
+	local cooldownFrame = CreateFrame("Frame", nil, frame)
+	cooldownFrame:SetHeight(height)
+	cooldownFrame:SetClipsChildren(true)
+	cooldownFrame:EnableMouse(false)
+
+	local cooldownParent = self.bossAbilityTimeline.frame:CreateTexture(nil, "BACKGROUND")
+	cooldownParent:SetPoint("TOPRIGHT", cooldownFrame, "TOPRIGHT")
+	cooldownParent:SetPoint("BOTTOMRIGHT", cooldownFrame, "BOTTOMRIGHT")
+	cooldownParent:SetAlpha(0)
+	cooldownParent:EnableMouse(false)
+
+	local cooldownBackground = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -2)
+	cooldownBackground:SetColorTexture(unpack(color))
+	cooldownBackground:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT", borderSize, -borderSize)
+	cooldownBackground:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT", -borderSize, borderSize)
+	cooldownBackground:EnableMouse(false)
+
+	local cooldownTexture = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -1)
+	cooldownTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\DiagonalLineSmall]], "REPEAT", "REPEAT")
+	cooldownTexture:SetSnapToPixelGrid(false)
+	cooldownTexture:SetTexelSnappingBias(0)
+	cooldownTexture:SetHorizTile(true)
+	cooldownTexture:SetVertTile(true)
+	cooldownTexture:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT", borderSize, -borderSize)
+	cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT", -borderSize, borderSize)
+	cooldownTexture:SetAlpha(cooldownTextureAlpha)
+	cooldownTexture:EnableMouse(false)
+
+	local lineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel + 1)
+	lineTexture:SetColorTexture(unpack(assignmentOutlineColor))
+	lineTexture:SetWidth(borderSize)
+	lineTexture:Hide()
+
+	frame.spellTexture = spellTexture
+	frame.cooldownBackground = cooldownBackground
+	frame.cooldownTexture = cooldownTexture
+	frame.assignmentFrame = timelineFrame
+	frame.cooldownParent = cooldownParent
+	frame.cooldownFrame = cooldownFrame
+	frame.selectionType = BossAbilitySelectionType.kNone
+	frame.lineTexture = lineTexture
+
+	return frame --[[@as BossAbilityFrame]]
+end
+
 -- Helper function to draw a boss ability timeline bar.
 ---@param self EPTimeline
----@param abilityInstance BossAbilityInstance
----@param hOffset number offset from the left of the timeline frame.
----@param vOffset number offset from the top of the timeline frame.
----@param width number width of bar.
----@param height number height of bar.
----@param color integer[] color of the bar.
----@param frameLevel integer Frame level to assign to the frame.
+---@param abilityInstance BossAbilityInstance Ability instance data for this ability instance.
+---@param horizontalOffset number Horizontal offset from the boss ability timeline frame.
+---@param verticalOffset number Vertical offset from the boss ability timeline frame.
+---@param width number Width of the boss ability bar.
+---@param baseFrameLevel integer Base frame level.
 ---@param index integer Index into boss ability frames.
-local function DrawBossAbilityBar(self, abilityInstance, hOffset, vOffset, width, height, color, frameLevel, index)
+local function DrawBossAbilityBar(self, abilityInstance, horizontalOffset, verticalOffset, width, baseFrameLevel, index)
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
+	local height = self.preferences.timelineRows.bossAbilityHeight
+	if abilityInstance.overlaps then
+		verticalOffset = verticalOffset + abilityInstance.overlaps.offset * height
+		height = height * abilityInstance.overlaps.heightMultiplier
+	end
+
+	local color = colors[((abilityInstance.bossAbilityOrderIndex - 1) % #colors) + 1]
 	local frame = self.bossAbilityFrames[index]
 	if not frame then
-		frame = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate") --[[@as BossAbilityFrame]]
-		frame:SetBackdrop({
-			edgeFile = "Interface\\BUTTONS\\White8x8",
-			edgeSize = 2,
-		})
-		frame:SetBackdropBorderColor(unpack(assignmentOutlineColor))
-		frame:SetScript("OnEnter", function(f)
-			HandleBossAbilityBarEnter(self, f --[[@as BossAbilityFrame]])
-		end)
-		frame:SetScript("OnLeave", function(f)
-			---@cast f BossAbilityFrame
-			self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellCount, true)
-			ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
-		end)
-		local spellTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel)
-		spellTexture:SetPoint("TOPLEFT", 2, -2)
-		spellTexture:SetPoint("BOTTOMRIGHT", -2, 2)
-
-		local lineTexture = frame:CreateTexture(nil, "OVERLAY", nil, bossAbilityTextureSubLevel + 1)
-		lineTexture:SetTexture(phaseIndicatorTexture, "REPEAT", "REPEAT")
-		lineTexture:SetVertexColor(unpack(cooldownBackgroundColor))
-		lineTexture:SetWidth(2)
-		lineTexture:Hide()
-
-		frame.assignmentFrame = timelineFrame
-		frame.spellTexture = spellTexture
-		frame.selectionType = BossAbilitySelectionType.kNone
-		frame.lineTexture = lineTexture
-
-		self.bossAbilityFrames[index] = frame
+		self.bossAbilityFrames[index] = CreateBossAbilityBar(self, width, height, color)
+		frame = self.bossAbilityFrames[index]
 	end
 
 	frame.abilityInstance = abilityInstance
 
+	local castDuration = abilityInstance.castEnd - abilityInstance.castStart
+	local effectDuration = abilityInstance.effectEnd - abilityInstance.castEnd
+	local totalDuration = castDuration + effectDuration
+
+	local castWidthPercentage = 0
+	if totalDuration > 0 then
+		castWidthPercentage = castDuration / totalDuration
+	end
+
+	local borderSize = 2
+
+	local line = frame.lineTexture
+	local cooldownFrame = frame.cooldownFrame
+	if effectDuration > 0 then
+		local durationWidthPercentage = effectDuration / totalDuration
+		local cooldownWidth = width * durationWidthPercentage - borderSize
+		cooldownFrame:SetSize(cooldownWidth, height)
+		local cooldownLeft = width * castWidthPercentage + borderSize
+		cooldownFrame:ClearAllPoints()
+		cooldownFrame:SetPoint("LEFT", cooldownLeft, 0)
+		frame.cooldownParent:SetPoint("LEFT", -verticalOffset, 0)
+		frame.cooldownBackground:SetColorTexture(unpack(color))
+		cooldownFrame:Show()
+
+		if castDuration > 0 then
+			line:SetHeight(height - (2 * borderSize))
+			line:ClearAllPoints()
+			local usableWidth = width - borderSize
+			local lineLeft = usableWidth * castWidthPercentage
+			line:SetPoint("LEFT", frame, "LEFT", lineLeft, 0)
+			line:Show()
+		else
+			line:Hide()
+		end
+	else
+		line:Hide()
+		cooldownFrame:Hide()
+	end
+
 	frame.spellTexture:SetColorTexture(unpack(color))
 	frame:SetSize(width, height)
-	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", hOffset, -vOffset)
-	frame:SetFrameLevel(frameLevel)
-	-- frame:SetAlpha(abilityInstance.alpha)
+	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
+	frame:SetFrameLevel(baseFrameLevel + abilityInstance.frameLevel)
 	frame:Show()
 end
 
@@ -753,44 +847,7 @@ local function UpdateBossAbilityBars(self)
 
 		if self.bossAbilityVisibility[entry.bossAbilitySpellID] == true then
 			local verticalOffset = offsets[entry.bossAbilitySpellID]
-			local height = bossAbilityHeight
-			local color = colors[((entry.bossAbilityOrderIndex - 1) % #colors) + 1]
-			local heightMultiplier = 1.0
-			if entry.overlaps then
-				verticalOffset = verticalOffset + entry.overlaps.offset * height
-				height = height * entry.overlaps.heightMultiplier
-				heightMultiplier = entry.overlaps.heightMultiplier
-			end
-			local frameLevel = baseFrameLevel + entry.frameLevel
-			DrawBossAbilityBar(
-				self,
-				entry,
-				horizontalOffset,
-				verticalOffset,
-				width,
-				height,
-				color,
-				frameLevel,
-				currentIndex
-			)
-
-			if
-				width > minimumBossAbilityWidth
-				and entry.castEnd > entry.castStart
-				and entry.castEnd < entry.effectEnd
-			then
-				local totalDuration = entry.effectEnd - entry.castStart
-				local percentOffset = min((entry.castEnd - entry.castStart) / totalDuration, 1)
-				local lineOffset = percentOffset * width - 1
-				local bossAbilityFrame = self.bossAbilityFrames[currentIndex]
-				local line = bossAbilityFrame.lineTexture
-				line:SetHeight(height - 4)
-				line:SetTexCoord(0.1, 0.4, 0, 4.5 * heightMultiplier)
-				line:SetPoint("LEFT", bossAbilityFrame, "LEFT", lineOffset, 0)
-				self.bossAbilityFrames[currentIndex].lineTexture:Show()
-			else
-				self.bossAbilityFrames[currentIndex].lineTexture:Hide()
-			end
+			DrawBossAbilityBar(self, entry, horizontalOffset, verticalOffset, width, baseFrameLevel, currentIndex)
 			currentIndex = currentIndex + 1
 		end
 	end
