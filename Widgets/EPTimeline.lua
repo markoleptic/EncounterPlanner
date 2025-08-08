@@ -1404,7 +1404,7 @@ local function DrawAssignment(
 			local visibleCooldownWidth = cooldownWidth - assignmentHeight
 			local cooldownFrame = assignmentFrame.cooldownFrame
 			if visibleCooldownWidth > 0 then
-				cooldownFrame:SetWidth(visibleCooldownWidth)
+				cooldownFrame:SetSize(visibleCooldownWidth, assignmentHeight + 0.01)
 				cooldownFrame:Show()
 			else
 				cooldownFrame:SetWidth(0)
