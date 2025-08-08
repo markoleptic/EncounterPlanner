@@ -1941,6 +1941,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 							castTimes = { 14.61, 5.69, 5.46 },
 						}),
 					},
+					halfHeight = true,
 					duration = 4.0,
 					castTime = 2.0,
 					allowedCombatLogEventTypes = {},
