@@ -728,7 +728,17 @@ end
 ---@param width number Width of the boss ability bar.
 ---@param baseFrameLevel integer Base frame level.
 ---@param index integer Index into boss ability frames.
-local function DrawBossAbilityBar(self, abilityInstance, horizontalOffset, verticalOffset, width, baseFrameLevel, index)
+---@param rowIndex integer Index (starting from 1) of the row, where 1 is the first boss ability row
+local function DrawBossAbilityBar(
+	self,
+	abilityInstance,
+	horizontalOffset,
+	verticalOffset,
+	width,
+	baseFrameLevel,
+	index,
+	rowIndex
+)
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
 	local height = self.preferences.timelineRows.bossAbilityHeight
 	if abilityInstance.overlaps then
@@ -736,7 +746,7 @@ local function DrawBossAbilityBar(self, abilityInstance, horizontalOffset, verti
 		height = height * abilityInstance.overlaps.heightMultiplier
 	end
 
-	local color = colors[((abilityInstance.bossAbilityOrderIndex - 1) % #colors) + 1]
+	local color = colors[((rowIndex - 1) % #colors) + 1]
 	local frame = self.bossAbilityFrames[index]
 	if not frame then
 		self.bossAbilityFrames[index] = CreateBossAbilityBar(self, width, height, color)
@@ -759,26 +769,24 @@ local function DrawBossAbilityBar(self, abilityInstance, horizontalOffset, verti
 	local line = frame.lineTexture
 	local cooldownFrame = frame.cooldownFrame
 	if effectDuration > 0 then
-		local durationWidthPercentage = effectDuration / totalDuration
-		local cooldownWidth = width * durationWidthPercentage - borderSize
-		cooldownFrame:SetSize(cooldownWidth, height)
-		local cooldownLeft = width * castWidthPercentage + borderSize
-		cooldownFrame:ClearAllPoints()
-		cooldownFrame:SetPoint("LEFT", cooldownLeft, 0)
-		frame.cooldownParent:SetPoint("LEFT", -verticalOffset, 0)
-		frame.cooldownBackground:SetColorTexture(unpack(color))
-		cooldownFrame:Show()
+		local castLeft = (width - borderSize) * castWidthPercentage
 
 		if castDuration > 0 then
 			line:SetHeight(height - (2 * borderSize))
 			line:ClearAllPoints()
-			local usableWidth = width - borderSize
-			local lineLeft = usableWidth * castWidthPercentage
-			line:SetPoint("LEFT", frame, "LEFT", lineLeft, 0)
+			line:SetPoint("LEFT", frame, "LEFT", castLeft, 0)
 			line:Show()
 		else
 			line:Hide()
 		end
+
+		cooldownFrame:ClearAllPoints()
+		cooldownFrame:SetHeight(height)
+		cooldownFrame:SetPoint("LEFT", castLeft + borderSize, 0)
+		cooldownFrame:SetPoint("RIGHT")
+		frame.cooldownParent:SetPoint("LEFT", -verticalOffset, 0)
+		frame.cooldownBackground:SetColorTexture(unpack(color))
+		cooldownFrame:Show()
 	else
 		line:Hide()
 		cooldownFrame:Hide()
@@ -808,12 +816,17 @@ local function UpdateBossAbilityBars(self)
 	end
 
 	local offsets = {}
+	local rowIndices = {}
+	local rowIndex = 1
 	local offset = 0
+
 	local bossAbilityHeight = self.preferences.timelineRows.bossAbilityHeight
 	for _, bossAbilitySpellID in ipairs(self.bossAbilityOrder) do
 		offsets[bossAbilitySpellID] = offset
+		rowIndices[bossAbilitySpellID] = rowIndex
 		if self.bossAbilityVisibility[bossAbilitySpellID] == true then
 			offset = offset + bossAbilityHeight + paddingBetweenBossAbilityBars
+			rowIndex = rowIndex + 1
 		end
 	end
 
@@ -847,7 +860,17 @@ local function UpdateBossAbilityBars(self)
 
 		if self.bossAbilityVisibility[entry.bossAbilitySpellID] == true then
 			local verticalOffset = offsets[entry.bossAbilitySpellID]
-			DrawBossAbilityBar(self, entry, horizontalOffset, verticalOffset, width, baseFrameLevel, currentIndex)
+			rowIndex = rowIndices[entry.bossAbilitySpellID]
+			DrawBossAbilityBar(
+				self,
+				entry,
+				horizontalOffset,
+				verticalOffset,
+				width,
+				baseFrameLevel,
+				currentIndex,
+				rowIndex
+			)
 			currentIndex = currentIndex + 1
 		end
 	end
