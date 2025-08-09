@@ -662,7 +662,7 @@ do
 		end
 	end
 
-	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
+	local CreateDropdownItemDataPlanSorter = utilities.CreateDropdownItemDataPlanSorter
 
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
 	function InterfaceUpdater.RepopulatePlanWidgets()
@@ -717,37 +717,8 @@ do
 					end
 				end
 				for _, dropdownData in pairs(instanceDropdownData) do
-					local dungeonInstanceID
-					if type(dropdownData.itemValue) == "table" then
-						dungeonInstanceID = dropdownData.itemValue.dungeonInstanceID
-					else
-						dungeonInstanceID = dropdownData.itemValue
-					end
-					local instanceBossOrder = GetInstanceBossOrder(dungeonInstanceID)
-					if instanceBossOrder then
-						---@param a DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
-						---@param b DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
-						---@return boolean
-						local function sortPlans(a, b)
-							local aOrder, bOrder = nil, nil
-							if a.mapChallengeModeID then
-								aOrder = instanceBossOrder[a.mapChallengeModeID][a.dungeonEncounterID]
-							else
-								aOrder = instanceBossOrder[a.dungeonEncounterID]
-							end
-							if b.mapChallengeModeID then
-								bOrder = instanceBossOrder[b.mapChallengeModeID][b.dungeonEncounterID]
-							else
-								bOrder = instanceBossOrder[b.dungeonEncounterID]
-							end
-							if aOrder and bOrder then
-								if aOrder ~= bOrder then
-									return aOrder < bOrder
-								end
-							end
-							return a.text < b.text
-						end
-						sort(dropdownData.dropdownItemMenuData, sortPlans)
+					if dropdownData.dropdownItemMenuData then
+						sort(dropdownData.dropdownItemMenuData, CreateDropdownItemDataPlanSorter(dropdownData))
 					end
 				end
 				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")

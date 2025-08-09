@@ -2920,6 +2920,43 @@ do
 	local spellIconRegex = "|T.-|t%s(.+)"
 	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
 
+	---@param dropdownItemData DropdownItemData
+	---@return fun(a: DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}, b: DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}):boolean
+	function Utilities.CreateDropdownItemDataPlanSorter(dropdownItemData)
+		local dungeonInstanceID
+		if type(dropdownItemData.itemValue) == "table" then
+			dungeonInstanceID = dropdownItemData.itemValue.dungeonInstanceID
+		else
+			dungeonInstanceID = dropdownItemData.itemValue
+		end
+		---@type table<integer, integer>|table<integer, table<integer, integer>>
+		local instanceBossOrder = GetInstanceBossOrder(dungeonInstanceID)
+
+		---@param a DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
+		---@param b DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
+		---@return boolean
+		return function(a, b)
+			local aOrder, bOrder = nil, nil
+			if a.mapChallengeModeID then
+				aOrder = instanceBossOrder[a.mapChallengeModeID][a.dungeonEncounterID]
+			else
+				aOrder = instanceBossOrder[a.dungeonEncounterID]
+			end
+			if b.mapChallengeModeID then
+				bOrder = instanceBossOrder[b.mapChallengeModeID][b.dungeonEncounterID]
+			else
+				bOrder = instanceBossOrder[b.dungeonEncounterID]
+			end
+			if aOrder and bOrder then
+				if aOrder ~= bOrder then
+					return aOrder < bOrder
+				end
+			end
+
+			return a.text < b.text
+		end
+	end
+
 	---@param boss Boss
 	---@return fun(a: EPItemBase, b: EPItemBase):boolean
 	function Utilities.CreatePlanSorter(boss)
@@ -2939,7 +2976,7 @@ do
 				local aPlan, bPlan = plans[a:GetUserDataTable().value], plans[b:GetUserDataTable().value]
 				if aPlan and bPlan then
 					aOrder = instanceBossOrder[aPlan.dungeonEncounterID]
-					bOrder = instanceBossOrder[aPlan.dungeonEncounterID]
+					bOrder = instanceBossOrder[bPlan.dungeonEncounterID]
 				end
 			end
 			if aOrder ~= bOrder then
