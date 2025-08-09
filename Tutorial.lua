@@ -2670,6 +2670,7 @@ function Private:OpenTutorial()
 				self.mainFrame.timeline:ClearSelectedAssignments()
 			end
 			self.tutorialCallbackObject = nil
+			self.activeTutorialCallbackName = nil
 		end)
 		tutorial:SetCallback("PreviousButtonClicked", function()
 			SetCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep - 1)
