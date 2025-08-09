@@ -116,27 +116,39 @@ function BossUtilities.FindDungeonInstance(dungeonInstanceID, mapChallengeModeID
 	end
 end
 
----@param encounterID integer Boss dungeon encounter ID
----@return string|nil
-function BossUtilities.GetBossName(encounterID)
-	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-		for _, boss in ipairs(dungeonInstance.bosses) do
-			if boss.dungeonEncounterID == encounterID then
-				return boss.name
+do
+	---@type table<integer, Boss>
+	local dungeonEncounterIDToBossCache = nil
+
+	local function PopulateDungeonEncounterIDToBossMap()
+		dungeonEncounterIDToBossCache = {}
+		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
+			for _, boss in ipairs(dungeonInstance.bosses) do
+				dungeonEncounterIDToBossCache[boss.dungeonEncounterID] = boss
 			end
 		end
 	end
-end
 
----@param encounterID integer Boss dungeon encounter ID
----@return Boss|nil
-function BossUtilities.GetBoss(encounterID)
-	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-		for _, boss in ipairs(dungeonInstance.bosses) do
-			if boss.dungeonEncounterID == encounterID then
-				return boss
-			end
+	---@param encounterID integer Boss dungeon encounter ID
+	---@return string|nil
+	function BossUtilities.GetBossName(encounterID)
+		if not dungeonEncounterIDToBossCache then
+			PopulateDungeonEncounterIDToBossMap()
 		end
+		---@cast dungeonEncounterIDToBossCache table<integer, Boss>
+		if dungeonEncounterIDToBossCache[encounterID] then
+			return dungeonEncounterIDToBossCache[encounterID].name
+		end
+	end
+
+	---@param encounterID integer Boss dungeon encounter ID
+	---@return Boss|nil
+	function BossUtilities.GetBoss(encounterID)
+		if not dungeonEncounterIDToBossCache then
+			PopulateDungeonEncounterIDToBossMap()
+		end
+		---@cast dungeonEncounterIDToBossCache table<integer, Boss>
+		return dungeonEncounterIDToBossCache[encounterID]
 	end
 end
 
@@ -201,19 +213,40 @@ function BossUtilities.GetBossDungeonEncounterIDFromSpellID(spellID, difficulty)
 	return nil
 end
 
----@param encounterID integer Boss dungeon encounter ID
----@param spellID number
----@param difficulty DifficultyType
----@return BossAbility|nil
-function BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-	for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-		for _, boss in ipairs(dungeonInstance.bosses) do
-			if boss.dungeonEncounterID == encounterID then
-				local bossAbilities = BossUtilities.GetBossAbilities(boss, difficulty)
-				if bossAbilities[spellID] then
-					return bossAbilities[spellID]
+do
+	---@type table<integer, table<integer, table<integer, BossAbility>>>|nil
+	local bossAbilityCache = nil
+
+	---@param encounterID integer Boss dungeon encounter ID
+	---@param spellID number
+	---@param difficulty DifficultyType
+	---@return BossAbility|nil
+	function BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
+		if not bossAbilityCache then
+			bossAbilityCache = {}
+			for dungeonInstance in BossUtilities.IterateDungeonInstances() do
+				for _, boss in ipairs(dungeonInstance.bosses) do
+					bossAbilityCache[boss.dungeonEncounterID] = bossAbilityCache[boss.dungeonEncounterID] or {}
+					local encounterSpecificCache = bossAbilityCache[boss.dungeonEncounterID]
+					encounterSpecificCache[DifficultyType.Mythic] = {}
+					for bossAbilitySpellID, bossAbility in
+						pairs(BossUtilities.GetBossAbilities(boss, DifficultyType.Mythic))
+					do
+						encounterSpecificCache[DifficultyType.Mythic][bossAbilitySpellID] = bossAbility
+					end
+					if dungeonInstance.hasHeroic then
+						encounterSpecificCache[DifficultyType.Heroic] = {}
+						for bossAbilitySpellID, bossAbility in
+							pairs(BossUtilities.GetBossAbilities(boss, DifficultyType.Heroic))
+						do
+							encounterSpecificCache[DifficultyType.Heroic][bossAbilitySpellID] = bossAbility
+						end
+					end
 				end
 			end
+		end
+		if bossAbilityCache[encounterID][difficulty] then
+			return bossAbilityCache[encounterID][difficulty][spellID]
 		end
 	end
 end
