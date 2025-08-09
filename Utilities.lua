@@ -2693,7 +2693,7 @@ do
 			local newEventType = newType --[[@as CombatLogEventType]]
 			if getmetatable(assignment) ~= CombatLogEventAssignment then
 				local combatLogEventSpellID, spellCount, minTime =
-					FindNearestCombatLogEvent(assignment.time, dungeonEncounterID, newEventType, true, difficulty)
+					FindNearestCombatLogEvent(assignment.time, dungeonEncounterID, newEventType, difficulty)
 				assignment = CombatLogEventAssignment:New(assignment, true)
 				assignment.combatLogEventType = newEventType
 				if combatLogEventSpellID and spellCount and minTime then
@@ -2717,7 +2717,7 @@ do
 					)
 					if absoluteTime then
 						local newCombatLogEventSpellID, newSpellCount =
-							FindNearestCombatLogEvent(absoluteTime, dungeonEncounterID, newEventType, true, difficulty)
+							FindNearestCombatLogEvent(absoluteTime, dungeonEncounterID, newEventType, difficulty)
 						if newCombatLogEventSpellID and newSpellCount then
 							assignment.combatLogEventSpellID = newCombatLogEventSpellID
 							assignment.combatLogEventType = newEventType
@@ -2793,7 +2793,7 @@ do
 	---@param assignment CombatLogEventAssignment
 	---@param difficulty DifficultyType
 	local function HandleNoPreferredCombatLogEventAbilities(encounterID, time, assignment, difficulty)
-		local newSpellID, newSpellCount, newTime = FindNearestCombatLogEvent(time, encounterID, "SCS", true, difficulty)
+		local newSpellID, newSpellCount, newTime = FindNearestCombatLogEvent(time, encounterID, "SCS", difficulty)
 		if newSpellID and newSpellCount and newTime then
 			if newSpellID and newSpellCount and newTime then
 				assignment.time = Utilities.Round(newTime, 1)

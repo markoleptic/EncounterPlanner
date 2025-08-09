@@ -948,19 +948,21 @@ function BossUtilities.GetMinimumCombatLogEventTime(encounterID, spellID, spellC
 	return nil
 end
 
-do
-	---@param time number The time from the beginning of the boss encounter
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param castTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
-	---@param eventType CombatLogEventType
-	---@param difficulty DifficultyType
-	---@return integer|nil spellID
-	---@return integer|nil spellCount
-	---@return number|nil leftoverTime
-	local function FindNearestCombatLogEventAllowingBefore(time, encounterID, castTimeTable, eventType, difficulty)
-		local minTime, minTimeBefore = hugeNumber, hugeNumber
+-- Finds the nearest combat log event corresponding to the absolute time in the encounter. If no matching combat log
+-- events occur before absoluteTime, it will fall back to choosing the closest one after.
+---@param absoluteTime number The time from the beginning of the boss encounter.
+---@param encounterID integer Boss dungeon encounter ID.
+---@param eventType CombatLogEventType Type of combat log event to limit the search to.
+---@param difficulty DifficultyType Encounter difficulty.
+---@return integer|nil spellID
+---@return integer|nil spellCount
+---@return number|nil leftoverTime
+function BossUtilities.FindNearestCombatLogEvent(absoluteTime, encounterID, eventType, difficulty)
+	local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
+	if castTimeTable then
+		local minTime, minTimeAfter = hugeNumber, hugeNumber
 		local spellIDForMinTime, spellCountForMinTime = nil, nil
-		local spellIDForMinTimeBefore, spellCountForMinTimeBefore = nil, nil
+		local spellIDForMinTimeAfter, spellCountForMinTimeAfter = nil, nil
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
@@ -976,19 +978,19 @@ do
 							ability
 						)
 					end
-					if currentTime <= time then
-						local difference = time - currentTime
+					if currentTime <= absoluteTime then
+						local difference = absoluteTime - currentTime
 						if difference < minTime then
 							minTime = difference
 							spellIDForMinTime = spellID
 							spellCountForMinTime = spellCount
 						end
 					else
-						local difference = currentTime - time
-						if difference < minTimeBefore then
-							minTimeBefore = difference
-							spellIDForMinTimeBefore = spellID
-							spellCountForMinTimeBefore = spellCount
+						local difference = currentTime - absoluteTime
+						if difference < minTimeAfter then
+							minTimeAfter = difference
+							spellIDForMinTimeAfter = spellID
+							spellCountForMinTimeAfter = spellCount
 						end
 					end
 				end
@@ -996,73 +998,12 @@ do
 		end
 		if not spellIDForMinTime and not spellCountForMinTime then
 			minTime = 0.0
-			spellIDForMinTime = spellIDForMinTimeBefore
-			spellCountForMinTime = spellCountForMinTimeBefore
+			spellIDForMinTime = spellIDForMinTimeAfter
+			spellCountForMinTime = spellCountForMinTimeAfter
 		end
 		return spellIDForMinTime, spellCountForMinTime, minTime
 	end
-
-	---@param time number The time from the beginning of the boss encounter
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param castTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
-	---@param eventType CombatLogEventType|nil
-	---@param difficulty DifficultyType
-	---@return integer|nil spellID
-	---@return integer|nil spellCount
-	---@return number|nil leftoverTime
-	local function FindNearestCombatLogEventNoBefore(time, encounterID, castTimeTable, eventType, difficulty)
-		local minTime = hugeNumber
-		local spellIDForMinTime, spellCountForMinTime = nil, nil
-
-		for spellID, spellCountAndTime in pairs(castTimeTable) do
-			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if
-				not eventType or BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType, difficulty)
-			then
-				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
-					local currentTime = spellCastStartTableEntry.castStart
-					if ability then
-						currentTime = BossUtilities.GetAdjustedStartTime(
-							encounterID,
-							spellCastStartTableEntry,
-							difficulty,
-							eventType,
-							ability
-						)
-					end
-					if currentTime <= time then
-						local difference = time - currentTime
-						if difference < minTime then
-							minTime = difference
-							spellIDForMinTime = spellID
-							spellCountForMinTime = spellCount
-						end
-					end
-				end
-			end
-		end
-		return spellIDForMinTime, spellCountForMinTime, minTime
-	end
-
-	---@param time number The time from the beginning of the boss encounter
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param eventType CombatLogEventType
-	---@param allowBefore boolean? If specified, combat log events will be chosen before the time if none can be found without doing so.
-	---@param difficulty DifficultyType
-	---@return integer|nil spellID
-	---@return integer|nil spellCount
-	---@return number|nil leftoverTime
-	function BossUtilities.FindNearestCombatLogEvent(time, encounterID, eventType, allowBefore, difficulty)
-		local castTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
-		if castTimeTable then
-			if allowBefore then
-				return FindNearestCombatLogEventAllowingBefore(time, encounterID, castTimeTable, eventType, difficulty)
-			else
-				return FindNearestCombatLogEventNoBefore(time, encounterID, castTimeTable, eventType, difficulty)
-			end
-		end
-		return nil
-	end
+	return nil
 end
 
 do
@@ -1374,7 +1315,7 @@ do
 					)
 					if not newSpellID then
 						newSpellID, newSpellCount, newTime =
-							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, true, newDifficulty)
+							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, newDifficulty)
 					end
 					if newSpellID and newSpellCount and newTime then
 						if newCastTimeTable[newSpellID] and newCastTimeTable[newSpellID][newSpellCount] then
