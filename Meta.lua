@@ -568,10 +568,6 @@
 ---|2
 ---|3
 
----@alias AssignmentConversionMethod
----| 1 # Convert combat log event assignments to timed assignments
----| 2 # Replace combat log event spells with those of the new boss, matching the closest timing
-
 C_Timer = {}
 
 ---@class Private

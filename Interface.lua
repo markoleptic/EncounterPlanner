@@ -909,27 +909,22 @@ end
 ---@param plan Plan
 ---@param newBossDungeonEncounterID integer
 ---@param newDifficulty DifficultyType
----@param conversionMethod integer|nil
-local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, conversionMethod)
-	local currentBossDungeonEncounterID = plan.dungeonEncounterID
-	local currentBoss = GetBoss(currentBossDungeonEncounterID)
+local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty)
+	local previousBossDungeonEncounterID = plan.dungeonEncounterID
+	local previousBoss = GetBoss(previousBossDungeonEncounterID)
 	local newBoss = GetBoss(newBossDungeonEncounterID)
-	local currentAssignments = plan.assignments
-	if currentBoss and newBoss then
+	local previousDifficulty = plan.difficulty
+
+	if previousBoss and newBoss then
 		ClosePlanDependentWidgets()
-		local oldDifficulty = plan.difficulty
-		if conversionMethod then
-			ConvertAssignmentsToNewBoss(
-				currentAssignments,
-				currentBoss,
-				newBoss,
-				oldDifficulty,
-				newDifficulty,
-				conversionMethod
-			)
-		end
-		ChangePlanBoss(AddOn.db.profile.plans, plan.name, newBossDungeonEncounterID, newDifficulty)
-		interfaceUpdater.RepopulatePlanWidgets()
+		local plans = AddOn.db.profile.plans
+		local newPlan = utilities.DuplicatePlan(plans, plan.name, plan.name)
+		AddOn.db.profile.lastOpenPlan = newPlan.name
+
+		ConvertAssignmentsToNewBoss(newPlan.assignments, previousBoss, newBoss, previousDifficulty, newDifficulty)
+		ChangePlanBoss(AddOn.db.profile.plans, newPlan.name, newBossDungeonEncounterID, newDifficulty)
+
+		AddPlanToDropdown(newPlan, true)
 		UpdateBoss(newBossDungeonEncounterID, true)
 		UpdateAllAssignments(false, newBossDungeonEncounterID)
 	end
@@ -941,46 +936,24 @@ local function HandleChangeBossDropdownValueChanged(value, newDifficulty)
 	local newBossDungeonEncounterID = tonumber(value)
 	if newBossDungeonEncounterID then
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-		local containsCombatLogEventAssignment = false
-		for _, assignment in ipairs(plan.assignments) do
-			if getmetatable(assignment) == CombatLogEventAssignment then
-				containsCombatLogEventAssignment = true
-				break
-			end
-		end
-		if containsCombatLogEventAssignment then
-			local messageBoxData = {
-				ID = Private.GenerateUniqueID(),
-				isCommunication = true,
-				title = L["Changing Boss with Combat Log Event Assignments"],
-				message = format(
-					"%s\n\n%s.\n%s.\n%s.\n\n%s",
-					L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"],
-					L["1. Convert all assignments to timed assignments for the new boss"],
-					L["2. Replace spells with those of the new boss, matching the closest timing"],
-					L["3. Cancel"],
-					L["Note: Replacing spells may not be reversible and could result in changes if you revert to the original boss."]
-				),
-				acceptButtonText = L["Convert to Timed Assignments"],
-				acceptButtonCallback = function()
-					HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, 1)
-				end,
-				rejectButtonText = L["Cancel"],
-				rejectButtonCallback = nil,
-				buttonsToAdd = {
-					{
-						beforeButtonIndex = 2,
-						buttonText = L["Replace Spells"],
-						callback = function()
-							HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, 2)
-						end,
-					},
-				},
-			} --[[@as MessageBoxData]]
-			CreateMessageBox(messageBoxData, false)
-		else
-			HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty, nil)
-		end
+		local messageBoxData = {
+			ID = Private.GenerateUniqueID(),
+			isCommunication = true,
+			title = L["Change Boss"],
+			message = format(
+				"%s %s",
+				L["The current plan will be duplicated, and assignments will be converted based on the phase in which they occur for the new boss."],
+				L["The conversion uses the same rules as when adding a new assignment by clicking the timeline."]
+			),
+			acceptButtonText = L["Okay"],
+			acceptButtonCallback = function()
+				HandleConvertAssignments(plan, newBossDungeonEncounterID, newDifficulty)
+			end,
+			rejectButtonText = L["Cancel"],
+			rejectButtonCallback = nil,
+			buttonsToAdd = {},
+		} --[[@as MessageBoxData]]
+		CreateMessageBox(messageBoxData, false)
 	end
 end
 

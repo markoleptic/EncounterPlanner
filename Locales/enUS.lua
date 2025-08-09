@@ -1,9 +1,6 @@
 local L = LibStub("AceLocale-3.0"):NewLocale("EncounterPlanner", "enUS", true)
 --@localization(locale="enUS", format="lua_additive_table", same-key-is-true=true, handle-subnamespaces="concat")@
 L = L or {}
-L["1. Convert all assignments to timed assignments for the new boss"] = true
-L["2. Replace spells with those of the new boss, matching the closest timing"] = true
-L["3. Cancel"] = true
 L["Accept and Trust"] = true
 L["Accept without Trusting"] = true
 L["Activation"] = true
@@ -97,7 +94,6 @@ L["Change the duration of Phase 1 to 1:30."] = true
 L["Change the time of the assignment by left-clicking the icon and dragging it.\nWhen dragging a combat log event assignment, it can only be placed after the boss ability, as the assignment must occur afterward."] =
 	true
 L["Changed the Designated External Plan to"] = true
-L["Changing Boss with Combat Log Event Assignments"] = true
 L["Check the"] = true
 L["checkbox"] = true
 L["Choose"] = true
@@ -116,7 +112,6 @@ L["Confirmation"] = true
 L["Consider extending boss phase durations/counts in"] = true
 L["contains high level categories for managing plans, modifying bosses, editing rosters, and settings"] = true
 L["Controls"] = true
-L["Convert to Timed Assignments"] = true
 L["Cooldown Icons"] = true
 L["Cooldown Icons grow horizontally."] = true
 L["Cooldown Icons grow vertically."] = true
@@ -329,7 +324,6 @@ L["Next"] = true
 L["No overlapping assignments"] = true
 L["No spell cast times found for boss"] = true
 L["None"] = true
-L["Note: Replacing spells may not be reversible and could result in changes if you revert to the original boss."] = true
 L["Number of assignment rows visible before scrolling is required."] = true
 L["Number of boss ability rows visible before scrolling is required."] = true
 L["Okay"] = true
@@ -387,7 +381,6 @@ L["Reminders associated with combat log events in a certain phase will be cancel
 L["Reminders can be customized in the"] = true
 L["Reminders can be toggled on and off for each plan using this checkbox or globally in the"] = true
 L["Removed"] = true
-L["Replace Spells"] = true
 L["Reset All to Default"] = true
 L["Reset Profile"] = true
 L["Right"] = true
@@ -473,8 +466,10 @@ L["The anchor point on the frame that the Progress Bar container is anchored to.
 L["The assignment is created relative to the start of the encounter since it was clicked within Phase 1."] = true
 L["The Assignment Timeline updates to reflect the spell. Its cooldown duration is represented by an alternating grey texture. If multiple instances of the same spell overlap, the rightmost spell icon will be tinted red."] =
 	true
-L["The current plan includes combat log event assignments tied to this boss's spells. Choose an option:"] = true
+L["The conversion uses the same rules as when adding a new assignment by clicking the timeline."] = true
 L["The current plan is selected using this dropdown. You can rename the current plan by double clicking the dropdown (You cannot rename the tutorial plan)."] =
+	true
+L["The current plan will be duplicated, and assignments will be converted based on the phase in which they occur for the new boss."] =
 	true
 L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."] = true
 L["The frame that the Cooldown Icon container is anchored to. Defaults to UIParent (screen)."] = true

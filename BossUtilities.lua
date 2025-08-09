@@ -142,7 +142,7 @@ do
 	end
 
 	---@param encounterID integer Boss dungeon encounter ID
-	---@return Boss|nil
+	---@return Boss
 	function BossUtilities.GetBoss(encounterID)
 		if not dungeonEncounterIDToBossCache then
 			PopulateDungeonEncounterIDToBossMap()
@@ -187,7 +187,7 @@ end
 
 ---@param boss Boss
 ---@param difficulty DifficultyType
----@return { [integer]: PreferredCombatLogEventAbility|nil }|nil
+---@return table<integer, PreferredCombatLogEventAbility|nil>|nil
 function BossUtilities.GetBossPreferredCombatLogEventAbilities(boss, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return boss.preferredCombatLogEventAbilitiesHeroic
@@ -370,7 +370,7 @@ end
 -- Returns a table of boss phases in the order in which they occur. This is necessary due since phases can repeat.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, integer>|nil -- [bossPhaseOrderIndex, bossPhaseIndex]
+---@return table<integer, integer> -- [bossPhaseOrderIndex, bossPhaseIndex]
 function BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return orderedBossPhasesHeroic[encounterID]
@@ -382,7 +382,7 @@ end
 -- Returns a table of boss phases in the order in which they occur, for the maximum allowed duration of a fight.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, integer>|nil -- [bossPhaseOrderIndex, bossPhaseIndex]
+---@return table<integer, integer> -- [bossPhaseOrderIndex, bossPhaseIndex]
 function BossUtilities.GetMaxOrderedBossPhases(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return maxOrderedBossPhasesHeroic[encounterID]
@@ -394,7 +394,7 @@ end
 -- Returns a table that can be used to find the absolute cast time of given the spellID and spell occurrence number.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, table<integer, SpellCastStartTableEntry>>|nil
+---@return table<integer, table<integer, SpellCastStartTableEntry>>
 function BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return absoluteSpellCastStartTablesHeroic[encounterID]
@@ -407,7 +407,7 @@ end
 -- is created using the maximum allowed phase counts rather than the current phase counts.
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param difficulty DifficultyType
----@return table<integer, table<integer, SpellCastStartTableEntry>>|nil
+---@return table<integer, table<integer, SpellCastStartTableEntry>>
 function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
 		return maxAbsoluteSpellCastStartTablesHeroic[encounterID]
@@ -1060,211 +1060,119 @@ function BossUtilities.FindNearestSpellCount(absoluteTime, encounterID, spellID,
 	return nil
 end
 
----@param absoluteTime number
----@param encounterID integer
----@param spellID integer|nil
----@param eventType CombatLogEventType
----@param difficulty DifficultyType
----@return integer|nil spellID
----@return integer|nil spellCount
----@return number|nil leftoverTime
-function BossUtilities.FindNearestPreferredCombatLogEventAbility(
-	absoluteTime,
-	encounterID,
-	spellID,
-	eventType,
-	difficulty
-)
-	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
-	if not absoluteSpellCastStartTable then
-		return nil
-	end
-	if spellID then
-		if absoluteSpellCastStartTable[spellID] then
-			local spellCountAndTime = absoluteSpellCastStartTable[spellID]
-			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			if not ability then
-				return nil
-			end
-			local minTime = hugeNumber
-			local spellCountForMinTime = nil
-
-			for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
-				local adjustedTime = spellCastStartTableEntry.castStart
-				if ability then
-					adjustedTime = BossUtilities.GetAdjustedStartTime(
-						encounterID,
-						spellCastStartTableEntry,
-						difficulty,
-						eventType,
-						ability
-					)
-				end
-				if adjustedTime <= absoluteTime then
-					local difference = absoluteTime - adjustedTime
-					if difference < minTime then
-						minTime = difference
-						spellCountForMinTime = spellCount
-					end
-				end
-			end
-			return nil, spellCountForMinTime, minTime
-		end
-	else
-		local minTime = hugeNumber
-		local spellIDForMinTime, spellCountForMinTime = nil, nil
-
-		for currentSpellID, spellCountAndTime in pairs(absoluteSpellCastStartTable) do
-			local ability = BossUtilities.FindBossAbility(encounterID, currentSpellID, difficulty)
-			if
-				not eventType
-				or BossUtilities.IsValidCombatLogEventType(encounterID, currentSpellID, eventType, difficulty)
-			then
-				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
-					local currentTime = spellCastStartTableEntry.castStart
-					if ability then
-						currentTime = BossUtilities.GetAdjustedStartTime(
-							encounterID,
-							spellCastStartTableEntry,
-							difficulty,
-							eventType,
-							ability
-						)
-					end
-					if currentTime <= absoluteTime then
-						local difference = absoluteTime - currentTime
-						if difference < minTime then
-							minTime = difference
-							spellIDForMinTime = spellID
-							spellCountForMinTime = spellCount
-						end
-					end
-				end
-			end
-		end
-		return spellIDForMinTime, spellCountForMinTime, minTime
-	end
-
-	return nil
-end
-
 do
 	---@class CombatLogEventAssignment
 	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 	---@class TimedAssignment
 	local TimedAssignment = Private.classes.TimedAssignment
 
-	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
-	---@param oldEncounterID integer Old boss dungeon encounter ID
-	---@param difficulty DifficultyType
-	local function ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldEncounterID, difficulty)
+	---@param absoluteTime number The time from the beginning of the boss encounter.
+	---@param encounterID integer Boss dungeon encounter ID.
+	---@param preferredAbilities table<integer, PreferredCombatLogEventAbility|nil> Preferred abilities for boss.
+	---@param phases table<integer, BossPhase> Boss phases.
+	---@param orderedBossPhaseTable table<integer, integer> Ordered boss abilities.
+	---@param difficulty DifficultyType Encounter difficulty.
+	---@return integer|nil spellID
+	---@return integer|nil spellCount
+	---@return CombatLogEventType|nil eventType
+	---@return number|nil leftoverTime
+	function BossUtilities.FindNearestPreferredCombatLogEvent(
+		absoluteTime,
+		encounterID,
+		preferredAbilities,
+		phases,
+		orderedBossPhaseTable,
+		difficulty
+	)
+		local cumulativeTime = 0.0
+		local newSpellID, newSpellCount, newEventType, newTime
+
+		local lastPhaseIndex = 1
+		for _, phaseIndex in ipairs(orderedBossPhaseTable) do
+			local phase = phases[phaseIndex]
+			if cumulativeTime + phase.duration > absoluteTime then
+				if preferredAbilities[phaseIndex] then
+					newSpellID = preferredAbilities[phaseIndex].combatLogEventSpellID
+					newEventType = preferredAbilities[phaseIndex].combatLogEventType
+					newSpellCount, newTime = BossUtilities.FindNearestSpellCount(
+						absoluteTime,
+						encounterID,
+						newSpellID,
+						newEventType,
+						difficulty
+					)
+				end
+				break
+			end
+			cumulativeTime = cumulativeTime + phase.duration
+			lastPhaseIndex = phaseIndex
+		end
+		if not newSpellID and absoluteTime >= cumulativeTime then
+			-- Use the last phase index if time is greater than total fight length
+			if preferredAbilities[lastPhaseIndex] then
+				newSpellID = preferredAbilities[lastPhaseIndex].combatLogEventSpellID
+				newEventType = preferredAbilities[lastPhaseIndex].combatLogEventType
+				newSpellCount, newTime =
+					BossUtilities.FindNearestSpellCount(absoluteTime, encounterID, newSpellID, newEventType, difficulty)
+			end
+		end
+		return newSpellID, newSpellCount, newEventType, newTime
+	end
+
+	-- Converts all assignments based on their appearance in the new boss phases.
+	---@param assignments table<integer, Assignment|CombatLogEventAssignment> Assignments to convert.
+	---@param oldBoss Boss Old boss.
+	---@param newBoss Boss New boss.
+	---@param oldDifficulty DifficultyType Old encounter difficulty.
+	---@param newDifficulty DifficultyType New encounter difficulty.
+	function BossUtilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, oldDifficulty, newDifficulty)
+		local oldEncounterID, newEncounterID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
+		local preferredAbilities = BossUtilities.GetBossPreferredCombatLogEventAbilities(newBoss, newDifficulty)
+		local phases = BossUtilities.GetBossPhases(newBoss, newDifficulty)
+		local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(newEncounterID, newDifficulty)
+		local absoluteSpellCastTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newEncounterID, newDifficulty)
+
 		for _, assignment in ipairs(assignments) do
+			local createTimed = true
+			local absoluteTime = assignment.time
+
+			-- Always convert relative time to absolute time for combat log event assignments
 			if getmetatable(assignment) == CombatLogEventAssignment then
-				local convertedTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+				absoluteTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
 					assignment.time,
 					oldEncounterID,
 					assignment.combatLogEventSpellID,
 					assignment.spellCount,
 					assignment.combatLogEventType,
-					difficulty
-				)
-				if convertedTime then
-					assignment = TimedAssignment:New(assignment, true)
-					assignment.time = Utilities.Round(convertedTime, 1)
-				end
-			end
-		end
-	end
-
-	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
-	---@param oldID integer Old boss dungeon encounter ID
-	---@param newID integer New boss dungeon encounter ID
-	---@param oldDifficulty DifficultyType
-	---@param newDifficulty DifficultyType
-	---@param newCastTimeTable table<integer, table<integer, SpellCastStartTableEntry>>
-	---@param newBossPhaseTable table<integer, integer>
-	local function ReplaceCombatLogEventAssignmentSpells(
-		assignments,
-		oldID,
-		newID,
-		oldDifficulty,
-		newDifficulty,
-		newCastTimeTable,
-		newBossPhaseTable
-	)
-		for _, assignment in ipairs(assignments) do
-			if getmetatable(assignment) == CombatLogEventAssignment then
-				local spellID, spellCount, eventType =
-					assignment.combatLogEventSpellID, assignment.spellCount, assignment.combatLogEventType
-				local absoluteTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
-					assignment.time,
-					oldID,
-					spellID,
-					spellCount,
-					eventType,
 					oldDifficulty
 				)
-				if absoluteTime then
-					local newSpellID, newSpellCount, newTime = BossUtilities.FindNearestPreferredCombatLogEventAbility(
+			end
+			if preferredAbilities then
+				local newSpellID, newSpellCount, newEventType, newTime =
+					BossUtilities.FindNearestPreferredCombatLogEvent(
 						absoluteTime,
-						newID,
-						nil,
-						eventType,
+						newEncounterID,
+						preferredAbilities,
+						phases,
+						orderedBossPhaseTable,
 						newDifficulty
 					)
-					if not newSpellID then
-						newSpellID, newSpellCount, newTime =
-							BossUtilities.FindNearestCombatLogEvent(absoluteTime, newID, eventType, newDifficulty)
-					end
-					if newSpellID and newSpellCount and newTime then
-						if newCastTimeTable[newSpellID] and newCastTimeTable[newSpellID][newSpellCount] then
-							local orderedBossPhaseIndex =
-								newCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-							assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
-							assignment.phase = newBossPhaseTable[orderedBossPhaseIndex]
-						end
-						assignment.time = Utilities.Round(newTime, 1)
-						assignment.combatLogEventSpellID = newSpellID
-						assignment.spellCount = newSpellCount
-					else
-						assignment = TimedAssignment:New(assignment, true)
-						assignment.time = Utilities.Round(absoluteTime, 1)
-					end
+				if newSpellID and newSpellCount and newEventType and newTime then
+					local orderedBossPhaseIndex =
+						absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
+					assignment = CombatLogEventAssignment:New(assignment, true)
+					assignment.combatLogEventType = newEventType
+					assignment.combatLogEventSpellID = newSpellID
+					assignment.spellCount = newSpellCount
+					assignment.time = Utilities.Round(newTime, 1)
+					assignment.phase = absoluteSpellCastTimeTable[orderedBossPhaseIndex]
+					assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+					createTimed = false
 				end
 			end
-		end
-	end
-
-	---@param assignments table<integer, Assignment|CombatLogEventAssignment>
-	---@param oldBoss Boss
-	---@param newBoss Boss
-	---@param oldDifficulty DifficultyType
-	---@param newDifficulty DifficultyType
-	---@param conversionMethod AssignmentConversionMethod
-	function BossUtilities.ConvertAssignmentsToNewBoss(
-		assignments,
-		oldBoss,
-		newBoss,
-		oldDifficulty,
-		newDifficulty,
-		conversionMethod
-	)
-		local oldID, newID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
-		if conversionMethod == 1 then
-			ConvertCombatLogEventAssignmentsToTimedAssignments(assignments, oldID, oldDifficulty)
-		elseif conversionMethod == 2 then
-			local newCastTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newID, newDifficulty)
-			local newBossPhaseTable = BossUtilities.GetOrderedBossPhases(newID, newDifficulty)
-			if newCastTimeTable and newBossPhaseTable then
-				ReplaceCombatLogEventAssignmentSpells(
-					assignments,
-					oldID,
-					newID,
-					oldDifficulty,
-					newDifficulty,
-					newCastTimeTable,
-					newBossPhaseTable
-				)
+			if createTimed then
+				assignment = TimedAssignment:New(assignment, true)
+				assignment.time = absoluteTime
 			end
 		end
 	end
