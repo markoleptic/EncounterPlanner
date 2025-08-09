@@ -2550,7 +2550,7 @@ end
 
 do
 	---@type table<integer, {duration: number, maxCharges: integer}>
-	local cooldowns = setmetatable({}, { __mode = "kv" })
+	local cooldowns = {}
 
 	---@param spellID integer
 	---@return number
