@@ -2608,6 +2608,7 @@ do
 end
 
 do
+	local assert = assert
 	local ConvertCombatLogEventTimeToAbsoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime
 	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
 	local FindNearestSpellCount = bossUtilities.FindNearestSpellCount
@@ -2615,29 +2616,33 @@ do
 	local IsValidCombatLogEventType = bossUtilities.IsValidCombatLogEventType
 	local IsValidSpellCount = bossUtilities.IsValidSpellCount
 
-	---@param assignment CombatLogEventAssignment
-	---@param dungeonEncounterID integer
-	---@param spellID integer
+	-- Finds the nearest combat log event corresponding to spellID to make a valid combat log event assignment.
+	---@param assignment CombatLogEventAssignment Combat log event assignment.
+	---@param dungeonEncounterID integer Boss dungeon encounter ID.
+	---@param spellID integer Combat log event spell ID.
+	---@param difficulty DifficultyType Encounter difficulty.
 	local function ConvertToValidCombatLogEventType(assignment, dungeonEncounterID, spellID, difficulty)
 		local validTypes = GetValidCombatLogEventTypes(dungeonEncounterID, spellID, difficulty)
-		local time, eventType = assignment.time, assignment.combatLogEventType
-		local previousSpellID, spellCount = assignment.combatLogEventSpellID, assignment.spellCount
-		local newSpellCount, _ = FindNearestSpellCount(
-			time,
-			dungeonEncounterID,
-			eventType,
-			previousSpellID,
-			spellCount,
-			spellID,
-			true,
-			difficulty
-		)
-		if newSpellCount then
-			if #validTypes > 0 then
-				assignment.combatLogEventType = validTypes[1]
+		assert(#validTypes > 0, "Combat log event spell ID has at least one valid combat log event type")
+		if #validTypes > 0 then
+			local relativeTime, currentEventType = assignment.time, assignment.combatLogEventType
+			local currentSpellID, currentSpellCount = assignment.combatLogEventSpellID, assignment.spellCount
+			local absoluteTime = ConvertCombatLogEventTimeToAbsoluteTime(
+				relativeTime,
+				dungeonEncounterID,
+				currentSpellID,
+				currentSpellCount,
+				currentEventType,
+				difficulty
+			)
+			local newEventType = validTypes[1]
+			local newSpellCount =
+				FindNearestSpellCount(absoluteTime, dungeonEncounterID, spellID, newEventType, difficulty)
+			if newSpellCount then
+				assignment.combatLogEventType = newEventType
+				assignment.combatLogEventSpellID = spellID
+				assignment.spellCount = newSpellCount
 			end
-			assignment.combatLogEventSpellID = spellID
-			assignment.spellCount = newSpellCount
 		end
 	end
 
@@ -2646,34 +2651,37 @@ do
 	---@param newSpellID integer
 	---@param difficulty DifficultyType
 	function Utilities.ChangeAssignmentCombatLogEventSpellID(assignment, dungeonEncounterID, newSpellID, difficulty)
-		local eventType = assignment.combatLogEventType
-		local valid, validEventType = IsValidCombatLogEventType(dungeonEncounterID, newSpellID, eventType, difficulty)
-		if valid or (not valid and validEventType) then
-			if validEventType then
-				assignment.combatLogEventType = validEventType
-			end
+		local currentEventType = assignment.combatLogEventType
+		local valid, newEventType =
+			IsValidCombatLogEventType(dungeonEncounterID, newSpellID, currentEventType, difficulty)
+		if valid or (not valid and newEventType) then
 			local currentSpellID, currentSpellCount = assignment.combatLogEventSpellID, assignment.spellCount
 			if IsValidSpellCount(dungeonEncounterID, newSpellID, currentSpellCount, nil, difficulty) then
-				assignment.combatLogEventSpellID = newSpellID
-				assignment.spellCount = currentSpellCount
+				if newEventType then
+					assignment.combatLogEventType = newEventType
+				end
 			else
-				local newSpellCount = FindNearestSpellCount(
-					assignment.time,
+				local relativeTime = assignment.time
+				local absoluteTime = ConvertCombatLogEventTimeToAbsoluteTime(
+					relativeTime,
 					dungeonEncounterID,
-					eventType,
 					currentSpellID,
 					currentSpellCount,
-					newSpellID,
-					true,
+					currentEventType,
 					difficulty
 				)
+				local newSpellCount =
+					FindNearestSpellCount(absoluteTime, dungeonEncounterID, newSpellID, newEventType, difficulty)
 				if newSpellCount then
 					assignment.combatLogEventSpellID = newSpellID
 					assignment.spellCount = newSpellCount
+					if newEventType then
+						assignment.combatLogEventType = newEventType
+					end
 				end
 			end
 		else
-			ConvertToValidCombatLogEventType(assignment, dungeonEncounterID, newSpellID)
+			ConvertToValidCombatLogEventType(assignment, dungeonEncounterID, newSpellID, difficulty)
 		end
 		Utilities.UpdateAssignmentBossPhase(
 			assignment --[[@as CombatLogEventAssignment]],

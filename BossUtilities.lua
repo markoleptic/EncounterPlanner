@@ -861,7 +861,7 @@ function BossUtilities.GetAdjustedStartTime(
 	return adjustedStartTime
 end
 
----@param time number Time relative to the combat log event
+---@param relativeTime number Time relative to the combat log event
 ---@param encounterID integer Boss dungeon encounter ID
 ---@param spellID integer Combat log event spell ID
 ---@param spellCount integer
@@ -869,7 +869,7 @@ end
 ---@param difficulty DifficultyType
 ---@return number|nil
 function BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
-	time,
+	relativeTime,
 	encounterID,
 	spellID,
 	spellCount,
@@ -880,7 +880,7 @@ function BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
 	if absoluteSpellCastStartTable then
 		if absoluteSpellCastStartTable[spellID] and absoluteSpellCastStartTable[spellID][spellCount] then
 			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
-			return time
+			return relativeTime
 				+ BossUtilities.GetAdjustedStartTime(
 					encounterID,
 					absoluteSpellCastStartTable[spellID][spellCount],
@@ -1006,23 +1006,23 @@ function BossUtilities.FindNearestCombatLogEvent(absoluteTime, encounterID, even
 	return nil
 end
 
-do
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param difficulty DifficultyType
-	---@param time number Time from beginning of boss encounter.
-	---@param ability BossAbility
-	---@param castTimeTable table<integer, SpellCastStartTableEntry>
-	---@param currentEventType CombatLogEventType
-	---@return integer|nil spellCount
-	---@return number leftoverTime
-	local function FindNearestSpellCountAllowingBefore(
-		encounterID,
-		difficulty,
-		time,
-		ability,
-		castTimeTable,
-		currentEventType
-	)
+-- Finds the nearest combat log event corresponding to the absolute time in the encounter and the spellID. If no
+-- matching combat log events occur before absoluteTime, it will fall back to choosing the closest one after.
+---@param absoluteTime number Time relative to the combat log event.
+---@param encounterID integer Boss dungeon encounter ID.
+---@param spellID integer Combat log event spell ID.
+---@param eventType CombatLogEventType Combat log event type.
+---@param difficulty DifficultyType Encounter difficulty.
+---@return integer|nil spellCount
+---@return number|nil leftoverTime
+function BossUtilities.FindNearestSpellCount(absoluteTime, encounterID, spellID, eventType, difficulty)
+	local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
+	if absoluteSpellCastStartTable and absoluteSpellCastStartTable[spellID] then
+		local castTimeTable = absoluteSpellCastStartTable[spellID]
+		local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
+		if not ability then
+			return nil
+		end
 		local minTime, minTimeBefore = hugeNumber, hugeNumber
 		local spellCountForMinTime, spellCountForMinTimeBefore = nil, nil
 
@@ -1033,18 +1033,18 @@ do
 					encounterID,
 					spellCastStartTableEntry,
 					difficulty,
-					currentEventType,
+					eventType,
 					ability
 				)
 			end
-			if currentTime <= time then
-				local difference = time - currentTime
+			if currentTime <= absoluteTime then
+				local difference = absoluteTime - currentTime
 				if difference < minTime then
 					minTime = difference
 					spellCountForMinTime = spellCount
 				end
 			else
-				local difference = currentTime - time
+				local difference = currentTime - absoluteTime
 				if difference < minTimeBefore then
 					minTimeBefore = difference
 					spellCountForMinTimeBefore = spellCount
@@ -1057,108 +1057,7 @@ do
 		end
 		return spellCountForMinTime, minTime
 	end
-
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param difficulty DifficultyType
-	---@param time number Time from beginning of boss encounter.
-	---@param ability BossAbility
-	---@param castTimeTable table<integer, SpellCastStartTableEntry>
-	---@param currentEventType CombatLogEventType
-	---@return integer|nil spellCount
-	---@return number leftoverTime
-	local function FindNearestSpellCountNoBefore(
-		encounterID,
-		difficulty,
-		time,
-		ability,
-		castTimeTable,
-		currentEventType
-	)
-		local minTime = hugeNumber
-		local spellCountForMinTime = nil
-
-		for spellCount, spellCastStartTableEntry in pairs(castTimeTable) do
-			local currentTime = spellCastStartTableEntry.castStart
-			if ability then
-				currentTime = BossUtilities.GetAdjustedStartTime(
-					encounterID,
-					spellCastStartTableEntry,
-					difficulty,
-					currentEventType,
-					ability
-				)
-			end
-			if currentTime <= time then
-				local difference = time - currentTime
-				if difference < minTime then
-					minTime = difference
-					spellCountForMinTime = spellCount
-				end
-			end
-		end
-		return spellCountForMinTime, minTime
-	end
-
-	---@param relativeTime number Time relative to the combat log event.
-	---@param encounterID integer Boss dungeon encounter ID
-	---@param currentEventType CombatLogEventType Current combat log event type
-	---@param currentSpellID integer Current combat log event spell ID
-	---@param currentSpellCount integer Current combat log event spell count
-	---@param newSpellID integer New combat log event spell ID
-	---@param allowBefore boolean? If specified, spell will be chosen before the time if none can be found without doing so.
-	---@param difficulty DifficultyType
-	---@return integer|nil spellCount
-	---@return number|nil leftoverTime
-	function BossUtilities.FindNearestSpellCount(
-		relativeTime,
-		encounterID,
-		currentEventType,
-		currentSpellID,
-		currentSpellCount,
-		newSpellID,
-		allowBefore,
-		difficulty
-	)
-		local absoluteTime = BossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
-			relativeTime,
-			encounterID,
-			currentSpellID,
-			currentSpellCount,
-			currentEventType,
-			difficulty
-		)
-		if not absoluteTime then
-			return nil
-		end
-		local absoluteSpellCastStartTable = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
-		if absoluteSpellCastStartTable and absoluteSpellCastStartTable[newSpellID] then
-			local castTimeTable = absoluteSpellCastStartTable[newSpellID]
-			local ability = BossUtilities.FindBossAbility(encounterID, newSpellID, difficulty)
-			if not ability then
-				return nil
-			end
-			if allowBefore then
-				return FindNearestSpellCountAllowingBefore(
-					encounterID,
-					difficulty,
-					absoluteTime,
-					ability,
-					castTimeTable,
-					currentEventType
-				)
-			else
-				return FindNearestSpellCountNoBefore(
-					encounterID,
-					difficulty,
-					absoluteTime,
-					ability,
-					castTimeTable,
-					currentEventType
-				)
-			end
-		end
-		return nil
-	end
+	return nil
 end
 
 ---@param absoluteTime number
