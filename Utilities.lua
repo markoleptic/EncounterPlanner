@@ -157,7 +157,8 @@ do
 
 	for specID, _ in pairs(specIDToType) do
 		local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
-		specIDToIconAndName[specID] = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", icon, name)
+		local inlineIcon = format("%s %s", constants.kFormatStringGenericInlineIconWithZoom, icon)
+		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
 	end
 
@@ -481,6 +482,8 @@ do
 		end
 	end
 
+	local kFormatStringGenericInlineIconWithZoom = constants.kFormatStringGenericInlineIconWithZoom
+
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
@@ -508,7 +511,8 @@ do
 					end
 					local name = GetSpellName(spell["spellID"])
 					if name then
-						local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", spell["icon"], name)
+						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, spell["icon"])
+						local iconText = format("%s %s", inlineIcon, name)
 						local spellID = spell["commonSpellID"] or spell["spellID"]
 						tinsert(
 							classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
@@ -541,7 +545,8 @@ do
 			local dropdownItems = cache["racial"]
 			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
 				local name = GetSpellName(racialInfo["spellID"])
-				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", racialInfo["icon"], name)
+				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, racialInfo["icon"])
+				local iconText = format("%s %s", inlineIcon, name)
 				tinsert(dropdownItems, {
 					itemValue = racialInfo["spellID"],
 					text = iconText,
@@ -563,7 +568,8 @@ do
 			local dropdownItems = cache["trinket"]
 			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
 				local name = GetSpellName(trinketInfo["spellID"])
-				local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", trinketInfo["icon"], name)
+				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, trinketInfo["icon"])
+				local iconText = format("%s %s", inlineIcon, name)
 				tinsert(dropdownItems, {
 					itemValue = trinketInfo["spellID"],
 					text = iconText,
@@ -703,9 +709,7 @@ do
 end
 
 do
-	local spellIconRegex = "|T.-|t%s(.+)"
-	local kUnknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
-	local kCustomGroupIndent = 10
+	local kRegexIconText = constants.kRegexIconText
 
 	---@param a DropdownItemData|{order:integer}
 	---@param b DropdownItemData|{order:integer}
@@ -737,7 +741,150 @@ do
 			end
 		end
 
-		return a.text:match(spellIconRegex) < b.text:match(spellIconRegex)
+		return a.text:match(kRegexIconText) < b.text:match(kRegexIconText)
+	end
+
+	local kFormatStringGenericInlineIconWithText = constants.kFormatStringGenericInlineIconWithText
+
+	do
+		local instanceAndBossDropdownItems = nil
+
+		-- Creates dropdown item data for instances and bosses
+		---@return table<integer, DropdownItemData>
+		function Utilities.GetOrCreateBossDropdownItems()
+			if not instanceAndBossDropdownItems then
+				instanceAndBossDropdownItems = {}
+				for dungeonInstance in bossUtilities.IterateDungeonInstances() do
+					local instanceIconText =
+						format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
+					local instanceDropdownData
+					if dungeonInstance.mapChallengeModeID then
+						instanceDropdownData = {
+							itemValue = {
+								dungeonInstanceID = dungeonInstance.instanceID,
+								mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+							},
+							text = instanceIconText,
+							dropdownItemMenuData = {},
+						}
+					else
+						instanceDropdownData = {
+							itemValue = dungeonInstance.instanceID,
+							text = instanceIconText,
+							dropdownItemMenuData = {},
+						}
+					end
+					for _, boss in ipairs(dungeonInstance.bosses) do
+						local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
+						tinsert(
+							instanceDropdownData.dropdownItemMenuData,
+							{ itemValue = boss.dungeonEncounterID, text = iconText }
+						)
+					end
+					tinsert(instanceAndBossDropdownItems, instanceDropdownData)
+				end
+				sort(instanceAndBossDropdownItems, SortInstances)
+			end
+			return instanceAndBossDropdownItems
+		end
+	end
+
+	local kFormatStringDifficultyIcon = constants.kFormatStringDifficultyIcon
+	local kEncounterJournalIcon = constants.kEncounterJournalIcon
+
+	do
+		local kOffsetX = -6
+		local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
+		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
+		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kFormatStringPlanName = constants.kFormatStringGenericInlineIconWithZoom .. "%s%s"
+
+		---@param planName string
+		---@param bossIcon string|integer
+		---@param difficulty DifficultyType
+		---@return string
+		function Utilities.FormatPlanText(planName, bossIcon, difficulty)
+			local difficultyIcon
+			if difficulty == DifficultyType.Heroic then
+				difficultyIcon = kHeroicIcon
+			else
+				difficultyIcon = kMythicIcon
+			end
+			return format(kFormatStringPlanName, bossIcon, difficultyIcon, planName)
+		end
+	end
+
+	do
+		local kOffsetX = 0
+		local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
+		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
+		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kHeroicIconText = format("%s %s", kHeroicIcon, L["Heroic"])
+		local kMythicIconText = format("%s %s", kMythicIcon, L["Mythic"])
+
+		local instanceAndBossDropdownItemsWithDifficulty
+		-- Creates dropdown item data for instances and bosses
+		---@return table<integer, DropdownItemData>
+		function Utilities.GetOrCreateBossDropdownItemsWithDifficulty()
+			if not instanceAndBossDropdownItemsWithDifficulty then
+				instanceAndBossDropdownItemsWithDifficulty = {}
+				for dungeonInstance in bossUtilities.IterateDungeonInstances() do
+					local instanceIconText =
+						format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
+					local instanceDropdownData
+					if dungeonInstance.mapChallengeModeID then
+						instanceDropdownData = {
+							itemValue = {
+								dungeonInstanceID = dungeonInstance.instanceID,
+								mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+							},
+							text = instanceIconText,
+							dropdownItemMenuData = {},
+						}
+					else
+						instanceDropdownData = {
+							itemValue = dungeonInstance.instanceID,
+							text = instanceIconText,
+							dropdownItemMenuData = {},
+						}
+					end
+
+					if dungeonInstance.hasHeroic then
+						instanceDropdownData.dropdownItemMenuData = {
+							{
+								itemValue = DifficultyType.Heroic,
+								text = kHeroicIconText,
+								dropdownItemMenuData = {},
+							},
+							{
+								itemValue = DifficultyType.Mythic,
+								text = kMythicIconText,
+								dropdownItemMenuData = {},
+							},
+						}
+						for _, boss in ipairs(dungeonInstance.bosses) do
+							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
+							local data = { itemValue = boss.dungeonEncounterID, text = iconText }
+							tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
+							tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
+						end
+					else
+						for _, boss in ipairs(dungeonInstance.bosses) do
+							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
+							tinsert(
+								instanceDropdownData.dropdownItemMenuData,
+								{ itemValue = boss.dungeonEncounterID, text = iconText }
+							)
+						end
+					end
+					tinsert(instanceAndBossDropdownItemsWithDifficulty, instanceDropdownData)
+				end
+				sort(instanceAndBossDropdownItemsWithDifficulty, SortInstances)
+			end
+			return instanceAndBossDropdownItemsWithDifficulty
+		end
 	end
 
 	---@return table<integer, DropdownItemData>
@@ -750,9 +897,10 @@ do
 			local instanceToUseForIcon = Private.dungeonInstances[customDungeonInstanceGroup.instanceIDToUseForIcon]
 			local instanceIconText
 			if instanceToUseForIcon then
-				instanceIconText = format("|T%s:16|t %s", instanceToUseForIcon.icon, instanceName)
+				instanceIconText =
+					format(kFormatStringGenericInlineIconWithText, instanceToUseForIcon.icon, instanceName)
 			else
-				instanceIconText = format("|T%s:16|t %s", kUnknownIcon, instanceName)
+				instanceIconText = format(kFormatStringGenericInlineIconWithText, constants.kUnknownIcon, instanceName)
 			end
 
 			tinsert(
@@ -769,9 +917,11 @@ do
 			customInstanceDropdownItemChildren[instanceName] = {}
 		end
 
+		local kCustomGroupIndent = 10
 		local instanceDropdownItems = {} ---@type table<integer, DropdownItemData>
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
-			local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
+			local instanceIconText =
+				format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
 			local instanceDropdownData
 			if dungeonInstance.mapChallengeModeID then
 				instanceDropdownData = {
@@ -811,109 +961,6 @@ do
 		end
 
 		return instanceDropdownItems
-	end
-
-	local instanceAndBossDropdownItems = nil
-
-	-- Creates dropdown item data for instances and bosses
-	---@return table<integer, DropdownItemData>
-	function Utilities.GetOrCreateBossDropdownItems()
-		if not instanceAndBossDropdownItems then
-			instanceAndBossDropdownItems = {}
-			for dungeonInstance in bossUtilities.IterateDungeonInstances() do
-				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-				local instanceDropdownData
-				if dungeonInstance.mapChallengeModeID then
-					instanceDropdownData = {
-						itemValue = {
-							dungeonInstanceID = dungeonInstance.instanceID,
-							mapChallengeModeID = dungeonInstance.mapChallengeModeID,
-						},
-						text = instanceIconText,
-						dropdownItemMenuData = {},
-					}
-				else
-					instanceDropdownData =
-						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-				end
-				for _, boss in ipairs(dungeonInstance.bosses) do
-					local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
-					tinsert(
-						instanceDropdownData.dropdownItemMenuData,
-						{ itemValue = boss.dungeonEncounterID, text = iconText }
-					)
-				end
-				tinsert(instanceAndBossDropdownItems, instanceDropdownData)
-			end
-			sort(instanceAndBossDropdownItems, SortInstances)
-		end
-		return instanceAndBossDropdownItems
-	end
-
-	local kFormatDifficultyString = "|T%s:16:16:0:0:64:64:%d:%d:%d:%d|t %s"
-	local kEncounterJournalIcon = [[Interface/EncounterJournal/UI-EJ-Icons]]
-	local instanceAndBossDropdownItemsWithDifficulty
-
-	-- Creates dropdown item data for instances and bosses
-	---@return table<integer, DropdownItemData>
-	function Utilities.GetOrCreateBossDropdownItemsWithDifficulty()
-		if not instanceAndBossDropdownItemsWithDifficulty then
-			local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
-			local heroicIconText = format(kFormatDifficultyString, kEncounterJournalIcon, l, r, t, b, L["Heroic"])
-			l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
-			local mythicIconText = format(kFormatDifficultyString, kEncounterJournalIcon, l, r, t, b, L["Mythic"])
-
-			instanceAndBossDropdownItemsWithDifficulty = {}
-			for dungeonInstance in bossUtilities.IterateDungeonInstances() do
-				local instanceIconText = format("|T%s:16|t %s", dungeonInstance.icon, dungeonInstance.name)
-				local instanceDropdownData
-				if dungeonInstance.mapChallengeModeID then
-					instanceDropdownData = {
-						itemValue = {
-							dungeonInstanceID = dungeonInstance.instanceID,
-							mapChallengeModeID = dungeonInstance.mapChallengeModeID,
-						},
-						text = instanceIconText,
-						dropdownItemMenuData = {},
-					}
-				else
-					instanceDropdownData =
-						{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
-				end
-
-				if dungeonInstance.hasHeroic then
-					instanceDropdownData.dropdownItemMenuData = {
-						{
-							itemValue = DifficultyType.Heroic,
-							text = heroicIconText,
-							dropdownItemMenuData = {},
-						},
-						{
-							itemValue = DifficultyType.Mythic,
-							text = mythicIconText,
-							dropdownItemMenuData = {},
-						},
-					}
-					for _, boss in ipairs(dungeonInstance.bosses) do
-						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
-						local data = { itemValue = boss.dungeonEncounterID, text = iconText }
-						tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
-						tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
-					end
-				else
-					for _, boss in ipairs(dungeonInstance.bosses) do
-						local iconText = format("|T%s:16|t %s", boss.icon, boss.name)
-						tinsert(
-							instanceDropdownData.dropdownItemMenuData,
-							{ itemValue = boss.dungeonEncounterID, text = iconText }
-						)
-					end
-				end
-				tinsert(instanceAndBossDropdownItemsWithDifficulty, instanceDropdownData)
-			end
-			sort(instanceAndBossDropdownItemsWithDifficulty, SortInstances)
-		end
-		return instanceAndBossDropdownItemsWithDifficulty
 	end
 
 	local instanceDropdownItems = nil
@@ -976,7 +1023,8 @@ end
 ---@param text string
 ---@return DropdownItemData
 function Utilities.CreateAbilityDropdownItemData(abilityID, icon, text)
-	local iconText = format("|T%s:16:16:0:0:64:64:5:59:5:59|t %s", icon, text)
+	local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
+	local iconText = format("%s %s", inlineIcon, text)
 	return { itemValue = abilityID, text = iconText }
 end
 
@@ -1819,32 +1867,35 @@ function Utilities.ConvertAssigneeToLegibleString(assignee, roster)
 	return legibleString
 end
 
--- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
----@param data table<integer, DropdownItemData> Dropdown data to sort
-function Utilities.SortDropdownDataByItemValue(data)
-	-- Sort the top-level table
-	sort(data, function(a, b)
-		local itemValueA = a.itemValue
-		local itemValueB = b.itemValue
-		if type(itemValueA) == "number" or itemValueA:find("spec:") then
-			local spellName = a.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueA = spellName
+do
+	local kRegexIconText = constants.kRegexIconText
+	-- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
+	---@param data table<integer, DropdownItemData> Dropdown data to sort
+	function Utilities.SortDropdownDataByItemValue(data)
+		-- Sort the top-level table
+		sort(data, function(a, b)
+			local itemValueA = a.itemValue
+			local itemValueB = b.itemValue
+			if type(itemValueA) == "number" or itemValueA:find("spec:") then
+				local spellName = a.text:match(kRegexIconText)
+				if spellName then
+					itemValueA = spellName
+				end
 			end
-		end
-		if type(itemValueB) == "number" or itemValueB:find("spec:") then
-			local spellName = b.text:match("|T.-|t%s(.+)")
-			if spellName then
-				itemValueB = spellName
+			if type(itemValueB) == "number" or itemValueB:find("spec:") then
+				local spellName = b.text:match(kRegexIconText)
+				if spellName then
+					itemValueB = spellName
+				end
 			end
-		end
-		return itemValueA < itemValueB
-	end)
+			return itemValueA < itemValueB
+		end)
 
-	-- Recursively sort any nested dropdownItemMenuData tables
-	for _, item in pairs(data) do
-		if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
-			Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
+		-- Recursively sort any nested dropdownItemMenuData tables
+		for _, item in pairs(data) do
+			if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+				Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
+			end
 		end
 	end
 end
@@ -2863,7 +2914,7 @@ do
 end
 
 do
-	local spellIconRegex = "|T.-|t%s(.+)"
+	local kRegexIconText = constants.kRegexIconText
 	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
 
 	---@param dropdownItemData DropdownItemData
@@ -2928,7 +2979,7 @@ do
 			if aOrder ~= bOrder then
 				return aOrder < bOrder
 			end
-			return a:GetText():match(spellIconRegex) < b:GetText():match(spellIconRegex)
+			return a:GetText():match(kRegexIconText) < b:GetText():match(kRegexIconText)
 		end
 	end
 end

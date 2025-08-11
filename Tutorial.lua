@@ -5,6 +5,8 @@ local _, Namespace = ...
 local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
+---@class Constants
+local constants = Private.constants
 
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
@@ -283,7 +285,7 @@ local function CountSpells(requiredCount, unique, requiredUniqueCount, exactUniq
 	local uniqueCount = 0
 	local uniqueSet = {}
 	for _, assignment in ipairs(GetCurrentAssignments()) do
-		if assignment.spellID > Private.constants.kTextAssignmentSpellID then
+		if assignment.spellID > constants.kTextAssignmentSpellID then
 			if unique and not uniqueSet[assignment.spellID] then
 				uniqueCount = uniqueCount + 1
 				uniqueSet[assignment.spellID] = true
@@ -481,7 +483,7 @@ local function TwoIntermissionAssignmentsExist()
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
 				if assignment.combatLogEventType == "SAR" and assignment.combatLogEventSpellID == kHappyHourSpellID then
-					if assignment.spellID == Private.constants.kTextAssignmentSpellID then
+					if assignment.spellID == constants.kTextAssignmentSpellID then
 						count = count + 1
 						if count >= 2 then
 							return true
@@ -533,14 +535,14 @@ local function FindOrCreateIntermissionAssignment(
 					if validEventType then
 						if assignmentNumber == 1 then
 							if setSpellID then
-								assignment.spellID = Private.constants.kTextAssignmentSpellID
+								assignment.spellID = constants.kTextAssignmentSpellID
 								assignment.text = L["Use {6262} at {circle}"]
 							end
 							return assignment
 						elseif assignmentNumber == 2 then
 							if encounteredFirstAssignment then
 								if setSpellID then
-									assignment.spellID = Private.constants.kTextAssignmentSpellID
+									assignment.spellID = constants.kTextAssignmentSpellID
 									assignment.text = L["Use {6262} at {circle}"]
 								end
 								return assignment
@@ -560,7 +562,7 @@ local function FindOrCreateIntermissionAssignment(
 	assignment.spellCount = spellCount
 	if assignmentNumber == 1 then
 		if setSpellID then
-			assignment.spellID = Private.constants.kTextAssignmentSpellID
+			assignment.spellID = constants.kTextAssignmentSpellID
 			assignment.text = L["Use {6262} at {circle}"]
 		end
 		if setTime then
@@ -568,7 +570,7 @@ local function FindOrCreateIntermissionAssignment(
 		end
 	elseif assignmentNumber == 2 then
 		if setSpellID then
-			assignment.spellID = Private.constants.kTextAssignmentSpellID
+			assignment.spellID = constants.kTextAssignmentSpellID
 			assignment.text = L["Use {6262} at {circle}"]
 		end
 		if setTime then
@@ -1192,7 +1194,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						if category == "assignmentEditorDataChanged" then
 							if CountSpells(1) then
 								for _, assignment in ipairs(GetCurrentAssignments()) do
-									if assignment.spellID > Private.constants.kTextAssignmentSpellID then
+									if assignment.spellID > constants.kTextAssignmentSpellID then
 										AddOn.db.global.tutorial.firstSpell = assignment.spellID
 										break
 									end
@@ -1431,7 +1433,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						if category == "assignmentEditorDataChanged" then
 							if CountSpells(2, true, 2) then
 								for _, assignment in ipairs(GetCurrentAssignments()) do
-									if assignment.spellID > Private.constants.kTextAssignmentSpellID then
+									if assignment.spellID > constants.kTextAssignmentSpellID then
 										if assignment.spellID ~= AddOn.db.global.tutorial.firstSpell then
 											AddOn.db.global.tutorial.secondSpell = assignment.spellID
 											break
@@ -1822,7 +1824,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["Drag the"],
-				"|T" .. [[Interface/ChatFrame/UI-ChatIM-SizeGrabber-Up]] .. ":0:0:0:-4|t",
+				"|T" .. constants.resizer.kIcon .. ":0:0:0:-4|t",
 				L["button to resize the main window"]
 			),
 			enableNextButton = false,

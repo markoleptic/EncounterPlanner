@@ -1007,6 +1007,7 @@ end
 ---@param value any
 local function HandlePlanDropdownValueChanged(dropdown, _, value)
 	if AddOn.db.profile.plans[value] then
+		dropdown:SetText(value)
 		ClosePlanDependentWidgets()
 		AddOn.db.profile.lastOpenPlan = value
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
@@ -1032,6 +1033,7 @@ local function HandlePlanDropdownValueChanged(dropdown, _, value)
 				---@cast boss Boss
 				Private.CreateNewPlanDialog(boss.dungeonEncounterID)
 				dropdown:SetValue(AddOn.db.profile.lastOpenPlan)
+				dropdown:SetText(AddOn.db.profile.lastOpenPlan)
 				if Private.activeTutorialCallbackName then
 					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
 				end
@@ -1049,7 +1051,7 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 	if Private.activeTutorialCallbackName then
 		return
 	end
-	local newPlanName = text:match("|T.-|t%s(.+)") or text
+	local newPlanName = text
 	local currentPlanName = AddOn.db.profile.lastOpenPlan
 	local revert = false
 
@@ -1062,15 +1064,9 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 	end
 
 	local currentPlan = AddOn.db.profile.plans[currentPlanName]
+	local boss = GetBoss(currentPlan.dungeonEncounterID)
 	if revert then
-		local previousText
-		local boss = GetBoss(currentPlan.dungeonEncounterID)
-		if boss then
-			previousText = format("|T%s:16|t %s", boss.icon, currentPlanName)
-		else
-			previousText = currentPlanName
-		end
-		lineEdit:SetText(previousText)
+		lineEdit:SetText(currentPlanName)
 	else
 		AddOn.db.profile.plans[newPlanName] = currentPlan
 		AddOn.db.profile.plans[currentPlanName] = nil
@@ -1078,15 +1074,10 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 		AddOn.db.profile.lastOpenPlan = newPlanName
 		local planDropdown = Private.mainFrame.planDropdown
 		if planDropdown then
-			local newText
-			local boss = GetBoss(currentPlan.dungeonEncounterID)
-			if boss then
-				newText = format("|T%s:16|t %s", boss.icon, newPlanName)
-			else
-				newText = newPlanName
-			end
-			planDropdown:EditItemValueAndText(currentPlanName, newPlanName, newText)
+			local newDropdownItemText = utilities.FormatPlanText(newPlanName, boss.icon, currentPlan.difficulty)
+			planDropdown:EditItemValueAndText(currentPlanName, newPlanName, newDropdownItemText)
 			planDropdown:Sort(AddOn.db.profile.plans[newPlanName].instanceID, nil, utilities.CreatePlanSorter(boss))
+			planDropdown:SetText(newPlanName)
 		end
 	end
 end
@@ -1974,7 +1965,7 @@ function Private:CreateInterface()
 	difficultyLabel:SetFontSize(kTopContainerWidgetFontSize)
 	difficultyLabel:SetHeight(16)
 	difficultyLabel:SetWidth(kTopContainerDropdownWidth)
-	difficultyLabel:SetIcon([[Interface/EncounterJournal/UI-EJ-Icons]], 0, 2, 0, 0, 2)
+	difficultyLabel:SetIcon(constants.kEncounterJournalIcon, 0, 2, 0, 0, 2)
 	instanceBossContainer:AddChildren(instanceLabel, bossLabel, difficultyLabel)
 
 	local planLabel = AceGUI:Create("EPLabel")

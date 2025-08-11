@@ -39,6 +39,9 @@ local titleBarBackdrop = {
 	edgeSize = 2,
 	insets = { left = 0, right = 0, top = 0, bottom = 0 },
 }
+local kResizerIcon = Private.constants.resizer.kIcon
+local kResizerIconPushed = Private.constants.resizer.kIconPushed
+local kResizerIconHighlight = Private.constants.resizer.kIconHighlight
 
 ---@param self EPEditBox
 local function OnAcquire(self)
@@ -271,9 +274,9 @@ local function Constructor()
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(resizerSize, resizerSize)
-	resizer:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-	resizer:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-	resizer:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+	resizer:SetNormalTexture(kResizerIcon)
+	resizer:SetHighlightTexture(kResizerIconHighlight)
+	resizer:SetPushedTexture(kResizerIconPushed)
 
 	---@class EPEditBox : AceGUIWidget
 	---@field closeButton EPButton

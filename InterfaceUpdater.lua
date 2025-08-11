@@ -101,6 +101,7 @@ do
 
 			bossLabel:SetText(boss.name, instanceAndBossPadding, dungeonEncounterID)
 			bossLabel:SetIcon(boss.icon, 0, 2, 0, 0, 2)
+			bossLabel.icon:SetTexCoord(0.15, 0.85, 0.15, 0.85)
 			bossLabel:SetFrameWidthFromText()
 
 			if difficulty == DifficultyType.Heroic then
@@ -663,6 +664,7 @@ do
 	end
 
 	local CreateDropdownItemDataPlanSorter = utilities.CreateDropdownItemDataPlanSorter
+	local FormatPlanText = utilities.FormatPlanText
 
 	-- Clears and repopulates the plan dropdown, selecting the last open plan and setting reminder enabled check box value.
 	function InterfaceUpdater.RepopulatePlanWidgets()
@@ -698,12 +700,7 @@ do
 							same = dropdownData.itemValue == instanceID
 						end
 						if same then
-							local text
-							if boss then
-								text = format("|T%s:16|t %s", boss.icon, planName)
-							else
-								text = planName
-							end
+							local text = FormatPlanText(planName, boss.icon, plan.difficulty)
 							tinsert(dropdownData.dropdownItemMenuData, {
 								itemValue = planName,
 								text = text,
@@ -723,6 +720,7 @@ do
 				end
 				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")
 				planDropdown:SetValue(lastOpenPlan)
+				planDropdown:SetText(lastOpenPlan)
 			end
 			InterfaceUpdater.UpdatePlanCheckBoxes(AddOn.db.profile.plans[lastOpenPlan])
 		end
@@ -742,13 +740,8 @@ do
 				if #items == 0 then
 					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
 					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
-					local text
 					local boss = GetBoss(plan.dungeonEncounterID)
-					if boss then
-						text = format("|T%s:16|t %s", boss.icon, plan.name)
-					else
-						text = plan.name
-					end
+					local text = FormatPlanText(plan.name, boss.icon, plan.difficulty)
 					local dropdownItemData = {
 						itemValue = plan.name,
 						text = text,
@@ -772,6 +765,7 @@ do
 				end
 				if select then
 					planDropdown:SetValue(plan.name)
+					planDropdown:SetText(plan.name)
 				end
 			end
 			InterfaceUpdater.UpdatePlanCheckBoxes(plan)

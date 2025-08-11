@@ -61,6 +61,18 @@ Private.constants = {
 		kSelection = {},
 		kAssignmentHover = {},
 	},
+	kRegexIconText = ".*|t%s*(.+)$",
+	-- Requires 6 arguments
+	kFormatStringDifficultyIcon = "|T%s:16:16:%d:0:64:64:%d:%d:%d:%d|t",
+	kEncounterJournalIcon = [[Interface\EncounterJournal\UI-EJ-Icons]],
+	kUnknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]],
+	resizer = {
+		kIcon = [[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Up]],
+		kIconHighlight = [[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Highlight]],
+		kIconPushed = [[Interface\ChatFrame\UI-ChatIM-SizeGrabber-Down]],
+	},
+	kFormatStringGenericInlineIconWithText = "|T%s:16|t %s",
+	kFormatStringGenericInlineIconWithZoom = "|T%s:16:16:0:0:64:64:5:59:5:59|t",
 }
 
 local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live
