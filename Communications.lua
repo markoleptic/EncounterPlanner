@@ -519,14 +519,17 @@ do
 	end
 
 	---@param bossDungeonEncounterID integer
-	function Private.SendTextToGroup(bossDungeonEncounterID)
+	---@param difficultyType DifficultyType
+	function Private.SendTextToGroup(bossDungeonEncounterID, difficultyType)
 		if UnitIsGroupLeader("player") then
 			local plans = AddOn.db.profile.plans
 			local primaryPlan ---@type Plan|nil
 			for _, plan in pairs(plans) do
-				if plan.dungeonEncounterID == bossDungeonEncounterID and plan.isPrimaryPlan then
-					primaryPlan = plan
-					break
+				if plan.dungeonEncounterID == bossDungeonEncounterID and plan.difficulty == difficultyType then
+					if plan.isPrimaryPlan == true then
+						primaryPlan = plan
+						break
+					end
 				end
 			end
 			if primaryPlan then

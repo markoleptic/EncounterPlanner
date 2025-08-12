@@ -728,15 +728,15 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 				difficultyType = DifficultyType.Mythic
 			end
 			if UnitIsGroupLeader("player") then
-				Private.SendTextToGroup(encounterID)
+				Private.SendTextToGroup(encounterID, difficultyType)
 			end
 
 			local startTime = GetTime()
 			local plans = AddOn.db.profile.plans
 			local activePlans = {}
 			for _, plan in pairs(plans) do
-				if plan.dungeonEncounterID == encounterID and plan.remindersEnabled then
-					if plan.difficulty == difficultyType then
+				if plan.dungeonEncounterID == encounterID and plan.difficulty == difficultyType then
+					if plan.remindersEnabled == true then
 						tinsert(activePlans, plan)
 					end
 				end
