@@ -2706,10 +2706,10 @@ do
 			IsValidCombatLogEventType(dungeonEncounterID, newSpellID, currentEventType, difficulty)
 		if valid or (not valid and newEventType) then
 			local currentSpellID, currentSpellCount = assignment.combatLogEventSpellID, assignment.spellCount
+
+			local assignNewSpellIDAndEventType = false
 			if IsValidSpellCount(dungeonEncounterID, newSpellID, currentSpellCount, nil, difficulty) then
-				if newEventType then
-					assignment.combatLogEventType = newEventType
-				end
+				assignNewSpellIDAndEventType = true
 			else
 				local relativeTime = assignment.time
 				local absoluteTime = ConvertCombatLogEventTimeToAbsoluteTime(
@@ -2723,11 +2723,15 @@ do
 				local newSpellCount =
 					FindNearestSpellCount(absoluteTime, dungeonEncounterID, newSpellID, newEventType, difficulty)
 				if newSpellCount then
-					assignment.combatLogEventSpellID = newSpellID
 					assignment.spellCount = newSpellCount
-					if newEventType then
-						assignment.combatLogEventType = newEventType
-					end
+					assignNewSpellIDAndEventType = true
+				end
+			end
+
+			if assignNewSpellIDAndEventType then
+				assignment.combatLogEventSpellID = newSpellID
+				if newEventType then
+					assignment.combatLogEventType = newEventType
 				end
 			end
 		else
@@ -2774,6 +2778,7 @@ do
 						difficulty
 					)
 					if absoluteTime then
+						--- Ignore new time offset to keep things similar to before
 						local newCombatLogEventSpellID, newSpellCount =
 							FindNearestCombatLogEvent(absoluteTime, dungeonEncounterID, newEventType, difficulty)
 						if newCombatLogEventSpellID and newSpellCount then
