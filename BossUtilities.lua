@@ -569,7 +569,7 @@ function BossUtilities.IsValidCombatLogEventType(encounterID, spellID, combatLog
 				return false
 			end
 		else
-			return true
+			return false
 		end
 	end
 	return false
@@ -965,8 +965,8 @@ function BossUtilities.FindNearestCombatLogEvent(absoluteTime, encounterID, even
 		local spellIDForMinTimeAfter, spellCountForMinTimeAfter = nil, nil
 
 		for spellID, spellCountAndTime in pairs(castTimeTable) do
-			local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
 			if BossUtilities.IsValidCombatLogEventType(encounterID, spellID, eventType, difficulty) then
+				local ability = BossUtilities.FindBossAbility(encounterID, spellID, difficulty)
 				for spellCount, spellCastStartTableEntry in pairs(spellCountAndTime) do
 					local currentTime = spellCastStartTableEntry.castStart
 					if ability then
