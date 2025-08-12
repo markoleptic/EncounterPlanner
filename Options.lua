@@ -2782,7 +2782,7 @@ do
 						end
 					end,
 					function(key)
-						if type(key) == "boolean" then
+						if type(key) == "string" then
 							GetReminderPreferences().sound.countdownStartSound = key
 						end
 					end,
@@ -2820,7 +2820,7 @@ do
 						end
 					end,
 					function(key)
-						if type(key) == "boolean" then
+						if type(key) == "string" then
 							GetReminderPreferences().sound.countdownEndSound = key
 						end
 					end,
