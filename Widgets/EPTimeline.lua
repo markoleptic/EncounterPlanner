@@ -134,7 +134,7 @@ local lastExecutionTime = 0.0
 ---@field cooldownParent Texture
 ---@field cooldownBackground Texture
 ---@field cooldownTexture Texture
----@field abilityInstance BossAbilityInstance
+---@field abilityInstance BossAbilityInstance|nil
 ---@field selectionType BossAbilitySelectionType
 
 ---@class FakeAssignmentFrame : AssignmentFrame
@@ -301,8 +301,13 @@ end
 ---@return BossAbilityFrame|nil
 local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
 	for _, frame in ipairs(bossAbilityFrames) do
-		if frame.abilityInstance.bossAbilitySpellID == spellID and frame.abilityInstance.spellCount == spellCount then
-			return frame
+		if frame.abilityInstance then
+			if
+				frame.abilityInstance.bossAbilitySpellID == spellID
+				and frame.abilityInstance.spellCount == spellCount
+			then
+				return frame
+			end
 		end
 	end
 	return nil
@@ -625,6 +630,9 @@ end
 ---@param self EPTimeline
 ---@param frame BossAbilityFrame
 local function HandleBossAbilityBarEnter(self, frame)
+	if not frame.abilityInstance then
+		return
+	end
 	local spellID = frame.abilityInstance.bossAbilitySpellID
 	local spellCount = frame.abilityInstance.spellCount
 	if #selectedAssignmentIDsFromBossAbilityFrameEnter > 0 then
@@ -666,7 +674,9 @@ local function CreateBossAbilityBar(self, width, height, color)
 	end)
 	frame:SetScript("OnLeave", function(f)
 		---@cast f BossAbilityFrame
-		self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellCount, true)
+		if f.abilityInstance then
+			self:ClearSelectedBossAbility(f.abilityInstance.bossAbilitySpellID, f.abilityInstance.spellCount, true)
+		end
 		ClearSelectedAssignmentsFromBossAbilityFrameEnter(self)
 	end)
 
