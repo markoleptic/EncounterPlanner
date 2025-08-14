@@ -232,6 +232,7 @@ L["Glows the unit frame of the target at the end of the countdown. If the assign
 	true
 L["Group"] = true
 L["Group Number"] = true
+L["H"] = true
 L["has sent you the plan"] = true
 L["Healer"] = true
 L["Health"] = true
@@ -298,6 +299,7 @@ L["Left Click"] = true
 L["Left-Click|r to toggle showing the main window."] = true
 L["located in the lower left of the main window"] = true
 L["coincides with the end of reminder countdowns"] = true
+L["M"] = true
 L["may be hidden due to starting after the encounter ends. Consider extending the duration in"] = true
 L["Melee"] = true
 L["menu"] = true

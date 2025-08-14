@@ -150,6 +150,49 @@ do
 		---@cast dungeonEncounterIDToBossCache table<integer, Boss>
 		return dungeonEncounterIDToBossCache[encounterID]
 	end
+
+	---@param encounterIDsAndDifficultiesWithPlans table<integer, table<DifficultyType, boolean>>
+	---@param ignoreEncounterIDs table<integer, boolean>
+	---@return table<integer, table<DifficultyType, boolean>> missing
+	function BossUtilities.DetermineMissingEncounterIDsAcrossAllDifficulties(
+		encounterIDsAndDifficultiesWithPlans,
+		ignoreEncounterIDs
+	)
+		local missing = {}
+		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
+			if dungeonInstance.hasHeroic then
+				for _, boss in ipairs(dungeonInstance.bosses) do
+					local encounterID = boss.dungeonEncounterID
+					if not ignoreEncounterIDs[encounterID] then
+						if not encounterIDsAndDifficultiesWithPlans[encounterID] then
+							missing[encounterID] = { [DifficultyType.Heroic] = true, [DifficultyType.Mythic] = true }
+						elseif not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Heroic] then
+							missing[encounterID] = missing[encounterID] or {}
+							missing[encounterID][DifficultyType.Heroic] = true
+						elseif not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Mythic] then
+							missing[encounterID] = missing[encounterID] or {}
+							missing[encounterID][DifficultyType.Mythic] = true
+						end
+					end
+				end
+			else
+				for _, boss in ipairs(dungeonInstance.bosses) do
+					local encounterID = boss.dungeonEncounterID
+					if not ignoreEncounterIDs[encounterID] then
+						if
+							not encounterIDsAndDifficultiesWithPlans[encounterID]
+							or not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Mythic]
+						then
+							missing[encounterID] = {
+								[DifficultyType.Mythic] = true,
+							}
+						end
+					end
+				end
+			end
+		end
+		return missing
+	end
 end
 
 ---@param boss Boss

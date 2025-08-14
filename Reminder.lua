@@ -539,6 +539,9 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 	if not iconContainer and preferences.icons.enabled then
 		CreateIconContainer(preferences.icons)
 	end
+
+	local atLeastOneAssignmentActive = false
+
 	for _, plan in pairs(plans) do
 		local roster = plan.roster
 		local assignments = plan.assignments
@@ -568,10 +571,12 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 				---@cast assignment TimedAssignment
 				CreateTimer(assignment, roster, preferences, GetTime() - startTime)
 			end
+			atLeastOneAssignmentActive = true
 		end
 	end
 
 	updateTimer = NewTicker(updateTimerTickRate, ProcessNextOperation, updateTimerIterations)
+	return atLeastOneAssignmentActive
 end
 
 ---@param spellID integer
@@ -743,8 +748,13 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			end
 			if #activePlans > 0 then
 				hideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
-				SetupReminders(activePlans, reminderPreferences, startTime, GetBossAbilities(boss, difficultyType))
-				Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+				if
+					SetupReminders(activePlans, reminderPreferences, startTime, GetBossAbilities(boss, difficultyType))
+				then
+					Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+				else
+					ResetLocalVariables()
+				end
 			end
 		end
 		--[===[@non-debug@

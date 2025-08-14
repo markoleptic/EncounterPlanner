@@ -466,7 +466,12 @@ do -- Profile updating and refreshing
 	function AddOn.UpdateProfile(profile)
 		if profile then
 			local remappings = Private.spellDB.GetSpellRemappings()
-			for planName, plan in pairs(profile.plans) do
+
+			---@type table<integer, table<DifficultyType, boolean>>
+			local encounterIDsAndDifficultiesWithPlans = {}
+
+			local plans = profile.plans
+			for planName, plan in pairs(plans) do
 				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 				plan = Plan:New(plan, planName, plan.ID)
 
@@ -480,6 +485,7 @@ do -- Profile updating and refreshing
 					)
 				end
 				boss = GetBoss(plan.dungeonEncounterID)--[[@as Boss]]
+
 				if not boss.abilitiesHeroic and plan.difficulty == DifficultyType.Heroic then
 					ChangePlanBoss(
 						profile.plans,
@@ -488,7 +494,14 @@ do -- Profile updating and refreshing
 						DifficultyType.Mythic
 					)
 				end
+
 				local dungeonEncounterID = boss.dungeonEncounterID
+				if not encounterIDsAndDifficultiesWithPlans[dungeonEncounterID] then
+					encounterIDsAndDifficultiesWithPlans[dungeonEncounterID] = {}
+				end
+				if not encounterIDsAndDifficultiesWithPlans[dungeonEncounterID][plan.difficulty] then
+					encounterIDsAndDifficultiesWithPlans[dungeonEncounterID][plan.difficulty] = true
+				end
 
 				SetPhaseDurations(dungeonEncounterID, plan.customPhaseDurations, plan.difficulty)
 				plan.customPhaseCounts = SetPhaseCounts(
@@ -522,6 +535,38 @@ do -- Profile updating and refreshing
 							assignment.spellID = remappings[assignment.spellID]
 						end
 					end
+				end
+			end
+
+			local missing = bossUtilities.DetermineMissingEncounterIDsAcrossAllDifficulties(
+				encounterIDsAndDifficultiesWithPlans,
+				profile.createdDefaults
+			)
+			for encounterID, difficulties in pairs(missing) do
+				profile.createdDefaults[encounterID] = true
+				local boss = GetBoss(encounterID)
+				for difficulty, _ in pairs(difficulties) do
+					local planName = boss.name
+					if boss.abilitiesHeroic then
+						if difficulty == DifficultyType.Heroic then
+							planName = format("%s (%s)", planName, L["H"])
+						else
+							planName = format("%s (%s)", planName, L["M"])
+						end
+					end
+					utilities.CreatePlan(plans, planName, encounterID, difficulty)
+				end
+			end
+
+			local lastOpenPlan = profile.lastOpenPlan
+			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
+				local nextPlanName = next(plans)
+				if nextPlanName then
+					profile.lastOpenPlan = nextPlanName
+				else
+					local newPlan =
+						CreatePlan(plans, nil, constants.kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
+					profile.lastOpenPlan = nextPlanName
 				end
 			end
 
@@ -586,11 +631,6 @@ do -- Profile updating and refreshing
 		interfaceUpdater.RemoveMessageBoxes(false)
 		if Private.mainFrame then
 			local plans = profile.plans
-			local lastOpenPlan = profile.lastOpenPlan
-			if lastOpenPlan == "" or not plans[lastOpenPlan] or plans[lastOpenPlan].dungeonEncounterID == 0 then
-				local newPlan = CreatePlan(plans, nil, constants.kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
-				profile.lastOpenPlan = newPlan.name
-			end
 			local timeline = Private.mainFrame.timeline
 			if timeline then
 				timeline:SetPreferences(profile.preferences)

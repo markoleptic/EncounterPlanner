@@ -794,9 +794,11 @@ do
 
 	do
 		local kOffsetX = -6
-		local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
+		local difficultyTextCoordPadding = 6
+		local l, r, t, b =
+			Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, difficultyTextCoordPadding)
 		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
-		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
+		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, difficultyTextCoordPadding)
 		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
 		local kFormatStringPlanName = constants.kFormatStringGenericInlineIconWithZoom .. "%s%s"
 

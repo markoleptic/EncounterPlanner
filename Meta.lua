@@ -355,6 +355,7 @@
 ---@field cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride>
 ---@field activeText table<integer, string> External text send by the group leader on encounter start.
 ---@field preferences Preferences Settings.
+---@field createdDefaults table<integer, boolean> Encounter IDs for which default plans have already been created.
 ---@field version string
 
 ---@class TutorialData

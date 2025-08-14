@@ -1863,23 +1863,7 @@ function Private:CreateInterface()
 	local profile = self.addOn.db.profile --[[@as DefaultProfile]]
 	local plans = profile.plans
 	local lastOpenPlan = profile.lastOpenPlan
-	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
-
-	if lastOpenPlan and lastOpenPlan ~= "" and plans[lastOpenPlan] then
-		encounterID = plans[lastOpenPlan].dungeonEncounterID
-	else
-		local defaultPlanName = L["Default"]
-		utilities.CreatePlan(plans, defaultPlanName, encounterID, DifficultyType.Mythic)
-		profile.lastOpenPlan = defaultPlanName
-		if MRTLoadingOrLoaded or MRTLoaded then
-			if VMRT and VMRT.Note and VMRT.Note.Text1 then
-				local maybeNew = Private:ImportPlanFromNote(defaultPlanName, encounterID, VMRT.Note.Text1)
-				if maybeNew then
-					encounterID = maybeNew
-				end
-			end
-		end
-	end
+	encounterID = plans[lastOpenPlan].dungeonEncounterID
 
 	local mainFrame = AceGUI:Create("EPMainFrame")
 	mainFrame:SetLayout("EPVerticalLayout")
@@ -1903,6 +1887,7 @@ function Private:CreateInterface()
 	local planMenuButton = Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
 	planMenuButton:AddItems(Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", Handler.PlanMenuButtonClicked)
+	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
 	local bossMenuButton = Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)

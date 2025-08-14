@@ -479,6 +479,7 @@ local defaults = {
 		trustedCharacters = {},
 		cooldownAndChargeOverrides = {},
 		activeText = {},
+		createdDefaults = {},
 		preferences = {
 			lastOpenTab = Private.L["Cooldown Overrides"],
 			keyBindings = {
