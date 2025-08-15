@@ -750,7 +750,11 @@ do -- Phase Length Editor
 					if boss.treatAsSinglePhase then
 						maxPhaseDuration = kMaxBossDuration
 					end
-					newDuration = Clamp(newDuration, kMinBossPhaseDuration, maxPhaseDuration)
+					if phases[phaseIndex].minDuration then
+						newDuration = Clamp(newDuration, phases[phaseIndex].minDuration, maxPhaseDuration)
+					else
+						newDuration = Clamp(newDuration, kMinBossPhaseDuration, maxPhaseDuration)
+					end
 				end
 				if abs(newDuration - previousDuration) < 0.01 then
 					formatAndReturn = true
@@ -1345,9 +1349,15 @@ do -- Plan Menu Button Handlers
 				---@cast widget EPNewPlanDialog
 				local boss = GetBoss(currentBossDungeonEncounterID)
 				if boss then
-					local hasHeroicAbilities = boss.abilitiesHeroic ~= nil
-					widget.difficultyDropdown:SetEnabled(hasHeroicAbilities)
-					if not hasHeroicAbilities then
+					local hasMythic = boss.phases ~= nil
+					local hasHeroic = boss.phasesHeroic ~= nil
+					widget.difficultyDropdown:SetEnabled(hasMythic and hasHeroic)
+					if not hasMythic then
+						if widget.difficultyDropdown:GetValue() ~= DifficultyType.Heroic then
+							widget.difficultyDropdown:SetValue(DifficultyType.Heroic)
+						end
+					end
+					if not hasHeroic then
 						if widget.difficultyDropdown:GetValue() ~= DifficultyType.Mythic then
 							widget.difficultyDropdown:SetValue(DifficultyType.Mythic)
 						end
@@ -1408,15 +1418,20 @@ do -- Plan Menu Button Handlers
 			newPlanDialog.frame:SetParent(UIParent)
 			newPlanDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
 			newPlanDialog:SetBossDropdownItems(utilities.GetOrCreateBossDropdownItems(), bossDungeonEncounterID)
-			newPlanDialog.difficultyDropdown:SetValue(DifficultyType.Mythic)
 			newPlanDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 			newPlanDialog:Resize()
 			newPlanDialog:SetPoint("TOP", UIParent, "TOP", 0, -newPlanDialog.frame:GetBottom())
 
 			local boss = GetBoss(bossDungeonEncounterID)
 			if boss then
-				local hasHeroicAbilities = boss.abilitiesHeroic ~= nil
-				newPlanDialog.difficultyDropdown:SetEnabled(hasHeroicAbilities)
+				local hasMythic = boss.phases ~= nil
+				local hasHeroic = boss.abilitiesHeroic ~= nil
+				if hasMythic then
+					newPlanDialog.difficultyDropdown:SetValue(DifficultyType.Mythic)
+				elseif hasHeroic then
+					newPlanDialog.difficultyDropdown:SetValue(DifficultyType.Heroic)
+				end
+				newPlanDialog.difficultyDropdown:SetEnabled(hasMythic and hasHeroic)
 				newPlanDialog:SetPlanNameLineEditText(CreateUniquePlanName(AddOn.db.profile.plans, boss.name))
 			end
 

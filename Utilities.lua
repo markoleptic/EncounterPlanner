@@ -869,8 +869,12 @@ do
 						for _, boss in ipairs(dungeonInstance.bosses) do
 							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
 							local data = { itemValue = boss.dungeonEncounterID, text = iconText }
-							tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
-							tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
+							if boss.phasesHeroic then
+								tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
+							end
+							if boss.phases then
+								tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
+							end
 						end
 					else
 						for _, boss in ipairs(dungeonInstance.bosses) do

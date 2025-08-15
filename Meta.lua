@@ -101,6 +101,8 @@
 ---@field shortName string|nil Short name to use if limited on space in timeline. No bosses currently implement.
 ---@field fixedDuration boolean|nil If specified, the duration is not editable.
 ---@field fixedCount boolean|nil If specified, the number of phases will not be editable.
+---@field minDuration number|nil
+---@field maxDuration number|nil
 
 -- A spell that a boss casts including when the spell is cast.
 ---@class BossAbility
@@ -135,6 +137,8 @@
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 -- If specified, casts will only be created if the phase occurrence number is in the table.
 ---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil
+---@field castTime number|nil Phase specific cast time override
+---@field duration number|nil Phase specific duration override
 
 -- Defines a boss ability that triggers another boss ability. May also repeat.
 ---@class EventTrigger

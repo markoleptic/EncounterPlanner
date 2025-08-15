@@ -160,33 +160,21 @@ do
 	)
 		local missing = {}
 		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-			if dungeonInstance.hasHeroic then
-				for _, boss in ipairs(dungeonInstance.bosses) do
-					local encounterID = boss.dungeonEncounterID
-					if not ignoreEncounterIDs[encounterID] then
-						if not encounterIDsAndDifficultiesWithPlans[encounterID] then
-							missing[encounterID] = { [DifficultyType.Heroic] = true, [DifficultyType.Mythic] = true }
-						elseif not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Heroic] then
-							missing[encounterID] = missing[encounterID] or {}
-							missing[encounterID][DifficultyType.Heroic] = true
-						elseif not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Mythic] then
-							missing[encounterID] = missing[encounterID] or {}
-							missing[encounterID][DifficultyType.Mythic] = true
-						end
+			for _, boss in ipairs(dungeonInstance.bosses) do
+				local encounterID = boss.dungeonEncounterID
+				if not ignoreEncounterIDs[encounterID] then
+					missing[encounterID] = missing[encounterID] or {}
+					if not encounterIDsAndDifficultiesWithPlans[encounterID] then
+						encounterIDsAndDifficultiesWithPlans[encounterID] = {}
 					end
-				end
-			else
-				for _, boss in ipairs(dungeonInstance.bosses) do
-					local encounterID = boss.dungeonEncounterID
-					if not ignoreEncounterIDs[encounterID] then
-						if
-							not encounterIDsAndDifficultiesWithPlans[encounterID]
-							or not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Mythic]
-						then
-							missing[encounterID] = {
-								[DifficultyType.Mythic] = true,
-							}
-						end
+					if
+						boss.phasesHeroic
+						and not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Heroic]
+					then
+						missing[encounterID][DifficultyType.Heroic] = true
+					end
+					if boss.phases and not encounterIDsAndDifficultiesWithPlans[encounterID][DifficultyType.Mythic] then
+						missing[encounterID][DifficultyType.Mythic] = true
 					end
 				end
 			end
@@ -271,13 +259,16 @@ do
 				for _, boss in ipairs(dungeonInstance.bosses) do
 					bossAbilityCache[boss.dungeonEncounterID] = bossAbilityCache[boss.dungeonEncounterID] or {}
 					local encounterSpecificCache = bossAbilityCache[boss.dungeonEncounterID]
-					encounterSpecificCache[DifficultyType.Mythic] = {}
-					for bossAbilitySpellID, bossAbility in
-						pairs(BossUtilities.GetBossAbilities(boss, DifficultyType.Mythic))
-					do
-						encounterSpecificCache[DifficultyType.Mythic][bossAbilitySpellID] = bossAbility
+					if boss.phases then
+						encounterSpecificCache[DifficultyType.Mythic] = {}
+						for bossAbilitySpellID, bossAbility in
+							pairs(BossUtilities.GetBossAbilities(boss, DifficultyType.Mythic))
+						do
+							encounterSpecificCache[DifficultyType.Mythic][bossAbilitySpellID] = bossAbility
+						end
 					end
-					if dungeonInstance.hasHeroic then
+
+					if boss.phasesHeroic then
 						encounterSpecificCache[DifficultyType.Heroic] = {}
 						for bossAbilitySpellID, bossAbility in
 							pairs(BossUtilities.GetBossAbilities(boss, DifficultyType.Heroic))
@@ -806,6 +797,9 @@ function BossUtilities.CalculateMaxPhaseDuration(encounterID, phaseIndex, maxTot
 	if boss and orderedBossPhaseTable then
 		local totalDurationWithoutPhaseDuration = 0.0
 		local phases = BossUtilities.GetBossPhases(boss, difficulty)
+		if phases[phaseIndex].maxDuration then
+			return phases[phaseIndex].maxDuration
+		end
 		for _, index in ipairs(orderedBossPhaseTable) do
 			if index ~= phaseIndex then
 				totalDurationWithoutPhaseDuration = totalDurationWithoutPhaseDuration + phases[index].duration
@@ -880,8 +874,14 @@ function BossUtilities.GetAdjustedStartTime(
 			local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
 			local phases = BossUtilities.GetBossPhases(boss, difficulty)
 			local duration = ability.duration
-			if ability.durationLastsUntilEndOfPhase then
-				duration = phases[orderedBossPhaseTable[bossPhaseOrderIndex]].duration
+
+			local bossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex]
+			local bossAbilityPhase = ability.phases[bossPhaseIndex]
+
+			if bossAbilityPhase and bossAbilityPhase.duration then
+				duration = bossAbilityPhase.duration
+			elseif ability.durationLastsUntilEndOfPhase then
+				duration = phases[bossPhaseIndex].duration
 			elseif ability.durationLastsUntilEndOfNextPhase then
 				local cumPhaseTime = 0.0
 				for currentOrderIndex = 1, bossPhaseOrderIndex do
@@ -896,9 +896,22 @@ function BossUtilities.GetAdjustedStartTime(
 				end
 				duration = cumPhaseTime - spellCastStartTableEntry.castStart
 			end
-			adjustedStartTime = adjustedStartTime + duration + ability.castTime
+			if bossAbilityPhase and bossAbilityPhase.castTime then
+				adjustedStartTime = adjustedStartTime + duration + bossAbilityPhase.castTime
+			else
+				adjustedStartTime = adjustedStartTime + duration + ability.castTime
+			end
 		elseif combatLogEventType == "SCC" or combatLogEventType == "SAA" then
-			adjustedStartTime = adjustedStartTime + ability.castTime
+			local bossPhaseOrderIndex = spellCastStartTableEntry.bossPhaseOrderIndex
+			---@type table<integer, integer>
+			local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
+			local bossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex]
+			local bossAbilityPhase = ability.phases[bossPhaseIndex]
+			if bossAbilityPhase and bossAbilityPhase.castTime then
+				adjustedStartTime = adjustedStartTime + bossAbilityPhase.castTime
+			else
+				adjustedStartTime = adjustedStartTime + ability.castTime
+			end
 		end
 	end
 	return adjustedStartTime
@@ -1520,9 +1533,8 @@ do
 			local castStart = cumulativePhaseCastTime + castTime
 
 			if castStart <= endTime then
-				local castEnd = castStart + ability.castTime
-				local effectEnd = castEnd + ability.duration
-
+				local castEnd = castStart + (abilityPhase.castTime or ability.castTime)
+				local effectEnd = castEnd + (abilityPhase.duration or ability.duration)
 				if abilityPhase.signifiesPhaseStart and castIndex == 1 then
 					castEnd = min(castEnd, endTime)
 					if effectEnd >= endTime then
@@ -1636,17 +1648,23 @@ do
 							phaseOccurrence
 							and (not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1)
 						then
+							local lastCastIndex = #bossAbilityPhase.castTimes
+							local lastBossAbilityPhaseCastTime = bossAbilityPhase.castTimes[lastCastIndex]
+							local timeAfterLastCast = bossPhase.duration - lastBossAbilityPhaseCastTime
+							if bossAbilityPhase.duration and bossAbilityPhase.castTime then
+								bossAbilityPhase.castTime = min(bossAbility.castTime, max(0, timeAfterLastCast))
+								bossAbilityPhase.duration = max(0, timeAfterLastCast - bossAbilityPhase.castTime)
+							end
+
 							if bossAbility.durationLastsUntilEndOfPhase then
-								bossAbility.duration = bossPhase.duration - bossAbilityPhase.castTimes[1]
+								bossAbility.duration = max(0, timeAfterLastCast)
 							elseif bossAbility.castTimeLastsUntilEndOfPhase then
-								bossAbility.castTime = bossPhase.duration - bossAbilityPhase.castTimes[1]
+								bossAbility.castTime = max(0, timeAfterLastCast)
 							elseif bossAbility.durationLastsUntilEndOfNextPhase then
 								local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
 								if nextBossPhaseIndex then
 									local nextPhaseDuration = phases[nextBossPhaseIndex].duration
-									bossAbility.duration = bossPhase.duration
-										- bossAbilityPhase.castTimes[1]
-										+ nextPhaseDuration
+									bossAbility.duration = max(0, timeAfterLastCast + nextPhaseDuration)
 								end
 							end
 
@@ -1702,7 +1720,11 @@ do
 				for _, phase in ipairs(phases) do
 					if currentPhase ~= phase then
 						if not phase.fixedDuration then
-							phase.duration = kMinBossPhaseDuration
+							if phase.minDuration then
+								phase.duration = phase.minDuration
+							else
+								phase.duration = kMinBossPhaseDuration
+							end
 						end
 					end
 				end
@@ -1992,12 +2014,14 @@ do
 			GenerateInstanceBossOrder(dungeonInstance, instanceBossOrder)
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				local encounterID = boss.dungeonEncounterID
-				BossUtilities.GenerateBossTables(boss, DifficultyType.Mythic)
-				maxOrderedBossPhases[encounterID] =
-					GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration, DifficultyType.Mythic)
-				maxAbsoluteSpellCastStartTables[encounterID] =
-					GenerateMaxAbsoluteSpellCastTimeTable(encounterID, DifficultyType.Mythic)
-				if boss.abilitiesHeroic then
+				if boss.phases then
+					BossUtilities.GenerateBossTables(boss, DifficultyType.Mythic)
+					maxOrderedBossPhases[encounterID] =
+						GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration, DifficultyType.Mythic)
+					maxAbsoluteSpellCastStartTables[encounterID] =
+						GenerateMaxAbsoluteSpellCastTimeTable(encounterID, DifficultyType.Mythic)
+				end
+				if boss.phasesHeroic then
 					BossUtilities.GenerateBossTables(boss, DifficultyType.Heroic)
 					maxOrderedBossPhasesHeroic[encounterID] =
 						GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration, DifficultyType.Heroic)
@@ -2056,8 +2080,10 @@ do
 		function test.CompareSpellCastTimeTables()
 			for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 				for _, boss in ipairs(dungeonInstance.bosses) do
-					testSpellCastTimeTablesForBoss(boss, DifficultyType.Mythic)
-					if boss.abilitiesHeroic then
+					if boss.phases then
+						testSpellCastTimeTablesForBoss(boss, DifficultyType.Mythic)
+					end
+					if boss.phasesHeroic then
 						testSpellCastTimeTablesForBoss(boss, DifficultyType.Heroic)
 					end
 				end
@@ -2094,9 +2120,10 @@ do
 		function test.ValidateMaxPhaseCounts()
 			for dungeonInstance in BossUtilities.IterateDungeonInstances() do
 				for _, boss in ipairs(dungeonInstance.bosses) do
-					testValidatedMaxPhaseCountsForBoss(boss, DifficultyType.Mythic)
-
-					if boss.abilitiesHeroic then
+					if boss.phases then
+						testValidatedMaxPhaseCountsForBoss(boss, DifficultyType.Mythic)
+					end
+					if boss.phasesHeroic then
 						testValidatedMaxPhaseCountsForBoss(boss, DifficultyType.Heroic)
 					end
 				end

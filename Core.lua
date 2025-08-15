@@ -301,12 +301,14 @@ do -- Raid instance initialization
 						index = index + 1
 					end
 				end
-				for phaseIndex, phase in ipairs(GetBossPhases(boss, DifficultyType.Mythic)) do
-					local long, short = CreatePhaseName(phase.name or phaseIndex)
-					phase.name = long
-					phase.shortName = short
+				if boss.phases then
+					for phaseIndex, phase in ipairs(GetBossPhases(boss, DifficultyType.Mythic)) do
+						local long, short = CreatePhaseName(phase.name or phaseIndex)
+						phase.name = long
+						phase.shortName = short
+					end
 				end
-				if boss.abilitiesHeroic then
+				if boss.phasesHeroic then
 					for phaseIndex, phase in ipairs(GetBossPhases(boss, DifficultyType.Heroic)) do
 						local long, short = CreatePhaseName(phase.name or phaseIndex)
 						phase.name = long
@@ -375,8 +377,8 @@ do -- Profile updating and refreshing
 				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
 				for difficultyName, difficulty in pairs(Private.classes.DifficultyType) do
 					if
-						difficulty == DifficultyType.Mythic
-						or (boss.abilitiesHeroic and difficulty == DifficultyType.Heroic)
+						(boss.phases and difficulty == DifficultyType.Mythic)
+						or (boss.phasesHeroic and difficulty == DifficultyType.Heroic)
 					then
 						local planName = encounterName .. "-" .. difficultyName .. "-Test"
 						local plan = CreatePlan(testPlans, planName, boss.dungeonEncounterID, difficulty)
@@ -486,16 +488,14 @@ do -- Profile updating and refreshing
 				end
 				boss = GetBoss(plan.dungeonEncounterID)--[[@as Boss]]
 
-				if not boss.abilitiesHeroic and plan.difficulty == DifficultyType.Heroic then
-					ChangePlanBoss(
-						profile.plans,
-						plan.name,
-						constants.kDefaultBossDungeonEncounterID,
-						DifficultyType.Mythic
-					)
+				local dungeonEncounterID = boss.dungeonEncounterID
+
+				if not boss.phasesHeroic and plan.difficulty == DifficultyType.Heroic then
+					ChangePlanBoss(profile.plans, plan.name, dungeonEncounterID, DifficultyType.Mythic)
+				elseif not boss.phases and plan.difficulty == DifficultyType.Mythic then
+					ChangePlanBoss(profile.plans, plan.name, dungeonEncounterID, DifficultyType.Heroic)
 				end
 
-				local dungeonEncounterID = boss.dungeonEncounterID
 				if not encounterIDsAndDifficultiesWithPlans[dungeonEncounterID] then
 					encounterIDsAndDifficultiesWithPlans[dungeonEncounterID] = {}
 				end
@@ -547,7 +547,7 @@ do -- Profile updating and refreshing
 				local boss = GetBoss(encounterID)
 				for difficulty, _ in pairs(difficulties) do
 					local planName = boss.name
-					if boss.abilitiesHeroic then
+					if boss.phasesHeroic then
 						if difficulty == DifficultyType.Heroic then
 							planName = format("%s (%s)", planName, L["H"])
 						else

@@ -2227,34 +2227,286 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 			},
 		}),
-		-- Boss:New({ -- Dimensius, the All-Devouring
-		-- 	bossIDs = {
-		-- 		233824, -- Dimensius
-		-- 		245255, -- Artoshion
-		-- 		245222, -- Pargoth
-		-- 	},
-		-- 	journalEncounterCreatureIDsToBossIDs = {
-		-- 		[5951] = 233824, -- Dimensius
-		-- 		[5952] = 245255, -- Artoshion
-		-- 		[5950] = 245222, -- Pargoth
-		-- 	},
-		-- 	journalEncounterID = 2691,
-		-- 	dungeonEncounterID = 3135,
-		-- 	instanceID = 2810,
-		-- 	preferredCombatLogEventAbilities = {
-		-- 		[1] = nil,
-		-- 	},
-		-- 	abilities = {},
-		-- 	phases = {
-		-- 		[1] = BossPhase:New({
-		-- 			duration = 120.0,
-		-- 			defaultDuration = 120.0,
-		-- 			count = 1,
-		-- 			defaultCount = 1,
-		-- 			name = "P1",
-		-- 		}),
-		-- 	},
-		-- }),
+		Boss:New({ -- Dimensius, the All-Devouring
+			bossIDs = {
+				233824, -- Dimensius
+				245255, -- Artoshion
+				245222, -- Pargoth
+			},
+			journalEncounterCreatureIDsToBossIDs = {
+				[5951] = 233824, -- Dimensius
+				[5952] = 245255, -- Artoshion
+				[5950] = 245222, -- Pargoth
+			},
+			journalEncounterID = 2691,
+			dungeonEncounterID = 3135,
+			instanceID = 2810,
+			preferredCombatLogEventAbilitiesHeroic = {
+				[1] = nil,
+				[2] = { combatLogEventSpellID = 1234898, combatLogEventType = "SCC" },
+				[3] = { combatLogEventSpellID = 1237689, combatLogEventType = "SAR" },
+				[4] = { combatLogEventSpellID = 1237689, combatLogEventType = "SAR" },
+				[5] = { combatLogEventSpellID = 1245292, combatLogEventType = "SAA" },
+			},
+			abilitiesHeroic = {
+				[1229038] = BossAbility:New({ -- Devour
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 11.8, 94.1 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1230087] = BossAbility:New({ -- Massive Smash
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 23.5 },
+							repeatInterval = { 47.0 },
+						}),
+					},
+					tankAbility = true,
+					halfHeight = true,
+					duration = 50.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1230979] = BossAbility:New({ -- Dark Matter
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 35.3 },
+							repeatInterval = { 43.6, 50.6 },
+						}),
+					},
+					duration = 2.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1234898] = BossAbility:New({ -- Event Horizon
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1236617] = BossAbility:New({ -- Broken World
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 10.0 },
+						}),
+					},
+					defaultHidden = true,
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC" },
+				}),
+				[1237689] = BossAbility:New({ -- Void Shell
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 40.0 },
+							signifiesPhaseEnd = true,
+							duration = 32.0,
+							castTime = 0.0,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 78.9 },
+							signifiesPhaseEnd = true,
+							duration = 32.0,
+							castTime = 0.0,
+						}),
+					},
+					duration = 32.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1237690] = BossAbility:New({ -- Eclipse
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 40.0 },
+							duration = 32.0,
+							castTime = 0.0,
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 78.9 },
+							duration = 32.0,
+							castTime = 0.0,
+						}),
+					},
+					duration = 32.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1239262] = BossAbility:New({ -- Conquerer's Cross
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 11.0, 35.3 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 12.7, 35.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.6,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1237694] = BossAbility:New({ -- Mass Ejection
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 17.9, 17.6, 17.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1238765] = BossAbility:New({ -- Extinction
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 22.9, 35.5 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 24.4, 35.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1237695] = BossAbility:New({ -- Stardust Nova
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 19.7, 35.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1240310] = BossAbility:New({ -- Total Destruction
+					phases = {
+						[4] = BossAbilityPhase:New({
+							castTimes = { 69.8 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245292] = BossAbility:New({ -- Destabilized
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+						}),
+					},
+					duration = 15.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
+				}),
+				[1231716] = BossAbility:New({ -- Extinguish the Stars
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 16.9 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
+				}),
+				[1233539] = BossAbility:New({ -- Devour
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 47.7 },
+							repeatInterval = { 99.7 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
+				}),
+				[1232973] = BossAbility:New({ -- Supernova
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 56.6, 14.5 },
+							repeatInterval = { 33.3, 33.3, 18.5, 14.6 },
+						}),
+					},
+					duration = 7.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+				[1234263] = BossAbility:New({ -- Cosmic Collapse
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 65.5 },
+							repeatInterval = { 33.3 },
+						}),
+					},
+					tankAbility = true,
+					halfHeight = true,
+					duration = 50.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = { "SCS" },
+				}),
+				[1234044] = BossAbility:New({ -- Darkened Sky
+					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 81.1 },
+							repeatInterval = { 33.3, 66.6 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = { "SCS", "SCC" },
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 155.0,
+					defaultDuration = 155.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P1",
+				}),
+				[2] = BossPhase:New({
+					duration = 50.0,
+					defaultDuration = 50.0,
+					count = 1,
+					defaultCount = 1,
+					name = "Int1",
+					minDuration = 45.0,
+					maxDuration = 72.0,
+				}),
+				[3] = BossPhase:New({
+					duration = 88.9,
+					defaultDuration = 88.9,
+					count = 1,
+					defaultCount = 1,
+					name = "P2",
+					minDuration = 84.9,
+					maxDuration = 110.9,
+				}),
+				[4] = BossPhase:New({
+					duration = 107.8,
+					defaultDuration = 107.8,
+					count = 1,
+					defaultCount = 1,
+					name = "P3",
+				}),
+				[5] = BossPhase:New({
+					duration = 180.0,
+					defaultDuration = 180.0,
+					count = 1,
+					defaultCount = 1,
+					name = "P4",
+				}),
+			},
+		}),
 	},
 	isRaid = true,
 	hasHeroic = true,
