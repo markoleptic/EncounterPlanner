@@ -9,20 +9,22 @@ local CreateFrame = CreateFrame
 local tostring = tostring
 local unpack = unpack
 
-local backdropColor = { 0.1, 0.1, 0.1, 1 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
-local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
-local enabledTextColor = { 1, 1, 1, 1 }
-local textInsets = { 4, 4, 0, 0 }
-local defaultFontSize = 14
-local defaultFrameHeight = 24
-local defaultFrameWidth = 200
-local backdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
+local k = {
+	Backdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	},
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
+	BackdropColor = { 0.1, 0.1, 0.1, 1 },
+	DefaultFontSize = 14,
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 200,
+	DisabledTextColor = { 0.5, 0.5, 0.5, 1 },
+	EnabledTextColor = { 1, 1, 1, 1 },
+	TextInsets = { 4, 4, 0, 0 },
 }
 
 ---@class EPLineEdit : AceGUIWidget
@@ -44,15 +46,15 @@ end
 ---@param self EPLineEdit
 local function OnAcquire(self)
 	self.readOnly = false
-	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self:SetEnabled(true)
 	self:SetText()
 	self:SetMaxLetters(256)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		self:SetFont(fPath, defaultFontSize, "")
+		self:SetFont(fPath, k.DefaultFontSize, "")
 	end
-	self:SetTextInsets(unpack(textInsets))
+	self:SetTextInsets(unpack(k.TextInsets))
 end
 
 ---@param self EPLineEdit
@@ -65,11 +67,11 @@ local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	if enabled then
 		self.editBox:EnableMouse(not self.readOnly)
-		self.editBox:SetTextColor(unpack(enabledTextColor))
+		self.editBox:SetTextColor(unpack(k.EnabledTextColor))
 	else
 		self.editBox:EnableMouse(false)
 		self.editBox:ClearFocus()
-		self.editBox:SetTextColor(unpack(disabledTextColor))
+		self.editBox:SetTextColor(unpack(k.DisabledTextColor))
 	end
 end
 
@@ -137,10 +139,10 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetBackdrop(backdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetBackdrop(k.Backdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
 	editBox:SetAutoFocus(false)
@@ -156,10 +158,10 @@ local function Constructor()
 	editBox:SetMaxLetters(256)
 	editBox:SetPoint("TOPLEFT")
 	editBox:SetPoint("BOTTOMRIGHT")
-	editBox:SetTextInsets(unpack(textInsets))
+	editBox:SetTextInsets(unpack(k.TextInsets))
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		editBox:SetFont(fPath, defaultFontSize, "")
+		editBox:SetFont(fPath, k.DefaultFontSize, "")
 	end
 
 	---@class EPLineEdit

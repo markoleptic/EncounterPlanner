@@ -10,18 +10,20 @@ local floor = math.floor
 local GetCursorPosition = GetCursorPosition
 local unpack = unpack
 
-local verticalPositionLineSubLevel = -8
-local verticalPositionLineColor = { 1, 0.82, 0, 1 }
-local scrollBarWidth = 20
-local thumbPadding = { x = 2, y = 2 }
-local totalVerticalThumbPadding = 2 * thumbPadding.y
-local paddingBetweenTimelineAndScrollBar = 10
-local defaultListPadding = 4
-local listFrameWidth = 200
-local listTimelinePadding = 10
-local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
-local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
-local minThumbSize = 20
+local k = {
+	DefaultListPadding = 4,
+	ListFrameWidth = 200,
+	ListTimelinePadding = 10,
+	MinThumbSize = 20,
+	PaddingBetweenTimelineAndScrollBar = 10,
+	ScrollBarWidth = 20,
+	ThumbPadding = { x = 2, y = 2 },
+	VerticalPositionLineColor = { 1, 0.82, 0, 1 },
+	VerticalPositionLineSubLevel = -8,
+	VerticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 },
+	VerticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 },
+}
+k.TotalVerticalThumbPadding = 2 * k.ThumbPadding.y
 
 ---@param self EPTimelineSection
 local function HandleVerticalThumbUpdate(self)
@@ -35,8 +37,8 @@ local function HandleVerticalThumbUpdate(self)
 	local _, yPosition = GetCursorPosition()
 	local newOffset = self.scrollBar:GetTop() - (yPosition / UIParent:GetEffectiveScale()) - currentOffset
 
-	local minAllowedOffset = thumbPadding.y
-	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
+	local minAllowedOffset = k.ThumbPadding.y
+	local maxAllowedOffset = currentScrollBarHeight - currentHeight - k.ThumbPadding.y
 	newOffset = Clamp(newOffset, minAllowedOffset, maxAllowedOffset)
 	self.thumb:SetPoint("TOP", 0, -newOffset)
 
@@ -46,7 +48,7 @@ local function HandleVerticalThumbUpdate(self)
 	local maxScroll = timelineHeight - scrollFrameHeight
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
-	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
+	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * k.ThumbPadding.y)
 
 	if maxScroll <= 0 or maxThumbPosition <= 0 then
 		-- No scrollable content or thumb fills the scroll bar
@@ -55,7 +57,7 @@ local function HandleVerticalThumbUpdate(self)
 		return
 	end
 
-	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	local scrollOffset = ((newOffset - k.ThumbPadding.y) / maxThumbPosition) * maxScroll
 	scrollFrame:SetVerticalScroll(scrollOffset)
 	self.listScrollFrame:SetVerticalScroll(scrollOffset)
 end
@@ -112,13 +114,13 @@ local function OnAcquire(self)
 	self.verticalThumbHeightWhenThumbClicked = 0
 	self.verticalThumbIsDragging = false
 	self.textureHeight = 0
-	self.listPadding = defaultListPadding
+	self.listPadding = k.DefaultListPadding
 
 	self.listScrollFrame:ClearAllPoints()
 	self.listScrollFrame:SetParent(self.frame)
 	self.listScrollFrame:SetPoint("TOP")
 	self.listScrollFrame:SetPoint("LEFT")
-	self.listScrollFrame:SetWidth(listFrameWidth)
+	self.listScrollFrame:SetWidth(k.ListFrameWidth)
 	self.listScrollFrame:Show()
 
 	self.listContainer = AceGUI:Create("EPContainer")
@@ -126,16 +128,16 @@ local function OnAcquire(self)
 	self.listContainer.frame:SetPoint("TOPLEFT")
 	self.listContainer.frame:EnableMouse(true)
 	self.listContainer:SetLayout("EPVerticalLayout")
-	self.listContainer:SetWidth(listFrameWidth)
-	self:SetListPadding(defaultListPadding)
+	self.listContainer:SetWidth(k.ListFrameWidth)
+	self:SetListPadding(k.DefaultListPadding)
 
 	self.listScrollFrame:SetScrollChild(self.listContainer.frame --[[@as Frame]])
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.frame)
 	self.scrollFrame:SetPoint("TOP")
-	self.scrollFrame:SetPoint("LEFT", listFrameWidth + listTimelinePadding, 0)
-	self.scrollFrame:SetPoint("RIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
+	self.scrollFrame:SetPoint("LEFT", k.ListFrameWidth + k.ListTimelinePadding, 0)
+	self.scrollFrame:SetPoint("RIGHT", -k.ScrollBarWidth - k.PaddingBetweenTimelineAndScrollBar, 0)
 	self.scrollFrame:Show()
 
 	self.timelineFrame:ClearAllPoints()
@@ -153,14 +155,14 @@ local function OnAcquire(self)
 
 	self.scrollBar:ClearAllPoints()
 	self.scrollBar:SetParent(self.frame)
-	self.scrollBar:SetWidth(scrollBarWidth)
+	self.scrollBar:SetWidth(k.ScrollBarWidth)
 	self.scrollBar:SetPoint("TOPRIGHT")
 	self.scrollBar:Show()
 
 	self.thumb:ClearAllPoints()
 	self.thumb:SetParent(self.scrollBar)
-	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
-	self.thumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), self.scrollBar:GetHeight() - 2 * thumbPadding.y)
+	self.thumb:SetPoint("TOP", 0, -k.ThumbPadding.y)
+	self.thumb:SetSize(k.ScrollBarWidth - (2 * k.ThumbPadding.x), self.scrollBar:GetHeight() - 2 * k.ThumbPadding.y)
 	self.thumb:Show()
 	self.thumb:SetScript("OnMouseDown", function()
 		HandleVerticalThumbMouseDown(self)
@@ -264,20 +266,20 @@ local function UpdateVerticalScroll(self)
 	local scrollRange = timelineHeight - scrollFrameHeight
 	if scrollRange <= 0 then
 		-- No scrolling needed, reset thumb
-		self.thumb:SetHeight(self.scrollBar:GetHeight() - totalVerticalThumbPadding)
-		self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+		self.thumb:SetHeight(self.scrollBar:GetHeight() - k.TotalVerticalThumbPadding)
+		self.thumb:SetPoint("TOP", 0, -k.ThumbPadding.y)
 		return
 	end
 
 	local scrollPercentage = self.scrollFrame:GetVerticalScroll() / scrollRange
-	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+	local availableThumbHeight = self.scrollBar:GetHeight() - k.TotalVerticalThumbPadding
 
 	local thumbHeight = (scrollFrameHeight / timelineHeight) * availableThumbHeight
-	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
+	thumbHeight = Clamp(thumbHeight, k.MinThumbSize, availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
 
 	local maxThumbPosition = availableThumbHeight - thumbHeight
-	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
+	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + k.ThumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
@@ -317,11 +319,11 @@ local function Constructor()
 
 	local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
 	scrollFrame:SetPoint("TOPLEFT")
-	scrollFrame:SetPoint("RIGHT", -scrollBarWidth - paddingBetweenTimelineAndScrollBar, 0)
+	scrollFrame:SetPoint("RIGHT", -k.ScrollBarWidth - k.PaddingBetweenTimelineAndScrollBar, 0)
 
 	local listScrollFrame = CreateFrame("ScrollFrame", Type .. "ListScrollFrame" .. count, frame)
 	listScrollFrame:SetPoint("TOPLEFT")
-	listScrollFrame:SetSize(listFrameWidth, 1)
+	listScrollFrame:SetSize(k.ListFrameWidth, 1)
 	listScrollFrame:EnableMouseWheel(true)
 
 	local timelineFrame = CreateFrame("Frame", Type .. "TimelineFrame" .. count, scrollFrame)
@@ -334,32 +336,35 @@ local function Constructor()
 	scrollFrame:EnableMouseWheel(true)
 
 	local verticalPositionLine =
-		timelineFrame:CreateTexture(Type .. "PositionLine" .. count, "OVERLAY", nil, verticalPositionLineSubLevel)
-	verticalPositionLine:SetColorTexture(unpack(verticalPositionLineColor))
+		timelineFrame:CreateTexture(Type .. "PositionLine" .. count, "OVERLAY", nil, k.VerticalPositionLineSubLevel)
+	verticalPositionLine:SetColorTexture(unpack(k.VerticalPositionLineColor))
 	verticalPositionLine:SetPoint("TOP", scrollFrame, "TOPLEFT")
 	verticalPositionLine:SetPoint("BOTTOM", scrollFrame, "BOTTOMLEFT")
 	verticalPositionLine:SetWidth(1)
 	verticalPositionLine:Hide()
 
 	local verticalScrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
-	verticalScrollBar:SetWidth(scrollBarWidth)
+	verticalScrollBar:SetWidth(k.ScrollBarWidth)
 	verticalScrollBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	verticalScrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
 
 	local verticalScrollBarBackground =
 		verticalScrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
 	verticalScrollBarBackground:SetAllPoints()
-	verticalScrollBarBackground:SetColorTexture(unpack(verticalScrollBackgroundColor))
+	verticalScrollBarBackground:SetColorTexture(unpack(k.VerticalScrollBackgroundColor))
 
 	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, verticalScrollBar)
-	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
-	verticalThumb:SetSize(scrollBarWidth - (2 * thumbPadding.x), verticalScrollBar:GetHeight() - 2 * thumbPadding.y)
+	verticalThumb:SetPoint("TOP", 0, k.ThumbPadding.y)
+	verticalThumb:SetSize(
+		k.ScrollBarWidth - (2 * k.ThumbPadding.x),
+		verticalScrollBar:GetHeight() - 2 * k.ThumbPadding.y
+	)
 	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
 
 	local verticalThumbBackground =
 		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
 	verticalThumbBackground:SetAllPoints()
-	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
+	verticalThumbBackground:SetColorTexture(unpack(k.VerticalThumbBackgroundColor))
 
 	---@class EPTimelineSection
 	local widget = {

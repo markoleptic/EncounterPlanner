@@ -12,23 +12,25 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 100
-local defaultFontHeight = 14
-local defaultBackgroundColor = Private.constants.colors.kDestructiveButtonActionColor
-local toggledColor = Private.constants.colors.kToggledButtonColor
-local defaultBackdropColor = Private.constants.colors.kDefaultButtonBackdropColor
-local toggledBackdropColor = Private.constants.colors.kToggledButtonBackdropColor
-local enabledTextColor = Private.constants.colors.kEnabledTextColor
-local disabledTextColor = Private.constants.colors.kDisabledTextColor
-local defaultIconColor = { 1, 1, 1, 1 }
-local buttonBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = nil,
-	tile = false,
-	tileSize = 0,
-	edgeSize = 0,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 100,
+	DefaultFontHeight = 14,
+	DefaultBackgroundColor = Private.constants.colors.kDestructiveButtonActionColor,
+	ToggledColor = Private.constants.colors.kToggledButtonColor,
+	DefaultBackdropColor = Private.constants.colors.kDefaultButtonBackdropColor,
+	ToggledBackdropColor = Private.constants.colors.kToggledButtonBackdropColor,
+	EnabledTextColor = Private.constants.colors.kEnabledTextColor,
+	DisabledTextColor = Private.constants.colors.kDisabledTextColor,
+	DefaultIconColor = { 1, 1, 1, 1 },
+	ButtonBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = nil,
+		tile = false,
+		tileSize = 0,
+		edgeSize = 0,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
 }
 
 ---@class EPButton : AceGUIWidget
@@ -51,14 +53,14 @@ local function OnAcquire(self)
 	self.toggleIndicator:Hide()
 	self.background:SetPoint("TOPLEFT")
 	self.background:SetPoint("BOTTOMRIGHT")
-	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self:SetIconPadding(0, 0)
-	self:SetBackdrop(buttonBackdrop, defaultBackdropColor)
-	self:SetBackdropColor(unpack(defaultBackdropColor))
-	self:SetColor(unpack(defaultBackgroundColor))
-	self:SetIconColor(unpack(defaultIconColor))
+	self:SetBackdrop(k.ButtonBackdrop, k.DefaultBackdropColor)
+	self:SetBackdropColor(unpack(k.DefaultBackdropColor))
+	self:SetColor(unpack(k.DefaultBackgroundColor))
+	self:SetIconColor(unpack(k.DefaultIconColor))
 	self:SetIcon(nil)
-	self:SetFontSize(defaultFontHeight)
+	self:SetFontSize(k.DefaultFontHeight)
 	self.frame:Show()
 	self:SetEnabled(true)
 end
@@ -79,9 +81,9 @@ local function SetEnabled(self, enabled)
 	self.icon:SetDesaturated(not enabled)
 	self.button:SetMouseClickEnabled(enabled)
 	if enabled then
-		fontString:SetTextColor(unpack(enabledTextColor))
+		fontString:SetTextColor(unpack(k.EnabledTextColor))
 	else
-		fontString:SetTextColor(unpack(disabledTextColor))
+		fontString:SetTextColor(unpack(k.DisabledTextColor))
 	end
 	if not enabled then
 		if self.fadeOutGroup:IsPlaying() then
@@ -163,13 +165,13 @@ local function Toggle(self)
 		self.background:ClearAllPoints()
 		self.background:SetPoint("TOPLEFT")
 		self.background:SetPoint("BOTTOMRIGHT")
-		self.button:SetBackdropColor(unpack(defaultBackdropColor))
+		self.button:SetBackdropColor(unpack(k.DefaultBackdropColor))
 	else
 		self.background:ClearAllPoints()
 		self.background:SetPoint("BOTTOMLEFT", 0, 0)
 		self.background:SetPoint("BOTTOMRIGHT", 0, 0)
 		self.background:SetPoint("TOP", 0, -2)
-		self.button:SetBackdropColor(unpack(toggledBackdropColor))
+		self.button:SetBackdropColor(unpack(k.ToggledBackdropColor))
 		self.toggleIndicator:Show()
 	end
 end
@@ -222,12 +224,12 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:EnableMouse(true)
 
 	local button = CreateFrame("Button", Type .. "Button" .. count, frame, "BackdropTemplate")
-	button:SetBackdrop(buttonBackdrop)
-	button:SetBackdropColor(unpack(defaultBackdropColor))
+	button:SetBackdrop(k.ButtonBackdrop)
+	button:SetBackdropColor(unpack(k.DefaultBackdropColor))
 	button:RegisterForClicks("LeftButtonUp")
 	button:SetAllPoints()
 	button:SetNormalFontObject("GameFontNormal")
@@ -235,7 +237,7 @@ local function Constructor()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		local fontString = button:GetFontString()
-		fontString:SetFont(fPath, defaultFontHeight)
+		fontString:SetFont(fPath, k.DefaultFontHeight)
 	end
 
 	local icon = button:CreateTexture(Type .. "Icon" .. count, "OVERLAY")
@@ -248,13 +250,13 @@ local function Constructor()
 	local background = button:CreateTexture(Type .. "Background" .. count, "BORDER")
 	background:SetPoint("TOPLEFT")
 	background:SetPoint("BOTTOMRIGHT")
-	background:SetColorTexture(unpack(defaultBackgroundColor))
+	background:SetColorTexture(unpack(k.DefaultBackgroundColor))
 	background:Hide()
 
 	local toggleIndicator = button:CreateTexture(Type .. "ToggleIndicator" .. count, "BORDER")
 	toggleIndicator:SetPoint("TOPLEFT")
 	toggleIndicator:SetPoint("TOPRIGHT")
-	toggleIndicator:SetColorTexture(unpack(toggledColor))
+	toggleIndicator:SetColorTexture(unpack(k.ToggledColor))
 	toggleIndicator:Hide()
 	toggleIndicator:SetHeight(2)
 

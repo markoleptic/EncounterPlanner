@@ -13,13 +13,15 @@ local select = select
 local tinsert = table.insert
 local wipe = table.wipe
 
-local defaultFrameHeight = 400
-local defaultFrameWidth = 400
-local fontSize = 12
-local lineNumberWidth = 20
-local scrollFrameScrollBarWidth = 20
-local textPadding = 2
-local padding = { left = 2, top = 2, right = 2, bottom = 2 }
+local k = {
+	DefaultFrameHeight = 400,
+	DefaultFrameWidth = 400,
+	FontSize = 12,
+	LineNumberWidth = 20,
+	ScrollFrameScrollBarWidth = 20,
+	TextPadding = 2,
+	Padding = { left = 2, top = 2, right = 2, bottom = 2 },
+}
 
 ---@class EPStatusBar : AceGUIWidget
 ---@field frame table|Frame|BackdropTemplate
@@ -35,7 +37,7 @@ local padding = { left = 2, top = 2, right = 2, bottom = 2 }
 ---@param self EPStatusBar
 local function OnAcquire(self)
 	self.lineNumber = 1
-	self.messageFrame:SetHeight(padding.top)
+	self.messageFrame:SetHeight(k.Padding.top)
 	self.messagePool = self.messagePool or {}
 	self.activeMessages = {}
 	self.frame:Show()
@@ -43,7 +45,7 @@ local function OnAcquire(self)
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
 	self.scrollFrame.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
 	self.scrollFrame.frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
-	self.scrollFrame:SetScrollBarWidth(scrollFrameScrollBarWidth)
+	self.scrollFrame:SetScrollBarWidth(k.ScrollFrameScrollBarWidth)
 	self.scrollFrame:SetScrollChild(self.messageFrame, true, true)
 end
 
@@ -79,8 +81,8 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		if fPath then
-			lineNumber:SetFont(fPath, fontSize)
-			line:SetFont(fPath, fontSize)
+			lineNumber:SetFont(fPath, k.FontSize)
+			line:SetFont(fPath, k.FontSize)
 		end
 	end
 
@@ -106,24 +108,24 @@ local function AddSingleMessage(self, message, severityLevel, indentLevel)
 		line:SetText("    " .. "    " .. message)
 	end
 
-	lineNumber:SetWidth(lineNumberWidth)
+	lineNumber:SetWidth(k.LineNumberWidth)
 
 	lineNumber:ClearAllPoints()
 	line:ClearAllPoints()
 
-	line:SetPoint("LEFT", self.messageFrame, "LEFT", lineNumberWidth + padding.left, 0)
-	line:SetPoint("RIGHT", self.messageFrame, "RIGHT", -padding.right, 0)
+	line:SetPoint("LEFT", self.messageFrame, "LEFT", k.LineNumberWidth + k.Padding.left, 0)
+	line:SetPoint("RIGHT", self.messageFrame, "RIGHT", -k.Padding.right, 0)
 	lineNumber:SetPoint("RIGHT", line, "LEFT")
 
 	if #self.activeMessages > 0 then
 		local lastLine = self.activeMessages[#self.activeMessages].line
-		line:SetPoint("TOP", lastLine, "BOTTOM", 0, -textPadding)
+		line:SetPoint("TOP", lastLine, "BOTTOM", 0, -k.TextPadding)
 	else
-		line:SetPoint("TOP", self.messageFrame, "TOP", 0, -padding.top)
+		line:SetPoint("TOP", self.messageFrame, "TOP", 0, -k.Padding.top)
 	end
 
 	if not self.setScrollMultiplier then
-		self.scrollFrame:SetScrollMultiplier(line:GetLineHeight() + padding.top)
+		self.scrollFrame:SetScrollMultiplier(line:GetLineHeight() + k.Padding.top)
 		self.setScrollMultiplier = true
 	end
 
@@ -169,10 +171,10 @@ end
 local function OnWidthSet(self)
 	local height = 0.0
 	for _, obj in ipairs(self.activeMessages) do
-		height = height + obj.line:GetHeight() + textPadding
+		height = height + obj.line:GetHeight() + k.TextPadding
 	end
 	if height > 0.0 then
-		height = height + padding.top
+		height = height + k.Padding.top
 	end
 	self.messageFrame:SetHeight(height)
 	self.scrollFrame:SetScroll(select(2, self.scrollFrame:GetScrollRange()))
@@ -181,11 +183,11 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:EnableMouse(true)
 
 	local messageFrame = CreateFrame("Frame", Type .. "MessageContainer" .. count, frame)
-	messageFrame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	messageFrame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	messageFrame:EnableMouse(true)
 
 	---@class EPStatusBar

@@ -8,21 +8,23 @@ local ColorPickerFrame = ColorPickerFrame or _G[ColorPickerFrame]
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 24
-local defaultFontHeight = 14
-local defaultColor = { 1.0, 1.0, 1.0, 1.0 }
-local defaultColorSwatchBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local defaultCheckersColor = { 0.5, 0.5, 0.5, 0.75 }
-local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
-local enabledTextColor = { 1, 1, 1, 1 }
-local defaultHorizontalPadding = 0
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 24,
+	DefaultFontHeight = 14,
+	DefaultColor = { 1.0, 1.0, 1.0, 1.0 },
+	DefaultColorSwatchBackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
+	DefaultCheckersColor = { 0.5, 0.5, 0.5, 0.75 },
+	DisabledTextColor = { 0.5, 0.5, 0.5, 1 },
+	EnabledTextColor = { 1, 1, 1, 1 },
+	DefaultHorizontalPadding = 0,
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = false,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
 }
 
 ---@param self EPColorPicker
@@ -91,7 +93,7 @@ local function OnRelease(self)
 	self:SetEnabled(true)
 	self:SetHasAlpha(true)
 	self:SetLabelText("")
-	self:SetColor(unpack(defaultColor))
+	self:SetColor(unpack(k.DefaultColor))
 end
 
 ---@param self EPColorPicker
@@ -105,7 +107,7 @@ local function SetLabelText(self, text, horizontalPadding)
 		self.label:Show()
 		self.label:SetWidth(self.label:GetStringWidth())
 		self.label:SetPoint("LEFT", self.frame, "LEFT")
-		self.colorSwatch:SetPoint("LEFT", self.label, "RIGHT", horizontalPadding or defaultHorizontalPadding, 0)
+		self.colorSwatch:SetPoint("LEFT", self.label, "RIGHT", horizontalPadding or k.DefaultHorizontalPadding, 0)
 		self.colorSwatch:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
 		self.colorSwatch:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
 	else
@@ -137,14 +139,14 @@ local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	if self.enabled then
 		self.colorSwatch:EnableMouse(true)
-		self.label:SetTextColor(unpack(enabledTextColor))
+		self.label:SetTextColor(unpack(k.EnabledTextColor))
 		self.colorTexture:SetDesaturated(false)
-		self.colorSwatch:SetBackdropColor(unpack(defaultColor))
+		self.colorSwatch:SetBackdropColor(unpack(k.DefaultColor))
 	else
 		self.colorSwatch:EnableMouse(false)
-		self.label:SetTextColor(unpack(disabledTextColor))
+		self.label:SetTextColor(unpack(k.DisabledTextColor))
 		self.colorTexture:SetDesaturated(true)
-		self.colorSwatch:SetBackdropColor(unpack(disabledTextColor))
+		self.colorSwatch:SetBackdropColor(unpack(k.DisabledTextColor))
 	end
 end
 
@@ -152,43 +154,43 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local colorSwatch = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-	colorSwatch:SetBackdrop(frameBackdrop)
-	colorSwatch:SetBackdropColor(unpack(defaultColor))
-	colorSwatch:SetBackdropBorderColor(unpack(defaultColorSwatchBackdropBorderColor))
-	colorSwatch:SetSize(defaultFrameWidth, defaultFrameHeight)
+	colorSwatch:SetBackdrop(k.FrameBackdrop)
+	colorSwatch:SetBackdropColor(unpack(k.DefaultColor))
+	colorSwatch:SetBackdropBorderColor(unpack(k.DefaultColorSwatchBackdropBorderColor))
+	colorSwatch:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	colorSwatch:SetPoint("TOPLEFT")
 	colorSwatch:SetPoint("BOTTOMRIGHT")
 	colorSwatch:EnableMouse(true)
 	colorSwatch:SetClipsChildren(true)
 
 	local colorTexture = colorSwatch:CreateTexture(nil, "OVERLAY")
-	colorTexture:SetPoint("TOPLEFT", frameBackdrop.edgeSize, -frameBackdrop.edgeSize)
-	colorTexture:SetPoint("BOTTOMRIGHT", -frameBackdrop.edgeSize, frameBackdrop.edgeSize)
-	colorTexture:SetVertexColor(unpack(defaultColor))
+	colorTexture:SetPoint("TOPLEFT", k.FrameBackdrop.edgeSize, -k.FrameBackdrop.edgeSize)
+	colorTexture:SetPoint("BOTTOMRIGHT", -k.FrameBackdrop.edgeSize, k.FrameBackdrop.edgeSize)
+	colorTexture:SetVertexColor(unpack(k.DefaultColor))
 
 	local checkers = colorSwatch:CreateTexture(nil, "BACKGROUND")
-	checkers:SetPoint("LEFT", frameBackdrop.edgeSize)
-	checkers:SetPoint("RIGHT", -frameBackdrop.edgeSize)
-	checkers:SetPoint("TOP", -frameBackdrop.edgeSize)
-	checkers:SetPoint("BOTTOM", frameBackdrop.edgeSize)
-	checkers:SetSize(defaultFontHeight - frameBackdrop.edgeSize, defaultFontHeight - frameBackdrop.edgeSize)
+	checkers:SetPoint("LEFT", k.FrameBackdrop.edgeSize)
+	checkers:SetPoint("RIGHT", -k.FrameBackdrop.edgeSize)
+	checkers:SetPoint("TOP", -k.FrameBackdrop.edgeSize)
+	checkers:SetPoint("BOTTOM", k.FrameBackdrop.edgeSize)
+	checkers:SetSize(k.DefaultFontHeight - k.FrameBackdrop.edgeSize, k.DefaultFontHeight - k.FrameBackdrop.edgeSize)
 	checkers:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]], "REPEAT", "REPEAT")
 	checkers:SetVertTile(true)
 	checkers:SetHorizTile(true)
 	checkers:SetDesaturated(true)
-	checkers:SetVertexColor(unpack(defaultCheckersColor))
+	checkers:SetVertexColor(unpack(k.DefaultCheckersColor))
 
 	local label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	label:SetJustifyH("LEFT")
 	label:SetJustifyV("MIDDLE")
-	label:SetTextColor(unpack(defaultColor))
+	label:SetTextColor(unpack(k.DefaultColor))
 
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		label:SetFont(fPath, defaultFontHeight)
+		label:SetFont(fPath, k.DefaultFontHeight)
 	end
 
 	---@class EPColorPicker
@@ -205,7 +207,7 @@ local function Constructor()
 		checkers = checkers,
 		colorSwatch = colorSwatch,
 		colorTexture = colorTexture,
-		color = defaultColor,
+		color = k.DefaultColor,
 		hasAlpha = true,
 	}
 

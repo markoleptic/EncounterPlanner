@@ -10,48 +10,48 @@ local next = next
 local pairs = pairs
 local unpack = unpack
 
-local defaultHeight = 24
-local defaultWidth = 200
-local defaultBackgroundColor = { 0.05, 0.05, 0.05, 0.3 }
-local defaultColor = { 0.5, 0.5, 0.5, 1 }
-local timeThreshold = 0.1
-local secondsInMinute = 60.0
-local slightlyUnderSecondsInMinute = secondsInMinute - timeThreshold
-local slightlyUnderTenSeconds = 10.0 - timeThreshold
-
-local animationTickRate = 0.04
-local greaterThanMinuteFormat = "%d:%02d"
-local greaterThanTenSecondsFormat = "%.0f"
-local lessThanTenSecondsFormat = "%.1f"
-
-local backdropColor = { 0, 0, 0, 0 }
-local backdropBorderColor = { 0, 0, 0, 1 }
-local frameBackdrop = {
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	edgeSize = 1,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	AnimationTickRate = 0.04,
+	BackdropBorderColor = { 0, 0, 0, 1 },
+	BackdropColor = { 0, 0, 0, 0 },
+	DefaultBackgroundColor = { 0.05, 0.05, 0.05, 0.3 },
+	DefaultColor = { 0.5, 0.5, 0.5, 1 },
+	DefaultHeight = 24,
+	DefaultWidth = 200,
+	FrameBackdrop = {
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = false,
+		edgeSize = 1,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	GreaterThanMinuteFormat = "%d:%02d",
+	GreaterThanTenSecondsFormat = "%.0f",
+	IconFrameBackdrop = {
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = false,
+		edgeSize = 1,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	LessThanTenSecondsFormat = "%.1f",
+	SecondsInMinute = 60.0,
+	TimeThreshold = 0.1,
 }
-local iconFrameBackdrop = {
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	edgeSize = 1,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+k.SlightlyUnderSecondsInMinute = k.SecondsInMinute - k.TimeThreshold
+k.SlightlyUnderTenSeconds = 10.0 - k.TimeThreshold
+
+local s = {
+	ActiveBars = {}, ---@type table<EPProgressBar, boolean>
+	SharedUpdater = CreateFrame("Frame"):CreateAnimationGroup(),
+	TestFontString = UIParent:CreateFontString(nil, "OVERLAY"),
 }
-
-local activeBars = {} ---@type table<EPProgressBar, boolean>
-
-local sharedUpdater = CreateFrame("Frame"):CreateAnimationGroup()
-sharedUpdater:SetLooping("REPEAT")
-
-local repeater = sharedUpdater:CreateAnimation()
-repeater:SetDuration(animationTickRate)
+s.SharedUpdater:SetLooping("REPEAT")
+s.TestFontString:Hide()
 
 local function SharedBarUpdate()
 	local currentTime = GetTime()
-	for bar in pairs(activeBars) do
+	for bar in pairs(s.ActiveBars) do
 		if currentTime >= bar.expirationTime then
-			activeBars[bar] = nil
+			s.ActiveBars[bar] = nil
 			bar.running = false
 			bar.frame:Hide()
 			bar:Fire("Completed")
@@ -60,28 +60,26 @@ local function SharedBarUpdate()
 			bar.remaining = relativeTime
 			bar.statusBar:SetValue(bar.fill and (currentTime - bar.startTime) + bar.gap or relativeTime)
 
-			if relativeTime <= slightlyUnderTenSeconds then
-				bar.duration:SetFormattedText(lessThanTenSecondsFormat, relativeTime)
-			elseif relativeTime <= slightlyUnderSecondsInMinute then
-				bar.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
+			if relativeTime <= k.SlightlyUnderTenSeconds then
+				bar.duration:SetFormattedText(k.LessThanTenSecondsFormat, relativeTime)
+			elseif relativeTime <= k.SlightlyUnderSecondsInMinute then
+				bar.duration:SetFormattedText(k.GreaterThanTenSecondsFormat, relativeTime)
 			else
-				local m = floor(relativeTime / secondsInMinute)
-				local s = relativeTime - (m * secondsInMinute)
-				bar.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
+				local minutes = floor(relativeTime / k.SecondsInMinute)
+				local seconds = relativeTime - (minutes * k.SecondsInMinute)
+				bar.duration:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
 			end
 		end
 	end
 
-	if not next(activeBars) then
-		sharedUpdater:Stop()
+	if not next(s.ActiveBars) then
+		s.SharedUpdater:Stop()
 	end
 end
 
-sharedUpdater:SetScript("OnLoop", SharedBarUpdate)
+s.SharedUpdater:SetScript("OnLoop", SharedBarUpdate)
 
 local kMinimumFontSize = 8
-local testFontString = UIParent:CreateFontString(nil, "OVERLAY")
-testFontString:Hide()
 
 ---@param text string
 ---@param font string
@@ -90,10 +88,10 @@ testFontString:Hide()
 ---@param maxWidth integer
 ---@return integer
 local function CalculateFontSizeToFit(text, font, fontHeight, flags, maxWidth)
-	testFontString:SetFont(font, fontHeight, flags)
-	testFontString:SetText(text)
+	s.TestFontString:SetFont(font, fontHeight, flags)
+	s.TestFontString:SetText(text)
 
-	if testFontString:GetStringWidth() <= maxWidth then
+	if s.TestFontString:GetStringWidth() <= maxWidth then
 		return fontHeight
 	end
 
@@ -102,8 +100,8 @@ local function CalculateFontSizeToFit(text, font, fontHeight, flags, maxWidth)
 
 	while minSize <= fontHeight do
 		local mid = floor((minSize + fontHeight) / 2)
-		testFontString:SetFont(font, mid)
-		local width = testFontString:GetStringWidth()
+		s.TestFontString:SetFont(font, mid)
+		local width = s.TestFontString:GetStringWidth()
 
 		if width <= maxWidth then
 			bestSize = mid
@@ -123,10 +121,10 @@ end
 ---@return number
 local function GetRequiredWidthForText(text, font, fontHeight, flags)
 	if font then
-		testFontString:SetFont(font, fontHeight, flags)
+		s.TestFontString:SetFont(font, fontHeight, flags)
 	end
-	testFontString:SetText(text)
-	return testFontString:GetStringWidth()
+	s.TestFontString:SetText(text)
+	return s.TestFontString:GetStringWidth()
 end
 
 ---@param self EPProgressBar
@@ -134,7 +132,7 @@ local function RestyleBar(self)
 	self.iconBackdrop:ClearAllPoints()
 	self.statusBar:ClearAllPoints()
 
-	local edgeSize = frameBackdrop.edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
 
 	if self.iconTexture then
 		self.iconBackdrop:SetWidth(self.frame:GetHeight())
@@ -152,7 +150,7 @@ local function RestyleBar(self)
 			self.statusBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -edgeSize, edgeSize)
 		end
 		self.iconBackdrop:Show()
-		local iconEdgeSize = iconFrameBackdrop.edgeSize
+		local iconEdgeSize = k.IconFrameBackdrop.edgeSize
 		self.icon:SetPoint("TOPLEFT", iconEdgeSize, -iconEdgeSize)
 		self.icon:SetPoint("BOTTOMRIGHT", -iconEdgeSize, iconEdgeSize)
 	else
@@ -285,11 +283,11 @@ end
 local function SetShowBorder(self, show)
 	self.frame:ClearBackdrop()
 	if show then
-		frameBackdrop.edgeSize = 1
-		self.frame:SetBackdrop(frameBackdrop)
-		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+		k.FrameBackdrop.edgeSize = 1
+		self.frame:SetBackdrop(k.FrameBackdrop)
+		self.frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	else
-		frameBackdrop.edgeSize = 0
+		k.FrameBackdrop.edgeSize = 0
 	end
 	if self.running then
 		RestyleBar(self)
@@ -301,11 +299,11 @@ end
 local function SetShowIconBorder(self, show)
 	self.iconBackdrop:ClearBackdrop()
 	if show then
-		iconFrameBackdrop.edgeSize = 1
-		self.iconBackdrop:SetBackdrop(iconFrameBackdrop)
-		self.iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+		k.IconFrameBackdrop.edgeSize = 1
+		self.iconBackdrop:SetBackdrop(k.IconFrameBackdrop)
+		self.iconBackdrop:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	else
-		iconFrameBackdrop.edgeSize = 0
+		k.IconFrameBackdrop.edgeSize = 0
 	end
 	if self.running then
 		RestyleBar(self)
@@ -378,19 +376,19 @@ local function Set(self, preferences, text, duration, icon)
 	end
 	self.frame:ClearBackdrop()
 	if preferences.showBorder then
-		frameBackdrop.edgeSize = 1
-		self.frame:SetBackdrop(frameBackdrop)
-		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+		k.FrameBackdrop.edgeSize = 1
+		self.frame:SetBackdrop(k.FrameBackdrop)
+		self.frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	else
-		frameBackdrop.edgeSize = 0
+		k.FrameBackdrop.edgeSize = 0
 	end
 	self.iconBackdrop:ClearBackdrop()
 	if preferences.showIconBorder then
-		iconFrameBackdrop.edgeSize = 1
-		self.iconBackdrop:SetBackdrop(iconFrameBackdrop)
-		self.iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+		k.IconFrameBackdrop.edgeSize = 1
+		self.iconBackdrop:SetBackdrop(k.IconFrameBackdrop)
+		self.iconBackdrop:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	else
-		iconFrameBackdrop.edgeSize = 0
+		k.IconFrameBackdrop.edgeSize = 0
 	end
 	self.statusBar:SetStatusBarTexture(preferences.texture)
 	self.background:SetTexture(preferences.texture)
@@ -423,10 +421,10 @@ local function Start(self, maxValue)
 	self.statusBar:SetMinMaxValues(0, maxValue or time)
 	self.statusBar:SetValue(self.fill and 0 or time)
 
-	activeBars[self] = true
+	s.ActiveBars[self] = true
 
-	if not sharedUpdater:IsPlaying() then
-		sharedUpdater:Play()
+	if not s.SharedUpdater:IsPlaying() then
+		s.SharedUpdater:Play()
 	end
 end
 
@@ -442,25 +440,25 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultWidth, defaultHeight)
+	frame:SetSize(k.DefaultWidth, k.DefaultHeight)
 	frame:SetFrameStrata("MEDIUM")
 	frame:SetFrameLevel(100)
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 
 	local statusBar = CreateFrame("StatusBar", Type .. "StatusBar" .. count, frame)
-	statusBar:SetStatusBarColor(unpack(defaultColor))
-	statusBar:SetSize(defaultWidth, defaultHeight)
+	statusBar:SetStatusBarColor(unpack(k.DefaultColor))
+	statusBar:SetSize(k.DefaultWidth, k.DefaultHeight)
 
 	local background = statusBar:CreateTexture(nil, "BACKGROUND")
-	background:SetVertexColor(unpack(defaultBackgroundColor))
+	background:SetVertexColor(unpack(k.DefaultBackgroundColor))
 	background:SetAllPoints()
 
 	local iconBackdrop = CreateFrame("Frame", Type .. "IconBackdrop" .. count, frame, "BackdropTemplate")
-	iconBackdrop:SetBackdrop(iconFrameBackdrop)
-	iconBackdrop:SetBackdropColor(unpack(backdropColor))
-	iconBackdrop:SetBackdropBorderColor(unpack(backdropBorderColor))
+	iconBackdrop:SetBackdrop(k.IconFrameBackdrop)
+	iconBackdrop:SetBackdropColor(unpack(k.BackdropColor))
+	iconBackdrop:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 
 	local icon = iconBackdrop:CreateTexture()
 	icon:SetPoint("TOPLEFT")

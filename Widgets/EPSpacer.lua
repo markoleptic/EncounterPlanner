@@ -5,7 +5,10 @@ local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 
-local defaultHeight = 4
+local k = {
+	DefaultHeight = 4,
+	DefaultWidth = 1,
+}
 
 ---@class EPSpacer : AceGUIWidget
 ---@field frame table|Frame|BackdropTemplate
@@ -15,7 +18,7 @@ local defaultHeight = 4
 ---@param self EPSpacer
 local function OnAcquire(self)
 	self.frame:Show()
-	self:SetHeight(defaultHeight)
+	self:SetHeight(k.DefaultHeight)
 	self.fillSpace = false
 end
 
@@ -31,7 +34,7 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetWidth(1)
+	frame:SetWidth(k.DefaultWidth)
 	frame:Hide()
 
 	---@class EPSpacer

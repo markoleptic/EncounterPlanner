@@ -10,22 +10,24 @@ local ipairs = ipairs
 local pairs = pairs
 local select = select
 local unpack = unpack
-local pi = math.pi
 
-local textOffsetX = 4
-local checkOffsetX = 2
-local menuIndicatorOffsetX = 3
-local menuIndicatorOffsetY = 1
-local checkSize = 16
-local fontSize = 14
-local dropdownItemHeight = 24
-local subHeight = 18
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local checkedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 }
-local disabledVertexColor = { 0.5, 0.5, 0.5, 1 }
-local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
-local enabledTextColor = { 1, 1, 1, 1 }
-local uncheckedVertexColor = { 1, 1, 1, 1 }
+local k = {
+	CheckedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 },
+	CheckOffsetX = 2,
+	CheckSize = 16,
+	DisabledTextColor = { 0.5, 0.5, 0.5, 1 },
+	DisabledVertexColor = { 0.5, 0.5, 0.5, 1 },
+	DropdownItemHeight = 24,
+	EnabledTextColor = { 1, 1, 1, 1 },
+	FontSize = 14,
+	MenuIndicatorOffsetX = 3,
+	MenuIndicatorOffsetY = 1,
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	Pi = math.pi,
+	SubHeight = 18,
+	TextOffsetX = 4,
+	UncheckedVertexColor = { 1, 1, 1, 1 },
+}
 
 local function FixLevels(parent, ...)
 	local i = 1
@@ -94,17 +96,17 @@ function EPItemBase.SetEnabled(self, enabled)
 	self.enabled = enabled
 	if enabled then
 		self.useHighlight = true
-		self.text:SetTextColor(unpack(enabledTextColor))
+		self.text:SetTextColor(unpack(k.EnabledTextColor))
 	else
 		self.useHighlight = false
-		self.text:SetTextColor(unpack(disabledTextColor))
+		self.text:SetTextColor(unpack(k.DisabledTextColor))
 	end
 end
 
 ---@param self EPItemBase
 function EPItemBase.OnAcquire(self)
-	self.checkOffsetX = textOffsetX
-	self.textOffsetX = textOffsetX
+	self.checkOffsetX = k.TextOffsetX
+	self.textOffsetX = k.TextOffsetX
 	self.frame:SetToplevel(true)
 	self.frame:SetFrameStrata("DIALOG")
 	self.text:SetPoint("LEFT", self.frame, "LEFT", self.textOffsetX, 0)
@@ -130,7 +132,7 @@ function EPItemBase.OnRelease(self)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		local _, size, _ = self.text:GetFont()
 		if fPath and size then
-			self.text:SetFont(fPath, fontSize)
+			self.text:SetFont(fPath, k.FontSize)
 		end
 	end
 	self.changedFont = nil
@@ -196,11 +198,11 @@ end
 ---@param neverChecked? boolean
 function EPItemBase.SetCustomTexture(self, texture, vertexColor, customTextureClickable, neverChecked)
 	if neverChecked then
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - k.CheckSize, 0)
 	else
-		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize * 2, 0)
+		self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - k.CheckSize * 2, 0)
 	end
-	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+	self.check:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - k.CheckSize, 0)
 	self.customTexture:SetTexture(texture)
 	self.customTexture:SetVertexColor(unpack(vertexColor))
 	if customTextureClickable then
@@ -220,38 +222,38 @@ function EPItemBase.Create(type)
 	local count = AceGUI:GetNextWidgetNum(type)
 
 	local frame = CreateFrame("Button", type .. count)
-	frame:SetHeight(dropdownItemHeight)
+	frame:SetHeight(k.DropdownItemHeight)
 	frame:SetFrameStrata("DIALOG")
 
 	local text = frame:CreateFontString(type .. "Text" .. count, "OVERLAY", "GameFontNormalSmall")
 	text:SetTextColor(1, 1, 1)
 	text:SetJustifyH("LEFT")
 	text:SetJustifyV("MIDDLE")
-	text:SetPoint("LEFT", frame, "LEFT", textOffsetX, 0)
+	text:SetPoint("LEFT", frame, "LEFT", k.TextOffsetX, 0)
 	text:SetWordWrap(false)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		text:SetFont(fPath, fontSize)
+		text:SetFont(fPath, k.FontSize)
 	end
 
 	local highlight = frame:CreateTexture(type .. "Highlight" .. count, "OVERLAY")
-	highlight:SetColorTexture(unpack(neutralButtonColor))
+	highlight:SetColorTexture(unpack(k.NeutralButtonColor))
 	highlight:SetPoint("TOPLEFT", 1, 0)
 	highlight:SetPoint("BOTTOMRIGHT", -1, 0)
 	highlight:SetBlendMode("ADD")
 	highlight:Hide()
 
 	local check = frame:CreateTexture(type .. "Check" .. count, "OVERLAY")
-	check:SetWidth(checkSize)
-	check:SetHeight(checkSize)
-	check:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
+	check:SetWidth(k.CheckSize)
+	check:SetHeight(k.CheckSize)
+	check:SetPoint("RIGHT", frame, "RIGHT", -k.CheckOffsetX, 0)
 	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	check:Hide()
 
 	local customTextureFrame = CreateFrame("Button", type .. "CustomTextureFrame" .. count, frame)
-	customTextureFrame:SetWidth(checkSize)
-	customTextureFrame:SetHeight(checkSize)
-	customTextureFrame:SetPoint("RIGHT", frame, "RIGHT", -checkOffsetX, 0)
+	customTextureFrame:SetWidth(k.CheckSize)
+	customTextureFrame:SetHeight(k.CheckSize)
+	customTextureFrame:SetPoint("RIGHT", frame, "RIGHT", -k.CheckOffsetX, 0)
 	customTextureFrame:Hide()
 
 	local customTexture = customTextureFrame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
@@ -282,8 +284,8 @@ function EPItemBase.Create(type)
 		SetHorizontalPadding = EPItemBase.SetHorizontalPadding,
 		SetCustomTexture = EPItemBase.SetCustomTexture,
 		SetTextColor = EPItemBase.SetTextColor,
-		textOffsetX = textOffsetX,
-		checkOffsetX = checkOffsetX,
+		textOffsetX = k.TextOffsetX,
+		checkOffsetX = k.CheckOffsetX,
 	}
 
 	frame:SetScript("OnEnter", function()
@@ -348,7 +350,7 @@ do
 		if neverShow then
 			self.text:SetPoint("RIGHT", self.frame, "RIGHT", 0, 0)
 		else
-			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - checkSize, 0)
+			self.text:SetPoint("RIGHT", self.frame, "RIGHT", -self.checkOffsetX - k.CheckSize, 0)
 		end
 	end
 
@@ -423,12 +425,12 @@ do
 		else
 			if self.enabled and #self.childPullout.items > 0 then
 				if self:GetIsSelected() then
-					self.menuIndicator:SetVertexColor(unpack(checkedVertexColor))
+					self.menuIndicator:SetVertexColor(unpack(k.CheckedVertexColor))
 				else
-					self.menuIndicator:SetVertexColor(unpack(uncheckedVertexColor))
+					self.menuIndicator:SetVertexColor(unpack(k.UncheckedVertexColor))
 				end
 			else
-				self.menuIndicator:SetVertexColor(unpack(disabledVertexColor))
+				self.menuIndicator:SetVertexColor(unpack(k.DisabledVertexColor))
 			end
 		end
 	end
@@ -774,13 +776,13 @@ do
 		local count = AceGUI:GetNextWidgetNum(widgetType)
 
 		local menuIndicator = widget.frame:CreateTexture(widget.type .. "MenuIndicator" .. count, "OVERLAY")
-		menuIndicator:SetWidth(subHeight)
-		menuIndicator:SetHeight(subHeight)
-		menuIndicator:SetPoint("RIGHT", widget.frame, "RIGHT", -menuIndicatorOffsetX, -menuIndicatorOffsetY)
+		menuIndicator:SetWidth(k.SubHeight)
+		menuIndicator:SetHeight(k.SubHeight)
+		menuIndicator:SetPoint("RIGHT", widget.frame, "RIGHT", -k.MenuIndicatorOffsetX, -k.MenuIndicatorOffsetY)
 		menuIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-		menuIndicator:SetRotation(pi / 2)
+		menuIndicator:SetRotation(k.Pi / 2)
 
-		widget.menuIndicatorOffsetX = menuIndicatorOffsetX
+		widget.menuIndicatorOffsetX = k.MenuIndicatorOffsetX
 		widget.menuIndicator = menuIndicator
 		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease

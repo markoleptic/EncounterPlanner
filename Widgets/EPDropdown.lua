@@ -20,37 +20,39 @@ local tremove = table.remove
 local type = type
 local unpack = unpack
 
-local defaultHorizontalItemPadding = 4
-local fontSize = 14
-local defaultDropdownItemHeight = 24
-local minimumPulloutWidth = 100
-local pulloutBackdropColor = { 0.1, 0.1, 0.1, 1 }
-local pulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local dropdownBackdropColor = { 0.1, 0.1, 0.1, 1 }
-local dropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local disabledTextColor = Private.constants.colors.kDisabledTextColor
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local enabledTextColor = Private.constants.colors.kEnabledTextColor
-local defaultDropdownWidth = 200
-local defaultPulloutWidth = 200
-local defaultMaxItems = 13
-local rightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t "
-local spellIconRegex = Private.constants.kRegexIconText
-local pulloutBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
+local k = {
+	DefaultDropdownItemHeight = 24,
+	DefaultDropdownWidth = 200,
+	DefaultHorizontalItemPadding = 4,
+	DefaultMaxItems = 13,
+	DefaultPulloutWidth = 200,
+	DisabledTextColor = Private.constants.colors.kDisabledTextColor,
+	DropdownBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	},
+	DropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
+	DropdownBackdropColor = { 0.1, 0.1, 0.1, 1 },
+	EnabledTextColor = Private.constants.colors.kEnabledTextColor,
+	FontSize = 14,
+	MinimumPulloutWidth = 100,
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	PulloutBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	},
+	PulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
+	PulloutBackdropColor = { 0.1, 0.1, 0.1, 1 },
+	RegexIconText = Private.constants.kRegexIconText,
+	RightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t ",
 }
-local dropdownBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
-}
-local edgeSize = dropdownBackdrop.edgeSize
+k.EdgeSize = k.DropdownBackdrop.edgeSize
 
 ---@param parent Frame
 ---@param ... [Frame]
@@ -92,7 +94,7 @@ local function CreateCombinedLevelString(levelsToInclude, textLevels)
 			if combinedLevelString:len() == 0 then
 				combinedLevelString = textLevel
 			else
-				combinedLevelString = combinedLevelString .. rightArrow .. textLevel
+				combinedLevelString = combinedLevelString .. k.RightArrow .. textLevel
 			end
 		end
 	else
@@ -101,13 +103,13 @@ local function CreateCombinedLevelString(levelsToInclude, textLevels)
 				if combinedLevelString:len() == 0 then
 					combinedLevelString = textLevels[#textLevels]
 				else
-					combinedLevelString = combinedLevelString .. rightArrow .. textLevels[#textLevels]
+					combinedLevelString = combinedLevelString .. k.RightArrow .. textLevels[#textLevels]
 				end
 			elseif textLevels[levelToInclude] then
 				if combinedLevelString:len() == 0 then
 					combinedLevelString = textLevels[levelToInclude]
 				else
-					combinedLevelString = combinedLevelString .. rightArrow .. textLevels[levelToInclude]
+					combinedLevelString = combinedLevelString .. k.RightArrow .. textLevels[levelToInclude]
 				end
 			end
 		end
@@ -133,8 +135,8 @@ do
 
 	---@param self EPDropdownPullout
 	local function OnAcquire(self)
-		self.dropdownItemHeight = defaultDropdownItemHeight
-		self.scrollIndicatorFrame:SetHeight(defaultDropdownItemHeight / 2)
+		self.dropdownItemHeight = k.DefaultDropdownItemHeight
+		self.scrollIndicatorFrame:SetHeight(k.DefaultDropdownItemHeight / 2)
 		self.frame:SetParent(UIParent)
 		self.autoWidth = false
 	end
@@ -145,8 +147,8 @@ do
 		self.scrollIndicatorFrame:Hide()
 		self.frame:ClearAllPoints()
 		self.frame:Hide()
-		self.maxHeight = defaultMaxItems * defaultDropdownItemHeight
-		self.maxItems = defaultMaxItems
+		self.maxHeight = k.DefaultMaxItems * k.DefaultDropdownItemHeight
+		self.maxItems = k.DefaultMaxItems
 	end
 
 	---@param enteredItem EPDropdownItemToggle|EPDropdownItemMenu
@@ -167,7 +169,7 @@ do
 		item:SetHeight(self.dropdownItemHeight)
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
+		self.frame:SetHeight(min(h + k.EdgeSize * 2, self.maxHeight))
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -180,7 +182,7 @@ do
 		item:SetHeight(self.dropdownItemHeight)
 		local h = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
+		self.frame:SetHeight(min(h + k.EdgeSize * 2, self.maxHeight))
 		item:SetPullout(self)
 		item:SetOnEnter(OnEnter)
 	end
@@ -211,17 +213,17 @@ do
 		local height = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(height)
 
-		if height + edgeSize * 2 > self.maxHeight then
+		if height + k.EdgeSize * 2 > self.maxHeight then
 			local halfHeight = self.dropdownItemHeight / 2.0
 			self.frame:SetHeight(self.maxHeight + halfHeight)
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + edgeSize)
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + k.EdgeSize)
 			self.scrollIndicatorFrame:SetHeight(halfHeight)
 			self.scrollIndicator:SetSize(halfHeight, halfHeight)
 			self.scrollIndicatorFrame:Show()
 			self:SetScroll(self.scrollFrame:GetVerticalScroll())
 		else
-			self.frame:SetHeight(min(height + edgeSize * 2, self.maxHeight))
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, edgeSize)
+			self.frame:SetHeight(min(height + k.EdgeSize * 2, self.maxHeight))
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, k.EdgeSize)
 			self.scrollIndicatorFrame:Hide()
 			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 		end
@@ -244,7 +246,7 @@ do
 	---@param maxItemWidth? number
 	local function Open(self, point, relFrame, relPoint, x, y, maxItemWidth)
 		if not maxItemWidth then
-			maxItemWidth = minimumPulloutWidth
+			maxItemWidth = k.MinimumPulloutWidth
 		end
 
 		self.frame:SetPoint(point, relFrame, relPoint, x, y)
@@ -277,17 +279,17 @@ do
 		local height = #self.items * self.dropdownItemHeight
 		self.itemFrame:SetHeight(height)
 
-		if height + edgeSize * 2 > self.maxHeight then
+		if height + k.EdgeSize * 2 > self.maxHeight then
 			local halfHeight = self.dropdownItemHeight / 2.0
 			self.frame:SetHeight(self.maxHeight + halfHeight)
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + edgeSize)
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, halfHeight + k.EdgeSize)
 			self.scrollIndicatorFrame:SetHeight(halfHeight)
 			self.scrollIndicator:SetSize(halfHeight, halfHeight)
 			self.scrollIndicatorFrame:Show()
 			self:SetScroll(self.scrollFrame:GetVerticalScroll())
 		else
-			self.frame:SetHeight(min(height + edgeSize * 2, self.maxHeight))
-			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, edgeSize)
+			self.frame:SetHeight(min(height + k.EdgeSize * 2, self.maxHeight))
+			self.scrollFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, k.EdgeSize)
 			self.scrollIndicatorFrame:Hide()
 			self.itemFrame:SetWidth(self.scrollFrame:GetWidth())
 		end
@@ -320,11 +322,11 @@ do
 	---@param maxVisibleItems integer
 	local function SetMaxVisibleItems(self, maxVisibleItems)
 		self.maxItems = maxVisibleItems
-		self.maxHeight = maxVisibleItems * self.dropdownItemHeight + edgeSize * 2
+		self.maxHeight = maxVisibleItems * self.dropdownItemHeight + k.EdgeSize * 2
 		if self.frame:GetHeight() > self.maxHeight then
 			self.frame:SetHeight(self.maxHeight)
-		elseif (self.itemFrame:GetHeight()) < self.maxHeight - edgeSize * 2 then
-			self.frame:SetHeight(self.itemFrame:GetHeight() + edgeSize * 2)
+		elseif (self.itemFrame:GetHeight()) < self.maxHeight - k.EdgeSize * 2 then
+			self.frame:SetHeight(self.itemFrame:GetHeight() + k.EdgeSize * 2)
 		end
 	end
 
@@ -338,13 +340,13 @@ do
 	---@param height number
 	local function SetItemHeight(self, height)
 		self.dropdownItemHeight = height
-		self.maxHeight = self.maxItems * height + edgeSize * 2
+		self.maxHeight = self.maxItems * height + k.EdgeSize * 2
 		for _, item in ipairs(self.items) do
 			item:SetHeight(height)
 		end
 		local h = #self.items * height
 		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + edgeSize * 2, self.maxHeight))
+		self.frame:SetHeight(min(h + k.EdgeSize * 2, self.maxHeight))
 	end
 
 	---@param self EPDropdownPullout
@@ -374,7 +376,7 @@ do
 			sort(self.items, sortFunction)
 		elseif byText then
 			sort(self.items, function(a, b)
-				return a:GetText():match(spellIconRegex) < b:GetText():match(spellIconRegex)
+				return a:GetText():match(k.RegexIconText) < b:GetText():match(k.RegexIconText)
 			end)
 		else
 			sort(self.items, function(a, b)
@@ -386,22 +388,22 @@ do
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-		frame:SetBackdrop(pulloutBackdrop)
-		frame:SetBackdropColor(unpack(pulloutBackdropColor))
-		frame:SetBackdropBorderColor(unpack(pulloutBackdropBorderColor))
+		frame:SetBackdrop(k.PulloutBackdrop)
+		frame:SetBackdropColor(unpack(k.PulloutBackdropColor))
+		frame:SetBackdropBorderColor(unpack(k.PulloutBackdropBorderColor))
 		frame:SetFrameStrata("DIALOG")
 		frame:SetClampedToScreen(true)
-		frame:SetWidth(defaultPulloutWidth)
-		frame:SetHeight(defaultDropdownItemHeight)
+		frame:SetWidth(k.DefaultPulloutWidth)
+		frame:SetHeight(k.DefaultDropdownItemHeight)
 
 		local scrollFrame = CreateFrame("ScrollFrame", Type .. "ScrollFrame" .. count, frame)
-		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -edgeSize)
-		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, edgeSize)
+		scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -k.EdgeSize)
+		scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, k.EdgeSize)
 		scrollFrame:EnableMouseWheel(true)
 		scrollFrame:SetFrameStrata("DIALOG")
 
 		local itemFrame = CreateFrame("Frame", Type .. "ItemFrame" .. count, scrollFrame)
-		itemFrame:SetWidth(defaultPulloutWidth)
+		itemFrame:SetWidth(k.DefaultPulloutWidth)
 		itemFrame:SetFrameStrata("DIALOG")
 		scrollFrame:SetScrollChild(itemFrame)
 		itemFrame:SetPoint("TOPLEFT")
@@ -409,12 +411,12 @@ do
 
 		local scrollIndicatorFrame =
 			CreateFrame("Frame", Type .. "ScrollIndicatorFrame" .. count, frame, "BackdropTemplate")
-		scrollIndicatorFrame:SetBackdrop(pulloutBackdrop)
-		scrollIndicatorFrame:SetBackdropColor(unpack(pulloutBackdropColor))
-		scrollIndicatorFrame:SetBackdropBorderColor(unpack(pulloutBackdropColor))
+		scrollIndicatorFrame:SetBackdrop(k.PulloutBackdrop)
+		scrollIndicatorFrame:SetBackdropColor(unpack(k.PulloutBackdropColor))
+		scrollIndicatorFrame:SetBackdropBorderColor(unpack(k.PulloutBackdropColor))
 		local scrollIndicator = scrollIndicatorFrame:CreateTexture(nil, "OVERLAY")
-		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", edgeSize, edgeSize)
-		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -edgeSize, edgeSize)
+		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", k.EdgeSize, k.EdgeSize)
+		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -k.EdgeSize, k.EdgeSize)
 		scrollIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-sort-down-32]])
 		scrollIndicator:SetPoint("CENTER")
 		scrollIndicatorFrame:Hide()
@@ -443,9 +445,9 @@ do
 			itemFrame = itemFrame,
 			type = Type,
 			count = count,
-			maxHeight = defaultMaxItems * defaultDropdownItemHeight,
+			maxHeight = k.DefaultMaxItems * k.DefaultDropdownItemHeight,
 			items = {},
-			maxItems = defaultMaxItems,
+			maxItems = k.DefaultMaxItems,
 		}
 
 		scrollFrame:SetScript("OnMouseWheel", function(_, delta)
@@ -593,8 +595,8 @@ do
 
 					if type(value) == "table" and type(itemValue) == "table" then
 						isMatch = true
-						for k, v in pairs(itemValue) do
-							if v ~= value[k] then
+						for key, currentValue in pairs(itemValue) do
+							if currentValue ~= value[key] then
 								isMatch = false
 								break
 							end
@@ -633,8 +635,8 @@ do
 					local itemValue = item:GetValue()
 					if type(value) == "table" and type(itemValue) == "table" then
 						local allEqual = true
-						for k, v in pairs(itemValue) do
-							if v ~= value[k] then
+						for key, currentValue in pairs(itemValue) do
+							if currentValue ~= value[key] then
 								allEqual = false
 								break
 							end
@@ -709,19 +711,19 @@ do
 
 	---@param self EPDropdown
 	local function OnAcquire(self)
-		self.frame:SetBackdrop(dropdownBackdrop)
-		self.frame:SetBackdropColor(unpack(dropdownBackdropColor))
-		self.frame:SetBackdropBorderColor(unpack(dropdownBackdropBorderColor))
+		self.frame:SetBackdrop(k.DropdownBackdrop)
+		self.frame:SetBackdropColor(unpack(k.DropdownBackdropColor))
+		self.frame:SetBackdropBorderColor(unpack(k.DropdownBackdropBorderColor))
 		self.frame:Show()
 		self.text:Show()
 		self.buttonCover:Show()
 		self.button:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
 		self.button:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
-		self.button:SetWidth(defaultDropdownItemHeight)
+		self.button:SetWidth(k.DefaultDropdownItemHeight)
 		self.button:Show()
-		self.itemHorizontalPadding = defaultHorizontalItemPadding
-		self.dropdownItemHeight = defaultDropdownItemHeight
-		self.textHorizontalPadding = defaultHorizontalItemPadding
+		self.itemHorizontalPadding = k.DefaultHorizontalItemPadding
+		self.dropdownItemHeight = k.DefaultDropdownItemHeight
+		self.textHorizontalPadding = k.DefaultHorizontalItemPadding
 		self.pullout = AceGUI:Create("EPDropdownPullout")
 		self.pullout:SetCallback("OnClose", function()
 			HandlePulloutClose(self)
@@ -733,15 +735,15 @@ do
 		self.pullout:SetAutoWidth(true)
 		FixLevels(self.pullout.frame, self.pullout.frame:GetChildren())
 
-		self:SetTextFontSize(fontSize)
-		self:SetItemTextFontSize(fontSize)
+		self:SetTextFontSize(k.FontSize)
+		self:SetItemTextFontSize(k.FontSize)
 		self:SetTextCentered(false)
 		self:SetHeight(self.dropdownItemHeight)
-		self:SetWidth(defaultDropdownWidth)
+		self:SetWidth(k.DefaultDropdownWidth)
 		self:SetPulloutWidth(nil)
 		self:SetButtonVisibility(true)
 		self:SetEnabled(true)
-		self:SetMaxVisibleItems(defaultMaxItems)
+		self:SetMaxVisibleItems(k.DefaultMaxItems)
 		self:SetShowPathText(false)
 		self:SetShowHighlight(false)
 	end
@@ -780,11 +782,11 @@ do
 		if enabled then
 			self.button:Enable()
 			self.buttonCover:Enable()
-			self.text:SetTextColor(unpack(enabledTextColor))
+			self.text:SetTextColor(unpack(k.EnabledTextColor))
 		else
 			self.button:Disable()
 			self.buttonCover:Disable()
-			self.text:SetTextColor(unpack(disabledTextColor))
+			self.text:SetTextColor(unpack(k.DisabledTextColor))
 		end
 	end
 
@@ -1319,9 +1321,9 @@ do
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-		frame:SetBackdrop(dropdownBackdrop)
-		frame:SetBackdropColor(unpack(dropdownBackdropColor))
-		frame:SetBackdropBorderColor(unpack(dropdownBackdropBorderColor))
+		frame:SetBackdrop(k.DropdownBackdrop)
+		frame:SetBackdropColor(unpack(k.DropdownBackdropColor))
+		frame:SetBackdropBorderColor(unpack(k.DropdownBackdropBorderColor))
 
 		local button = CreateFrame("Button", Type .. "Button" .. count, frame)
 		button:ClearAllPoints()
@@ -1331,7 +1333,7 @@ do
 		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 		button:SetDisabledTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-		button:GetDisabledTexture():SetVertexColor(unpack(disabledTextColor))
+		button:GetDisabledTexture():SetVertexColor(unpack(k.DisabledTextColor))
 
 		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)
 		buttonCover:SetFrameLevel(button:GetFrameLevel() + 1)
@@ -1341,7 +1343,7 @@ do
 		local background = frame:CreateTexture(Type .. "Background" .. count, "BORDER")
 		background:SetPoint("TOPLEFT", buttonCover, 1, -1)
 		background:SetPoint("BOTTOMRIGHT", buttonCover, -1, 1)
-		background:SetColorTexture(unpack(neutralButtonColor))
+		background:SetColorTexture(unpack(k.NeutralButtonColor))
 		background:Hide()
 
 		local fadeInGroup = background:CreateAnimationGroup()
@@ -1366,11 +1368,11 @@ do
 
 		local text = frame:CreateFontString(nil, "OVERLAY")
 		text:SetWordWrap(false)
-		text:SetPoint("LEFT", frame, "LEFT", defaultHorizontalItemPadding, 0)
-		text:SetPoint("RIGHT", frame, "RIGHT", -defaultHorizontalItemPadding, 0)
+		text:SetPoint("LEFT", frame, "LEFT", k.DefaultHorizontalItemPadding, 0)
+		text:SetPoint("RIGHT", frame, "RIGHT", -k.DefaultHorizontalItemPadding, 0)
 		local fPath = LSM:Fetch("font", "PT Sans Narrow")
 		if fPath then
-			text:SetFont(fPath, fontSize)
+			text:SetFont(fPath, k.FontSize)
 		end
 
 		---@class EPDropdown
@@ -1438,7 +1440,7 @@ do
 			if widget.lineEdit then
 				widget:Close()
 				local textMaybeWithIcon = widget.text:GetText()
-				textMaybeWithIcon = textMaybeWithIcon:match(spellIconRegex) or textMaybeWithIcon
+				textMaybeWithIcon = textMaybeWithIcon:match(k.RegexIconText) or textMaybeWithIcon
 				widget.lineEdit:SetText(textMaybeWithIcon)
 				widget.lineEdit.frame:Show()
 				widget.lineEdit:SetFocus()

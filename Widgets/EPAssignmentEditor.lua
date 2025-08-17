@@ -19,52 +19,54 @@ local max = math.max
 local tremove = table.remove
 local unpack = unpack
 
-local frameWidth = 200
-local frameHeight = 200
-local buttonFrameHeight = 28
-local windowBarHeight = 28
-local maxNumberOfRecentItems = 10
-local indentWidth = 20
-local contentFramePadding = { x = 15, y = 15 }
-local backdropColor = { 0, 0, 0, 0.9 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local buttonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 }
-local disabledTextColor = { 0.33, 0.33, 0.33, 1 }
-local halfDisabledTextColor = { 0.66, 0.66, 0.66, 1 }
-local labelWidgetSpacing = { 2, 2 }
-local containerContainerSpacing = { 0, 4 }
-local closeButtonIconPadding = { 2, 2 }
-local title = L["Assignment Editor"]
-local spacingBetweenOptions = 8
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	BackdropColor = { 0, 0, 0, 0.9 },
+	ButtonFrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	ButtonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 },
+	ButtonFrameHeight = 28,
+	CloseButtonIconPadding = { 2, 2 },
+	ContainerContainerSpacing = { 0, 4 },
+	ContentFramePadding = { x = 15, y = 15 },
+	DisabledTextColor = { 0.33, 0.33, 0.33, 1 },
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	FrameHeight = 200,
+	FrameWidth = 200,
+	HalfDisabledTextColor = { 0.66, 0.66, 0.66, 1 },
+	IndentWidth = 20,
+	LabelWidgetSpacing = { 2, 2 },
+	MaxNumberOfRecentItems = 10,
+	SpacingBetweenOptions = 8,
+	Title = L["Assignment Editor"],
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	WindowBarHeight = 28,
 }
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local buttonFrameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local lineBackdrop = {
+k.LineBackdrop = {
 	bgFile = "Interface\\BUTTONS\\White8x8",
 	tile = false,
 	edgeSize = 0,
-	insets = { left = 0, right = 0, top = spacingBetweenOptions, bottom = spacingBetweenOptions },
+	insets = { left = 0, right = 0, top = k.SpacingBetweenOptions, bottom = k.SpacingBetweenOptions },
 }
 
 local assignmentTriggers = {
@@ -89,7 +91,6 @@ local assignmentTriggers = {
 ---@field buttonFrame Frame|table
 ---@field deleteButton EPButton
 ---@field closeButton EPButton
----@field titleText FontString
 ---@field assignmentTypeContainer EPContainer
 ---@field assignmentTypeDropdown EPDropdown
 ---@field assignmentTypeLabel EPLabel
@@ -159,7 +160,7 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 				end
 			end
 		end
-		while #recent >= maxNumberOfRecentItems do
+		while #recent >= k.MaxNumberOfRecentItems do
 			self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Recent", { recent[#recent] })
 			tremove(recent, #recent)
 		end
@@ -259,7 +260,7 @@ local function OnAcquire(self)
 	do
 		self.assignmentTypeContainer = AceGUI:Create("EPContainer")
 		self.assignmentTypeContainer:SetLayout("EPVerticalLayout")
-		self.assignmentTypeContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.assignmentTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.assignmentTypeContainer:SetFullWidth(true)
 
 		self.assignmentTypeLabel = AceGUI:Create("EPLabel")
@@ -281,13 +282,13 @@ local function OnAcquire(self)
 		local maxLabelWidth = 0.0
 		self.combatLogEventContainer = AceGUI:Create("EPContainer")
 		self.combatLogEventContainer:SetLayout("EPVerticalLayout")
-		self.combatLogEventContainer:SetSpacing(unpack(containerContainerSpacing))
+		self.combatLogEventContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
 		self.combatLogEventContainer:SetFullWidth(true)
-		self.combatLogEventContainer:SetPadding(indentWidth, 0, 0, 0)
+		self.combatLogEventContainer:SetPadding(k.IndentWidth, 0, 0, 0)
 
 		local leftContainer = AceGUI:Create("EPContainer")
 		leftContainer:SetLayout("EPHorizontalLayout")
-		leftContainer:SetSpacing(unpack(labelWidgetSpacing))
+		leftContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		leftContainer:SetFullWidth(true)
 
 		self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
@@ -304,7 +305,7 @@ local function OnAcquire(self)
 
 		local rightContainer = AceGUI:Create("EPContainer")
 		rightContainer:SetLayout("EPHorizontalLayout")
-		rightContainer:SetSpacing(unpack(labelWidgetSpacing))
+		rightContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		rightContainer:SetFullWidth(true)
 
 		self.combatLogEventSpellCountLabel = AceGUI:Create("EPLabel")
@@ -329,14 +330,14 @@ local function OnAcquire(self)
 
 	local triggerContainer = AceGUI:Create("EPContainer")
 	triggerContainer:SetLayout("EPVerticalLayout")
-	triggerContainer:SetSpacing(unpack(containerContainerSpacing))
+	triggerContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
 	triggerContainer:SetFullWidth(true)
 	triggerContainer:AddChildren(self.assignmentTypeContainer, self.combatLogEventContainer)
 
 	do
 		self.timeContainer = AceGUI:Create("EPContainer")
 		self.timeContainer:SetLayout("EPVerticalLayout")
-		self.timeContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.timeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.timeContainer:SetFullWidth(true)
 
 		self.timeLabel = AceGUI:Create("EPLabel")
@@ -374,7 +375,7 @@ local function OnAcquire(self)
 	do
 		self.assigneeTypeContainer = AceGUI:Create("EPContainer")
 		self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
-		self.assigneeTypeContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.assigneeTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.assigneeTypeContainer:SetFullWidth(true)
 
 		self.assigneeTypeLabel = AceGUI:Create("EPLabel")
@@ -394,7 +395,7 @@ local function OnAcquire(self)
 	do
 		self.spellAssignmentContainer = AceGUI:Create("EPContainer")
 		self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
-		self.spellAssignmentContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.spellAssignmentContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.spellAssignmentContainer:SetFullWidth(true)
 
 		self.enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
@@ -435,7 +436,7 @@ local function OnAcquire(self)
 	do
 		self.targetContainer = AceGUI:Create("EPContainer")
 		self.targetContainer:SetLayout("EPVerticalLayout")
-		self.targetContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.targetContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.targetContainer:SetFullWidth(true)
 
 		self.enableTargetCheckBox = AceGUI:Create("EPCheckBox")
@@ -463,7 +464,7 @@ local function OnAcquire(self)
 	do
 		self.optionalTextContainer = AceGUI:Create("EPContainer")
 		self.optionalTextContainer:SetLayout("EPVerticalLayout")
-		self.optionalTextContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.optionalTextContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.optionalTextContainer:SetFullWidth(true)
 
 		self.optionalTextLabel = AceGUI:Create("EPLabel")
@@ -483,7 +484,7 @@ local function OnAcquire(self)
 	do
 		self.previewContainer = AceGUI:Create("EPContainer")
 		self.previewContainer:SetLayout("EPVerticalLayout")
-		self.previewContainer:SetSpacing(unpack(labelWidgetSpacing))
+		self.previewContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 		self.previewContainer:SetFullWidth(true)
 
 		local previewLabelLabel = AceGUI:Create("EPLabel")
@@ -500,32 +501,32 @@ local function OnAcquire(self)
 	end
 
 	local line = AceGUI:Create("EPSpacer")
-	line.frame:SetBackdrop(lineBackdrop)
-	line.frame:SetBackdropColor(unpack(backdropBorderColor))
+	line.frame:SetBackdrop(k.LineBackdrop)
+	line.frame:SetBackdropColor(unpack(k.BackdropBorderColor))
 	line:SetFullWidth(true)
-	line:SetHeight(2 + 2 * spacingBetweenOptions)
+	line:SetHeight(2 + 2 * k.SpacingBetweenOptions)
 
 	local triggerTimeSpacer = AceGUI:Create("EPSpacer")
 	triggerTimeSpacer:SetFullWidth(true)
-	triggerTimeSpacer:SetHeight(spacingBetweenOptions)
+	triggerTimeSpacer:SetHeight(k.SpacingBetweenOptions)
 
 	local timeTypeSpacer = AceGUI:Create("EPSpacer")
 	timeTypeSpacer:SetFullWidth(true)
-	timeTypeSpacer:SetHeight(spacingBetweenOptions)
+	timeTypeSpacer:SetHeight(k.SpacingBetweenOptions)
 
 	local spellTargetSpacer = AceGUI:Create("EPSpacer")
 	spellTargetSpacer:SetFullWidth(true)
-	spellTargetSpacer:SetHeight(spacingBetweenOptions)
+	spellTargetSpacer:SetHeight(k.SpacingBetweenOptions)
 
 	local spellTextSpacer = AceGUI:Create("EPSpacer")
 	spellTextSpacer:SetFullWidth(true)
-	spellTextSpacer:SetHeight(spacingBetweenOptions)
+	spellTextSpacer:SetHeight(k.SpacingBetweenOptions)
 
 	local line2 = AceGUI:Create("EPSpacer")
-	line2.frame:SetBackdrop(lineBackdrop)
-	line2.frame:SetBackdropColor(unpack(backdropBorderColor))
+	line2.frame:SetBackdrop(k.LineBackdrop)
+	line2.frame:SetBackdropColor(unpack(k.BackdropBorderColor))
 	line2:SetFullWidth(true)
-	line2:SetHeight(2 + 2 * spacingBetweenOptions)
+	line2:SetHeight(2 + 2 * k.SpacingBetweenOptions)
 
 	self:AddChildren(
 		triggerContainer,
@@ -543,12 +544,12 @@ local function OnAcquire(self)
 		self.previewContainer
 	)
 
-	local edgeSize = frameBackdrop.edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
 
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetText(L["Delete Assignment"])
 	self.deleteButton:SetWidthFromText()
-	self.deleteButton:SetBackdropColor(unpack(backdropColor))
+	self.deleteButton:SetBackdropColor(unpack(k.BackdropColor))
 	self.deleteButton:SetCallback("Clicked", function()
 		self:Fire("DeleteButtonClicked")
 	end)
@@ -556,12 +557,12 @@ local function OnAcquire(self)
 	self.deleteButton.frame:SetPoint("TOP", self.buttonFrame, "TOP", 0, -edgeSize)
 	self.deleteButton.frame:SetPoint("BOTTOM", self.buttonFrame, "BOTTOM", 0, edgeSize)
 
-	local buttonSize = windowBarHeight - 2 * edgeSize
+	local buttonSize = k.WindowBarHeight - 2 * edgeSize
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(unpack(closeButtonIconPadding))
-	self.closeButton:SetBackdropColor(unpack(backdropColor))
+	self.closeButton:SetIconPadding(unpack(k.CloseButtonIconPadding))
+	self.closeButton:SetBackdropColor(unpack(k.BackdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
@@ -626,8 +627,8 @@ end
 local function LayoutFinished(self, width, height)
 	if width and height then
 		self.frame:SetSize(
-			width + contentFramePadding.x * 2,
-			buttonFrameHeight + height + windowBarHeight + contentFramePadding.y * 2
+			width + k.ContentFramePadding.x * 2,
+			k.ButtonFrameHeight + height + k.WindowBarHeight + k.ContentFramePadding.y * 2
 		)
 	end
 end
@@ -689,11 +690,11 @@ local function PopulateFields(
 		if item then
 			if count == 0 then -- Fully disabled
 				item:SetEnabled(false)
-				item:SetTextColor(disabledTextColor)
+				item:SetTextColor(k.DisabledTextColor)
 			elseif count == 1 then -- Indicate that the current spell isn't compatible
 				item:SetEnabled(true)
 				if not isTimedAssignment then
-					item:SetTextColor(halfDisabledTextColor)
+					item:SetTextColor(k.HalfDisabledTextColor)
 				end
 			elseif count == 2 then -- Compatible with current spell
 				item:SetEnabled(true)
@@ -739,24 +740,24 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(frameWidth, frameHeight)
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	frame:SetSize(k.FrameWidth, k.FrameHeight)
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(windowBarHeight)
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetHeight(k.WindowBarHeight)
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(title)
+	windowBarText:SetText(k.Title)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
@@ -771,23 +772,29 @@ local function Constructor()
 	end)
 
 	local buttonFrame = CreateFrame("Frame", Type .. "ButtonFrame" .. count, frame, "BackdropTemplate")
-	buttonFrame:SetBackdrop(buttonFrameBackdrop)
-	buttonFrame:SetBackdropColor(unpack(buttonFrameBackdropColor))
-	buttonFrame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	buttonFrame:SetBackdrop(k.ButtonFrameBackdrop)
+	buttonFrame:SetBackdropColor(unpack(k.ButtonFrameBackdropColor))
+	buttonFrame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	buttonFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT")
 	buttonFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
-	buttonFrame:SetHeight(buttonFrameHeight)
+	buttonFrame:SetHeight(k.ButtonFrameHeight)
 	buttonFrame:EnableMouse(true)
 
 	local contentFrameName = Type .. "ContentFrame" .. count
 	local contentFrame = CreateFrame("Frame", contentFrameName, frame)
-	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", contentFramePadding.x, -contentFramePadding.y - windowBarHeight)
+	contentFrame:SetPoint(
+		"TOPLEFT",
+		frame,
+		"TOPLEFT",
+		k.ContentFramePadding.x,
+		-k.ContentFramePadding.y - k.WindowBarHeight
+	)
 	contentFrame:SetPoint(
 		"BOTTOMRIGHT",
 		frame,
 		"BOTTOMRIGHT",
-		-contentFramePadding.x,
-		contentFramePadding.y + buttonFrameHeight
+		-k.ContentFramePadding.x,
+		k.ContentFramePadding.y + k.ButtonFrameHeight
 	)
 
 	---@class EPAssignmentEditor

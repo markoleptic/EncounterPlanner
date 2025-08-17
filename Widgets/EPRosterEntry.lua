@@ -12,10 +12,12 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local max = math.max
 
-local mainFrameWidth = 400
-local mainFrameHeight = 400
-local contentFramePadding = { x = 4, y = 4 }
-local widgetHeight = 20
+local k = {
+	MainFrameWidth = 400,
+	MainFrameHeight = 400,
+	ContentFramePadding = { x = 4, y = 4 },
+	WidgetHeight = 20,
+}
 
 ---@class EPRosterEntry : AceGUIContainer
 ---@field frame table|BackdropTemplate|Frame
@@ -34,20 +36,20 @@ local function OnAcquire(self)
 	self:SetLayout("EPHorizontalLayout")
 
 	self.nameLineEdit = AceGUI:Create("EPLineEdit")
-	self.nameLineEdit:SetHeight(widgetHeight)
+	self.nameLineEdit:SetHeight(k.WidgetHeight)
 	self.nameLineEdit:SetMaxLetters(36)
 	self.nameLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 		self:Fire("NameChanged", value)
 	end)
 
 	self.classDropdown = AceGUI:Create("EPDropdown")
-	self.classDropdown:SetDropdownItemHeight(widgetHeight)
+	self.classDropdown:SetDropdownItemHeight(k.WidgetHeight)
 	self.classDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("ClassChanged", value)
 	end)
 
 	self.roleDropdown = AceGUI:Create("EPDropdown")
-	self.roleDropdown:SetDropdownItemHeight(widgetHeight)
+	self.roleDropdown:SetDropdownItemHeight(k.WidgetHeight)
 	self.roleDropdown:SetCallback("OnValueChanged", function(_, _, value)
 		self:Fire("RoleChanged", value)
 	end)
@@ -55,8 +57,8 @@ local function OnAcquire(self)
 	self.deleteButton = AceGUI:Create("EPButton")
 	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.deleteButton:SetIconPadding(0, 0)
-	self.deleteButton:SetHeight(widgetHeight)
-	self.deleteButton:SetWidth(widgetHeight)
+	self.deleteButton:SetHeight(k.WidgetHeight)
+	self.deleteButton:SetWidth(k.WidgetHeight)
 	self.deleteButton:SetCallback("Clicked", function()
 		self:Fire("DeleteButtonClicked")
 	end)
@@ -118,24 +120,24 @@ end
 
 local function SetRelativeWidths(self, width)
 	local nonSpacingWidth = max(1, width - 3 * self.content.spacing.x)
-	local firstThreeWidth = (nonSpacingWidth - widgetHeight) / 3.0
+	local firstThreeWidth = (nonSpacingWidth - k.WidgetHeight) / 3.0
 	local firstThreeRelativeWidth = firstThreeWidth / nonSpacingWidth
 	self.nameLineEdit:SetRelativeWidth(firstThreeRelativeWidth)
 	self.classDropdown:SetRelativeWidth(firstThreeRelativeWidth)
 	self.roleDropdown:SetRelativeWidth(firstThreeRelativeWidth)
-	self.deleteButton:SetRelativeWidth(widgetHeight / nonSpacingWidth)
+	self.deleteButton:SetRelativeWidth(k.WidgetHeight / nonSpacingWidth)
 end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(mainFrameWidth, mainFrameHeight)
+	frame:SetSize(k.MainFrameWidth, k.MainFrameHeight)
 
 	local content = CreateFrame("Frame", Type .. "Content" .. count, frame)
 	content:SetPoint("TOPLEFT")
 	content:SetPoint("BOTTOMRIGHT")
-	content.spacing = contentFramePadding
+	content.spacing = k.ContentFramePadding
 
 	---@class EPRosterEntry
 	local widget = {

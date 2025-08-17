@@ -15,31 +15,32 @@ local ipairs = ipairs
 local max = math.max
 local unpack = unpack
 
-local defaultFrameHeight = 200
-local defaultFrameWidth = 400
-local windowBarHeight = 28
-local backdropColor = { 0, 0, 0, 1 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
-local defaultButtonHeight = 24
-local framePadding = 15
-local defaultFontSize = 14
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local title = "Export as MRT Note"
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
+	BackdropColor = { 0, 0, 0, 1 },
+	DefaultButtonHeight = 24,
+	DefaultFontSize = 14,
+	DefaultFrameHeight = 200,
+	DefaultFrameWidth = 400,
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	FramePadding = 15,
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	WindowBarHeight = 28,
 }
 
 ---@param container EPContainer
@@ -64,22 +65,22 @@ end
 ---@param self EPMessageBox
 local function OnAcquire(self)
 	self:SetTitle("")
-	self.frame:SetHeight(defaultFrameHeight)
-	self.frame:SetWidth(defaultFrameWidth)
+	self.frame:SetHeight(k.DefaultFrameHeight)
+	self.frame:SetWidth(k.DefaultFrameWidth)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
-	self.buttonContainer:SetSpacing(framePadding / 2.0, 0)
+	self.buttonContainer:SetSpacing(k.FramePadding / 2.0, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
 	self.buttonContainer.frame:SetParent(self.frame)
-	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
 
 	local acceptButton = AceGUI:Create("EPButton")
 	acceptButton:SetText(L["Okay"])
 	acceptButton:SetWidthFromText()
-	acceptButton:SetHeight(defaultButtonHeight)
-	acceptButton:SetColor(unpack(neutralButtonColor))
+	acceptButton:SetHeight(k.DefaultButtonHeight)
+	acceptButton:SetColor(unpack(k.NeutralButtonColor))
 	acceptButton:SetCallback("Clicked", function()
 		self:Fire("Accepted")
 	end)
@@ -87,7 +88,7 @@ local function OnAcquire(self)
 	local rejectButton = AceGUI:Create("EPButton")
 	rejectButton:SetText(L["Cancel"])
 	rejectButton:SetWidthFromText()
-	rejectButton:SetHeight(defaultButtonHeight)
+	rejectButton:SetHeight(k.DefaultButtonHeight)
 	rejectButton:SetCallback("Clicked", function()
 		self:Fire("Rejected")
 	end)
@@ -97,9 +98,9 @@ local function OnAcquire(self)
 	SetButtonWidths(self.buttonContainer)
 	self.buttonContainer:DoLayout()
 
-	local currentContentWidth = self.frame:GetWidth() - 2 * framePadding
+	local currentContentWidth = self.frame:GetWidth() - 2 * k.FramePadding
 	if self.buttonContainer.frame:GetWidth() > currentContentWidth then
-		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * framePadding)
+		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * k.FramePadding)
 	end
 	self.frame:Show()
 end
@@ -133,11 +134,11 @@ end
 ---@param text string
 local function SetText(self, text)
 	self.text:ClearAllPoints()
-	self.text:SetWidth(self.frame:GetWidth() - 2 * framePadding)
+	self.text:SetWidth(self.frame:GetWidth() - 2 * k.FramePadding)
 	self.text:SetText(text)
 	local textHeight = self.text:GetHeight()
-	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
-	self:SetHeight(self.windowBar:GetHeight() + textHeight + defaultButtonHeight + framePadding * 3)
+	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
+	self:SetHeight(self.windowBar:GetHeight() + textHeight + k.DefaultButtonHeight + k.FramePadding * 3)
 end
 
 ---@param self EPMessageBox
@@ -159,8 +160,8 @@ local function AddButton(self, text, beforeWidget)
 	local button = AceGUI:Create("EPButton")
 	button:SetText(text)
 	button:SetWidthFromText()
-	button:SetHeight(defaultButtonHeight)
-	button:SetColor(unpack(neutralButtonColor))
+	button:SetHeight(k.DefaultButtonHeight)
+	button:SetColor(unpack(k.NeutralButtonColor))
 	button:SetCallback("Clicked", function()
 		self:Fire(text .. "Clicked")
 	end)
@@ -171,10 +172,10 @@ local function AddButton(self, text, beforeWidget)
 	end
 	SetButtonWidths(self.buttonContainer)
 	self.buttonContainer:DoLayout()
-	local currentContentWidth = self.frame:GetWidth() - 2 * framePadding
+	local currentContentWidth = self.frame:GetWidth() - 2 * k.FramePadding
 	if self.buttonContainer.frame:GetWidth() > currentContentWidth then
-		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * framePadding)
-		self.text:SetWidth(self.frame:GetWidth() - 2 * framePadding)
+		self.frame:SetWidth(self.buttonContainer.frame:GetWidth() + 2 * k.FramePadding)
+		self.text:SetWidth(self.frame:GetWidth() - 2 * k.FramePadding)
 	end
 end
 
@@ -182,11 +183,11 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:SetFrameStrata("FULLSCREEN_DIALOG")
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
 	frame:EnableMouse(true)
@@ -194,10 +195,10 @@ local function Constructor()
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(windowBarHeight)
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetHeight(k.WindowBarHeight)
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local text = frame:CreateFontString(nil, "OVERLAY")
@@ -205,12 +206,12 @@ local function Constructor()
 	text:SetSpacing(4)
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		text:SetFont(fPath, defaultFontSize)
+		text:SetFont(fPath, k.DefaultFontSize)
 	end
-	text:SetPoint("TOP", windowBar, "BOTTOM", 0, -framePadding)
+	text:SetPoint("TOP", windowBar, "BOTTOM", 0, -k.FramePadding)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(title)
+	windowBarText:SetText("")
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	if fPath then

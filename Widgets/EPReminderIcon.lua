@@ -7,13 +7,17 @@ local CreateFrame = CreateFrame
 local floor = math.floor
 local unpack = unpack
 
-local defaultFrameHeight = 30
-local defaultFrameWidth = 30
-local backdropBorderColor = { 0, 0, 0, 1 }
-local kMinimumFontSize = 8
+local k = {
+	BackdropBorderColor = { 0, 0, 0, 1 },
+	DefaultFrameHeight = 30,
+	DefaultFrameWidth = 30,
+	MinimumFontSize = 8,
+}
 
-local testFontString = UIParent:CreateFontString(nil, "OVERLAY")
-testFontString:Hide()
+local s = {
+	TestFontString = UIParent:CreateFontString(nil, "OVERLAY"),
+}
+s.TestFontString:Hide()
 
 ---@param text string
 ---@param font string
@@ -22,20 +26,20 @@ testFontString:Hide()
 ---@param maxWidth integer
 ---@return integer
 local function CalculateFontSizeToFit(text, font, fontHeight, flags, maxWidth)
-	testFontString:SetFont(font, fontHeight, flags)
-	testFontString:SetText(text)
+	s.TestFontString:SetFont(font, fontHeight, flags)
+	s.TestFontString:SetText(text)
 
-	if testFontString:GetStringWidth() <= maxWidth then
+	if s.TestFontString:GetStringWidth() <= maxWidth then
 		return fontHeight
 	end
 
-	local minSize = kMinimumFontSize
+	local minSize = k.MinimumFontSize
 	local bestSize = minSize
 
 	while minSize <= fontHeight do
 		local mid = floor((minSize + fontHeight) / 2)
-		testFontString:SetFont(font, mid)
-		local width = testFontString:GetStringWidth()
+		s.TestFontString:SetFont(font, mid)
+		local width = s.TestFontString:GetStringWidth()
 
 		if width <= maxWidth then
 			bestSize = mid
@@ -143,7 +147,7 @@ local function SetBorderSize(self, borderSize)
 			edgeFile = "Interface\\BUTTONS\\White8x8",
 			edgeSize = borderSize,
 		})
-		self.frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+		self.frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	end
 	self.icon:SetPoint("TOPLEFT", borderSize, -borderSize)
 	self.icon:SetPoint("BOTTOMRIGHT", -borderSize, borderSize)
@@ -184,12 +188,12 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:SetBackdrop({
 		edgeFile = "Interface\\BUTTONS\\White8x8",
 		edgeSize = 2,
 	})
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetPoint("TOPLEFT")

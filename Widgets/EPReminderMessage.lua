@@ -9,29 +9,31 @@ local GetTime = GetTime
 local next = next
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 200
-local defaultTextPadding = 4
-local defaultBackdropColor = { 0, 0, 0, 0 }
-local anchorModeBackdropColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 }
-local defaultDisplayTime = 2
-local defaultFadeDuration = 1.2
-local timerTickRate = 0.1
-local timeThreshold = 0.1
-local secondsInMinute = 60.0
-local slightlyUnderSecondsInMinute = secondsInMinute - timeThreshold
-local slightlyUnderTenSeconds = 10.0 - timeThreshold
-local greaterThanMinuteFormat = "%d:%02d"
-local greaterThanTenSecondsFormat = "%.0f"
-local lessThanTenSecondsFormat = "%.1f"
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = nil,
-	tile = true,
-	tileSize = 0,
-	edgeSize = 0,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 200,
+	DefaultTextPadding = 4,
+	DefaultBackdropColor = { 0, 0, 0, 0 },
+	AnchorModeBackdropColor = { 10.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 0.25 },
+	DefaultDisplayTime = 2,
+	DefaultFadeDuration = 1.2,
+	TimerTickRate = 0.1,
+	TimeThreshold = 0.1,
+	SecondsInMinute = 60.0,
+	GreaterThanMinuteFormat = "%d:%02d",
+	GreaterThanTenSecondsFormat = "%.0f",
+	LessThanTenSecondsFormat = "%.1f",
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = nil,
+		tile = true,
+		tileSize = 0,
+		edgeSize = 0,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
 }
+k.SlightlyUnderSecondsInMinute = k.SecondsInMinute - k.TimeThreshold
+k.SlightlyUnderTenSeconds = 10.0 - k.TimeThreshold
 
 ---@param self EPReminderMessage
 local function UpdateFrameWidth(self)
@@ -103,7 +105,7 @@ local sharedUpdater = CreateFrame("Frame"):CreateAnimationGroup()
 sharedUpdater:SetLooping("REPEAT")
 
 local repeater = sharedUpdater:CreateAnimation()
-repeater:SetDuration(timerTickRate)
+repeater:SetDuration(k.TimerTickRate)
 
 local function SharedMessageUpdate()
 	local currentTime = GetTime()
@@ -118,24 +120,24 @@ local function SharedMessageUpdate()
 		else
 			local relativeTime = message.expirationTime - currentTime
 			message.remaining = relativeTime
-			if relativeTime <= slightlyUnderTenSeconds then
-				message.duration:SetFormattedText(lessThanTenSecondsFormat, relativeTime)
+			if relativeTime <= k.SlightlyUnderTenSeconds then
+				message.duration:SetFormattedText(k.LessThanTenSecondsFormat, relativeTime)
 				if message.currentThreshold ~= "UnderTenSeconds" then
 					message.currentThreshold = "UnderTenSeconds"
 					UpdateIconAndTextAnchors(message)
 					UpdateFrameWidth(message)
 				end
-			elseif relativeTime <= slightlyUnderSecondsInMinute then
-				message.duration:SetFormattedText(greaterThanTenSecondsFormat, relativeTime)
+			elseif relativeTime <= k.SlightlyUnderSecondsInMinute then
+				message.duration:SetFormattedText(k.GreaterThanTenSecondsFormat, relativeTime)
 				if message.currentThreshold ~= "OverTenSeconds" then
 					message.currentThreshold = "OverTenSeconds"
 					UpdateIconAndTextAnchors(message)
 					UpdateFrameWidth(message)
 				end
 			else
-				local m = floor(relativeTime / secondsInMinute)
-				local s = relativeTime - (m * secondsInMinute)
-				message.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
+				local minutes = floor(relativeTime / k.SecondsInMinute)
+				local seconds = relativeTime - (minutes * k.SecondsInMinute)
+				message.duration:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
 				if message.currentThreshold ~= "OverMinute" then
 					message.currentThreshold = "OverMinute"
 					UpdateIconAndTextAnchors(message)
@@ -181,7 +183,7 @@ local function OnRelease(self)
 	self:SetAnchorMode(false)
 	self.icon:SetTexture(nil)
 	self.showIcon = false
-	self.horizontalTextPadding = defaultTextPadding
+	self.horizontalTextPadding = k.DefaultTextPadding
 end
 
 ---@param self EPReminderMessage
@@ -219,16 +221,16 @@ local function SetDuration(self, duration)
 	if duration == 0.0 then
 		self.duration:SetText("")
 		self.currentThreshold = ""
-	elseif duration <= slightlyUnderTenSeconds then
+	elseif duration <= k.SlightlyUnderTenSeconds then
 		self.currentThreshold = "UnderTenSeconds"
-		self.duration:SetFormattedText(lessThanTenSecondsFormat, duration)
-	elseif duration <= slightlyUnderSecondsInMinute then
+		self.duration:SetFormattedText(k.LessThanTenSecondsFormat, duration)
+	elseif duration <= k.SlightlyUnderSecondsInMinute then
 		self.currentThreshold = "OverTenSeconds"
-		self.duration:SetFormattedText(greaterThanTenSecondsFormat, duration)
+		self.duration:SetFormattedText(k.GreaterThanTenSecondsFormat, duration)
 	else
-		local m = floor(duration / secondsInMinute)
-		local s = duration - (m * secondsInMinute)
-		self.duration:SetFormattedText(greaterThanMinuteFormat, m, s)
+		local minutes = floor(duration / k.SecondsInMinute)
+		local seconds = duration - (minutes * k.SecondsInMinute)
+		self.duration:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
 		self.currentThreshold = "OverMinute"
 	end
 	UpdateIconAndTextAnchors(self)
@@ -248,7 +250,7 @@ local function Start(self, duration)
 	self.text:Show()
 	SetDuration(self, duration)
 
-	local startDelay = duration == 0 and defaultDisplayTime or self.remaining
+	local startDelay = duration == 0 and k.DefaultDisplayTime or self.remaining
 	self.textFade:SetStartDelay(startDelay)
 	self.iconFade:SetStartDelay(startDelay)
 
@@ -299,9 +301,9 @@ end
 ---@param anchorMode boolean
 local function SetAnchorMode(self, anchorMode)
 	if anchorMode then
-		self.frame:SetBackdropColor(unpack(anchorModeBackdropColor))
+		self.frame:SetBackdropColor(unpack(k.AnchorModeBackdropColor))
 	else
-		self.frame:SetBackdropColor(unpack(defaultBackdropColor))
+		self.frame:SetBackdropColor(unpack(k.DefaultBackdropColor))
 	end
 end
 
@@ -331,10 +333,10 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(defaultBackdropColor))
-	frame:SetBackdropBorderColor(unpack(defaultBackdropColor))
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.DefaultBackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.DefaultBackdropColor))
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
 	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -349,15 +351,15 @@ local function Constructor()
 
 	local textAnimationGroup = text:CreateAnimationGroup()
 	local textFade = textAnimationGroup:CreateAnimation("Alpha")
-	textFade:SetStartDelay(defaultDisplayTime)
-	textFade:SetDuration(defaultFadeDuration)
+	textFade:SetStartDelay(k.DefaultDisplayTime)
+	textFade:SetDuration(k.DefaultFadeDuration)
 	textFade:SetFromAlpha(1)
 	textFade:SetToAlpha(0)
 
 	local iconAnimationGroup = icon:CreateAnimationGroup()
 	local iconFade = iconAnimationGroup:CreateAnimation("Alpha")
-	iconFade:SetStartDelay(defaultDisplayTime)
-	iconFade:SetDuration(defaultFadeDuration)
+	iconFade:SetStartDelay(k.DefaultDisplayTime)
+	iconFade:SetDuration(k.DefaultFadeDuration)
 	iconFade:SetFromAlpha(1)
 	iconFade:SetToAlpha(0)
 
@@ -380,7 +382,7 @@ local function Constructor()
 		text = text,
 		duration = duration,
 		showIcon = false,
-		horizontalTextPadding = defaultTextPadding,
+		horizontalTextPadding = k.DefaultTextPadding,
 		remaining = 0,
 		expirationTime = 0,
 		currentThreshold = "",

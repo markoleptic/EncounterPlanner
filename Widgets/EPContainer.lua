@@ -9,18 +9,20 @@ local tinsert = table.insert
 local tremove = table.remove
 local unpack = unpack
 
-local defaultSpacing = { x = 10, y = 10 }
-local defaultHeight = 100
-local defaultWidth = 100
+local k = {
+	DefaultSpacing = { x = 10, y = 10 },
+	DefaultHeight = 100,
+	DefaultWidth = 100,
+}
 
 ---@param self EPAnchorContainer|EPContainer
 local function OnAcquire(self)
 	self.frame:ClearBackdrop()
 	self.frame:Show()
-	self.content.spacing = { x = defaultSpacing.x, y = defaultSpacing.y }
+	self.content.spacing = { x = k.DefaultSpacing.x, y = k.DefaultSpacing.y }
 	self:SetPadding(0, 0, 0, 0)
-	self:SetHeight(defaultHeight)
-	self:SetWidth(defaultWidth)
+	self:SetHeight(k.DefaultHeight)
+	self:SetWidth(k.DefaultWidth)
 	self.content:SetScript("OnSizeChanged", nil)
 	self.frame:SetScript("OnSizeChanged", nil)
 end
@@ -183,8 +185,8 @@ do
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetFrameStrata("DIALOG")
-		frame:SetHeight(defaultHeight)
-		frame:SetWidth(defaultWidth)
+		frame:SetHeight(k.DefaultHeight)
+		frame:SetWidth(k.DefaultWidth)
 
 		local content = CreateFrame("Frame", Type .. "Content" .. count, frame)
 		content:SetPoint("TOPLEFT")
@@ -339,8 +341,8 @@ do
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 		frame:SetFrameStrata("DIALOG")
-		frame:SetHeight(defaultHeight)
-		frame:SetWidth(defaultWidth)
+		frame:SetHeight(k.DefaultHeight)
+		frame:SetWidth(k.DefaultWidth)
 
 		local content = CreateFrame("Frame", Type .. "Content" .. count, frame)
 		content:SetPoint("TOPLEFT")

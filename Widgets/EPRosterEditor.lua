@@ -21,98 +21,99 @@ local tremove = table.remove
 local unpack = unpack
 local wipe = table.wipe
 
-local defaultFrameWidth = 500
-local defaultFrameHeight = 500
-local preferredHeight = 600
-local windowBarHeight = 28
-local contentFramePadding = { x = 15, y = 15 }
-local otherPadding = { x = 10, y = 10 }
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local backdropColor = { 0, 0, 0, 1 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 1 }
-local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
-local activeContainerPadding = { 10, 10, 10, 10 }
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 27, bottom = 0 },
-}
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-}
-
-local classRoles = {
-	["class:DeathKnight"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = true,
+local k = {
+	DefaultFrameWidth = 500,
+	DefaultFrameHeight = 500,
+	PreferredHeight = 600,
+	WindowBarHeight = 28,
+	ContentFramePadding = { x = 15, y = 15 },
+	OtherPadding = { x = 10, y = 10 },
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	BackdropColor = { 0, 0, 0, 1 },
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
+	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
+	ActiveContainerPadding = { 10, 10, 10, 10 },
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 27, bottom = 0 },
 	},
-	["class:DemonHunter"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = true,
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
 	},
-	["class:Druid"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = true,
-	},
-	["class:Evoker"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = false,
-	},
-	["class:Hunter"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = false,
-	},
-	["class:Mage"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = false,
-	},
-	["class:Monk"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = true,
-	},
-	["class:Paladin"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = true,
-	},
-	["class:Priest"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = false,
-	},
-	["class:Rogue"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = false,
-	},
-	["class:Shaman"] = {
-		["role:damager"] = true,
-		["role:healer"] = true,
-		["role:tank"] = false,
-	},
-	["class:Warlock"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = false,
-	},
-	["class:Warrior"] = {
-		["role:damager"] = true,
-		["role:healer"] = false,
-		["role:tank"] = true,
+	ClassRoles = {
+		["class:DeathKnight"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = true,
+		},
+		["class:DemonHunter"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = true,
+		},
+		["class:Druid"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = true,
+		},
+		["class:Evoker"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = false,
+		},
+		["class:Hunter"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = false,
+		},
+		["class:Mage"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = false,
+		},
+		["class:Monk"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = true,
+		},
+		["class:Paladin"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = true,
+		},
+		["class:Priest"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = false,
+		},
+		["class:Rogue"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = false,
+		},
+		["class:Shaman"] = {
+			["role:damager"] = true,
+			["role:healer"] = true,
+			["role:tank"] = false,
+		},
+		["class:Warlock"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = false,
+		},
+		["class:Warrior"] = {
+			["role:damager"] = true,
+			["role:healer"] = false,
+			["role:tank"] = true,
+		},
 	},
 }
 
@@ -174,11 +175,11 @@ local function HandleRosterEntryClassChanged(self, rosterEntry, newClass)
 		for _, rosterWidgetMapping in ipairs(rosterWidgetMap) do
 			if rosterWidgetMapping.widgetEntry == rosterEntry then
 				rosterWidgetMapping.dbEntry.class = newClass
-				if classRoles[newClass] then
-					rosterEntry:PopulateRoleDropdown(classRoles[newClass])
-					local hasHealerRole = classRoles[newClass]["role:healer"]
-					local hasTankRole = classRoles[newClass]["role:tank"]
-					local roleValid = classRoles[newClass][rosterWidgetMapping.dbEntry.role]
+				if k.ClassRoles[newClass] then
+					rosterEntry:PopulateRoleDropdown(k.ClassRoles[newClass])
+					local hasHealerRole = k.ClassRoles[newClass]["role:healer"]
+					local hasTankRole = k.ClassRoles[newClass]["role:tank"]
+					local roleValid = k.ClassRoles[newClass][rosterWidgetMapping.dbEntry.role]
 					if (not hasHealerRole and not hasTankRole) or not roleValid then
 						rosterWidgetMapping.dbEntry.role = "role:damager"
 					end
@@ -239,8 +240,8 @@ local function CreateRosterEntry(self, rosterWidgetMapping)
 	newRosterEntry:PopulateClassDropdown(self.classDropdownData)
 	if rosterWidgetMapping then
 		rosterWidgetMapping.widgetEntry = newRosterEntry
-		if classRoles[rosterWidgetMapping.dbEntry.class] then
-			newRosterEntry:PopulateRoleDropdown(classRoles[rosterWidgetMapping.dbEntry.class])
+		if k.ClassRoles[rosterWidgetMapping.dbEntry.class] then
+			newRosterEntry:PopulateRoleDropdown(k.ClassRoles[rosterWidgetMapping.dbEntry.class])
 		else
 			newRosterEntry:PopulateRoleDropdown({})
 		end
@@ -286,8 +287,8 @@ end
 local function EditRosterEntry(self, rosterWidgetMapping, index)
 	local rosterEntry = self.activeContainer.children[index]
 	if rosterEntry then
-		if classRoles[rosterWidgetMapping.dbEntry.class] then
-			rosterEntry:PopulateRoleDropdown(classRoles[rosterWidgetMapping.dbEntry.class])
+		if k.ClassRoles[rosterWidgetMapping.dbEntry.class] then
+			rosterEntry:PopulateRoleDropdown(k.ClassRoles[rosterWidgetMapping.dbEntry.class])
 		else
 			rosterEntry:PopulateRoleDropdown({})
 		end
@@ -385,15 +386,15 @@ local function OnAcquire(self)
 
 	self.frame:SetSize(800, 800)
 
-	local edgeSize = frameBackdrop.edgeSize
-	local buttonSize = windowBarHeight - 2 * edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
+	local buttonSize = k.WindowBarHeight - 2 * edgeSize
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
+	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
@@ -406,13 +407,13 @@ local function OnAcquire(self)
 	self.tabContainer:SetAlignment("center")
 	self.tabContainer:SetSelfAlignment("center")
 	self.tabContainer.frame:SetParent(self.frame)
-	self.tabContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -contentFramePadding.y)
+	self.tabContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.ContentFramePadding.y)
 
 	local currentRosterTab = AceGUI:Create("EPButton")
 	currentRosterTab:SetIsToggleable(true)
 	currentRosterTab:SetText(L["Current Plan Roster"], "Current Plan Roster")
 	currentRosterTab:SetWidthFromText()
-	currentRosterTab:SetColor(unpack(neutralButtonColor))
+	currentRosterTab:SetColor(unpack(k.NeutralButtonColor))
 	currentRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
 			for _, child in ipairs(self.tabContainer.children) do
@@ -429,7 +430,7 @@ local function OnAcquire(self)
 	sharedRosterTab:SetIsToggleable(true)
 	sharedRosterTab:SetText(L["Shared Roster"], "Shared Roster")
 	sharedRosterTab:SetWidthFromText()
-	sharedRosterTab:SetColor(unpack(neutralButtonColor))
+	sharedRosterTab:SetColor(unpack(k.NeutralButtonColor))
 	sharedRosterTab:SetCallback("Clicked", function(button, _)
 		if not button:IsToggled() then
 			for _, child in ipairs(self.tabContainer.children) do
@@ -445,14 +446,14 @@ local function OnAcquire(self)
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 4)
-	self.activeContainer:SetPadding(unpack(activeContainerPadding))
+	self.activeContainer:SetPadding(unpack(k.ActiveContainerPadding))
 	self.activeContainer.frame:EnableMouse(true)
 
 	local addEntryButton = AceGUI:Create("EPButton")
 	addEntryButton:SetText("+")
 	addEntryButton:SetHeight(20)
 	addEntryButton:SetWidth(20)
-	addEntryButton:SetColor(unpack(neutralButtonColor))
+	addEntryButton:SetColor(unpack(k.NeutralButtonColor))
 	addEntryButton:SetCallback("Clicked", function()
 		self.activeContainer:AddChild(CreateRosterEntry(self), addEntryButton)
 		for _, child in ipairs(self.activeContainer.children) do
@@ -468,30 +469,30 @@ local function OnAcquire(self)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
-	self.buttonContainer:SetSpacing(otherPadding.x, 0)
+	self.buttonContainer:SetSpacing(k.OtherPadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
 	self.buttonContainer.frame:SetParent(self.frame)
-	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, contentFramePadding.y)
+	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.ContentFramePadding.y)
 
 	local updateRosterButton = AceGUI:Create("EPButton")
 	updateRosterButton:SetText(L["Update from Shared Roster"])
 	updateRosterButton:SetWidthFromText()
-	updateRosterButton:SetColor(unpack(neutralButtonColor))
+	updateRosterButton:SetColor(unpack(k.NeutralButtonColor))
 	updateRosterButton:SetCallback("Clicked", function()
 		self:Fire("UpdateRosterButtonClicked", self.activeTab)
 	end)
 	local fillRosterButton = AceGUI:Create("EPButton")
 	fillRosterButton:SetText(L["Fill from Shared Roster"])
 	fillRosterButton:SetWidthFromText()
-	fillRosterButton:SetColor(unpack(neutralButtonColor))
+	fillRosterButton:SetColor(unpack(k.NeutralButtonColor))
 	fillRosterButton:SetCallback("Clicked", function()
 		self:Fire("FillRosterButtonClicked", self.activeTab)
 	end)
 	local importCurrentGroupButton = AceGUI:Create("EPButton")
 	importCurrentGroupButton:SetText(L["Import Current Party/Raid Group"])
 	importCurrentGroupButton:SetWidthFromText()
-	importCurrentGroupButton:SetColor(unpack(neutralButtonColor))
+	importCurrentGroupButton:SetColor(unpack(k.NeutralButtonColor))
 	importCurrentGroupButton:SetCallback("Clicked", function()
 		self:Fire("ImportCurrentGroupButtonClicked", self.activeTab)
 	end)
@@ -506,11 +507,11 @@ local function OnAcquire(self)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetParent(self.frame)
-	self.scrollFrame.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
-	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", contentFramePadding.x, 0)
-	self.scrollFrame.frame:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -contentFramePadding.y)
-	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -contentFramePadding.x, 0)
-	self.scrollFrame.frame:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, contentFramePadding.y)
+	self.scrollFrame.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
+	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", k.ContentFramePadding.x, 0)
+	self.scrollFrame.frame:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -k.ContentFramePadding.y)
+	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.ContentFramePadding.x, 0)
+	self.scrollFrame.frame:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, k.ContentFramePadding.y)
 	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
 
 	self.frame:Show()
@@ -542,9 +543,9 @@ end
 
 ---@param self EPRosterEditor
 local function Resize(self)
-	local width = contentFramePadding.x * 2 + self.buttonContainer.frame:GetWidth()
+	local width = k.ContentFramePadding.x * 2 + self.buttonContainer.frame:GetWidth()
 
-	self.frame:SetSize(width, preferredHeight)
+	self.frame:SetSize(width, k.PreferredHeight)
 	self.activeContainer:DoLayout()
 end
 
@@ -610,18 +611,18 @@ local function Constructor()
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
 	frame:SetFrameStrata("DIALOG")
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetHeight(windowBarHeight)
+	windowBar:SetHeight(k.WindowBarHeight)
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(L["Roster Editor"])

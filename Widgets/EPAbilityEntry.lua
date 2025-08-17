@@ -13,30 +13,31 @@ local CreateFrame = CreateFrame
 local GetSpellName = C_Spell.GetSpellName
 local GetSpellTexture = C_Spell.GetSpellTexture
 local unpack = unpack
-local pi = math.pi
-local piOverTwo = pi / 2
 
-local frameWidth = 200
-local frameHeight = 30
-local padding = { x = 2, y = 2 }
-local backdropColor = { 0, 0, 0, 0.9 }
-local checkBackdropColor = { 0, 0, 0, 0 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local textAssignmentTexture = Private.constants.kTextAssignmentTexture
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local listItemBackdrop = {
-	bgFile = nil,
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 1,
-}
-local checkBackdrop = {
-	bgFile = nil,
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	tileSize = nil,
-	edgeSize = 1,
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	BackdropColor = { 0, 0, 0, 0.9 },
+	CheckBackdrop = {
+		bgFile = nil,
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = false,
+		tileSize = nil,
+		edgeSize = 1,
+	},
+	CheckBackdropColor = { 0, 0, 0, 0 },
+	FrameHeight = 30,
+	FrameWidth = 200,
+	ListItemBackdrop = {
+		bgFile = nil,
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+	},
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	Padding = { x = 2, y = 2 },
+	PiOverTwo = math.pi / 2,
+	TextAssignmentTexture = Private.constants.kTextAssignmentTexture,
 }
 
 ---@class EPAbilityEntry : AceGUIWidget
@@ -57,19 +58,19 @@ local checkBackdrop = {
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.frame:Show()
-	self.frame:SetSize(frameWidth, frameHeight)
+	self.frame:SetSize(k.FrameWidth, k.FrameHeight)
 
-	local buttonSize = frameHeight - 2 * padding.y
+	local buttonSize = k.FrameHeight - 2 * k.Padding.y
 
 	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT")
 	self.collapseButton:SetSize(buttonSize, buttonSize)
 
 	self.checkBackground:SetSize(buttonSize, buttonSize)
-	self.checkBackground:SetPoint("RIGHT", -padding.x, 0)
+	self.checkBackground:SetPoint("RIGHT", -k.Padding.x, 0)
 	self.checkBackground:Show()
 
 	self.swapBackground:SetSize(buttonSize, buttonSize)
-	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x / 2, 0)
+	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -k.Padding.x / 2, 0)
 	self.swapBackground:Hide()
 
 	self.label = AceGUI:Create("EPLabel")
@@ -77,10 +78,10 @@ local function OnAcquire(self)
 	self.label.frame:SetPoint("LEFT")
 	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT")
 	self.label:SetHorizontalTextAlignment("LEFT")
-	self.label:SetHeight(frameHeight)
+	self.label:SetHeight(k.FrameHeight)
 
-	local checkSpacing = checkBackdrop.edgeSize
-	local checkSize = frameHeight - 2 * checkSpacing
+	local checkSpacing = k.CheckBackdrop.edgeSize
+	local checkSize = k.FrameHeight - 2 * checkSpacing
 
 	self.check = AceGUI:Create("EPButton")
 	self.check:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
@@ -89,7 +90,7 @@ local function OnAcquire(self)
 	self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
 	self.check:SetWidth(checkSize)
 	self.check:SetHeight(checkSize)
-	self.check:SetBackdropColor(unpack(checkBackdropColor))
+	self.check:SetBackdropColor(unpack(k.CheckBackdropColor))
 	self.check:SetCallback("Clicked", function()
 		if self.enabled then
 			self:Fire("OnValueChanged")
@@ -178,10 +179,10 @@ local function SetAbility(self, spellID, key)
 	local spellName = GetSpellName(spellID)
 	local iconID = GetSpellTexture(spellID)
 	if spellName and iconID then
-		self.label:SetText(spellName, padding.x * 2)
-		self.label:SetIcon(iconID, padding.x, padding.y, spellID)
+		self.label:SetText(spellName, k.Padding.x * 2)
+		self.label:SetIcon(iconID, k.Padding.x, k.Padding.y, spellID)
 	else
-		self.label:SetText(L["Unknown"], padding.x * 2)
+		self.label:SetText(L["Unknown"], k.Padding.x * 2)
 		self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK")
 	end
 	self.key = key
@@ -190,8 +191,8 @@ end
 ---@param self EPAbilityEntry
 ---@param key string|table|nil
 local function SetGeneralAbility(self, key)
-	self.label:SetText(L["Text"], padding.x * 2)
-	self.label:SetIcon(textAssignmentTexture, padding.x, padding.y, 0)
+	self.label:SetText(L["Text"], k.Padding.x * 2)
+	self.label:SetIcon(k.TextAssignmentTexture, k.Padding.x, k.Padding.y, 0)
 	self.key = key
 end
 
@@ -202,8 +203,8 @@ end
 ---@param key string|table|nil
 local function SetBossAbility(self, spellID, text, iconID, key)
 	if text and iconID then
-		self.label:SetText(text, padding.x * 2)
-		self.label:SetIcon(iconID, padding.x, padding.y, spellID)
+		self.label:SetText(text, k.Padding.x * 2)
+		self.label:SetIcon(iconID, k.Padding.x, k.Padding.y, spellID)
 	else
 		self.label:SetIcon(nil)
 	end
@@ -214,8 +215,8 @@ end
 ---@param key string|table|nil
 ---@param text string|nil
 local function SetNullAbility(self, key, text)
-	self.label:SetText(text or L["Unknown"], padding.x * 2)
-	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", padding.x, padding.y, 0)
+	self.label:SetText(text or L["Unknown"], k.Padding.x * 2)
+	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", k.Padding.x, k.Padding.y, 0)
 	self.key = key
 end
 
@@ -251,9 +252,9 @@ end
 ---@param role RaidGroupRole|integer|nil
 local function SetRoleOrSpec(self, role)
 	if role == "role:tank" or role == "role:healer" or role == "role:damager" then
-		self.label:SetHorizontalTextPadding(padding.x * 2)
+		self.label:SetHorizontalTextPadding(k.Padding.x * 2)
 		local iconPadding = self.frame:GetHeight() * 0.25
-		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", padding.x, iconPadding)
+		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", k.Padding.x, iconPadding)
 		if role == "role:tank" then
 			self.label.icon:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
 		elseif role == "role:healer" then
@@ -268,8 +269,8 @@ local function SetRoleOrSpec(self, role)
 		end
 		self.role = role
 	elseif type(role) == "number" then
-		self.label:SetHorizontalTextPadding(padding.x * 2)
-		self.label:SetIcon(role, padding.x, padding.y)
+		self.label:SetHorizontalTextPadding(k.Padding.x * 2)
+		self.label:SetIcon(role, k.Padding.x, k.Padding.y)
 		if self.collapseButton:IsShown() then
 			self.label.frame:SetPoint("LEFT", self.collapseButton:GetWidth(), 0)
 		else
@@ -301,9 +302,9 @@ end
 local function SetCollapsed(self, collapsed)
 	self.collapsed = collapsed
 	if collapsed then
-		self.collapseButton:GetNormalTexture():SetRotation(piOverTwo)
-		self.collapseButton:GetPushedTexture():SetRotation(piOverTwo)
-		self.collapseButton:GetHighlightTexture():SetRotation(piOverTwo)
+		self.collapseButton:GetNormalTexture():SetRotation(k.PiOverTwo)
+		self.collapseButton:GetPushedTexture():SetRotation(k.PiOverTwo)
+		self.collapseButton:GetHighlightTexture():SetRotation(k.PiOverTwo)
 	else
 		self.collapseButton:GetNormalTexture():SetRotation(0)
 		self.collapseButton:GetPushedTexture():SetRotation(0)
@@ -326,7 +327,7 @@ local function ShowSwapIcon(self, show)
 		self.swapBackground:Show()
 		self.label.frame:SetPoint("RIGHT", self.swapBackground, "LEFT")
 
-		local checkSpacing = checkBackdrop.edgeSize
+		local checkSpacing = k.CheckBackdrop.edgeSize
 		local checkSize = self.frame:GetHeight() - 2 * checkSpacing
 
 		self.swap = AceGUI:Create("EPButton")
@@ -336,8 +337,8 @@ local function ShowSwapIcon(self, show)
 		self.swap.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
 		self.swap:SetWidth(checkSize)
 		self.swap:SetHeight(checkSize)
-		self.swap:SetBackdropColor(unpack(checkBackdropColor))
-		self.swap:SetColor(unpack(neutralButtonColor))
+		self.swap:SetBackdropColor(unpack(k.CheckBackdropColor))
+		self.swap:SetColor(unpack(k.NeutralButtonColor))
 		self.swap:SetCallback("Clicked", function()
 			if self.enabled then
 				if self.dropdown.frame:IsShown() then
@@ -390,16 +391,16 @@ end
 ---@param self EPAbilityEntry
 local function OnHeightSet(self)
 	local height = self.frame:GetHeight()
-	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT", padding.x, 0)
-	self.collapseButton:SetSize(height - 2 * padding.y, height - 2 * padding.y)
+	self.collapseButton:SetPoint("LEFT", self.frame, "LEFT", k.Padding.x, 0)
+	self.collapseButton:SetSize(height - 2 * k.Padding.y, height - 2 * k.Padding.y)
 
-	self.checkBackground:SetSize(height - 2 * padding.y, height - 2 * padding.y)
-	self.checkBackground:SetPoint("RIGHT", -padding.x, 0)
+	self.checkBackground:SetSize(height - 2 * k.Padding.y, height - 2 * k.Padding.y)
+	self.checkBackground:SetPoint("RIGHT", -k.Padding.x, 0)
 
-	self.swapBackground:SetSize(height - 2 * padding.y, height - 2 * padding.y)
-	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -padding.x / 2, 0)
+	self.swapBackground:SetSize(height - 2 * k.Padding.y, height - 2 * k.Padding.y)
+	self.swapBackground:SetPoint("RIGHT", self.checkBackground, "LEFT", -k.Padding.x / 2, 0)
 
-	local checkSpacing = checkBackdrop.edgeSize
+	local checkSpacing = k.CheckBackdrop.edgeSize
 	local checkSize = height - 2 * checkSpacing
 
 	if self.check then
@@ -424,9 +425,9 @@ local function OnHeightSet(self)
 	if self.role then
 		if type(self.role) == "string" then
 			local iconPadding = self.frame:GetHeight() * 0.25
-			self.label:SetIconPadding(padding.x, iconPadding)
+			self.label:SetIconPadding(k.Padding.x, iconPadding)
 		elseif type(self.role) == "number" then
-			self.label:SetIconPadding(padding.x, padding.y)
+			self.label:SetIconPadding(k.Padding.x, k.Padding.y)
 		end
 	end
 end
@@ -435,15 +436,15 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetBackdrop(listItemBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(frameWidth, frameHeight)
+	frame:SetBackdrop(k.ListItemBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	frame:SetSize(k.FrameWidth, k.FrameHeight)
 	frame:EnableMouse(true)
 
 	local collapseButton = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
-	collapseButton:SetPoint("LEFT", frame, "LEFT", padding.x, 0)
-	collapseButton:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
+	collapseButton:SetPoint("LEFT", frame, "LEFT", k.Padding.x, 0)
+	collapseButton:SetSize(k.FrameHeight - 2 * k.Padding.y, k.FrameHeight - 2 * k.Padding.y)
 	collapseButton:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	collapseButton:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
 	collapseButton:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
@@ -451,18 +452,18 @@ local function Constructor()
 	collapseButton:Hide()
 
 	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
-	checkBackground:SetBackdrop(checkBackdrop)
-	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
-	checkBackground:SetBackdropBorderColor(unpack(backdropBorderColor))
-	checkBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
-	checkBackground:SetPoint("RIGHT", -padding.x, 0)
+	checkBackground:SetBackdrop(k.CheckBackdrop)
+	checkBackground:SetBackdropColor(unpack(k.CheckBackdropColor))
+	checkBackground:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	checkBackground:SetSize(k.FrameHeight - 2 * k.Padding.y, k.FrameHeight - 2 * k.Padding.y)
+	checkBackground:SetPoint("RIGHT", -k.Padding.x, 0)
 
 	local swapBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
-	swapBackground:SetBackdrop(checkBackdrop)
-	swapBackground:SetBackdropColor(unpack(checkBackdropColor))
-	swapBackground:SetBackdropBorderColor(unpack(backdropBorderColor))
-	swapBackground:SetSize(frameHeight - 2 * padding.y, frameHeight - 2 * padding.y)
-	swapBackground:SetPoint("RIGHT", checkBackground, "LEFT", -padding.x / 2, 0)
+	swapBackground:SetBackdrop(k.CheckBackdrop)
+	swapBackground:SetBackdropColor(unpack(k.CheckBackdropColor))
+	swapBackground:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	swapBackground:SetSize(k.FrameHeight - 2 * k.Padding.y, k.FrameHeight - 2 * k.Padding.y)
+	swapBackground:SetPoint("RIGHT", checkBackground, "LEFT", -k.Padding.x / 2, 0)
 	swapBackground:Hide()
 
 	---@class EPAbilityEntry

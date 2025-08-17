@@ -7,20 +7,22 @@ local CreateColor = CreateColor
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 100
-local backdropColor = { 0, 0, 0, 0 }
-local hoverButtonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 }
-local iconColor = { 1, 1, 1, 1 }
-local disabledIconColor = { 0.5, 0.5, 0.5, 1 }
-local selectedButtonColor = { 1, 1, 1 }
-local buttonBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = nil,
-	tile = false,
-	tileSize = 0,
-	edgeSize = 0,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	BackdropColor = { 0, 0, 0, 0 },
+	ButtonBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = nil,
+		tile = false,
+		tileSize = 0,
+		edgeSize = 0,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 100,
+	DisabledIconColor = { 0.5, 0.5, 0.5, 1 },
+	HoverButtonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 },
+	IconColor = { 1, 1, 1, 1 },
+	SelectedButtonColor = { 1, 1, 1 },
 }
 
 ---@param self EPRadioButton
@@ -116,7 +118,7 @@ end
 ---@param self EPRadioButton
 local function OnAcquire(self)
 	self.toggled = false
-	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame)
@@ -124,7 +126,7 @@ local function OnAcquire(self)
 	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
 
 	self:SetIconPadding(2, 2)
-	self:SetBackdropColor(unpack(backdropColor))
+	self:SetBackdropColor(unpack(k.BackdropColor))
 	self:SetToggled(false)
 	self:SetEnabled(true)
 
@@ -145,9 +147,9 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	if enabled then
-		self:SetIconColor(unpack(iconColor))
+		self:SetIconColor(unpack(k.IconColor))
 	else
-		self:SetIconColor(unpack(disabledIconColor))
+		self:SetIconColor(unpack(k.DisabledIconColor))
 	end
 	self.button.icon:SetDesaturated(not enabled)
 	self.button:SetEnabled(enabled)
@@ -226,16 +228,16 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:EnableMouse(true)
 
 	local button = CreateFrame("Button", Type .. "Button" .. count, frame, "BackdropTemplate")
-	button:SetBackdrop(buttonBackdrop)
-	button:SetBackdropColor(unpack(backdropColor))
+	button:SetBackdrop(k.ButtonBackdrop)
+	button:SetBackdropColor(unpack(k.BackdropColor))
 	button:RegisterForClicks("LeftButtonUp")
 	button:SetPoint("TOPLEFT")
 	button:SetPoint("BOTTOMLEFT")
-	button:SetWidth(defaultFrameHeight)
+	button:SetWidth(k.DefaultFrameHeight)
 
 	button.icon = button:CreateTexture(Type .. "Icon" .. count, "OVERLAY")
 	button.icon:SetBlendMode("ADD")
@@ -277,8 +279,8 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		button = button,
-		blue = CreateColor(unpack(hoverButtonColor)),
-		white = CreateColor(unpack(selectedButtonColor)),
+		blue = CreateColor(unpack(k.HoverButtonColor)),
+		white = CreateColor(unpack(k.SelectedButtonColor)),
 	}
 
 	button:SetScript("OnEnter", function()

@@ -12,54 +12,56 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 400
-local defaultFrameWidth = 600
-local windowBarHeight = 28
-local backdropColor = { 0, 0, 0, 1 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
-local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
-local okayButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local okayButtonHeight = 24
-local resizerSize = 16
-local framePadding = 15
-local otherPadding = 10
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
+	BackdropColor = { 0, 0, 0, 1 },
+	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
+	DefaultFrameHeight = 400,
+	DefaultFrameWidth = 600,
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	FramePadding = 15,
+	OkayButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	OkayButtonHeight = 24,
+	OtherPadding = 10,
+	ResizerIcon = Private.constants.resizer.kIcon,
+	ResizerIconHighlight = Private.constants.resizer.kIconHighlight,
+	ResizerIconPushed = Private.constants.resizer.kIconPushed,
+	ResizerSize = 16,
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	WindowBarHeight = 28,
 }
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local kResizerIcon = Private.constants.resizer.kIcon
-local kResizerIconPushed = Private.constants.resizer.kIconPushed
-local kResizerIconHighlight = Private.constants.resizer.kIconHighlight
 
 ---@param self EPEditBox
 local function OnAcquire(self)
 	self.editBox:SetText("")
 	self:SetTitle("")
 
-	self.frame:SetHeight(defaultFrameHeight)
-	self.frame:SetWidth(defaultFrameWidth)
-	self.editBox:SetSize(defaultFrameWidth, defaultFrameWidth)
+	self.frame:SetHeight(k.DefaultFrameHeight)
+	self.frame:SetWidth(k.DefaultFrameWidth)
+	self.editBox:SetSize(k.DefaultFrameWidth, k.DefaultFrameWidth)
 	self.frame:Show()
 
-	local edgeSize = frameBackdrop.edgeSize
-	local buttonSize = windowBarHeight - 2 * edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
+	local buttonSize = k.WindowBarHeight - 2 * edgeSize
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
+	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
 	self.closeButton:SetHeight(buttonSize)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton.frame:SetParent(self.windowBar)
@@ -70,10 +72,10 @@ local function OnAcquire(self)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
-	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", framePadding, 0)
-	self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
-	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -framePadding, 0)
-	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", k.FramePadding, 0)
+	self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
+	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.FramePadding, 0)
+	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
 	self.scrollFrame:SetScrollChild(self.editBox --[[@as Frame]], true, true)
 
 	self.editBox:SetScript("OnTextChanged", function()
@@ -140,21 +142,21 @@ local function ShowOkayButton(self, show, okayButtonText)
 			self.okayButton = AceGUI:Create("EPButton")
 			self.okayButton.frame:SetParent(self.frame --[[@as Frame]])
 			self.okayButton:SetText(okayButtonText or "Okay")
-			self.okayButton:SetHeight(okayButtonHeight)
+			self.okayButton:SetHeight(k.OkayButtonHeight)
 			self.okayButton:SetWidthFromText()
-			self.okayButton:SetColor(unpack(okayButtonColor))
+			self.okayButton:SetColor(unpack(k.OkayButtonColor))
 			self.okayButton:SetCallback("Clicked", function()
 				self:Fire("OkayButtonClicked")
 			end)
-			self.okayButton.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+			self.okayButton.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
 		end
-		self.scrollFrame.frame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, framePadding)
+		self.scrollFrame.frame:SetPoint("BOTTOM", self.okayButton.frame, "TOP", 0, k.FramePadding)
 	else
 		if self.okayButton then
 			self.okayButton:Release()
 		end
 		self.okayButton = nil
-		self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, framePadding)
+		self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
 	end
 end
 
@@ -170,7 +172,7 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 			self.container:SetLayout("EPVerticalLayout")
 			self.container:SetSpacing(0, 10)
 			self.container.frame:SetParent(self.frame --[[@as Frame]])
-			self.container.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -framePadding)
+			self.container.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
 
 			local lineEditLabel = AceGUI:Create("EPLabel")
 			lineEditLabel:SetText(lineEditLabelText)
@@ -199,7 +201,7 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 			container:AddChildren(lineEditLabel, self.lineEdit)
 
 			self.container:AddChildren(self.checkBox, container)
-			self.scrollFrame.frame:SetPoint("TOP", self.container.frame, "BOTTOM", 0, -otherPadding)
+			self.scrollFrame.frame:SetPoint("TOP", self.container.frame, "BOTTOM", 0, -k.OtherPadding)
 		end
 	else
 		if self.container then
@@ -208,7 +210,7 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 		self.container = nil
 		self.checkBox = nil
 		self.lineEdit = nil
-		self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "TOP", 0, -framePadding)
+		self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "TOP", 0, -k.FramePadding)
 	end
 end
 
@@ -228,24 +230,24 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:SetFrameStrata("DIALOG")
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
 	frame:SetResizable(true)
-	frame:SetResizeBounds(defaultFrameWidth, defaultFrameHeight, nil, nil)
+	frame:SetResizeBounds(k.DefaultFrameWidth, k.DefaultFrameHeight, nil, nil)
 	frame:EnableMouse(true)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(windowBarHeight)
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetHeight(k.WindowBarHeight)
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
@@ -273,10 +275,10 @@ local function Constructor()
 
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
-	resizer:SetSize(resizerSize, resizerSize)
-	resizer:SetNormalTexture(kResizerIcon)
-	resizer:SetHighlightTexture(kResizerIconHighlight)
-	resizer:SetPushedTexture(kResizerIconPushed)
+	resizer:SetSize(k.ResizerSize, k.ResizerSize)
+	resizer:SetNormalTexture(k.ResizerIcon)
+	resizer:SetHighlightTexture(k.ResizerIconHighlight)
+	resizer:SetPushedTexture(k.ResizerIconPushed)
 
 	---@class EPEditBox : AceGUIWidget
 	---@field closeButton EPButton

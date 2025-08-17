@@ -17,45 +17,47 @@ local GetTime = GetTime
 local IsControlKeyDown = IsControlKeyDown
 local unpack = unpack
 
-local mainFrameWidth = 1200
-local mainFrameHeight = 600
-local windowBarHeight = Private.constants.kWindowBarHeight
-local defaultPadding = 10
-local statusBarHeight = Private.constants.kStatusBarHeight
-local statusBarPadding = Private.constants.kStatusBarPadding
-local buttonWidth = 200
-local neutralButtonColor = Private.constants.colors.kNeutralButtonActionColor
-local backdropColor = { 0, 0, 0, 0.9 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local editBoxFrameBackdropColor = { 0, 0, 0, 1.0 }
-local editBoxFrameBackdropBorderColor = { 0.15, 0.15, 0.15, 1.0 }
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 27, bottom = 0 },
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	BackdropColor = { 0, 0, 0, 0.9 },
+	ButtonWidth = 200,
+	CloseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
+	CollapseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]],
+	DefaultPadding = 10,
+	DiscordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-new-48]],
+	DiscordUrl = [[discord.gg/9bmH43JSzy]],
+	EditBoxFrameBackdropBorderColor = { 0.15, 0.15, 0.15, 1.0 },
+	EditBoxFrameBackdropColor = { 0, 0, 0, 1.0 },
+	ExpandIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]],
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 27, bottom = 0 },
+	},
+	MainFrameHeight = 600,
+	MainFrameWidth = 1200,
+	MaximizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]],
+	MinimizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]],
+	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	StatusBarHeight = Private.constants.kStatusBarHeight,
+	StatusBarPadding = Private.constants.kStatusBarPadding,
+	ThrottleInterval = 0.015, -- Minimum time between executions, in seconds
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+	},
+	TutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]],
+	UserGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]],
+	UserGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]],
+	WindowBarHeight = Private.constants.kWindowBarHeight,
 }
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-}
-local closeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
-local collapseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]]
-local discordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-new-48]]
-local expandIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]]
-local maximizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]]
-local minimizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]]
-local tutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]]
-local userGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]]
 
-local userGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]]
-local discordUrl = [[discord.gg/9bmH43JSzy]]
-local throttleInterval = 0.015 -- Minimum time between executions, in seconds
 local lastExecutionTime = 0
 
 ---@param self EPMainFrame
@@ -107,29 +109,30 @@ end
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
-	self.padding = { left = defaultPadding, top = defaultPadding, right = defaultPadding, bottom = defaultPadding }
+	self.padding =
+		{ left = k.DefaultPadding, top = k.DefaultPadding, right = k.DefaultPadding, bottom = k.DefaultPadding }
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("DIALOG")
 	self.frame:Show()
 
-	local edgeSize = frameBackdrop.edgeSize
-	local buttonSize = windowBarHeight - 2 * edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
+	local buttonSize = k.WindowBarHeight - 2 * edgeSize
 
-	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(windowBarHeight + self.padding.top))
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(k.WindowBarHeight + self.padding.top))
 	self.content:SetPoint(
 		"TOPRIGHT",
 		self.frame,
 		"TOPRIGHT",
 		-self.padding.right,
-		-(windowBarHeight + self.padding.bottom)
+		-(k.WindowBarHeight + self.padding.bottom)
 	)
 
 	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon(closeIcon)
+	self.closeButton:SetIcon(k.CloseIcon)
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(backdropColor))
+	self.closeButton:SetBackdropColor(unpack(k.BackdropColor))
 	self.closeButton.frame:SetParent(self.windowBar)
 	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
@@ -137,11 +140,11 @@ local function OnAcquire(self)
 	end)
 
 	self.minimizeButton = AceGUI:Create("EPButton")
-	self.minimizeButton:SetIcon(minimizeIcon)
+	self.minimizeButton:SetIcon(k.MinimizeIcon)
 	self.minimizeButton:SetIconPadding(2, 2)
 	self.minimizeButton:SetWidth(buttonSize)
 	self.minimizeButton:SetHeight(buttonSize)
-	self.minimizeButton:SetBackdropColor(unpack(backdropColor))
+	self.minimizeButton:SetBackdropColor(unpack(k.BackdropColor))
 	self.minimizeButton.frame:SetParent(self.windowBar)
 	self.minimizeButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT")
 	self.minimizeButton:SetCallback("Clicked", function()
@@ -150,11 +153,11 @@ local function OnAcquire(self)
 	end)
 
 	self.closeButtonMinimizeFrame = AceGUI:Create("EPButton")
-	self.closeButtonMinimizeFrame:SetIcon(closeIcon)
+	self.closeButtonMinimizeFrame:SetIcon(k.CloseIcon)
 	self.closeButtonMinimizeFrame:SetIconPadding(2, 2)
 	self.closeButtonMinimizeFrame:SetWidth(buttonSize)
 	self.closeButtonMinimizeFrame:SetHeight(buttonSize)
-	self.closeButtonMinimizeFrame:SetBackdropColor(unpack(backdropColor))
+	self.closeButtonMinimizeFrame:SetBackdropColor(unpack(k.BackdropColor))
 	self.closeButtonMinimizeFrame.frame:SetParent(self.minimizeFrame --[[@as Frame]])
 	self.closeButtonMinimizeFrame.frame:SetPoint("RIGHT", self.minimizeFrame, "RIGHT", -edgeSize, 0)
 	self.closeButtonMinimizeFrame:SetCallback("Clicked", function()
@@ -162,11 +165,11 @@ local function OnAcquire(self)
 	end)
 
 	self.maximizeButton = AceGUI:Create("EPButton")
-	self.maximizeButton:SetIcon(maximizeIcon)
+	self.maximizeButton:SetIcon(k.MaximizeIcon)
 	self.maximizeButton:SetIconPadding(2, 2)
 	self.maximizeButton:SetWidth(buttonSize)
 	self.maximizeButton:SetHeight(buttonSize)
-	self.maximizeButton:SetBackdropColor(unpack(backdropColor))
+	self.maximizeButton:SetBackdropColor(unpack(k.BackdropColor))
 	self.maximizeButton.frame:SetParent(self.minimizeFrame --[[@as Frame]])
 	self.maximizeButton.frame:SetPoint("RIGHT", self.closeButtonMinimizeFrame.frame, "LEFT", -edgeSize, 0)
 	self.maximizeButton:SetCallback("Clicked", function()
@@ -182,24 +185,24 @@ local function OnAcquire(self)
 	)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
-	self.collapseAllButton:SetIcon(collapseIcon)
+	self.collapseAllButton:SetIcon(k.CollapseIcon)
 	self.collapseAllButton:SetIconPadding(2, 2)
 	self.collapseAllButton:SetWidth(buttonSize)
 	self.collapseAllButton:SetHeight(buttonSize)
-	self.collapseAllButton:SetBackdropColor(unpack(backdropColor))
-	self.collapseAllButton:SetColor(unpack(neutralButtonColor))
+	self.collapseAllButton:SetBackdropColor(unpack(k.BackdropColor))
+	self.collapseAllButton:SetColor(unpack(k.NeutralButtonColor))
 	self.collapseAllButton.frame:SetParent(self.frame)
 	self.collapseAllButton:SetCallback("Clicked", function()
 		self:Fire("CollapseAllButtonClicked")
 	end)
 
 	self.expandAllButton = AceGUI:Create("EPButton")
-	self.expandAllButton:SetIcon(expandIcon)
+	self.expandAllButton:SetIcon(k.ExpandIcon)
 	self.expandAllButton:SetIconPadding(2, 2)
 	self.expandAllButton:SetWidth(buttonSize)
 	self.expandAllButton:SetHeight(buttonSize)
-	self.expandAllButton:SetBackdropColor(unpack(backdropColor))
-	self.expandAllButton:SetColor(unpack(neutralButtonColor))
+	self.expandAllButton:SetBackdropColor(unpack(k.BackdropColor))
+	self.expandAllButton:SetColor(unpack(k.NeutralButtonColor))
 	self.expandAllButton.frame:SetParent(self.frame)
 	self.expandAllButton:SetCallback("Clicked", function()
 		self:Fire("ExpandAllButtonClicked")
@@ -213,45 +216,45 @@ local function OnAcquire(self)
 	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar, "BOTTOMLEFT", 1, 1)
 
 	local buttonSpacing = 4
-	local buttonHeight = (statusBarHeight / 2.0) - buttonSpacing
+	local buttonHeight = (k.StatusBarHeight / 2.0) - buttonSpacing
 
 	local clearLogButton = AceGUI:Create("EPButton")
-	clearLogButton:SetText(format("|T%s:%d|t %s", closeIcon, 0, L["Clear Status Bar"]))
-	clearLogButton:SetWidth(buttonWidth)
+	clearLogButton:SetText(format("|T%s:%d|t %s", k.CloseIcon, 0, L["Clear Status Bar"]))
+	clearLogButton:SetWidth(k.ButtonWidth)
 	clearLogButton:SetHeight(buttonHeight)
 	clearLogButton:SetCallback("Clicked", function()
 		Private.interfaceUpdater.ClearMessageLog()
 	end)
 
 	local tutorialButton = AceGUI:Create("EPButton")
-	tutorialButton:SetText(format("|T%s:%d|t %s", tutorialIcon, 0, L["Tutorial"]))
+	tutorialButton:SetText(format("|T%s:%d|t %s", k.TutorialIcon, 0, L["Tutorial"]))
 	tutorialButton:SetWidthFromText(0)
 	tutorialButton:SetHeight(buttonHeight)
-	tutorialButton:SetColor(unpack(neutralButtonColor))
+	tutorialButton:SetColor(unpack(k.NeutralButtonColor))
 	tutorialButton:SetCallback("Clicked", function()
 		self:Fire("TutorialButtonClicked")
 	end)
 	self.tutorialButton = tutorialButton
 
 	local userGuideButton = AceGUI:Create("EPButton")
-	userGuideButton:SetText(format("|T%s:%d|t %s", userGuideIcon, 0, L["User Guide"]))
+	userGuideButton:SetText(format("|T%s:%d|t %s", k.UserGuideIcon, 0, L["User Guide"]))
 	userGuideButton:SetWidthFromText(0)
 	userGuideButton:SetHeight(buttonHeight)
-	userGuideButton:SetColor(unpack(neutralButtonColor))
+	userGuideButton:SetColor(unpack(k.NeutralButtonColor))
 	userGuideButton:SetCallback("Clicked", function()
-		HandleButtonClicked(self, userGuideButton.frame, "BOTTOMLEFT", "TOPLEFT", userGuideUrl)
+		HandleButtonClicked(self, userGuideButton.frame, "BOTTOMLEFT", "TOPLEFT", k.UserGuideUrl)
 	end)
 
 	local discordButton = AceGUI:Create("EPButton")
-	discordButton:SetText(format("|T%s:%d|t", discordIcon, 0))
+	discordButton:SetText(format("|T%s:%d|t", k.DiscordIcon, 0))
 	discordButton:SetWidthFromText(0)
 	discordButton:SetHeight(buttonHeight)
-	discordButton:SetColor(unpack(neutralButtonColor))
+	discordButton:SetColor(unpack(k.NeutralButtonColor))
 	discordButton:SetCallback("Clicked", function()
-		HandleButtonClicked(self, discordButton.frame, "BOTTOM", "TOP", discordUrl)
+		HandleButtonClicked(self, discordButton.frame, "BOTTOM", "TOP", k.DiscordUrl)
 	end)
 
-	local remainingWidthAvailable = buttonWidth
+	local remainingWidthAvailable = k.ButtonWidth
 		- tutorialButton.frame:GetWidth()
 		- userGuideButton.frame:GetWidth()
 		- discordButton.frame:GetWidth()
@@ -274,7 +277,7 @@ local function OnAcquire(self)
 	lowerLeftContainer:AddChildren(clearLogButton, userGuideAndDiscordContainer)
 
 	self.statusBar = AceGUI:Create("EPStatusBar")
-	self.statusBar:SetHeight(statusBarHeight)
+	self.statusBar:SetHeight(k.StatusBarHeight)
 	self.statusBar:SetFullWidth(true)
 
 	self.lowerContainer = AceGUI:Create("EPContainer")
@@ -286,7 +289,7 @@ local function OnAcquire(self)
 	self.lowerContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, self.padding.bottom)
 	self.lowerContainer:AddChildren(lowerLeftContainer, self.statusBar)
 
-	local verticalOffset = statusBarHeight + statusBarPadding + self.padding.bottom
+	local verticalOffset = k.StatusBarHeight + k.StatusBarPadding + self.padding.bottom
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.padding.right, verticalOffset)
 	local expandHorizontalOffset = self.padding.right + 2 + self.collapseAllButton.frame:GetWidth()
 	self.expandAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", expandHorizontalOffset, verticalOffset)
@@ -354,11 +357,11 @@ local function LayoutFinished(self, _, height)
 		if height then
 			self:SetHeight(
 				height
-					+ windowBarHeight
+					+ k.WindowBarHeight
 					+ self.padding.top
 					+ self.padding.bottom
 					+ self.lowerContainer.frame:GetHeight()
-					+ statusBarPadding
+					+ k.StatusBarPadding
 			)
 		end
 	end
@@ -375,8 +378,8 @@ local function SetPadding(self, top, right, bottom, left)
 	self.padding.bottom = bottom
 	self.padding.left = left
 
-	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(windowBarHeight + self.padding.top))
-	local verticalOffset = self.statusBar.frame:GetHeight() + statusBarPadding + self.padding.bottom
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(k.WindowBarHeight + self.padding.top))
+	local verticalOffset = self.statusBar.frame:GetHeight() + k.StatusBarPadding + self.padding.bottom
 	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -self.padding.right, verticalOffset)
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.padding.right, verticalOffset)
 	local expandHorizontalOffset = self.padding.right + 2 + self.collapseAllButton.frame:GetWidth()
@@ -469,22 +472,22 @@ local function Constructor()
 	frame:SetResizable(true)
 	frame:SetClampedToScreen(true)
 	frame:SetFrameStrata("DIALOG")
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
-	frame:SetSize(mainFrameWidth, mainFrameHeight)
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
+	frame:SetSize(k.MainFrameWidth, k.MainFrameHeight)
 
 	local contentFrame = CreateFrame("Frame", Type .. "ContentFrame" .. count, frame)
-	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultPadding, -(windowBarHeight + defaultPadding))
-	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -defaultPadding, defaultPadding)
+	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", k.DefaultPadding, -(k.WindowBarHeight + k.DefaultPadding))
+	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -k.DefaultPadding, k.DefaultPadding)
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetHeight(windowBarHeight)
+	windowBar:SetHeight(k.WindowBarHeight)
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	windowBarText:SetText(L["Encounter Planner"] .. " " .. addOnVersion)
@@ -509,11 +512,11 @@ local function Constructor()
 	minimizeFrame:SetMovable(true)
 	minimizeFrame:SetResizable(true)
 	minimizeFrame:SetFrameStrata("DIALOG")
-	minimizeFrame:SetHeight(windowBarHeight)
+	minimizeFrame:SetHeight(k.WindowBarHeight)
 	minimizeFrame:SetPoint("TOP")
-	minimizeFrame:SetBackdrop(titleBarBackdrop)
-	minimizeFrame:SetBackdropColor(unpack(backdropColor))
-	minimizeFrame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	minimizeFrame:SetBackdrop(k.TitleBarBackdrop)
+	minimizeFrame:SetBackdropColor(unpack(k.BackdropColor))
+	minimizeFrame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	minimizeFrame:EnableMouse(true)
 	minimizeFrame:SetClampedToScreen(true)
 	local minimizeFrameText = minimizeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -543,9 +546,9 @@ local function Constructor()
 
 	local editBoxFrame = CreateFrame("Frame", Type .. "EditBoxFrame" .. count, frame, "BackdropTemplate")
 	editBoxFrame:SetFrameStrata("TOOLTIP")
-	editBoxFrame:SetBackdrop(titleBarBackdrop)
-	editBoxFrame:SetBackdropColor(unpack(editBoxFrameBackdropColor))
-	editBoxFrame:SetBackdropBorderColor(unpack(editBoxFrameBackdropBorderColor))
+	editBoxFrame:SetBackdrop(k.TitleBarBackdrop)
+	editBoxFrame:SetBackdropColor(unpack(k.EditBoxFrameBackdropColor))
+	editBoxFrame:SetBackdropBorderColor(unpack(k.EditBoxFrameBackdropBorderColor))
 	editBoxFrame:EnableMouseMotion(true)
 
 	local testFontString = editBoxFrame:CreateFontString(nil, "BACKGROUND")
@@ -652,7 +655,7 @@ local function Constructor()
 			return
 		end
 		local currentTime = GetTime()
-		if currentTime - lastExecutionTime < throttleInterval then
+		if currentTime - lastExecutionTime < k.ThrottleInterval then
 			return
 		end
 		lastExecutionTime = currentTime

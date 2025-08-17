@@ -11,24 +11,24 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 100
-local spacingBetweenCheckAndLabel = 4
-
-local buttonColor = Private.constants.colors.kNeutralButtonActionColor
-local buttonBackdropColor = { 0, 0, 0, 0 }
-local checkBackdropColor = { 0, 0, 0, 0 }
-local checkBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local textColor = { 1, 0.82, 0, 1 }
-local buttonPadding = 1
-local defaultFontSize = 14
-
-local checkBackdrop = {
-	bgFile = nil,
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = false,
-	tileSize = nil,
-	edgeSize = 1,
+local k = {
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 100,
+	SpacingBetweenCheckAndLabel = 4,
+	ButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	ButtonBackdropColor = { 0, 0, 0, 0 },
+	CheckBackdropColor = { 0, 0, 0, 0 },
+	CheckBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	TextColor = { 1, 0.82, 0, 1 },
+	ButtonPadding = 1,
+	DefaultFontSize = 14,
+	CheckBackdrop = {
+		bgFile = nil,
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = false,
+		tileSize = nil,
+		edgeSize = 1,
+	},
 }
 
 ---@class EPCheckBox : AceGUIWidget
@@ -44,17 +44,17 @@ local checkBackdrop = {
 
 ---@param self EPCheckBox
 local function OnAcquire(self)
-	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self.autoCheckSize = true
 
 	self.button = AceGUI:Create("EPButton")
 	self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
 	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])
-	self.button.frame:SetPoint("TOPLEFT", buttonPadding, -buttonPadding)
-	self.button.frame:SetPoint("BOTTOMRIGHT", -buttonPadding, buttonPadding)
-	self.button:SetWidth(defaultFrameHeight - 2 * buttonPadding)
-	self.button:SetBackdropColor(unpack(buttonBackdropColor))
-	self.button:SetColor(unpack(buttonColor))
+	self.button.frame:SetPoint("TOPLEFT", k.ButtonPadding, -k.ButtonPadding)
+	self.button.frame:SetPoint("BOTTOMRIGHT", -k.ButtonPadding, k.ButtonPadding)
+	self.button:SetWidth(k.DefaultFrameHeight - 2 * k.ButtonPadding)
+	self.button:SetBackdropColor(unpack(k.ButtonBackdropColor))
+	self.button:SetColor(unpack(k.ButtonColor))
 	self.button:SetCallback("Clicked", function()
 		if self.enabled then
 			self:SetChecked(not self.checked)
@@ -72,11 +72,11 @@ local function OnAcquire(self)
 
 	self.label = AceGUI:Create("EPLabel")
 	self.label.frame:SetParent(self.frame)
-	self.label.frame:SetPoint("LEFT", self.checkBackground, "RIGHT", spacingBetweenCheckAndLabel, 0)
+	self.label.frame:SetPoint("LEFT", self.checkBackground, "RIGHT", k.SpacingBetweenCheckAndLabel, 0)
 	self.label.frame:SetPoint("RIGHT", self.frame, "RIGHT")
-	self.label:SetHeight(defaultFrameHeight)
-	self.label:SetFontSize(defaultFontSize)
-	self.label.text:SetTextColor(unpack(textColor))
+	self.label:SetHeight(k.DefaultFrameHeight)
+	self.label:SetFontSize(k.DefaultFontSize)
+	self.label.text:SetTextColor(unpack(k.TextColor))
 
 	self:SetEnabled(true)
 	self:SetChecked(true)
@@ -137,7 +137,7 @@ local function SetFrameWidthFromText(self)
 	self.label:SetFrameWidthFromText()
 	self:SetWidth(
 		(self.autoCheckSize and self.frame:GetHeight() or self.checkBackground:GetWidth())
-			+ spacingBetweenCheckAndLabel
+			+ k.SpacingBetweenCheckAndLabel
 			+ self.label.frame:GetWidth()
 	)
 end
@@ -160,15 +160,15 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:EnableMouse(true)
 
 	local checkBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
-	checkBackground:SetBackdrop(checkBackdrop)
-	checkBackground:SetBackdropColor(unpack(checkBackdropColor))
-	checkBackground:SetBackdropBorderColor(unpack(checkBackdropBorderColor))
+	checkBackground:SetBackdrop(k.CheckBackdrop)
+	checkBackground:SetBackdropColor(unpack(k.CheckBackdropColor))
+	checkBackground:SetBackdropBorderColor(unpack(k.CheckBackdropBorderColor))
 	checkBackground:SetPoint("LEFT")
-	checkBackground:SetSize(defaultFrameHeight, defaultFrameHeight)
+	checkBackground:SetSize(k.DefaultFrameHeight, k.DefaultFrameHeight)
 
 	---@class EPCheckBox
 	local widget = {

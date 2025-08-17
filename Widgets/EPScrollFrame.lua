@@ -11,30 +11,31 @@ local min = math.min
 local select = select
 local unpack = unpack
 
-local defaultFrameWidth = 400
-local defaultFrameHeight = 400
-local defaultScrollBarScrollFramePadding = 10
-local defaultScrollBarWidth = 16
-local thumbPadding = { x = 2, y = 2 }
-local totalVerticalThumbPadding = 2 * thumbPadding.y
-local verticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 }
-local verticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 }
-local minThumbSize = 20
-local scrollMultiplier = 30.0
-local scrollFrameBackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 }
-local maxEdgeCursorScrollDistance = 300.0
-local minEdgeMultiplier = 0.05
-local maxEdgeMultiplier = 1.5
-
-local edgeMultiplierRange = maxEdgeMultiplier - minEdgeMultiplier
-local scrollFrameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	edgeSize = 2,
+local k = {
+	DefaultFrameHeight = 400,
+	DefaultFrameWidth = 400,
+	DefaultScrollBarScrollFramePadding = 10,
+	DefaultScrollBarWidth = 16,
+	MaxEdgeCursorScrollDistance = 300.0,
+	MaxEdgeMultiplier = 1.5,
+	MinEdgeMultiplier = 0.05,
+	MinThumbSize = 20,
+	ScrollFrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeSize = 2,
+	},
+	ScrollFrameBackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
+	ScrollMultiplier = 30.0,
+	ThumbPadding = { x = 2, y = 2 },
+	VerticalScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 },
+	VerticalThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 },
 }
-local wrapperPadding = scrollFrameBackdrop.edgeSize
+k.EdgeMultiplierRange = k.MaxEdgeMultiplier - k.MinEdgeMultiplier
+k.TotalVerticalThumbPadding = 2 * k.ThumbPadding.y
+k.WrapperPadding = k.ScrollFrameBackdrop.edgeSize
 
 ---@param self EPScrollFrame
 ---@return number -- min
@@ -82,12 +83,12 @@ local function HandleEdgeScrolling(self)
 	local currentScroll = self.currentScroll
 
 	if yPosition > frameTop - 5 then -- Cursor near the top
-		local t = min(maxEdgeCursorScrollDistance, yPosition - (frameTop - 5)) / maxEdgeCursorScrollDistance
-		local result = edgeMultiplierRange * t + minEdgeMultiplier
+		local t = min(k.MaxEdgeCursorScrollDistance, yPosition - (frameTop - 5)) / k.MaxEdgeCursorScrollDistance
+		local result = k.EdgeMultiplierRange * t + k.MinEdgeMultiplier
 		SetVerticalScroll(self, max(0, currentScroll - self.scrollMultiplier * result))
 	elseif yPosition < frameBottom + 5 then -- Cursor near the bottom edge
-		local t = min(maxEdgeCursorScrollDistance, (frameBottom + 5) - yPosition) / maxEdgeCursorScrollDistance
-		local result = edgeMultiplierRange * t + minEdgeMultiplier
+		local t = min(k.MaxEdgeCursorScrollDistance, (frameBottom + 5) - yPosition) / k.MaxEdgeCursorScrollDistance
+		local result = k.EdgeMultiplierRange * t + k.MinEdgeMultiplier
 		SetVerticalScroll(self, min(maxScroll, currentScroll + self.scrollMultiplier * result))
 	end
 
@@ -123,15 +124,15 @@ local function HandleVerticalThumbUpdate(self)
 	local currentScrollBarHeight = self.verticalScrollBarHeightWhenThumbClicked
 	local yPosition = select(2, GetCursorPosition()) / UIParent:GetEffectiveScale()
 
-	local minAllowedOffset = thumbPadding.y
-	local maxAllowedOffset = currentScrollBarHeight - currentHeight - thumbPadding.y
+	local minAllowedOffset = k.ThumbPadding.y
+	local maxAllowedOffset = currentScrollBarHeight - currentHeight - k.ThumbPadding.y
 	local newOffset = Clamp(self.scrollBar:GetTop() - yPosition - currentOffset, minAllowedOffset, maxAllowedOffset)
 	self.thumb:SetPoint("TOP", 0, -newOffset)
 
 	local minScroll, maxScroll = self:GetScrollRange()
 
 	-- Calculate the scroll frame's vertical scroll based on the thumb's position
-	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * thumbPadding.y)
+	local maxThumbPosition = currentScrollBarHeight - currentHeight - (2 * k.ThumbPadding.y)
 
 	if maxScroll <= 0 or maxThumbPosition <= 0 then
 		-- No scrollable content or thumb fills the scroll bar
@@ -139,7 +140,7 @@ local function HandleVerticalThumbUpdate(self)
 		return
 	end
 
-	local scrollOffset = ((newOffset - thumbPadding.y) / maxThumbPosition) * maxScroll
+	local scrollOffset = ((newOffset - k.ThumbPadding.y) / maxThumbPosition) * maxScroll
 	SetVerticalScroll(self, max(minScroll, scrollOffset))
 end
 
@@ -163,7 +164,7 @@ end
 
 ---@param self EPScrollFrame
 local function OnAcquire(self)
-	self.scrollMultiplier = scrollMultiplier
+	self.scrollMultiplier = k.ScrollMultiplier
 	self.currentScroll = 0
 	self.verticalThumbOffsetWhenThumbClicked = 0
 	self.verticalScrollBarHeightWhenThumbClicked = 0
@@ -172,43 +173,43 @@ local function OnAcquire(self)
 	self.edgeScrollingEnabled = false
 	self.setScrollChildWidth = false
 	self.enableEdgeScrolling = false
-	self.scrollBarScrollFramePadding = defaultScrollBarScrollFramePadding
+	self.scrollBarScrollFramePadding = k.DefaultScrollBarScrollFramePadding
 
-	self.frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self.frame:Show()
 
 	self.scrollFrameWrapper:SetParent(self.frame --[[@as Frame]])
 	self.scrollFrame:SetSize(
-		defaultFrameWidth - defaultScrollBarScrollFramePadding - defaultScrollBarWidth,
-		defaultFrameHeight
+		k.DefaultFrameWidth - k.DefaultScrollBarScrollFramePadding - k.DefaultScrollBarWidth,
+		k.DefaultFrameHeight
 	)
 	self.scrollFrameWrapper:SetPoint("TOPLEFT")
-	self.scrollFrameWrapper:SetPoint("BOTTOMRIGHT", -defaultScrollBarScrollFramePadding - defaultScrollBarWidth, 0)
-	self.scrollFrameWrapper:SetBackdrop(scrollFrameBackdrop)
+	self.scrollFrameWrapper:SetPoint("BOTTOMRIGHT", -k.DefaultScrollBarScrollFramePadding - k.DefaultScrollBarWidth, 0)
+	self.scrollFrameWrapper:SetBackdrop(k.ScrollFrameBackdrop)
 	self.scrollFrameWrapper:SetBackdropColor(0, 0, 0, 1.0)
-	self.scrollFrameWrapper:SetBackdropBorderColor(unpack(scrollFrameBackdropBorderColor))
+	self.scrollFrameWrapper:SetBackdropBorderColor(unpack(k.ScrollFrameBackdropBorderColor))
 	self.scrollFrameWrapper:Show()
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.scrollFrameWrapper --[[@as Frame]])
 	self.scrollFrame:SetSize(
-		defaultFrameWidth - defaultScrollBarScrollFramePadding - defaultScrollBarWidth - 2 * wrapperPadding,
-		defaultFrameHeight - 2 * wrapperPadding
+		k.DefaultFrameWidth - k.DefaultScrollBarScrollFramePadding - k.DefaultScrollBarWidth - 2 * k.WrapperPadding,
+		k.DefaultFrameHeight - 2 * k.WrapperPadding
 	)
-	self.scrollFrame:SetPoint("TOPLEFT", wrapperPadding, -wrapperPadding)
-	self.scrollFrame:SetPoint("BOTTOMRIGHT", -wrapperPadding, wrapperPadding)
+	self.scrollFrame:SetPoint("TOPLEFT", k.WrapperPadding, -k.WrapperPadding)
+	self.scrollFrame:SetPoint("BOTTOMRIGHT", -k.WrapperPadding, k.WrapperPadding)
 	self.scrollFrame:Show()
 
 	self.scrollBar:ClearAllPoints()
 	self.scrollBar:SetParent(self.frame --[[@as Frame]])
-	self.scrollBar:SetSize(defaultScrollBarWidth, defaultFrameHeight)
+	self.scrollBar:SetSize(k.DefaultScrollBarWidth, k.DefaultFrameHeight)
 	self.scrollBar:SetPoint("TOPRIGHT")
 	self.scrollBar:SetPoint("BOTTOMRIGHT")
 	self.scrollBar:Show()
 
 	self.thumb:ClearAllPoints()
 	self.thumb:SetParent(self.scrollBar)
-	self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+	self.thumb:SetPoint("TOP", 0, -k.ThumbPadding.y)
 	self.thumb:SetScript("OnMouseDown", function()
 		HandleVerticalThumbMouseDown(self)
 	end)
@@ -357,21 +358,21 @@ local function UpdateThumbPositionAndSize(self)
 
 	if heightDifference <= 0 then
 		-- No scrolling needed, reset thumb
-		local fullThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+		local fullThumbHeight = self.scrollBar:GetHeight() - k.TotalVerticalThumbPadding
 		self.thumb:SetHeight(fullThumbHeight)
-		self.thumb:SetPoint("TOP", 0, -thumbPadding.y)
+		self.thumb:SetPoint("TOP", 0, -k.ThumbPadding.y)
 		return
 	end
 
 	local scrollPercentage = currentScroll / heightDifference
-	local availableThumbHeight = self.scrollBar:GetHeight() - totalVerticalThumbPadding
+	local availableThumbHeight = self.scrollBar:GetHeight() - k.TotalVerticalThumbPadding
 
 	local thumbHeight = (scrollFrameHeight / scrollChildHeight) * availableThumbHeight
-	thumbHeight = Clamp(thumbHeight, minThumbSize, availableThumbHeight)
+	thumbHeight = Clamp(thumbHeight, k.MinThumbSize, availableThumbHeight)
 	self.thumb:SetHeight(thumbHeight)
 
 	local maxThumbPosition = availableThumbHeight - thumbHeight
-	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + thumbPadding.y
+	local verticalThumbPosition = Clamp(scrollPercentage * maxThumbPosition, 0, maxThumbPosition) + k.ThumbPadding.y
 	self.thumb:SetPoint("TOP", 0, -verticalThumbPosition)
 end
 
@@ -383,7 +384,7 @@ end
 
 ---@return number
 local function GetWrapperPadding()
-	return wrapperPadding
+	return k.WrapperPadding
 end
 
 ---@param self EPScrollFrame
@@ -391,7 +392,7 @@ end
 local function SetScrollBarWidth(self, width)
 	self.scrollBar:SetWidth(width)
 	self.scrollFrameWrapper:SetPoint("BOTTOMRIGHT", -self.scrollBarScrollFramePadding - width, 0)
-	self.thumb:SetSize(width - (2 * thumbPadding.x), self.scrollBar:GetHeight() - 2 * thumbPadding.y)
+	self.thumb:SetSize(width - (2 * k.ThumbPadding.x), self.scrollBar:GetHeight() - 2 * k.ThumbPadding.y)
 end
 
 ---@param self EPScrollFrame
@@ -419,7 +420,7 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:EnableMouse(true)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local scrollFrameWrapper = CreateFrame("Frame", Type .. "scrollFrameWrapper" .. count, frame, "BackdropTemplate")
 	scrollFrameWrapper:SetClipsChildren(true)
@@ -428,24 +429,27 @@ local function Constructor()
 	scrollFrame:SetClipsChildren(true)
 
 	local scrollBar = CreateFrame("Frame", Type .. "VerticalScrollBar" .. count, frame)
-	scrollBar:SetWidth(defaultScrollBarWidth)
+	scrollBar:SetWidth(k.DefaultScrollBarWidth)
 	scrollBar:SetPoint("TOPRIGHT")
 	scrollBar:SetPoint("BOTTOMRIGHT")
 
 	local verticalScrollBarBackground =
 		scrollBar:CreateTexture(Type .. "VerticalScrollBarBackground" .. count, "BACKGROUND")
 	verticalScrollBarBackground:SetAllPoints()
-	verticalScrollBarBackground:SetColorTexture(unpack(verticalScrollBackgroundColor))
+	verticalScrollBarBackground:SetColorTexture(unpack(k.VerticalScrollBackgroundColor))
 
 	local verticalThumb = CreateFrame("Button", Type .. "VerticalScrollBarThumb" .. count, scrollBar)
-	verticalThumb:SetPoint("TOP", 0, thumbPadding.y)
-	verticalThumb:SetSize(defaultScrollBarWidth - (2 * thumbPadding.x), scrollBar:GetHeight() - 2 * thumbPadding.y)
+	verticalThumb:SetPoint("TOP", 0, k.ThumbPadding.y)
+	verticalThumb:SetSize(
+		k.DefaultScrollBarWidth - (2 * k.ThumbPadding.x),
+		scrollBar:GetHeight() - 2 * k.ThumbPadding.y
+	)
 	verticalThumb:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
 
 	local verticalThumbBackground =
 		verticalThumb:CreateTexture(Type .. "VerticalScrollBarThumbBackground" .. count, "BACKGROUND")
 	verticalThumbBackground:SetAllPoints()
-	verticalThumbBackground:SetColorTexture(unpack(verticalThumbBackgroundColor))
+	verticalThumbBackground:SetColorTexture(unpack(k.VerticalThumbBackgroundColor))
 
 	---@class EPScrollFrame : AceGUIWidget
 	---@field scrollChild Frame|nil
@@ -476,8 +480,8 @@ local function Constructor()
 		edgeScrollingEnabled = false,
 		setScrollChildWidth = false,
 		enableEdgeScrolling = false,
-		scrollBarScrollFramePadding = defaultScrollBarScrollFramePadding,
-		scrollMultiplier = scrollMultiplier,
+		scrollBarScrollFramePadding = k.DefaultScrollBarScrollFramePadding,
+		scrollMultiplier = k.ScrollMultiplier,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

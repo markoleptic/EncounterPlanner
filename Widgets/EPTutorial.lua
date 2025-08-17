@@ -16,33 +16,35 @@ local ipairs = ipairs
 local max = math.max
 local unpack = unpack
 
-local defaultHeight = 200
-local defaultWidth = 350
-local defaultButtonHeight = 20
-local defaultFontSize = 14
-local contentFramePadding = { x = 10, y = 10 }
-local closeButtonBackdropColor = { 0, 0, 0, 0.9 }
-local otherPadding = { x = 10, y = 10 }
-local windowBarHeight = 28
-local buttonColor = Private.constants.colors.kNeutralButtonActionColor
-local backdropColor = { 0, 0, 0, 0.9 }
-local backdropBorderColor = { 0.25, 0.25, 0.25, 0.9 }
-local title = L["Tutorial"]
-local frameBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
-local titleBarBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
-	edgeFile = "Interface\\BUTTONS\\White8x8",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 2,
-	insets = { left = 0, right = 0, top = 0, bottom = 0 },
+local k = {
+	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	BackdropColor = { 0, 0, 0, 0.9 },
+	ButtonColor = Private.constants.colors.kNeutralButtonActionColor,
+	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
+	ContentFramePadding = { x = 10, y = 10 },
+	DefaultButtonHeight = 20,
+	DefaultFontSize = 14,
+	DefaultHeight = 200,
+	DefaultWidth = 350,
+	FrameBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	OtherPadding = { x = 10, y = 10 },
+	Title = L["Tutorial"],
+	TitleBarBackdrop = {
+		bgFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = "Interface\\BUTTONS\\White8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 2,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 },
+	},
+	WindowBarHeight = 28,
 }
 
 ---@param container EPContainer
@@ -65,17 +67,17 @@ local function OnAcquire(self)
 	self.previousText = ""
 	self.currentStep = 0
 	self.totalSteps = 0
-	self.frame:SetSize(defaultWidth, defaultHeight)
+	self.frame:SetSize(k.DefaultWidth, k.DefaultHeight)
 
-	local edgeSize = frameBackdrop.edgeSize
-	local buttonSize = windowBarHeight - 2 * edgeSize
+	local edgeSize = k.FrameBackdrop.edgeSize
+	local buttonSize = k.WindowBarHeight - 2 * edgeSize
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 	self.closeButton:SetIconPadding(2, 2)
 	self.closeButton:SetWidth(buttonSize)
 	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(closeButtonBackdropColor))
+	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
 	self.closeButton.frame:SetParent(self.windowBar --[[@as Frame]])
 	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
 	self.closeButton:SetCallback("Clicked", function()
@@ -90,8 +92,8 @@ local function OnAcquire(self)
 		"TOPLEFT",
 		self.windowBar,
 		"BOTTOMLEFT",
-		contentFramePadding.x,
-		-contentFramePadding.y
+		k.ContentFramePadding.x,
+		-k.ContentFramePadding.y
 	)
 
 	self.text:SetPoint("TOPLEFT", self.container.frame, "TOPLEFT")
@@ -102,21 +104,21 @@ local function OnAcquire(self)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
-	self.buttonContainer:SetSpacing(otherPadding.x, 0)
+	self.buttonContainer:SetSpacing(k.OtherPadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
 	self.buttonContainer.frame:SetParent(self.frame --[[@as Frame]])
-	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, contentFramePadding.y)
+	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.ContentFramePadding.y)
 
 	self.progressBar = AceGUI:Create("EPProgressBar")
 	self.progressBar.frame:SetParent(self.frame --[[@as Frame]])
-	self.progressBar:SetPoint("BOTTOM", self.buttonContainer.frame --[[@as Frame]], "TOP", 0, contentFramePadding.y)
+	self.progressBar:SetPoint("BOTTOM", self.buttonContainer.frame --[[@as Frame]], "TOP", 0, k.ContentFramePadding.y)
 
 	local previousButton = AceGUI:Create("EPButton")
 	previousButton:SetText(L["Previous"])
 	previousButton:SetWidthFromText()
-	previousButton:SetHeight(defaultButtonHeight)
-	previousButton:SetColor(unpack(buttonColor))
+	previousButton:SetHeight(k.DefaultButtonHeight)
+	previousButton:SetColor(unpack(k.ButtonColor))
 	previousButton:SetCallback("Clicked", function()
 		self:Fire("PreviousButtonClicked")
 	end)
@@ -125,8 +127,8 @@ local function OnAcquire(self)
 	local nextButton = AceGUI:Create("EPButton")
 	nextButton:SetText(L["Start"])
 	nextButton:SetWidthFromText()
-	nextButton:SetHeight(defaultButtonHeight)
-	nextButton:SetColor(unpack(buttonColor))
+	nextButton:SetHeight(k.DefaultButtonHeight)
+	nextButton:SetColor(unpack(k.ButtonColor))
 	nextButton:SetCallback("Clicked", function()
 		self:Fire("NextButtonClicked")
 	end)
@@ -173,7 +175,7 @@ local function InitProgressBar(self, totalSteps, barTexture)
 		fill = false,
 		showBorder = false,
 		showIconBorder = false,
-		color = buttonColor,
+		color = k.ButtonColor,
 		backgroundColor = Private.constants.colors.kDefaultButtonBackdropColor,
 	}
 	self.progressBar:Set(preferences, "", 0, nil)
@@ -211,32 +213,32 @@ end
 
 ---@param self EPTutorial
 local function Resize(self)
-	self.progressBar.frame:SetWidth(defaultWidth - contentFramePadding.x * 2)
+	self.progressBar.frame:SetWidth(k.DefaultWidth - k.ContentFramePadding.x * 2)
 	self.progressBar:RestyleBar()
-	self.container.frame:SetWidth(defaultWidth - contentFramePadding.x * 2)
+	self.container.frame:SetWidth(k.DefaultWidth - k.ContentFramePadding.x * 2)
 	self.text:ClearAllPoints()
-	self.measureText:SetWidth(defaultWidth - contentFramePadding.x * 2)
+	self.measureText:SetWidth(k.DefaultWidth - k.ContentFramePadding.x * 2)
 	self.measureText:SetText(self.text:GetText())
-	self.text:SetWidth(defaultWidth - contentFramePadding.x * 2)
+	self.text:SetWidth(k.DefaultWidth - k.ContentFramePadding.x * 2)
 	self.container.frame:SetHeight(self.measureText:GetHeight())
 	self.text:SetPoint("CENTER", self.container.frame)
 
 	local containerHeight = self.container.frame:GetHeight()
 	local buttonContainerHeight = self.buttonContainer.frame:GetHeight()
 	local progressBarHeight = self.progressBar.frame:GetHeight()
-	local paddingHeight = contentFramePadding.y * 4
+	local paddingHeight = k.ContentFramePadding.y * 4
 
-	local height = windowBarHeight + buttonContainerHeight + paddingHeight + containerHeight + progressBarHeight
-	self.frame:SetSize(defaultWidth, height)
+	local height = k.WindowBarHeight + buttonContainerHeight + paddingHeight + containerHeight + progressBarHeight
+	self.frame:SetSize(k.DefaultWidth, height)
 end
 
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetSize(defaultWidth, defaultHeight)
-	frame:SetBackdrop(frameBackdrop)
-	frame:SetBackdropColor(unpack(backdropColor))
-	frame:SetBackdropBorderColor(unpack(backdropBorderColor))
+	frame:SetSize(k.DefaultWidth, k.DefaultHeight)
+	frame:SetBackdrop(k.FrameBackdrop)
+	frame:SetBackdropColor(unpack(k.BackdropColor))
+	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
 	frame:SetFrameStrata("DIALOG")
@@ -247,7 +249,7 @@ local function Constructor()
 	measureText:SetJustifyH("CENTER")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		measureText:SetFont(fPath, defaultFontSize, "")
+		measureText:SetFont(fPath, k.DefaultFontSize, "")
 	end
 
 	local text = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
@@ -258,20 +260,20 @@ local function Constructor()
 	text:SetFontObject("ChatFontNormal")
 	text:SetJustifyH("CENTER")
 	if fPath then
-		text:SetFont(fPath, defaultFontSize, "")
+		text:SetFont(fPath, k.DefaultFontSize, "")
 	end
 
 	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
 	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
 	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(windowBarHeight)
-	windowBar:SetBackdrop(titleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(backdropColor))
-	windowBar:SetBackdropBorderColor(unpack(backdropBorderColor))
+	windowBar:SetHeight(k.WindowBarHeight)
+	windowBar:SetBackdrop(k.TitleBarBackdrop)
+	windowBar:SetBackdropColor(unpack(k.BackdropColor))
+	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(title)
+	windowBarText:SetText(k.Title)
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	if fPath then

@@ -15,13 +15,15 @@ local tooltip = Private.tooltip
 local CreateFrame = CreateFrame
 local unpack = unpack
 
-local defaultFrameHeight = 24
-local defaultFrameWidth = 200
-local defaultFontHeight = 14
-local disabledTextColor = { 0.5, 0.5, 0.5, 1 }
-local enabledTextColor = { 1, 1, 1, 1 }
-local defaultIconPadding = { left = 2, top = 2, right = 2, bottom = 2 }
-local defaultTextPadding = { left = 0, right = 2 }
+local k = {
+	DefaultFontHeight = 14,
+	DefaultFrameHeight = 24,
+	DefaultFrameWidth = 200,
+	DefaultIconPadding = { left = 2, top = 2, right = 2, bottom = 2 },
+	DefaultTextPadding = { left = 0, right = 2 },
+	DisabledTextColor = { 0.5, 0.5, 0.5, 1 },
+	EnabledTextColor = { 1, 1, 1, 1 },
+}
 
 ---@param epLabel EPLabel
 local function HandleIconEnter(epLabel)
@@ -75,25 +77,25 @@ end
 local function SetEnabled(self, enabled)
 	self.enabled = enabled
 	if enabled then
-		self.text:SetTextColor(unpack(enabledTextColor))
+		self.text:SetTextColor(unpack(k.EnabledTextColor))
 	else
-		self.text:SetTextColor(unpack(disabledTextColor))
+		self.text:SetTextColor(unpack(k.DisabledTextColor))
 	end
 end
 
 ---@param self EPLabel
 local function OnAcquire(self)
-	self.horizontalTextPadding = { left = defaultTextPadding.left, right = defaultTextPadding.right }
+	self.horizontalTextPadding = { left = k.DefaultTextPadding.left, right = k.DefaultTextPadding.right }
 	self.iconPadding = {
-		left = defaultIconPadding.left,
-		top = defaultIconPadding.top,
-		right = defaultIconPadding.right,
-		bottom = defaultIconPadding.bottom,
+		left = k.DefaultIconPadding.left,
+		top = k.DefaultIconPadding.top,
+		right = k.DefaultIconPadding.right,
+		bottom = k.DefaultIconPadding.bottom,
 	}
 	self.text:ClearAllPoints()
 	self.icon:ClearAllPoints()
-	self:SetFontSize(defaultFontHeight)
-	self:SetHeight(defaultFrameHeight)
+	self:SetFontSize(k.DefaultFontHeight)
+	self:SetHeight(k.DefaultFrameHeight)
 	self:SetHorizontalTextAlignment("LEFT")
 	self:SetIcon(nil)
 	self:SetEnabled(true)
@@ -213,19 +215,19 @@ local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
 	local frame = CreateFrame("Frame", Type .. count, UIParent)
-	frame:SetSize(defaultFrameWidth, defaultFrameHeight)
+	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local icon = frame:CreateTexture(Type .. "Icon" .. count, "ARTWORK")
-	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", defaultIconPadding.left, -defaultIconPadding.top)
-	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", defaultIconPadding.left, defaultIconPadding.bottom)
+	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", k.DefaultIconPadding.left, -k.DefaultIconPadding.top)
+	icon:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", k.DefaultIconPadding.left, k.DefaultIconPadding.bottom)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
 	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
-		text:SetFont(fPath, defaultFontHeight)
+		text:SetFont(fPath, k.DefaultFontHeight)
 	end
-	text:SetPoint("LEFT", frame, "LEFT", defaultTextPadding.x, 0)
-	text:SetPoint("RIGHT", frame, "RIGHT", defaultTextPadding.x, 0)
+	text:SetPoint("LEFT", frame, "LEFT", k.DefaultTextPadding.x, 0)
+	text:SetPoint("RIGHT", frame, "RIGHT", k.DefaultTextPadding.x, 0)
 	text:SetWordWrap(false)
 
 	---@class EPLabel
