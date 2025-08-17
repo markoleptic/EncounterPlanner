@@ -57,10 +57,10 @@ do
 	local SetPhaseCounts = bossUtilities.SetPhaseCounts
 	local SetPhaseDurations = bossUtilities.SetPhaseDurations
 
-	local instanceAndBossPadding = 4
+	local kInstanceAndBossPadding = 4
 	local kMaxBossDuration = constants.kMaxBossDuration
-	local lastBossDungeonEncounterID = 0
-	local lastDifficulty = DifficultyType.Mythic
+	local sLastBossDungeonEncounterID = 0
+	local sLastDifficulty = DifficultyType.Mythic
 
 	-- Clears and repopulates the boss ability container based on the boss name.
 	---@param boss Boss
@@ -90,24 +90,24 @@ do
 				dungeonInstance = dungeonInstance.splitDungeonInstances[boss.mapChallengeModeID]
 				instanceLabel:SetText(
 					dungeonInstance.name,
-					instanceAndBossPadding,
+					kInstanceAndBossPadding,
 					{ dungeonInstanceID = dungeonInstance.instanceID, mapChallengeModeID = boss.mapChallengeModeID }
 				)
 			else
-				instanceLabel:SetText(dungeonInstance.name, instanceAndBossPadding, dungeonInstance.instanceID)
+				instanceLabel:SetText(dungeonInstance.name, kInstanceAndBossPadding, dungeonInstance.instanceID)
 			end
 			instanceLabel:SetIcon(dungeonInstance.icon, 0, 2, 0, 0, 2)
 			instanceLabel:SetFrameWidthFromText()
 
-			bossLabel:SetText(boss.name, instanceAndBossPadding, dungeonEncounterID)
+			bossLabel:SetText(boss.name, kInstanceAndBossPadding, dungeonEncounterID)
 			bossLabel:SetIcon(boss.icon, 0, 2, 0, 0, 2)
 			bossLabel.icon:SetTexCoord(0.15, 0.85, 0.15, 0.85)
 			bossLabel:SetFrameWidthFromText()
 
 			if difficulty == DifficultyType.Heroic then
-				difficultyLabel:SetText(L["Heroic"], instanceAndBossPadding, difficulty)
+				difficultyLabel:SetText(L["Heroic"], kInstanceAndBossPadding, difficulty)
 			else
-				difficultyLabel:SetText(L["Mythic"], instanceAndBossPadding, difficulty)
+				difficultyLabel:SetText(L["Mythic"], kInstanceAndBossPadding, difficulty)
 			end
 			difficultyLabel.icon:SetTexCoord(GetTextCoordsFromDifficulty(difficulty, true))
 			difficultyLabel:SetFrameWidthFromText()
@@ -191,12 +191,12 @@ do
 	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local difficulty = plan.difficulty
-		if lastBossDungeonEncounterID ~= 0 then
-			ResetBossPhaseTimings(lastBossDungeonEncounterID, lastDifficulty)
-			ResetBossPhaseCounts(lastBossDungeonEncounterID, lastDifficulty)
+		if sLastBossDungeonEncounterID ~= 0 then
+			ResetBossPhaseTimings(sLastBossDungeonEncounterID, sLastDifficulty)
+			ResetBossPhaseCounts(sLastBossDungeonEncounterID, sLastDifficulty)
 		end
-		lastBossDungeonEncounterID = bossDungeonEncounterID
-		lastDifficulty = difficulty
+		sLastBossDungeonEncounterID = bossDungeonEncounterID
+		sLastDifficulty = difficulty
 		local boss = GetBoss(bossDungeonEncounterID)
 		if boss then
 			SetPhaseDurations(bossDungeonEncounterID, plan.customPhaseDurations, difficulty)
@@ -231,7 +231,7 @@ do
 	local GetSpellName = C_Spell.GetSpellName
 	local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 
-	local assignmentMetaTables = {
+	local kAssignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
 		TimedAssignment = Private.classes.TimedAssignment,
 		PhasedAssignment = Private.classes.PhasedAssignment,
@@ -348,7 +348,7 @@ do
 						assignmentEditor:PopulateFields(
 							assignment,
 							previewText,
-							assignmentMetaTables,
+							kAssignmentMetaTables,
 							availableCombatLogEventTypes,
 							spellSpecificCombatLogEventTypes
 						)
@@ -636,10 +636,10 @@ function InterfaceUpdater.UpdateFromPlan(plan, preserve)
 end
 
 do
-	local reminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
-	local reminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
-	local reminderEnabledIconColor = { 1, 0.82, 0, 1 }
-	local reminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
+	local kReminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
+	local kReminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
+	local kReminderEnabledIconColor = { 1, 0.82, 0, 1 }
+	local kReminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
 
 	---@param plan Plan
 	function InterfaceUpdater.UpdatePlanCheckBoxes(plan)
@@ -683,8 +683,8 @@ do
 				end
 				for planName, plan in pairs(plans) do
 					local instanceID = plan.instanceID
-					local customTexture = plan.remindersEnabled and reminderEnabledTexture or reminderDisabledTexture
-					local color = plan.remindersEnabled and reminderEnabledIconColor or reminderDisabledIconColor
+					local customTexture = plan.remindersEnabled and kReminderEnabledTexture or kReminderDisabledTexture
+					local color = plan.remindersEnabled and kReminderEnabledIconColor or kReminderDisabledIconColor
 					for _, dropdownData in pairs(instanceDropdownData) do
 						local boss = GetBoss(plan.dungeonEncounterID)
 						local dungeonInstanceID, mapChallengeModeID
@@ -738,8 +738,8 @@ do
 				local items = planDropdown:FindItems(plan.name)
 				local enabled = plan.remindersEnabled
 				if #items == 0 then
-					local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
-					local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+					local customTexture = enabled and kReminderEnabledTexture or kReminderDisabledTexture
+					local color = enabled and kReminderEnabledIconColor or kReminderDisabledIconColor
 					local boss = GetBoss(plan.dungeonEncounterID)
 					local text = FormatPlanText(plan.name, boss.icon, plan.difficulty)
 					local dropdownItemData = {
@@ -790,8 +790,8 @@ do
 			local planDropdown = Private.mainFrame.planDropdown
 			if planDropdown then
 				local items = planDropdown:FindItems(planName)
-				local customTexture = enabled and reminderEnabledTexture or reminderDisabledTexture
-				local color = enabled and reminderEnabledIconColor or reminderDisabledIconColor
+				local customTexture = enabled and kReminderEnabledTexture or kReminderDisabledTexture
+				local color = enabled and kReminderEnabledIconColor or kReminderDisabledIconColor
 				for _, itemData in pairs(items) do
 					itemData.item:SetCustomTexture(customTexture, color, false)
 				end
@@ -802,35 +802,35 @@ end
 
 do
 	local InCombatLockdown = InCombatLockdown
-	local messageBox = nil ---@type  EPMessageBox|nil
-	local messageQueue = {} ---@type table<integer, MessageBoxData>
-	local isExecutingCallbacks = false
+	local sMessageBox = nil ---@type  EPMessageBox|nil
+	local sMessageQueue = {} ---@type table<integer, MessageBoxData>
+	local sIsExecutingCallbacks = false
 
 	local function Enqueue(messageBoxData)
-		tinsert(messageQueue, messageBoxData)
+		tinsert(sMessageQueue, messageBoxData)
 	end
 
 	---@return MessageBoxData|nil
 	local function Dequeue()
-		if #messageQueue > 0 then
-			return tremove(messageQueue, 1)
+		if #sMessageQueue > 0 then
+			return tremove(sMessageQueue, 1)
 		end
 	end
 
 	---@param onlyNonCommunication boolean
 	local function ClearQueue(onlyNonCommunication)
 		local newQueue = {}
-		for _, messageBoxData in ipairs(messageQueue) do
+		for _, messageBoxData in ipairs(sMessageQueue) do
 			if onlyNonCommunication and messageBoxData.isCommunication then
 				tinsert(newQueue, messageBoxData)
 			end
 		end
-		messageQueue = newQueue
+		sMessageQueue = newQueue
 	end
 
 	local function ProcessMessageQueue()
 		Private:UnregisterEvent("PLAYER_REGEN_ENABLED")
-		if not messageBox and #messageQueue > 0 then
+		if not sMessageBox and #sMessageQueue > 0 then
 			local messageBoxData = Dequeue()
 			if messageBoxData then
 				InterfaceUpdater.CreateMessageBox(messageBoxData, false)
@@ -841,14 +841,14 @@ do
 	---@param callback fun()
 	local function ExecuteCallback(callback)
 		if callback then
-			isExecutingCallbacks = true
+			sIsExecutingCallbacks = true
 			callback()
-			isExecutingCallbacks = false
+			sIsExecutingCallbacks = false
 		end
 	end
 
 	local function HandleMessageBoxReleased()
-		messageBox = nil
+		sMessageBox = nil
 		ProcessMessageQueue()
 	end
 
@@ -863,33 +863,33 @@ do
 			end
 			return false
 		else
-			if not messageBox then
-				messageBox = AceGUI:Create("EPMessageBox")
-				messageBox.frame:SetParent(UIParent)
-				messageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
-				messageBox:SetTitle(messageBoxData.title)
-				messageBox:SetText(messageBoxData.message)
-				messageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-				messageBox:SetPoint("TOP", UIParent, "TOP", 0, -messageBox.frame:GetBottom())
-				messageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
-				messageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
-				messageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
-				messageBox:SetCallback("Accepted", function()
-					AceGUI:Release(messageBox)
+			if not sMessageBox then
+				sMessageBox = AceGUI:Create("EPMessageBox")
+				sMessageBox.frame:SetParent(UIParent)
+				sMessageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
+				sMessageBox:SetTitle(messageBoxData.title)
+				sMessageBox:SetText(messageBoxData.message)
+				sMessageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+				sMessageBox:SetPoint("TOP", UIParent, "TOP", 0, -sMessageBox.frame:GetBottom())
+				sMessageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
+				sMessageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
+				sMessageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
+				sMessageBox:SetCallback("Accepted", function()
+					AceGUI:Release(sMessageBox)
 					ExecuteCallback(messageBoxData.acceptButtonCallback)
 				end)
-				messageBox:SetCallback("Rejected", function()
-					AceGUI:Release(messageBox)
+				sMessageBox:SetCallback("Rejected", function()
+					AceGUI:Release(sMessageBox)
 					if type(messageBoxData.rejectButtonCallback) == "function" then
 						ExecuteCallback(messageBoxData.rejectButtonCallback)
 					end
 				end)
 				for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
-					local button = messageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
+					local button = sMessageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
 					if button then
-						messageBox:AddButton(buttonToAdd.buttonText, button)
-						messageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
-							AceGUI:Release(messageBox)
+						sMessageBox:AddButton(buttonToAdd.buttonText, button)
+						sMessageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
+							AceGUI:Release(sMessageBox)
 							if type(buttonToAdd.callback) == "function" then
 								ExecuteCallback(buttonToAdd.callback)
 							end
@@ -898,7 +898,7 @@ do
 						error(AddOnName .. ": Invalid button index.")
 					end
 				end
-				messageBox.isCommunicationsMessage = messageBoxData.isCommunication
+				sMessageBox.isCommunicationsMessage = messageBoxData.isCommunication
 				return true
 			elseif queueIfNotCreated then
 				Enqueue(messageBoxData)
@@ -911,10 +911,10 @@ do
 	function InterfaceUpdater.RemoveMessageBoxes(onlyNonCommunication)
 		ClearQueue(onlyNonCommunication)
 
-		if not isExecutingCallbacks and messageBox then
-			local isCurrentCommunication = messageBox.isCommunicationsMessage
+		if not sIsExecutingCallbacks and sMessageBox then
+			local isCurrentCommunication = sMessageBox.isCommunicationsMessage
 			if not onlyNonCommunication or isCurrentCommunication then
-				messageBox:Release()
+				sMessageBox:Release()
 			end
 		end
 
@@ -925,9 +925,9 @@ do
 
 	---@param messageBoxDataID string
 	function InterfaceUpdater.RemoveFromMessageQueue(messageBoxDataID)
-		for index, messageBoxData in ipairs(messageQueue) do
+		for index, messageBoxData in ipairs(sMessageQueue) do
 			if messageBoxData.ID == messageBoxDataID then
-				tremove(messageQueue, index)
+				tremove(sMessageQueue, index)
 				break
 			end
 		end
@@ -935,20 +935,20 @@ do
 end
 
 do
-	local messageLog = {} ---@type table<integer, {message: string, severityLevel: integer, indentLevel: integer}>
+	local sMessageLog = {} ---@type table<integer, {message: string, severityLevel: integer, indentLevel: integer}>
 
 	---@param message string
 	---@param severityLevel SeverityLevel?
 	---@param indentLevel IndentLevel?
 	function InterfaceUpdater.LogMessage(message, severityLevel, indentLevel)
-		tinsert(messageLog, { message = message, severityLevel = severityLevel, indentLevel = indentLevel })
+		tinsert(sMessageLog, { message = message, severityLevel = severityLevel, indentLevel = indentLevel })
 		if Private.mainFrame and Private.mainFrame.statusBar then
 			Private.mainFrame.statusBar:AddMessage(message, severityLevel, indentLevel)
 		end
 	end
 
 	function InterfaceUpdater.ClearMessageLog()
-		wipe(messageLog)
+		wipe(sMessageLog)
 		if Private.mainFrame and Private.mainFrame.statusBar then
 			Private.mainFrame.statusBar:ClearMessages()
 		end
@@ -957,7 +957,7 @@ do
 	function InterfaceUpdater.RestoreMessageLog()
 		if Private.mainFrame and Private.mainFrame.statusBar then
 			Private.mainFrame.statusBar:ClearMessages()
-			Private.mainFrame.statusBar:AddMessages(messageLog)
+			Private.mainFrame.statusBar:AddMessages(sMessageLog)
 		end
 	end
 end
@@ -975,7 +975,7 @@ function InterfaceUpdater.FindMatchingPlan(planID)
 end
 
 do
-	local assignmentMetaTables = {
+	local kAssignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
 		TimedAssignment = Private.classes.TimedAssignment,
 	}
@@ -1009,7 +1009,7 @@ do
 			Private.assignmentEditor:PopulateFields(
 				assignment,
 				previewText,
-				assignmentMetaTables,
+				kAssignmentMetaTables,
 				availableCombatLogEventTypes,
 				spellSpecificCombatLogEventTypes
 			)

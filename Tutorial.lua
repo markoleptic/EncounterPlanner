@@ -40,24 +40,25 @@ local pairs = pairs
 local tinsert = table.insert
 local type = type
 
-local kAbilityEntryWidth = 200
-local kAssignmentSpacing = 2
-local kBrewmasterAldryrEncounterID = 2900
-local kHappyHourSpellID = 442525
-local kHighlightPadding = 2
-local kTutorialFrameLevel = 250
-local kTutorialOffset = 10
+local k = {
+	AbilityEntryWidth = 200,
+	AssignmentSpacing = 2,
+	BrewmasterAldryrEncounterID = 2900,
+	HappyHourSpellID = 442525,
+	HighlightPadding = 2,
+	TutorialFrameLevel = 250,
+	TutorialOffset = 10,
+	PlayerName = UnitFullName("player"),
+	TimeValues = { [1] = 15.0, [2] = 20.0, [3] = 120.0 },
+}
 
-local playerName, _ = UnitFullName("player")
-
-local highlightBorderFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-highlightBorderFrame:SetBackdrop({
-	edgeFile = "Interface\\Buttons\\WHITE8x8",
-	edgeSize = 2,
-})
-highlightBorderFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
-highlightBorderFrame:EnableMouse(false)
-highlightBorderFrame:Hide()
+local s = {
+	HighlightBorderFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate"),
+}
+s.HighlightBorderFrame:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 2 })
+s.HighlightBorderFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
+s.HighlightBorderFrame:EnableMouse(false)
+s.HighlightBorderFrame:Hide()
 
 ---@param frame Frame
 local function HighlightFrame(frame)
@@ -65,13 +66,13 @@ local function HighlightFrame(frame)
 		return
 	end
 
-	highlightBorderFrame:SetParent(UIParent)
-	highlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
-	highlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-	highlightBorderFrame:ClearAllPoints()
-	highlightBorderFrame:SetPoint("TOPLEFT", frame, -kHighlightPadding, kHighlightPadding)
-	highlightBorderFrame:SetPoint("BOTTOMRIGHT", frame, kHighlightPadding, -kHighlightPadding)
-	highlightBorderFrame:Show()
+	s.HighlightBorderFrame:SetParent(UIParent)
+	s.HighlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
+	s.HighlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
+	s.HighlightBorderFrame:ClearAllPoints()
+	s.HighlightBorderFrame:SetPoint("TOPLEFT", frame, -k.HighlightPadding, k.HighlightPadding)
+	s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", frame, k.HighlightPadding, -k.HighlightPadding)
+	s.HighlightBorderFrame:Show()
 end
 
 -- Highlights the assignment timeline and places the tutorial frame above it.
@@ -80,15 +81,15 @@ local function HighlightAssignmentTimelineAndPositionTutorialFrame(self)
 	local timeline = self.mainFrame.timeline
 	if timeline then
 		local timelineFrame = timeline.assignmentTimeline.scrollFrame
-		highlightBorderFrame:SetParent(timelineFrame)
-		highlightBorderFrame:SetFrameStrata(timelineFrame:GetFrameStrata())
-		highlightBorderFrame:SetFrameLevel(timelineFrame:GetFrameLevel() + 50)
-		highlightBorderFrame:ClearAllPoints()
-		highlightBorderFrame:SetPoint("TOPLEFT", timelineFrame)
-		highlightBorderFrame:SetPoint("BOTTOMRIGHT", timelineFrame)
-		highlightBorderFrame:Show()
+		s.HighlightBorderFrame:SetParent(timelineFrame)
+		s.HighlightBorderFrame:SetFrameStrata(timelineFrame:GetFrameStrata())
+		s.HighlightBorderFrame:SetFrameLevel(timelineFrame:GetFrameLevel() + 50)
+		s.HighlightBorderFrame:ClearAllPoints()
+		s.HighlightBorderFrame:SetPoint("TOPLEFT", timelineFrame)
+		s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", timelineFrame)
+		s.HighlightBorderFrame:Show()
 		self.tutorial.frame:ClearAllPoints()
-		self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset + 32)
+		self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset + 32)
 	end
 end
 
@@ -108,31 +109,31 @@ local function HighlightTimelineSectionAndPositionTutorialFrame(
 	local timeline = self.mainFrame.timeline
 	if timeline then
 		local timelineFrame = timeline.assignmentTimeline.timelineFrame
-		highlightBorderFrame:SetParent(timelineFrame)
-		highlightBorderFrame:SetFrameStrata(timelineFrame:GetFrameStrata())
-		highlightBorderFrame:SetFrameLevel(timelineFrame:GetFrameLevel() + 50)
-		highlightBorderFrame:ClearAllPoints()
+		s.HighlightBorderFrame:SetParent(timelineFrame)
+		s.HighlightBorderFrame:SetFrameStrata(timelineFrame:GetFrameStrata())
+		s.HighlightBorderFrame:SetFrameLevel(timelineFrame:GetFrameLevel() + 50)
+		s.HighlightBorderFrame:ClearAllPoints()
 		local x = leftOffset
 		local assignmentHeightSetting = AddOn.db.profile.preferences.timelineRows.assignmentHeight
-		local assignmentHeight = (assignmentHeightSetting + kAssignmentSpacing) * rowNumber
+		local assignmentHeight = (assignmentHeightSetting + k.AssignmentSpacing) * rowNumber
 		local y = -assignmentHeight
-		highlightBorderFrame:SetPoint("TOPLEFT", timelineFrame, x, y)
+		s.HighlightBorderFrame:SetPoint("TOPLEFT", timelineFrame, x, y)
 		x = rightOffset
 		y = -assignmentHeight
-		highlightBorderFrame:SetPoint("TOPRIGHT", timelineFrame, x, y)
-		highlightBorderFrame:SetHeight(assignmentHeightSetting)
-		highlightBorderFrame:Show()
+		s.HighlightBorderFrame:SetPoint("TOPRIGHT", timelineFrame, x, y)
+		s.HighlightBorderFrame:SetHeight(assignmentHeightSetting)
+		s.HighlightBorderFrame:Show()
 		self.tutorial.frame:ClearAllPoints()
 		if additionalVerticalOffset then
 			self.tutorial.frame:SetPoint(
 				"BOTTOM",
-				highlightBorderFrame,
+				s.HighlightBorderFrame,
 				"TOP",
 				0,
-				kTutorialOffset + additionalVerticalOffset
+				k.TutorialOffset + additionalVerticalOffset
 			)
 		else
-			self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+			self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset)
 		end
 	end
 end
@@ -143,7 +144,7 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 	local needToCreateNewAssignment = true
 
 	for _, assignment in ipairs(assignments) do
-		if assignment.assignee == playerName then
+		if assignment.assignee == k.PlayerName then
 			needToCreateNewAssignment = false
 			interfaceUpdater.UpdateFromAssignment(
 				GetCurrentBossDungeonEncounterID(),
@@ -202,9 +203,9 @@ end
 ---@param scrollIntoView boolean
 local function EnsureAssigneeIsExpanded(self, scrollIntoView)
 	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-	if collapsed[playerName] ~= nil then
-		if collapsed[playerName] == true then
-			collapsed[playerName] = false
+	if collapsed[k.PlayerName] ~= nil then
+		if collapsed[k.PlayerName] == true then
+			collapsed[k.PlayerName] = false
 			interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 		end
 	end
@@ -230,7 +231,7 @@ local function IsSelfPresentInPlan()
 	local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 	if plan then
 		for _, assignment in ipairs(plan.assignments) do
-			if assignment.assignee == playerName then
+			if assignment.assignee == k.PlayerName then
 				return true
 			end
 		end
@@ -320,8 +321,6 @@ local function IsTextChanged(self)
 	return false
 end
 
-local timeValues = { [1] = 15.0, [2] = 20.0, [3] = 120.0 }
-
 ---@param assignmentNumber integer
 ---@param setTime boolean
 ---@param allowUnknown boolean|nil
@@ -336,7 +335,7 @@ local function FindPhaseOneAssignment(assignmentNumber, setTime, allowUnknown)
 		local secondSpell = AddOn.db.global.tutorial.secondSpell
 		local encounteredSecondSpell = false
 		for _, assignment in ipairs(assignments) do
-			if assignment.assignee == playerName then
+			if assignment.assignee == k.PlayerName then
 				---@cast assignment TimedAssignment
 				if getmetatable(assignment) == Private.classes.TimedAssignment then
 					local valid = false
@@ -372,7 +371,7 @@ local function FindPhaseOneAssignment(assignmentNumber, setTime, allowUnknown)
 					end
 					if valid then
 						if setTime and assignmentNumber ~= 3 then
-							assignment.time = timeValues[assignmentNumber]
+							assignment.time = k.TimeValues[assignmentNumber]
 						end
 						return assignment
 					end
@@ -400,7 +399,7 @@ local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setT
 	else
 		assignment = TimedAssignment:New()
 	end
-	assignment.assignee = playerName
+	assignment.assignee = k.PlayerName
 	if assignmentNumber == 1 then
 		if AddOn.db.global.tutorial.firstSpell > 0 then
 			assignment.spellID = AddOn.db.global.tutorial.firstSpell
@@ -420,7 +419,7 @@ local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setT
 			assignment.spellID = AddOn.db.global.tutorial.secondSpell
 		end
 		if setTime then
-			timeValues.time = 120.0
+			assignment.time = 120.0
 		end
 	end
 	tinsert(GetCurrentAssignments(), assignment)
@@ -464,7 +463,7 @@ local function IntermissionAssignmentExists(combatLogEventType, limitToInIntermi
 				if
 					timeOkay
 					and assignment.combatLogEventType == combatLogEventType
-					and assignment.combatLogEventSpellID == kHappyHourSpellID
+					and assignment.combatLogEventSpellID == k.HappyHourSpellID
 				then
 					return true
 				end
@@ -482,7 +481,10 @@ local function TwoIntermissionAssignmentsExist()
 		for _, assignment in ipairs(GetCurrentAssignments()) do
 			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
-				if assignment.combatLogEventType == "SAR" and assignment.combatLogEventSpellID == kHappyHourSpellID then
+				if
+					assignment.combatLogEventType == "SAR"
+					and assignment.combatLogEventSpellID == k.HappyHourSpellID
+				then
 					if assignment.spellID == constants.kTextAssignmentSpellID then
 						count = count + 1
 						if count >= 2 then
@@ -556,7 +558,7 @@ local function FindOrCreateIntermissionAssignment(
 	end
 
 	local assignment = CombatLogEventAssignment:New()
-	assignment.assignee = playerName
+	assignment.assignee = k.PlayerName
 	assignment.combatLogEventType = combatLogEventTypes[1]
 	assignment.combatLogEventSpellID = spellID
 	assignment.spellCount = spellCount
@@ -658,9 +660,9 @@ end
 local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAssignmentEditor, allowUnknown)
 	if self.tutorial then
 		local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-		if collapsed[playerName] ~= nil then
-			if collapsed[playerName] == true then
-				collapsed[playerName] = false
+		if collapsed[k.PlayerName] ~= nil then
+			if collapsed[k.PlayerName] == true then
+				collapsed[k.PlayerName] = false
 			end
 		end
 
@@ -721,9 +723,9 @@ local function IntermissionOkay(
 	if self.tutorial then
 		if not skipExpand then
 			local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-			if collapsed[playerName] ~= nil then
-				if collapsed[playerName] == true then
-					collapsed[playerName] = false
+			if collapsed[k.PlayerName] ~= nil then
+				if collapsed[k.PlayerName] == true then
+					collapsed[k.PlayerName] = false
 				end
 			end
 		end
@@ -737,7 +739,7 @@ local function IntermissionOkay(
 		local time = 0.0
 		if assignmentNumber > 1 then
 			FindOrCreatePhaseOneAssignment(3, true, true)
-			local a = FindOrCreateIntermissionAssignment(1, true, true, { "SAR" }, kHappyHourSpellID, 1, false, 0.0)
+			local a = FindOrCreateIntermissionAssignment(1, true, true, { "SAR" }, k.HappyHourSpellID, 1, false, 0.0)
 			time = a.time + 15.0
 		end
 		local assignment = FindOrCreateIntermissionAssignment(
@@ -797,7 +799,7 @@ end
 local function CreateTutorialSteps(self, setCurrentStep)
 	local createdTutorialPlan = false
 	local cinderBrewMeaderyName = self.dungeonInstances[2661].name
-	local brewmasterAldryrName = GetBoss(kBrewmasterAldryrEncounterID).name
+	local brewmasterAldryrName = GetBoss(k.BrewmasterAldryrEncounterID).name
 
 	---@type table<integer, TutorialStep>
 	return {
@@ -842,7 +844,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				{ L["New Plan"] }
 			),
 			enableNextButton = function()
-				return IsCurrentPlanValidTutorial(kBrewmasterAldryrEncounterID)
+				return IsCurrentPlanValidTutorial(k.BrewmasterAldryrEncounterID)
 			end,
 			OnStepActivated = function(localSelf)
 				self.RegisterCallback(self.tutorialCallbackObject, localSelf.name, function(_, category)
@@ -867,7 +869,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				{ L["Tutorial"] }
 			),
 			enableNextButton = function()
-				return IsCurrentPlanValidTutorial(kBrewmasterAldryrEncounterID)
+				return IsCurrentPlanValidTutorial(k.BrewmasterAldryrEncounterID)
 			end,
 			OnStepActivated = function(localSelf)
 				self.RegisterCallback(self.tutorialCallbackObject, localSelf.name, function(_, category)
@@ -879,7 +881,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							local planName = self.newPlanDialog.planNameLineEdit:GetText():trim()
 							local encounterID = self.newPlanDialog.bossDropdown:GetValue()
 							self.newPlanDialog.createButton:SetEnabled(
-								ValidateNewTutorialPlan(planName, encounterID, kBrewmasterAldryrEncounterID)
+								ValidateNewTutorialPlan(planName, encounterID, k.BrewmasterAldryrEncounterID)
 							)
 						end
 					elseif category == "newPlanDialogPlanCreated" then
@@ -903,7 +905,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					local planName = self.newPlanDialog.planNameLineEdit:GetText():trim()
 					local encounterID = self.newPlanDialog.bossDropdown:GetValue()
 					self.newPlanDialog.createButton:SetEnabled(
-						ValidateNewTutorialPlan(planName, encounterID, kBrewmasterAldryrEncounterID)
+						ValidateNewTutorialPlan(planName, encounterID, k.BrewmasterAldryrEncounterID)
 					)
 				end
 				localSelf.frame = self.newPlanDialog.frame
@@ -1271,13 +1273,13 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			HighlightFrameAndPositionTutorialFrame = function()
 				local textFrame = self.assignmentEditor.optionalTextContainer.frame
 				local previewFrame = self.assignmentEditor.previewContainer.frame
-				highlightBorderFrame:SetFrameStrata(previewFrame:GetFrameStrata())
-				highlightBorderFrame:SetFrameLevel(previewFrame:GetFrameLevel() + 10)
-				highlightBorderFrame:SetPoint("TOPLEFT", textFrame, -2, 2)
-				highlightBorderFrame:SetPoint("BOTTOMRIGHT", previewFrame, 2, -2)
-				highlightBorderFrame:Show()
+				s.HighlightBorderFrame:SetFrameStrata(previewFrame:GetFrameStrata())
+				s.HighlightBorderFrame:SetFrameLevel(previewFrame:GetFrameLevel() + 10)
+				s.HighlightBorderFrame:SetPoint("TOPLEFT", textFrame, -2, 2)
+				s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", previewFrame, 2, -2)
+				s.HighlightBorderFrame:Show()
 				self.tutorial.frame:ClearAllPoints()
-				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+				self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset)
 			end,
 			PreStepDeactivated = function(_, incrementing)
 				if incrementing and self.assignmentEditor then
@@ -1370,14 +1372,14 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
 				local frame = self.assignmentEditor.children[1].frame
-				highlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
-				highlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-				highlightBorderFrame:SetPoint("TOPLEFT", frame, -kHighlightPadding, kHighlightPadding)
+				s.HighlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
+				s.HighlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
+				s.HighlightBorderFrame:SetPoint("TOPLEFT", frame, -k.HighlightPadding, k.HighlightPadding)
 				local lowerFrame = self.assignmentEditor.timeContainer.frame
-				highlightBorderFrame:SetPoint("BOTTOMRIGHT", lowerFrame, kHighlightPadding, -kHighlightPadding)
-				highlightBorderFrame:Show()
+				s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", lowerFrame, k.HighlightPadding, -k.HighlightPadding)
+				s.HighlightBorderFrame:Show()
 				self.tutorial.frame:ClearAllPoints()
-				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+				self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset)
 			end,
 			PreStepDeactivated = function(_, incrementing)
 				if not incrementing and self.assignmentEditor then
@@ -1501,7 +1503,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["Since the intermission is triggered by boss health, using timed assignments would be unreliable. Instead, the spell the boss casts before transitioning into intermission is used."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, kHappyHourSpellID, true, true) then
+				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, k.HappyHourSpellID, true, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1528,16 +1530,16 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "changeIntermissionAssignmentCombatLogEventType",
 			text = FormatText(L["Change the"], { L["Trigger"] }, L["to"], { L["Spell Aura Removed"] }),
 			enableNextButton = function()
-				return IsCombatLogEventCorrect(self, "SAR", kHappyHourSpellID)
+				return IsCombatLogEventCorrect(self, "SAR", k.HappyHourSpellID)
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, kHappyHourSpellID, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SCS", "SAR" }, k.HappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
 						end
 						if category == "assignmentEditorDataChanged" then
-							if IsCombatLogEventCorrect(self, "SAR", kHappyHourSpellID) then
+							if IsCombatLogEventCorrect(self, "SAR", k.HappyHourSpellID) then
 								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 							end
 						elseif category == "assignmentEditorReleased" then
@@ -1564,7 +1566,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 1, false, false, { "SAR" }, kHappyHourSpellID, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SAR" }, k.HappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1593,7 +1595,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				return IsTextChanged(self)
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 1, false, false, { "SAR" }, kHappyHourSpellID, false, true) then
+				if IntermissionOkay(self, 1, false, false, { "SAR" }, k.HappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1616,13 +1618,13 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			HighlightFrameAndPositionTutorialFrame = function()
 				local textFrame = self.assignmentEditor.optionalTextContainer.frame
 				local previewFrame = self.assignmentEditor.previewContainer.frame
-				highlightBorderFrame:SetFrameStrata(previewFrame:GetFrameStrata())
-				highlightBorderFrame:SetFrameLevel(previewFrame:GetFrameLevel() + 10)
-				highlightBorderFrame:SetPoint("TOPLEFT", textFrame, -2, 2)
-				highlightBorderFrame:SetPoint("BOTTOMRIGHT", previewFrame, 2, -2)
-				highlightBorderFrame:Show()
+				s.HighlightBorderFrame:SetFrameStrata(previewFrame:GetFrameStrata())
+				s.HighlightBorderFrame:SetFrameLevel(previewFrame:GetFrameLevel() + 10)
+				s.HighlightBorderFrame:SetPoint("TOPLEFT", textFrame, -2, 2)
+				s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", previewFrame, 2, -2)
+				s.HighlightBorderFrame:Show()
 				self.tutorial.frame:ClearAllPoints()
-				self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+				self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset)
 			end,
 			PreStepDeactivated = function(_, incrementing)
 				if incrementing and self.assignmentEditor then
@@ -1703,7 +1705,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				EnsureAssigneeIsExpanded(self, true)
 			end,
 			OnStepActivated = function(localSelf)
-				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, kHappyHourSpellID, false, false)
+				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, k.HappyHourSpellID, false, false)
 				if order then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, timeDifference)
 						if self.activeTutorialCallbackName ~= localSelf.name then
@@ -1740,7 +1742,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				EnsureAssigneeIsExpanded(self, true)
 			end,
 			OnStepActivated = function(localSelf)
-				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, kHappyHourSpellID, false, false)
+				local order = IntermissionOkay(self, 1, true, false, { "SAR" }, k.HappyHourSpellID, false, false)
 				if order then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
@@ -1769,7 +1771,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["The duplicated assignment inherits all properties, besides time, from the original and is independent of it."],
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1797,25 +1799,25 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = L["Zoom in and out horizontally on either timeline by pressing Ctrl + Mouse Scroll. Pan the view to the left and right by holding right-click."],
 			enableNextButton = true,
 			OnStepActivated = function()
-				return IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false) ~= nil
+				return IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false) ~= nil
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
 				local timeline = self.mainFrame.timeline
 				if timeline then
 					local bossAbilityTimelineFrame = timeline.bossAbilityTimeline.frame
 					local assignmentTimelineFrame = timeline.assignmentTimeline.frame
-					highlightBorderFrame:SetFrameStrata(bossAbilityTimelineFrame:GetFrameStrata())
-					highlightBorderFrame:SetFrameLevel(bossAbilityTimelineFrame:GetFrameLevel() + 50)
-					highlightBorderFrame:ClearAllPoints()
-					local x = -kHighlightPadding + kAbilityEntryWidth + 10
-					local y = kHighlightPadding
-					highlightBorderFrame:SetPoint("TOPLEFT", bossAbilityTimelineFrame, x, y)
+					s.HighlightBorderFrame:SetFrameStrata(bossAbilityTimelineFrame:GetFrameStrata())
+					s.HighlightBorderFrame:SetFrameLevel(bossAbilityTimelineFrame:GetFrameLevel() + 50)
+					s.HighlightBorderFrame:ClearAllPoints()
+					local x = -k.HighlightPadding + k.AbilityEntryWidth + 10
+					local y = k.HighlightPadding
+					s.HighlightBorderFrame:SetPoint("TOPLEFT", bossAbilityTimelineFrame, x, y)
 					x = -30
-					y = -kHighlightPadding
-					highlightBorderFrame:SetPoint("BOTTOMRIGHT", assignmentTimelineFrame, x, y)
-					highlightBorderFrame:Show()
+					y = -k.HighlightPadding
+					s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", assignmentTimelineFrame, x, y)
+					s.HighlightBorderFrame:Show()
 					self.tutorial.frame:ClearAllPoints()
-					self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset)
+					self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset)
 				end
 			end,
 		},
@@ -1829,7 +1831,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = false,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1855,15 +1857,15 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = function()
 				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-				if collapsed[playerName] ~= nil then
-					if collapsed[playerName] == true then
+				if collapsed[k.PlayerName] ~= nil then
+					if collapsed[k.PlayerName] == true then
 						return true
 					end
 				end
 				return false
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false, true) then
 					self.RegisterCallback(
 						Private.tutorialCallbackObject,
 						localSelf.name,
@@ -1871,7 +1873,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							if self.activeTutorialCallbackName ~= localSelf.name then
 								return
 							end
-							if category == "assigneeCollapsed" and assignee == playerName and collapsed == true then
+							if category == "assigneeCollapsed" and assignee == k.PlayerName and collapsed == true then
 								setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 							end
 						end
@@ -1884,7 +1886,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 								---@cast child EPAbilityEntry
 								local key = child:GetKey()
 								if type(key) == "string" then
-									if key == playerName then
+									if key == k.PlayerName then
 										localSelf.frame = child.collapseButton
 										break
 									end
@@ -1903,7 +1905,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "collapseSpellsForAssigneeExplain",
 			text = L["All spells for that assignee are condensed into a single row and cooldown durations are hidden. The same button can be clicked to expand spells."],
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -1932,7 +1934,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false, true) then
 					localSelf.frame = self.mainFrame.collapseAllButton.frame
 					return true
 				else
@@ -1949,15 +1951,15 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = function()
 				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-				if collapsed[playerName] ~= nil then
-					if collapsed[playerName] == false then
+				if collapsed[k.PlayerName] ~= nil then
+					if collapsed[k.PlayerName] == false then
 						return true
 					end
 				end
 				return false
 			end,
 			OnStepActivated = function(localSelf)
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -2122,16 +2124,16 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				local timeline = self.mainFrame.timeline
 				if timeline then
 					local bossAbilityTimelineFrame = timeline.bossAbilityTimeline.timelineFrame
-					highlightBorderFrame:SetParent(bossAbilityTimelineFrame)
-					highlightBorderFrame:SetFrameStrata(bossAbilityTimelineFrame:GetFrameStrata())
-					highlightBorderFrame:SetFrameLevel(bossAbilityTimelineFrame:GetFrameLevel() + 50)
-					highlightBorderFrame:ClearAllPoints()
+					s.HighlightBorderFrame:SetParent(bossAbilityTimelineFrame)
+					s.HighlightBorderFrame:SetFrameStrata(bossAbilityTimelineFrame:GetFrameStrata())
+					s.HighlightBorderFrame:SetFrameLevel(bossAbilityTimelineFrame:GetFrameLevel() + 50)
+					s.HighlightBorderFrame:ClearAllPoints()
 					local leftOffset, rightOffset = GetPhaseOffsets(self, 1, 1)
-					highlightBorderFrame:SetPoint("TOPLEFT", bossAbilityTimelineFrame, leftOffset, 0)
-					highlightBorderFrame:SetPoint("BOTTOMRIGHT", bossAbilityTimelineFrame, rightOffset, 0)
-					highlightBorderFrame:Show()
+					s.HighlightBorderFrame:SetPoint("TOPLEFT", bossAbilityTimelineFrame, leftOffset, 0)
+					s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", bossAbilityTimelineFrame, rightOffset, 0)
+					s.HighlightBorderFrame:Show()
 					self.tutorial.frame:ClearAllPoints()
-					self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, kTutorialOffset + 10)
+					self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, k.TutorialOffset + 10)
 				end
 			end,
 		},
@@ -2148,7 +2150,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				if self:IsSimulatingBoss() then
 					self:StopSimulatingBoss()
 				end
-				if IntermissionOkay(self, 2, true, true, { "SAR" }, kHappyHourSpellID, false, false, true) then
+				if IntermissionOkay(self, 2, true, true, { "SAR" }, k.HappyHourSpellID, false, false, true) then
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
 						if self.activeTutorialCallbackName ~= localSelf.name then
 							return
@@ -2209,7 +2211,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 					end)
 					HighlightFrame(self.mainFrame.maximizeButton.frame)
 					self.tutorial.frame:ClearAllPoints()
-					self.tutorial.frame:SetPoint("TOP", highlightBorderFrame, "BOTTOM", 0, -kTutorialOffset)
+					self.tutorial.frame:SetPoint("TOP", s.HighlightBorderFrame, "BOTTOM", 0, -k.TutorialOffset)
 					self.tutorial.frame:Show()
 					return true
 				end
@@ -2345,7 +2347,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							---@cast child EPAbilityEntry
 							local key = child:GetKey()
 							if type(key) == "table" then
-								if key.assignee and key.assignee == playerName then
+								if key.assignee and key.assignee == k.PlayerName then
 									localSelf.frame = child.check.frame
 									break
 								end
@@ -2384,7 +2386,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						if child.type == "EPAbilityEntry" then
 							---@cast child EPAbilityEntry
 							local key = child:GetKey()
-							if type(key) == "string" and key == playerName then
+							if type(key) == "string" and key == k.PlayerName then
 								localSelf.frame = child.check.frame
 								break
 							end
@@ -2422,7 +2424,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						if child.type == "EPAbilityEntry" then
 							---@cast child EPAbilityEntry
 							local key = child:GetKey()
-							if type(key) == "string" and key == playerName then
+							if type(key) == "string" and key == k.PlayerName then
 								if child.swap then
 									localSelf.frame = child.swap.frame
 								end
@@ -2510,9 +2512,9 @@ function Private:OpenTutorial()
 		local highlightBorderFrameWasVisible = false
 		self.mainFrame:SetCallback("MinimizeButtonClicked", function()
 			if self.tutorial then
-				highlightBorderFrameWasVisible = highlightBorderFrame:IsShown()
+				highlightBorderFrameWasVisible = s.HighlightBorderFrame:IsShown()
 				self.tutorial.frame:Hide()
-				highlightBorderFrame:Hide()
+				s.HighlightBorderFrame:Hide()
 				if self.activeTutorialCallbackName then
 					self.callbacks:Fire(self.activeTutorialCallbackName, "minimizeButtonClicked")
 				end
@@ -2522,7 +2524,7 @@ function Private:OpenTutorial()
 			if self.tutorial then
 				self.tutorial.frame:Show()
 				if highlightBorderFrameWasVisible then
-					highlightBorderFrame:Show()
+					s.HighlightBorderFrame:Show()
 				end
 				if self.activeTutorialCallbackName then
 					self.callbacks:Fire(self.activeTutorialCallbackName, "maximizeButtonClicked")
@@ -2583,9 +2585,9 @@ function Private:OpenTutorial()
 			else
 				local currentStep = steps[currentStepIndex]
 
-				highlightBorderFrame:SetParent(UIParent)
-				highlightBorderFrame:ClearAllPoints()
-				highlightBorderFrame:Hide()
+				s.HighlightBorderFrame:SetParent(UIParent)
+				s.HighlightBorderFrame:ClearAllPoints()
+				s.HighlightBorderFrame:Hide()
 
 				local continue = true
 				if currentStep.OnStepActivated then
@@ -2610,11 +2612,11 @@ function Private:OpenTutorial()
 					elseif currentStep.frame then
 						HighlightFrame(currentStep.frame)
 						self.tutorial.frame:ClearAllPoints()
-						local offset = kTutorialOffset
+						local offset = k.TutorialOffset
 						if currentStep.additionalVerticalOffset then
 							offset = offset + currentStep.additionalVerticalOffset
 						end
-						self.tutorial.frame:SetPoint("BOTTOM", highlightBorderFrame, "TOP", 0, offset)
+						self.tutorial.frame:SetPoint("BOTTOM", s.HighlightBorderFrame, "TOP", 0, offset)
 					end
 				else
 					if currentStep.PreStepDeactivated then
@@ -2653,15 +2655,15 @@ function Private:OpenTutorial()
 
 		local tutorial = AceGUI:Create("EPTutorial")
 		tutorial:InitProgressBar(totalStepCount, AddOn.db.profile.preferences.reminder.progressBars.texture)
-		tutorial.frame:SetFrameLevel(kTutorialFrameLevel)
+		tutorial.frame:SetFrameLevel(k.TutorialFrameLevel)
 		tutorial:SetCallback("OnRelease", function()
 			self.tutorial = nil
 			self.UnregisterAllCallbacks(self.tutorialCallbackObject)
 			if not AddOn.db.global.tutorial.completed then
 				AddOn.db.global.tutorial.skipped = true
 			end
-			highlightBorderFrame:ClearAllPoints()
-			highlightBorderFrame:Hide()
+			s.HighlightBorderFrame:ClearAllPoints()
+			s.HighlightBorderFrame:Hide()
 			for _, step in pairs(steps) do
 				if step.PreStepDeactivated then
 					step:PreStepDeactivated(true, true)
@@ -2687,7 +2689,7 @@ function Private:OpenTutorial()
 		self.tutorial = tutorial
 
 		local lastTutorialStepName = AddOn.db.global.tutorial.lastStepName
-		local plan = FindTutorialPlan(kBrewmasterAldryrEncounterID)
+		local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
 		if plan then
 			AddOn.db.profile.lastOpenPlan = plan.name
 			interfaceUpdater.UpdateFromPlan(plan)

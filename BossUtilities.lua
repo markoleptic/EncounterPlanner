@@ -23,37 +23,39 @@ local sort = table.sort
 local tinsert = table.insert
 local wipe = table.wipe
 
---- Dungeon Instance ID -> [dungeonInstance.mapChallengeModeID, [Boss dungeon encounter ID, order]] | [Boss dungeon encounter ID, order]
----@type table<integer, table<integer, table<integer, integer>>|table<integer, integer>>
-local instanceBossOrder = {}
+local s = {
+	-- Boss dungeon encounter ID -> boss ability spell ID -> SpellCastStartTableEntry
+	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
+	AbsoluteSpellCastStartTables = {},
 
--- Boss dungeon encounter ID -> boss ability spell ID -> SpellCastStartTableEntry
----@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
-local absoluteSpellCastStartTables = {}
+	-- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
+	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
+	AbsoluteSpellCastStartTablesHeroic = {},
 
----@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
-local maxAbsoluteSpellCastStartTables = {}
+	--- Dungeon Instance ID -> [mapChallengeModeID, [encounterID, order]] | [encounterID, order]
+	---@type table<integer, table<integer, table<integer, integer>>|table<integer, integer>>
+	InstanceBossOrder = {},
 
--- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
----@type table<integer, table<integer, integer>>
-local orderedBossPhases = {}
+	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
+	MaxAbsoluteSpellCastStartTables = {},
 
----@type table<integer, table<integer, integer>>
-local maxOrderedBossPhases = {}
+	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
+	MaxAbsoluteSpellCastStartTablesHeroic = {},
 
--- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
----@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
-local absoluteSpellCastStartTablesHeroic = {}
+	---@type table<integer, table<integer, integer>>
+	MaxOrderedBossPhases = {},
 
----@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
-local maxAbsoluteSpellCastStartTablesHeroic = {}
+	---@type table<integer, table<integer, integer>>
+	MaxOrderedBossPhasesHeroic = {},
 
--- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
----@type table<integer, table<integer, integer>>
-local orderedBossPhasesHeroic = {}
+	-- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
+	---@type table<integer, table<integer, integer>>
+	OrderedBossPhases = {},
 
----@type table<integer, table<integer, integer>>
-local maxOrderedBossPhasesHeroic = {}
+	-- Boss dungeon encounter ID -> [boss phase order index, boss phase index]
+	---@type table<integer, table<integer, integer>>
+	OrderedBossPhasesHeroic = {},
+}
 
 do
 	local ceil = math.ceil
@@ -288,7 +290,7 @@ end
 ---@param dungeonInstanceID integer Dungeon instance ID
 ---@return table<integer, integer>|table<integer, table<integer, integer>>|nil
 function BossUtilities.GetInstanceBossOrder(dungeonInstanceID)
-	return instanceBossOrder[dungeonInstanceID]
+	return s.InstanceBossOrder[dungeonInstanceID]
 end
 
 do
@@ -407,9 +409,9 @@ end
 ---@return table<integer, integer> -- [bossPhaseOrderIndex, bossPhaseIndex]
 function BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
-		return orderedBossPhasesHeroic[encounterID]
+		return s.OrderedBossPhasesHeroic[encounterID]
 	else
-		return orderedBossPhases[encounterID]
+		return s.OrderedBossPhases[encounterID]
 	end
 end
 
@@ -419,9 +421,9 @@ end
 ---@return table<integer, integer> -- [bossPhaseOrderIndex, bossPhaseIndex]
 function BossUtilities.GetMaxOrderedBossPhases(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
-		return maxOrderedBossPhasesHeroic[encounterID]
+		return s.MaxOrderedBossPhasesHeroic[encounterID]
 	else
-		return maxOrderedBossPhases[encounterID]
+		return s.MaxOrderedBossPhases[encounterID]
 	end
 end
 
@@ -431,9 +433,9 @@ end
 ---@return table<integer, table<integer, SpellCastStartTableEntry>>
 function BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
-		return absoluteSpellCastStartTablesHeroic[encounterID]
+		return s.AbsoluteSpellCastStartTablesHeroic[encounterID]
 	else
-		return absoluteSpellCastStartTables[encounterID]
+		return s.AbsoluteSpellCastStartTables[encounterID]
 	end
 end
 
@@ -444,9 +446,9 @@ end
 ---@return table<integer, table<integer, SpellCastStartTableEntry>>
 function BossUtilities.GetMaxAbsoluteSpellCastTimeTable(encounterID, difficulty)
 	if difficulty == DifficultyType.Heroic then
-		return maxAbsoluteSpellCastStartTablesHeroic[encounterID]
+		return s.MaxAbsoluteSpellCastStartTablesHeroic[encounterID]
 	else
-		return maxAbsoluteSpellCastStartTables[encounterID]
+		return s.MaxAbsoluteSpellCastStartTables[encounterID]
 	end
 end
 
@@ -617,9 +619,9 @@ end
 function BossUtilities.GetMaxSpellCount(encounterID, spellID, difficulty)
 	local spellCount
 	if difficulty == DifficultyType.Heroic then
-		spellCount = absoluteSpellCastStartTablesHeroic[encounterID]
+		spellCount = s.AbsoluteSpellCastStartTablesHeroic[encounterID]
 	else
-		spellCount = absoluteSpellCastStartTables[encounterID]
+		spellCount = s.AbsoluteSpellCastStartTables[encounterID]
 	end
 	if spellCount then
 		local spellCountBySpellID = spellCount[spellID]
@@ -1331,9 +1333,9 @@ do
 			tbl = customOrderedBossPhases
 		else
 			if difficulty == DifficultyType.Heroic then
-				tbl = orderedBossPhasesHeroic[boss.dungeonEncounterID]
+				tbl = s.OrderedBossPhasesHeroic[boss.dungeonEncounterID]
 			else
-				tbl = orderedBossPhases[boss.dungeonEncounterID]
+				tbl = s.OrderedBossPhases[boss.dungeonEncounterID]
 			end
 		end
 		for _, bossPhaseIndex in ipairs(tbl) do
@@ -1967,22 +1969,23 @@ do
 	function BossUtilities.GenerateBossTables(boss, difficulty)
 		local encounterID = boss.dungeonEncounterID
 		if difficulty == DifficultyType.Heroic then
-			orderedBossPhasesHeroic[encounterID] = GenerateOrderedBossPhaseTable(encounterID, difficulty)
+			s.OrderedBossPhasesHeroic[encounterID] = GenerateOrderedBossPhaseTable(encounterID, difficulty)
 		else
-			orderedBossPhases[encounterID] = GenerateOrderedBossPhaseTable(encounterID, difficulty)
+			s.OrderedBossPhases[encounterID] = GenerateOrderedBossPhaseTable(encounterID, difficulty)
 		end
 		phaseCountDurationMap = GeneratePhaseCountDurationMap(boss, nil, difficulty)
 		if difficulty == DifficultyType.Heroic then
-			absoluteSpellCastStartTablesHeroic[encounterID] =
-				GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhasesHeroic[encounterID], difficulty)
-			boss.sortedAbilityIDsHeroic = GenerateSortedBossAbilities(absoluteSpellCastStartTablesHeroic[encounterID])
+			s.AbsoluteSpellCastStartTablesHeroic[encounterID] =
+				GenerateAbsoluteSpellCastTimeTable(boss, s.OrderedBossPhasesHeroic[encounterID], difficulty)
+			boss.sortedAbilityIDsHeroic = GenerateSortedBossAbilities(s.AbsoluteSpellCastStartTablesHeroic[encounterID])
 			boss.abilityInstancesHeroic =
-				GenerateBossAbilityInstances(boss, orderedBossPhasesHeroic[encounterID], nil, difficulty)
+				GenerateBossAbilityInstances(boss, s.OrderedBossPhasesHeroic[encounterID], nil, difficulty)
 		else
-			absoluteSpellCastStartTables[encounterID] =
-				GenerateAbsoluteSpellCastTimeTable(boss, orderedBossPhases[encounterID], difficulty)
-			boss.sortedAbilityIDs = GenerateSortedBossAbilities(absoluteSpellCastStartTables[encounterID])
-			boss.abilityInstances = GenerateBossAbilityInstances(boss, orderedBossPhases[encounterID], nil, difficulty)
+			s.AbsoluteSpellCastStartTables[encounterID] =
+				GenerateAbsoluteSpellCastTimeTable(boss, s.OrderedBossPhases[encounterID], difficulty)
+			boss.sortedAbilityIDs = GenerateSortedBossAbilities(s.AbsoluteSpellCastStartTables[encounterID])
+			boss.abilityInstances =
+				GenerateBossAbilityInstances(boss, s.OrderedBossPhases[encounterID], nil, difficulty)
 		end
 
 		wipe(phaseCountDurationMap)
@@ -2011,21 +2014,21 @@ do
 	-- phases, spell cast times, sorted abilities, and ability instances for a boss.
 	function BossUtilities.Initialize()
 		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-			GenerateInstanceBossOrder(dungeonInstance, instanceBossOrder)
+			GenerateInstanceBossOrder(dungeonInstance, s.InstanceBossOrder)
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				local encounterID = boss.dungeonEncounterID
 				if boss.phases then
 					BossUtilities.GenerateBossTables(boss, DifficultyType.Mythic)
-					maxOrderedBossPhases[encounterID] =
+					s.MaxOrderedBossPhases[encounterID] =
 						GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration, DifficultyType.Mythic)
-					maxAbsoluteSpellCastStartTables[encounterID] =
+					s.MaxAbsoluteSpellCastStartTables[encounterID] =
 						GenerateMaxAbsoluteSpellCastTimeTable(encounterID, DifficultyType.Mythic)
 				end
 				if boss.phasesHeroic then
 					BossUtilities.GenerateBossTables(boss, DifficultyType.Heroic)
-					maxOrderedBossPhasesHeroic[encounterID] =
+					s.MaxOrderedBossPhasesHeroic[encounterID] =
 						GenerateMaxOrderedBossPhaseTable(encounterID, kMaxBossDuration, DifficultyType.Heroic)
-					maxAbsoluteSpellCastStartTablesHeroic[encounterID] =
+					s.MaxAbsoluteSpellCastStartTablesHeroic[encounterID] =
 						GenerateMaxAbsoluteSpellCastTimeTable(encounterID, DifficultyType.Heroic)
 				end
 			end

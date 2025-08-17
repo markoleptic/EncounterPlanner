@@ -5,6 +5,13 @@ local Private = Namespace
 local AddOn = Private.addOn
 local L = Private.L
 
+---@enum AnchorType
+local AnchorType = {
+	Message = {},
+	ProgressBar = {},
+	Icon = {},
+}
+
 ---@class Constants
 local constants = Private.constants
 local kOptionsMenuFrameLevel = constants.frameLevels.kOptionsMenuFrameLevel
@@ -41,12 +48,11 @@ local type = type
 local unpack = unpack
 local wipe = table.wipe
 
----@type EPAnchorContainer|nil
-local messageAnchor = nil
----@type EPAnchorContainer|nil
-local progressBarAnchor = nil
----@type EPAnchorContainer|nil
-local iconAnchor = nil
+local s = {
+	MessageAnchor = nil, ---@type EPAnchorContainer|nil
+	ProgressBarAnchor = nil, ---@type EPAnchorContainer|nil
+	IconAnchor = nil, ---@type EPAnchorContainer|nil
+}
 
 ---@param left number
 ---@param top number
@@ -197,41 +203,43 @@ local function DeleteProfile(name)
 end
 
 local mouseIsDown = false
-local progressBarManager = {}
+---@class ProgressBarManager
+local ProgressBarManager = {}
 
 do
-	local timers = {}
 	local kGenericTimerMultiplier = 0.33
-	local isAddingProgressBars = false
-	local progressBarText = L["Progress Bar Text"]
-	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kProgressBarText = L["Progress Bar Text"]
+	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+
+	local sIsAddingProgressBars = false
+	local sTimers = {}
 
 	local function AddDelayedProgressBar(time)
 		local timer = NewTimer(time, function()
-			progressBarManager:AddProgressBar()
-			tremove(timers, 1)
+			ProgressBarManager:AddProgressBar()
+			tremove(sTimers, 1)
 		end)
-		tinsert(timers, timer)
+		tinsert(sTimers, timer)
 	end
 
 	local function AddSecondAndThirdProgressBarsDelayed()
-		isAddingProgressBars = true
+		sIsAddingProgressBars = true
 		local secondTimerDuration = GetReminderPreferences().countdownLength * kGenericTimerMultiplier
 		local thirdTimerDuration = secondTimerDuration * 2.0
 		AddDelayedProgressBar(secondTimerDuration)
 		AddDelayedProgressBar(thirdTimerDuration)
 	end
 
-	function progressBarManager:AddProgressBar()
-		if progressBarAnchor then
+	function ProgressBarManager:AddProgressBar()
+		if s.ProgressBarAnchor then
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.progressBars
 			local progressBar = AceGUI:Create("EPProgressBar")
-			progressBar:Set(preferences, progressBarText, reminderPreferences.countdownLength, questionMarkIcon)
+			progressBar:Set(preferences, kProgressBarText, reminderPreferences.countdownLength, kQuestionMarkIcon)
 			progressBar:SetCallback("Completed", function(widget)
 				---@cast widget EPProgressBar
-				if progressBarAnchor then
-					if not isAddingProgressBars and #progressBarAnchor.children == 1 then
+				if s.ProgressBarAnchor then
+					if not sIsAddingProgressBars and #s.ProgressBarAnchor.children == 1 then
 						widget:SetDuration(GetReminderPreferences().countdownLength)
 						widget:Start()
 						widget.frame:Show()
@@ -239,78 +247,80 @@ do
 					elseif mouseIsDown then
 						local p = GetProgressBarPreferences()
 						local p1, p2, p3, p4, p5 =
-							ApplyPoint(progressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-						progressBarAnchor:RemoveChild(widget)
+							ApplyPoint(s.ProgressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						s.ProgressBarAnchor:RemoveChild(widget)
 						if mouseIsDown and p1 then
-							progressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+							s.ProgressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 						end
 					else
-						progressBarAnchor:RemoveChild(widget)
+						s.ProgressBarAnchor:RemoveChild(widget)
 					end
 				end
 			end)
 
 			if mouseIsDown then
 				local p = GetProgressBarPreferences()
-				local p1, p2, p3, p4, p5 = ApplyPoint(progressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-				progressBarAnchor:AddChild(progressBar)
+				local p1, p2, p3, p4, p5 = ApplyPoint(s.ProgressBarAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+				s.ProgressBarAnchor:AddChild(progressBar)
 				if mouseIsDown and p1 then
-					progressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+					s.ProgressBarAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 				end
 			else
-				progressBarAnchor:AddChild(progressBar)
+				s.ProgressBarAnchor:AddChild(progressBar)
 			end
 			progressBar:Start()
 
-			if #progressBarAnchor.children >= 3 then
-				isAddingProgressBars = false
+			if #s.ProgressBarAnchor.children >= 3 then
+				sIsAddingProgressBars = false
 			end
 		end
 	end
 
-	function progressBarManager:AddProgressBarsOnTimer()
-		if progressBarAnchor then
-			progressBarAnchor:ReleaseChildren()
+	function ProgressBarManager:AddProgressBarsOnTimer()
+		if s.ProgressBarAnchor then
+			s.ProgressBarAnchor:ReleaseChildren()
 			self:AddProgressBar()
 			AddSecondAndThirdProgressBarsDelayed()
 		end
 	end
 
-	function progressBarManager:CancelTimers()
-		for _, timer in ipairs(timers) do
+	function ProgressBarManager:CancelTimers()
+		for _, timer in ipairs(sTimers) do
 			if timer and timer.Cancel then
 				timer:Cancel()
 			end
 		end
-		wipe(timers)
-		isAddingProgressBars = false
+		wipe(sTimers)
+		sIsAddingProgressBars = false
 	end
 end
 
-local messageManager = {}
+---@class MessageManager
+local MessageManager = {}
 do
-	local timers = {}
-	local secondTimerDurationNoCountdown = 1.2
-	local thirdTimerDurationNoCountdown = 2.4
 	local kGenericTimerMultiplier = 0.33
-	local isAddingMessages = false
-	local messageText = L["Cast spell or something"]
-	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kMessageText = L["Cast spell or something"]
+	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kSecondTimerDurationNoCountdown = 1.2
+	local kThirdTimerDurationNoCountdown = 2.4
+
+	local sIsAddingMessages = false
+	local sTimers = {}
 
 	local function AddMessageDelayed(time)
 		local timer = NewTimer(time, function()
-			messageManager:AddMessage()
-			tremove(timers, 1)
+			MessageManager:AddMessage()
+			tremove(sTimers, 1)
 		end)
-		tinsert(timers, timer)
+		tinsert(sTimers, timer)
 	end
 
 	local function AddSecondAndThirdMessagesDelayed()
-		isAddingMessages = true
+		sIsAddingMessages = true
 		local reminderPreferences = GetReminderPreferences()
 		if reminderPreferences.messages.showOnlyAtExpiration then
-			AddMessageDelayed(secondTimerDurationNoCountdown)
-			AddMessageDelayed(thirdTimerDurationNoCountdown)
+			AddMessageDelayed(kSecondTimerDurationNoCountdown)
+			AddMessageDelayed(kThirdTimerDurationNoCountdown)
 		else
 			local secondTimerDuration = reminderPreferences.countdownLength * kGenericTimerMultiplier
 			local thirdTimerDuration = secondTimerDuration * 2.0
@@ -319,17 +329,17 @@ do
 		end
 	end
 
-	function messageManager:AddMessage()
-		if messageAnchor then
+	function MessageManager:AddMessage()
+		if s.MessageAnchor then
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.messages
 			local message = AceGUI:Create("EPReminderMessage")
-			message:Set(preferences, messageText, questionMarkIcon)
+			message:Set(preferences, kMessageText, kQuestionMarkIcon)
 			message:SetAnchorMode(true)
 			message:SetCallback("Completed", function(widget)
 				---@cast widget EPReminderMessage
-				if messageAnchor then
-					if not isAddingMessages and #messageAnchor.children == 1 then
+				if s.MessageAnchor then
+					if not sIsAddingMessages and #s.MessageAnchor.children == 1 then
 						local p = GetReminderPreferences()
 						widget:Start(p.messages.showOnlyAtExpiration and 0 or p.countdownLength)
 						widget.frame:Show()
@@ -337,138 +347,141 @@ do
 					elseif mouseIsDown then
 						local p = GetMessagePreferences()
 						local p1, p2, p3, p4, p5 =
-							ApplyPoint(messageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-						messageAnchor:RemoveChild(widget)
+							ApplyPoint(s.MessageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						s.MessageAnchor:RemoveChild(widget)
 						if mouseIsDown and p1 then
-							messageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+							s.MessageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 						end
 					else
-						messageAnchor:RemoveChild(widget)
+						s.MessageAnchor:RemoveChild(widget)
 					end
 				end
 			end)
 
 			if mouseIsDown then
 				local p = GetMessagePreferences()
-				local p1, p2, p3, p4, p5 = ApplyPoint(messageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-				messageAnchor:AddChild(message)
+				local p1, p2, p3, p4, p5 = ApplyPoint(s.MessageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+				s.MessageAnchor:AddChild(message)
 				if mouseIsDown and p1 then
-					messageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+					s.MessageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 				end
 			else
-				messageAnchor:AddChild(message)
+				s.MessageAnchor:AddChild(message)
 			end
 			message:Start(preferences.showOnlyAtExpiration and 0 or reminderPreferences.countdownLength)
 
-			if #messageAnchor.children >= 3 then
-				isAddingMessages = false
+			if #s.MessageAnchor.children >= 3 then
+				sIsAddingMessages = false
 			end
 		end
 	end
 
-	function messageManager:AddMessagesOnTimer()
-		if messageAnchor then
-			messageAnchor:ReleaseChildren()
+	function MessageManager:AddMessagesOnTimer()
+		if s.MessageAnchor then
+			s.MessageAnchor:ReleaseChildren()
 			self:AddMessage()
 			AddSecondAndThirdMessagesDelayed()
 		end
 	end
 
-	function messageManager:CancelTimers()
-		for _, timer in ipairs(timers) do
+	function MessageManager:CancelTimers()
+		for _, timer in ipairs(sTimers) do
 			if timer and timer.Cancel then
 				timer:Cancel()
 			end
 		end
-		wipe(timers)
-		isAddingMessages = false
+		wipe(sTimers)
+		sIsAddingMessages = false
 	end
 end
 
-local iconManager = {}
+---@class IconManager
+local IconManager = {}
 do
-	local timers = {}
 	local kGenericTimerMultiplier = 0.33
-	local isAddingIcons = false
-	local iconText = L["Icon Text"]
-	local questionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kIconText = L["Icon Text"]
+	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+
+	local sIsAddingIcons = false
+	local sTimers = {}
 
 	local function AddDelayedIcon(time)
 		local timer = NewTimer(time, function()
-			iconManager:AddIcon()
-			tremove(timers, 1)
+			IconManager:AddIcon()
+			tremove(sTimers, 1)
 		end)
-		tinsert(timers, timer)
+		tinsert(sTimers, timer)
 	end
 
 	local function AddSecondAndThirdIconsDelayed()
-		isAddingIcons = true
+		sIsAddingIcons = true
 		local secondTimerDuration = GetReminderPreferences().countdownLength * kGenericTimerMultiplier
 		local thirdTimerDuration = secondTimerDuration * 2.0
 		AddDelayedIcon(secondTimerDuration)
 		AddDelayedIcon(thirdTimerDuration)
 	end
 
-	function iconManager:AddIcon()
-		if iconAnchor then
+	function IconManager:AddIcon()
+		if s.IconAnchor then
 			local reminderPreferences = GetReminderPreferences()
 			local preferences = reminderPreferences.icons
 			local icon = AceGUI:Create("EPReminderIcon")
-			icon:Set(preferences, iconText, questionMarkIcon)
+			icon:Set(preferences, kIconText, kQuestionMarkIcon)
 			icon:SetCallback("Completed", function(widget)
 				---@cast widget EPReminderIcon
-				if iconAnchor then
-					if not isAddingIcons and #iconAnchor.children == 1 then
+				if s.IconAnchor then
+					if not sIsAddingIcons and #s.IconAnchor.children == 1 then
 						widget:Start(GetTime(), GetReminderPreferences().countdownLength)
 						widget.frame:Show()
 						AddSecondAndThirdIconsDelayed()
 					elseif mouseIsDown then
 						local p = GetIconPreferences()
-						local p1, p2, p3, p4, p5 = ApplyPoint(iconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-						iconAnchor:RemoveChild(widget)
+						local p1, p2, p3, p4, p5 =
+							ApplyPoint(s.IconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						s.IconAnchor:RemoveChild(widget)
 						if mouseIsDown and p1 then
-							iconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+							s.IconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 						end
 					else
-						iconAnchor:RemoveChild(widget)
+						s.IconAnchor:RemoveChild(widget)
 					end
 				end
 			end)
 
 			if mouseIsDown then
 				local p = GetIconPreferences()
-				local p1, p2, p3, p4, p5 = ApplyPoint(iconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
-				iconAnchor:AddChild(icon)
+				local p1, p2, p3, p4, p5 = ApplyPoint(s.IconAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+				s.IconAnchor:AddChild(icon)
 				if mouseIsDown and p1 then
-					iconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
+					s.IconAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
 				end
 			else
-				iconAnchor:AddChild(icon)
+				s.IconAnchor:AddChild(icon)
 			end
 			icon:Start(GetTime(), reminderPreferences.countdownLength)
 
-			if #iconAnchor.children >= 3 then
-				isAddingIcons = false
+			if #s.IconAnchor.children >= 3 then
+				sIsAddingIcons = false
 			end
 		end
 	end
 
-	function iconManager:AddIconsOnTimer()
-		if iconAnchor then
-			iconAnchor:ReleaseChildren()
+	function IconManager:AddIconsOnTimer()
+		if s.IconAnchor then
+			s.IconAnchor:ReleaseChildren()
 			self:AddIcon()
 			AddSecondAndThirdIconsDelayed()
 		end
 	end
 
-	function iconManager:CancelTimers()
-		for _, timer in ipairs(timers) do
+	function IconManager:CancelTimers()
+		for _, timer in ipairs(sTimers) do
 			if timer and timer.Cancel then
 				timer:Cancel()
 			end
 		end
-		wipe(timers)
-		isAddingIcons = false
+		wipe(sTimers)
+		sIsAddingIcons = false
 	end
 end
 
@@ -478,14 +491,14 @@ local function CreateProgressBarAnchor()
 	local container = utilities.CreateReminderAnchorContainer(progressBarPreferences, progressBarPreferences.spacing)
 	container:SetAnchorMode(true, progressBarPreferences.point)
 	container.frame:SetClampedToScreen(true)
-	progressBarManager:AddProgressBarsOnTimer()
+	ProgressBarManager:AddProgressBarsOnTimer()
 
 	container:SetCallback("OnRelease", function()
-		progressBarManager:CancelTimers()
-		if progressBarAnchor then
-			progressBarAnchor.frame:SetClampedToScreen(false)
+		ProgressBarManager:CancelTimers()
+		if s.ProgressBarAnchor then
+			s.ProgressBarAnchor.frame:SetClampedToScreen(false)
 		end
-		progressBarAnchor = nil
+		s.ProgressBarAnchor = nil
 		mouseIsDown = false
 	end)
 	container:SetCallback("MouseDown", function()
@@ -493,13 +506,13 @@ local function CreateProgressBarAnchor()
 	end)
 	container:SetCallback("NewPoint", function(_, _, point, regionName, relativePoint)
 		mouseIsDown = false
-		if progressBarAnchor then
+		if s.ProgressBarAnchor then
 			local preferences = GetProgressBarPreferences()
-			if progressBarAnchor.frame:GetName() == regionName then
+			if s.ProgressBarAnchor.frame:GetName() == regionName then
 				regionName = preferences.relativeTo
 			end
 			preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
-				ApplyPoint(progressBarAnchor.frame, point, regionName, relativePoint)
+				ApplyPoint(s.ProgressBarAnchor.frame, point, regionName, relativePoint)
 			if Private.optionsMenu then
 				Private.optionsMenu:UpdateOptions()
 			end
@@ -517,11 +530,11 @@ local function CreateMessageAnchor()
 	container:SetAnchorMode(true, messagePreferences.point)
 
 	container:SetCallback("OnRelease", function()
-		messageManager:CancelTimers()
-		if messageAnchor then
-			messageAnchor.frame:SetClampedToScreen(false)
+		MessageManager:CancelTimers()
+		if s.MessageAnchor then
+			s.MessageAnchor.frame:SetClampedToScreen(false)
 		end
-		messageAnchor = nil
+		s.MessageAnchor = nil
 		mouseIsDown = false
 	end)
 	container:SetCallback("MouseDown", function()
@@ -529,13 +542,13 @@ local function CreateMessageAnchor()
 	end)
 	container:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
 		mouseIsDown = false
-		if messageAnchor then
+		if s.MessageAnchor then
 			local preferences = GetMessagePreferences()
-			if messageAnchor.frame:GetName() == relativeFrame then
+			if s.MessageAnchor.frame:GetName() == relativeFrame then
 				relativeFrame = preferences.relativeTo
 			end
 			preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
-				ApplyPoint(messageAnchor.frame, point, relativeFrame, relativePoint)
+				ApplyPoint(s.MessageAnchor.frame, point, relativeFrame, relativePoint)
 			if Private.optionsMenu then
 				Private.optionsMenu:UpdateOptions()
 			end
@@ -553,11 +566,11 @@ local function CreateIconAnchor()
 	container:SetAnchorMode(true, iconPreferences.point)
 
 	container:SetCallback("OnRelease", function()
-		iconManager:CancelTimers()
-		if iconAnchor then
-			iconAnchor.frame:SetClampedToScreen(false)
+		IconManager:CancelTimers()
+		if s.IconAnchor then
+			s.IconAnchor.frame:SetClampedToScreen(false)
 		end
-		iconAnchor = nil
+		s.IconAnchor = nil
 		mouseIsDown = false
 	end)
 	container:SetCallback("MouseDown", function()
@@ -565,13 +578,13 @@ local function CreateIconAnchor()
 	end)
 	container:SetCallback("NewPoint", function(_, _, point, relativeFrame, relativePoint)
 		mouseIsDown = false
-		if iconAnchor then
+		if s.IconAnchor then
 			local preferences = GetIconPreferences()
-			if iconAnchor.frame:GetName() == relativeFrame then
+			if s.IconAnchor.frame:GetName() == relativeFrame then
 				relativeFrame = preferences.relativeTo
 			end
 			preferences.point, preferences.relativeTo, preferences.relativePoint, preferences.x, preferences.y =
-				ApplyPoint(iconAnchor.frame, point, relativeFrame, relativePoint)
+				ApplyPoint(s.IconAnchor.frame, point, relativeFrame, relativePoint)
 			if Private.optionsMenu then
 				Private.optionsMenu:UpdateOptions()
 			end
@@ -581,24 +594,17 @@ local function CreateIconAnchor()
 	return container
 end
 
----@enum AnchorType
-local AnchorType = {
-	Message = {},
-	ProgressBar = {},
-	Icon = {},
-}
-
 ---@param anchorType AnchorType
 ---@param point AnchorPoint|nil
 ---@param relativeTo string|nil
 ---@param relativePoint AnchorPoint|nil
 local function ApplyPointToAnchor(anchorType, point, relativeTo, relativePoint)
 	if anchorType == AnchorType.ProgressBar then
-		if progressBarAnchor then
+		if s.ProgressBarAnchor then
 			local x, y
 			point, relativeTo, relativePoint, x, y =
-				ApplyPoint(progressBarAnchor.frame, point, relativeTo, relativePoint)
-			progressBarAnchor:SetAnchorPoint(point)
+				ApplyPoint(s.ProgressBarAnchor.frame, point, relativeTo, relativePoint)
+			s.ProgressBarAnchor:SetAnchorPoint(point)
 			local preferences = GetProgressBarPreferences()
 			preferences.point = point
 			preferences.relativeTo = relativeTo
@@ -606,10 +612,10 @@ local function ApplyPointToAnchor(anchorType, point, relativeTo, relativePoint)
 			preferences.x, preferences.y = x, y
 		end
 	elseif anchorType == AnchorType.Message then
-		if messageAnchor then
+		if s.MessageAnchor then
 			local x, y
-			point, relativeTo, relativePoint, x, y = ApplyPoint(messageAnchor.frame, point, relativeTo, relativePoint)
-			messageAnchor:SetAnchorPoint(point)
+			point, relativeTo, relativePoint, x, y = ApplyPoint(s.MessageAnchor.frame, point, relativeTo, relativePoint)
+			s.MessageAnchor:SetAnchorPoint(point)
 			local preferences = GetMessagePreferences()
 			preferences.point = point
 			preferences.relativeTo = relativeTo
@@ -617,10 +623,10 @@ local function ApplyPointToAnchor(anchorType, point, relativeTo, relativePoint)
 			preferences.x, preferences.y = x, y
 		end
 	elseif anchorType == AnchorType.Icon then
-		if iconAnchor then
+		if s.IconAnchor then
 			local x, y
-			point, relativeTo, relativePoint, x, y = ApplyPoint(iconAnchor.frame, point, relativeTo, relativePoint)
-			iconAnchor:SetAnchorPoint(point)
+			point, relativeTo, relativePoint, x, y = ApplyPoint(s.IconAnchor.frame, point, relativeTo, relativePoint)
+			s.IconAnchor:SetAnchorPoint(point)
 			local preferences = GetIconPreferences()
 			preferences.point = point
 			preferences.relativeTo = relativeTo
@@ -634,28 +640,28 @@ end
 ---@param func fun(widget: EPProgressBar|EPReminderMessage|EPReminderIcon)
 local function CallAnchorFunction(anchorType, func)
 	if anchorType == AnchorType.ProgressBar then
-		if progressBarAnchor then
-			for _, child in ipairs(progressBarAnchor.children) do
+		if s.ProgressBarAnchor then
+			for _, child in ipairs(s.ProgressBarAnchor.children) do
 				---@cast child EPProgressBar
 				func(child)
 			end
-			progressBarAnchor:DoLayout()
+			s.ProgressBarAnchor:DoLayout()
 		end
 	elseif anchorType == AnchorType.Message then
-		if messageAnchor then
-			for _, child in ipairs(messageAnchor.children) do
+		if s.MessageAnchor then
+			for _, child in ipairs(s.MessageAnchor.children) do
 				---@cast child EPReminderMessage
 				func(child)
 			end
-			messageAnchor:DoLayout()
+			s.MessageAnchor:DoLayout()
 		end
 	elseif anchorType == AnchorType.Icon then
-		if iconAnchor then
-			for _, child in ipairs(iconAnchor.children) do
+		if s.IconAnchor then
+			for _, child in ipairs(s.IconAnchor.children) do
 				---@cast child EPReminderIcon
 				func(child)
 			end
-			iconAnchor:DoLayout()
+			s.IconAnchor:DoLayout()
 		end
 	end
 end
@@ -663,22 +669,22 @@ end
 ---@param anchorType AnchorType
 local function HideAnchor(anchorType)
 	if anchorType == AnchorType.ProgressBar then
-		if progressBarAnchor then
-			progressBarAnchor.frame:Hide()
-			progressBarManager:CancelTimers()
-			progressBarAnchor:ReleaseChildren()
+		if s.ProgressBarAnchor then
+			s.ProgressBarAnchor.frame:Hide()
+			ProgressBarManager:CancelTimers()
+			s.ProgressBarAnchor:ReleaseChildren()
 		end
 	elseif anchorType == AnchorType.Message then
-		if messageAnchor then
-			messageAnchor.frame:Hide()
-			messageManager:CancelTimers()
-			messageAnchor:ReleaseChildren()
+		if s.MessageAnchor then
+			s.MessageAnchor.frame:Hide()
+			MessageManager:CancelTimers()
+			s.MessageAnchor:ReleaseChildren()
 		end
 	elseif anchorType == AnchorType.Icon then
-		if iconAnchor then
-			iconAnchor.frame:Hide()
-			iconManager:CancelTimers()
-			iconAnchor:ReleaseChildren()
+		if s.IconAnchor then
+			s.IconAnchor.frame:Hide()
+			IconManager:CancelTimers()
+			s.IconAnchor:ReleaseChildren()
 		end
 	end
 end
@@ -686,27 +692,28 @@ end
 ---@param anchorType AnchorType
 local function ShowAnchor(anchorType)
 	if anchorType == AnchorType.ProgressBar then
-		if progressBarAnchor then
-			progressBarAnchor.frame:Show()
-			progressBarManager:CancelTimers()
-			progressBarManager:AddProgressBarsOnTimer()
+		if s.ProgressBarAnchor then
+			s.ProgressBarAnchor.frame:Show()
+			ProgressBarManager:CancelTimers()
+			ProgressBarManager:AddProgressBarsOnTimer()
 		end
 	elseif anchorType == AnchorType.Message then
-		if messageAnchor then
-			messageAnchor.frame:Show()
-			messageManager:CancelTimers()
-			messageManager:AddMessagesOnTimer()
+		if s.MessageAnchor then
+			s.MessageAnchor.frame:Show()
+			MessageManager:CancelTimers()
+			MessageManager:AddMessagesOnTimer()
 		end
 	elseif anchorType == AnchorType.Icon then
-		if iconAnchor then
-			iconAnchor.frame:Show()
-			iconManager:CancelTimers()
-			iconManager:AddIconsOnTimer()
+		if s.IconAnchor then
+			s.IconAnchor.frame:Show()
+			IconManager:CancelTimers()
+			IconManager:AddIconsOnTimer()
 		end
 	end
 end
 
-local optionCreator = {}
+---@class OptionCreator
+local OptionCreator = {}
 do
 	local Clamp = Clamp
 
@@ -1022,13 +1029,13 @@ do
 									Private:StopSimulatingBoss()
 								end
 								Private:UnregisterReminderEvents()
-								if messageAnchor and messageAnchor.frame:IsShown() then
+								if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
 									HideAnchor(AnchorType.Message)
 								end
-								if progressBarAnchor and progressBarAnchor.frame:IsShown() then
+								if s.ProgressBarAnchor and s.ProgressBarAnchor.frame:IsShown() then
 									HideAnchor(AnchorType.ProgressBar)
 								end
-								if iconAnchor and iconAnchor.frame:IsShown() then
+								if s.IconAnchor and s.IconAnchor.frame:IsShown() then
 									HideAnchor(AnchorType.Icon)
 								end
 							end
@@ -1105,7 +1112,7 @@ do
 					local value = tonumber(key)
 					if value then
 						GetReminderPreferences().countdownLength = value
-						progressBarManager:AddProgressBarsOnTimer()
+						ProgressBarManager:AddProgressBarsOnTimer()
 					end
 				end,
 				validate = function(value)
@@ -1135,7 +1142,7 @@ do
 						local preferences = GetMessagePreferences()
 						if key ~= preferences.enabled and key == false then
 							preferences.enabled = false
-							if messageAnchor and messageAnchor.frame:IsShown() then
+							if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
 								HideAnchor(AnchorType.Message)
 							end
 						end
@@ -1149,7 +1156,7 @@ do
 					return preferences.enabled == true and preferences.messages.enabled == true
 				end,
 				buttonCallback = function()
-					if messageAnchor and messageAnchor.frame:IsShown() then
+					if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
 						HideAnchor(AnchorType.Message)
 					else
 						ShowAnchor(AnchorType.Message)
@@ -1181,14 +1188,14 @@ do
 					if key == "expirationOnly" then
 						if preferences.messages.showOnlyAtExpiration ~= true then
 							preferences.messages.showOnlyAtExpiration = true
-							if messageAnchor and messageAnchor.frame:IsShown() then
+							if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
 								ShowAnchor(AnchorType.Message)
 							end
 						end
 					else -- if key == "fullCountdown" then
 						if preferences.messages.showOnlyAtExpiration ~= false then
 							preferences.messages.showOnlyAtExpiration = false
-							if messageAnchor and messageAnchor.frame:IsShown() then
+							if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
 								ShowAnchor(AnchorType.Message)
 							end
 						end
@@ -1212,9 +1219,9 @@ do
 				set = function(key)
 					if type(key) == "boolean" then
 						GetMessagePreferences().soonestExpirationOnBottom = key
-						if messageAnchor then
-							messageAnchor.content.sortAscending = key
-							messageAnchor:DoLayout()
+						if s.MessageAnchor then
+							s.MessageAnchor.content.sortAscending = key
+							s.MessageAnchor:DoLayout()
 						end
 					end
 				end,
@@ -1390,8 +1397,8 @@ do
 						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
 						local region = _G[regionName] or UIParent
-						if messageAnchor then
-							messageAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						if s.MessageAnchor then
+							s.MessageAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
 						end
 					end
 				end,
@@ -1437,7 +1444,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local messages = GetMessagePreferences()
-						if messageAnchor and messageAnchor.frame:GetName() == key then
+						if s.MessageAnchor and s.MessageAnchor.frame:GetName() == key then
 							key = messages.relativeTo
 						end
 						ApplyPointToAnchor(AnchorType.Message, messages.point, key, messages.relativePoint)
@@ -1476,7 +1483,7 @@ do
 						local preferences = GetProgressBarPreferences()
 						if key ~= preferences.enabled and key == false then
 							preferences.enabled = false
-							if progressBarAnchor and progressBarAnchor.frame:IsShown() then
+							if s.ProgressBarAnchor and s.ProgressBarAnchor.frame:IsShown() then
 								HideAnchor(AnchorType.ProgressBar)
 							end
 						end
@@ -1487,7 +1494,7 @@ do
 				buttonText = L["Toggle Progress Bar Anchor"],
 				buttonEnabled = enableProgressBarOption,
 				buttonCallback = function()
-					if progressBarAnchor and progressBarAnchor.frame:IsShown() then
+					if s.ProgressBarAnchor and s.ProgressBarAnchor.frame:IsShown() then
 						HideAnchor(AnchorType.ProgressBar)
 					else
 						ShowAnchor(AnchorType.ProgressBar)
@@ -1674,9 +1681,9 @@ do
 					local value = tonumber(key)
 					if value then
 						GetProgressBarPreferences().spacing = value
-						if progressBarAnchor then
-							progressBarAnchor:SetSpacing(0, value)
-							progressBarAnchor:DoLayout()
+						if s.ProgressBarAnchor then
+							s.ProgressBarAnchor:SetSpacing(0, value)
+							s.ProgressBarAnchor:DoLayout()
 						end
 					end
 				end,
@@ -1749,9 +1756,9 @@ do
 				set = function(key)
 					if type(key) == "boolean" then
 						GetProgressBarPreferences().soonestExpirationOnBottom = key
-						if progressBarAnchor then
-							progressBarAnchor.content.sortAscending = key
-							progressBarAnchor:DoLayout()
+						if s.ProgressBarAnchor then
+							s.ProgressBarAnchor.content.sortAscending = key
+							s.ProgressBarAnchor:DoLayout()
 						end
 					end
 				end,
@@ -2001,8 +2008,14 @@ do
 						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
 						local region = _G[regionName] or UIParent
-						if progressBarAnchor then
-							progressBarAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						if s.ProgressBarAnchor then
+							s.ProgressBarAnchor.frame:SetPoint(
+								preferences.point,
+								region,
+								preferences.relativePoint,
+								x,
+								y
+							)
 						end
 					end
 				end,
@@ -2053,7 +2066,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local preferences = GetProgressBarPreferences()
-						if progressBarAnchor and progressBarAnchor.frame:GetName() == key then
+						if s.ProgressBarAnchor and s.ProgressBarAnchor.frame:GetName() == key then
 							key = preferences.relativeTo
 						end
 						ApplyPointToAnchor(AnchorType.ProgressBar, preferences.point, key, preferences.relativePoint)
@@ -2092,7 +2105,7 @@ do
 						local preferences = GetIconPreferences()
 						if key ~= preferences.enabled and key == false then
 							preferences.enabled = false
-							if iconAnchor and iconAnchor.frame:IsShown() then
+							if s.IconAnchor and s.IconAnchor.frame:IsShown() then
 								HideAnchor(AnchorType.Icon)
 							end
 						end
@@ -2103,7 +2116,7 @@ do
 				buttonText = L["Toggle Cooldown Icon Anchor"],
 				buttonEnabled = enableIconOption,
 				buttonCallback = function()
-					if iconAnchor and iconAnchor.frame:IsShown() then
+					if s.IconAnchor and s.IconAnchor.frame:IsShown() then
 						HideAnchor(AnchorType.Icon)
 					else
 						ShowAnchor(AnchorType.Icon)
@@ -2214,9 +2227,9 @@ do
 					local value = tonumber(key)
 					if value then
 						GetIconPreferences().spacing = value
-						if iconAnchor then
-							iconAnchor:SetSpacing(value, value)
-							iconAnchor:DoLayout()
+						if s.IconAnchor then
+							s.IconAnchor:SetSpacing(value, value)
+							s.IconAnchor:DoLayout()
 						end
 					end
 				end,
@@ -2291,9 +2304,9 @@ do
 					if type(key) == "string" then
 						local icons = GetIconPreferences()
 						icons.orientation = key
-						if iconAnchor then
-							iconAnchor.content.orientation = key
-							iconAnchor:DoLayout()
+						if s.IconAnchor then
+							s.IconAnchor.content.orientation = key
+							s.IconAnchor:DoLayout()
 						end
 					end
 				end,
@@ -2337,9 +2350,9 @@ do
 				set = function(key)
 					if type(key) == "boolean" then
 						GetIconPreferences().soonestExpirationOnBottom = key
-						if iconAnchor then
-							iconAnchor.content.sortAscending = key
-							iconAnchor:DoLayout()
+						if s.IconAnchor then
+							s.IconAnchor.content.sortAscending = key
+							s.IconAnchor:DoLayout()
 						end
 					end
 				end,
@@ -2595,8 +2608,8 @@ do
 						local regionName = IsValidRegionName(preferences.relativeTo) and preferences.relativeTo
 							or "UIParent"
 						local region = _G[regionName] or UIParent
-						if iconAnchor then
-							iconAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
+						if s.IconAnchor then
+							s.IconAnchor.frame:SetPoint(preferences.point, region, preferences.relativePoint, x, y)
 						end
 					end
 				end,
@@ -2642,7 +2655,7 @@ do
 				set = function(key)
 					if type(key) == "string" then
 						local icons = GetIconPreferences()
-						if iconAnchor and iconAnchor.frame:GetName() == key then
+						if s.IconAnchor and s.IconAnchor.frame:GetName() == key then
 							key = icons.relativeTo
 						end
 						ApplyPointToAnchor(AnchorType.Icon, icons.point, key, icons.relativePoint)
@@ -3216,7 +3229,7 @@ do
 	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
 	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
 	---@return { [1]: string, [2]: table<integer, EPSettingOption>, [3]: table<integer, string>?}>
-	function optionCreator.GetOrCreateOptions()
+	function OptionCreator.GetOrCreateOptions()
 		if not sounds then
 			sounds = IterateHashTable("sound")
 		end
@@ -3263,31 +3276,31 @@ end
 
 -- Releases the message and progress bar anchors if they exist.
 function Private:CloseAnchors()
-	if messageAnchor then
-		AceGUI:Release(messageAnchor)
+	if s.MessageAnchor then
+		AceGUI:Release(s.MessageAnchor)
 	end
-	messageAnchor = nil
-	if progressBarAnchor then
-		AceGUI:Release(progressBarAnchor)
+	s.MessageAnchor = nil
+	if s.ProgressBarAnchor then
+		AceGUI:Release(s.ProgressBarAnchor)
 	end
-	progressBarAnchor = nil
-	if iconAnchor then
-		AceGUI:Release(iconAnchor)
+	s.ProgressBarAnchor = nil
+	if s.IconAnchor then
+		AceGUI:Release(s.IconAnchor)
 	end
-	iconAnchor = nil
+	s.IconAnchor = nil
 end
 
 local function CreateAnchors()
 	Private:CloseAnchors()
 
-	messageAnchor = CreateMessageAnchor()
-	messageAnchor.frame:Hide()
+	s.MessageAnchor = CreateMessageAnchor()
+	s.MessageAnchor.frame:Hide()
 
-	progressBarAnchor = CreateProgressBarAnchor()
-	progressBarAnchor.frame:Hide()
+	s.ProgressBarAnchor = CreateProgressBarAnchor()
+	s.ProgressBarAnchor.frame:Hide()
 
-	iconAnchor = CreateIconAnchor()
-	iconAnchor.frame:Hide()
+	s.IconAnchor = CreateIconAnchor()
+	s.IconAnchor.frame:Hide()
 end
 
 -- Releases the message and progress bar anchors if they exist and recreates them. Requires the options menu to be open.
@@ -3330,7 +3343,7 @@ function Private:CreateOptionsMenu()
 
 		CreateAnchors()
 
-		local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = optionCreator.GetOrCreateOptions()
+		local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = OptionCreator.GetOrCreateOptions()
 		optionsMenu:AddOptionTab(cooldownOverrideTab[1], cooldownOverrideTab[2], cooldownOverrideTab[3])
 		optionsMenu:AddOptionTab(keyBindingsTab[1], keyBindingsTab[2], keyBindingsTab[3])
 		optionsMenu:AddOptionTab(reminderTab[1], reminderTab[2], reminderTab[3])

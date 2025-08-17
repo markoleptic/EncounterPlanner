@@ -33,6 +33,7 @@ local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
 local print = print
+local tonumber = tonumber
 local type = type
 local UIParent = UIParent
 
@@ -66,7 +67,8 @@ local function IsVersionLessThan(major, minor, patch, targetMajor, targetMinor, 
 		or (major == targetMajor and minor == targetMinor and patch < targetPatch)
 end
 
-local minimapIconObject = {}
+---@class MinimapIconObject
+local MinimapIconObject = {}
 do -- Minimap icon initialization and handling
 	local GetAddOnMetric = C_AddOnProfiler.GetAddOnMetric
 
@@ -213,14 +215,15 @@ do -- Minimap icon initialization and handling
 	}
 
 	---@param addOn AceAddon|table
-	function minimapIconObject.RegisterMinimapIcons(addOn)
+	function MinimapIconObject.RegisterMinimapIcons(addOn)
 		AddonCompartmentFrame:RegisterAddon(AddonCompartmentFrameObject)
 		dataBrokerObject = LDB:NewDataObject(AddOnName, dataBrokerObject)
 		LDBIcon:Register(AddOnName, dataBrokerObject, addOn.db.profile.preferences.minimap)
 	end
 end
 
-local dungeonInstanceInitializer = {}
+---@class DungeonInstanceInitializer
+local DungeonInstanceInitializer = {}
 do -- Raid instance initialization
 	local EJ_GetCreatureInfo = EJ_GetCreatureInfo
 	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
@@ -268,7 +271,7 @@ do -- Raid instance initialization
 	local GetBossPhases = bossUtilities.GetBossPhases
 
 	-- Initializes names and icons for raid instances.
-	function dungeonInstanceInitializer.InitializeDungeonInstances()
+	function DungeonInstanceInitializer.InitializeDungeonInstances()
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			if dungeonInstance.executeAndNil then
 				dungeonInstance.executeAndNil()
@@ -656,7 +659,7 @@ function AddOn:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileShutdown", "OnProfileShutdown")
 	self:RegisterChatCommand(AddOnName, "SlashCommand")
 	self:RegisterChatCommand("ep", "SlashCommand")
-	minimapIconObject.RegisterMinimapIcons(self)
+	MinimapIconObject.RegisterMinimapIcons(self)
 
 	self.OnInitialize = nil
 end
@@ -679,7 +682,7 @@ local function HandlePlayerTalentUpdate(_, configID)
 end
 
 function AddOn:OnEnable()
-	dungeonInstanceInitializer.InitializeDungeonInstances()
+	DungeonInstanceInitializer.InitializeDungeonInstances()
 	bossUtilities.Initialize()
 	--@debug@
 	Private.testRunner.RunTests()

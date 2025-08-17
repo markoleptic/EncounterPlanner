@@ -66,15 +66,37 @@ local tremove = table.remove
 local unpack = unpack
 local wipe = table.wipe
 
-local Creator = {}
-local Handler = {}
+local s = {
+	Creator = {},
+	Handler = {},
+	SimulationCompletedObject = {
+		HandleSimulationCompleted = function()
+			if Private.mainFrame then
+				local simulateRemindersButton = Private.mainFrame.simulateRemindersButton
+				if simulateRemindersButton then
+					simulateRemindersButton:SetText(L["Simulate Reminders"])
+					local timeline = Private.mainFrame.timeline
+					if timeline then
+						timeline:SetIsSimulating(false)
+						local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
+						addAssigneeDropdown:SetEnabled(true)
+					end
+					Private.mainFrame.planDropdown:SetEnabled(true)
+				end
+			end
+		end,
+	},
+}
 
-local kAddAssigneeText =
-	utilities.AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
-
-local kTopContainerDropdownWidth = 200
-local kTopContainerWidgetFontSize = 14
-local kMaxVisibleDropdownItems = 10
+local k = {
+	AddAssigneeText = utilities.AddIconBeforeText(
+		[[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]],
+		L["Add Assignee"]
+	),
+	MaxVisibleDropdownItems = 10,
+	TopContainerDropdownWidth = 200,
+	TopContainerWidgetFontSize = 14,
+}
 
 do -- Plan Menu Items
 	local AddIconBeforeText = utilities.AddIconBeforeText
@@ -82,7 +104,7 @@ do -- Plan Menu Items
 	local planMenuItems = nil
 
 	---@return table<integer, DropdownItemData>
-	function Creator.PlanMenuItems()
+	function s.Creator.PlanMenuItems()
 		if not planMenuItems then
 			planMenuItems = {
 				{
@@ -144,7 +166,7 @@ do -- Boss Menu Items
 	local bossMenuItems = nil
 
 	---@return table<integer, DropdownItemData>
-	function Creator.BossMenuItems()
+	function s.Creator.BossMenuItems()
 		if not bossMenuItems then
 			bossMenuItems = {
 				{
@@ -221,7 +243,7 @@ do -- Menu Button
 	---@param text string
 	---@param height number
 	---@return EPDropdown
-	function Creator.DropdownMenuButton(text, height)
+	function s.Creator.DropdownMenuButton(text, height)
 		local menuButton = AceGUI:Create("EPDropdown")
 		menuButton:SetTextCentered(true)
 		menuButton:SetAutoItemWidth(true)
@@ -231,7 +253,7 @@ do -- Menu Button
 		menuButton:SetHeight(height)
 		menuButton:SetButtonVisibility(false)
 		menuButton:SetShowHighlight(true)
-		menuButton:SetMaxVisibleItems(kMaxVisibleDropdownItems)
+		menuButton:SetMaxVisibleItems(k.MaxVisibleDropdownItems)
 		menuButton:SetCallback("OnEnter", HandleMenuButtonEntered)
 		menuButton:SetCallback("OnOpened", HandleMenuButtonOpened)
 		menuButton:SetCallback("OnClosed", HandleMenuButtonClosed)
@@ -252,7 +274,7 @@ do -- Menu Button
 	---@param height number
 	---@param clickedCallback fun()
 	---@return EPButton
-	function Creator.MenuButton(text, height, clickedCallback)
+	function s.Creator.MenuButton(text, height, clickedCallback)
 		local menuButton = AceGUI:Create("EPButton")
 		menuButton:SetText(text)
 		menuButton:SetFontSize(kMenuButtonFontSize)
@@ -1113,14 +1135,14 @@ local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifferen
 end
 
 local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
-	if value == kAddAssigneeText then
+	if value == k.AddAssigneeText then
 		return
 	end
 
 	local assignments = GetCurrentAssignments()
 	for _, assignment in pairs(GetCurrentAssignments()) do
 		if assignment.assignee == value then
-			dropdown:SetText(kAddAssigneeText)
+			dropdown:SetText(k.AddAssigneeText)
 			return
 		end
 	end
@@ -1135,7 +1157,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	tinsert(assignments, assignment)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
-	dropdown:SetText(kAddAssigneeText)
+	dropdown:SetText(k.AddAssigneeText)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "assigneeAdded")
 	end
@@ -1157,7 +1179,7 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	end
 end
 
-do -- Plan Menu Button Handlers
+do -- Plan Menu Button s.Handlers
 	local GetBossName = bossUtilities.GetBossName
 
 	local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
@@ -1441,7 +1463,7 @@ do -- Plan Menu Button Handlers
 
 	---@param planMenuButton EPDropdown
 	---@param value any
-	function Handler.PlanMenuButtonClicked(planMenuButton, _, value)
+	function s.Handler.PlanMenuButtonClicked(planMenuButton, _, value)
 		if value == "Plan" then
 			return
 		end
@@ -1619,23 +1641,6 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 			Private.activeTutorialCallbackName,
 			wasSimulatingBoss and "simulationStopped" or "simulationStarted"
 		)
-	end
-end
-
-local simulationCompletedObject = {}
-function simulationCompletedObject.HandleSimulationCompleted()
-	if Private.mainFrame then
-		local simulateRemindersButton = Private.mainFrame.simulateRemindersButton
-		if simulateRemindersButton then
-			simulateRemindersButton:SetText(L["Simulate Reminders"])
-			local timeline = Private.mainFrame.timeline
-			if timeline then
-				timeline:SetIsSimulating(false)
-				local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
-				addAssigneeDropdown:SetEnabled(true)
-			end
-			Private.mainFrame.planDropdown:SetEnabled(true)
-		end
 	end
 end
 
@@ -1856,7 +1861,7 @@ end
 
 local function HandleMainFrameReleased()
 	Private.mainFrame = nil
-	Private.UnregisterCallback(simulationCompletedObject, "SimulationCompleted")
+	Private.UnregisterCallback(s.SimulationCompletedObject, "SimulationCompleted")
 	if Private.IsSimulatingBoss() then
 		Private:StopSimulatingBoss()
 	end
@@ -1899,20 +1904,20 @@ function Private:CreateInterface()
 
 	local menuButtonHeight = mainFrame.windowBar:GetHeight() - 2
 
-	local planMenuButton = Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
-	planMenuButton:AddItems(Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
-	planMenuButton:SetCallback("OnValueChanged", Handler.PlanMenuButtonClicked)
+	local planMenuButton = s.Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
+	planMenuButton:AddItems(s.Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
+	planMenuButton:SetCallback("OnValueChanged", s.Handler.PlanMenuButtonClicked)
 	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
 
-	local bossMenuButton = Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)
+	local bossMenuButton = s.Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)
 	bossMenuButton:SetMultiselect(true)
-	bossMenuButton:AddItems(Creator.BossMenuItems(), "EPDropdownItemToggle")
+	bossMenuButton:AddItems(s.Creator.BossMenuItems(), "EPDropdownItemToggle")
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
-	local rosterMenuButton = Creator.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)
+	local rosterMenuButton = s.Creator.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)
 	local preferencesMenuButton =
-		Creator.MenuButton(L["Preferences"], menuButtonHeight, HandlePreferencesMenuButtonClicked)
+		s.Creator.MenuButton(L["Preferences"], menuButtonHeight, HandlePreferencesMenuButtonClicked)
 
 	mainFrame.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
@@ -1922,19 +1927,19 @@ function Private:CreateInterface()
 	instanceLabelContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabelLabel = AceGUI:Create("EPLabel")
-	instanceLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
+	instanceLabelLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	instanceLabelLabel:SetHeight(16)
 	instanceLabelLabel:SetText(L["Instance"] .. ":", 0)
 	instanceLabelLabel:SetFrameWidthFromText()
 
 	local bossLabelLabel = AceGUI:Create("EPLabel")
-	bossLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
+	bossLabelLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	bossLabelLabel:SetHeight(16)
 	bossLabelLabel:SetText(L["Boss"] .. ":", 0)
 	bossLabelLabel:SetFrameWidthFromText()
 
 	local difficultyLabelLabel = AceGUI:Create("EPLabel")
-	difficultyLabelLabel:SetFontSize(kTopContainerWidgetFontSize)
+	difficultyLabelLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	difficultyLabelLabel:SetHeight(16)
 	difficultyLabelLabel:SetText(L["Difficulty"] .. ":", 0)
 	difficultyLabelLabel:SetFrameWidthFromText()
@@ -1952,34 +1957,34 @@ function Private:CreateInterface()
 	instanceBossContainer:SetPadding(0, 0, 0, 0)
 
 	local instanceLabel = AceGUI:Create("EPLabel")
-	instanceLabel:SetFontSize(kTopContainerWidgetFontSize)
-	instanceLabel:SetWidth(kTopContainerDropdownWidth)
+	instanceLabel:SetFontSize(k.TopContainerWidgetFontSize)
+	instanceLabel:SetWidth(k.TopContainerDropdownWidth)
 	instanceLabel:SetHeight(16)
 
 	local bossLabel = AceGUI:Create("EPLabel")
-	bossLabel:SetFontSize(kTopContainerWidgetFontSize)
-	bossLabel:SetWidth(kTopContainerDropdownWidth)
+	bossLabel:SetFontSize(k.TopContainerWidgetFontSize)
+	bossLabel:SetWidth(k.TopContainerDropdownWidth)
 	bossLabel:SetHeight(16)
 
 	local difficultyLabel = AceGUI:Create("EPLabel")
-	difficultyLabel:SetFontSize(kTopContainerWidgetFontSize)
+	difficultyLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	difficultyLabel:SetHeight(16)
-	difficultyLabel:SetWidth(kTopContainerDropdownWidth)
+	difficultyLabel:SetWidth(k.TopContainerDropdownWidth)
 	difficultyLabel:SetIcon(constants.kEncounterJournalIcon, 0, 2, 0, 0, 2)
 	instanceBossContainer:AddChildren(instanceLabel, bossLabel, difficultyLabel)
 
 	local planLabel = AceGUI:Create("EPLabel")
-	planLabel:SetFontSize(kTopContainerWidgetFontSize)
+	planLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	planLabel:SetText(L["Current Plan:"], 0)
 	planLabel:SetHeight(topContainerWidgetHeight)
 	planLabel:SetFrameWidthFromText()
 
 	local planDropdown = AceGUI:Create("EPDropdown")
-	planDropdown:SetWidth(kTopContainerDropdownWidth - 10)
+	planDropdown:SetWidth(k.TopContainerDropdownWidth - 10)
 	planDropdown:SetAutoItemWidth(true)
 	planDropdown:SetHeight(topContainerWidgetHeight)
 	planDropdown:SetUseLineEditForDoubleClick(true)
-	planDropdown:SetMaxVisibleItems(kMaxVisibleDropdownItems)
+	planDropdown:SetMaxVisibleItems(k.MaxVisibleDropdownItems)
 	planDropdown:SetCallback("OnLineEditTextSubmitted", HandlePlanNameChanged)
 	planDropdown:SetCallback("OnValueChanged", HandlePlanDropdownValueChanged)
 
@@ -2018,7 +2023,7 @@ function Private:CreateInterface()
 	simulateRemindersButton:SetWidth(checkBoxWidth)
 	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
 
-	self.RegisterCallback(simulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
+	self.RegisterCallback(s.SimulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
 
 	local sendPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
 	sendPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
@@ -2096,7 +2101,7 @@ function Private:CreateInterface()
 	timeline:SetCallback("ResizeBoundsCalculated", HandleResizeBoundsCalculated)
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
-	addAssigneeDropdown:SetText(kAddAssigneeText)
+	addAssigneeDropdown:SetText(k.AddAssigneeText)
 	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
 

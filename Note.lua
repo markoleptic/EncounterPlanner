@@ -52,21 +52,23 @@ local tinsert = table.insert
 local tonumber = tonumber
 local wipe = table.wipe
 
-local colorEndRegex = "|?|r"
-local colorStartRegex = "|?|c........"
-local postDashRegex = "([^ \n][^\n]-)  +"
-local postOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-"
-local removeFirstDashRegex = "^[^%-]*%-+%s*"
-local spaceSurroundedDashRegex = "^.* %- (.*)"
-local stringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}(.*)"
-local targetNameRegex = "(@%S+)"
-local textRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}"
-local timeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}"
-local combatLogEventFromAbbreviation = {
-	["SCC"] = "SPELL_CAST_SUCCESS",
-	["SCS"] = "SPELL_CAST_START",
-	["SAA"] = "SPELL_AURA_APPLIED",
-	["SAR"] = "SPELL_AURA_REMOVED",
+local k = {
+	ColorEndRegex = "|?|r",
+	ColorStartRegex = "|?|c........",
+	CombatLogEventFromAbbreviation = {
+		["SCC"] = "SPELL_CAST_SUCCESS",
+		["SCS"] = "SPELL_CAST_START",
+		["SAA"] = "SPELL_AURA_APPLIED",
+		["SAR"] = "SPELL_AURA_REMOVED",
+	},
+	PostDashRegex = "([^ \n][^\n]-)  +",
+	PostOptionsPreDashRegex = "}{spell:(%d+)}?(.-) %-",
+	RemoveFirstDashRegex = "^[^%-]*%-+%s*",
+	SpaceSurroundedDashRegex = "^.* %- (.*)",
+	StringWithoutSpellRegex = "(.*){spell:(%d+):?%d*}(.*)",
+	TargetNameRegex = "(@%S+)",
+	TextRegex = "{[Tt][Ee][Xx][Tt]}(.-){/[Tt][Ee][Xx][Tt]}",
+	TimeOptionsSplitRegex = "{time:(%d+)[:%.]?(%d*),?([^{}]*)}",
 }
 
 ---@class FailureTableEntry
@@ -83,16 +85,16 @@ local function CreateAssignmentsFromLine(line, failed)
 	local assignments = {}
 	local failedCount = 0
 
-	local rightOfDash = line:match(spaceSurroundedDashRegex)
+	local rightOfDash = line:match(k.SpaceSurroundedDashRegex)
 	if rightOfDash then
 		line = rightOfDash
 	else
-		line = line:gsub(removeFirstDashRegex, "", 1)
+		line = line:gsub(k.RemoveFirstDashRegex, "", 1)
 	end
 
-	for str in (line .. "  "):gmatch(postDashRegex) do
+	for str in (line .. "  "):gmatch(k.PostDashRegex) do
 		local spellID = kInvalidAssignmentSpellID
-		local strWithoutSpell = str:gsub(stringWithoutSpellRegex, function(left, id, right)
+		local strWithoutSpell = str:gsub(k.StringWithoutSpellRegex, function(left, id, right)
 			if id and id ~= "" then
 				local numericValue = tonumber(id)
 				if numericValue and GetSpellName(numericValue) then
@@ -101,17 +103,17 @@ local function CreateAssignmentsFromLine(line, failed)
 			end
 			return left .. right
 		end)
-		local text = str:match(textRegex)
+		local text = str:match(k.TextRegex)
 		if text then
 			text = text:gsub("{everyone}", "") -- duplicate everyone
 			text = text:gsub("^%s*(.-)%s*$", "%1") -- remove beginning/trailing whitespace
-			strWithoutSpell = strWithoutSpell:gsub(textRegex, "")
+			strWithoutSpell = strWithoutSpell:gsub(k.TextRegex, "")
 		end
 		for _, entry in pairs(splitTable(",", strWithoutSpell)) do
 			local targetName = nil
 			entry = entry:gsub("%s", "") -- remove all whitespace
-			entry = entry:gsub(colorStartRegex, ""):gsub(colorEndRegex, "") -- Remove colors
-			entry = entry:gsub(targetNameRegex, function(target)
+			entry = entry:gsub(k.ColorStartRegex, ""):gsub(k.ColorEndRegex, "") -- Remove colors
+			entry = entry:gsub(k.TargetNameRegex, function(target)
 				if target then
 					targetName = target:gsub("@", "") -- Extract target name
 				end
@@ -151,7 +153,7 @@ end
 ---@return boolean -- True if invalid combat log event type or combat log event spell ID
 local function ProcessCombatEventLogEventOption(option, time, assignments, derivedAssignments, replaced, encounterIDs)
 	local combatLogEventAbbreviation, spellIDStr, spellCountStr, _ = split(":", option, 4)
-	if combatLogEventFromAbbreviation[combatLogEventAbbreviation] then
+	if k.CombatLogEventFromAbbreviation[combatLogEventAbbreviation] then
 		local spellID = tonumber(spellIDStr)
 		local spellCount = tonumber(spellCountStr)
 		if spellID then
@@ -274,7 +276,7 @@ end
 ---@return string
 local function ParseTime(line)
 	local time, options = nil, nil
-	local rest, _ = line:gsub(timeOptionsSplitRegex, function(minute, sec, opts)
+	local rest, _ = line:gsub(k.TimeOptionsSplitRegex, function(minute, sec, opts)
 		if minute and (sec == nil or sec == "") then
 			time = tonumber(minute)
 		elseif minute and sec then
@@ -378,7 +380,7 @@ function Private.ParseNote(plan, text, test)
 	for _, line in pairs(text) do
 		local time, options, rest = ParseTime(line)
 		if time and options then
-			local spellID, _ = line:match(postOptionsPreDashRegex)
+			local spellID, _ = line:match(k.PostOptionsPreDashRegex)
 			local spellIDNumber
 			if spellID then
 				spellIDNumber = tonumber(spellID)

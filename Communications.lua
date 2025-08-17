@@ -8,9 +8,23 @@ local Encode, Decode = Private.Encode, Private.Decode
 
 ---@class Constants
 local constants = Private.constants
-local kDistributePlan = constants.communications.kDistributePlan
-local kPlanReceived = constants.communications.kPlanReceived
-local kDistributeText = constants.communications.kDistributeText
+
+local k = {
+	ConfigForDeflate = {
+		[1] = { level = 1 },
+		[2] = { level = 2 },
+		[3] = { level = 3 },
+		[4] = { level = 4 },
+		[5] = { level = 5 },
+		[6] = { level = 6 },
+		[7] = { level = 7 },
+		[8] = { level = 8 },
+		[9] = { level = 9 },
+	},
+	DistributePlan = constants.communications.kDistributePlan,
+	DistributeText = constants.communications.kDistributeText,
+	PlanReceived = constants.communications.kPlanReceived,
+}
 
 ---@class Utilities
 local utilities = Private.utilities
@@ -28,23 +42,14 @@ local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
 local LibDeflate = LibStub("LibDeflate")
 local format = string.format
+local ipairs = ipairs
 local IsInRaid = IsInRaid
+local pairs = pairs
 local type = type
 local UnitFullName = UnitFullName
 
-local configForDeflate = {
-	[1] = { level = 1 },
-	[2] = { level = 2 },
-	[3] = { level = 3 },
-	[4] = { level = 4 },
-	[5] = { level = 5 },
-	[6] = { level = 6 },
-	[7] = { level = 7 },
-	[8] = { level = 8 },
-	[9] = { level = 9 },
-}
-
-local planSerializer = {}
+---@class PlanSerializer
+local PlanSerializer = {}
 do
 	---@class Assignment
 	local Assignment = Private.classes.Assignment
@@ -128,7 +133,7 @@ do
 
 	---@param plan Plan
 	---@return SerializedPlan
-	function planSerializer.SerializePlan(plan)
+	function PlanSerializer.SerializePlan(plan)
 		local serializedPlan = {}
 		serializedPlan[1] = plan.ID
 		serializedPlan[2] = plan.name
@@ -151,7 +156,7 @@ do
 
 	---@param serializedPlan SerializedPlan
 	---@return Plan
-	function planSerializer.DeserializePlan(serializedPlan)
+	function PlanSerializer.DeserializePlan(serializedPlan)
 		local planID = serializedPlan[1]
 		local name = serializedPlan[2]
 		local plan = Plan:New({}, name, planID)
@@ -176,7 +181,7 @@ end
 ---@param level integer|nil
 ---@return string
 local function CompressString(inString, forChat, level)
-	local compressed = LibDeflate:CompressZlib(inString, configForDeflate[level] or nil)
+	local compressed = LibDeflate:CompressZlib(inString, k.ConfigForDeflate[level] or nil)
 	if forChat then
 		return LibDeflate:EncodeForPrint(compressed)
 	else
@@ -210,7 +215,7 @@ end
 ---@return string
 local function TableToString(inTable, forChat, level)
 	local serialized = Encode(inTable)
-	local compressed = LibDeflate:CompressZlib(serialized, configForDeflate[level] or nil)
+	local compressed = LibDeflate:CompressZlib(serialized, k.ConfigForDeflate[level] or nil)
 
 	if forChat then
 		return LibDeflate:EncodeForPrint(compressed)
@@ -405,11 +410,11 @@ do
 	---@param package table
 	---@param sender string
 	local function HandleDistributePlanCommReceived(package, sender)
-		local plan = planSerializer.DeserializePlan(package --[[@as table]])
+		local plan = PlanSerializer.DeserializePlan(package --[[@as table]])
 		local groupType = GetGroupType()
 		if groupType then
 			local returnMessage = CompressString(format("%s,%s", plan.ID, sender), false)
-			AddOn:SendCommMessage(kPlanReceived, returnMessage, groupType, nil, "NORMAL")
+			AddOn:SendCommMessage(k.PlanReceived, returnMessage, groupType, nil, "NORMAL")
 		end
 		local foundTrustedCharacter = false
 		for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
@@ -447,12 +452,12 @@ do
 		end
         --@end-non-debug@]===]
 
-		if prefix == kDistributePlan then
+		if prefix == k.DistributePlan then
 			local package = StringToTable(message, false)
 			if type(package == "table") then
 				HandleDistributePlanCommReceived(package --[[@as table]], fullName)
 			end
-		elseif prefix == kPlanReceived and next(activePlanIDsBeingSent) then
+		elseif prefix == k.PlanReceived and next(activePlanIDsBeingSent) then
 			local package = DecompressString(message, false)
 			local messageTable = strsplittable(",", package)
 			local planID, originalPlanSender = messageTable[1], messageTable[2]
@@ -464,7 +469,7 @@ do
 					end
 				end
 			end
-		elseif prefix == kDistributeText then
+		elseif prefix == k.DistributeText then
 			local package = StringToTable(message, false)
 			self.db.profile.activeText = package --[[@as table]]
 			Private.ExecuteAPICallback("ExternalTextSynced")
@@ -512,9 +517,9 @@ do
 				activePlanIDsBeingSent[plan.ID].timer = nil
 			end
 			activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
-			local exportString = TableToString(planSerializer.SerializePlan(plan), false)
+			local exportString = TableToString(PlanSerializer.SerializePlan(plan), false)
 			LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
-			AddOn:SendCommMessage(kDistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
+			AddOn:SendCommMessage(k.DistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
 		end
 	end
 
@@ -536,7 +541,7 @@ do
 				local groupType = GetGroupType()
 				if groupType then
 					local exportString = TableToString(primaryPlan.content, false)
-					AddOn:SendCommMessage(kDistributeText, exportString, groupType, nil, "NORMAL")
+					AddOn:SendCommMessage(k.DistributeText, exportString, groupType, nil, "NORMAL")
 					Private.ExecuteAPICallback("ExternalTextSynced")
 				end
 			end
@@ -546,9 +551,9 @@ end
 
 function Private:RegisterCommunications()
 	AddOn:RegisterComm(AddOnName)
-	AddOn:RegisterComm(kDistributePlan)
-	AddOn:RegisterComm(kPlanReceived)
-	AddOn:RegisterComm(kDistributeText)
+	AddOn:RegisterComm(k.DistributePlan)
+	AddOn:RegisterComm(k.PlanReceived)
+	AddOn:RegisterComm(k.DistributeText)
 	self.RegisterCallback(commObject, "ProfileRefreshed", "Reset")
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", commObject.HandleGroupRosterUpdate)
 end
@@ -636,9 +641,9 @@ do
 			ChangePlanBoss({ [plan.name] = plan }, plan.name, plan.dungeonEncounterID, plan.difficulty)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
-			local export = TableToString(planSerializer.SerializePlan(plan), false)
+			local export = TableToString(PlanSerializer.SerializePlan(plan), false)
 			local package = StringToTable(export, false)
-			local deserializedPlan = planSerializer.DeserializePlan(package --[[@as table]])
+			local deserializedPlan = PlanSerializer.DeserializePlan(package --[[@as table]])
 			deserializedPlan.isPrimaryPlan = true
 			TestEqual(plan, deserializedPlan, "Plan equals serialized plan")
 
