@@ -45,6 +45,8 @@ local s = {
 	TestFontString = UIParent:CreateFontString(nil, "OVERLAY"),
 }
 s.SharedUpdater:SetLooping("REPEAT")
+s.Repeater = s.SharedUpdater:CreateAnimation()
+s.Repeater:SetDuration(k.AnimationTickRate)
 s.TestFontString:Hide()
 
 local function SharedBarUpdate()

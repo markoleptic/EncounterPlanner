@@ -20,6 +20,20 @@ local tremove = table.remove
 local unpack = unpack
 
 local k = {
+	AssignmentTriggers = {
+		{
+			text = L["Combat Log Event"],
+			itemValue = "Combat Log Event",
+			dropdownItemMenuData = {
+				{ text = L["Spell Cast Start"], itemValue = "SCS" },
+				{ text = L["Spell Cast Success"], itemValue = "SCC" },
+				{ text = L["Spell Aura Applied"], itemValue = "SAA" },
+				{ text = L["Spell Aura Removed"], itemValue = "SAR" },
+				{ text = L["Unit Died"], itemValue = "UD" },
+			},
+		},
+		{ text = L["Fixed Time"], itemValue = "Fixed Time" },
+	},
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
 	ButtonFrameBackdrop = {
@@ -67,21 +81,6 @@ k.LineBackdrop = {
 	tile = false,
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = k.SpacingBetweenOptions, bottom = k.SpacingBetweenOptions },
-}
-
-local assignmentTriggers = {
-	{
-		text = L["Combat Log Event"],
-		itemValue = "Combat Log Event",
-		dropdownItemMenuData = {
-			{ text = L["Spell Cast Start"], itemValue = "SCS" },
-			{ text = L["Spell Cast Success"], itemValue = "SCC" },
-			{ text = L["Spell Aura Applied"], itemValue = "SAA" },
-			{ text = L["Spell Aura Removed"], itemValue = "SAR" },
-			{ text = L["Unit Died"], itemValue = "UD" },
-		},
-	},
-	{ text = L["Fixed Time"], itemValue = "Fixed Time" },
 }
 
 ---@class EPAssignmentEditor : AceGUIContainer
@@ -273,7 +272,7 @@ local function OnAcquire(self)
 		self.assignmentTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleAssignmentTypeDropdownValueChanged(self, value)
 		end)
-		self.assignmentTypeDropdown:AddItems(assignmentTriggers, "EPDropdownItemToggle")
+		self.assignmentTypeDropdown:AddItems(k.AssignmentTriggers, "EPDropdownItemToggle")
 
 		self.assignmentTypeContainer:AddChildren(self.assignmentTypeLabel, self.assignmentTypeDropdown)
 	end

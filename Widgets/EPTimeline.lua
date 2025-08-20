@@ -3,6 +3,7 @@ local _, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+---@class Constants
 local constants = Private.constants
 local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
@@ -38,7 +39,6 @@ local type = type
 local unpack = unpack
 local wipe = table.wipe
 
----@class k
 local k = {
 	AssignmentOutlineColor = { 0.25, 0.25, 0.25, 1 },
 	AssignmentSelectOutlineColor = { 1, 0.82, 0, 1 },
@@ -65,7 +65,7 @@ local k = {
 	FontPath = LSM:Fetch("font", "PT Sans Narrow"),
 	FrameHeight = 400,
 	FrameWidth = 900,
-	HorizontalScrollBarHeight = constants.timeline.k.HorizontalScrollBarHeight,
+	HorizontalScrollBarHeight = constants.timeline.kHorizontalScrollBarHeight,
 	InvalidTextureColor = { 0.8, 0.1, 0.1, 0.4 },
 	MaxZoomFactor = 10,
 	MinimumBossAbilityWidth = 10,
@@ -73,9 +73,9 @@ local k = {
 	MinimumNumberOfBossAbilityRows = 2,
 	MinimumSpacingBetweenLabels = 4,
 	MinZoomFactor = 1,
-	NonTimelineHeight = constants.timeline.k.HorizontalScrollBarHeight
-		+ constants.timeline.k.PaddingBetweenTimelineAndScrollBar
-		+ constants.timeline.k.PaddingBetweenTimelines
+	NonTimelineHeight = constants.timeline.kHorizontalScrollBarHeight
+		+ constants.timeline.kPaddingBetweenTimelineAndScrollBar
+		+ constants.timeline.kPaddingBetweenTimelines
 		+ constants.kStatusBarHeight
 		+ constants.kStatusBarPadding
 		+ constants.kWindowBarHeight
@@ -122,25 +122,23 @@ local s = {
 	TimelineFrameOffsetWhenDragStarted = 0.0,
 	TotalTimelineDuration = 0.0,
 
-	reset = function(self)
-		self.AssignmentIsDragging = false
+	Reset = function(self)
 		self.AssignmentBeingDuplicated = false
 		self.AssignmentFrameBeingDragged = nil
+		self.AssignmentIsDragging = false
 		self.HorizontalCursorAssignmentFrameOffsetWhenClicked = 0
 		self.HorizontalCursorPositionWhenAssignmentFrameClicked = 0
-		self.ThumbPadding = { x = 2, y = 2 }
-		self.TimelineLinePadding = { x = 25, y = 25 }
-		self.ThumbOffsetWhenThumbClicked = 0.0
-		self.ScrollBarWidthWhenThumbClicked = 0.0
-		self.ThumbWidthWhenThumbClicked = 0.0
-		self.ThumbIsDragging = false
-		self.s.TimelineFrameOffsetWhenDragStarted = 0
-		self.TimelineFrameIsDragging = false
-		self.TotalTimelineDuration = 0.0
-		self.LastExecutionTime = 0.0
-		self.SelectedAssignmentIDsFromBossAbilityFrameEnter = {}
 		self.IsSimulating = false
+		self.LastExecutionTime = 0.0
+		self.ScrollBarWidthWhenThumbClicked = 0.0
+		self.SelectedAssignmentIDsFromBossAbilityFrameEnter = {}
 		self.SimulationStartTime = 0.0
+		self.ThumbIsDragging = false
+		self.ThumbOffsetWhenThumbClicked = 0.0
+		self.ThumbWidthWhenThumbClicked = 0.0
+		self.TimelineFrameIsDragging = false
+		self.TimelineFrameOffsetWhenDragStarted = 0
+		self.TotalTimelineDuration = 0.0
 	end,
 }
 
@@ -1789,7 +1787,7 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 	end
 
 	s.TimelineFrameIsDragging = true
-	s.s.TimelineFrameOffsetWhenDragStarted = GetCursorPosition()
+	s.TimelineFrameOffsetWhenDragStarted = GetCursorPosition()
 
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
@@ -1806,14 +1804,14 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 	frame:SetScript("OnUpdate", function()
 		if s.TimelineFrameIsDragging then
 			local x = GetCursorPosition()
-			local dx = (x - s.s.TimelineFrameOffsetWhenDragStarted) / bossAbilityScrollFrame:GetEffectiveScale()
+			local dx = (x - s.TimelineFrameOffsetWhenDragStarted) / bossAbilityScrollFrame:GetEffectiveScale()
 			local newHorizontalScroll = bossAbilityScrollFrame:GetHorizontalScroll() - dx
 			local maxHorizontalScroll = timelineFrameWidth - scrollFrameWidth
 			newHorizontalScroll = Clamp(newHorizontalScroll, 0, maxHorizontalScroll)
 			bossAbilityScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			assignmentScrollFrame:SetHorizontalScroll(newHorizontalScroll)
 			splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-			s.s.TimelineFrameOffsetWhenDragStarted = x
+			s.TimelineFrameOffsetWhenDragStarted = x
 			UpdateHorizontalScrollBarThumb(
 				horizontalScrollBarWidth,
 				thumb,
@@ -2276,7 +2274,7 @@ local function OnRelease(self)
 	self.CalculateAssignmentTimeFromStart = nil
 	self.GetMinimumCombatLogEventTime = nil
 	self.ComputeChargeStates = nil
-	s:ResetLocalVariables()
+	s:Reset()
 end
 
 -- Sets the boss ability entries for the timeline.
