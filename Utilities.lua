@@ -2573,38 +2573,54 @@ function Utilities.FormatTime(time)
 	return formattedMinutes, formattedSeconds
 end
 
-local tooltipOwner = CreateFrame("Frame", "EPCooldownScannerTooltipOwnerFrame")
-tooltipOwner:Hide()
-
-local tooltip = CreateFrame("GameTooltip", "EPCooldownScannerTooltip", nil, "GameTooltipTemplate")
-tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
-tooltip:Hide()
-
----@param spellID integer
----@return number?
-local function GetCooldownDurationFromTooltip(spellID)
-	tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
-	tooltip:SetSpellByID(spellID)
-	tooltip:RefreshData()
-
-	for i = 2, tooltip:NumLines() do
-		local text = _G["EPCooldownScannerTooltipTextRight" .. i]:GetText()
-		if text then
-			local secondMatch = text:match("(%d+%.?%d*)%s+sec")
-			if secondMatch then
-				return tonumber(secondMatch)
-			end
-			local minuteMatch = text:match("(%d+%.?%d*)%s+min")
-			if minuteMatch then
-				return tonumber(minuteMatch) * 60.0
-			end
+---@param strTable table<integer, string>
+---@return table<integer, table<integer, string>>
+function Utilities.SplitStringTableByWhiteSpace(strTable)
+	local returnTable = {}
+	for index, line in ipairs(strTable) do
+		returnTable[index] = {}
+		for word in line:gmatch("%S+") do
+			tinsert(returnTable[index], word)
 		end
 	end
-
-	return nil
+	return returnTable
 end
 
 do
+	local tooltipOwner = CreateFrame("Frame", "EPCooldownScannerTooltipOwnerFrame")
+	tooltipOwner:Hide()
+
+	local tooltip = CreateFrame("GameTooltip", "EPCooldownScannerTooltip", nil, "GameTooltipTemplate")
+	tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
+	tooltip:Hide()
+
+	---@param spellID integer
+	---@return number?
+	function Utilities.GetCooldownDurationFromTooltip(spellID)
+		tooltip:SetOwner(tooltipOwner, "ANCHOR_NONE")
+		tooltip:SetSpellByID(spellID)
+		tooltip:RefreshData()
+
+		for i = 2, tooltip:NumLines() do
+			local text = _G["EPCooldownScannerTooltipTextRight" .. i]:GetText()
+			if text then
+				local secondMatch = text:match("(%d+%.?%d*)%s+sec")
+				if secondMatch then
+					return tonumber(secondMatch)
+				end
+				local minuteMatch = text:match("(%d+%.?%d*)%s+min")
+				if minuteMatch then
+					return tonumber(minuteMatch) * 60.0
+				end
+			end
+		end
+
+		return nil
+	end
+end
+
+do
+	local GetCooldownDurationFromTooltip = Utilities.GetCooldownDurationFromTooltip
 	---@type table<integer, {duration: number, maxCharges: integer}>
 	local cooldowns = {}
 
@@ -2994,235 +3010,3 @@ do
 		end
 	end
 end
-
---@debug@
-do
-	---@class Test
-	local test = Private.test
-	---@class TestUtilities
-	local testUtilities = Private.testUtilities
-
-	do
-		function test.CreateUniquePlanName()
-			local planName = ""
-			local newName
-			for _ = 1, 36 do
-				planName = planName .. "H"
-			end
-			local plans = {}
-			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, planName)
-			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
-			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
-
-			planName = ""
-			for _ = 1, 34 do
-				planName = planName .. "H"
-			end
-			planName = planName .. "99"
-			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, planName)
-			testUtilities.TestNotEqual(planName, newName, "Plan names not equal")
-			testUtilities.TestEqual(newName:len(), 36, "Plan length equal to 36")
-			testUtilities.TestEqual(newName:sub(34, 36), "100", "Correct number appended")
-
-			planName = "Plan Name"
-			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, planName)
-			testUtilities.TestEqual("Plan Name 2", newName, "Plan name appended with number")
-
-			planName = "Plan Name 3"
-			plans[planName] = Plan:New({}, planName)
-			newName = Utilities.CreateUniquePlanName(plans, "Plan Name 4")
-			testUtilities.TestEqual("Plan Name 4", newName, "Plan name available and used")
-
-			return "CreateUniquePlanName"
-		end
-	end
-
-	do
-		local testEncounterIDOne = constants.kDefaultBossDungeonEncounterID
-		local testEncounterIDTwo = 3010
-		local testEncounterIDThree = 3011
-		local kTestPlanName = "Test"
-		local plans = {}
-
-		---@param index integer
-		---@return Plan
-		local function GetPlan(index)
-			if index == 1 then
-				return plans[kTestPlanName]
-			else
-				return plans[kTestPlanName .. " " .. tostring(index)]
-			end
-		end
-
-		---@return table<integer, Plan>
-		local function CreateTestPlans()
-			wipe(plans)
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDOne, DifficultyType.Mythic)
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDOne, DifficultyType.Mythic)
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDTwo, DifficultyType.Mythic)
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDTwo, DifficultyType.Mythic)
-
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDOne, DifficultyType.Heroic)
-			Utilities.CreatePlan(plans, kTestPlanName, testEncounterIDTwo, DifficultyType.Heroic)
-
-			return { GetPlan(1), GetPlan(2), GetPlan(3), GetPlan(4), GetPlan(5), GetPlan(6) }
-		end
-
-		---@param truthTable table<integer, boolean>
-		---@param context string
-		---@param numericIndexedPlans table<integer, Plan>
-		local function TestPlansEqual(truthTable, context, numericIndexedPlans)
-			for index, plan in ipairs(numericIndexedPlans) do
-				testUtilities.TestEqual(plan.isPrimaryPlan, truthTable[index], context .. " Index " .. 1)
-			end
-		end
-
-		function test.SetDesignatedExternalPlan()
-			local numericIndexedPlans = CreateTestPlans()
-
-			testUtilities.TestEqual(GetPlan(1).isPrimaryPlan, true, "Correct primary plan after creation")
-			testUtilities.TestEqual(GetPlan(3).isPrimaryPlan, true, "Correct primary plan after creation")
-			testUtilities.TestEqual(GetPlan(5).isPrimaryPlan, true, "Correct primary plan after creation")
-			testUtilities.TestEqual(GetPlan(6).isPrimaryPlan, true, "Correct primary plan after creation")
-
-			GetPlan(1).isPrimaryPlan = false
-			GetPlan(3).isPrimaryPlan = false
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(1))
-			local truthTable = { true, false, false, false, true, true }
-			TestPlansEqual(truthTable, "Set primary when none exist", numericIndexedPlans)
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(3))
-			truthTable = { true, false, true, false, true, true }
-			TestPlansEqual(truthTable, "Set primary when none exist", numericIndexedPlans)
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(1))
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(3))
-			truthTable = { true, false, true, false, true, true }
-			TestPlansEqual(truthTable, "Do nothing when primary exists", numericIndexedPlans)
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(2))
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(4))
-			truthTable = { false, true, false, true, true, true }
-			TestPlansEqual(truthTable, "Switch primary", numericIndexedPlans)
-
-			GetPlan(5).isPrimaryPlan = false
-			GetPlan(6).isPrimaryPlan = false
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(5))
-			truthTable = { false, true, false, true, true, false }
-			TestPlansEqual(truthTable, "Set primary when none exist", numericIndexedPlans)
-
-			Utilities.SetDesignatedExternalPlan(plans, GetPlan(6))
-			truthTable = { false, true, false, true, true, true }
-			TestPlansEqual(truthTable, "Set primary when none exist", numericIndexedPlans)
-
-			return "SetDesignatedExternalPlan"
-		end
-
-		function test.ChangePlanBoss()
-			local numericIndexedPlans = CreateTestPlans()
-
-			Utilities.ChangePlanBoss(
-				plans,
-				GetPlan(1).name,
-				constants.kDefaultBossDungeonEncounterID,
-				GetPlan(1).difficulty
-			)
-
-			Utilities.ChangePlanBoss(plans, GetPlan(3).name, testEncounterIDTwo, GetPlan(3).difficulty)
-			local truthTable = { true, false, true, false, true, true }
-			TestPlansEqual(truthTable, "No change", numericIndexedPlans)
-
-			Utilities.ChangePlanBoss(plans, GetPlan(2).name, testEncounterIDThree, GetPlan(2).difficulty)
-			truthTable = { true, true, true, false, true, true }
-			local context = "Set new primary when no primary exist"
-			TestPlansEqual(truthTable, context, numericIndexedPlans)
-
-			Utilities.ChangePlanBoss(plans, GetPlan(4).name, testEncounterIDTwo, GetPlan(4).difficulty)
-			truthTable = { true, true, true, false, true, true }
-			context = "Preserve primary when primary already exists"
-			TestPlansEqual(truthTable, context, numericIndexedPlans)
-
-			Utilities.ChangePlanBoss(plans, GetPlan(1).name, testEncounterIDTwo, GetPlan(1).difficulty)
-			truthTable = { false, true, true, false, true, true }
-			context = context .. " 2"
-			TestPlansEqual(truthTable, context, numericIndexedPlans)
-
-			GetPlan(2).isPrimaryPlan = false
-			GetPlan(5).isPrimaryPlan = false
-			Utilities.ChangePlanBoss(plans, GetPlan(5).name, GetPlan(5).dungeonEncounterID, DifficultyType.Mythic)
-			truthTable = { false, false, true, false, true, true }
-			context = "Set new primary when no primary exist after changing difficulty"
-			TestPlansEqual(truthTable, context, numericIndexedPlans)
-
-			return "ChangePlanBoss"
-		end
-
-		function test.DeletePlan()
-			local numericIndexedPlans = CreateTestPlans()
-			local profile = { plans = plans, lastOpenPlan = GetPlan(1).name }
-
-			local planOne = GetPlan(1)
-			Utilities.DeletePlan(profile, planOne.name)
-			local context = "Successfully removed correct plan"
-			testUtilities.TestEqual(profile.plans[planOne.name], nil, context)
-			testUtilities.TestEqual(profile.plans[GetPlan(2).name], GetPlan(2), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(3).name], GetPlan(3), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(4).name], GetPlan(4), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(5).name], GetPlan(5), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(6).name], GetPlan(6), context)
-
-			planOne.isPrimaryPlan = false
-			local truthTable = { false, true, true, false, true, true }
-			TestPlansEqual(truthTable, "Primary swapped after deleting", numericIndexedPlans)
-
-			local planFour = GetPlan(4)
-			Utilities.DeletePlan(profile, planFour.name)
-			context = "Successfully removed correct plan 2"
-			testUtilities.TestEqual(profile.plans[planOne.name], nil, context)
-			testUtilities.TestEqual(profile.plans[GetPlan(2).name], GetPlan(2), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(3).name], GetPlan(3), context)
-			testUtilities.TestEqual(profile.plans[planFour.name], nil, context)
-			testUtilities.TestEqual(profile.plans[GetPlan(5).name], GetPlan(5), context)
-			testUtilities.TestEqual(profile.plans[GetPlan(6).name], GetPlan(6), context)
-
-			planFour.isPrimaryPlan = false
-			truthTable = { false, true, true, false, true, true }
-			TestPlansEqual(truthTable, "Preserve primary", numericIndexedPlans)
-
-			local planTwo = GetPlan(2)
-			local planThree = GetPlan(3)
-			local planFive = GetPlan(5)
-			local planSix = GetPlan(6)
-			Utilities.DeletePlan(profile, planTwo.name)
-			Utilities.DeletePlan(profile, planThree.name)
-			Utilities.DeletePlan(profile, planFive.name)
-			Utilities.DeletePlan(profile, planSix.name)
-			context = "Successfully removed all plans except default"
-			testUtilities.TestEqual(profile.plans[planTwo.name], nil, context)
-			testUtilities.TestEqual(profile.plans[planThree.name], nil, context)
-			testUtilities.TestEqual(profile.plans[planFour.name], nil, context)
-			testUtilities.TestEqual(profile.plans[planFive.name], nil, context)
-			testUtilities.TestEqual(profile.plans[planSix.name], nil, context)
-
-			local _, defaultPlan = next(profile.plans) --[[@as Plan]]
-			local lastExistingEncounterID = planThree.dungeonEncounterID
-			local defaultPlanEncounterID = defaultPlan.dungeonEncounterID
-			context = "Created default plan after deleting all plans"
-			testUtilities.TestEqual(lastExistingEncounterID, defaultPlanEncounterID, context)
-			testUtilities.TestEqual(defaultPlan.name, L["Default"], context)
-			return "DeletePlan"
-		end
-
-		function test.CooldownDurationTooltip()
-			local duration = GetCooldownDurationFromTooltip(342245)
-			testUtilities.TestEqual(duration, 50.0, "Shortened duration from talent")
-			return "CooldownDurationTooltip"
-		end
-	end
-end
---@end-debug@

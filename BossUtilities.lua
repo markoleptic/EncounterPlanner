@@ -651,7 +651,7 @@ end
 ---@param maxTotalDuration number
 ---@param difficulty DifficultyType
 ---@return table<integer, integer>
-local function CalculateMaxPhaseCounts(encounterID, maxTotalDuration, difficulty)
+function BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration, difficulty)
 	local counts = {}
 	local boss = BossUtilities.GetBoss(encounterID)
 	if boss then
@@ -719,7 +719,7 @@ function BossUtilities.ValidatePhaseCounts(encounterID, changedPhase, newCount, 
 		end
 
 		-- Clamp phases to their min/maxes
-		local maxCounts = CalculateMaxPhaseCounts(encounterID, maxTotalDuration, difficulty)
+		local maxCounts = BossUtilities.CalculateMaxPhaseCounts(encounterID, maxTotalDuration, difficulty)
 		if validatedCounts[1] then
 			validatedCounts[1] = Clamp(validatedCounts[1], 1, maxCounts[1])
 			local lastPhaseIndex, lastPhaseIndexCount = 1, validatedCounts[1]
@@ -1322,8 +1322,8 @@ do
 	---@param boss Boss
 	---@param customOrderedBossPhases table<integer, integer>|nil
 	---@param difficulty DifficultyType
-	---@return table<integer, {startTime: number, endTime: number, count: integer}>
-	local function GeneratePhaseCountDurationMap(boss, customOrderedBossPhases, difficulty)
+	---@return table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
+	function GeneratePhaseCountDurationMap(boss, customOrderedBossPhases, difficulty)
 		local phases = BossUtilities.GetBossPhases(boss, difficulty)
 		local counts = {}
 		local map = {}
@@ -2036,103 +2036,11 @@ do
 	end
 
 	--@debug@
-	do
-		---@class Test
-		local test = Private.test
-		---@class TestUtilities
-		local testUtilities = Private.testUtilities
-
-		local TestEqual = testUtilities.TestEqual
-		local TestNotEqual = testUtilities.TestNotEqual
-
-		---@param boss Boss
-		---@param difficulty DifficultyType
-		local function testSpellCastTimeTablesForBoss(boss, difficulty)
-			local encounterID = boss.dungeonEncounterID
-			phaseCountDurationMap = GeneratePhaseCountDurationMap(boss, nil, difficulty)
-			local castTimeTable = {}
-			local ordered = BossUtilities.GetOrderedBossPhases(encounterID, difficulty)
-
-			GenerateBossAbilityInstances(boss, ordered, castTimeTable, difficulty)
-			for _, spellOccurrenceNumbers in pairs(castTimeTable) do
-				sort(spellOccurrenceNumbers)
-			end
-
-			---@type table<integer, table<integer, SpellCastStartTableEntry>>
-			local absoluteAtEncounterID = BossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
-
-			TestEqual(#absoluteAtEncounterID, #castTimeTable, "Cast Time Table Size Equal")
-			for bossAbilitySpellID, spellCount in pairs(absoluteAtEncounterID) do
-				for spellOccurrence, castStartAndOrder in ipairs(spellCount) do
-					local castStart = castTimeTable[bossAbilitySpellID][spellOccurrence]
-					local _, spellName = BossUtilities.GetBossAbilityIconAndLabel(boss, bossAbilitySpellID, difficulty)
-					TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
-				end
-			end
-			for bossAbilitySpellID, spellCount in pairs(castTimeTable) do
-				for spellOccurrence, castStart in ipairs(spellCount) do
-					local castStartAndOrder = absoluteAtEncounterID[bossAbilitySpellID][spellOccurrence]
-					local _, spellName = BossUtilities.GetBossAbilityIconAndLabel(boss, bossAbilitySpellID, difficulty)
-					TestEqual(castStart, castStartAndOrder.castStart, "Cast Time Equal " .. spellName)
-				end
-			end
-
-			wipe(phaseCountDurationMap)
-		end
-
-		function test.CompareSpellCastTimeTables()
-			for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-				for _, boss in ipairs(dungeonInstance.bosses) do
-					if boss.phases then
-						testSpellCastTimeTablesForBoss(boss, DifficultyType.Mythic)
-					end
-					if boss.phasesHeroic then
-						testSpellCastTimeTablesForBoss(boss, DifficultyType.Heroic)
-					end
-				end
-			end
-			return "CompareSpellCastTimeTables"
-		end
-
-		---@param boss Boss
-		---@param difficulty DifficultyType
-		local function testValidatedMaxPhaseCountsForBoss(boss, difficulty)
-			local encounterID = boss.dungeonEncounterID
-			local maxPhaseCounts = CalculateMaxPhaseCounts(encounterID, kMaxBossDuration, difficulty)
-			local validatedPhaseCounts =
-				BossUtilities.SetPhaseCounts(encounterID, maxPhaseCounts, kMaxBossDuration, difficulty)
-			TestEqual(maxPhaseCounts, validatedPhaseCounts, "Max Phase Counts Equal Validated Phase Counts")
-
-			local maxOrderedPhasesAtEncounterID = BossUtilities.GetMaxOrderedBossPhases(encounterID, difficulty)
-			local maxPhaseCountsFromOrderedPhases = {}
-			TestNotEqual(maxOrderedPhasesAtEncounterID, nil, "maxOrderedPhasesAtEncounterID not nil")
-			for _, phaseIndex in ipairs(maxOrderedPhasesAtEncounterID) do
-				maxPhaseCountsFromOrderedPhases[phaseIndex] = (maxPhaseCountsFromOrderedPhases[phaseIndex] or 0) + 1
-			end
-
-			TestEqual(
-				maxPhaseCounts,
-				maxPhaseCountsFromOrderedPhases,
-				"Max Phase Counts Equal Max Phase Counts From Ordered Phases"
-			)
-			for _, phase in ipairs(BossUtilities.GetBossPhases(boss, difficulty)) do
-				phase.count = phase.defaultCount
-			end
-		end
-
-		function test.ValidateMaxPhaseCounts()
-			for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-				for _, boss in ipairs(dungeonInstance.bosses) do
-					if boss.phases then
-						testValidatedMaxPhaseCountsForBoss(boss, DifficultyType.Mythic)
-					end
-					if boss.phasesHeroic then
-						testValidatedMaxPhaseCountsForBoss(boss, DifficultyType.Heroic)
-					end
-				end
-			end
-			return "ValidateMaxPhaseCounts"
-		end
+	---@param map table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
+	function BossUtilities.SetPhaseCountDurationMap(map)
+		phaseCountDurationMap = map
 	end
+	BossUtilities.GeneratePhaseCountDurationMap = GeneratePhaseCountDurationMap
+	BossUtilities.GenerateBossAbilityInstances = GenerateBossAbilityInstances
 	--@end-debug@
 end

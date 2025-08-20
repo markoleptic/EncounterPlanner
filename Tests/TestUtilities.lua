@@ -195,4 +195,105 @@ do
 		end
 		return textTable
 	end
+
+	---@class Utilities
+	local utilities = Private.utilities
+	local CreatePlan = utilities.CreatePlan
+
+	---@class BossUtilities
+	local bossUtilities = Private.bossUtilities
+
+	---@class CombatLogEventAssignment
+	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+	---@class TimedAssignment
+	local TimedAssignment = Private.classes.TimedAssignment
+
+	local DifficultyType = Private.classes.DifficultyType
+
+	local floor = math.floor
+	local GetSpellName = C_Spell.GetSpellName
+	local random = math.random
+	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
+	local EJ_SelectInstance = EJ_SelectInstance
+
+	---@param profile DefaultProfile
+	function TestUtilities.CreateTestPlans(profile)
+		for k, _ in pairs(profile.plans) do
+			if k:find("-Test") then
+				profile.plans[k] = nil
+			end
+		end
+		local testPlans = {}
+		local name, entry = utilities.CreateRosterEntryForSelf()
+		-- cSpell:disable
+		local textTable = {
+			"Test Start",
+			"|cff006fdcMajablast|r  |cfffe7b09Skorke|r  |cfff38bb9Berlinnetti|r  |cff00fe97Dogpog|r",
+			"Test End",
+		}
+		-- cSpell:enable
+
+		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
+			for _, boss in ipairs(dungeonInstance.bosses) do
+				EJ_SelectInstance(dungeonInstance.journalInstanceID)
+				EJ_SelectEncounter(boss.journalEncounterID)
+				local encounterName = EJ_GetEncounterInfo(boss.journalEncounterID)
+				for difficultyName, difficulty in pairs(Private.classes.DifficultyType) do
+					if
+						(boss.phases and difficulty == DifficultyType.Mythic)
+						or (boss.phasesHeroic and difficulty == DifficultyType.Heroic)
+					then
+						local planName = encounterName .. "-" .. difficultyName .. "-Test"
+						local plan = CreatePlan(testPlans, planName, boss.dungeonEncounterID, difficulty)
+						plan.roster[name] = entry
+						plan.content = textTable
+						local instances =
+							bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID, plan.difficulty)
+						local bossAbilities = bossUtilities.GetBossAbilities(boss, plan.difficulty)
+						---@cast instances table<integer, BossAbilityInstance>
+						for _, abilityInstance in ipairs(instances) do
+							local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
+							if #types > 0 then
+								local allowedType = types[random(1, #types)]
+								local assignment = CombatLogEventAssignment:New()
+								assignment.assignee = name
+								assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+								assignment.phase = abilityInstance.bossPhaseIndex
+								assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
+								assignment.combatLogEventType = allowedType
+								assignment.spellCount = abilityInstance.spellCount
+								assignment.time = 8.00
+								assignment.spellID = 1
+								assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
+								tinsert(plan.assignments, assignment)
+							end
+						end
+						local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
+						do
+							local assignment = Private.classes.TimedAssignment:New()
+							assignment.assignee = name
+							assignment.time = 0
+							assignment.spellID = 1
+							assignment.text = "Timed " .. 0
+							tinsert(plan.assignments, assignment)
+						end
+						for i = 5, floor(d * 0.6), 30 do
+							local assignment = Private.classes.TimedAssignment:New()
+							assignment.assignee = name
+							assignment.time = i
+							assignment.spellID = 1
+							assignment.text = "Timed " .. i
+							tinsert(plan.assignments, assignment)
+						end
+						testPlans[plan.name] = plan
+					end
+				end
+			end
+		end
+		for _, testPlan in pairs(testPlans) do
+			if not profile.plans[testPlan.name] then
+				profile.plans[testPlan.name] = testPlan
+			end
+		end
+	end
 end

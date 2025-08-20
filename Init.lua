@@ -684,6 +684,7 @@ do
 end
 
 Private.dungeonInstances = {} ---@type table<integer, DungeonInstance>
+---@type table<string, CustomDungeonInstanceGroup>
 Private.customDungeonInstanceGroups = {
 	["TheWarWithinSeasonThree"] = {
 		instanceIDToUseForIcon = 2810,
@@ -695,7 +696,7 @@ Private.customDungeonInstanceGroups = {
 		instanceName = Private.L["TWW Season 2"],
 		order = 1,
 	},
-} --@type table<string, CustomDungeonInstanceGroup>
+}
 Private.interfaceUpdater = {}
 Private.bossUtilities = {}
 Private.utilities = {}
@@ -723,9 +724,4 @@ obj:SetFont(fontPath, 16, "")
 fontInitializer:SetFontObject(obj)
 fontInitializer:Hide()
 fontInitializer:SetParent(UIParent)
-
 LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))
-
---@debug@
-Private.test = {}
---@end-debug@

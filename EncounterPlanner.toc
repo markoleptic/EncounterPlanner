@@ -32,10 +32,6 @@ Init.lua
 Libs\Cbor.lua
 Widgets\Widgets.xml
 
-#@debug@
-Tests\TestUtilities.lua
-#@end-debug@
-
 Raids\Modules.xml
 TheWarWithinSeasonTwo\Modules.xml
 TheWarWithinSeasonThree\Modules.xml
@@ -53,5 +49,7 @@ API.lua
 Core.lua
 
 #@debug@
+Tests\TestUtilities.lua
+Tests\Tests.lua
 Tests\TestRunner.lua
 #@end-debug@

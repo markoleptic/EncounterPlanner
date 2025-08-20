@@ -2631,12 +2631,14 @@ function Private:OpenTutorial()
 		totalStepCount = #steps
 
 		--@debug@
-		local map = {}
-		for _, step in ipairs(steps) do
-			if map[step.name] then
-				print("Duplicate entry:", step.name)
-			else
-				map[step.name] = true
+		do
+			local map = {}
+			for _, step in ipairs(steps) do
+				if map[step.name] then
+					print("Duplicate entry:", step.name)
+				else
+					map[step.name] = true
+				end
 			end
 		end
 		--@end-debug@
