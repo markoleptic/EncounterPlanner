@@ -2377,6 +2377,20 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					castTime = 5.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC" },
 				}),
+				[1237325] = BossAbility:New({ -- Gamma Burst
+					phases = {
+						[3] = BossAbilityPhase:New({
+							castTimes = { 38.0, 35.5 },
+						}),
+						[4] = BossAbilityPhase:New({
+							castTimes = { 43.3, 35.2 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = { "SAA" },
+					buffer = 1.0,
+				}),
 				[1237695] = BossAbility:New({ -- Stardust Nova
 					phases = {
 						[4] = BossAbilityPhase:New({
