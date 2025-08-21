@@ -211,7 +211,7 @@ local function Constructor()
 	text:SetPoint("TOP", windowBar, "BOTTOM", 0, -k.FramePadding)
 
 	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("")
+	windowBarText:SetText("Title")
 	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
 	local h = windowBarText:GetStringHeight()
 	if fPath then
