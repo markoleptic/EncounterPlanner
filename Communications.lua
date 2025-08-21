@@ -24,6 +24,7 @@ local k = {
 	DistributePlan = constants.communications.kDistributePlan,
 	DistributeText = constants.communications.kDistributeText,
 	PlanReceived = constants.communications.kPlanReceived,
+	RequestPlanUpdate = constants.communications.kRequestPlanUpdate,
 }
 
 ---@class Utilities
@@ -407,57 +408,38 @@ do
 		CreateMessageBox(messageBoxData, true)
 	end
 
-	---@param package table
-	---@param sender string
-	local function HandleDistributePlanCommReceived(package, sender)
-		local plan = PlanSerializer.DeserializePlan(package --[[@as table]])
-		local groupType = GetGroupType()
-		if groupType then
-			local returnMessage = CompressString(format("%s,%s", plan.ID, sender), false)
-			AddOn:SendCommMessage(k.PlanReceived, returnMessage, groupType, nil, "NORMAL")
-		end
-		local foundTrustedCharacter = false
-		for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
-			if sender == trustedCharacter then
-				foundTrustedCharacter = true
-				break
+	-- Executed after receiving the DistributePlan message.
+	---@param message string
+	---@param senderFullName string
+	local function HandleDistributePlanCommReceived(message, senderFullName)
+		local package = StringToTable(message, false)
+		if type(package == "table") then
+			local plan = PlanSerializer.DeserializePlan(package --[[@as table]])
+			local groupType = GetGroupType()
+			if groupType then
+				local returnMessage = CompressString(format("%s,%s", plan.ID, senderFullName), false)
+				AddOn:SendCommMessage(k.PlanReceived, returnMessage, groupType, nil, "NORMAL")
 			end
-		end
-		if foundTrustedCharacter then
-			ImportPlan(plan, sender)
-		else
-			CreateImportMessageBox(plan, sender)
+			local foundTrustedCharacter = false
+			for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
+				if senderFullName == trustedCharacter then
+					foundTrustedCharacter = true
+					break
+				end
+			end
+			if foundTrustedCharacter then
+				ImportPlan(plan, senderFullName)
+			else
+				CreateImportMessageBox(plan, senderFullName)
+			end
 		end
 	end
 
-	---@param prefix string
+	-- Executed after sending a plan and receiving the PlanReceived response.
 	---@param message string
-	---@param _ string Distribution
-	---@param sender string
-	function AddOn:OnCommReceived(prefix, message, _, sender)
-		local name, realm = UnitFullName(sender)
-		if not name then
-			return
-		end
-		local playerName, playerRealm = UnitFullName("player")
-		local playerFullName = format("%s-%s", playerName, playerRealm)
-		if not realm or realm:len() < 3 then
-			realm = playerRealm
-		end
-		local fullName = format("%s-%s", name, realm)
-
-		--[===[@non-debug@
-		if fullName == playerName .. "-" .. playerRealm then
-			return
-		end
-        --@end-non-debug@]===]
-
-		if prefix == k.DistributePlan then
-			local package = StringToTable(message, false)
-			if type(package == "table") then
-				HandleDistributePlanCommReceived(package --[[@as table]], fullName)
-			end
-		elseif prefix == k.PlanReceived and next(activePlanIDsBeingSent) then
+	---@param playerFullName string
+	local function HandlePlanReceivedCommReceived(message, playerFullName)
+		if next(activePlanIDsBeingSent) then
 			local package = DecompressString(message, false)
 			local messageTable = strsplittable(",", package)
 			local planID, originalPlanSender = messageTable[1], messageTable[2]
@@ -469,10 +451,45 @@ do
 					end
 				end
 			end
+		end
+	end
+
+	-- Executed after receiving the DistributeText message.
+	---@param message string
+	local function HandleDistributeTextCommReceived(message)
+		local package = StringToTable(message, false)
+		AddOn.db.profile.activeText = package --[[@as table]]
+		Private.ExecuteAPICallback("ExternalTextSynced")
+	end
+
+	---@param prefix string
+	---@param message string
+	---@param _ string Distribution
+	---@param sender string
+	function AddOn:OnCommReceived(prefix, message, _, sender)
+		local senderName, senderRealm = UnitFullName(sender)
+		if not senderName then
+			return
+		end
+		local playerName, playerRealm = UnitFullName("player")
+		local playerFullName = format("%s-%s", playerName, playerRealm)
+		if not senderRealm or senderRealm:len() < 3 then
+			senderRealm = playerRealm
+		end
+		local senderFullName = format("%s-%s", senderName, senderRealm)
+
+		--[===[@non-debug@
+		if senderFullName == playerFullName then
+			return
+		end
+        --@end-non-debug@]===]
+
+		if prefix == k.DistributePlan then
+			HandleDistributePlanCommReceived(message, senderFullName)
+		elseif prefix == k.PlanReceived then
+			HandlePlanReceivedCommReceived(message, playerFullName)
 		elseif prefix == k.DistributeText then
-			local package = StringToTable(message, false)
-			self.db.profile.activeText = package --[[@as table]]
-			Private.ExecuteAPICallback("ExternalTextSynced")
+			HandleDistributeTextCommReceived(message)
 		end
 	end
 
