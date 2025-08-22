@@ -250,6 +250,7 @@ end
 do
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
+	local GeneratePhaseCountDurationMap = bossUtilities.GeneratePhaseCountDurationMap
 
 	---@param boss Boss
 	---@param difficulty DifficultyType
@@ -340,6 +341,8 @@ do
 		end
 		return "ValidateMaxPhaseCounts"
 	end
+
+	bossUtilities.GeneratePhaseCountDurationMap = nil
 end
 
 do

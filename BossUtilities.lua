@@ -1323,7 +1323,7 @@ do
 	---@param customOrderedBossPhases table<integer, integer>|nil
 	---@param difficulty DifficultyType
 	---@return table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
-	function GeneratePhaseCountDurationMap(boss, customOrderedBossPhases, difficulty)
+	local function GeneratePhaseCountDurationMap(boss, customOrderedBossPhases, difficulty)
 		local phases = BossUtilities.GetBossPhases(boss, difficulty)
 		local counts = {}
 		local map = {}

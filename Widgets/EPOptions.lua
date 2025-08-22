@@ -371,18 +371,18 @@ do
 		currentContainer:SetLayout("EPHorizontalLayout")
 		currentContainer:SetSpacing(0, 0)
 
-		local minutes, seconds = "0", "00"
-		if duration then
-			minutes, seconds = cooldownOverrideObject.FormatTime(duration)
-		end
-
 		local minuteLineEdit = AceGUI:Create("EPLineEdit")
-		minuteLineEdit:SetText(minutes)
-		minuteLineEdit:SetRelativeWidth(kTimeLineEditRelWidth)
-
 		local secondLineEdit = AceGUI:Create("EPLineEdit")
-		secondLineEdit:SetText(seconds)
-		secondLineEdit:SetRelativeWidth(kTimeLineEditRelWidth)
+		do
+			local minutes, seconds = "0", "00"
+			if duration then
+				minutes, seconds = cooldownOverrideObject.FormatTime(duration)
+			end
+			minuteLineEdit:SetText(minutes)
+			minuteLineEdit:SetRelativeWidth(kTimeLineEditRelWidth)
+			secondLineEdit:SetText(seconds)
+			secondLineEdit:SetRelativeWidth(kTimeLineEditRelWidth)
+		end
 
 		local separatorLabel = AceGUI:Create("EPLabel")
 		separatorLabel:SetText(":", 0)
@@ -482,10 +482,10 @@ do
 						if type(value) == "number" then
 							if not cooldownAndChargeOverrides[value] then
 								local cooldown = cooldownOverrideObject.GetSpellCooldownAndCharges(value)
-								local m, s = cooldownOverrideObject.FormatTime(cooldown)
-								defaultLabel:SetText(format("%s:%s", m, s), 0)
-								minuteLineEdit:SetText(m)
-								secondLineEdit:SetText(s)
+								local minutes, seconds = cooldownOverrideObject.FormatTime(cooldown)
+								defaultLabel:SetText(format("%s:%s", minutes, seconds), 0)
+								minuteLineEdit:SetText(minutes)
+								secondLineEdit:SetText(seconds)
 								chargeLineEdit:SetText()
 								dropdown:SetText(text)
 								dropdown:SetEnabled(false)
