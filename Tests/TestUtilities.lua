@@ -101,7 +101,7 @@ do
 	local function TestEqualTable(t1, t2)
 		if type(t1) == "table" and type(t2) == "table" then
 			for k, v in pairs(t1) do
-				if k ~= "__index" and k ~= "uniqueID" and type(v) ~= "function" then -- Ignore metatables
+				if k ~= "__index" and k ~= "uniqueID" then -- Ignore metatables
 					local equal, err = TestEqualTable(v, t2[k])
 					if not equal then
 						return false, "Mismatch at key '" .. tostring(k) .. "': " .. err

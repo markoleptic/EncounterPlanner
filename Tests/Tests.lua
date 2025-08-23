@@ -1327,4 +1327,70 @@ do
 			return "CooldownDurationTooltip"
 		end
 	end
+
+	do
+		---@class TimedAssignment
+		local TimedAssignment = Private.classes.TimedAssignment
+		---@class CombatLogEventAssignment
+		local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+
+		function test.DuplicatePlan()
+			local plans = {}
+			local plan = utilities.CreatePlan(
+				plans,
+				"Test",
+				Private.constants.kDefaultBossDungeonEncounterID,
+				DifficultyType.Mythic
+			)
+
+			for i = 1, GetNumClasses() do
+				local _, classFile, _ = GetClassInfo(i)
+				local actualClassName
+				if classFile == "DEATHKNIGHT" then
+					actualClassName = "DeathKnight"
+				elseif classFile == "DEMONHUNTER" then
+					actualClassName = "DemonHunter"
+				else
+					actualClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
+				end
+				local rosterEntry = Private.classes.RosterEntry:New()
+				rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
+				rosterEntry.classColoredName = utilities.GetLocalizedPrettyClassName(classFile)
+				rosterEntry.role = "role:damager"
+				plan.roster["Player" .. i] = rosterEntry
+			end
+
+			local combatLogEvents = { "SAA", "SAR", "SCC", "SCS", "UD" }
+
+			for i = 1, 10 do
+				if i % 2 == 0 then
+					local assignment = TimedAssignment:New({})
+					assignment.assignee = "Player" .. i
+					assignment.time = i * 5.0
+					assignment.text = "Buh" .. i
+					assignment.spellID = 344343
+					tinsert(plan.assignments, assignment)
+				else
+					local assignment = CombatLogEventAssignment:New({})
+					assignment.assignee = "Player" .. i
+					assignment.bossPhaseOrderIndex = 3
+					assignment.combatLogEventSpellID = 1
+					assignment.combatLogEventType = combatLogEvents[math.random(5)]
+					assignment.phase = 3
+					assignment.spellCount = 1
+					assignment.spellID = 1230529
+					assignment.text = "Buh" .. i
+					assignment.time = i * 5.0
+					tinsert(plan.assignments, assignment)
+				end
+			end
+
+			local duplicatedPlan = utilities.DuplicatePlan(plans, "Test", "Test")
+			duplicatedPlan.isPrimaryPlan = plan.isPrimaryPlan
+			duplicatedPlan.name = plan.name
+			duplicatedPlan.ID = plan.ID
+			TestEqual(plan, duplicatedPlan, "Duplicated plan equals original plan")
+			return "DuplicatePlan"
+		end
+	end
 end
