@@ -132,11 +132,17 @@ do
 		currentTotalComparisons = currentTotalComparisons + 1
 		if type(first) == "table" and type(second) == "table" then
 			local result, contextString = TestEqualTable(first, second)
-			if result == true then
+			local result2, contextString2 = TestEqualTable(second, first)
+			if result == true and result2 == true then
 				currentPassedComparisons = currentPassedComparisons + 1
 			else
-				tinsert(currentFailedComparisonsContexts, tostring(context) .. ": " .. contextString)
-				currentFailedComparisons = currentFailedComparisons + 1
+				if not result then
+					tinsert(currentFailedComparisonsContexts, tostring(context) .. ": " .. contextString)
+					currentFailedComparisons = currentFailedComparisons + 1
+				else
+					tinsert(currentFailedComparisonsContexts, tostring(context) .. ": " .. contextString2)
+					currentFailedComparisons = currentFailedComparisons + 1
+				end
 			end
 		else
 			if first == second then
