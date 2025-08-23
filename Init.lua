@@ -332,7 +332,10 @@ end
 ---@param removeInvalidFields boolean|nil
 ---@return CombatLogEventAssignment
 function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
-	o = o or Private.classes.Assignment:New(o)
+	if not o or getmetatable(o) ~= Private.classes.Assignment then
+		o = Private.classes.Assignment:New(o)
+	end
+
 	local instance = CreateNewInstance(self, o)
 	if removeInvalidFields then
 		RemoveInvalidFields(self, instance)
@@ -344,7 +347,9 @@ end
 ---@param removeInvalidFields boolean|nil
 ---@return TimedAssignment
 function Private.classes.TimedAssignment:New(o, removeInvalidFields)
-	o = o or Private.classes.Assignment:New(o)
+	if not o or getmetatable(o) ~= Private.classes.Assignment then
+		o = Private.classes.Assignment:New(o)
+	end
 	local instance = CreateNewInstance(self, o)
 	if removeInvalidFields then
 		RemoveInvalidFields(self, instance)
@@ -356,7 +361,9 @@ end
 ---@param removeInvalidFields boolean|nil
 ---@return PhasedAssignment
 function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
-	o = o or Private.classes.Assignment:New(o)
+	if not o or getmetatable(o) ~= Private.classes.Assignment then
+		o = Private.classes.Assignment:New(o)
+	end
 	local instance = CreateNewInstance(self, o)
 	if removeInvalidFields then
 		RemoveInvalidFields(self, instance)
