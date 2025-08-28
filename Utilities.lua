@@ -67,7 +67,7 @@ do
 	local GetSpecializationInfoByID = GetSpecializationInfoByID
 	local rawget = rawget
 	local rawset = rawset
-	local kNumberOfClasses = 13
+	local kNumberOfClasses = GetNumClasses()
 
 	local caseAndWhiteSpaceInsensitiveMetaTable = {
 		__index = function(tbl, key)
@@ -157,7 +157,7 @@ do
 
 	for specID, _ in pairs(specIDToType) do
 		local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
-		local inlineIcon = format("%s %s", constants.kFormatStringGenericInlineIconWithZoom, icon)
+		local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
 		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
 	end
@@ -1459,7 +1459,7 @@ do
 		if AddOn.db then
 			local cooldownAndChargeOverrides = AddOn.db.profile.cooldownAndChargeOverrides
 			for _, assignment in pairs(plan.assignments) do
-				local timelineAssignment = TimelineAssignment:New(assignment)
+				local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
 				local spellID = assignment.spellID
 				local cooldownAndChargeOverride = cooldownAndChargeOverrides[spellID]
 
@@ -1480,7 +1480,7 @@ do
 		else
 			for _, assignment in pairs(plan.assignments) do
 				local spellID = assignment.spellID
-				local timelineAssignment = TimelineAssignment:New(assignment)
+				local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
 				timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
 					Utilities.GetSpellCooldownAndCharges(spellID)
 				tinsert(timelineAssignments, timelineAssignment)
@@ -2255,19 +2255,20 @@ function Utilities.CreateReminderText(assignment, roster, addIcon)
 end
 
 ---@param assignments table<integer, Assignment>
-function Utilities.SetAssignmentMetaTables(assignments)
+---@param planID string
+function Utilities.SetAssignmentMetaTables(assignments, planID)
 	for _, assignment in pairs(assignments) do
-		assignment = Assignment:New(assignment)
+		assignment = Assignment:New(assignment, planID)
 		if
 			---@diagnostic disable-next-line: undefined-field
 			assignment.combatLogEventType
 			---@diagnostic disable-next-line: undefined-field
 			and assignment.combatLogEventSpellID
 		then
-			assignment = CombatLogEventAssignment:New(assignment)
+			assignment = CombatLogEventAssignment:New(assignment, planID)
 			---@diagnostic disable-next-line: undefined-field
 		else
-			assignment = TimedAssignment:New(assignment)
+			assignment = TimedAssignment:New(assignment, planID)
 		end
 	end
 end
@@ -2371,7 +2372,7 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 	newPlan.isPrimaryPlan = false
 
 	setmetatable(newPlan, getmetatable(planToCopy))
-	Utilities.SetAssignmentMetaTables(newPlan.assignments)
+	Utilities.SetAssignmentMetaTables(newPlan.assignments, newPlan.ID)
 	plans[newPlanName] = newPlan
 	return newPlan
 end
@@ -2539,6 +2540,461 @@ do
 
 			SwapDesignatedExternalPlanIfNeeded(plans, encounterID, difficulty)
 		end
+	end
+end
+
+do
+	---@param a TimedAssignment|CombatLogEventAssignment
+	---@param b TimedAssignment|CombatLogEventAssignment
+	---@return boolean
+	local function AssignmentsEqual(a, b)
+		local metatableA, metatableB = getmetatable(a), getmetatable(b)
+		if metatableA ~= metatableB then
+			return false
+		end
+		if metatableA == TimedAssignment then
+			return a.assignee == b.assignee
+				and a.spellID == b.spellID
+				and a.time == b.time
+				and a.targetName == b.targetName
+				and a.text == b.text
+		elseif metatableA == CombatLogEventAssignment then
+			return a.assignee == b.assignee
+				and a.spellID == b.spellID
+				and a.time == b.time
+				and a.combatLogEventSpellID == b.combatLogEventSpellID
+				and a.combatLogEventType == b.combatLogEventType
+				and a.spellCount == b.spellCount
+				and a.targetName == b.targetName
+				and a.text == b.text
+		end
+		return true
+	end
+
+	local ShallowCopy = function(tbl)
+		local copy = {}
+		for k, v in pairs(tbl) do
+			copy[k] = v
+		end
+		return copy
+	end
+
+	local DeepCopy = Private.DeepCopy
+	local PlanDiffType = Private.classes.PlanDiffType
+
+	---@generic T
+	---@param a table<integer, T>
+	---@param b table<integer, T>
+	---@param comparator fun(a: T, b: T): boolean
+	---@return table<integer, PlanDiffEntry<T>>
+	function Utilities.MyersDiff(a, b, comparator)
+		local front = { [1] = { 0, {} } } -- k = 1 represents diagonal 0
+
+		local aCount, bCount = #a, #b
+		for d = 0, aCount + bCount do
+			for k = -d, d, 2 do
+				local goDown
+				if k == -d or k ~= d and front[k - 1][1] < front[k + 1][1] then
+					goDown = true
+				elseif k == d then
+					goDown = false
+				else
+					local left = front[k - 1] and front[k - 1][1] or -math.huge
+					local right = front[k + 1] and front[k + 1][1] or -math.huge
+					goDown = right > left
+				end
+
+				local previousX, x, history
+				if goDown then
+					previousX = front[k + 1][1]
+					history = front[k + 1][2]
+					x = previousX
+				else
+					previousX = front[k - 1][1]
+					history = front[k - 1][2]
+					x = previousX + 1
+				end
+				local y = x - k
+
+				history = ShallowCopy(history)
+
+				if 1 <= y and y <= bCount and goDown then
+					tinsert(history, { type = PlanDiffType.Insert, index = y, value = b[y], result = true })
+				elseif 1 <= x and x <= aCount and not goDown then
+					tinsert(history, { type = PlanDiffType.Delete, index = x, value = a[x], result = true })
+				end
+
+				while x < aCount and y < bCount and comparator(a[x + 1], b[y + 1]) == true do
+					tinsert(history, { type = PlanDiffType.Equal, aIndex = x + 1, bIndex = y + 1, result = false })
+					x = x + 1
+					y = y + 1
+				end
+
+				if x >= aCount and y >= bCount then
+					return history
+				end
+
+				front[k] = { x, history }
+			end
+		end
+
+		return {}
+	end
+
+	-- Merges delete and inserts entries into change entries of a diff if they their index is equal, accounting for
+	-- shifts due to deletes, inserts, and changes.
+	---@generic T
+	---@param diff table<integer, PlanDiffEntry<T>> Original diff with no Change entries.
+	---@return table<integer, PlanDiffEntry<T>> modifiedDiff
+	function Utilities.CoalesceChanges(diff)
+		local result = {}
+		local i = 1
+		local shift = 0
+		while i <= #diff do
+			local entry = diff[i]
+			local nextEntry = diff[i + 1]
+			local coalesced = false
+			if entry.type == PlanDiffType.Delete then
+				if nextEntry and nextEntry.type == PlanDiffType.Insert then
+					if nextEntry.index == entry.index then
+						tinsert(result, {
+							type = PlanDiffType.Change,
+							index = entry.index,
+							oldValue = entry.value,
+							newValue = nextEntry.value,
+							result = true,
+						})
+						coalesced = true
+					elseif nextEntry.index == entry.index + shift then
+						tinsert(result, {
+							type = PlanDiffType.Change,
+							index = entry.index + shift,
+							oldValue = entry.value,
+							newValue = nextEntry.value,
+							result = true,
+						})
+						coalesced = true
+					end
+				end
+				shift = shift - 1
+			elseif entry.type == PlanDiffType.Insert then
+				shift = shift + 1
+			end
+
+			if coalesced then -- Cancel out shift and skip next
+				shift = shift + 1
+				i = i + 2
+			else
+				tinsert(result, entry)
+				i = i + 1
+			end
+		end
+		return result
+	end
+
+	-- Creates a diff between two plans.
+	---@param oldPlan Plan Existing plan.
+	---@param newPlan Plan New plan.
+	---@return PlanDiff
+	function Utilities.DiffPlans(oldPlan, newPlan)
+		---@type PlanDiff
+		local diff = {
+			assignments = Utilities.CoalesceChanges(
+				Utilities.MyersDiff(oldPlan.assignments, newPlan.assignments, AssignmentsEqual)
+			),
+			roster = {},
+			content = Utilities.CoalesceChanges(Utilities.MyersDiff(oldPlan.content, newPlan.content, function(a, b)
+				return a == b
+			end)),
+			metaData = {},
+			empty = true,
+		}
+
+		-- Metadata
+		if oldPlan.difficulty ~= newPlan.difficulty then
+			diff.metaData.difficulty = {}
+			diff.metaData.difficulty.oldValue = oldPlan.difficulty
+			diff.metaData.difficulty.newValue = newPlan.difficulty
+			diff.metaData.difficulty.result = true
+			diff.empty = false
+		end
+		if oldPlan.dungeonEncounterID ~= newPlan.dungeonEncounterID then
+			diff.metaData.dungeonEncounterID = {}
+			diff.metaData.dungeonEncounterID.oldValue = oldPlan.dungeonEncounterID
+			diff.metaData.dungeonEncounterID.newValue = newPlan.dungeonEncounterID
+			diff.metaData.dungeonEncounterID.result = true
+			diff.empty = false
+		end
+		if oldPlan.instanceID ~= newPlan.instanceID then
+			diff.metaData.instanceID = {}
+			diff.metaData.instanceID.oldValue = oldPlan.instanceID
+			diff.metaData.instanceID.newValue = newPlan.instanceID
+			diff.metaData.instanceID.result = true
+			diff.empty = false
+		end
+
+		-- Roster
+		local oldRoster = oldPlan.roster
+		local newRoster = newPlan.roster
+		local seen = {}
+		for newRosterName, newRosterEntry in pairs(newRoster) do
+			local oldRosterEntry = oldRoster[newRosterName]
+			if not oldRosterEntry then
+				local planRosterDiff = {
+					assignee = newRosterName,
+					type = PlanDiffType.Delete,
+					oldValue = DeepCopy(newRosterEntry),
+					result = true,
+				} ---@type PlanRosterDiff
+				tinsert(diff.roster, planRosterDiff)
+			else
+				if oldRosterEntry.class ~= newRosterEntry.class or oldRosterEntry.role ~= newRosterEntry.role then
+					local planRosterDiff = {
+						assignee = newRosterName,
+						type = PlanDiffType.Change,
+						oldValue = DeepCopy(oldRosterEntry),
+						newValue = DeepCopy(newRosterEntry),
+						result = true,
+					} ---@type PlanRosterDiff
+					tinsert(diff.roster, planRosterDiff)
+				end
+				seen[newRosterName] = true
+			end
+		end
+		for oldRosterName, oldRosterEntry in pairs(oldRoster) do
+			if not seen[oldRosterName] then
+				local planRosterDiff = {
+					assignee = oldRosterName,
+					type = PlanDiffType.Insert,
+					newValue = DeepCopy(oldRosterEntry),
+					result = true,
+				} ---@type PlanRosterDiff
+				tinsert(diff.roster, planRosterDiff)
+			end
+		end
+
+		if diff.empty == true then
+			for _, entry in ipairs(diff.assignments) do
+				if entry.result == true then
+					diff.empty = false
+					break
+				end
+			end
+		end
+		if diff.empty == true then
+			for _, entry in ipairs(diff.roster) do
+				if entry.result == true then
+					diff.empty = false
+					break
+				end
+			end
+		end
+		if diff.empty == true then
+			for _, entry in ipairs(diff.content) do
+				if entry.result == true then
+					diff.empty = false
+					break
+				end
+			end
+		end
+		if diff.empty == true then
+			if diff.metaData.difficulty then
+				diff.empty = false
+			elseif diff.metaData.dungeonEncounterID then
+				diff.empty = false
+			elseif diff.metaData.instanceID then
+				diff.empty = false
+			end
+		end
+
+		return diff
+	end
+
+	-- Applies the diff with proper index handling.
+	---@generic T
+	---@param existingTable table<integer, T> Existing table to apply the diff to.
+	---@param tableDiff table<integer, PlanDiffEntry<T>> Diff between existing and new table.
+	---@param changeFunc fun(newValue:T, ...:any):T Function to set new values from the new table.
+	---@param ... any Args for changeFunc
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyDiff(existingTable, tableDiff, changeFunc, ...)
+		local addedCount, removedCount, changedCount = 0, 0, 0
+
+		-- Apply deletes first (reverse order)
+		for i = #tableDiff, 1, -1 do
+			local diff = tableDiff[i]
+			if diff.result and diff.type == PlanDiffType.Delete then
+				tremove(existingTable, diff.index)
+				removedCount = removedCount + 1
+			end
+		end
+
+		-- Apply inserts and changes in forward order
+		for i = 1, #tableDiff do
+			local diff = tableDiff[i]
+			if diff.result then
+				if diff.type == PlanDiffType.Insert then
+					tinsert(existingTable, diff.index, diff.value)
+					addedCount = addedCount + 1
+				elseif diff.type == PlanDiffType.Change then
+					existingTable[diff.index] = changeFunc(diff.newValue, ...)
+					changedCount = changedCount + 1
+				end
+			end
+		end
+
+		return addedCount, removedCount, changedCount
+	end
+
+	local DuplicateAssignment = Private.DuplicateAssignment
+
+	-- Merges an existing plan using a plan diff.
+	---@param plans table<string, Plan> All plans.
+	---@param existingPlan Plan Existing plan to apply diff to.
+	---@param planDiff PlanDiff Diff between existing and new plan.
+	---@return table<integer, string> messages
+	function Utilities.MergePlan(plans, existingPlan, planDiff)
+		local messages = {}
+		local existingAssignments = existingPlan.assignments
+		local existingPlanID = existingPlan.ID
+		local added, removed, changed =
+			Utilities.ApplyDiff(existingAssignments, planDiff.assignments, DuplicateAssignment, existingPlanID)
+
+		if added > 0 or removed > 0 or changed > 0 then
+			tinsert(
+				messages,
+				format(
+					"%s %d, %s %d, %s %s %d %s.",
+					L["Added"],
+					added,
+					L["Removed"]:lower(),
+					removed,
+					L["and"],
+					L["Changed"]:lower(),
+					changed,
+					L["assignments"]
+				)
+			)
+			added, removed, changed = 0, 0, 0
+		end
+
+		local existingRoster = existingPlan.roster
+		for i = #planDiff.roster, 1, -1 do
+			local diff = planDiff.roster[i]
+			if diff.result == true then
+				if diff.type == PlanDiffType.Delete then
+					existingRoster[diff.assignee] = nil
+					removed = removed + 1
+				elseif diff.type == PlanDiffType.Insert then
+					local rosterEntry = RosterEntry:New()
+					rosterEntry.class = diff.newValue.class
+					rosterEntry.classColoredName = diff.newValue.classColoredName
+					rosterEntry.role = diff.newValue.role
+					existingRoster[diff.assignee] = rosterEntry
+					added = added + 1
+				elseif diff.type == PlanDiffType.Change then
+					existingRoster[diff.assignee].class = diff.newValue.class
+					existingRoster[diff.assignee].classColoredName = diff.newValue.classColoredName
+					existingRoster[diff.assignee].role = diff.newValue.role
+					changed = changed + 1
+				end
+			end
+		end
+
+		if added > 0 or removed > 0 or changed > 0 then
+			tinsert(
+				messages,
+				format(
+					"%s %d, %s %d, %s %s %d %s.",
+					L["Added"],
+					added,
+					L["Removed"]:lower(),
+					removed,
+					L["and"],
+					L["Changed"]:lower(),
+					changed,
+					L["roster members"]
+				)
+			)
+			added, removed, changed = 0, 0, 0
+		end
+
+		local existingContent = existingPlan.content
+		removed, added, changed = Utilities.ApplyDiff(existingContent, planDiff.content, function(v)
+			return v
+		end)
+
+		if added > 0 or removed > 0 or changed > 0 then
+			tinsert(
+				messages,
+				format(
+					"%s %d, %s %d, %s %s %d %s.",
+					L["Added"],
+					added,
+					L["Removed"]:lower(),
+					removed,
+					L["and"],
+					L["Changed"]:lower(),
+					changed,
+					L["lines of External Text"]
+				)
+			)
+			added, removed, changed = 0, 0, 0
+		end
+
+		local changedMetaData = false
+		local metaDataMessages = {}
+		if planDiff.metaData.instanceID and planDiff.metaData.instanceID.result == true then
+			existingPlan.instanceID = planDiff.metaData.instanceID.newValue
+			tinsert(metaDataMessages, L["Instance"]:lower())
+			changedMetaData = true
+		end
+		if planDiff.metaData.dungeonEncounterID and planDiff.metaData.dungeonEncounterID.result == true then
+			existingPlan.dungeonEncounterID = planDiff.metaData.dungeonEncounterID.newValue
+			tinsert(metaDataMessages, L["Boss"]:lower())
+			changedMetaData = true
+		end
+		if planDiff.metaData.difficulty and planDiff.metaData.difficulty.result == true then
+			existingPlan.difficulty = planDiff.metaData.difficulty.newValue
+			tinsert(metaDataMessages, L["Difficulty"]:lower())
+			changedMetaData = true
+		end
+
+		if changedMetaData then
+			Utilities.ChangePlanBoss(plans, existingPlan.name, existingPlan.dungeonEncounterID, existingPlan.difficulty)
+			if #metaDataMessages == 1 then
+				tinsert(messages, format("%s %s %s.", L["Changed"]:lower(), L["The"]:lower(), metaDataMessages[1]))
+			elseif #metaDataMessages == 2 then
+				tinsert(
+					messages,
+					format(
+						"%s %s %s %s %s.",
+						L["Changed"]:lower(),
+						L["The"]:lower(),
+						metaDataMessages[1],
+						L["and"],
+						metaDataMessages[2]
+					)
+				)
+			elseif #metaDataMessages == 3 then
+				tinsert(
+					messages,
+					format(
+						"%s %s %s, %s, %s %s.",
+						L["Changed"]:lower(),
+						L["The"]:lower(),
+						metaDataMessages[1],
+						metaDataMessages[2],
+						L["and"],
+						metaDataMessages[3]
+					)
+				)
+			end
+		end
+
+		return messages
 	end
 end
 
@@ -2772,13 +3228,14 @@ do
 	---@param dungeonEncounterID integer
 	---@param newType "Fixed Time"|CombatLogEventType
 	---@param difficulty DifficultyType
-	function Utilities.ChangeAssignmentType(assignment, dungeonEncounterID, newType, difficulty)
+	---@param planID string
+	function Utilities.ChangeAssignmentType(assignment, dungeonEncounterID, newType, difficulty, planID)
 		if validCombatLogEventTypes[newType] then
 			local newEventType = newType --[[@as CombatLogEventType]]
 			if getmetatable(assignment) ~= CombatLogEventAssignment then
 				local combatLogEventSpellID, spellCount, minTime =
 					FindNearestCombatLogEvent(assignment.time, dungeonEncounterID, newEventType, difficulty)
-				assignment = CombatLogEventAssignment:New(assignment, true)
+				assignment = CombatLogEventAssignment:New(assignment, planID, true)
 				assignment.combatLogEventType = newEventType
 				if combatLogEventSpellID and spellCount and minTime then
 					assignment.combatLogEventSpellID = combatLogEventSpellID
@@ -2829,7 +3286,7 @@ do
 						difficulty
 					)
 				end
-				assignment = TimedAssignment:New(assignment, true)
+				assignment = TimedAssignment:New(assignment, planID, true)
 				if convertedTime then
 					assignment.time = Utilities.Round(convertedTime, 1)
 				end
@@ -2848,8 +3305,9 @@ do
 	---@param assignee string Assignee name or assignee type.
 	---@param assignmentSpellID integer|nil Assignment spell ID.
 	---@param difficulty DifficultyType Encounter difficulty.
+	---@param planID string
 	---@return TimedAssignment|CombatLogEventAssignment|nil
-	function Utilities.CreateNewAssignment(encounterID, absoluteTime, assignee, assignmentSpellID, difficulty)
+	function Utilities.CreateNewAssignment(encounterID, absoluteTime, assignee, assignmentSpellID, difficulty, planID)
 		local assignment = nil
 		local boss = GetBoss(encounterID)
 		local preferredAbilities = GetBossPreferredCombatLogEventAbilities(boss, difficulty)
@@ -2868,7 +3326,7 @@ do
 			)
 			if newSpellID and newSpellCount and newEventType and newTime then
 				local orderedBossPhaseIndex = absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-				assignment = CombatLogEventAssignment:New(assignment, true)
+				assignment = CombatLogEventAssignment:New(assignment, planID, true)
 				assignment.combatLogEventType = newEventType
 				assignment.combatLogEventSpellID = newSpellID
 				assignment.spellCount = newSpellCount
@@ -2879,7 +3337,7 @@ do
 		end
 
 		if not assignment then
-			assignment = TimedAssignment:New(assignment, true)
+			assignment = TimedAssignment:New(assignment, planID, true)
 			assignment.time = Utilities.Round(absoluteTime, 1)
 		end
 

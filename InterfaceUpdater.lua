@@ -366,6 +366,7 @@ do
 	local function HandleAssigneeRowDeleteButtonClicked(widget)
 		local messageBoxData = {
 			ID = Private.GenerateUniqueID(),
+			widgetType = "EPMessageBox",
 			isCommunication = false,
 			title = L["Delete Assignments Confirmation"],
 			message = format(
@@ -403,6 +404,7 @@ do
 		end
 		local messageBoxData = {
 			ID = Private.GenerateUniqueID(),
+			widgetType = "EPMessageBox",
 			isCommunication = false,
 			title = L["Delete Assignments Confirmation"],
 			message = format(
@@ -802,7 +804,7 @@ end
 
 do
 	local InCombatLockdown = InCombatLockdown
-	local sMessageBox = nil ---@type  EPMessageBox|nil
+	local sMessageBox = nil ---@type EPMessageBox|EPDiffViewer|nil
 	local sMessageQueue = {} ---@type table<integer, MessageBoxData>
 	local sIsExecutingCallbacks = false
 
@@ -864,41 +866,53 @@ do
 			return false
 		else
 			if not sMessageBox then
-				sMessageBox = AceGUI:Create("EPMessageBox")
-				sMessageBox.frame:SetParent(UIParent)
-				sMessageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
-				sMessageBox:SetTitle(messageBoxData.title)
-				sMessageBox:SetText(messageBoxData.message)
-				sMessageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-				sMessageBox:SetPoint("TOP", UIParent, "TOP", 0, -sMessageBox.frame:GetBottom())
-				sMessageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
-				sMessageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
-				sMessageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
-				sMessageBox:SetCallback("Accepted", function()
-					AceGUI:Release(sMessageBox)
-					ExecuteCallback(messageBoxData.acceptButtonCallback)
-				end)
-				sMessageBox:SetCallback("Rejected", function()
-					AceGUI:Release(sMessageBox)
-					if type(messageBoxData.rejectButtonCallback) == "function" then
-						ExecuteCallback(messageBoxData.rejectButtonCallback)
-					end
-				end)
-				for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
-					local button = sMessageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
-					if button then
-						sMessageBox:AddButton(buttonToAdd.buttonText, button)
-						sMessageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
-							AceGUI:Release(sMessageBox)
-							if type(buttonToAdd.callback) == "function" then
-								ExecuteCallback(buttonToAdd.callback)
-							end
-						end)
-					else
-						error(AddOnName .. ": Invalid button index.")
+				if messageBoxData.widgetType == "EPMessageBox" then
+					sMessageBox = AceGUI:Create("EPMessageBox")
+					sMessageBox.frame:SetParent(UIParent)
+					sMessageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
+					sMessageBox:SetTitle(messageBoxData.title)
+					sMessageBox:SetText(messageBoxData.message)
+					sMessageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+					sMessageBox:SetPoint("TOP", UIParent, "TOP", 0, -sMessageBox.frame:GetBottom())
+					sMessageBox:SetAcceptButtonText(messageBoxData.acceptButtonText)
+					sMessageBox:SetRejectButtonText(messageBoxData.rejectButtonText)
+					sMessageBox.isCommunicationsMessage = messageBoxData.isCommunication
+				elseif messageBoxData.widgetType == "EPDiffViewer" then
+					sMessageBox = AceGUI:Create("EPDiffViewer")
+					sMessageBox.frame:SetParent(UIParent)
+					sMessageBox.frame:SetFrameLevel(kMessageBoxFrameLevel)
+					sMessageBox:SetText(messageBoxData.message)
+					sMessageBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+					sMessageBox:SetPoint("TOP", UIParent, "TOP", 0, -sMessageBox.frame:GetBottom())
+					sMessageBox:AddDiffs(messageBoxData.planDiff, messageBoxData.oldPlan, messageBoxData.newPlan)
+				end
+				if sMessageBox then
+					sMessageBox:SetCallback("OnRelease", HandleMessageBoxReleased)
+					sMessageBox:SetCallback("Accepted", function()
+						AceGUI:Release(sMessageBox)
+						ExecuteCallback(messageBoxData.acceptButtonCallback)
+					end)
+					sMessageBox:SetCallback("Rejected", function()
+						AceGUI:Release(sMessageBox)
+						if type(messageBoxData.rejectButtonCallback) == "function" then
+							ExecuteCallback(messageBoxData.rejectButtonCallback)
+						end
+					end)
+					for _, buttonToAdd in ipairs(messageBoxData.buttonsToAdd) do
+						local button = sMessageBox.buttonContainer.children[buttonToAdd.beforeButtonIndex]
+						if button then
+							sMessageBox:AddButton(buttonToAdd.buttonText, button)
+							sMessageBox:SetCallback(buttonToAdd.buttonText .. "Clicked", function()
+								AceGUI:Release(sMessageBox)
+								if type(buttonToAdd.callback) == "function" then
+									ExecuteCallback(buttonToAdd.callback)
+								end
+							end)
+						else
+							error(AddOnName .. ": Invalid button index.")
+						end
 					end
 				end
-				sMessageBox.isCommunicationsMessage = messageBoxData.isCommunication
 				return true
 			elseif queueIfNotCreated then
 				Enqueue(messageBoxData)

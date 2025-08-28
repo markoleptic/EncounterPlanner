@@ -234,6 +234,7 @@
 
 ---@class MessageBoxData Data needed to construct an EPMessageBox widget.
 ---@field ID string Unique ID to distinguish message boxes in the queue.
+---@field widgetType "EPMessageBox"|"EPDiffViewer"
 ---@field isCommunication boolean True if the message box data was constructed from Communications.lua.
 ---@field title string Title of the message box.
 ---@field message string Content of the message box.
@@ -242,6 +243,9 @@
 ---@field rejectButtonText string Reject button text of the message box.
 ---@field rejectButtonCallback fun()|nil Function executed when the reject button is clicked.
 ---@field buttonsToAdd table<integer, AdditionalMessageBoxButtonData> Additional buttons to add to the message box.
+---@field planDiff? PlanDiff
+---@field oldPlan? Plan
+---@field newPlan? Plan
 
 ---@class KeyBindings
 ---@field pan MouseButtonKeyBinding Controls panning the timeline left and right.
@@ -442,6 +446,27 @@
 ---@class SpellCastStartTableEntry
 ---@field castStart number
 ---@field bossPhaseOrderIndex integer
+
+---@class PlanDiffEntry<T>: { type: PlanDiffType, index?: integer, aIndex?: integer, bIndex?: integer, value?: `T`, oldValue?: `T`, newValue?: `T`, result: boolean }
+
+---@class PlanRosterDiff
+---@field assignee string
+---@field type PlanDiffType
+---@field oldValue? RosterEntry Nil if type is `PlanDiffType.Insert`.
+---@field newValue? RosterEntry Nil if type is `PlanDiffType.Delete`.
+---@field result boolean
+
+---@class PlanMetaDataDiff
+---@field difficulty? {oldValue: DifficultyType, newValue: DifficultyType, result: boolean}
+---@field dungeonEncounterID? {oldValue: integer, newValue: integer, result: boolean}
+---@field instanceID? {oldValue: integer, newValue: integer, result: boolean}
+
+---@class PlanDiff
+---@field assignments table<integer, PlanDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>>
+---@field content table<integer, PlanDiffEntry<string>>
+---@field roster table<integer, PlanRosterDiff>
+---@field metaData PlanMetaDataDiff
+---@field empty boolean
 
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS

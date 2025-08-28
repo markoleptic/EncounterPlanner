@@ -1103,6 +1103,7 @@ do
 	---@class Plan
 	local Plan = Private.classes.Plan
 	local CreateUniquePlanName = utilities.CreateUniquePlanName
+	local CreatePlan = utilities.CreatePlan
 
 	function test.CreateUniquePlanName()
 		local planName = ""
@@ -1141,7 +1142,6 @@ do
 	end
 
 	do
-		local CreatePlan = utilities.CreatePlan
 		local SetDesignatedExternalPlan = utilities.SetDesignatedExternalPlan
 		local testEncounterIDOne = constants.kDefaultBossDungeonEncounterID
 		local testEncounterIDTwo = 3010
@@ -1328,20 +1328,109 @@ do
 		end
 	end
 
-	do
-		---@class TimedAssignment
-		local TimedAssignment = Private.classes.TimedAssignment
-		---@class CombatLogEventAssignment
-		local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+	---@class TimedAssignment
+	local TimedAssignment = Private.classes.TimedAssignment
+	---@class CombatLogEventAssignment
+	local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+	---@class RosterEntry
+	local RosterEntry = Private.classes.RosterEntry
+	---@class BossUtilities
+	local bossUtilities = Private.bossUtilities
 
-		function test.DuplicatePlan()
+	local DuplicatePlan = utilities.DuplicatePlan
+	local CreateTestPlan = testUtilities.CreateTestPlan
+
+	---@return table<string, RosterEntry>
+	local function CreateTestRoster()
+		local roster = {}
+		for i = 1, GetNumClasses() do
+			local _, classFile, _ = GetClassInfo(i)
+			local actualClassName
+			if classFile == "DEATHKNIGHT" then
+				actualClassName = "DeathKnight"
+			elseif classFile == "DEMONHUNTER" then
+				actualClassName = "DemonHunter"
+			else
+				actualClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
+			end
+			local rosterEntry = RosterEntry:New()
+			rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
+			rosterEntry.classColoredName = utilities.GetLocalizedPrettyClassName(classFile)
+			rosterEntry.role = "role:damager"
+			roster["Player" .. i] = rosterEntry
+		end
+		return roster
+	end
+
+	function test.DuplicatePlan()
+		local plans = {}
+
+		local plan = CreateTestPlan(
+			plans,
+			"Test",
+			bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID),
+			DifficultyType.Mythic,
+			CreateTestRoster()
+		)
+
+		local duplicatedPlan = DuplicatePlan(plans, "Test", "Test")
+		duplicatedPlan.isPrimaryPlan = plan.isPrimaryPlan
+		duplicatedPlan.name = plan.name
+		duplicatedPlan.ID = plan.ID
+		TestEqual(plan, duplicatedPlan, "Duplicated plan equals original plan")
+
+		return "DuplicatePlan"
+	end
+
+	do
+		local ApplyDiff = utilities.ApplyDiff
+		local DiffPlans = utilities.DiffPlans
+		local DuplicateAssignment = Private.DuplicateAssignment
+		local GetClassColor = C_ClassColor.GetClassColor
+		local PlanDiffType = Private.classes.PlanDiffType
+
+		-- cSpell:disable
+		local textOne = [[
+            nsnovastart
+            ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r
+            ||cff33937fDraugmentor||r  ||cfffefefeReduckted||r  ||cff3ec6eaMarkoleptic||r  ||cffa9d271Orcodontist||r 
+            ||cffc31d39Hobyrim||r  ||cffc31d39Xonj||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r  
+            ||cffa9d271Orcodontist||r  ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r  ||cfffe7b09Skorke||r   
+            ||cfffe7b09Gun||r  ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r   
+            ||cff00fe97Dogpog||r  ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff3ec6eaSeansmage||r
+            ||cfffe7b09Skorke||r  ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r  ||cff3ec6eaMarkoleptic||r
+            ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Gun||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r
+            nsnovaend
+        ]]
+		local textTwo = [[
+            nsnovastart
+            ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r
+            ||cff33937fDraugmentor||r  ||cfffefefeReduckted||r  ||cff3ec6eaMarkoleptic||r  ||cffa9d271Orcodontist||r 
+            ||cffc31d39Hobyrim||r  ||cffc31d39Xonj||r  ||cff00fe97Dogpog||r  ||cff3ec6eaSeansmage||r  
+            ||cffa9d271Orcodontist||r  ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r 
+            ||cfffe7b09Gun||r  ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r   
+            ||cff00fe97Dogpog||r  ||cffc31d39Xonj||r  ||cffc31d39Hobyrim||r  ||cff3ec6eaSeansmage||r
+            ||cfffefefeReduckted||r  ||cff33937fDraugmentor||r  ||cff3ec6eaMarkoleptic||r
+            ||cff3ec6eaMarkoleptic||r  ||cfffe7b09Gun||r  ||cfffe7b09Wiiki||r  ||cfffefefeLbkt||r
+            Yo
+            nsnovaend
+        ]]
+		-- cSpell:enable
+
+		function test.PlanDiff()
 			local plans = {}
-			local plan = utilities.CreatePlan(
-				plans,
-				"Test",
-				Private.constants.kDefaultBossDungeonEncounterID,
-				DifficultyType.Mythic
-			)
+			local oldPlan =
+				CreatePlan(plans, "Test", Private.constants.kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
+			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
+
+			for i = 1, 10 do
+				local assignment = TimedAssignment:New(nil, oldPlan.ID)
+				assignment.assignee = "Player" .. i
+				assignment.time = 60.0
+				assignment.text = "Buh"
+				assignment.spellID = 344343
+				tinsert(oldPlan.assignments, assignment)
+			end
 
 			for i = 1, GetNumClasses() do
 				local _, classFile, _ = GetClassInfo(i)
@@ -1353,44 +1442,431 @@ do
 				else
 					actualClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
 				end
-				local rosterEntry = Private.classes.RosterEntry:New()
+				local rosterEntry = RosterEntry:New()
 				rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
-				rosterEntry.classColoredName = utilities.GetLocalizedPrettyClassName(classFile)
+				rosterEntry.classColoredName = GetClassColor(classFile):WrapTextInColorCode("Player" .. i)
 				rosterEntry.role = "role:damager"
-				plan.roster["Player" .. i] = rosterEntry
+				oldPlan.roster["Player" .. i] = rosterEntry
 			end
 
-			local combatLogEvents = { "SAA", "SAR", "SCC", "SCS", "UD" }
+			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 
-			for i = 1, 10 do
-				if i % 2 == 0 then
-					local assignment = TimedAssignment:New({})
-					assignment.assignee = "Player" .. i
-					assignment.time = i * 5.0
-					assignment.text = "Buh" .. i
-					assignment.spellID = 344343
-					tinsert(plan.assignments, assignment)
-				else
-					local assignment = CombatLogEventAssignment:New({})
-					assignment.assignee = "Player" .. i
-					assignment.bossPhaseOrderIndex = 3
-					assignment.combatLogEventSpellID = 1
-					assignment.combatLogEventType = combatLogEvents[math.random(5)]
-					assignment.phase = 3
-					assignment.spellCount = 1
-					assignment.spellID = 1230529
-					assignment.text = "Buh" .. i
-					assignment.time = i * 5.0
-					tinsert(plan.assignments, assignment)
+			local diff = DiffPlans(oldPlan, newPlan)
+			TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+
+			newPlan.content = RemoveTabs(SplitStringIntoTable(textTwo))
+
+			newPlan.difficulty = DifficultyType.Heroic
+
+			newPlan.roster["Player13"] = nil
+			newPlan.roster["Player8"].role = "role:healer"
+			newPlan.roster["Player22"] = {
+				class = "class:DemonHunter",
+				classColoredName = GetClassColor("DEMONHUNTER"):WrapTextInColorCode("Player22"),
+				role = "role:tank",
+			}
+
+			tremove(newPlan.assignments, 1)
+			tremove(newPlan.assignments, 2)
+			tremove(newPlan.assignments, 5)
+			newPlan.assignments[6].assignee = "{everyone}"
+
+			diff = DiffPlans(oldPlan, newPlan)
+
+			TestEqual(diff.metaData.difficulty.oldValue, DifficultyType.Mythic, "Changed difficulty")
+			TestEqual(diff.metaData.difficulty.newValue, DifficultyType.Heroic, "Changed difficulty")
+
+			TestEqual(diff.roster[1].type, PlanDiffType.Delete, "Deleted roster member")
+			TestEqual(diff.roster[2].type, PlanDiffType.Change, "Changed roster member")
+			TestEqual(diff.roster[2].oldValue.role, "role:damager", "Changed roster member")
+			TestEqual(diff.roster[2].newValue.role, "role:healer", "Changed roster member")
+			TestEqual(diff.roster[3].type, PlanDiffType.Insert, "Inserted roster member")
+
+			TestEqual(diff.assignments[1].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(diff.assignments[2].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(diff.assignments[3].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(diff.assignments[4].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(diff.assignments[5].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(diff.assignments[6].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(diff.assignments[7].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(diff.assignments[8].type, PlanDiffType.Equal, "Equal assignment")
+			-- TestEqual(diff.assignments[9].type, PlanDiffType.Change, "Changed assignment")
+			-- TestEqual(diff.assignments[9].newValue.assignee, "{everyone}", "Changed assignment")
+			-- TestEqual(diff.assignments[10].type, PlanDiffType.Equal, "Equal assignment")
+
+			ApplyDiff(oldPlan.assignments, diff.assignments, DuplicateAssignment, oldPlan.ID)
+			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
+
+			return "PlanDiff"
+		end
+
+		local MergePlan = utilities.MergePlan
+
+		function test.MergePlan()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local oldPlan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
+
+			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			do
+				local diff = DiffPlans(oldPlan, newPlan)
+				TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+			end
+
+			newPlan.content = RemoveTabs(SplitStringIntoTable(textTwo))
+
+			local rosterCount = 0
+			for _ in pairs(newPlan.roster) do
+				rosterCount = rosterCount + 1
+			end
+
+			local assignees = {}
+			for _, assignment in ipairs(newPlan.assignments) do
+				tinsert(assignees, assignment.assignee)
+			end
+
+			for _ = 1, math.random(20, 60) do
+				local choice = math.random() -- [0,1)
+				local len = #newPlan.assignments
+				if choice < 0.3 and len > 0 then -- delete
+					local idx = math.random(1, len)
+					tremove(newPlan.assignments, idx)
+				elseif choice < 0.6 then -- insert
+					local idx = math.random(1, len + 1)
+					tinsert(newPlan.assignments, idx, testUtilities.CreateRandomAssignment(newPlan, boss, assignees))
+				elseif len > 0 then -- change
+					local idx = math.random(1, len)
+					newPlan.assignments[idx].assignee = testUtilities.GetRandomAssignee(newPlan.roster, rosterCount)
 				end
 			end
 
-			local duplicatedPlan = utilities.DuplicatePlan(plans, "Test", "Test")
-			duplicatedPlan.isPrimaryPlan = plan.isPrimaryPlan
-			duplicatedPlan.name = plan.name
-			duplicatedPlan.ID = plan.ID
-			TestEqual(plan, duplicatedPlan, "Duplicated plan equals original plan")
-			return "DuplicatePlan"
+			local diff = DiffPlans(oldPlan, newPlan)
+			MergePlan(plans, oldPlan, diff)
+			TestEqual(
+				oldPlan.dungeonEncounterID,
+				newPlan.dungeonEncounterID,
+				"New plan dungeonEncounterID applied correctly"
+			)
+			TestEqual(oldPlan.instanceID, newPlan.instanceID, "New plan instanceID applied correctly")
+			TestEqual(oldPlan.difficulty, newPlan.difficulty, "New plan difficulty applied correctly")
+			TestEqual(oldPlan.roster, newPlan.roster, "New plan roster applied correctly")
+			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
+			TestEqual(oldPlan.content, newPlan.content, "New plan content applied correctly")
+
+			return "MergePlan"
+		end
+	end
+end
+
+do
+	local CoalesceChanges = utilities.CoalesceChanges
+	local MyersDiff = utilities.MyersDiff
+	local PlanDiffType = Private.classes.PlanDiffType
+
+	function test.MyersDiff()
+		local comparator = function(a, b)
+			return a == b
+		end
+
+		for i = 1, 2 do
+			local func
+			if i == 1 then
+				func = function(...)
+					return MyersDiff(...)
+				end
+			else
+				func = function(...)
+					return CoalesceChanges(MyersDiff(...))
+				end
+			end
+
+			local aStringTable, bStringTable = {}, {}
+			local diff = func(aStringTable, bStringTable, comparator)
+			TestEqual(#diff, 0, "Empty")
+
+			aStringTable = { "a", "b", "c" }
+			bStringTable = { "a", "b", "c" }
+			diff = func(aStringTable, bStringTable, comparator)
+			for _, diffEntry in ipairs(diff) do
+				TestEqual(diffEntry.type, PlanDiffType.Equal, "Equal for all elements")
+			end
+
+			aStringTable = { "a", "b" }
+			bStringTable = { "a", "b", "c", "d" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			local context = "Insert Only"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Insert, context)
+			TestEqual(diff[4].type, PlanDiffType.Insert, context)
+			TestEqual(diff[3].value, "c", context)
+			TestEqual(diff[4].value, "d", context)
+
+			aStringTable = { "a", "b", "c", "d" }
+			bStringTable = { "a", "b" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Delete Only"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Delete, context)
+			TestEqual(diff[4].type, PlanDiffType.Delete, context)
+			TestEqual(diff[3].value, "c", context)
+			TestEqual(diff[4].value, "d", context)
+
+			aStringTable = { "a", "b", "x", "d" }
+			bStringTable = { "a", "b", "y", "d" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Coalesced insert and delete"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			if i == 1 then
+				TestEqual(diff[3].type, PlanDiffType.Delete, context)
+				TestEqual(diff[4].type, PlanDiffType.Insert, context)
+				TestEqual(diff[5].type, PlanDiffType.Equal, context)
+				TestEqual(diff[3].value, "x", context)
+				TestEqual(diff[4].value, "y", context)
+			else
+				TestEqual(diff[3].type, PlanDiffType.Change, context)
+				TestEqual(diff[4].type, PlanDiffType.Equal, context)
+				TestEqual(diff[3].oldValue, "x", context)
+				TestEqual(diff[3].newValue, "y", context)
+			end
+
+			aStringTable = { "b", "c" }
+			bStringTable = { "a", "b", "c" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Leading insertion"
+			TestEqual(diff[1].type, PlanDiffType.Insert, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Equal, context)
+			TestEqual(diff[1].value, "a", context)
+
+			aStringTable = { "a", "b", "c" }
+			bStringTable = { "b", "c" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Leading deletion"
+			TestEqual(diff[1].type, PlanDiffType.Delete, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Equal, context)
+			TestEqual(diff[1].value, "a", context)
+
+			aStringTable = { "a", "b" }
+			bStringTable = { "a", "b", "c" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Trailing insertion"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Insert, context)
+			TestEqual(diff[3].value, "c", context)
+
+			aStringTable = { "a", "b", "c" }
+			bStringTable = { "a", "b" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Trailing deletion"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Delete, context)
+			TestEqual(diff[3].value, "c", context)
+
+			aStringTable = { "a", "b", "c", "d", "e" }
+			bStringTable = { "a", "x", "c", "y", "e" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Multiple inserts and deletes"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			if i == 1 then
+				TestEqual(diff[2].type, PlanDiffType.Delete, context)
+				TestEqual(diff[3].type, PlanDiffType.Insert, context)
+				TestEqual(diff[4].type, PlanDiffType.Equal, context)
+				TestEqual(diff[5].type, PlanDiffType.Delete, context)
+				TestEqual(diff[6].type, PlanDiffType.Insert, context)
+				TestEqual(diff[7].type, PlanDiffType.Equal, context)
+				TestEqual(diff[2].value, "b", context)
+				TestEqual(diff[3].value, "x", context)
+				TestEqual(diff[5].value, "d", context)
+				TestEqual(diff[6].value, "y", context)
+			else
+				TestEqual(diff[2].type, PlanDiffType.Change, context)
+				TestEqual(diff[3].type, PlanDiffType.Equal, context)
+				TestEqual(diff[4].type, PlanDiffType.Change, context)
+				TestEqual(diff[5].type, PlanDiffType.Equal, context)
+				TestEqual(diff[2].oldValue, "b", context)
+				TestEqual(diff[2].newValue, "x", context)
+				TestEqual(diff[4].oldValue, "d", context)
+				TestEqual(diff[4].newValue, "y", context)
+			end
+
+			if i == 1 then
+				aStringTable = { "a", "b", "c" }
+				bStringTable = { "x", "y", "z" }
+				diff = func(aStringTable, bStringTable, comparator)
+
+				context = "Completely different sequences"
+				TestEqual(diff[1].type, PlanDiffType.Delete, context)
+				TestEqual(diff[2].type, PlanDiffType.Delete, context)
+				TestEqual(diff[3].type, PlanDiffType.Delete, context)
+				TestEqual(diff[4].type, PlanDiffType.Insert, context)
+				TestEqual(diff[5].type, PlanDiffType.Insert, context)
+				TestEqual(diff[6].type, PlanDiffType.Insert, context)
+				TestEqual(diff[1].value, "a", context)
+				TestEqual(diff[2].value, "b", context)
+				TestEqual(diff[3].value, "c", context)
+				TestEqual(diff[4].value, "x", context)
+				TestEqual(diff[5].value, "y", context)
+				TestEqual(diff[6].value, "z", context)
+			end
+
+			aStringTable = { "a", "b", "c", "d", "e" }
+			bStringTable = { "b", "c", "d" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Subsequence match"
+			TestEqual(diff[1].type, PlanDiffType.Delete, context)
+			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(diff[3].type, PlanDiffType.Equal, context)
+			TestEqual(diff[4].type, PlanDiffType.Equal, context)
+			TestEqual(diff[5].type, PlanDiffType.Delete, context)
+			TestEqual(diff[1].value, "a", context)
+			TestEqual(diff[5].value, "e", context)
+
+			aStringTable = { "a", "d" }
+			bStringTable = { "a", "b", "c", "d" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Large insertion in middle"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Insert, context)
+			TestEqual(diff[3].type, PlanDiffType.Insert, context)
+			TestEqual(diff[4].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].value, "b", context)
+			TestEqual(diff[3].value, "c", context)
+
+			aStringTable = { "a", "b", "c", "d" }
+			bStringTable = { "a", "d" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Large deletion in middle"
+			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].type, PlanDiffType.Delete, context)
+			TestEqual(diff[3].type, PlanDiffType.Delete, context)
+			TestEqual(diff[4].type, PlanDiffType.Equal, context)
+			TestEqual(diff[2].value, "b", context)
+			TestEqual(diff[3].value, "c", context)
+
+			aStringTable = {}
+			bStringTable = { "a", "b", "c" }
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Existing empty, new non-empty"
+			TestEqual(diff[1].type, PlanDiffType.Insert, context)
+			TestEqual(diff[2].type, PlanDiffType.Insert, context)
+			TestEqual(diff[3].type, PlanDiffType.Insert, context)
+			TestEqual(diff[1].value, "a", context)
+			TestEqual(diff[2].value, "b", context)
+			TestEqual(diff[3].value, "c", context)
+
+			aStringTable = { "a", "b", "c" }
+			bStringTable = {}
+			diff = func(aStringTable, bStringTable, comparator)
+
+			context = "Existing non-empty, new empty"
+			TestEqual(diff[1].type, PlanDiffType.Delete, context)
+			TestEqual(diff[2].type, PlanDiffType.Delete, context)
+			TestEqual(diff[3].type, PlanDiffType.Delete, context)
+			TestEqual(diff[1].value, "a", context)
+			TestEqual(diff[2].value, "b", context)
+			TestEqual(diff[3].value, "c", context)
+		end
+
+		return "MyersDiff"
+	end
+
+	do
+		local ApplyDiff = utilities.ApplyDiff
+
+		function test.ApplyMyersDiff()
+			local changeFunc = function(newValue)
+				return newValue
+			end
+			local aStringTable = { "A", "B", "C", "D", "E" }
+			local bStringTable = { "A", "B", "C", "D" }
+			local planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "2")
+			end
+
+			aStringTable = { "A", "B", "C", "D", "E" }
+			bStringTable = { "A", "B", "C", "D", "E", "F" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "1")
+			end
+
+			aStringTable = { "A", "B", "C", "D", "E" }
+			bStringTable = { "A", "F", "C", "X", "E" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "1")
+			end
+
+			aStringTable = { "A", "B", "C", "D", "E" }
+			bStringTable = { "F", "C", "X", "E" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "2")
+			end
+
+			aStringTable = { "A", "B", "C", "D", "E" }
+			bStringTable = { "A", "F", "C", "X" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "3")
+			end
+
+			aStringTable = { "A", "B", "C", "D" }
+			bStringTable = { "X", "A", "B", "C", "Y", "D", "Z" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "3")
+			end
+
+			aStringTable = { "A", "B", "C", "D" }
+			bStringTable = { "X", "Y", "Z" }
+			planDiff = MyersDiff(aStringTable, bStringTable, function(a, b)
+				return a == b
+			end)
+			ApplyDiff(aStringTable, planDiff, changeFunc)
+			for i, v in ipairs(bStringTable) do
+				TestEqual(aStringTable[i], v, "3")
+			end
+
+			return "ApplyMyersDiff"
 		end
 	end
 end

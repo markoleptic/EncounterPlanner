@@ -23,8 +23,9 @@ local k = {
 	},
 	DistributePlan = constants.communications.kDistributePlan,
 	DistributeText = constants.communications.kDistributeText,
-	PlanReceived = constants.communications.kPlanReceived,
+	DistributePlanReceived = constants.communications.kDistributePlanReceived,
 	RequestPlanUpdate = constants.communications.kRequestPlanUpdate,
+	RequestPlanUpdateResponse = constants.communications.kRequestPlanUpdateResponse,
 }
 
 ---@class Utilities
@@ -85,16 +86,17 @@ do
 	end
 
 	---@param data SerializedAssignment
+	---@param planID string
 	---@return CombatLogEventAssignment|TimedAssignment
-	local function DeserializeAssignment(data)
-		local assignment = Assignment:New({})
+	local function DeserializeAssignment(data, planID)
+		local assignment = Assignment:New(nil, planID)
 		assignment.assignee = data[1]
 		assignment.spellID = data[2]
 		assignment.text = data[3]
 		assignment.targetName = data[4]
 
 		if data[10] then
-			assignment = CombatLogEventAssignment:New(assignment)
+			assignment = CombatLogEventAssignment:New(assignment, planID)
 			assignment.time = data[5]
 			assignment.combatLogEventType = data[6]
 			assignment.combatLogEventSpellID = data[7]
@@ -102,7 +104,7 @@ do
 			assignment.phase = data[9]
 			assignment.bossPhaseOrderIndex = data[10]
 		else
-			assignment = TimedAssignment:New(assignment)
+			assignment = TimedAssignment:New(assignment, planID)
 			assignment.time = data[5]
 		end
 
@@ -165,7 +167,7 @@ do
 		plan.instanceID = serializedPlan[4]
 		plan.difficulty = serializedPlan[5]
 		for _, serializedAssignment in ipairs(serializedPlan[6]) do
-			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
+			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment, planID)
 		end
 		for _, serializedRosterEntry in ipairs(serializedPlan[7]) do
 			---@cast serializedRosterEntry SerializedRosterEntry
@@ -298,6 +300,54 @@ local function ImportPlan(plan, fullName)
 	end
 end
 
+---@param existingPlan Plan
+---@param planDiff PlanDiff
+local function UpdatePlan(existingPlan, planDiff)
+	local messages = utilities.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff)
+
+	for _, message in ipairs(messages) do
+		LogMessage(message)
+	end
+
+	if Private.mainFrame then
+		local currentPlanName = Private.mainFrame.planDropdown:GetValue()
+		if currentPlanName == existingPlan.name then
+			UpdateFromPlan(existingPlan, true) -- Only update if current plan is the updated plan
+		end
+	end
+end
+
+---@return string|nil
+local function GetGroupType()
+	local groupType = nil
+	if IsInRaid() then
+		groupType = "RAID"
+	elseif IsInGroup() then
+		groupType = "PARTY"
+	end
+	return groupType
+end
+
+function Private:UpdateSendPlanButtonState()
+	if self.mainFrame then
+		local sendPlanButton = self.mainFrame.sendPlanButton
+		if sendPlanButton then
+			local inGroup = IsInGroup() or IsInRaid()
+			local isAssistantOrLeader = UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")
+			local buttonText
+			if inGroup and isAssistantOrLeader then
+				buttonText = L["Send Plan to Group"]
+			elseif inGroup and not isAssistantOrLeader then
+				buttonText = L["Propose Plan Changes"]
+			else
+				buttonText = L["Send Plan to Group"]
+			end
+			sendPlanButton:SetText(buttonText)
+			sendPlanButton:SetEnabled(inGroup)
+		end
+	end
+end
+
 local commObject = {}
 do
 	local CreateMessageBox = interfaceUpdater.CreateMessageBox
@@ -313,47 +363,41 @@ do
 	local wipe = table.wipe
 
 	local activePlanIDsBeingSent = {} ---@type table<string, {timer:FunctionContainer|nil, totalReceivedConfirmations: integer}>
+	local activeUpdatePlanIDsBeingSent = {} ---@type table<string, {timer:FunctionContainer|nil, totalReceivedConfirmations: integer}>
 	local activePlanReceiveMessageBoxDataIDs = {} ---@type table<integer, string>
+	local activePlanUpdateMessageBoxDataIDs = {} ---@type table<integer, string>
 
 	function commObject.Reset()
 		for _, uniqueID in ipairs(activePlanReceiveMessageBoxDataIDs) do
 			RemoveFromMessageQueue(uniqueID)
 		end
 		wipe(activePlanReceiveMessageBoxDataIDs)
+
+		for _, uniqueID in ipairs(activePlanUpdateMessageBoxDataIDs) do
+			RemoveFromMessageQueue(uniqueID)
+		end
+		wipe(activePlanUpdateMessageBoxDataIDs)
+
 		for _, obj in pairs(activePlanIDsBeingSent) do
 			obj.timer:Cancel()
 		end
 		wipe(activePlanIDsBeingSent)
-	end
 
-	local function UpdateSendPlanButtonEnabledState()
-		if Private.mainFrame and Private.mainFrame.sendPlanButton then
-			local inGroup = IsInGroup() or IsInRaid()
-			local isLeader = UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")
-			Private.mainFrame.sendPlanButton:SetEnabled(inGroup and isLeader)
+		for _, obj in pairs(activeUpdatePlanIDsBeingSent) do
+			obj.timer:Cancel()
 		end
-	end
-
-	---@return string|nil
-	local function GetGroupType()
-		local groupType = nil
-		if IsInRaid() then
-			groupType = "RAID"
-		elseif IsInGroup() then
-			groupType = "PARTY"
-		end
-		return groupType
+		wipe(activeUpdatePlanIDsBeingSent)
 	end
 
 	function commObject.HandleGroupRosterUpdate()
 		if IsInGroup() or IsInRaid() then
 			UpdateRosterDataFromGroup(AddOn.db.profile.sharedRoster)
 		end
-		UpdateSendPlanButtonEnabledState()
+		Private:UpdateSendPlanButtonState()
 	end
 
 	---@param IDToRemove string
-	local function RemoveFromActiveMessageBoxDataIDs(IDToRemove)
+	local function RemoveFromActivePlanReceiveMessageBoxDataIDs(IDToRemove)
 		for index, uniqueID in ipairs(activePlanReceiveMessageBoxDataIDs) do
 			if uniqueID == IDToRemove then
 				tremove(activePlanReceiveMessageBoxDataIDs, index)
@@ -362,17 +406,62 @@ do
 		end
 	end
 
+	---@param IDToRemove string
+	local function RemoveFromActivePlanUpdateMessageBoxDataIDs(IDToRemove)
+		for index, uniqueID in ipairs(activePlanUpdateMessageBoxDataIDs) do
+			if uniqueID == IDToRemove then
+				tremove(activePlanUpdateMessageBoxDataIDs, index)
+				break
+			end
+		end
+	end
+
+	---@param planID string
+	---@param senderFullName string
+	---@return string
+	local function CreateReceiptString(planID, senderFullName)
+		return CompressString(format("%s,%s", planID, senderFullName), false)
+	end
+
+	---@param message string
+	---@return string planID
+	---@return string senderFullName
+	local function ParseReceiptString(message)
+		local package = DecompressString(message, false)
+		local messageTable = strsplittable(",", package)
+		return messageTable[1], messageTable[2]
+	end
+
+	---@param planID string
+	---@param senderFullName string
+	---@param context string
+	---@return string
+	local function CreateUpdateReceiptString(planID, senderFullName, context)
+		return CompressString(format("%s,%s,%s", planID, senderFullName, context), false)
+	end
+
+	---@param message string
+	---@return string planID
+	---@return string senderFullName
+	---@return string context
+	local function ParseUpdateReceiptString(message)
+		local package = DecompressString(message, false)
+		local messageTable = strsplittable(",", package)
+		return messageTable[1], messageTable[2], messageTable[3]
+	end
+
 	---@param plan Plan
-	---@param sender string
-	local function CreateImportMessageBox(plan, sender)
+	---@param senderFullName string
+	local function CreateImportMessageBox(plan, senderFullName)
 		local uniqueID = Private.GenerateUniqueID()
 		local messageBoxData = {
 			ID = uniqueID,
+			widgetType = "EPMessageBox",
 			isCommunication = true,
 			title = L["Plan Received"],
 			message = format(
 				"%s %s '%s'. %s %s",
-				sender,
+				senderFullName,
 				L["has sent you the plan"],
 				plan.name,
 				L["Do you want to accept the plan?"],
@@ -381,15 +470,15 @@ do
 			acceptButtonText = L["Accept and Trust"],
 			acceptButtonCallback = function()
 				local trustedCharacters = AddOn.db.profile.trustedCharacters
-				trustedCharacters[#trustedCharacters + 1] = sender
+				trustedCharacters[#trustedCharacters + 1] = senderFullName
 				if plan then
-					ImportPlan(plan, sender)
+					ImportPlan(plan, senderFullName)
 				end
-				RemoveFromActiveMessageBoxDataIDs(uniqueID)
+				RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
 			end,
 			rejectButtonText = L["Reject"],
 			rejectButtonCallback = function()
-				RemoveFromActiveMessageBoxDataIDs(uniqueID)
+				RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
 			end,
 			buttonsToAdd = {
 				{
@@ -397,14 +486,77 @@ do
 					buttonText = L["Accept without Trusting"],
 					callback = function()
 						if plan then
-							ImportPlan(plan, sender)
+							ImportPlan(plan, senderFullName)
 						end
-						RemoveFromActiveMessageBoxDataIDs(uniqueID)
+						RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
 					end,
 				},
 			},
 		} --[[@as MessageBoxData]]
 		tinsert(activePlanReceiveMessageBoxDataIDs, messageBoxData.ID)
+		CreateMessageBox(messageBoxData, true)
+	end
+
+	---@param existingPlan Plan
+	---@param newPlan Plan
+	---@param planDiff PlanDiff
+	---@param senderFullName string
+	local function CreateUpdateMessageBox(existingPlan, newPlan, planDiff, senderFullName)
+		local uniqueID = Private.GenerateUniqueID()
+
+		local messageBoxData = {
+			ID = uniqueID,
+			widgetType = "EPDiffViewer",
+			isCommunication = true,
+			title = L["Plan Change Request"],
+			message = format(
+				"%s %s '%s'. %s.",
+				senderFullName,
+				L["wants to update"],
+				existingPlan.name,
+				L["Select the changes, if any, you wish to update the plan with"]
+			),
+			acceptButtonText = L["Accept"],
+			acceptButtonCallback = function()
+				UpdatePlan(existingPlan, planDiff)
+				local groupType = GetGroupType()
+				if groupType then
+					local receiptString = CreateUpdateReceiptString(newPlan.ID, senderFullName, L["was accepted"])
+					AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
+				end
+				RemoveFromActivePlanUpdateMessageBoxDataIDs(uniqueID)
+			end,
+			rejectButtonText = L["Reject"],
+			rejectButtonCallback = function()
+				local groupType = GetGroupType()
+				if groupType then
+					local receiptString = CreateUpdateReceiptString(newPlan.ID, senderFullName, L["was rejected"])
+					AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
+				end
+				RemoveFromActivePlanUpdateMessageBoxDataIDs(uniqueID)
+			end,
+			buttonsToAdd = {
+				{
+					beforeButtonIndex = 2,
+					buttonText = L["Accept and Send Plan to Group"],
+					callback = function()
+						UpdatePlan(existingPlan, planDiff)
+						local groupType = GetGroupType()
+						if groupType then
+							local receiptString =
+								CreateUpdateReceiptString(newPlan.ID, senderFullName, L["was accepted"])
+							AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
+						end
+						RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
+						Private.SendPlanToGroup()
+					end,
+				},
+			},
+			planDiff = planDiff,
+			oldPlan = existingPlan,
+			newPlan = newPlan,
+		} --[[@as MessageBoxData]]
+		tinsert(activePlanUpdateMessageBoxDataIDs, messageBoxData.ID)
 		CreateMessageBox(messageBoxData, true)
 	end
 
@@ -417,8 +569,8 @@ do
 			local plan = PlanSerializer.DeserializePlan(package --[[@as table]])
 			local groupType = GetGroupType()
 			if groupType then
-				local returnMessage = CompressString(format("%s,%s", plan.ID, senderFullName), false)
-				AddOn:SendCommMessage(k.PlanReceived, returnMessage, groupType, nil, "NORMAL")
+				local receiptString = CreateReceiptString(plan.ID, senderFullName)
+				AddOn:SendCommMessage(k.DistributePlanReceived, receiptString, groupType, nil, "NORMAL")
 			end
 			local foundTrustedCharacter = false
 			for _, trustedCharacter in ipairs(AddOn.db.profile.trustedCharacters) do
@@ -440,9 +592,7 @@ do
 	---@param playerFullName string
 	local function HandlePlanReceivedCommReceived(message, playerFullName)
 		if next(activePlanIDsBeingSent) then
-			local package = DecompressString(message, false)
-			local messageTable = strsplittable(",", package)
-			local planID, originalPlanSender = messageTable[1], messageTable[2]
+			local planID, originalPlanSender = ParseReceiptString(message)
 			if planID and originalPlanSender then
 				if activePlanIDsBeingSent[planID] then
 					if originalPlanSender == playerFullName then
@@ -460,6 +610,65 @@ do
 		local package = StringToTable(message, false)
 		AddOn.db.profile.activeText = package --[[@as table]]
 		Private.ExecuteAPICallback("ExternalTextSynced")
+	end
+
+	-- Executed after receiving the RequestPlanUpdate message.
+	---@param message string
+	local function HandleRequestPlanUpdateCommReceived(message, senderFullName)
+		if UnitIsGroupLeader("player") then
+			local package = StringToTable(message, false)
+			if type(package == "table") then
+				local groupType = GetGroupType()
+				if groupType then
+					local newPlan = PlanSerializer.DeserializePlan(package --[[@as table]])
+					local existingPlanName, existingPlan = FindMatchingPlan(newPlan.ID)
+					if existingPlanName and existingPlan then
+						local planDiff = utilities.DiffPlans(existingPlan, newPlan)
+						if planDiff.empty == true then
+							local receiptString = CreateUpdateReceiptString(
+								newPlan.ID,
+								senderFullName,
+								format("%s %s", L["was cancelled because"], L["the plan is already up-to-date"])
+							)
+							AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
+						else
+							CreateUpdateMessageBox(existingPlan, newPlan, planDiff, senderFullName)
+						end
+					else
+						local receiptString = CreateUpdateReceiptString(
+							newPlan.ID,
+							senderFullName,
+							format(
+								"%s %s %s",
+								L["was cancelled because"],
+								senderFullName,
+								L["does not have a plan with a matching ID"]
+							)
+						)
+						AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
+					end
+				end
+			end
+		end
+	end
+
+	-- Executed after sending a RequestPlanUpdate message and receiving a response.
+	---@param message string
+	---@param playerFullName string
+	local function HandleRequestPlanUpdateResponseCommReceived(message, playerFullName)
+		if next(activeUpdatePlanIDsBeingSent) then
+			local planID, senderFullName, context = ParseUpdateReceiptString(message)
+			if senderFullName == playerFullName and activeUpdatePlanIDsBeingSent[planID] then
+				activeUpdatePlanIDsBeingSent[planID].timer:Cancel()
+				activeUpdatePlanIDsBeingSent[planID] = nil
+				local existingPlanName = FindMatchingPlan(planID)
+				if existingPlanName then
+					LogMessage(format("%s '%s' %s.", L["Your request to update the plan"], existingPlanName, context))
+				else
+					LogMessage(format("%s '%s' %s.", L["Your request to update the plan"], L["Unknown"], context))
+				end
+			end
+		end
 	end
 
 	---@param prefix string
@@ -486,57 +695,141 @@ do
 
 		if prefix == k.DistributePlan then
 			HandleDistributePlanCommReceived(message, senderFullName)
-		elseif prefix == k.PlanReceived then
+		elseif prefix == k.DistributePlanReceived then
 			HandlePlanReceivedCommReceived(message, playerFullName)
 		elseif prefix == k.DistributeText then
 			HandleDistributeTextCommReceived(message)
+		elseif prefix == k.RequestPlanUpdate then
+			HandleRequestPlanUpdateCommReceived(message, senderFullName)
+		elseif prefix == k.RequestPlanUpdateResponse then
+			HandleRequestPlanUpdateResponseCommReceived(message, playerFullName)
 		end
 	end
 
-	---@param planID string
-	---@param sent integer
-	---@param total integer
-	local function CallbackProgress(planID, sent, total)
-		if total > 0 then
-			local progress = sent / total
-			if progress >= 1.0 then
-				LogMessage(L["Plan sent"] .. ".")
-				if activePlanIDsBeingSent[planID] then
-					activePlanIDsBeingSent[planID].timer = NewTimer(10, function()
-						local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
-						local playerString = count == 1 and L["player"] or L["players"]
-						LogMessage(format("%s %d %s.", L["Plan received by"], count, playerString))
-						activePlanIDsBeingSent[planID] = nil
-					end)
+	do
+		---@param planID string
+		---@param sent integer
+		---@param total integer
+		local function CallbackProgress(planID, sent, total)
+			if total > 0 then
+				local progress = sent / total
+				if progress >= 1.0 then
+					LogMessage(L["Plan sent"] .. ".")
+					if activePlanIDsBeingSent[planID] then
+						activePlanIDsBeingSent[planID].timer = NewTimer(10, function()
+							local count = activePlanIDsBeingSent[planID].totalReceivedConfirmations
+							local planName = interfaceUpdater.FindMatchingPlan(planID)
+							if count and planName then
+								local playerString
+								if count == 1 then
+									playerString = L["player"]
+								else
+									playerString = L["players"]
+								end
+								LogMessage(
+									format(
+										"%s '%s' %s %d %s.",
+										L["Plan"],
+										planName,
+										L["received by"],
+										count,
+										playerString
+									)
+								)
+							end
+							activePlanIDsBeingSent[planID] = nil
+						end)
+					end
+				end
+			end
+		end
+
+		function Private.SendPlanToGroup()
+			local plans = AddOn.db.profile.plans
+			local plan = plans[AddOn.db.profile.lastOpenPlan]
+			local groupType = GetGroupType()
+			if groupType then
+				if groupType == "RAID" then
+					local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
+					interfaceUpdater.UpdatePlanCheckBoxes(plan)
+					if changedPrimaryPlan then
+						LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], plan.name))
+					end
+				end
+				if activePlanIDsBeingSent[plan.ID] then
+					activePlanIDsBeingSent[plan.ID].timer:Cancel()
+					activePlanIDsBeingSent[plan.ID].timer = nil
+				end
+				activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
+				local exportString = TableToString(PlanSerializer.SerializePlan(plan), false)
+				LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
+				AddOn:SendCommMessage(k.DistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
+			end
+		end
+	end
+
+	do
+		---@param planID string
+		---@param sent integer
+		---@param total integer
+		local function CallbackProgress(planID, sent, total)
+			if total > 0 then
+				local progress = sent / total
+				if progress >= 1.0 then
+					if activeUpdatePlanIDsBeingSent[planID] then
+						activeUpdatePlanIDsBeingSent[planID].timer = NewTimer(120, function()
+							local planName = interfaceUpdater.FindMatchingPlan(planID)
+							if planName then
+								LogMessage(
+									format(
+										"%s '%s' %s.",
+										L["Request for proposed changes for plan"],
+										planName,
+										L["timed out"]
+									)
+								)
+							end
+							activeUpdatePlanIDsBeingSent[planID] = nil
+						end)
+					end
+				end
+			end
+		end
+
+		function Private.SendPlanToLeader()
+			local plans = AddOn.db.profile.plans
+			local plan = plans[AddOn.db.profile.lastOpenPlan]
+			local groupType = GetGroupType()
+			if groupType then
+				if activeUpdatePlanIDsBeingSent[plan.ID] then
+					LogMessage(
+						format("%s '%s'.", L["Still waiting for response to proposed changes for plan"], plan.name)
+					)
+				else
+					activeUpdatePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
+					local exportString = TableToString(PlanSerializer.SerializePlan(plan), false)
+					LogMessage(format("%s '%s'...", L["Proposing changes to plan"], plan.name))
+					AddOn:SendCommMessage(
+						k.RequestPlanUpdate,
+						exportString,
+						groupType,
+						nil,
+						"BULK",
+						CallbackProgress,
+						plan.ID
+					)
 				end
 			end
 		end
 	end
 
-	function Private.HandleSendPlanButtonConstructed()
-		UpdateSendPlanButtonEnabledState()
-	end
-
-	function Private.SendPlanToGroup()
-		local plans = AddOn.db.profile.plans
-		local plan = plans[AddOn.db.profile.lastOpenPlan]
-		local groupType = GetGroupType()
-		if groupType then
-			if groupType == "RAID" then
-				local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
-				interfaceUpdater.UpdatePlanCheckBoxes(plan)
-				if changedPrimaryPlan then
-					LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], plan.name))
-				end
+	function Private.HandleSendPlanButtonClicked()
+		if IsInGroup() or IsInRaid() then
+			if UnitIsGroupAssistant("player") or UnitIsGroupLeader("player") then
+				Private.SendPlanToGroup()
+			else
+				Private.SendPlanToLeader()
 			end
-			if activePlanIDsBeingSent[plan.ID] then
-				activePlanIDsBeingSent[plan.ID].timer:Cancel()
-				activePlanIDsBeingSent[plan.ID].timer = nil
-			end
-			activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
-			local exportString = TableToString(PlanSerializer.SerializePlan(plan), false)
-			LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
-			AddOn:SendCommMessage(k.DistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
 		end
 	end
 
@@ -569,8 +862,10 @@ end
 function Private:RegisterCommunications()
 	AddOn:RegisterComm(AddOnName)
 	AddOn:RegisterComm(k.DistributePlan)
-	AddOn:RegisterComm(k.PlanReceived)
+	AddOn:RegisterComm(k.DistributePlanReceived)
 	AddOn:RegisterComm(k.DistributeText)
+	AddOn:RegisterComm(k.RequestPlanUpdate)
+	AddOn:RegisterComm(k.RequestPlanUpdateResponse)
 	self.RegisterCallback(commObject, "ProfileRefreshed", "Reset")
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", commObject.HandleGroupRosterUpdate)
 end

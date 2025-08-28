@@ -508,7 +508,7 @@ do -- Assignment Editor
 
 		if dataType == "AssignmentType" then
 			---@cast assignment CombatLogEventAssignment|TimedAssignment
-			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty)
+			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty, GetCurrentPlan().ID)
 			updateFields = true
 			updateAssignments = true
 		elseif dataType == "CombatLogEventSpellID" then
@@ -947,7 +947,7 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDiff
 		local newPlan = utilities.DuplicatePlan(plans, plan.name, plan.name)
 		AddOn.db.profile.lastOpenPlan = newPlan.name
 
-		ConvertAssignmentsToNewBoss(newPlan.assignments, previousBoss, newBoss, previousDifficulty, newDifficulty)
+		ConvertAssignmentsToNewBoss(newPlan, previousBoss, newBoss, previousDifficulty, newDifficulty)
 		ChangePlanBoss(AddOn.db.profile.plans, newPlan.name, newBossDungeonEncounterID, newDifficulty)
 
 		AddPlanToDropdown(newPlan, true)
@@ -964,6 +964,7 @@ local function HandleChangeBossDropdownValueChanged(value, newDifficulty)
 		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
 		local messageBoxData = {
 			ID = Private.GenerateUniqueID(),
+			widgetType = "EPMessageBox",
 			isCommunication = true,
 			title = L["Change Boss"],
 			message = format(
@@ -1147,7 +1148,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		end
 	end
 
-	local assignment = TimedAssignment:New()
+	local assignment = TimedAssignment:New(nil, GetCurrentPlan().ID)
 	assignment.assignee = value
 	if #assignments == 0 then
 		local timelineRows = AddOn.db.profile.preferences.timelineRows
@@ -1168,7 +1169,8 @@ end
 ---@param time number
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local encounterID = GetCurrentBossDungeonEncounterID()
-	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID, GetCurrentDifficulty())
+	local assignment =
+		utilities.CreateNewAssignment(encounterID, time, assignee, spellID, GetCurrentDifficulty(), GetCurrentPlan().ID)
 	if assignment then
 		tinsert(GetCurrentAssignments(), assignment)
 		UpdateAllAssignments(false, encounterID)
@@ -1479,6 +1481,7 @@ do -- Plan Menu Button s.Handlers
 		elseif value == "Delete Current Plan" then
 			local messageBoxData = {
 				ID = Private.GenerateUniqueID(),
+				widgetType = "EPMessageBox",
 				isCommunication = false,
 				title = L["Delete Plan Confirmation"],
 				message = format(
@@ -1748,14 +1751,14 @@ end
 ---@param timelineAssignment TimelineAssignment
 ---@param newTimelineAssignment table
 local function HandleDuplicateAssignmentStart(_, _, timelineAssignment, newTimelineAssignment)
-	Private.DuplicateTimelineAssignment(timelineAssignment, newTimelineAssignment)
+	Private.DuplicateTimelineAssignment(timelineAssignment, newTimelineAssignment, GetCurrentPlan().ID)
 end
 
 ---@param timelineAssignment TimelineAssignment
 ---@param absoluteTime number
 local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTime)
 	local assignment = timelineAssignment.assignment
-	local newAssignment = Private.DuplicateAssignment(assignment)
+	local newAssignment = Private.DuplicateAssignment(assignment, GetCurrentPlan().ID)
 	tinsert(GetCurrentAssignments(), newAssignment)
 
 	local newAssignmentTime = utilities.Round(absoluteTime, 1)
@@ -2030,11 +2033,11 @@ function Private:CreateInterface()
 	sendPlanAndExternalTextContainer:SetSpacing(unpack(topContainerSpacing))
 
 	local sendPlanButton = AceGUI:Create("EPButton")
-	sendPlanButton:SetText(L["Send Plan to Group"])
+	sendPlanButton:SetText(L["Propose Plan Changes"])
 	sendPlanButton:SetWidthFromText()
 	sendPlanButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	sendPlanButton:SetHeight(topContainerWidgetHeight)
-	sendPlanButton:SetCallback("Clicked", Private.SendPlanToGroup)
+	sendPlanButton:SetCallback("Clicked", Private.HandleSendPlanButtonClicked)
 
 	local externalTextButton = AceGUI:Create("EPButton")
 	externalTextButton:SetText(L["External Text"])
@@ -2118,7 +2121,7 @@ function Private:CreateInterface()
 	mainFrame.externalTextButton = externalTextButton
 	self.mainFrame = mainFrame
 
-	self.HandleSendPlanButtonConstructed()
+	self:UpdateSendPlanButtonState()
 	interfaceUpdater.RestoreMessageLog()
 	mainFrame:AddChildren(topContainer, timeline)
 	mainFrame.menuButtonContainer:DoLayout()

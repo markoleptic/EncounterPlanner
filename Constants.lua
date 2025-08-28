@@ -22,8 +22,10 @@ Private.constants = {
 	},
 	communications = {
 		kDistributePlan = "EPDistributePlan",
-		kPlanReceived = "EPPlanReceived",
+		kDistributePlanReceived = "EPPlanReceived",
 		kDistributeText = "EPDistributeText",
+		kRequestPlanUpdate = "EPPlanUpdate",
+		kRequestPlanUpdateResponse = "EPPlanUpdateR",
 	},
 	colors = {
 		kNeutralButtonActionColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0, 0.65 },

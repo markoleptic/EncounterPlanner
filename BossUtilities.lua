@@ -1178,19 +1178,19 @@ do
 	end
 
 	-- Converts all assignments based on their appearance in the new boss phases.
-	---@param assignments table<integer, Assignment|CombatLogEventAssignment> Assignments to convert.
+	---@param plan Plan Plan with assignments to convert.
 	---@param oldBoss Boss Old boss.
 	---@param newBoss Boss New boss.
 	---@param oldDifficulty DifficultyType Old encounter difficulty.
 	---@param newDifficulty DifficultyType New encounter difficulty.
-	function BossUtilities.ConvertAssignmentsToNewBoss(assignments, oldBoss, newBoss, oldDifficulty, newDifficulty)
+	function BossUtilities.ConvertAssignmentsToNewBoss(plan, oldBoss, newBoss, oldDifficulty, newDifficulty)
 		local oldEncounterID, newEncounterID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
 		local preferredAbilities = BossUtilities.GetBossPreferredCombatLogEventAbilities(newBoss, newDifficulty)
 		local phases = BossUtilities.GetBossPhases(newBoss, newDifficulty)
 		local orderedBossPhaseTable = BossUtilities.GetOrderedBossPhases(newEncounterID, newDifficulty)
 		local absoluteSpellCastTimeTable = BossUtilities.GetAbsoluteSpellCastTimeTable(newEncounterID, newDifficulty)
 
-		for _, assignment in ipairs(assignments) do
+		for _, assignment in ipairs(plan.assignments) do
 			local createTimed = true
 			local absoluteTime = assignment.time
 
@@ -1218,7 +1218,7 @@ do
 				if newSpellID and newSpellCount and newEventType and newTime then
 					local orderedBossPhaseIndex =
 						absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-					assignment = CombatLogEventAssignment:New(assignment, true)
+					assignment = CombatLogEventAssignment:New(assignment, plan.ID, true)
 					assignment.combatLogEventType = newEventType
 					assignment.combatLogEventSpellID = newSpellID
 					assignment.spellCount = newSpellCount
@@ -1229,7 +1229,7 @@ do
 				end
 			end
 			if createTimed then
-				assignment = TimedAssignment:New(assignment, true)
+				assignment = TimedAssignment:New(assignment, plan.ID, true)
 				assignment.time = absoluteTime
 			end
 		end

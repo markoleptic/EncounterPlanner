@@ -79,9 +79,10 @@ local k = {
 -- Parses a line of text in the note and creates assignment(s).
 ---@param line string
 ---@param failed table<integer, FailureTableEntry>
+---@param planID string
 ---@return table<integer, Assignment>
 ---@return integer
-local function CreateAssignmentsFromLine(line, failed)
+local function CreateAssignmentsFromLine(line, failed, planID)
 	local assignments = {}
 	local failedCount = 0
 
@@ -126,7 +127,7 @@ local function CreateAssignmentsFromLine(line, failed)
 					text = text,
 					spellID = spellID,
 					targetName = targetName,
-				})
+				}, planID)
 				if assignment.spellID == kInvalidAssignmentSpellID then
 					if assignment.text:len() > 0 then
 						assignment.spellID = kTextAssignmentSpellID
@@ -148,10 +149,19 @@ end
 ---@param derivedAssignments table<integer, Assignment>
 ---@param replaced table<integer, FailureTableEntry>
 ---@param encounterIDs table<integer, {assignmentIDs: table<integer, integer>, string: string}> Boss encounter spell IDs
+---@param planID string
 ---@return boolean -- True if combat log event assignments were added
 ---@return boolean -- True if first first return value is true and replaced invalid spell count
 ---@return boolean -- True if invalid combat log event type or combat log event spell ID
-local function ProcessCombatEventLogEventOption(option, time, assignments, derivedAssignments, replaced, encounterIDs)
+local function ProcessCombatEventLogEventOption(
+	option,
+	time,
+	assignments,
+	derivedAssignments,
+	replaced,
+	encounterIDs,
+	planID
+)
 	local combatLogEventAbbreviation, spellIDStr, spellCountStr, _ = split(":", option, 4)
 	if k.CombatLogEventFromAbbreviation[combatLogEventAbbreviation] then
 		local spellID = tonumber(spellIDStr)
@@ -183,7 +193,7 @@ local function ProcessCombatEventLogEventOption(option, time, assignments, deriv
 				end
 				if spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
+						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment, planID)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.spellCount = spellCount
@@ -215,9 +225,10 @@ end
 ---@param options string
 ---@param replaced table<integer, FailureTableEntry>
 ---@param encounterIDs table<integer, {assignmentIDs: table<integer, integer>, string: string}>
+---@param planID string
 ---@return integer -- defaultedToTimedAssignmentCount
 ---@return integer -- defaultedToNearestSpellCountCount
-local function ProcessOptions(assignments, derivedAssignments, time, options, replaced, encounterIDs)
+local function ProcessOptions(assignments, derivedAssignments, time, options, replaced, encounterIDs, planID)
 	local regularTimer = true
 	local defaultedToTimedCount = 0
 
@@ -249,7 +260,15 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 		-- end
 	else
 		local success, replacedInvalidSpellCount, invalidCombatLogEventTypeOrCombatLogEventSpellID =
-			ProcessCombatEventLogEventOption(option, time, assignments, derivedAssignments, replaced, encounterIDs)
+			ProcessCombatEventLogEventOption(
+				option,
+				time,
+				assignments,
+				derivedAssignments,
+				replaced,
+				encounterIDs,
+				planID
+			)
 		if success then
 			if replacedInvalidSpellCount then
 				return 0, #assignments
@@ -262,7 +281,7 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = TimedAssignment:New(assignment)
+			local timedAssignment = TimedAssignment:New(assignment, planID)
 			timedAssignment.time = time
 			tinsert(derivedAssignments, timedAssignment)
 		end
@@ -394,10 +413,17 @@ function Private.ParseNote(plan, text, test)
 					end
 				end
 			end
-			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced)
+			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced, plan.ID)
 			failedCount = failedCount + count
-			local defaultedToTimed, defaultedCombatLogAssignment =
-				ProcessOptions(inputs, plan.assignments, time, options, failedOrReplaced, bossDungeonEncounterIDs)
+			local defaultedToTimed, defaultedCombatLogAssignment = ProcessOptions(
+				inputs,
+				plan.assignments,
+				time,
+				options,
+				failedOrReplaced,
+				bossDungeonEncounterIDs,
+				plan.ID
+			)
 			defaultedToTimedCount = defaultedToTimedCount + defaultedToTimed
 			defaultedSpellCount = defaultedSpellCount + defaultedCombatLogAssignment
 			lastLineWasOtherContent = false
@@ -435,7 +461,7 @@ function Private.ParseNote(plan, text, test)
 			for _, assignmentID in pairs(assignmentIDsAndOptions.assignmentIDs) do
 				local assignment = FindAssignmentByUniqueID(plan.assignments, assignmentID)
 				if assignment then
-					assignment = TimedAssignment:New(assignment, true)
+					assignment = TimedAssignment:New(assignment, plan.ID, true)
 					tinsert(failedOrReplaced, { reason = 7, string = assignmentIDsAndOptions.string })
 					defaultedToTimedCount = defaultedToTimedCount + 1
 				end

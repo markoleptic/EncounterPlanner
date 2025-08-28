@@ -380,6 +380,7 @@ do -- Profile updating and refreshing
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
 		if profile then
+			Private.ResetPlanAssignmentCounter()
 			local remappings = Private.spellDB.GetSpellRemappings()
 
 			---@type table<integer, table<DifficultyType, boolean>>
@@ -387,8 +388,8 @@ do -- Profile updating and refreshing
 
 			local plans = profile.plans
 			for planName, plan in pairs(plans) do
-				SetAssignmentMetaTables(plan.assignments) -- Convert tables from DB into classes
 				plan = Plan:New(plan, planName, plan.ID)
+				SetAssignmentMetaTables(plan.assignments, plan.ID) -- Convert tables from DB into classes
 
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then

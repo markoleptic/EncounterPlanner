@@ -138,6 +138,18 @@ local function HighlightTimelineSectionAndPositionTutorialFrame(
 	end
 end
 
+---@param encounterID integer
+---@return Plan|nil
+local function FindTutorialPlan(encounterID)
+	local plans = AddOn.db.profile.plans
+	for _, plan in pairs(plans) do
+		if plan.name:lower():find(L["Tutorial"]:lower()) and plan.dungeonEncounterID == encounterID then
+			return plan
+		end
+	end
+	return nil
+end
+
 -- Creates a generic assignment if none are found and updates the interface from the assignment found or created.
 local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssignment()
 	local assignments = GetCurrentAssignments()
@@ -163,17 +175,22 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 		if not roster[name] then
 			roster[name] = entry
 		end
-		local assignment = TimedAssignment:New()
-		assignment.assignee = name
-		tinsert(GetCurrentAssignments(), assignment)
-		interfaceUpdater.UpdateFromAssignment(
-			GetCurrentBossDungeonEncounterID(),
-			assignment,
-			true,
-			true,
-			true,
-			GetCurrentDifficulty()
-		)
+		local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
+		if plan then
+			local assignment = TimedAssignment:New(nil, plan.ID)
+			assignment.assignee = name
+			tinsert(GetCurrentAssignments(), assignment)
+			interfaceUpdater.UpdateFromAssignment(
+				GetCurrentBossDungeonEncounterID(),
+				assignment,
+				true,
+				true,
+				true,
+				GetCurrentDifficulty()
+			)
+		else
+			error("Couldn't find a tutorial plan.")
+		end
 	end
 end
 
@@ -397,7 +414,12 @@ local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setT
 	if assignment then
 		return assignment
 	else
-		assignment = TimedAssignment:New()
+		local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
+		if plan then
+			assignment = TimedAssignment:New(nil, plan.ID)
+		else
+			error("Couldn't find a tutorial plan.")
+		end
 	end
 	assignment.assignee = k.PlayerName
 	if assignmentNumber == 1 then
@@ -557,7 +579,14 @@ local function FindOrCreateIntermissionAssignment(
 		end
 	end
 
-	local assignment = CombatLogEventAssignment:New()
+	local assignment
+	local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
+	if plan then
+		assignment = CombatLogEventAssignment:New(nil, plan.ID)
+	else
+		error("Couldn't find a tutorial plan.")
+	end
+
 	assignment.assignee = k.PlayerName
 	assignment.combatLogEventType = combatLogEventTypes[1]
 	assignment.combatLogEventSpellID = spellID
@@ -618,18 +647,6 @@ local function GetPhaseOffsets(self, startPhaseIndex, endPhaseIndex)
 		rightOffset = endOffsetFromLeft - scrollFrameWidth
 	end
 	return leftOffset, rightOffset
-end
-
----@param encounterID integer
----@return Plan|nil
-local function FindTutorialPlan(encounterID)
-	local plans = AddOn.db.profile.plans
-	for _, plan in pairs(plans) do
-		if plan.name:lower():find(L["Tutorial"]:lower()) and plan.dungeonEncounterID == encounterID then
-			return plan
-		end
-	end
-	return nil
 end
 
 ---@param encounterID integer
@@ -2469,9 +2486,10 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			name = "sendPlan",
 			text = format(
-				"%s. %s.",
-				L["Sending the current plan requires group leader or group assistant"],
-				L["Receivers can approve or reject incoming plans, and can automatically receive future plans by saving the sender as a trusted character"]
+				"%s. %s. %s.",
+				L["Group leaders and assistants can send the current plan"],
+				L["Others can propose changes, which the leader reviews"],
+				L["Receivers can approve, reject, or auto-accept plans from trusted characters"]
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)

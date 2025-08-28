@@ -99,6 +99,15 @@
 ---@alias EPTutorialType
 ---|"EPTutorial"
 
+---@alias EPDiffViewerType
+---|"EPDiffViewer"
+
+---@alias EPDiffViewerEntryType
+---|"EPDiffViewerEntry"
+
+---@alias EPMultiLineTextType
+---|"EPMultiLineText"
+
 ---@alias EPWidgetType
 ---| EPSpacerType
 ---| EPLabelType
@@ -125,6 +134,9 @@
 ---| EPScrollFrame
 ---| EPStatusBar
 ---| EPTutorial
+---| EPDiffViewer
+---| EPDiffViewerEntryType
+---| EPMultiLineText
 
 ---@alias EPContainerType
 ---| EPAssignmentEditorType
@@ -142,7 +154,7 @@ local AceGUIWidget = {}
 ---@class AceGUIContainer : AceGUIWidget
 local AceGUIContainer = {}
 
----@param type AceGUIWidgetType|EPWidgetType|EPLayoutType
+---@param type AceGUIWidgetType|EPWidgetType
 ---@return AceGUIWidget
 function AceGUI:Create(type) end
 
@@ -268,6 +280,18 @@ function AceGUI:Create(type) end
 
 ---@param type EPTutorialType
 ---@return EPTutorial
+function AceGUI:Create(type) end
+
+---@param type EPDiffViewerType
+---@return EPDiffViewer
+function AceGUI:Create(type) end
+
+---@param type EPDiffViewerEntryType
+---@return EPDiffViewerEntry
+function AceGUI:Create(type) end
+
+---@param type EPMultiLineTextType
+---@return EPMultiLineText
 function AceGUI:Create(type) end
 
 ---@param type AceGUIContainerType|EPContainerType

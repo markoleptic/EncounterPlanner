@@ -222,6 +222,137 @@ do
 	local EJ_GetEncounterInfo, EJ_SelectEncounter = EJ_GetEncounterInfo, EJ_SelectEncounter
 	local EJ_SelectInstance = EJ_SelectInstance
 
+	do
+		local assignmentTypeDropdownItems = utilities.GetOrCreateAssignmentTypeDropdownItems()
+		local classItems, specItems, groupItems, roleItems, typeItems, everyoneItem
+		for _, dropdownItemData in ipairs(assignmentTypeDropdownItems) do
+			if dropdownItemData.itemValue == "Class" then
+				classItems = dropdownItemData.dropdownItemMenuData
+			elseif dropdownItemData.itemValue == "Spec" then
+				specItems = dropdownItemData.dropdownItemMenuData
+			elseif dropdownItemData.itemValue == "Group Number" then
+				groupItems = dropdownItemData.dropdownItemMenuData
+			elseif dropdownItemData.itemValue == "Role" then
+				roleItems = dropdownItemData.dropdownItemMenuData
+			elseif dropdownItemData.itemValue == "Type" then
+				typeItems = dropdownItemData.dropdownItemMenuData
+			elseif dropdownItemData.itemValue == "{everyone}" then
+				everyoneItem = dropdownItemData
+			end
+		end
+
+		local randomizedAssigneeTypes = { classItems, specItems, groupItems, roleItems, typeItems, everyoneItem }
+		function TestUtilities.GetRandomAssignee(roster, rosterCount)
+			local chooseRosterMember = rosterCount > 0 and (random(1, 10) == 1)
+			if chooseRosterMember then
+				local currentRosterMemberIndex = 1
+				local rosterMemberIndex = random(1, rosterCount)
+				local rosterMemberName = ""
+				for currentRosterMemberName, _ in pairs(roster) do
+					if currentRosterMemberIndex == rosterMemberIndex then
+						rosterMemberName = currentRosterMemberName
+						break
+					end
+					currentRosterMemberIndex = currentRosterMemberIndex + 1
+				end
+				return rosterMemberName
+			else
+				local randomizedType = randomizedAssigneeTypes[random(1, #randomizedAssigneeTypes)]
+				---@cast randomizedType table<integer, DropdownItemData>|DropdownItemData
+				if randomizedType.itemValue then
+					return randomizedType.itemValue
+				else
+					local itemCount = #randomizedType
+					return randomizedType[random(1, itemCount)].itemValue
+				end
+			end
+		end
+	end
+	---@param plans table<string, Plan>
+	---@param planName string
+	---@param boss Boss
+	---@param difficulty DifficultyType
+	---@param roster table<string, RosterEntry>
+	function TestUtilities.CreateTestPlan(plans, planName, boss, difficulty, roster)
+		local plan = CreatePlan(plans, planName, boss.dungeonEncounterID, difficulty)
+		local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID, plan.difficulty)
+		local bossAbilities = bossUtilities.GetBossAbilities(boss, plan.difficulty)
+		plan.roster = roster
+
+		local rosterCount = 0
+		for _ in pairs(roster) do
+			rosterCount = rosterCount + 1
+		end
+
+		---@cast instances table<integer, BossAbilityInstance>
+		for _, abilityInstance in ipairs(instances) do
+			local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
+			if #types > 0 then
+				local allowedType = types[random(1, #types)]
+				local assignment = CombatLogEventAssignment:New(nil, plan.ID)
+				assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
+				assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+				assignment.phase = abilityInstance.bossPhaseIndex
+				assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
+				assignment.combatLogEventType = allowedType
+				assignment.spellCount = abilityInstance.spellCount
+				assignment.time = 8.00
+				assignment.spellID = 1
+				assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
+				tinsert(plan.assignments, assignment)
+			end
+		end
+		local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
+		do
+			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
+			assignment.time = 0
+			assignment.spellID = 1
+			assignment.text = "Timed " .. 0
+			tinsert(plan.assignments, assignment)
+		end
+		for i = 5, floor(d * 0.6), 30 do
+			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
+			assignment.time = i
+			assignment.spellID = 1
+			assignment.text = "Timed " .. i
+			tinsert(plan.assignments, assignment)
+		end
+
+		return plan
+	end
+
+	function TestUtilities.CreateRandomAssignment(plan, boss, assignees)
+		local instances = bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID, plan.difficulty)
+		local bossAbilities = bossUtilities.GetBossAbilities(boss, plan.difficulty)
+		---@cast instances table<integer, BossAbilityInstance>
+		local abilityInstance = instances[random(1, #instances)]
+
+		local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
+		if #types > 0 then
+			local allowedType = types[random(1, #types)]
+			local assignment = CombatLogEventAssignment:New(nil, plan.ID)
+			assignment.assignee = assignees[random(1, #assignees)]
+			assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
+			assignment.phase = abilityInstance.bossPhaseIndex
+			assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
+			assignment.combatLogEventType = allowedType
+			assignment.spellCount = abilityInstance.spellCount
+			assignment.time = 12.0
+			assignment.spellID = 1
+			assignment.text = C_Spell.GetSpellName(abilityInstance.bossAbilitySpellID)
+			return assignment
+		else
+			local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
+			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			assignment.assignee = assignees[random(1, #assignees)]
+			assignment.time = random() * d
+			assignment.spellID = 1
+			assignment.text = "Timed " .. assignment.time
+		end
+	end
+
 	---@param profile DefaultProfile
 	function TestUtilities.CreateTestPlans(profile)
 		for k, _ in pairs(profile.plans) do
@@ -230,7 +361,7 @@ do
 			end
 		end
 		local testPlans = {}
-		local name, entry = utilities.CreateRosterEntryForSelf()
+
 		-- cSpell:disable
 		local textTable = {
 			"Test Start",
@@ -250,47 +381,11 @@ do
 						or (boss.phasesHeroic and difficulty == DifficultyType.Heroic)
 					then
 						local planName = encounterName .. "-" .. difficultyName .. "-Test"
-						local plan = CreatePlan(testPlans, planName, boss.dungeonEncounterID, difficulty)
+						local name, entry = utilities.CreateRosterEntryForSelf()
+						local roster = { [name] = entry }
+						local plan = TestUtilities.CreateTestPlan(testPlans, planName, boss, difficulty, roster)
 						plan.roster[name] = entry
 						plan.content = textTable
-						local instances =
-							bossUtilities.GetBossAbilityInstances(boss.dungeonEncounterID, plan.difficulty)
-						local bossAbilities = bossUtilities.GetBossAbilities(boss, plan.difficulty)
-						---@cast instances table<integer, BossAbilityInstance>
-						for _, abilityInstance in ipairs(instances) do
-							local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
-							if #types > 0 then
-								local allowedType = types[random(1, #types)]
-								local assignment = CombatLogEventAssignment:New()
-								assignment.assignee = name
-								assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
-								assignment.phase = abilityInstance.bossPhaseIndex
-								assignment.bossPhaseOrderIndex = abilityInstance.bossAbilityOrderIndex
-								assignment.combatLogEventType = allowedType
-								assignment.spellCount = abilityInstance.spellCount
-								assignment.time = 8.00
-								assignment.spellID = 1
-								assignment.text = GetSpellName(abilityInstance.bossAbilitySpellID)
-								tinsert(plan.assignments, assignment)
-							end
-						end
-						local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
-						do
-							local assignment = Private.classes.TimedAssignment:New()
-							assignment.assignee = name
-							assignment.time = 0
-							assignment.spellID = 1
-							assignment.text = "Timed " .. 0
-							tinsert(plan.assignments, assignment)
-						end
-						for i = 5, floor(d * 0.6), 30 do
-							local assignment = Private.classes.TimedAssignment:New()
-							assignment.assignee = name
-							assignment.time = i
-							assignment.spellID = 1
-							assignment.text = "Timed " .. i
-							tinsert(plan.assignments, assignment)
-						end
 						testPlans[plan.name] = plan
 					end
 				end

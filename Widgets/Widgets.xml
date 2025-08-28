@@ -29,6 +29,9 @@
     <Script file="EPAssignmentEditor.lua" />
     <Script file="EPTimelineSection.lua" />
     <Script file="EPTimeline.lua" />
+    <Script file="EPMultiLineText.lua" />
+    <Script file="EPDiffViewerEntry.lua" />
+    <Script file="EPDiffViewer.lua" />
     <Script file="EPRosterEntry.lua" />
     <Script file="EPRosterEditor.lua" />
     <Script file="EPMainFrame.lua" />

@@ -117,6 +117,14 @@ Private.classes.DifficultyType = {
 	Mythic = 16,
 }
 
+---@enum PlanDiffType
+Private.classes.PlanDiffType = {
+	Equal = 1,
+	Insert = 2,
+	Delete = 3,
+	Change = 4,
+}
+
 ---@class Assignment
 Private.classes.Assignment = {
 	uniqueID = 0,
@@ -317,23 +325,46 @@ local function CreateNewInstance(classTable, o)
 	return o
 end
 
-local assignmentIDCounter = 0
+do
+	local sPlanAssignmentCounters = {}
+
+	---@param planID string
+	function Private.AddPlanAssignmentCounter(planID)
+		if not sPlanAssignmentCounters[planID] then
+			sPlanAssignmentCounters[planID] = 0
+		end
+	end
+
+	function Private.ResetPlanAssignmentCounter()
+		sPlanAssignmentCounters = {}
+	end
+
+	---@param planID string
+	function Private.GetNewAssignmentID(planID)
+		if not sPlanAssignmentCounters[planID] then
+			sPlanAssignmentCounters[planID] = 0
+		end
+		sPlanAssignmentCounters[planID] = sPlanAssignmentCounters[planID] + 1
+		return sPlanAssignmentCounters[planID]
+	end
+end
 
 ---@param o any
+---@param planID string
 ---@return Assignment
-function Private.classes.Assignment:New(o)
+function Private.classes.Assignment:New(o, planID)
 	local instance = CreateNewInstance(self, o)
-	assignmentIDCounter = assignmentIDCounter + 1
-	instance.uniqueID = assignmentIDCounter
+	instance.uniqueID = Private.GetNewAssignmentID(planID)
 	return instance
 end
 
 ---@param o any
+---@param planID string
 ---@param removeInvalidFields boolean|nil
 ---@return CombatLogEventAssignment
-function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
+function Private.classes.CombatLogEventAssignment:New(o, planID, removeInvalidFields)
 	if not o or getmetatable(o) ~= Private.classes.Assignment then
-		o = Private.classes.Assignment:New(o)
+		o = Private.classes.Assignment:New(o, planID)
 	end
 
 	local instance = CreateNewInstance(self, o)
@@ -344,11 +375,12 @@ function Private.classes.CombatLogEventAssignment:New(o, removeInvalidFields)
 end
 
 ---@param o any
+---@param planID string
 ---@param removeInvalidFields boolean|nil
 ---@return TimedAssignment
-function Private.classes.TimedAssignment:New(o, removeInvalidFields)
+function Private.classes.TimedAssignment:New(o, planID, removeInvalidFields)
 	if not o or getmetatable(o) ~= Private.classes.Assignment then
-		o = Private.classes.Assignment:New(o)
+		o = Private.classes.Assignment:New(o, planID)
 	end
 	local instance = CreateNewInstance(self, o)
 	if removeInvalidFields then
@@ -358,11 +390,12 @@ function Private.classes.TimedAssignment:New(o, removeInvalidFields)
 end
 
 ---@param o any
+---@param planID string
 ---@param removeInvalidFields boolean|nil
 ---@return PhasedAssignment
-function Private.classes.PhasedAssignment:New(o, removeInvalidFields)
+function Private.classes.PhasedAssignment:New(o, planID, removeInvalidFields)
 	if not o or getmetatable(o) ~= Private.classes.Assignment then
-		o = Private.classes.Assignment:New(o)
+		o = Private.classes.Assignment:New(o, planID)
 	end
 	local instance = CreateNewInstance(self, o)
 	if removeInvalidFields then
@@ -373,9 +406,10 @@ end
 
 -- Copies an assignment with a new uniqueID.
 ---@param assignmentToCopy Assignment
+---@param planID string
 ---@return Assignment
-function Private.DuplicateAssignment(assignmentToCopy)
-	local newAssignment = Private.classes.Assignment:New()
+function Private.DuplicateAssignment(assignmentToCopy, planID)
+	local newAssignment = Private.classes.Assignment:New(nil, planID)
 	local newId = newAssignment.uniqueID
 	for key, value in pairs(Private.DeepCopy(assignmentToCopy)) do
 		newAssignment[key] = value
@@ -388,25 +422,27 @@ end
 -- Creates a timeline assignment from an assignment.
 ---@param assignment Assignment
 ---@param o any
+---@param planID string
 ---@return TimelineAssignment
-function Private.classes.TimelineAssignment:New(assignment, o)
+function Private.classes.TimelineAssignment:New(assignment, o, planID)
 	local instance = CreateNewInstance(self, o)
-	instance.assignment = assignment or Private.classes.Assignment:New(assignment)
+	instance.assignment = assignment or Private.classes.Assignment:New(assignment, planID)
 	return instance
 end
 
 -- Creates a timeline assignment from an assignment.
 ---@param timelineAssignmentToCopy TimelineAssignment
 ---@param o any
+---@param planID string
 ---@return TimelineAssignment
-function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, o)
+function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, o, planID)
 	o = o or {}
 	for key, value in pairs(Private.DeepCopy(timelineAssignmentToCopy)) do
 		if key ~= "assignment" then
 			o[key] = value
 		end
 	end
-	o.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment)
+	o.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment, planID)
 	setmetatable(o, getmetatable(timelineAssignmentToCopy))
 	return o
 end
@@ -459,6 +495,7 @@ function Private.classes.Plan:New(o, name, existingID)
 	else
 		instance.ID = GenerateUniqueID()
 	end
+	Private.AddPlanAssignmentCounter(instance.ID)
 	return instance
 end
 
