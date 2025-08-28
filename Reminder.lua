@@ -725,7 +725,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 	local reminderPreferences = AddOn.db.profile.preferences.reminder
 	if reminderPreferences.enabled then
 		--[===[@non-debug@
-		if difficulties[difficultyID] then
+		if k.Difficulties[difficultyID] then
         --@end-non-debug@]===]
 		local boss = GetBoss(encounterID)
 		if boss then
