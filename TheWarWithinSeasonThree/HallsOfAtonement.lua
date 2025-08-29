@@ -14,9 +14,6 @@ local BossPhase = Private.classes.BossPhase
 ---@class DungeonInstance
 local DungeonInstance = Private.classes.DungeonInstance
 
-Private:RegisterPlaceholderBossSpellID(1236973, L["Erupting Torment"])
-Private:RegisterPlaceholderBossSpellID(1236512, L["Unstable Anima"])
-
 Private.dungeonInstances[2287] = DungeonInstance:New({
 	journalInstanceID = 1185,
 	instanceID = 2287,

@@ -603,12 +603,3 @@ L["Zoom in and out horizontally on either timeline by pressing Ctrl + Mouse Scro
 L["Zooms in horizontally on the timeline."] = true
 L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."] = true
 L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."] = true
-L["Time Bombs"] = true
-L["Unstable Anima"] = true
-L["Charged Slash"] = true
-L["Shuri"] = true
-L["Phase Slash"] = true
-L["Final Warning"] = true
-L["Erupting Torment"] = true
-L["Divide"] = true
-L["Double Technique"] = true
