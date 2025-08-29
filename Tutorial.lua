@@ -2491,14 +2491,22 @@ local function CreateTutorialSteps(self, setCurrentStep)
 		{
 			name = "sendPlan",
 			text = format(
-				"%s. %s. %s.",
+				"%s. %s.",
 				L["Group leaders and assistants can send the current plan"],
-				L["Others can propose changes, which the leader reviews"],
 				L["Receivers can approve, reject, or auto-accept plans from trusted characters"]
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
 				localSelf.frame = self.mainFrame.sendPlanButton.frame
+				return true
+			end,
+		},
+		{
+			name = "proposeChanges",
+			text = format("%s.", L["Others can propose changes, which the leader reviews"]),
+			enableNextButton = true,
+			OnStepActivated = function(localSelf)
+				localSelf.frame = self.mainFrame.proposeChangesButton.frame
 				return true
 			end,
 		},
