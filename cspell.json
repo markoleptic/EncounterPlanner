@@ -265,10 +265,8 @@
 		"cspell.json",
 		"EncounterPlanner.toc",
 		".github/",
-		".pkgmeta"
+		".pkgmeta",
+		"Locales/ruRU.lua"
 	],
-	"enableFiletypes": [
-		"lua",
-		"toc"
-	]
+	"enableFiletypes": ["lua", "toc"]
 }

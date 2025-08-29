@@ -2133,11 +2133,15 @@ function Private:CreateInterface()
 	mainFrame.proposeChangesButton = proposeChangesButton
 	mainFrame.simulateRemindersButton = simulateRemindersButton
 	mainFrame.externalTextButton = externalTextButton
+	mainFrame.planMenuButton = planMenuButton
+	mainFrame.rosterMenuButton = rosterMenuButton
+	mainFrame.preferencesMenuButton = preferencesMenuButton
 	self.mainFrame = mainFrame
 
 	self:UpdateSendPlanButtonState()
 	interfaceUpdater.RestoreMessageLog()
 	mainFrame:AddChildren(topContainer, timeline)
+	mainFrame.currentPlanWidget = topContainer
 	mainFrame.menuButtonContainer:DoLayout()
 
 	interfaceUpdater.RepopulatePlanWidgets()

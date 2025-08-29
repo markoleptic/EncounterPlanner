@@ -82,31 +82,35 @@ end
 ---@field frame table|Frame
 ---@field type string
 ---@field content table|Frame
----@field windowBar table|Frame
+---@field bossLabel EPLabel
+---@field bossMenuButton EPDropdown
+---@field children table<integer, EPContainer>
 ---@field closeButton EPButton
----@field minimizeButton EPButton
----@field maximizeButton EPButton
 ---@field closeButtonMinimizeFrame EPButton
 ---@field collapseAllButton EPButton
----@field expandAllButton EPButton
----@field simulateRemindersButton EPButton
----@field externalTextButton EPButton
----@field tutorialButton EPButton
----@field lowerContainer EPContainer
----@field statusBar EPStatusBar
----@field instanceLabel EPLabel
----@field bossLabel EPLabel
+---@field currentPlanWidget EPContainer
 ---@field difficultyLabel EPLabel
----@field bossMenuButton EPDropdown
----@field planDropdown EPDropdown
----@field timeline EPTimeline
----@field planReminderEnableCheckBox EPCheckBox
----@field sendPlanButton EPButton
----@field proposeChangesButton EPButton
----@field primaryPlanCheckBox EPCheckBox
+---@field expandAllButton EPButton
+---@field externalTextButton EPButton
+---@field instanceLabel EPLabel
+---@field lowerContainer EPContainer
+---@field maximizeButton EPButton
 ---@field menuButtonContainer EPContainer
----@field children table<integer, EPContainer>
+---@field minimizeButton EPButton
 ---@field padding {left: number, top: number, right: number, bottom: number}
+---@field planDropdown EPDropdown
+---@field planMenuButton EPDropdown
+---@field planReminderEnableCheckBox EPCheckBox
+---@field preferencesMenuButton EPDropdown
+---@field primaryPlanCheckBox EPCheckBox
+---@field proposeChangesButton EPButton
+---@field rosterMenuButton EPDropdown
+---@field sendPlanButton EPButton
+---@field simulateRemindersButton EPButton
+---@field statusBar EPStatusBar
+---@field timeline EPTimeline
+---@field tutorialButton EPButton
+---@field windowBar table|Frame
 
 ---@param self EPMainFrame
 local function OnAcquire(self)
@@ -301,53 +305,60 @@ local function OnRelease(self)
 	if self.menuButtonContainer then
 		self.menuButtonContainer:Release()
 	end
-	self.menuButtonContainer = nil
 
 	if self.closeButton then
 		self.closeButton:Release()
 	end
-	self.closeButton = nil
 
 	if self.minimizeButton then
 		self.minimizeButton:Release()
 	end
-	self.minimizeButton = nil
 
 	if self.maximizeButton then
 		self.maximizeButton:Release()
 	end
-	self.maximizeButton = nil
+
 	if self.closeButtonMinimizeFrame then
 		self.closeButtonMinimizeFrame:Release()
 	end
-	self.closeButtonMinimizeFrame = nil
+
 	if self.collapseAllButton then
 		self.collapseAllButton:Release()
 	end
-	self.collapseAllButton = nil
+
 	if self.expandAllButton then
 		self.expandAllButton:Release()
 	end
-	self.expandAllButton = nil
 
 	self.lowerContainer:Release()
-	self.lowerContainer = nil
-	self.statusBar = nil
 
 	self.minimizeFrame:Hide()
 
-	self.instanceLabel = nil
+	self.closeButton = nil
+	self.closeButtonMinimizeFrame = nil
 	self.bossLabel = nil
-	self.difficultyLabel = nil
 	self.bossMenuButton = nil
-	self.planDropdown = nil
-	self.timeline = nil
-	self.planReminderEnableCheckBox = nil
-	self.sendPlanButton = nil
-	self.proposeChangesButton = nil
-	self.primaryPlanCheckBox = nil
-	self.simulateRemindersButton = nil
+	self.collapseAllButton = nil
+	self.currentPlanWidget = nil
+	self.difficultyLabel = nil
+	self.expandAllButton = nil
 	self.externalTextButton = nil
+	self.instanceLabel = nil
+	self.lowerContainer = nil
+	self.maximizeButton = nil
+	self.menuButtonContainer = nil
+	self.minimizeButton = nil
+	self.planDropdown = nil
+	self.planMenuButton = nil
+	self.planReminderEnableCheckBox = nil
+	self.preferencesMenuButton = nil
+	self.primaryPlanCheckBox = nil
+	self.proposeChangesButton = nil
+	self.rosterMenuButton = nil
+	self.sendPlanButton = nil
+	self.simulateRemindersButton = nil
+	self.statusBar = nil
+	self.timeline = nil
 	self.tutorialButton = nil
 end
 

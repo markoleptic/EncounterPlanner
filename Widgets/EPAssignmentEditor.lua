@@ -107,6 +107,7 @@ k.LineBackdrop = {
 ---@field timeContainer EPContainer
 ---@field timeMinuteLineEdit EPLineEdit
 ---@field timeSecondLineEdit EPLineEdit
+---@field triggerContainer EPContainer
 ---@field enableTargetCheckBox EPCheckBox
 ---@field timeLabel EPLabel
 ---@field optionalTextContainer EPContainer
@@ -332,6 +333,7 @@ local function OnAcquire(self)
 	triggerContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
 	triggerContainer:SetFullWidth(true)
 	triggerContainer:AddChildren(self.assignmentTypeContainer, self.combatLogEventContainer)
+	self.triggerContainer = triggerContainer
 
 	do
 		self.timeContainer = AceGUI:Create("EPContainer")
@@ -601,6 +603,7 @@ local function OnRelease(self)
 	self.timeContainer = nil
 	self.timeMinuteLineEdit = nil
 	self.timeSecondLineEdit = nil
+	self.triggerContainer = nil
 	self.enableTargetCheckBox = nil
 	self.timeLabel = nil
 	self.optionalTextContainer = nil

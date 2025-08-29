@@ -872,7 +872,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					end
 				end)
-				localSelf.frame = self.mainFrame.menuButtonContainer.children[1].frame
+				localSelf.frame = self.mainFrame.planMenuButton.frame
 				return true
 			end,
 		},
@@ -952,7 +952,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 					end
 				end)
-				localSelf.frame = self.mainFrame.menuButtonContainer.children[3].frame
+				localSelf.frame = self.mainFrame.rosterMenuButton.frame
 				return true
 			end,
 		},
@@ -979,7 +979,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						end
 					end
 				end)
-				localSelf.frame = self.rosterEditor.tabContainer.children[1].frame
+				localSelf.frame = self.rosterEditor.currentRosterTab.frame
 				return true
 			end,
 			PreStepDeactivated = function(_, incrementing)
@@ -1012,7 +1012,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 						end
 					end
 				end)
-				localSelf.frame = self.rosterEditor.tabContainer.children[2].frame
+				localSelf.frame = self.rosterEditor.sharedRosterTab.frame
 				return true
 			end,
 			PreStepDeactivated = function(_, incrementing)
@@ -1030,7 +1030,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				localSelf.frame = self.mainFrame.children[1].frame
+				localSelf.frame = self.mainFrame.currentPlanWidget.frame
 				return true
 			end,
 		},
@@ -1155,7 +1155,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							end
 						end
 					end)
-					localSelf.frame = self.assignmentEditor.children[1].frame
+					localSelf.frame = self.assignmentEditor.triggerContainer.frame
 					return true
 				else
 					return false
@@ -1330,7 +1330,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			),
 			enableNextButton = true,
 			OnStepActivated = function(localSelf)
-				localSelf.frame = self.mainFrame.menuButtonContainer.children[4].frame
+				localSelf.frame = self.mainFrame.preferencesMenuButton.frame
 				return true
 			end,
 		},
@@ -1388,10 +1388,15 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				end
 			end,
 			HighlightFrameAndPositionTutorialFrame = function()
-				local frame = self.assignmentEditor.children[1].frame
-				s.HighlightBorderFrame:SetFrameStrata(frame:GetFrameStrata())
-				s.HighlightBorderFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-				s.HighlightBorderFrame:SetPoint("TOPLEFT", frame, -k.HighlightPadding, k.HighlightPadding)
+				local triggerContainerFrame = self.assignmentEditor.triggerContainer.frame
+				s.HighlightBorderFrame:SetFrameStrata(triggerContainerFrame:GetFrameStrata())
+				s.HighlightBorderFrame:SetFrameLevel(triggerContainerFrame:GetFrameLevel() + 10)
+				s.HighlightBorderFrame:SetPoint(
+					"TOPLEFT",
+					triggerContainerFrame,
+					-k.HighlightPadding,
+					k.HighlightPadding
+				)
 				local lowerFrame = self.assignmentEditor.timeContainer.frame
 				s.HighlightBorderFrame:SetPoint("BOTTOMRIGHT", lowerFrame, k.HighlightPadding, -k.HighlightPadding)
 				s.HighlightBorderFrame:Show()
@@ -1531,7 +1536,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							end
 						end
 					end)
-					localSelf.frame = self.assignmentEditor.children[1].frame
+					localSelf.frame = self.assignmentEditor.triggerContainer.frame
 					return true
 				else
 					return false
@@ -1565,7 +1570,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							end
 						end
 					end)
-					localSelf.frame = self.assignmentEditor.children[1].frame
+					localSelf.frame = self.assignmentEditor.triggerContainer.frame
 					return true
 				else
 					return false
@@ -1594,7 +1599,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							end
 						end
 					end)
-					localSelf.frame = self.assignmentEditor.children[1].frame
+					localSelf.frame = self.assignmentEditor.triggerContainer.frame
 					return true
 				else
 					return false

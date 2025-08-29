@@ -407,7 +407,7 @@
 ---@field name string
 ---@field text string
 ---@field enableNextButton boolean|fun():boolean
----@field frame Frame|table|nil
+---@field frame Frame|BackdropTemplate|nil
 ---@field OnStepActivated nil|fun(self: TutorialStep):boolean
 ---@field PreStepDeactivated fun(self: TutorialStep, incrementing: boolean, cleanUp: boolean|nil)|nil
 ---@field HighlightFrameAndPositionTutorialFrame fun()|nil

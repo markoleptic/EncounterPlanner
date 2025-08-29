@@ -370,6 +370,8 @@ end
 ---@field closeButton EPButton
 ---@field children table<integer, AceGUIWidget>
 ---@field tabContainer EPContainer
+---@field currentRosterTab EPButton
+---@field sharedRosterTab EPButton
 ---@field activeContainer EPContainer
 ---@field buttonContainer EPContainer
 ---@field classDropdownData DropdownItemData
@@ -425,6 +427,7 @@ local function OnAcquire(self)
 			PopulateActiveTab(self, button.button:GetText())
 		end
 	end)
+	self.currentRosterTab = currentRosterTab
 
 	local sharedRosterTab = AceGUI:Create("EPButton")
 	sharedRosterTab:SetIsToggleable(true)
@@ -442,6 +445,7 @@ local function OnAcquire(self)
 			PopulateActiveTab(self, button.button:GetText())
 		end
 	end)
+	self.sharedRosterTab = sharedRosterTab
 
 	self.activeContainer = AceGUI:Create("EPContainer")
 	self.activeContainer:SetLayout("EPVerticalLayout")
@@ -524,6 +528,8 @@ local function OnRelease(self)
 
 	self.tabContainer:Release()
 	self.tabContainer = nil
+	self.currentRosterTab = nil
+	self.sharedRosterTab = nil
 
 	self.activeContainer.frame:EnableMouse(false)
 	self.activeContainer.frame:SetScript("OnMouseWheel", nil)
