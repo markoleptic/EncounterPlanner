@@ -102,6 +102,7 @@ end
 ---@field timeline EPTimeline
 ---@field planReminderEnableCheckBox EPCheckBox
 ---@field sendPlanButton EPButton
+---@field proposeChangesButton EPButton
 ---@field primaryPlanCheckBox EPCheckBox
 ---@field menuButtonContainer EPContainer
 ---@field children table<integer, EPContainer>
@@ -343,6 +344,7 @@ local function OnRelease(self)
 	self.timeline = nil
 	self.planReminderEnableCheckBox = nil
 	self.sendPlanButton = nil
+	self.proposeChangesButton = nil
 	self.primaryPlanCheckBox = nil
 	self.simulateRemindersButton = nil
 	self.externalTextButton = nil

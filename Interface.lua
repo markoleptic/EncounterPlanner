@@ -1997,10 +1997,6 @@ function Private:CreateInterface()
 	planContainer:SetPadding(0, 2, 0, 2)
 	planContainer:AddChildren(planLabel, planDropdown)
 
-	local reminderContainer = AceGUI:Create("EPContainer")
-	reminderContainer:SetLayout("EPVerticalLayout")
-	reminderContainer:SetSpacing(unpack(topContainerSpacing))
-
 	local planReminderEnableCheckBox = AceGUI:Create("EPCheckBox")
 	planReminderEnableCheckBox:SetText(L["Plan Reminders"])
 	planReminderEnableCheckBox:SetHeight(topContainerWidgetHeight)
@@ -2024,32 +2020,37 @@ function Private:CreateInterface()
 	local checkBoxWidth = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
 	planReminderEnableCheckBox:SetWidth(checkBoxWidth)
 	simulateRemindersButton:SetWidth(checkBoxWidth)
+
+	local reminderContainer = AceGUI:Create("EPContainer")
+	reminderContainer:SetLayout("EPVerticalLayout")
+	reminderContainer:SetSpacing(unpack(topContainerSpacing))
 	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
 
 	self.RegisterCallback(s.SimulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
 
-	local sendPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
-	sendPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
-	sendPlanAndExternalTextContainer:SetSpacing(unpack(topContainerSpacing))
+	local sendAndProposeChangesContainer = AceGUI:Create("EPContainer")
+	sendAndProposeChangesContainer:SetLayout("EPVerticalLayout")
+	sendAndProposeChangesContainer:SetSpacing(unpack(topContainerSpacing))
 
 	local sendPlanButton = AceGUI:Create("EPButton")
-	sendPlanButton:SetText(L["Propose Plan Changes"])
+	sendPlanButton:SetText(L["Send to Group"])
 	sendPlanButton:SetWidthFromText()
 	sendPlanButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
 	sendPlanButton:SetHeight(topContainerWidgetHeight)
 	sendPlanButton:SetCallback("Clicked", Private.HandleSendPlanButtonClicked)
 
-	local externalTextButton = AceGUI:Create("EPButton")
-	externalTextButton:SetText(L["External Text"])
-	externalTextButton:SetWidthFromText()
-	externalTextButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
-	externalTextButton:SetHeight(topContainerWidgetHeight)
-	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
+	local proposeChangesButton = AceGUI:Create("EPButton")
+	proposeChangesButton:SetText(L["Propose Changes"])
+	proposeChangesButton:SetWidthFromText()
+	proposeChangesButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
+	proposeChangesButton:SetHeight(topContainerWidgetHeight)
+	proposeChangesButton:SetCallback("Clicked", Private.HandleProposeChangesButtonClicked)
 
-	local buttonWidth = max(sendPlanButton.frame:GetWidth(), externalTextButton.frame:GetWidth())
+	local buttonWidth = max(sendPlanButton.frame:GetWidth(), proposeChangesButton.frame:GetWidth())
 	sendPlanButton:SetWidth(buttonWidth)
-	externalTextButton:SetWidth(buttonWidth)
-	sendPlanAndExternalTextContainer:AddChildren(sendPlanButton, externalTextButton)
+	proposeChangesButton:SetWidth(buttonWidth)
+
+	sendAndProposeChangesContainer:AddChildren(sendPlanButton, proposeChangesButton)
 
 	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
 	primaryPlanCheckBox:SetText(L["Designated External Plan"])
@@ -2061,15 +2062,27 @@ function Private:CreateInterface()
 	primaryPlanCheckBox.fireEventsIfDisabled = true
 	primaryPlanCheckBox.button.fireEventsIfDisabled = true
 
+	local externalTextButton = AceGUI:Create("EPButton")
+	externalTextButton:SetText(L["External Text"])
+	externalTextButton:SetFullWidth(true)
+	externalTextButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
+	externalTextButton:SetHeight(topContainerWidgetHeight)
+	externalTextButton:SetCallback("Clicked", HandleExternalTextButtonClicked)
+
+	local primaryPlanAndExternalTextContainer = AceGUI:Create("EPContainer")
+	primaryPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
+	primaryPlanAndExternalTextContainer:SetSpacing(unpack(topContainerSpacing))
+	primaryPlanAndExternalTextContainer:AddChildren(primaryPlanCheckBox, externalTextButton)
+
 	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
 	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
 	reminderAndSendPlanButtonContainer:SetFullHeight(true)
 	reminderAndSendPlanButtonContainer:SetSelfAlignment("topRight")
-	reminderAndSendPlanButtonContainer:SetSpacing(unpack(topContainerSpacing))
+	reminderAndSendPlanButtonContainer:SetSpacing(8, 4)
 	reminderAndSendPlanButtonContainer:AddChildren(
-		primaryPlanCheckBox,
 		reminderContainer,
-		sendPlanAndExternalTextContainer
+		primaryPlanAndExternalTextContainer,
+		sendAndProposeChangesContainer
 	)
 
 	local topContainer = AceGUI:Create("EPContainer")
@@ -2117,6 +2130,7 @@ function Private:CreateInterface()
 	mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
 	mainFrame.timeline = timeline
 	mainFrame.sendPlanButton = sendPlanButton
+	mainFrame.proposeChangesButton = proposeChangesButton
 	mainFrame.simulateRemindersButton = simulateRemindersButton
 	mainFrame.externalTextButton = externalTextButton
 	self.mainFrame = mainFrame

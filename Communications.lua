@@ -331,19 +331,13 @@ end
 function Private:UpdateSendPlanButtonState()
 	if self.mainFrame then
 		local sendPlanButton = self.mainFrame.sendPlanButton
-		if sendPlanButton then
+		local proposeChangesButton = self.mainFrame.proposeChangesButton
+		if sendPlanButton and proposeChangesButton then
 			local inGroup = IsInGroup() or IsInRaid()
-			local isAssistantOrLeader = UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")
-			local buttonText
-			if inGroup and isAssistantOrLeader then
-				buttonText = L["Send Plan to Group"]
-			elseif inGroup and not isAssistantOrLeader then
-				buttonText = L["Propose Plan Changes"]
-			else
-				buttonText = L["Send Plan to Group"]
-			end
-			sendPlanButton:SetText(buttonText)
-			sendPlanButton:SetEnabled(inGroup)
+			local isGroupLeader = UnitIsGroupLeader("player")
+			local isAssistant = UnitIsGroupAssistant("player")
+			sendPlanButton:SetEnabled(inGroup and (isGroupLeader or isAssistant))
+			proposeChangesButton:SetEnabled(inGroup and not isGroupLeader)
 		end
 	end
 end
@@ -827,7 +821,13 @@ do
 		if IsInGroup() or IsInRaid() then
 			if UnitIsGroupAssistant("player") or UnitIsGroupLeader("player") then
 				Private.SendPlanToGroup()
-			else
+			end
+		end
+	end
+
+	function Private.HandleProposeChangesButtonClicked()
+		if IsInGroup() or IsInRaid() then
+			if not UnitIsGroupLeader("player") then
 				Private.SendPlanToLeader()
 			end
 		end
