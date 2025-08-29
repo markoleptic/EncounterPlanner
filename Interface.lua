@@ -1924,11 +1924,6 @@ function Private:CreateInterface()
 
 	mainFrame.menuButtonContainer:AddChildren(planMenuButton, bossMenuButton, rosterMenuButton, preferencesMenuButton)
 
-	local instanceLabelContainer = AceGUI:Create("EPContainer")
-	instanceLabelContainer:SetLayout("EPVerticalLayout")
-	instanceLabelContainer:SetSpacing(0, 0)
-	instanceLabelContainer:SetPadding(0, 0, 0, 0)
-
 	local instanceLabelLabel = AceGUI:Create("EPLabel")
 	instanceLabelLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	instanceLabelLabel:SetHeight(16)
@@ -1947,17 +1942,17 @@ function Private:CreateInterface()
 	difficultyLabelLabel:SetText(L["Difficulty"] .. ":", 0)
 	difficultyLabelLabel:SetFrameWidthFromText()
 
-	local instanceBossLabelWidth = max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth())
-	instanceBossLabelWidth = max(instanceBossLabelWidth, difficultyLabelLabel.frame:GetWidth())
+	local instanceBossLabelWidth =
+		max(instanceLabelLabel.frame:GetWidth(), bossLabelLabel.frame:GetWidth(), difficultyLabelLabel.frame:GetWidth())
 	instanceLabelLabel:SetWidth(instanceBossLabelWidth)
 	bossLabelLabel:SetWidth(instanceBossLabelWidth)
 	difficultyLabelLabel:SetWidth(instanceBossLabelWidth)
-	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel, difficultyLabelLabel)
 
-	local instanceBossContainer = AceGUI:Create("EPContainer")
-	instanceBossContainer:SetLayout("EPVerticalLayout")
-	instanceBossContainer:SetSpacing(0, 0)
-	instanceBossContainer:SetPadding(0, 0, 0, 0)
+	local instanceLabelContainer = AceGUI:Create("EPContainer")
+	instanceLabelContainer:SetLayout("EPVerticalLayout")
+	instanceLabelContainer:SetSpacing(0, 0)
+	instanceLabelContainer:SetPadding(0, 0, 0, 0)
+	instanceLabelContainer:AddChildren(instanceLabelLabel, bossLabelLabel, difficultyLabelLabel)
 
 	local instanceLabel = AceGUI:Create("EPLabel")
 	instanceLabel:SetFontSize(k.TopContainerWidgetFontSize)
@@ -1974,6 +1969,11 @@ function Private:CreateInterface()
 	difficultyLabel:SetHeight(16)
 	difficultyLabel:SetWidth(k.TopContainerDropdownWidth)
 	difficultyLabel:SetIcon(constants.kEncounterJournalIcon, 0, 2, 0, 0, 2)
+
+	local instanceBossContainer = AceGUI:Create("EPContainer")
+	instanceBossContainer:SetLayout("EPVerticalLayout")
+	instanceBossContainer:SetSpacing(0, 0)
+	instanceBossContainer:SetPadding(0, 0, 0, 0)
 	instanceBossContainer:AddChildren(instanceLabel, bossLabel, difficultyLabel)
 
 	local planLabel = AceGUI:Create("EPLabel")
@@ -2017,40 +2017,17 @@ function Private:CreateInterface()
 	simulateRemindersButton:SetCallback("OnLeave", HandlePlanReminderEnableCheckBoxOrButtonLeave)
 	simulateRemindersButton.fireEventsIfDisabled = true
 
-	local checkBoxWidth = max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
-	planReminderEnableCheckBox:SetWidth(checkBoxWidth)
-	simulateRemindersButton:SetWidth(checkBoxWidth)
+	self.RegisterCallback(s.SimulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
+
+	local enableRemindersAndSimulateRemindersButtonWidth =
+		max(planReminderEnableCheckBox.frame:GetWidth(), simulateRemindersButton.frame:GetWidth())
+	planReminderEnableCheckBox:SetWidth(enableRemindersAndSimulateRemindersButtonWidth)
+	simulateRemindersButton:SetWidth(enableRemindersAndSimulateRemindersButtonWidth)
 
 	local reminderContainer = AceGUI:Create("EPContainer")
 	reminderContainer:SetLayout("EPVerticalLayout")
 	reminderContainer:SetSpacing(unpack(topContainerSpacing))
 	reminderContainer:AddChildren(planReminderEnableCheckBox, simulateRemindersButton)
-
-	self.RegisterCallback(s.SimulationCompletedObject, "SimulationCompleted", "HandleSimulationCompleted")
-
-	local sendAndProposeChangesContainer = AceGUI:Create("EPContainer")
-	sendAndProposeChangesContainer:SetLayout("EPVerticalLayout")
-	sendAndProposeChangesContainer:SetSpacing(unpack(topContainerSpacing))
-
-	local sendPlanButton = AceGUI:Create("EPButton")
-	sendPlanButton:SetText(L["Send to Group"])
-	sendPlanButton:SetWidthFromText()
-	sendPlanButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
-	sendPlanButton:SetHeight(topContainerWidgetHeight)
-	sendPlanButton:SetCallback("Clicked", Private.HandleSendPlanButtonClicked)
-
-	local proposeChangesButton = AceGUI:Create("EPButton")
-	proposeChangesButton:SetText(L["Propose Changes"])
-	proposeChangesButton:SetWidthFromText()
-	proposeChangesButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
-	proposeChangesButton:SetHeight(topContainerWidgetHeight)
-	proposeChangesButton:SetCallback("Clicked", Private.HandleProposeChangesButtonClicked)
-
-	local buttonWidth = max(sendPlanButton.frame:GetWidth(), proposeChangesButton.frame:GetWidth())
-	sendPlanButton:SetWidth(buttonWidth)
-	proposeChangesButton:SetWidth(buttonWidth)
-
-	sendAndProposeChangesContainer:AddChildren(sendPlanButton, proposeChangesButton)
 
 	local primaryPlanCheckBox = AceGUI:Create("EPCheckBox")
 	primaryPlanCheckBox:SetText(L["Designated External Plan"])
@@ -2073,6 +2050,30 @@ function Private:CreateInterface()
 	primaryPlanAndExternalTextContainer:SetLayout("EPVerticalLayout")
 	primaryPlanAndExternalTextContainer:SetSpacing(unpack(topContainerSpacing))
 	primaryPlanAndExternalTextContainer:AddChildren(primaryPlanCheckBox, externalTextButton)
+
+	local sendPlanButton = AceGUI:Create("EPButton")
+	sendPlanButton:SetText(L["Send to Group"])
+	sendPlanButton:SetWidthFromText()
+	sendPlanButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
+	sendPlanButton:SetHeight(topContainerWidgetHeight)
+	sendPlanButton:SetCallback("Clicked", Private.HandleSendPlanButtonClicked)
+
+	local proposeChangesButton = AceGUI:Create("EPButton")
+	proposeChangesButton:SetText(L["Propose Changes"])
+	proposeChangesButton:SetWidthFromText()
+	proposeChangesButton:SetColor(unpack(constants.colors.kNeutralButtonActionColor))
+	proposeChangesButton:SetHeight(topContainerWidgetHeight)
+	proposeChangesButton:SetCallback("Clicked", Private.HandleProposeChangesButtonClicked)
+
+	local sendPlanAndProposeChangesButtonWidth =
+		max(sendPlanButton.frame:GetWidth(), proposeChangesButton.frame:GetWidth())
+	sendPlanButton:SetWidth(sendPlanAndProposeChangesButtonWidth)
+	proposeChangesButton:SetWidth(sendPlanAndProposeChangesButtonWidth)
+
+	local sendAndProposeChangesContainer = AceGUI:Create("EPContainer")
+	sendAndProposeChangesContainer:SetLayout("EPVerticalLayout")
+	sendAndProposeChangesContainer:SetSpacing(unpack(topContainerSpacing))
+	sendAndProposeChangesContainer:AddChildren(sendPlanButton, proposeChangesButton)
 
 	local reminderAndSendPlanButtonContainer = AceGUI:Create("EPContainer")
 	reminderAndSendPlanButtonContainer:SetLayout("EPHorizontalLayout")
@@ -2121,21 +2122,21 @@ function Private:CreateInterface()
 	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
 	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
 
-	mainFrame.instanceLabel = instanceLabel
 	mainFrame.bossLabel = bossLabel
-	mainFrame.difficultyLabel = difficultyLabel
 	mainFrame.bossMenuButton = bossMenuButton
-	mainFrame.planDropdown = planDropdown
-	mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
-	mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
-	mainFrame.timeline = timeline
-	mainFrame.sendPlanButton = sendPlanButton
-	mainFrame.proposeChangesButton = proposeChangesButton
-	mainFrame.simulateRemindersButton = simulateRemindersButton
+	mainFrame.difficultyLabel = difficultyLabel
 	mainFrame.externalTextButton = externalTextButton
+	mainFrame.instanceLabel = instanceLabel
+	mainFrame.planDropdown = planDropdown
 	mainFrame.planMenuButton = planMenuButton
-	mainFrame.rosterMenuButton = rosterMenuButton
+	mainFrame.planReminderEnableCheckBox = planReminderEnableCheckBox
 	mainFrame.preferencesMenuButton = preferencesMenuButton
+	mainFrame.primaryPlanCheckBox = primaryPlanCheckBox
+	mainFrame.proposeChangesButton = proposeChangesButton
+	mainFrame.rosterMenuButton = rosterMenuButton
+	mainFrame.sendPlanButton = sendPlanButton
+	mainFrame.simulateRemindersButton = simulateRemindersButton
+	mainFrame.timeline = timeline
 	self.mainFrame = mainFrame
 
 	self:UpdateSendPlanButtonState()
