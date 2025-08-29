@@ -2,6 +2,7 @@ local L = LibStub("AceLocale-3.0"):NewLocale("EncounterPlanner", "ruRU")
 if not L then
 	return
 end
+--@localization(locale="ruRU", format="lua_additive_table", handle-subnamespaces="concat", handle-unlocalized="english")@
 -- Translator ZamestoTV
 L["Accept and Trust"] = "Принять и доверять"
 L["Accept without Trusting"] = "Принять без доверия"
@@ -549,12 +550,3 @@ L["Zoom in and out horizontally on either timeline by pressing Ctrl + Mouse Scro
 L["Zooms in horizontally on the timeline."] = "Увеличивает масштаб горизонтально на таймлайне."
 L["Zooms in toward the horizontal center of the timeline, keeping the middle of the visible area in focus."] = "Увеличивает масштаб к горизонтальному центру таймлайна, сохраняя середину видимой области в фокусе."
 L["Zooms in toward the position of your mouse cursor, keeping the area under the cursor in focus."] = "Увеличивает масштаб к позиции курсора мыши, сохраняя область под курсором в фокусе."
-L["Time Bombs"] = "Временные бомбы"
-L["Unstable Anima"] = "Нестабильная анима"
-L["Charged Slash"] = "Заряженный разрез"
-L["Shuri"] = "Шури"
-L["Phase Slash"] = "Фазовый разрез"
-L["Final Warning"] = "Последнее предупреждение"
-L["Erupting Torment"] = "Извергающееся мучение"
-L["Divide"] = "Разделить"
-L["Double Technique"] = "Двойная техника"
