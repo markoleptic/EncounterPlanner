@@ -172,8 +172,8 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", true)
 	end
 	self.spellAssignmentDropdown:ClearHighlightsForExistingDropdownItemMenu("Recent")
-	self:Fire("DataChanged", "SpellAssignment", value)
 	self:Fire("RecentItemsChanged", self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent"))
+	self:Fire("DataChanged", "SpellAssignment", value)
 end
 
 ---@param self EPAssignmentEditor
