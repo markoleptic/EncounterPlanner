@@ -641,8 +641,8 @@ do -- Assignment Editor
 			if Private.mainFrame then
 				local timeline = Private.mainFrame.timeline
 				if timeline then
-					timeline:ClearSelectedAssignments()
-					timeline:ClearSelectedBossAbilities()
+					timeline.ClearSelectedAssignments()
+					timeline.ClearSelectedBossAbilities()
 				end
 			end
 			if Private.activeTutorialCallbackName then

@@ -10,14 +10,19 @@ local s = Private.timeline.state
 ---@class EPTimelineUtilities
 local EPTimelineUtilities = Private.timeline.utilities
 
+local AssignmentSelectionType = Private.constants.AssignmentSelectionType
+local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
+
 local Clamp = Clamp
 local GetCursorPosition = GetCursorPosition
 local ipairs = ipairs
 local IsAltKeyDown = IsAltKeyDown
 local IsControlKeyDown = IsControlKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
+local select = select
 local sort = table.sort
 local split = string.split
+local type = type
 local unpack = unpack
 
 ---@param frame Frame|Texture
@@ -49,24 +54,6 @@ function EPTimelineUtilities.FindAssignmentFrame(assignmentFrames, uniqueID)
 	for _, frame in ipairs(assignmentFrames) do
 		if frame.uniqueAssignmentID == uniqueID then
 			return frame
-		end
-	end
-	return nil
-end
-
----@param bossAbilityFrames table<integer, BossAbilityFrame>
----@param spellID integer
----@param spellCount integer
----@return BossAbilityFrame|nil
-function EPTimelineUtilities.FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
-	for _, frame in ipairs(bossAbilityFrames) do
-		if frame.abilityInstance then
-			if
-				frame.abilityInstance.bossAbilitySpellID == spellID
-				and frame.abilityInstance.spellCount == spellCount
-			then
-				return frame
-			end
 		end
 	end
 	return nil
@@ -206,4 +193,110 @@ function EPTimelineUtilities.UpdateLinePosition(timelineFrame, verticalPositionL
 	verticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT", newTimeOffset, 0)
 	verticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
 	verticalPositionLine:Show()
+end
+
+---@param assignmentIDOrAssignmentFrame integer|AssignmentFrame
+---@param assignmentSelectionType AssignmentSelectionType
+function EPTimelineUtilities.SelectAssignment(assignmentIDOrAssignmentFrame, assignmentSelectionType)
+	local frame = nil
+	if type(assignmentIDOrAssignmentFrame) == "table" then
+		frame = assignmentIDOrAssignmentFrame
+	else
+		frame = EPTimelineUtilities.FindAssignmentFrame(s.AssignmentFrames, assignmentIDOrAssignmentFrame)
+	end
+
+	if frame then
+		local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
+		if assignmentSelectionType == AssignmentSelectionType.kSelection then
+			EPTimelineUtilities.SetAssignmentFrameOutline(frame, k.HighlightType.Full, assignmentHeight)
+			frame.selectionType = assignmentSelectionType
+		elseif assignmentSelectionType == AssignmentSelectionType.kBossAbilityHover then
+			if frame.selectionType ~= AssignmentSelectionType.kSelection then
+				EPTimelineUtilities.SetAssignmentFrameOutline(frame, k.HighlightType.Half, assignmentHeight)
+				frame.selectionType = assignmentSelectionType
+			end
+		elseif assignmentSelectionType == AssignmentSelectionType.kNone then
+			EPTimelineUtilities.SetAssignmentFrameOutline(frame, k.HighlightType.None, assignmentHeight)
+			frame.selectionType = assignmentSelectionType
+		end
+	end
+end
+
+---@param assignmentID integer
+---@param onlyClearIfNotSelectedByClicking boolean|nil
+function EPTimelineUtilities.ClearSelectedAssignment(assignmentID, onlyClearIfNotSelectedByClicking)
+	local frame = EPTimelineUtilities.FindAssignmentFrame(s.AssignmentFrames, assignmentID)
+	if frame then
+		if not onlyClearIfNotSelectedByClicking or frame.selectionType ~= AssignmentSelectionType.kSelection then
+			EPTimelineUtilities.SetAssignmentFrameOutline(
+				frame,
+				k.HighlightType.None,
+				s.Preferences.timelineRows.assignmentHeight
+			)
+			frame.selectionType = AssignmentSelectionType.kNone
+		end
+	end
+end
+
+function EPTimelineUtilities.ClearSelectedAssignments()
+	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
+	for _, frame in ipairs(s.AssignmentFrames) do
+		EPTimelineUtilities.SetAssignmentFrameOutline(frame, k.HighlightType.None, assignmentHeight)
+		frame.selectionType = AssignmentSelectionType.kNone
+	end
+end
+
+do
+	---@param bossAbilityFrames table<integer, BossAbilityFrame>
+	---@param spellID integer
+	---@param spellCount integer
+	---@return BossAbilityFrame|nil
+	local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
+		for _, frame in ipairs(bossAbilityFrames) do
+			if frame.abilityInstance then
+				if
+					frame.abilityInstance.bossAbilitySpellID == spellID
+					and frame.abilityInstance.spellCount == spellCount
+				then
+					return frame
+				end
+			end
+		end
+		return nil
+	end
+
+	---@param spellID integer
+	---@param spellCount integer
+	---@param selectionType BossAbilitySelectionType
+	function EPTimelineUtilities.SelectBossAbility(spellID, spellCount, selectionType)
+		local frame = FindBossAbilityFrame(s.BossAbilityFrames, spellID, spellCount)
+		if frame then
+			frame:SetBackdropBorderColor(unpack(k.AssignmentSelectOutlineColor))
+			if selectionType == BossAbilitySelectionType.kSelection then
+				local y = select(5, frame:GetPointByName("TOPLEFT"))
+				s.BossAbilityTimeline:ScrollVerticallyIfNotVisible(y, y - frame:GetHeight())
+			end
+			frame.selectionType = selectionType
+		end
+	end
+
+	---@param spellID integer
+	---@param spellCount integer
+	---@param onlyClearIfNotSelectedByClicking boolean|nil
+	function EPTimelineUtilities.ClearSelectedBossAbility(spellID, spellCount, onlyClearIfNotSelectedByClicking)
+		local frame = FindBossAbilityFrame(s.BossAbilityFrames, spellID, spellCount)
+		if frame then
+			if not onlyClearIfNotSelectedByClicking or frame.selectionType ~= AssignmentSelectionType.kSelection then
+				frame:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
+				frame.selectionType = BossAbilitySelectionType.kNone
+			end
+		end
+	end
+end
+
+function EPTimelineUtilities.ClearSelectedBossAbilities()
+	for _, frame in ipairs(s.BossAbilityFrames) do
+		frame:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
+		frame.selectionType = BossAbilitySelectionType.kNone
+	end
 end

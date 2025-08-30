@@ -345,7 +345,6 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field temporaryAssignmentFrameIndex integer
 
 ---@class BossAbilityFrame : Frame, BackdropTemplate
----@field assignmentFrame table|Frame
 ---@field spellTexture Texture
 ---@field lineTexture Texture
 ---@field cooldownFrame Frame

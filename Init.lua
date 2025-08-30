@@ -748,28 +748,26 @@ Private.customDungeonInstanceGroups = {
 		order = 1,
 	},
 }
----@class InterfaceUpdater
-Private.interfaceUpdater = {}
----@class BossUtilities
-Private.bossUtilities = {}
----@class Utilities
-Private.utilities = {}
-Private.timeline = {
-	constants = nil, --[[@as EPTimelineConstants]]
-	state = nil, --[[@as EPTimelineState]]
-	utilities = nil, --[[@as EPTimelineUtilities]]
-}
 
-Private.mainFrame = nil --[[@as EPMainFrame]]
-Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]
-Private.rosterEditor = nil --[[@as EPRosterEditor]]
-Private.importEditBox = nil --[[@as EPEditBox]]
-Private.exportEditBox = nil --[[@as EPEditBox]]
-Private.optionsMenu = nil --[[@as EPOptions]]
-Private.phaseLengthEditor = nil --[[@as EPPhaseLengthEditor]]
-Private.newPlanDialog = nil --[[@as EPNewPlanDialog]]
-Private.externalTextEditor = nil --[[@as EPEditBox]]
-Private.tutorial = nil --[[@as EPTutorial]]
+Private.interfaceUpdater = {} ---@type InterfaceUpdater
+Private.bossUtilities = {} ---@type BossUtilities
+Private.utilities = {} ---@type Utilities
+Private.timeline = {
+	constants = nil, ---@type EPTimelineConstants
+	state = nil, ---@type EPTimelineState
+	utilities = {}, ---@type EPTimelineUtilities
+	bossAbility = {}, ---@type EPTimelineBossAbility
+}
+Private.mainFrame = nil ---@type EPMainFrame
+Private.assignmentEditor = nil ---@type EPAssignmentEditor
+Private.rosterEditor = nil ---@type EPRosterEditor
+Private.importEditBox = nil ---@type EPEditBox
+Private.exportEditBox = nil ---@type EPEditBox
+Private.optionsMenu = nil ---@type EPOptions
+Private.phaseLengthEditor = nil ---@type EPPhaseLengthEditor
+Private.newPlanDialog = nil ---@type EPNewPlanDialog
+Private.externalTextEditor = nil ---@type EPEditBox
+Private.tutorial = nil ---@type EPTutorial
 Private.tutorialCallbackObject = nil ---@type table|nil
 Private.activeTutorialCallbackName = nil ---@type string|nil
 

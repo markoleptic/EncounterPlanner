@@ -1048,11 +1048,11 @@ do
 					end
 					timeline:UpdateTimeline()
 				end
-				timeline:ClearSelectedAssignments()
-				timeline:ClearSelectedBossAbilities()
-				timeline:SelectAssignment(assignment.uniqueID, AssignmentSelectionType.kSelection)
+				timeline.ClearSelectedAssignments()
+				timeline.ClearSelectedBossAbilities()
+				timeline.SelectAssignment(assignment.uniqueID, AssignmentSelectionType.kSelection)
 				if assignment.combatLogEventSpellID and assignment.spellCount then
-					timeline:SelectBossAbility(
+					timeline.SelectBossAbility(
 						assignment.combatLogEventSpellID,
 						assignment.spellCount,
 						BossAbilitySelectionType.kSelection

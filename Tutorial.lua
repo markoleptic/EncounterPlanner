@@ -702,8 +702,8 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 			GetCurrentDifficulty()
 		)
 		if not openAssignmentEditor then
-			self.mainFrame.timeline:ClearSelectedBossAbilities()
-			self.mainFrame.timeline:ClearSelectedAssignments()
+			self.mainFrame.timeline.ClearSelectedBossAbilities()
+			self.mainFrame.timeline.ClearSelectedAssignments()
 		end
 		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
 			self.mainFrame.timeline.timelineAssignments,
@@ -2703,8 +2703,8 @@ function Private:OpenTutorial()
 				end
 			end
 			if not self.assignmentEditor and self.mainFrame and self.mainFrame.timeline then
-				self.mainFrame.timeline:ClearSelectedBossAbilities()
-				self.mainFrame.timeline:ClearSelectedAssignments()
+				self.mainFrame.timeline.ClearSelectedBossAbilities()
+				self.mainFrame.timeline.ClearSelectedAssignments()
 			end
 			self.tutorialCallbackObject = nil
 			self.activeTutorialCallbackName = nil
