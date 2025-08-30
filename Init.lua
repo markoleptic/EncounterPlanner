@@ -757,6 +757,7 @@ Private.timeline = {
 	state = nil, ---@type EPTimelineState
 	utilities = {}, ---@type EPTimelineUtilities
 	bossAbility = {}, ---@type EPTimelineBossAbility
+	assignment = {}, ---@type EPTimelineAssignment
 }
 Private.mainFrame = nil ---@type EPMainFrame
 Private.assignmentEditor = nil ---@type EPAssignmentEditor

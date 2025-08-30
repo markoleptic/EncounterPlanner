@@ -364,3 +364,6 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field partialLeft number
 ---@field label FontString|nil
 ---@field alreadyShortened boolean|nil
+
+---@class EPTimeLabel : FontString
+---@field wantsToShow boolean

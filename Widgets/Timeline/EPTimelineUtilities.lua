@@ -14,11 +14,14 @@ local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 
 local Clamp = Clamp
+local floor = math.floor
+local format = string.format
 local GetCursorPosition = GetCursorPosition
 local ipairs = ipairs
 local IsAltKeyDown = IsAltKeyDown
 local IsControlKeyDown = IsControlKeyDown
 local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
+local pairs = pairs
 local select = select
 local sort = table.sort
 local split = string.split
@@ -246,6 +249,40 @@ function EPTimelineUtilities.ClearSelectedAssignments()
 	end
 end
 
+-- Returns tables of selected assignments and optionally resets assignment frames.
+---@param clear boolean If true, assignment frames are reset
+---@return table<AssignmentSelectionType, table<integer, integer>> -- Unique assignment IDs of the selected frames
+function EPTimelineUtilities.GetSelectedAssignments(clear)
+	local selection, bossAbilityHover = {}, {}
+	local SetAssignmentFrameOutline = EPTimelineUtilities.SetAssignmentFrameOutline
+	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
+	for _, frame in ipairs(s.AssignmentFrames) do
+		if frame.selectionType == AssignmentSelectionType.kSelection then
+			selection[#selection + 1] = frame.uniqueAssignmentID
+		elseif frame.selectionType == AssignmentSelectionType.kBossAbilityHover then
+			bossAbilityHover[#bossAbilityHover + 1] = frame.uniqueAssignmentID
+		end
+		if clear then
+			frame:Hide()
+			frame:SetWidth(assignmentHeight)
+			frame.invalidTexture:Hide()
+			frame.cooldownFrame:Hide()
+			frame.uniqueAssignmentID = 0
+			SetAssignmentFrameOutline(frame, k.HighlightType.None, assignmentHeight)
+			frame.selectionType = AssignmentSelectionType.kNone
+			frame.timelineAssignment = nil
+			if frame.chargeMarker then
+				frame.chargeMarker:ClearAllPoints()
+				frame.chargeMarker:Hide()
+			end
+		end
+	end
+	return {
+		[AssignmentSelectionType.kSelection] = selection,
+		[AssignmentSelectionType.kBossAbilityHover] = bossAbilityHover,
+	}
+end
+
 do
 	---@param bossAbilityFrames table<integer, BossAbilityFrame>
 	---@param spellID integer
@@ -298,5 +335,137 @@ function EPTimelineUtilities.ClearSelectedBossAbilities()
 	for _, frame in ipairs(s.BossAbilityFrames) do
 		frame:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
 		frame.selectionType = BossAbilitySelectionType.kNone
+	end
+end
+
+-- Updates the time of the current time label and hides time labels that overlap with it.
+function EPTimelineUtilities.UpdateTimeLabels()
+	local hideVerticalPositionLineAndLabels = true
+	local verticalPositionLine = s.BossAbilityTimeline.verticalPositionLine
+	local currentTimeLabel = s.CurrentTimeLabel
+	local timelineLabels = s.TimelineLabels
+	local splitterFrame = s.MainTimelineSplitterFrame
+	if verticalPositionLine:IsVisible() then
+		local timelineFrame = s.BossAbilityTimeline.timelineFrame
+		local time = EPTimelineUtilities.ConvertTimelineOffsetToTime(verticalPositionLine, timelineFrame)
+		if time then
+			hideVerticalPositionLineAndLabels = false
+			currentTimeLabel.frame:Show()
+
+			time = Private.utilities.Round(time, 0)
+			local minutes = floor(time / 60)
+			local seconds = time % 60
+			currentTimeLabel:SetText(format("%d:%02d", minutes, seconds), 2)
+			currentTimeLabel:SetFrameWidthFromText()
+
+			local lineOffsetFromTimelineFrame = verticalPositionLine:GetLeft() - timelineFrame:GetLeft()
+			local labelOffsetFromTimelineFrame = lineOffsetFromTimelineFrame
+				- currentTimeLabel.text:GetStringWidth() / 2.0
+			currentTimeLabel:SetPoint("LEFT", splitterFrame, "LEFT", labelOffsetFromTimelineFrame, 0)
+
+			for _, label in pairs(timelineLabels) do
+				if label.wantsToShow then
+					local text = currentTimeLabel.text
+					local textLeft, textRight = text:GetLeft(), text:GetRight()
+					local labelLeft, labelRight = label:GetLeft(), label:GetRight()
+					if not (textRight <= labelLeft or textLeft >= labelRight) then
+						label:Hide()
+					elseif label.wantsToShow then
+						label:Show()
+					end
+				end
+			end
+		end
+	end
+	if hideVerticalPositionLineAndLabels then
+		currentTimeLabel.frame:Hide()
+		for _, label in pairs(timelineLabels) do
+			if label.wantsToShow then
+				label:Show()
+			end
+		end
+	end
+end
+
+-- Updates the tick mark positions for the boss ability timeline and assignments timeline.
+function EPTimelineUtilities.UpdateTickMarks()
+	local assignmentTicks = s.AssignmentTimeline:GetTicks()
+	local bossTicks = s.BossAbilityTimeline:GetTicks()
+	for _, tick in pairs(bossTicks) do
+		tick:Hide()
+	end
+	for _, tick in pairs(assignmentTicks) do
+		tick:Hide()
+	end
+	for _, label in pairs(s.TimelineLabels) do
+		label:Hide()
+		label.wantsToShow = false
+	end
+	if s.TotalTimelineDuration <= 0.0 then
+		return
+	end
+
+	local assignmentTimelineFrame = s.AssignmentTimeline.timelineFrame
+	local bossTimelineFrame = s.BossAbilityTimeline.timelineFrame
+	local timelineWidth = bossTimelineFrame:GetWidth()
+	local padding = k.TimelineLinePadding
+	local timelineWidthWithoutPadding = timelineWidth - (2 * padding.x)
+
+	local tickInterval = k.TickIntervals[1]
+	for i = 1, #k.TickIntervals do
+		local interval = k.TickIntervals[i]
+		if (interval / s.TotalTimelineDuration) * timelineWidthWithoutPadding >= s.MinTickInterval then
+			tickInterval = interval
+			break
+		end
+	end
+
+	local Round = Private.utilities.Round
+	for i = 0, s.TotalTimelineDuration, tickInterval do
+		local position = (i / s.TotalTimelineDuration) * timelineWidthWithoutPadding
+		local tickPosition = position + padding.x
+		local tickWidth = (i % 2 == 0) and k.DefaultTickWidth * 0.5 or k.DefaultTickWidth
+		local bossTick = bossTicks[i]
+		if not bossTick then
+			bossTick = bossTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
+			bossTick:SetColorTexture(unpack(k.TickColor))
+			bossTicks[i] = bossTick
+		end
+		bossTick:SetWidth(tickWidth)
+		bossTick:SetPoint("TOP", bossTimelineFrame, "TOPLEFT", tickPosition, 0)
+		bossTick:SetPoint("BOTTOM", bossTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
+		bossTick:Show()
+
+		local assignmentTick = assignmentTicks[i]
+		if not assignmentTick then
+			assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
+			assignmentTick:SetColorTexture(unpack(k.TickColor))
+			assignmentTicks[i] = assignmentTick
+		end
+
+		assignmentTick:SetWidth(tickWidth)
+		assignmentTick:SetHeight(s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
+		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", tickPosition, 0)
+		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
+		assignmentTick:Show()
+
+		local label = s.TimelineLabels[i]
+		if not label then
+			---@type EPTimeLabel
+			label = s.MainTimelineSplitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+			s.TimelineLabels[i] = label
+			if k.FontPath then
+				label:SetFont(k.FontPath, k.TickFontSize)
+				label:SetTextColor(unpack(k.TickLabelColor))
+			end
+		end
+		local time = Round(i, 0)
+		local minutes = floor(time / 60)
+		local seconds = time % 60
+
+		label:SetText(format("%d:%02d", minutes, seconds))
+		label:SetPoint("CENTER", s.MainTimelineSplitterFrame, "LEFT", tickPosition, 0)
+		label:Show()
+		label.wantsToShow = true
 	end
 end

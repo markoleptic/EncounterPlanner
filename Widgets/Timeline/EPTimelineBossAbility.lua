@@ -6,8 +6,6 @@ local Private = Namespace
 local k = Private.timeline.constants
 ---@class EPTimelineState
 local s = Private.timeline.state
----@class EPTimelineUtilities
-local timelineUtilities = Private.timeline.utilities
 
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
@@ -17,10 +15,10 @@ local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 ---@class EPTimelineBossAbility
 local EPTimelineBossAbility = Private.timeline.bossAbility
 
-local ClearSelectedAssignment = timelineUtilities.ClearSelectedAssignment
-local ClearSelectedBossAbility = timelineUtilities.ClearSelectedBossAbility
-local SelectAssignment = timelineUtilities.SelectAssignment
-local SelectBossAbility = timelineUtilities.SelectBossAbility
+local ClearSelectedAssignment = Private.timeline.utilities.ClearSelectedAssignment
+local ClearSelectedBossAbility = Private.timeline.utilities.ClearSelectedBossAbility
+local SelectAssignment = Private.timeline.utilities.SelectAssignment
+local SelectBossAbility = Private.timeline.utilities.SelectBossAbility
 
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
@@ -140,15 +138,13 @@ local function DrawBossPhaseIndicator(phaseNameFrame, phaseStart, index, longNam
 	})
 end
 
----@param bossAbilityTimelineTimelineFrame Frame|BackdropTemplate
----@param bossAbilityTimelineFrame Frame|BackdropTemplate
 ---@param width number
 ---@param height number
 ---@param color integer[]
 ---@return BossAbilityFrame
-local function CreateBossAbilityFrame(bossAbilityTimelineTimelineFrame, bossAbilityTimelineFrame, width, height, color)
+local function CreateBossAbilityFrame(width, height, color)
 	---@type BossAbilityFrame
-	local frame = CreateFrame("Frame", nil, bossAbilityTimelineTimelineFrame, "BackdropTemplate")
+	local frame = CreateFrame("Frame", nil, s.BossAbilityTimeline.timelineFrame, "BackdropTemplate")
 	frame:SetSize(width, height)
 	local borderSize = 2
 	frame:SetBackdrop({
@@ -170,7 +166,7 @@ local function CreateBossAbilityFrame(bossAbilityTimelineTimelineFrame, bossAbil
 	cooldownFrame:SetClipsChildren(true)
 	cooldownFrame:EnableMouse(false)
 
-	local cooldownParent = bossAbilityTimelineFrame:CreateTexture(nil, "BACKGROUND")
+	local cooldownParent = s.BossAbilityTimeline.frame:CreateTexture(nil, "BACKGROUND")
 	cooldownParent:SetPoint("TOPRIGHT", cooldownFrame, "TOPRIGHT")
 	cooldownParent:SetPoint("BOTTOMRIGHT", cooldownFrame, "BOTTOMRIGHT")
 	cooldownParent:SetAlpha(0)
@@ -226,8 +222,6 @@ local function DrawBossAbilityFrame(
 	index,
 	rowIndex
 )
-	local timelineFrame = s.BossAbilityTimeline.timelineFrame
-	local bossAbilityTimelineFrame = s.BossAbilityTimeline.frame
 	local height = s.Preferences.timelineRows.bossAbilityHeight
 	if abilityInstance.overlaps then
 		verticalOffset = verticalOffset + abilityInstance.overlaps.offset * height
@@ -237,8 +231,7 @@ local function DrawBossAbilityFrame(
 	local color = k.BossAbilityColors[((rowIndex - 1) % #k.BossAbilityColors) + 1]
 	local frame = s.BossAbilityFrames[index]
 	if not frame then
-		s.BossAbilityFrames[index] =
-			CreateBossAbilityFrame(timelineFrame, bossAbilityTimelineFrame, width, height, color)
+		s.BossAbilityFrames[index] = CreateBossAbilityFrame(width, height, color)
 		frame = s.BossAbilityFrames[index]
 	end
 
@@ -283,7 +276,7 @@ local function DrawBossAbilityFrame(
 
 	frame.spellTexture:SetColorTexture(unpack(color))
 	frame:SetSize(width, height)
-	frame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
+	frame:SetPoint("TOPLEFT", s.BossAbilityTimeline.timelineFrame, "TOPLEFT", horizontalOffset, -verticalOffset)
 	frame:SetFrameLevel(baseFrameLevel + abilityInstance.frameLevel)
 	frame:Show()
 end

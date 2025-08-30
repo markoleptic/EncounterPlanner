@@ -2107,10 +2107,12 @@ function Private:CreateInterface()
 	topContainer:SetBackdrop(topContainerBackdrop, { 0, 0, 0, 0 }, { 0.25, 0.25, 0.25, 1 })
 
 	local timeline = AceGUI:Create("EPTimeline")
-	timeline:SetPreferences(profile.preferences)
-	timeline.CalculateAssignmentTimeFromStart = HandleCalculateAssignmentTimeFromStart
-	timeline.GetMinimumCombatLogEventTime = HandleGetMinimumCombatLogEventTime
-	timeline.ComputeChargeStates = interfaceUpdater.ComputeChargeStates
+	timeline.SetPreferences(profile.preferences)
+	timeline:SetFunctionReferences(
+		HandleCalculateAssignmentTimeFromStart,
+		HandleGetMinimumCombatLogEventTime,
+		interfaceUpdater.ComputeChargeStates
+	)
 	timeline:SetFullWidth(true)
 	timeline:SetCallback("AssignmentClicked", HandleTimelineAssignmentClicked)
 	timeline:SetCallback("CreateNewAssignment", HandleCreateNewAssignment)

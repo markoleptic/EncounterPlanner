@@ -543,7 +543,7 @@ do -- Profile updating and refreshing
 			local plans = profile.plans
 			local timeline = Private.mainFrame.timeline
 			if timeline then
-				timeline:SetPreferences(profile.preferences)
+				timeline.SetPreferences(profile.preferences)
 			end
 			interfaceUpdater.RepopulatePlanWidgets()
 			interfaceUpdater.UpdateFromPlan(plans[profile.lastOpenPlan])

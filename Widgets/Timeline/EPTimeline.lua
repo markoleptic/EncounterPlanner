@@ -3,556 +3,40 @@ local _, Namespace = ...
 ---@class Private
 local Private = Namespace
 
+local Type = "EPTimeline"
+local Version = 1
+
 ---@class EPTimelineConstants
 local k = Private.timeline.constants
 ---@class EPTimelineState
 local s = Private.timeline.state
 
-local ConvertTimelineOffsetToTime = Private.timeline.utilities.ConvertTimelineOffsetToTime
 local ConvertTimeToTimelineOffset = Private.timeline.utilities.ConvertTimeToTimelineOffset
+local CreateBossPhaseIndicators = Private.timeline.bossAbility.CreateBossPhaseIndicators
 local FindAssignmentFrame = Private.timeline.utilities.FindAssignmentFrame
 local FindTimelineAssignment = Private.timeline.utilities.FindTimelineAssignment
 local IsValidKeyCombination = Private.timeline.utilities.IsValidKeyCombination
-local SetAssignmentFrameOutline = Private.timeline.utilities.SetAssignmentFrameOutline
-local SortAssignmentFrameIndices = Private.timeline.utilities.SortAssignmentFrameIndices
+local StopMovingAssignment = Private.timeline.assignment.StopMovingAssignment
+local UpdateAssignmentFrames = Private.timeline.assignment.UpdateAssignmentFrames
+local UpdateBossAbilityFrames = Private.timeline.bossAbility.UpdateBossAbilityFrames
 local UpdateHorizontalScrollBarThumb = Private.timeline.utilities.UpdateHorizontalScrollBarThumb
 local UpdateLinePosition = Private.timeline.utilities.UpdateLinePosition
-local SelectAssignment = Private.timeline.utilities.SelectAssignment
-
-local UpdateBossAbilityFrames = Private.timeline.bossAbility.UpdateBossAbilityFrames
-local CreateBossPhaseIndicators = Private.timeline.bossAbility.CreateBossPhaseIndicators
-
-local AssignmentSelectionType = Private.constants.AssignmentSelectionType
-
-local Type = "EPTimeline"
-local Version = 1
-
-local AceGUI = LibStub("AceGUI-3.0")
-local UIParent = UIParent
+local UpdateTickMarks = Private.timeline.utilities.UpdateTickMarks
+local UpdateTimeLabels = Private.timeline.utilities.UpdateTimeLabels
 
 local abs = math.abs
+local AceGUI = LibStub("AceGUI-3.0")
 local Clamp = Clamp
 local CreateFrame = CreateFrame
 local floor = math.floor
-local format = string.format
 local GetCursorPosition = GetCursorPosition
-local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
 local ipairs = ipairs
 local max, min = math.max, math.min
-local next = next
 local pairs = pairs
 local select = select
-local sort = table.sort
-local tinsert = table.insert
-local tremove = table.remove
-local type = type
+local UIParent = UIParent
 local unpack = unpack
-local wipe = table.wipe
-
----@class EPTimeline : AceGUIWidget
----@field parent AceGUIContainer|nil
----@field frame table|Frame
----@field splitterFrame table|Frame
----@field type string
----@field assignmentTimeline EPTimelineSection
----@field bossAbilityTimeline EPTimelineSection
----@field timelineLabels table<integer, FontString>
----@field contentFrame table|Frame
----@field horizontalScrollBar table|Frame
----@field thumb Button
----@field addAssigneeDropdown EPDropdown
----@field currentTimeLabel EPLabel
----@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
----@field orderedWithSpellIDAssignmentFrameIndices table<integer, table<integer, table<integer, integer>>>
----@field fakeAssignmentFrame FakeAssignmentFrame
----@field bossAbilityInstances table<integer, BossAbilityInstance>
----@field bossAbilityVisibility table<integer, boolean>
----@field bossAbilityOrder table<integer, integer>
----@field bossPhaseOrder table<integer, integer>
----@field bossPhases table<integer, BossPhase>
----@field collapsed table<string, boolean>
----@field allowHeightResizing boolean
----@field bossAbilityDimensions {min: integer, max:integer, step:number}
----@field assignmentDimensions {min: integer, max:integer, step:number}
----@field preferences Preferences
----@field zoomFactor number
----@field CalculateAssignmentTimeFromStart fun(assignment: TimelineAssignment): number|nil
----@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
----@field ComputeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
----@field minTickInterval number
-
--- Updates the time of the current time label and hides time labels that overlap with it.
----@param self EPTimeline
-local function UpdateTimeLabels(self)
-	local verticalPositionLine = self.bossAbilityTimeline.verticalPositionLine
-	local hideVerticalPositionLineAndLabels = true
-	if verticalPositionLine:IsVisible() then
-		local timelineFrame = self.bossAbilityTimeline.timelineFrame
-		local time = ConvertTimelineOffsetToTime(verticalPositionLine, timelineFrame)
-		if time then
-			hideVerticalPositionLineAndLabels = false
-			local currentTimeLabel = self.currentTimeLabel
-			currentTimeLabel.frame:Show()
-
-			time = Private.utilities.Round(time, 0)
-			local minutes = floor(time / 60)
-			local seconds = time % 60
-			currentTimeLabel:SetText(format("%d:%02d", minutes, seconds), 2)
-			currentTimeLabel:SetFrameWidthFromText()
-
-			local lineOffsetFromTimelineFrame = verticalPositionLine:GetLeft() - timelineFrame:GetLeft()
-			local labelOffsetFromTimelineFrame = lineOffsetFromTimelineFrame
-				- currentTimeLabel.text:GetStringWidth() / 2.0
-			currentTimeLabel:SetPoint("LEFT", self.splitterFrame, "LEFT", labelOffsetFromTimelineFrame, 0)
-
-			for _, label in pairs(self.timelineLabels) do
-				if label.wantsToShow then
-					local text = currentTimeLabel.text
-					local textLeft, textRight = text:GetLeft(), text:GetRight()
-					local labelLeft, labelRight = label:GetLeft(), label:GetRight()
-					if not (textRight <= labelLeft or textLeft >= labelRight) then
-						label:Hide()
-					elseif label.wantsToShow then
-						label:Show()
-					end
-				end
-			end
-		end
-	end
-	if hideVerticalPositionLineAndLabels then
-		self.currentTimeLabel.frame:Hide()
-		for _, label in pairs(self.timelineLabels) do
-			if label.wantsToShow then
-				label:Show()
-			end
-		end
-	end
-end
-
--- Updates the tick mark positions for the boss ability timeline and assignments timeline.
----@param self EPTimeline
-local function UpdateTickMarks(self)
-	local assignmentTicks = self.assignmentTimeline:GetTicks()
-	local bossTicks = self.bossAbilityTimeline:GetTicks()
-	for _, tick in pairs(bossTicks) do
-		tick:Hide()
-	end
-	for _, tick in pairs(assignmentTicks) do
-		tick:Hide()
-	end
-	for _, label in pairs(self.timelineLabels) do
-		label:Hide()
-		label.wantsToShow = false
-	end
-	if s.TotalTimelineDuration <= 0.0 then
-		return
-	end
-
-	local assignmentTimelineFrame = self.assignmentTimeline.timelineFrame
-	local bossTimelineFrame = self.bossAbilityTimeline.timelineFrame
-	local timelineWidth = bossTimelineFrame:GetWidth()
-	local padding = k.TimelineLinePadding
-	local timelineWidthWithoutPadding = timelineWidth - (2 * padding.x)
-
-	local tickInterval = k.TickIntervals[1]
-	for i = 1, #k.TickIntervals do
-		local interval = k.TickIntervals[i]
-		if (interval / s.TotalTimelineDuration) * timelineWidthWithoutPadding >= self.minTickInterval then
-			tickInterval = interval
-			break
-		end
-	end
-
-	local Round = Private.utilities.Round
-	for i = 0, s.TotalTimelineDuration, tickInterval do
-		local position = (i / s.TotalTimelineDuration) * timelineWidthWithoutPadding
-		local tickPosition = position + padding.x
-		local tickWidth = (i % 2 == 0) and k.DefaultTickWidth * 0.5 or k.DefaultTickWidth
-		local bossTick = bossTicks[i]
-		if not bossTick then
-			bossTick = bossTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
-			bossTick:SetColorTexture(unpack(k.TickColor))
-			bossTicks[i] = bossTick
-		end
-		bossTick:SetWidth(tickWidth)
-		bossTick:SetPoint("TOP", bossTimelineFrame, "TOPLEFT", tickPosition, 0)
-		bossTick:SetPoint("BOTTOM", bossTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
-		bossTick:Show()
-
-		local assignmentTick = assignmentTicks[i]
-		if not assignmentTick then
-			assignmentTick = assignmentTimelineFrame:CreateTexture(nil, "BACKGROUND", nil, -7)
-			assignmentTick:SetColorTexture(unpack(k.TickColor))
-			assignmentTicks[i] = assignmentTick
-		end
-
-		assignmentTick:SetWidth(tickWidth)
-		assignmentTick:SetHeight(s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
-		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", tickPosition, 0)
-		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
-		assignmentTick:Show()
-
-		---@class FontString
-		local label = self.timelineLabels[i]
-		if not label then
-			label = self.splitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-			self.timelineLabels[i] = label
-			if k.FontPath then
-				label:SetFont(k.FontPath, k.TickFontSize)
-				label:SetTextColor(unpack(k.TickLabelColor))
-			end
-		end
-		local time = Round(i, 0)
-		local minutes = floor(time / 60)
-		local seconds = time % 60
-
-		label:SetText(format("%d:%02d", minutes, seconds))
-		label:SetPoint("CENTER", self.splitterFrame, "LEFT", tickPosition, 0)
-		label:Show()
-		label.wantsToShow = true
-	end
-end
-
--- Called when an assignment has stopped being dragged. Returns true if the assignment was duplicated, or the
--- difference between the previous assignment time and the new assignment time if the assignment was only moved.
----@param self EPTimeline
----@param assignmentFrame AssignmentFrame
----@return boolean|number
-local function StopMovingAssignment(self, assignmentFrame)
-	s.AssignmentIsDragging = false
-	assignmentFrame:SetScript("OnUpdate", nil)
-
-	local timelineAssignment = assignmentFrame.timelineAssignment
-
-	assignmentFrame.timelineAssignment = nil
-	s.AssignmentFrameBeingDragged = nil
-	s.HorizontalCursorPositionWhenAssignmentFrameClicked = 0
-
-	local time = ConvertTimelineOffsetToTime(assignmentFrame, self.bossAbilityTimeline.timelineFrame)
-
-	if s.AssignmentBeingDuplicated then
-		self.fakeAssignmentFrame:Hide()
-		s.AssignmentBeingDuplicated = false
-		if timelineAssignment then
-			local spellID = timelineAssignment.assignment.spellID
-			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
-			local spellIDTable = orderTable[spellID]
-			for index, assignmentFrameIndex in ipairs(spellIDTable) do
-				if assignmentFrameIndex == self.fakeAssignmentFrame.temporaryAssignmentFrameIndex then
-					tremove(s.AssignmentFrames, assignmentFrameIndex)
-					tremove(spellIDTable, index)
-					if not next(orderTable[spellID]) then
-						orderTable[spellID] = nil
-					end
-					break
-				end
-			end
-
-			if time then
-				self:Fire("DuplicateAssignmentEnd", timelineAssignment, time)
-			end
-		end
-		self.fakeAssignmentFrame:SetWidth(s.Preferences.timelineRows.assignmentHeight)
-		self.fakeAssignmentFrame.cooldownFrame:Hide()
-		self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
-		self.fakeAssignmentFrame.spellID = nil
-		self.fakeAssignmentFrame.uniqueAssignmentID = nil
-		self.fakeAssignmentFrame.timelineAssignment = nil
-		self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = nil
-		if self.fakeAssignmentFrame.chargeMarker then
-			self.fakeAssignmentFrame.chargeMarker:Hide()
-		end
-		return true
-	else
-		if time and timelineAssignment then
-			timelineAssignment.startTime = Private.utilities.Round(time, 1)
-			local relativeTime = self.CalculateAssignmentTimeFromStart(timelineAssignment)
-			local assignment = timelineAssignment.assignment
-			---@cast assignment TimedAssignment
-			local previousTime = assignment.time
-
-			if relativeTime then
-				---@cast assignment CombatLogEventAssignment
-				assignment.time = relativeTime
-			else
-				---@cast assignment TimedAssignment
-				assignment.time = timelineAssignment.startTime
-			end
-			return abs(previousTime - assignment.time)
-		end
-	end
-	return 0.0
-end
-
--- Called while an assignment is being dragged.
----@param self EPTimeline
----@param frame AssignmentFrame
-local function HandleAssignmentUpdate(self, frame)
-	if s.IsSimulating or not s.AssignmentIsDragging then
-		return
-	end
-
-	local horizontalCursorPosition = GetCursorPosition() / UIParent:GetEffectiveScale()
-	local difference = horizontalCursorPosition - s.HorizontalCursorPositionWhenAssignmentFrameClicked
-	if abs(difference) < 5 then -- Use a threshold of 5 pixels before changing the time
-		UpdateLinePosition(
-			self.assignmentTimeline.frame,
-			self.assignmentTimeline.verticalPositionLine,
-			-s.HorizontalCursorAssignmentFrameOffsetWhenClicked - difference
-		)
-		UpdateLinePosition(
-			self.bossAbilityTimeline.frame,
-			self.bossAbilityTimeline.verticalPositionLine,
-			-s.HorizontalCursorAssignmentFrameOffsetWhenClicked - difference
-		)
-		UpdateTimeLabels(self)
-		return
-	end
-	s.HorizontalCursorPositionWhenAssignmentFrameClicked = 0
-
-	local timelineFrameLeft = self.bossAbilityTimeline.timelineFrame:GetLeft()
-	local timelineFrameWidth = self.bossAbilityTimeline.timelineFrame:GetWidth()
-	local minOffsetFromTimelineFrameLeft = k.TimelineLinePadding.x
-	local maxOffsetFromTimelineFrameLeft = timelineFrameWidth - k.TimelineLinePadding.x
-
-	local minTime = self.GetMinimumCombatLogEventTime(frame.timelineAssignment)
-	if minTime then
-		local minOffsetFromTime = ConvertTimeToTimelineOffset(minTime, timelineFrameWidth)
-		minOffsetFromTimelineFrameLeft = max(minOffsetFromTime, minOffsetFromTimelineFrameLeft)
-	end
-
-	local assignmentFrameOffsetFromTimelineFrameLeft = horizontalCursorPosition
-		- timelineFrameLeft
-		- s.HorizontalCursorAssignmentFrameOffsetWhenClicked
-
-	assignmentFrameOffsetFromTimelineFrameLeft = Clamp(
-		assignmentFrameOffsetFromTimelineFrameLeft,
-		minOffsetFromTimelineFrameLeft,
-		maxOffsetFromTimelineFrameLeft
-	)
-
-	local assignmentLeft = frame:GetLeft()
-	local assignmentRight = assignmentLeft + s.Preferences.timelineRows.assignmentHeight
-	local horizontalScroll = self.bossAbilityTimeline.scrollFrame:GetHorizontalScroll()
-	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
-	local scrollFrameLeft = self.bossAbilityTimeline.scrollFrame:GetLeft()
-	local scrollFrameRight = scrollFrameLeft + scrollFrameWidth
-	local newHorizontalScroll = nil
-	if assignmentLeft < scrollFrameLeft then
-		local negativeOverflow = scrollFrameLeft - assignmentLeft
-		newHorizontalScroll = horizontalScroll - negativeOverflow
-	elseif assignmentRight > scrollFrameRight then
-		local positiveOverflow = assignmentRight - scrollFrameRight
-		newHorizontalScroll = horizontalScroll + positiveOverflow
-	end
-
-	if newHorizontalScroll then
-		newHorizontalScroll = Clamp(newHorizontalScroll, 0, timelineFrameWidth - scrollFrameWidth)
-		self.bossAbilityTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		self.assignmentTimeline.scrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		self.splitterScrollFrame:SetHorizontalScroll(newHorizontalScroll)
-		UpdateHorizontalScrollBarThumb(
-			self.horizontalScrollBar:GetWidth(),
-			self.thumb,
-			self.bossAbilityTimeline.scrollFrame:GetWidth(),
-			self.bossAbilityTimeline.timelineFrame:GetWidth(),
-			newHorizontalScroll
-		)
-	end
-
-	local verticalOffsetFromTimelineFrameTop = (frame.timelineAssignment.order - 1)
-		* (s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
-	frame:SetPoint("TOPLEFT", assignmentFrameOffsetFromTimelineFrameLeft, -verticalOffsetFromTimelineFrameTop)
-
-	local frameTimelineFrameDifference = timelineFrameLeft - (self.assignmentTimeline.frame:GetLeft() or 0)
-	local overrideLineLeft = assignmentFrameOffsetFromTimelineFrameLeft + frameTimelineFrameDifference
-	UpdateLinePosition(
-		self.assignmentTimeline.frame,
-		self.assignmentTimeline.verticalPositionLine,
-		nil,
-		overrideLineLeft
-	)
-	UpdateLinePosition(
-		self.bossAbilityTimeline.frame,
-		self.bossAbilityTimeline.verticalPositionLine,
-		nil,
-		overrideLineLeft
-	)
-	UpdateTimeLabels(self)
-
-	if s.AssignmentFrameBeingDragged and s.AssignmentFrameBeingDragged.timelineAssignment then
-		local time = ConvertTimelineOffsetToTime(s.AssignmentFrameBeingDragged, self.bossAbilityTimeline.timelineFrame)
-		if time then
-			s.AssignmentFrameBeingDragged.timelineAssignment.startTime = time
-			local order = s.AssignmentFrameBeingDragged.timelineAssignment.order
-			local spellIDAssignmentFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices[order]
-
-			local sortedAssignmentFrameIndices = {} ---@type table<integer,integer>
-			for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
-				for _, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
-					sortedAssignmentFrameIndices[#sortedAssignmentFrameIndices + 1] = assignmentFrameIndex
-				end
-			end
-			local assignmentFrames = s.AssignmentFrames
-			-- Need to sort by offset due to the fake assignment frame
-			SortAssignmentFrameIndices(assignmentFrames, sortedAssignmentFrameIndices)
-
-			local spellID = s.AssignmentFrameBeingDragged.timelineAssignment.assignment.spellID
-			local matchingSpellIDAssignmentFrameIndices = {} ---@type table<integer, integer>
-			local matchingTimelineAssignments = {} ---@type table<integer, TimelineAssignment>
-
-			-- Only compute charge states for matching spellIDs
-			for _, index in ipairs(sortedAssignmentFrameIndices) do
-				if assignmentFrames[index].spellID == spellID then
-					local newIndex = #matchingSpellIDAssignmentFrameIndices + 1
-					matchingSpellIDAssignmentFrameIndices[newIndex] = index
-					matchingTimelineAssignments[newIndex] = assignmentFrames[index].timelineAssignment
-				end
-			end
-			self.ComputeChargeStates(matchingTimelineAssignments)
-
-			local showSpellCooldownDuration = s.Preferences.showSpellCooldownDuration
-			local collapsed = self.collapsed
-			for _, assignmentFrameIndex in ipairs(matchingSpellIDAssignmentFrameIndices) do
-				local timelineAssignment = assignmentFrames[assignmentFrameIndex].timelineAssignment
-				if timelineAssignment then
-					local assignee = timelineAssignment.assignment.assignee
-					local showCooldown = showSpellCooldownDuration and not collapsed[assignee]
-					local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
-					self:DrawAssignment(
-						timelineAssignment.startTime,
-						timelineAssignment.assignment.spellID,
-						assignmentFrameIndex,
-						timelineAssignment.assignment.uniqueID,
-						timelineAssignment.order,
-						cooldown,
-						timelineAssignment.relativeChargeRestoreTime,
-						timelineAssignment.invalidChargeCast
-					)
-				end
-			end
-
-			local timelineFrame = self.assignmentTimeline.timelineFrame
-			local minFrameLevel = timelineFrame:GetFrameLevel() + 1
-			local left = (-s.Preferences.timelineRows.assignmentHeight * order)
-
-			for _, index in ipairs(sortedAssignmentFrameIndices) do
-				local assignmentFrame = assignmentFrames[index]
-				assignmentFrame:SetFrameLevel(minFrameLevel)
-				assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
-				minFrameLevel = minFrameLevel + 1
-			end
-		end
-	end
-end
-
----@param self EPTimeline
----@param frame AssignmentFrame
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
-local function HandleAssignmentMouseDown(self, frame, mouseButton)
-	if s.IsSimulating then
-		return
-	end
-
-	local isValidEdit = IsValidKeyCombination(s.Preferences.keyBindings.editAssignment, mouseButton)
-	local isValidDuplicate = IsValidKeyCombination(s.Preferences.keyBindings.duplicateAssignment, mouseButton)
-
-	if not isValidEdit and not isValidDuplicate then
-		return
-	end
-
-	s.HorizontalCursorPositionWhenAssignmentFrameClicked = GetCursorPosition() / UIParent:GetEffectiveScale()
-	s.HorizontalCursorAssignmentFrameOffsetWhenClicked = s.HorizontalCursorPositionWhenAssignmentFrameClicked
-		- frame:GetLeft()
-
-	self:ClearSelectedAssignments()
-	s.AssignmentIsDragging = true
-	local timelineAssignment, index = FindTimelineAssignment(s.TimelineAssignments, frame.uniqueAssignmentID)
-
-	if isValidDuplicate then
-		s.AssignmentBeingDuplicated = true
-		if timelineAssignment and index then
-			local spellID = timelineAssignment.assignment.spellID
-			local orderTable = self.orderedWithSpellIDAssignmentFrameIndices[timelineAssignment.order]
-			local spellIDTable = orderTable[spellID]
-
-			local newTimelineAssignment = {}
-			self:Fire("DuplicateAssignmentStart", timelineAssignment, newTimelineAssignment)
-
-			for spellIDTablePositionIndex, assignmentFrameIndex in ipairs(spellIDTable) do
-				if assignmentFrameIndex == index then
-					local newIndex = #s.AssignmentFrames + 1
-					self.fakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
-					self.fakeAssignmentFrame.timelineAssignment = newTimelineAssignment
-					s.AssignmentFrames[newIndex] = self.fakeAssignmentFrame
-					tinsert(spellIDTable, spellIDTablePositionIndex, newIndex)
-					break
-				end
-			end
-
-			local fakeAssignmentFrame = self.fakeAssignmentFrame
-			fakeAssignmentFrame:Hide()
-			fakeAssignmentFrame.spellID = frame.spellID
-			fakeAssignmentFrame.uniqueAssignmentID = frame.uniqueAssignmentID
-			fakeAssignmentFrame:SetPoint(frame:GetPointByName("TOPLEFT"))
-			fakeAssignmentFrame:SetSize(frame:GetSize())
-			fakeAssignmentFrame.spellTexture:SetSize(frame.spellTexture:GetSize())
-			fakeAssignmentFrame.spellTexture:SetTexture(frame.spellTexture:GetTexture())
-
-			if frame.cooldownFrame:IsShown() then
-				fakeAssignmentFrame.cooldownFrame:SetWidth(frame.cooldownFrame:GetWidth())
-				fakeAssignmentFrame.cooldownFrame:Show()
-				local left = -s.Preferences.timelineRows.assignmentHeight * timelineAssignment.order
-				fakeAssignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
-			else
-				fakeAssignmentFrame.cooldownFrame:Hide()
-			end
-			if frame.invalidTexture:IsShown() then
-				fakeAssignmentFrame.invalidTexture:Show()
-			else
-				fakeAssignmentFrame.invalidTexture:Hide()
-			end
-			fakeAssignmentFrame:SetFrameLevel(frame:GetFrameLevel() - 1)
-			fakeAssignmentFrame:Show()
-		end
-	end
-	SelectAssignment(frame, AssignmentSelectionType.kSelection)
-	frame.timelineAssignment = timelineAssignment
-	s.AssignmentFrameBeingDragged = frame
-	frame:SetScript("OnUpdate", function(f)
-		HandleAssignmentUpdate(self, f)
-	end)
-end
-
----@param self EPTimeline
----@param frame AssignmentFrame
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
-local function HandleAssignmentMouseUp(self, frame, mouseButton)
-	if s.IsSimulating then
-		return
-	end
-	local duplicatedOrAssignmentTimeDifference = nil
-	if s.AssignmentIsDragging then
-		duplicatedOrAssignmentTimeDifference = StopMovingAssignment(self, frame)
-		if type(duplicatedOrAssignmentTimeDifference) == "boolean" and duplicatedOrAssignmentTimeDifference == true then
-			self.bossAbilityTimeline.verticalPositionLine:Hide()
-			self.assignmentTimeline.verticalPositionLine:Hide()
-			UpdateTimeLabels(self)
-			return
-		end
-	end
-
-	if IsValidKeyCombination(s.Preferences.keyBindings.editAssignment, mouseButton) then
-		if frame.uniqueAssignmentID then
-			self:Fire("AssignmentClicked", frame.uniqueAssignmentID, duplicatedOrAssignmentTimeDifference)
-		end
-	end
-
-	self.bossAbilityTimeline.verticalPositionLine:Hide()
-	self.assignmentTimeline.verticalPositionLine:Hide()
-	UpdateTimeLabels(self)
-end
 
 ---@param self EPTimeline
 ---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"
@@ -562,10 +46,10 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 	end
 
 	if s.AssignmentIsDragging and s.AssignmentFrameBeingDragged then
-		StopMovingAssignment(self, s.AssignmentFrameBeingDragged)
-		self.bossAbilityTimeline.verticalPositionLine:Hide()
-		self.assignmentTimeline.verticalPositionLine:Hide()
-		UpdateTimeLabels(self)
+		StopMovingAssignment(s.AssignmentFrameBeingDragged)
+		s.BossAbilityTimeline.verticalPositionLine:Hide()
+		s.AssignmentTimeline.verticalPositionLine:Hide()
+		UpdateTimeLabels()
 		return
 	end
 
@@ -574,7 +58,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 		currentX = currentX / UIParent:GetEffectiveScale()
 		currentY = currentY / UIParent:GetEffectiveScale()
 
-		local timelineFrame = self.bossAbilityTimeline.timelineFrame
+		local timelineFrame = s.BossAbilityTimeline.timelineFrame
 		local timelineWidth = timelineFrame:GetWidth()
 		local padding = k.TimelineLinePadding.x
 		local newTimeOffset = currentX - timelineFrame:GetLeft()
@@ -584,11 +68,11 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 			return
 		end
 
-		local relativeDistanceFromTop = abs(self.assignmentTimeline.timelineFrame:GetTop() - currentY)
+		local relativeDistanceFromTop = abs(s.AssignmentTimeline.timelineFrame:GetTop() - currentY)
 		local totalAssignmentHeight = 0
 		local assignee, spellID = nil, nil
 		for _, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-			if assigneeAndSpell.spellID == nil or not self.collapsed[assigneeAndSpell.assignee] then
+			if assigneeAndSpell.spellID == nil or not s.Collapsed[assigneeAndSpell.assignee] then
 				totalAssignmentHeight = totalAssignmentHeight
 					+ (s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
 				if totalAssignmentHeight >= relativeDistanceFromTop then
@@ -605,258 +89,11 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 end
 
 ---@param self EPTimeline
----@param spellID integer
----@param timelineFrame Frame
----@param offsetX number
----@param offsetY number
----@return AssignmentFrame
-local function CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offsetY)
-	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
-	local assignment = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate")
-	assignment:SetBackdrop({
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		edgeSize = 2,
-	})
-	assignment:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
-	assignment:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
-	assignment:SetSize(assignmentHeight, assignmentHeight)
-
-	local cooldownFrame = CreateFrame("Frame", nil, assignment)
-	cooldownFrame:SetPoint("LEFT", assignment, "RIGHT")
-	cooldownFrame:SetHeight(assignmentHeight + 0.01)
-	cooldownFrame:SetClipsChildren(true)
-	cooldownFrame:EnableMouse(false)
-
-	local spellTexture = assignment:CreateTexture(nil, "OVERLAY", nil, k.AssignmentTextureSubLevel)
-	spellTexture:SetPoint("CENTER")
-	spellTexture:SetSize(assignmentHeight - 2, assignmentHeight - 2)
-	spellTexture:SetPassThroughButtons("LeftButton", "RightButton", "MiddleButton", "Button4", "Button5")
-	spellTexture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-
-	local cooldownParent = self.frame:CreateTexture(nil, "BACKGROUND")
-	cooldownParent:SetPoint("TOPRIGHT", cooldownFrame, "TOPRIGHT")
-	cooldownParent:SetPoint("BOTTOMRIGHT", cooldownFrame, "BOTTOMRIGHT")
-	cooldownParent:SetAlpha(0)
-	cooldownParent:EnableMouse(false)
-
-	local cooldownBackground = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -2)
-	cooldownBackground:SetColorTexture(unpack(k.CooldownBackgroundColor))
-	cooldownBackground:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT")
-	cooldownBackground:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT")
-	cooldownBackground:EnableMouse(false)
-
-	local cooldownTexture = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -1)
-	cooldownTexture:SetTexture(k.CooldownTextureFile, "REPEAT", "REPEAT")
-	cooldownTexture:SetSnapToPixelGrid(false)
-	cooldownTexture:SetTexelSnappingBias(0)
-	cooldownTexture:SetHorizTile(true)
-	cooldownTexture:SetVertTile(true)
-	cooldownTexture:SetPoint("TOPLEFT", cooldownParent, "TOPLEFT", k.CooldownPadding, -k.CooldownPadding)
-	cooldownTexture:SetPoint("BOTTOMRIGHT", cooldownParent, "BOTTOMRIGHT", -k.CooldownPadding, k.CooldownPadding)
-	cooldownTexture:SetAlpha(k.CooldownTextureAlpha)
-	cooldownTexture:EnableMouse(false)
-
-	local invalidTexture = assignment:CreateTexture(nil, "OVERLAY", nil, k.AssignmentTextureSubLevel + 1)
-	invalidTexture:SetAllPoints(spellTexture)
-	invalidTexture:SetColorTexture(unpack(k.InvalidTextureColor))
-	invalidTexture:Hide()
-
-	assignment.spellTexture = spellTexture
-	assignment.invalidTexture = invalidTexture
-	assignment.cooldownBackground = cooldownBackground
-	assignment.cooldownTexture = cooldownTexture
-	assignment.assignmentFrame = timelineFrame
-	assignment.timelineAssignment = nil
-	assignment.spellID = spellID
-	assignment.cooldownParent = cooldownParent
-	assignment.cooldownFrame = cooldownFrame
-	assignment.selectionType = AssignmentSelectionType.kNone
-
-	assignment:SetScript("OnMouseDown", function(frame, mouseButton, _)
-		HandleAssignmentMouseDown(self, frame, mouseButton)
-	end)
-	assignment:SetScript("OnMouseUp", function(frame, mouseButton, _)
-		HandleAssignmentMouseUp(self, frame, mouseButton)
-	end)
-
-	return assignment --[[@as AssignmentFrame]]
-end
-
--- Helper function to draw a spell icon for an assignment.
----@param self EPTimeline
----@param startTime number absolute start time of the assignment
----@param spellID integer spellID of the spell being assigned
----@param index integer index of the AssignmentFrame to use to display the assignment
----@param uniqueID integer unique index of the assignment
----@param order number the relative order of the assignee of the assignment
----@param cooldownDuration number|nil
----@param relativeChargeRestoreTime number|nil
----@param invalidChargeCast boolean|nil
-local function DrawAssignment(
-	self,
-	startTime,
-	spellID,
-	index,
-	uniqueID,
-	order,
-	cooldownDuration,
-	relativeChargeRestoreTime,
-	invalidChargeCast
-)
-	if s.TotalTimelineDuration <= 0.0 then
-		return
-	end
-
-	local padding = k.TimelineLinePadding
-	local timelineFrame = self.assignmentTimeline.timelineFrame
-	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
-	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
-
-	local timelineStartPosition = (startTime / s.TotalTimelineDuration) * timelineWidth
-	local offsetX = timelineStartPosition + k.TimelineLinePadding.x
-	local offsetY = (order - 1) * (assignmentHeight + k.PaddingBetweenAssignments)
-
-	local assignmentFrame = s.AssignmentFrames[index]
-	if not assignmentFrame then
-		assignmentFrame = CreateAssignmentFrame(self, spellID, timelineFrame, offsetX, offsetY)
-		s.AssignmentFrames[index] = assignmentFrame
-	end
-
-	assignmentFrame.spellID = spellID
-	assignmentFrame.uniqueAssignmentID = uniqueID
-
-	assignmentFrame:SetHeight(assignmentHeight)
-	assignmentFrame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
-	assignmentFrame:Show()
-
-	local hideMarker = true
-	if spellID == k.InvalidAssignmentSpellID then
-		assignmentFrame.spellTexture:SetTexture(k.UnknownIcon)
-	elseif spellID == k.TextAssignmentSpellID then
-		assignmentFrame.spellTexture:SetTexture(k.TextAssignmentTexture)
-	else
-		local iconID, _ = GetSpellTexture(spellID)
-		assignmentFrame.spellTexture:SetTexture(iconID)
-		if cooldownDuration then
-			local cooldownEndPosition = (startTime + cooldownDuration) / s.TotalTimelineDuration * timelineWidth
-			local cooldownWidth = (cooldownEndPosition - timelineStartPosition) - k.CooldownWidthTolerance
-			local visibleCooldownWidth = cooldownWidth - assignmentHeight
-			local cooldownFrame = assignmentFrame.cooldownFrame
-			if visibleCooldownWidth > 0 then
-				cooldownFrame:SetSize(visibleCooldownWidth, assignmentHeight + 0.01)
-				cooldownFrame:Show()
-			else
-				cooldownFrame:SetWidth(0)
-				cooldownFrame:Hide()
-			end
-
-			if relativeChargeRestoreTime then
-				local chargeMarker = assignmentFrame.chargeMarker
-				if not chargeMarker then
-					chargeMarker = self.chargeFrame:CreateTexture(nil, "OVERLAY", nil, k.AssignmentTextureSubLevel + 1)
-					chargeMarker:SetTexture(k.PhaseIndicatorTexture, "REPEAT", "REPEAT")
-					chargeMarker:SetVertexColor(unpack(k.SpellChargeRestorationColor))
-					chargeMarker:SetWidth(2)
-					assignmentFrame.chargeMarker = chargeMarker
-				end
-				local left = (relativeChargeRestoreTime / s.TotalTimelineDuration) * timelineWidth
-				chargeMarker:SetHeight(assignmentHeight - 2)
-				chargeMarker:SetTexCoord(0.1, 0.4, 0, 4.5)
-				chargeMarker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
-				chargeMarker:Show()
-				hideMarker = false
-			end
-		end
-	end
-	if assignmentFrame.chargeMarker and hideMarker then
-		assignmentFrame.chargeMarker:Hide()
-	end
-	if invalidChargeCast == true then
-		assignmentFrame.invalidTexture:Show()
-	else
-		assignmentFrame.invalidTexture:Hide()
-	end
-end
-
--- Updates the rendering of assignments on the timeline.
----@param self EPTimeline
-local function UpdateAssignments(self)
-	-- Clears/resets assignment frames
-	local selected = self:GetSelectedAssignments(true)
-
-	wipe(self.orderedWithSpellIDAssignmentFrameIndices)
-	local orderedFrameIndices = {}
-	local collapsed = self.collapsed
-	local showSpellCooldownDuration = s.Preferences.showSpellCooldownDuration
-	local orderedSpellIDFrameIndices = self.orderedWithSpellIDAssignmentFrameIndices
-
-	for index, timelineAssignment in ipairs(s.TimelineAssignments) do
-		local order = timelineAssignment.order
-		local assignment = timelineAssignment.assignment
-		local spellID = assignment.spellID
-		if not orderedSpellIDFrameIndices[order] then
-			orderedSpellIDFrameIndices[order] = {}
-			orderedFrameIndices[order] = {}
-		end
-		if not orderedSpellIDFrameIndices[order][spellID] then
-			orderedSpellIDFrameIndices[order][spellID] = {}
-		end
-		local showCooldown = showSpellCooldownDuration and not collapsed[assignment.assignee]
-		local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
-		DrawAssignment(
-			self,
-			timelineAssignment.startTime,
-			spellID,
-			index,
-			assignment.uniqueID,
-			order,
-			cooldown,
-			timelineAssignment.relativeChargeRestoreTime,
-			timelineAssignment.invalidChargeCast
-		)
-		s.AssignmentFrames[index].timelineAssignment = timelineAssignment
-		orderedSpellIDFrameIndices[order][spellID][#orderedSpellIDFrameIndices[order][spellID] + 1] = index
-		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
-	end
-
-	local assignmentFrames = s.AssignmentFrames
-	local timelineFrame = self.assignmentTimeline.timelineFrame
-	local timelineAssignments = s.TimelineAssignments
-	local timelineFrameLevel = timelineFrame:GetFrameLevel()
-	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
-
-	local maxFrameLevel = 0
-	for order, assignmentFrameIndices in pairs(orderedFrameIndices) do
-		sort(assignmentFrameIndices, function(a, b)
-			---@diagnostic disable-next-line: need-check-nil
-			return timelineAssignments[a].startTime < timelineAssignments[b].startTime
-		end)
-		local minFrameLevel = timelineFrameLevel + 1
-		local left = (-assignmentHeight * order)
-		for _, index in ipairs(assignmentFrameIndices) do
-			local assignmentFrame = assignmentFrames[index]
-			assignmentFrame:SetFrameLevel(minFrameLevel)
-			assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
-			minFrameLevel = minFrameLevel + 1
-		end
-		maxFrameLevel = max(maxFrameLevel, minFrameLevel)
-	end
-
-	self.chargeFrame:SetFrameLevel(maxFrameLevel)
-
-	for assignmentSelectionType, uniqueAssignmentIDs in pairs(selected) do
-		for _, uniqueAssignmentID in ipairs(uniqueAssignmentIDs) do
-			SelectAssignment(uniqueAssignmentID, assignmentSelectionType)
-		end
-	end
-end
-
----@param self EPTimeline
 ---@param isBossTimelineSection boolean
 ---@param delta number
 local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 	if s.AssignmentIsDragging and s.AssignmentFrameBeingDragged then
-		StopMovingAssignment(self, s.AssignmentFrameBeingDragged)
+		StopMovingAssignment(s.AssignmentFrameBeingDragged)
 	end
 
 	local currentTime = GetTime()
@@ -979,14 +216,14 @@ local function HandleTimelineFrameMouseWheel(self, isBossTimelineSection, delta)
 			newTimelineFrameWidth,
 			newHorizontalScroll
 		)
-		UpdateAssignments(self)
+		UpdateAssignmentFrames()
 		UpdateBossAbilityFrames(
 			self.bossAbilityOrder,
 			self.bossAbilityVisibility,
 			self.bossAbilityInstances,
 			self.phaseNameFrame
 		)
-		UpdateTickMarks(self)
+		UpdateTickMarks()
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "timelineFrameMouseWheel")
 		end
@@ -1059,7 +296,7 @@ local function HandleTimelineFrameEnter(self, frame)
 	frame:SetScript("OnUpdate", function()
 		UpdateLinePosition(assignmentFrame, assignmentLine)
 		UpdateLinePosition(bossAbilityFrame, bossAbilityLine)
-		UpdateTimeLabels(self)
+		UpdateTimeLabels()
 	end)
 end
 
@@ -1072,7 +309,7 @@ local function HandleTimelineFrameLeave(self, frame)
 	frame:SetScript("OnUpdate", nil)
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
-	UpdateTimeLabels(self)
+	UpdateTimeLabels()
 end
 
 ---@param self EPTimeline
@@ -1091,7 +328,7 @@ local function HandleTimelineFrameDragStart(self, frame, button)
 
 	self.assignmentTimeline.verticalPositionLine:Hide()
 	self.bossAbilityTimeline.verticalPositionLine:Hide()
-	UpdateTimeLabels(self)
+	UpdateTimeLabels()
 
 	local splitterScrollFrame = self.splitterScrollFrame
 	local scrollFrameWidth = self.bossAbilityTimeline.scrollFrame:GetWidth()
@@ -1151,7 +388,7 @@ local function HandleTimelineFrameDragStop(self, frame, scrollFrame)
 		frame:SetScript("OnUpdate", function()
 			UpdateLinePosition(assignmentFrame, assignmentLine)
 			UpdateLinePosition(bossAbilityFrame, bossAbilityLine)
-			UpdateTimeLabels(self)
+			UpdateTimeLabels()
 		end)
 	end
 end
@@ -1187,7 +424,7 @@ local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentRows = 0
 	local rowHeight = s.Preferences.timelineRows.assignmentHeight
 	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assignee] then
+		if as.spellID == nil or not s.Collapsed[as.assignee] then
 			totalAssignmentHeight = totalAssignmentHeight + (rowHeight + k.PaddingBetweenAssignments)
 			totalAssignmentRows = totalAssignmentRows + 1
 		end
@@ -1270,7 +507,7 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	local maximumNumberOfAssignmentRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
 
 	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not self.collapsed[as.assignee] then
+		if as.spellID == nil or not s.Collapsed[as.assignee] then
 			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
 				maxH = maxH + stepH
 			end
@@ -1295,16 +532,13 @@ end
 
 ---@param self EPTimeline
 local function OnAcquire(self)
-	s:Init()
-	self.timelineLabels = self.timelineLabels or {}
+	s:Init(self.splitterFrame, self.splitterScrollFrame, self.chargeFrame, self.horizontalScrollBar, self.thumb)
 	self.zoomFactor = self.zoomFactor or 1.0
-	self.orderedWithSpellIDAssignmentFrameIndices = {}
 	self.bossAbilityOrder = {}
 	self.bossPhaseOrder = {}
 	self.bossPhases = {}
 	self.assigneesAndSpells = {}
 	self.bossAbilityVisibility = {}
-	self.collapsed = {}
 	self.allowHeightResizing = false
 	self.bossAbilityDimensions = { min = 0, max = 0, step = 0 }
 	self.assignmentDimensions = { min = 0, max = 0, step = 0 }
@@ -1320,9 +554,10 @@ local function OnAcquire(self)
 	self.assignmentTimeline:SetListPadding(k.PaddingBetweenAssignments)
 
 	self.bossAbilityTimeline = AceGUI:Create("EPTimelineSection")
-	s.BossAbilityTimeline = self.bossAbilityTimeline
 	self.bossAbilityTimeline.frame:SetParent(self.contentFrame)
 	self.bossAbilityTimeline:SetListPadding(k.PaddingBetweenBossAbilityBars)
+
+	s:SetTimelineSections(self.assignmentTimeline, self.bossAbilityTimeline)
 
 	self.assignmentTimeline.listContainer.frame:SetScript("OnMouseWheel", function(_, delta)
 		HandleTimelineFrameMouseWheel(self, false, delta)
@@ -1394,20 +629,6 @@ local function OnAcquire(self)
 	self.phaseNameFrame:SetHeight(22)
 	self.phaseNameFrame:Show()
 
-	local label = self.timelineLabels[1]
-	if not label then
-		label = self.splitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		self.timelineLabels[1] = label
-		if k.FontPath then
-			label:SetFont(k.FontPath, k.TickFontSize)
-			label:SetTextColor(unpack(k.TickLabelColor))
-		end
-		label:Hide()
-		label:SetPoint("LEFT")
-		label:SetText("00:00")
-		self.minTickInterval = label:GetStringWidth() + k.MinimumSpacingBetweenLabels
-	end
-
 	self.horizontalScrollBar:SetHeight(k.HorizontalScrollBarHeight)
 	self.horizontalScrollBar:SetParent(self.frame)
 	self.horizontalScrollBar:SetPoint("BOTTOMLEFT", 210, 0)
@@ -1434,19 +655,6 @@ local function OnAcquire(self)
 	self.addAssigneeDropdown = AceGUI:Create("EPDropdown")
 	self.addAssigneeDropdown.frame:SetParent(self.contentFrame)
 	self.addAssigneeDropdown.frame:SetPoint("RIGHT", self.splitterScrollFrame, "LEFT", -10, 0)
-
-	self.currentTimeLabel = AceGUI:Create("EPLabel")
-	self.currentTimeLabel.text:SetTextColor(unpack(k.AssignmentSelectOutlineColor))
-	self.currentTimeLabel:SetFontSize(18)
-	self.currentTimeLabel.frame:SetParent(self.splitterScrollFrame)
-	self.currentTimeLabel.frame:SetPoint("CENTER", self.splitterScrollFrame, "LEFT", 200, 0)
-	self.currentTimeLabel.frame:Hide()
-
-	if self.fakeAssignmentFrame then
-		self.fakeAssignmentFrame:SetParent(self.assignmentTimeline.timelineFrame)
-		self.fakeAssignmentFrame:ClearAllPoints()
-		self.fakeAssignmentFrame:Hide()
-	end
 
 	self.frame:Show()
 end
@@ -1492,50 +700,21 @@ local function OnRelease(self)
 	self.assignmentTimeline = nil
 	self.bossAbilityTimeline:Release()
 	self.bossAbilityTimeline = nil
-	s.BossAbilityTimeline = nil
 	self.addAssigneeDropdown:Release()
 	self.addAssigneeDropdown = nil
-	self.currentTimeLabel:Release()
-	self.currentTimeLabel = nil
-
-	for _, label in pairs(self.timelineLabels) do
-		label:ClearAllPoints()
-		label:Hide()
-		label.wantsToShow = nil
-	end
 
 	self.phaseNameFrame:ClearAllPoints()
 	self.phaseNameFrame:SetParent(UIParent)
 	self.phaseNameFrame:Hide()
 
-	self.fakeAssignmentFrame:ClearAllPoints()
-	self.fakeAssignmentFrame:SetParent(UIParent)
-	self.fakeAssignmentFrame:Hide()
-	self.fakeAssignmentFrame:SetWidth(0)
-	self.fakeAssignmentFrame.cooldownFrame:Hide()
-	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
-	SetAssignmentFrameOutline(self.fakeAssignmentFrame, k.HighlightType.None, 2)
-	if self.fakeAssignmentFrame.chargeMarker then
-		self.fakeAssignmentFrame.chargeMarker:ClearAllPoints()
-		self.fakeAssignmentFrame.chargeMarker:Hide()
-	end
-	self.fakeAssignmentFrame.spellID = nil
-	self.fakeAssignmentFrame.uniqueAssignmentID = nil
-	self.fakeAssignmentFrame.timelineAssignment = nil
-
-	self.orderedWithSpellIDAssignmentFrameIndices = nil
 	self.bossAbilityOrder = nil
 	self.bossPhaseOrder = nil
 	self.bossPhases = nil
 	self.assigneesAndSpells = nil
 	self.bossAbilityVisibility = nil
-	self.collapsed = nil
 	self.allowHeightResizing = nil
 	self.bossAbilityDimensions = nil
 	self.assignmentDimensions = nil
-	self.CalculateAssignmentTimeFromStart = nil
-	self.GetMinimumCombatLogEventTime = nil
-	self.ComputeChargeStates = nil
 	s:Reset()
 end
 
@@ -1570,7 +749,7 @@ local function SetBossAbilities(self, bossAbilityInstances, abilityOrder, phases
 			self.bossAbilityInstances,
 			self.phaseNameFrame
 		)
-		UpdateTickMarks(self)
+		UpdateTickMarks()
 	end
 end
 
@@ -1579,10 +758,8 @@ end
 ---@param assigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
 ---@param collapsed table<string, boolean>
 local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
-	s.TimelineAssignments = assignments
+	s:SetAssignments(assignments, collapsed)
 	self.assigneesAndSpells = assigneesAndSpells
-	self.collapsed = collapsed
-
 	self:UpdateHeightFromAssignments()
 	self:SetAssignmentTimelineVerticalScroll()
 end
@@ -1590,8 +767,8 @@ end
 -- Only here to preserve ordering of local functions...
 ---@param self EPTimeline
 local function UpdateAssignmentsAndTickMarks(self)
-	UpdateAssignments(self)
-	UpdateTickMarks(self)
+	UpdateAssignmentFrames()
+	UpdateTickMarks()
 end
 
 ---@param self EPTimeline
@@ -1698,7 +875,7 @@ local function UpdateTimeline(self, skipUpdateAssignments, skipUpdateBossAbility
 		newHorizontalScroll
 	)
 	if not skipUpdateAssignments then
-		UpdateAssignments(self)
+		UpdateAssignmentFrames()
 	end
 	if not skipUpdateBossAbilityBars then
 		UpdateBossAbilityFrames(
@@ -1709,7 +886,7 @@ local function UpdateTimeline(self, skipUpdateAssignments, skipUpdateBossAbility
 		)
 	end
 	if not skipUpdateTickMarks then
-		UpdateTickMarks(self)
+		UpdateTickMarks()
 	end
 end
 
@@ -1839,39 +1016,6 @@ local function OnHeightSet(self, height)
 	self:UpdateTimeline()
 end
 
--- Returns tables of selected assignments and optionally resets assignment frames.
----@param self EPTimeline
----@param clear boolean If true, assignment frames are reset
----@return table<AssignmentSelectionType, table<integer, integer>> -- Unique assignment IDs of the selected frames
-local function GetSelectedAssignments(self, clear)
-	local selection, bossAbilityHover = {}, {}
-	for _, frame in ipairs(s.AssignmentFrames) do
-		if frame.selectionType == AssignmentSelectionType.kSelection then
-			selection[#selection + 1] = frame.uniqueAssignmentID
-		elseif frame.selectionType == AssignmentSelectionType.kBossAbilityHover then
-			bossAbilityHover[#bossAbilityHover + 1] = frame.uniqueAssignmentID
-		end
-		if clear then
-			frame:Hide()
-			frame:SetWidth(s.Preferences.timelineRows.assignmentHeight)
-			frame.invalidTexture:Hide()
-			frame.cooldownFrame:Hide()
-			frame.uniqueAssignmentID = 0
-			SetAssignmentFrameOutline(frame, k.HighlightType.None, s.Preferences.timelineRows.assignmentHeight)
-			frame.selectionType = AssignmentSelectionType.kNone
-			frame.timelineAssignment = nil
-			if frame.chargeMarker then
-				frame.chargeMarker:ClearAllPoints()
-				frame.chargeMarker:Hide()
-			end
-		end
-	end
-	return {
-		[AssignmentSelectionType.kSelection] = selection,
-		[AssignmentSelectionType.kBossAbilityHover] = bossAbilityHover,
-	}
-end
-
 ---@param self EPTimeline
 ---@param assignmentID integer
 local function ScrollAssignmentIntoView(self, assignmentID)
@@ -1938,19 +1082,24 @@ local function SetAllowHeightResizing(self, allow)
 	end
 end
 
----@param self EPTimeline
 ---@param preferences Preferences
-local function SetPreferences(self, preferences)
-	s.Preferences = preferences
-	if not self.fakeAssignmentFrame then
-		local fakeAssignmentFrame = CreateAssignmentFrame(self, 0, self.frame, 0, 0)
-		fakeAssignmentFrame:SetParent(self.assignmentTimeline.timelineFrame)
-		fakeAssignmentFrame:SetScript("OnMouseDown", nil)
-		fakeAssignmentFrame:SetScript("OnMouseUp", nil)
-		fakeAssignmentFrame:Hide()
-		fakeAssignmentFrame.assignmentFrame = nil
-		self.fakeAssignmentFrame = fakeAssignmentFrame --[[@as FakeAssignmentFrame]]
-	end
+local function SetPreferences(preferences)
+	s:SetPreferences(preferences)
+end
+
+---@param self EPTimeline
+---@param calculateAssignmentTimeFromStart fun(timelineAssignment: TimelineAssignment): number|nil
+---@param getMinimumCombatLogEventTime fun(timelineAssignment: TimelineAssignment): number|nil
+---@param computeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
+local function SetFunctionReferences(
+	self,
+	calculateAssignmentTimeFromStart,
+	getMinimumCombatLogEventTime,
+	computeChargeStates
+)
+	s:SetFunctionReferences(function(name, ...)
+		self:Fire(name, ...)
+	end, calculateAssignmentTimeFromStart, getMinimumCombatLogEventTime, computeChargeStates)
 end
 
 ---@return number
@@ -1986,7 +1135,7 @@ local function SetIsSimulating(self, simulating)
 			assignmentLine:SetPoint("BOTTOM", assignmentFrame, "BOTTOMLEFT", horizontalOffset, 0)
 			assignmentLine:Show()
 
-			UpdateTimeLabels(self)
+			UpdateTimeLabels()
 		end)
 	else
 		s.SimulationStartTime = 0.0
@@ -2005,7 +1154,7 @@ local function SetIsSimulating(self, simulating)
 		end)
 		self.assignmentTimeline.verticalPositionLine:Hide()
 		self.bossAbilityTimeline.verticalPositionLine:Hide()
-		UpdateTimeLabels(self)
+		UpdateTimeLabels()
 	end
 end
 
@@ -2133,7 +1282,21 @@ local function Constructor()
 	local chargeFrame = CreateFrame("Frame", nil, frame)
 	chargeFrame:SetClipsChildren(true)
 
-	---@class EPTimeline
+	---@class EPTimeline : AceGUIWidget
+	---@field parent AceGUIContainer|nil
+	---@field assignmentTimeline EPTimelineSection
+	---@field bossAbilityTimeline EPTimelineSection
+	---@field addAssigneeDropdown EPDropdown
+	---@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
+	---@field bossAbilityInstances table<integer, BossAbilityInstance>
+	---@field bossAbilityVisibility table<integer, boolean>
+	---@field bossAbilityOrder table<integer, integer>
+	---@field bossPhaseOrder table<integer, integer>
+	---@field bossPhases table<integer, BossPhase>
+	---@field allowHeightResizing boolean
+	---@field bossAbilityDimensions {min: integer, max:integer, step:number}
+	---@field assignmentDimensions {min: integer, max:integer, step:number}
+	---@field zoomFactor number
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -2154,12 +1317,12 @@ local function Constructor()
 		SetAllowHeightResizing = SetAllowHeightResizing,
 		SetMaxAssignmentHeight = SetMaxAssignmentHeight,
 		SetPreferences = SetPreferences,
+		SetFunctionReferences = SetFunctionReferences,
 		UpdateHeightFromBossAbilities = UpdateHeightFromBossAbilities,
 		UpdateHeightFromAssignments = UpdateHeightFromAssignments,
 		UpdateAssignmentsAndTickMarks = UpdateAssignmentsAndTickMarks,
 		GetTotalTimelineDuration = GetTotalTimelineDuration,
 		SetIsSimulating = SetIsSimulating,
-		GetSelectedAssignments = GetSelectedAssignments,
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
 		FindTimelineAssignment = FindTimelineAssignment,
@@ -2167,7 +1330,6 @@ local function Constructor()
 		SetHorizontalScroll = SetHorizontalScroll,
 		SetAssignmentTimelineVerticalScroll = SetAssignmentTimelineVerticalScroll,
 		SetBossAbilityTimelineVerticalScroll = SetBossAbilityTimelineVerticalScroll,
-		DrawAssignment = DrawAssignment,
 		frame = frame,
 		splitterFrame = splitterFrame,
 		splitterScrollFrame = splitterScrollFrame,
