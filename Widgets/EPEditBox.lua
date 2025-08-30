@@ -71,6 +71,17 @@ local function OnAcquire(self)
 	end)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
+	self.scrollFrame.frame:SetScript("OnMouseUp", function()
+		if not self.editBox:IsMouseOver() then
+			if self.scrollFrame then
+				if self.scrollFrame.frame:IsMouseOver(-2, 2, 2, -2) then
+					local cursorPosition = self.editBox:GetText():len()
+					self.editBox:SetFocus()
+					self.editBox:SetCursorPosition(cursorPosition)
+				end
+			end
+		end
+	end)
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
 	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", k.FramePadding, 0)
 	self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
@@ -92,6 +103,7 @@ local function OnRelease(self)
 	self.editBox:SetScript("OnTextChanged", nil)
 
 	if self.scrollFrame then
+		self.scrollFrame.frame:SetScript("OnMouseUp", nil)
 		self.scrollFrame:Release()
 	end
 	self.scrollFrame = nil
@@ -221,6 +233,7 @@ local function HighlightTextAndFocus(self)
 end
 
 ---@param self EPEditBox
+---@param position integer
 local function SetFocusAndCursorPosition(self, position)
 	self.editBox:SetFocus()
 	self.editBox:SetCursorPosition(position)
