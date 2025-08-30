@@ -120,7 +120,7 @@ do -- Plan Menu Items
 				},
 				{
 					itemValue = "Import",
-					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], "Import"),
+					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], L["Import"]),
 					dropdownItemMenuData = {
 						{
 							itemValue = "FromMRT",
