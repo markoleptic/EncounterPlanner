@@ -326,3 +326,31 @@ function AceGUIContainer:AddChildren(...) end
 
 ---@param layout AceGUILayoutType|EPLayoutType
 function AceGUIContainer:SetLayout(layout) end
+
+---@class AssignmentFrame : Frame, BackdropTemplate
+---@field spellTexture Texture
+---@field invalidTexture Texture
+---@field cooldownFrame Frame
+---@field cooldownParent Texture
+---@field cooldownBackground Texture
+---@field cooldownTexture Texture
+---@field assignmentFrame Frame
+---@field timelineAssignment TimelineAssignment|nil
+---@field spellID integer
+---@field selectionType AssignmentSelectionType
+---@field uniqueAssignmentID integer
+---@field chargeMarker Texture|nil
+
+---@class FakeAssignmentFrame : AssignmentFrame
+---@field temporaryAssignmentFrameIndex integer
+
+---@class BossAbilityFrame : Frame, BackdropTemplate
+---@field assignmentFrame table|Frame
+---@field spellTexture Texture
+---@field lineTexture Texture
+---@field cooldownFrame Frame
+---@field cooldownParent Texture
+---@field cooldownBackground Texture
+---@field cooldownTexture Texture
+---@field abilityInstance BossAbilityInstance|nil
+---@field selectionType BossAbilitySelectionType

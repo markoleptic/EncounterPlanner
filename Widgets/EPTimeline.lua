@@ -3,8 +3,11 @@ local _, Namespace = ...
 ---@class Private
 local Private = Namespace
 
----@class Constants
-local constants = Private.constants
+---@class EPTimelineConstants
+local k = Private.timeline.constants
+---@class EPTimelineState
+local s = Private.timeline.state
+
 local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 
@@ -12,13 +15,13 @@ local Type = "EPTimeline"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 
+local Round = Private.utilities.Round
 local abs = math.abs
-local ceil, floor = math.ceil, math.floor
 local Clamp = Clamp
 local CreateFrame = CreateFrame
+local floor = math.floor
 local format = string.format
 local GetCursorPosition = GetCursorPosition
 local GetSpellTexture = C_Spell.GetSpellTexture
@@ -39,139 +42,8 @@ local type = type
 local unpack = unpack
 local wipe = table.wipe
 
-local k = {
-	AssignmentOutlineColor = { 0.25, 0.25, 0.25, 1 },
-	AssignmentSelectOutlineColor = { 1, 0.82, 0, 1 },
-	AssignmentTextureSubLevel = 0,
-	BossAbilityColors = {
-		{ 0.122, 0.467, 0.706, 1 },
-		{ 1.0, 0.498, 0.055, 1 },
-		{ 0.173, 0.627, 0.173, 1 },
-		{ 0.839, 0.153, 0.157, 1 },
-		{ 0.58, 0.404, 0.741, 1 },
-		{ 0.549, 0.337, 0.294, 1 },
-		{ 0.89, 0.467, 0.761, 1 },
-		{ 0.498, 0.498, 0.498, 1 },
-		{ 0.737, 0.741, 0.133, 1 },
-		{ 0.09, 0.745, 0.812, 1 },
-	},
-	BossAbilityTextureSubLevel = 0,
-	CooldownBackgroundColor = { 0.25, 0.25, 0.25, 1 },
-	CooldownPadding = 1,
-	CooldownTextureAlpha = 0.5,
-	CooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]],
-	CooldownWidthTolerance = 0.01,
-	DefaultTickWidth = 2,
-	FontPath = LSM:Fetch("font", "PT Sans Narrow"),
-	FrameHeight = 400,
-	FrameWidth = 900,
-	HorizontalScrollBarHeight = constants.timeline.kHorizontalScrollBarHeight,
-	InvalidTextureColor = { 0.8, 0.1, 0.1, 0.4 },
-	MaxZoomFactor = 10,
-	MinimumBossAbilityWidth = 10,
-	MinimumNumberOfAssignmentRows = 2,
-	MinimumNumberOfBossAbilityRows = 2,
-	MinimumSpacingBetweenLabels = 4,
-	MinZoomFactor = 1,
-	NonTimelineHeight = constants.timeline.kHorizontalScrollBarHeight
-		+ constants.timeline.kPaddingBetweenTimelineAndScrollBar
-		+ constants.timeline.kPaddingBetweenTimelines
-		+ constants.kStatusBarHeight
-		+ constants.kStatusBarPadding
-		+ constants.kWindowBarHeight
-		+ constants.kMainFramePadding[2]
-		+ constants.kMainFramePadding[4]
-		+ constants.kTopContainerHeight
-		+ constants.kMainFrameSpacing[2],
-	PaddingBetweenAssignments = 2,
-	PaddingBetweenBossAbilityBars = 2,
-	PaddingBetweenTimelineAndScrollBar = constants.timeline.kPaddingBetweenTimelineAndScrollBar,
-	PaddingBetweenTimelines = constants.timeline.kPaddingBetweenTimelines,
-	PhaseIndicatorColor = { 1, 0.82, 0, 1 },
-	PhaseIndicatorFontSize = 12,
-	PhaseIndicatorTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]],
-	PhaseIndicatorWidth = 2,
-	ScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 },
-	ScrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 },
-	SpellChargeRestorationColor = { 0.4, 1, 0.8, 1 },
-	ThrottleInterval = 0.015, -- Minimum time between executions, in seconds
-	ThumbPadding = { x = 2, y = 2 },
-	TickColor = { 1, 1, 1, 0.75 },
-	TickFontSize = 12,
-	TickIntervals = { 5, 10, 30, 60, 90 },
-	TickLabelColor = { 1, 1, 1, 1 },
-	TimelineLinePadding = { x = 25, y = 25 },
-	ZoomStep = 0.05,
-}
-
-local s = {
-	AssignmentBeingDuplicated = false,
-	AssignmentFrameBeingDragged = nil, ---@type AssignmentFrame|nil
-	AssignmentIsDragging = false,
-	HorizontalCursorAssignmentFrameOffsetWhenClicked = 0,
-	HorizontalCursorPositionWhenAssignmentFrameClicked = 0,
-	IsSimulating = false,
-	LastExecutionTime = 0.0,
-	ScrollBarWidthWhenThumbClicked = 0.0,
-	SelectedAssignmentIDsFromBossAbilityFrameEnter = {},
-	SimulationStartTime = 0.0,
-	ThumbIsDragging = false,
-	ThumbOffsetWhenThumbClicked = 0.0,
-	ThumbWidthWhenThumbClicked = 0.0,
-	TimelineFrameIsDragging = false,
-	TimelineFrameOffsetWhenDragStarted = 0.0,
-	TotalTimelineDuration = 0.0,
-
-	Reset = function(self)
-		self.AssignmentBeingDuplicated = false
-		self.AssignmentFrameBeingDragged = nil
-		self.AssignmentIsDragging = false
-		self.HorizontalCursorAssignmentFrameOffsetWhenClicked = 0
-		self.HorizontalCursorPositionWhenAssignmentFrameClicked = 0
-		self.IsSimulating = false
-		self.LastExecutionTime = 0.0
-		self.ScrollBarWidthWhenThumbClicked = 0.0
-		self.SelectedAssignmentIDsFromBossAbilityFrameEnter = {}
-		self.SimulationStartTime = 0.0
-		self.ThumbIsDragging = false
-		self.ThumbOffsetWhenThumbClicked = 0.0
-		self.ThumbWidthWhenThumbClicked = 0.0
-		self.TimelineFrameIsDragging = false
-		self.TimelineFrameOffsetWhenDragStarted = 0
-		self.TotalTimelineDuration = 0.0
-	end,
-}
-
 ---@class BossPhaseIndicatorTexture : Texture
 ---@field label FontString
-
----@class AssignmentFrame : Frame, BackdropTemplate
----@field spellTexture Texture
----@field invalidTexture Texture
----@field cooldownFrame Frame
----@field cooldownParent Texture
----@field cooldownBackground Texture
----@field cooldownTexture Texture
----@field assignmentFrame Frame
----@field timelineAssignment TimelineAssignment|nil
----@field spellID integer
----@field selectionType AssignmentSelectionType
----@field uniqueAssignmentID integer
----@field chargeMarker Texture|nil
-
----@class BossAbilityFrame : Frame, BackdropTemplate
----@field assignmentFrame table|Frame
----@field spellTexture Texture
----@field lineTexture Texture
----@field cooldownFrame Frame
----@field cooldownParent Texture
----@field cooldownBackground Texture
----@field cooldownTexture Texture
----@field abilityInstance BossAbilityInstance|nil
----@field selectionType BossAbilitySelectionType
-
----@class FakeAssignmentFrame : AssignmentFrame
----@field temporaryAssignmentFrameIndex integer
 
 ---@class EPTimeline : AceGUIWidget
 ---@field parent AceGUIContainer|nil
@@ -215,18 +87,6 @@ local HighlightType = {
 	Full = {},
 	Half = {},
 }
-
----@param value number
----@param precision integer
----@return number
-local function Round(value, precision)
-	local factor = 10 ^ precision
-	if value > 0 then
-		return floor(value * factor + 0.5) / factor
-	else
-		return ceil(value * factor - 0.5) / factor
-	end
-end
 
 ---@param keyBinding ScrollKeyBinding|MouseButtonKeyBinding
 ---@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"|"MouseScroll"
@@ -1436,10 +1296,10 @@ local function DrawAssignment(
 	assignmentFrame:Show()
 
 	local hideMarker = true
-	if spellID == constants.kInvalidAssignmentSpellID then
-		assignmentFrame.spellTexture:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
-	elseif spellID == constants.kTextAssignmentSpellID then
-		assignmentFrame.spellTexture:SetTexture(constants.kTextAssignmentTexture)
+	if spellID == k.InvalidAssignmentSpellID then
+		assignmentFrame.spellTexture:SetTexture(k.UnknownIcon)
+	elseif spellID == k.TextAssignmentSpellID then
+		assignmentFrame.spellTexture:SetTexture(k.TextAssignmentTexture)
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignmentFrame.spellTexture:SetTexture(iconID)

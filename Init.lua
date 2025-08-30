@@ -748,9 +748,17 @@ Private.customDungeonInstanceGroups = {
 		order = 1,
 	},
 }
+---@class InterfaceUpdater
 Private.interfaceUpdater = {}
+---@class BossUtilities
 Private.bossUtilities = {}
+---@class Utilities
 Private.utilities = {}
+Private.timeline = {
+	constants = nil, --[[@as EPTimelineConstants]]
+	state = nil, --[[@as EPTimelineState]]
+	utilities = nil, --[[@as EPTimelineUtilities]]
+}
 
 Private.mainFrame = nil --[[@as EPMainFrame]]
 Private.assignmentEditor = nil --[[@as EPAssignmentEditor]]

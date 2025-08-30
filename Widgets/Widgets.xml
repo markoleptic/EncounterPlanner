@@ -27,6 +27,7 @@
     <Script file="EPTutorial.lua" />
     <Script file="EPPhaseLengthEditor.lua" />
     <Script file="EPAssignmentEditor.lua" />
+    <Include file="Timeline\Widgets.xml" />
     <Script file="EPTimelineSection.lua" />
     <Script file="EPTimeline.lua" />
     <Script file="EPMultiLineText.lua" />
