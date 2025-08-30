@@ -37,9 +37,9 @@ local k = {
 	FrameWidth = 900,
 	---@enum HighlightType
 	HighlightType = {
-		None = {},
-		Full = {},
-		Half = {},
+		None = 1,
+		Full = 2,
+		Half = 3,
 	},
 	HorizontalScrollBarHeight = constants.timeline.kHorizontalScrollBarHeight,
 	InvalidTextureColor = { 0.8, 0.1, 0.1, 0.4 },
