@@ -215,7 +215,7 @@ do
 	---@param newPlan Plan
 	local function AddDiffs(self, diffs, oldPlan, newPlan)
 		self.planDiff = diffs
-		local addedMetaDataSection, addedAssignmentSection, addedRosterSection, addedContentSection
+		local addedMetaDataSection, addedAssignmentSection, addedRosterSection, addedContentSection = nil, nil, nil, nil
 		local dividerLineIndex = 1
 
 		if diffs.metaData.instanceID then
