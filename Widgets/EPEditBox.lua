@@ -58,12 +58,6 @@ local function CreateLineEditContainer(self, lineEditLabelText, lineEditText)
 	lineEditLabel:SetFrameWidthFromText()
 
 	self.lineEdit = AceGUI:Create("EPLineEdit")
-	if self.lastLineEditText then
-		self.lineEdit:SetText(self.lastLineEditText)
-	else
-		self.lineEdit:SetText(lineEditText)
-	end
-	self.lineEdit:SetText(lineEditText)
 	self.lineEdit:SetMaxLetters(36)
 	self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 		self:Fire("ValidatePlanName", value)
@@ -71,8 +65,12 @@ local function CreateLineEditContainer(self, lineEditLabelText, lineEditText)
 	end)
 	self.lineEdit:SetCallback("OnRelease", function()
 		self.lineEdit = nil
-		self.lastLineEditText = nil
 	end)
+	if self.lastLineEditText then
+		self.lineEdit:SetText(self.lastLineEditText)
+	else
+		self.lineEdit:SetText(lineEditText)
+	end
 
 	local leftSpacer = AceGUI:Create("EPSpacer")
 	leftSpacer:SetFillSpace(true)
@@ -245,7 +243,7 @@ end
 ---@param radioButtonText table<integer, string>
 ---@param lineEditLabelText string
 ---@param lineEditText string
-local function ShowCheckBoxAndLineEdit(self, show, radioButtonText, lineEditLabelText, lineEditText)
+local function ShowRadioButtonGroup(self, show, radioButtonText, lineEditLabelText, lineEditText)
 	if show then
 		if not self.container then
 			self.container = AceGUI:Create("EPContainer")
@@ -371,7 +369,7 @@ local function Constructor()
 		HighlightTextAndFocus = HighlightTextAndFocus,
 		ShowOkayButton = ShowOkayButton,
 		SetTitle = SetTitle,
-		ShowCheckBoxAndLineEdit = ShowCheckBoxAndLineEdit,
+		ShowRadioButtonGroup = ShowRadioButtonGroup,
 		SetFocusAndCursorPosition = SetFocusAndCursorPosition,
 		frame = frame,
 		type = Type,

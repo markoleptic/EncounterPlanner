@@ -1235,7 +1235,7 @@ do -- Plan Menu Button s.Handlers
 					widget.okayButton:SetEnabled(true)
 				end
 			end)
-			importEditBox:ShowCheckBoxAndLineEdit(
+			importEditBox:ShowRadioButtonGroup(
 				true,
 				{ L["Import Into Current Plan"], L["Overwrite Current Plan"], L["Create New Plan"] },
 				L["New Plan Name:"],
