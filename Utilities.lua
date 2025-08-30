@@ -597,24 +597,25 @@ do
 	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
 	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap)
-		if not cache["trinket"] then
-			cache["trinket"] = {} --[[@as table<string, DropdownItemData>]]
-			local dropdownItems = cache["trinket"]
-			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
-				local name = GetSpellName(trinketInfo["spellID"])
-				local icon = GetSpellTexture(trinketInfo["spellID"])
+		if not cache["consumable"] then
+			cache["consumable"] = {} --[[@as table<string, DropdownItemData>]]
+			local dropdownItems = cache["consumable"]
+			for _, consumableInfo in pairs(Private.spellDB.other["CONSUMABLE"]) do
+				local name = GetSpellName(consumableInfo["spellID"])
+				local icon = GetSpellTexture(consumableInfo["spellID"])
 				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 				local iconText = format("%s %s", inlineIcon, name)
 				tinsert(dropdownItems, {
-					itemValue = trinketInfo["spellID"],
+					itemValue = consumableInfo["spellID"],
 					text = iconText,
 				})
 			end
 			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			cache["trinket"] = { itemValue = "Trinket", text = L["Trinket"], dropdownItemMenuData = dropdownItems }
+			cache["consumable"] =
+				{ itemValue = "Consumable", text = L["Consumable"], dropdownItemMenuData = dropdownItems }
 		end
-		SetFavoriteTextureVisibility(cache["trinket"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
-		return cache["trinket"]
+		SetFavoriteTextureVisibility(cache["consumable"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
+		return cache["consumable"]
 	end
 
 	---@param showFavoriteTexture boolean

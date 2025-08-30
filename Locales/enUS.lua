@@ -116,6 +116,7 @@ L["collapses all spells for all assignees"] = true
 L["Combat Log Event"] = true
 L["Confirmation"] = true
 L["Consider extending boss phase durations/counts in"] = true
+L["Consumable"] = true
 L["contains high level categories for managing plans, modifying bosses, editing rosters, and settings"] = true
 L["Controls"] = true
 L["Cooldown Icons"] = true
