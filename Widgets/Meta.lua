@@ -354,3 +354,14 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field cooldownTexture Texture
 ---@field abilityInstance BossAbilityInstance|nil
 ---@field selectionType BossAbilitySelectionType
+
+---@class BossPhaseIndicatorTexture : Texture
+---@field label FontString
+
+---@class LastPhaseIndicatorInfo
+---@field left number
+---@field right number
+---@field shortName	string
+---@field partialLeft number
+---@field label FontString|nil
+---@field alreadyShortened boolean|nil

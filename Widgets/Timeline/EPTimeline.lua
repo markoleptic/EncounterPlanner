@@ -7,6 +7,8 @@ local Private = Namespace
 local k = Private.timeline.constants
 ---@class EPTimelineState
 local s = Private.timeline.state
+---@class EPTimelineUtilities
+local timelineUtilities = Private.timeline.utilities
 
 local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
@@ -16,6 +18,17 @@ local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
+
+local ConvertTimelineOffsetToTime = timelineUtilities.ConvertTimelineOffsetToTime
+local ConvertTimeToTimelineOffset = timelineUtilities.ConvertTimeToTimelineOffset
+local FindAssignmentFrame = timelineUtilities.FindAssignmentFrame
+local FindBossAbilityFrame = timelineUtilities.FindBossAbilityFrame
+local FindTimelineAssignment = timelineUtilities.FindTimelineAssignment
+local IsValidKeyCombination = timelineUtilities.IsValidKeyCombination
+local SetAssignmentFrameOutline = timelineUtilities.SetAssignmentFrameOutline
+local SortAssignmentFrameIndices = timelineUtilities.SortAssignmentFrameIndices
+local UpdateHorizontalScrollBarThumb = timelineUtilities.UpdateHorizontalScrollBarThumb
+local UpdateLinePosition = timelineUtilities.UpdateLinePosition
 
 local Round = Private.utilities.Round
 local abs = math.abs
@@ -27,23 +40,16 @@ local GetCursorPosition = GetCursorPosition
 local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
 local ipairs = ipairs
-local IsAltKeyDown = IsAltKeyDown
-local IsControlKeyDown = IsControlKeyDown
-local IsLeftShiftKeyDown, IsRightShiftKeyDown = IsLeftShiftKeyDown, IsRightShiftKeyDown
 local max, min = math.max, math.min
 local next = next
 local pairs = pairs
 local select = select
 local sort = table.sort
-local split = string.split
 local tinsert = table.insert
 local tremove = table.remove
 local type = type
 local unpack = unpack
 local wipe = table.wipe
-
----@class BossPhaseIndicatorTexture : Texture
----@field label FontString
 
 ---@class EPTimeline : AceGUIWidget
 ---@field parent AceGUIContainer|nil
@@ -80,126 +86,6 @@ local wipe = table.wipe
 ---@field GetMinimumCombatLogEventTime fun(assignment: TimelineAssignment): number|nil
 ---@field ComputeChargeStates fun(timelineAssignments: table<integer, TimelineAssignment>)
 ---@field minTickInterval number
-
----@enum HighlightType
-local HighlightType = {
-	None = {},
-	Full = {},
-	Half = {},
-}
-
----@param keyBinding ScrollKeyBinding|MouseButtonKeyBinding
----@param mouseButton "LeftButton"|"RightButton"|"MiddleButton"|"Button4"|"Button5"|"MouseScroll"
----@return boolean
-local function IsValidKeyCombination(keyBinding, mouseButton)
-	local modifier, key = split("-", keyBinding)
-	if modifier and key then
-		if modifier == "Ctrl" then
-			if not IsControlKeyDown() then
-				return false
-			end
-		elseif modifier == "Shift" then
-			if not IsLeftShiftKeyDown() and not IsRightShiftKeyDown() then
-				return false
-			end
-		elseif modifier == "Alt" then
-			if not IsAltKeyDown() then
-				return false
-			end
-		end
-		if mouseButton ~= key then
-			return false
-		end
-	else
-		if IsControlKeyDown() or IsLeftShiftKeyDown() or IsRightShiftKeyDown() or IsAltKeyDown() then
-			return false
-		end
-		if mouseButton ~= keyBinding then
-			return false
-		end
-	end
-	return true
-end
-
----@param frame Frame|Texture
----@param timelineFrame Frame
----@return number|nil
-local function ConvertTimelineOffsetToTime(frame, timelineFrame)
-	local offset = (frame:GetLeft() or 0) - (timelineFrame:GetLeft() or 0)
-	local padding = k.TimelineLinePadding.x
-	local time = (offset - padding) * s.TotalTimelineDuration / (timelineFrame:GetWidth() - padding * 2)
-	if time < 0 or time > s.TotalTimelineDuration then
-		return nil
-	end
-	return time
-end
-
----@param time number
----@param timelineFrameWidth number
----@return number
-local function ConvertTimeToTimelineOffset(time, timelineFrameWidth)
-	local timelineWidth = timelineFrameWidth - 2 * k.TimelineLinePadding.x
-	local timelineStartPosition = (time / s.TotalTimelineDuration) * timelineWidth
-	return timelineStartPosition + k.TimelineLinePadding.x
-end
-
----@param timelineAssignments table<integer, TimelineAssignment>
----@param uniqueID integer
----@return TimelineAssignment|nil,integer|nil
-local function FindTimelineAssignment(timelineAssignments, uniqueID)
-	for index, timelineAssignment in ipairs(timelineAssignments) do
-		if timelineAssignment.assignment.uniqueID == uniqueID then
-			return timelineAssignment, index
-		end
-	end
-	return nil, nil
-end
-
----@param assignmentFrames table<integer, AssignmentFrame>
----@param uniqueID integer
----@return AssignmentFrame|nil
-local function FindAssignmentFrame(assignmentFrames, uniqueID)
-	for _, frame in ipairs(assignmentFrames) do
-		if frame.uniqueAssignmentID == uniqueID then
-			return frame
-		end
-	end
-	return nil
-end
-
----@param bossAbilityFrames table<integer, BossAbilityFrame>
----@param spellID integer
----@param spellCount integer
----@return BossAbilityFrame|nil
-local function FindBossAbilityFrame(bossAbilityFrames, spellID, spellCount)
-	for _, frame in ipairs(bossAbilityFrames) do
-		if frame.abilityInstance then
-			if
-				frame.abilityInstance.bossAbilitySpellID == spellID
-				and frame.abilityInstance.spellCount == spellCount
-			then
-				return frame
-			end
-		end
-	end
-	return nil
-end
-
----@param frame AssignmentFrame
----@param highlightType HighlightType
----@param height number
-local function SetAssignmentFrameOutline(frame, highlightType, height)
-	if highlightType == HighlightType.Full then
-		frame.spellTexture:SetSize(height - 4, height - 4)
-		frame:SetBackdropBorderColor(unpack(k.AssignmentSelectOutlineColor))
-	elseif highlightType == HighlightType.Half then
-		frame.spellTexture:SetSize(height - 2, height - 2)
-		frame:SetBackdropBorderColor(unpack(k.AssignmentSelectOutlineColor))
-	elseif highlightType == HighlightType.None then
-		frame.spellTexture:SetSize(height - 2, height - 2)
-		frame:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
-	end
-end
 
 -- Updates the time of the current time label and hides time labels that overlap with it.
 ---@param self EPTimeline
@@ -247,46 +133,6 @@ local function UpdateTimeLabels(self)
 			end
 		end
 	end
-end
-
--- Updates the horizontal offset a vertical line from a timeline frame and shows it.
----@param timelineFrame Frame
----@param verticalPositionLine Texture
----@param offset? number Optional offset to add
----@param override? number Optional override offset from the timeline frame
-local function UpdateLinePosition(timelineFrame, verticalPositionLine, offset, override)
-	local newTimeOffset
-	if override then
-		newTimeOffset = override
-	else
-		newTimeOffset = (GetCursorPosition() / UIParent:GetEffectiveScale()) - (timelineFrame:GetLeft() or 0)
-		if offset then
-			newTimeOffset = newTimeOffset + offset
-		end
-	end
-
-	verticalPositionLine:SetPoint("TOP", timelineFrame, "TOPLEFT", newTimeOffset, 0)
-	verticalPositionLine:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", newTimeOffset, 0)
-	verticalPositionLine:Show()
-end
-
----@param assignmentFrames table<integer, AssignmentFrame>
----@param frameIndices table<integer, integer>
-local function SortAssignmentFrameIndices(assignmentFrames, frameIndices)
-	sort(frameIndices, function(a, b)
-		local leftA, leftB = assignmentFrames[a]:GetLeft(), assignmentFrames[b]:GetLeft()
-		if leftA and leftB then
-			if leftA == leftB then
-				local spellIDA, spellIDB = assignmentFrames[a].spellID, assignmentFrames[b].spellID
-				if spellIDA == spellIDB then
-					return a < b
-				end
-				return spellIDA < spellIDB
-			end
-			return leftA < leftB
-		end
-		return a < b
-	end)
 end
 
 -- Updates the tick mark positions for the boss ability timeline and assignments timeline.
@@ -372,35 +218,6 @@ local function UpdateTickMarks(self)
 	end
 end
 
--- Updates the position of the horizontal scroll bar thumb.
----@param scrollBarWidth number
----@param thumb Button
----@param scrollFrameWidth number
----@param timelineWidth number
----@param horizontalScroll number
-local function UpdateHorizontalScrollBarThumb(scrollBarWidth, thumb, scrollFrameWidth, timelineWidth, horizontalScroll)
-	-- Sometimes horizontal scroll bar width can be zero when resizing, but is same as timeline width
-	if scrollBarWidth == 0 then
-		scrollBarWidth = timelineWidth
-	end
-
-	-- Calculate the scroll bar thumb size based on the visible area
-	local thumbWidth = (scrollFrameWidth / timelineWidth) * (scrollBarWidth - (2 * k.ThumbPadding.x))
-	thumbWidth = Clamp(thumbWidth, 20, scrollFrameWidth - (2 * k.ThumbPadding.x))
-	thumb:SetWidth(thumbWidth)
-
-	local maxScroll = timelineWidth - scrollFrameWidth
-	local maxThumbPosition = scrollBarWidth - thumbWidth - (2 * k.ThumbPadding.x)
-	local horizontalThumbPosition
-	if maxScroll > 0 then -- Prevent division by zero if maxScroll is 0
-		horizontalThumbPosition = (horizontalScroll / maxScroll) * maxThumbPosition
-		horizontalThumbPosition = horizontalThumbPosition + k.ThumbPadding.x
-	else
-		horizontalThumbPosition = k.ThumbPadding.x -- If no scrolling is possible, reset the thumb to the start
-	end
-	thumb:SetPoint("LEFT", horizontalThumbPosition, 0)
-end
-
 ---@param self EPTimeline
 ---@return BossPhaseIndicatorTexture
 local function CreatePhaseIndicatorTexture(self)
@@ -426,35 +243,13 @@ local function CreatePhaseIndicatorTexture(self)
 	return phaseIndicator
 end
 
--- ---@param width number
--- ---@param height number
--- ---@param rotationInRadians number
--- ---@return number, number
--- local function CalculateRotatedOffset(width, height, rotationInRadians)
--- 	local cosRotation, sinRotation = cos(rotationInRadians), sin(rotationInRadians)
--- 	local widthRotated = width * cosRotation + height * sinRotation
--- 	local heightRotated = height * cosRotation + width * sinRotation
--- 	local additionalHorizontalOffset = height * sinRotation
--- 	local horizontalOffset = abs(width - widthRotated) / 2.0 + additionalHorizontalOffset
--- 	local verticalOffset = abs(height - heightRotated) / 2.0
--- 	return horizontalOffset, verticalOffset
--- end
-
----@class LastInfo
----@field left number
----@field right number
----@field shortName	string
----@field partialLeft number
----@field label FontString|nil
----@field alreadyShortened boolean|nil
-
 ---@param self EPTimeline
 ---@param index integer
 ---@param longName string
 ---@param shortName string
 ---@param offset number
 ---@param width number
----@param lastInfo table<integer, LastInfo>
+---@param lastInfo table<integer, LastPhaseIndicatorInfo>
 local function DrawBossPhaseIndicator(self, phaseStart, index, longName, shortName, offset, width, lastInfo)
 	local indicator = self.bossPhaseIndicators[index][phaseStart and 1 or 2]
 	local timelineFrame = self.bossAbilityTimeline.timelineFrame
@@ -717,7 +512,7 @@ local function UpdateBossAbilityBars(self)
 	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
 	local baseFrameLevel = timelineFrame:GetFrameLevel()
 
-	local lastInfo = {} ---@type table<integer, LastInfo>
+	local lastInfo = {} ---@type table<integer, LastPhaseIndicatorInfo>
 	local currentIndex = 1 -- In case boss abilities are hidden, this ensures boss ability frames are indexed correctly
 	for _, entry in ipairs(self.bossAbilityInstances) do
 		local timelineStartPosition = (entry.castStart / s.TotalTimelineDuration) * timelineWidth
@@ -759,7 +554,7 @@ local function UpdateBossAbilityBars(self)
 	sort(lastInfo, function(a, b)
 		return a.left < b.left
 	end)
-	local lastLastInfo ---@type LastInfo|nil
+	local lastLastInfo ---@type LastPhaseIndicatorInfo|nil
 	for index, info in ipairs(lastInfo) do
 		if index > 1 and lastLastInfo then
 			if info.left <= lastLastInfo.right + 5 then
@@ -2064,7 +1859,7 @@ local function OnRelease(self)
 		frame:Hide()
 		frame:SetScript("OnUpdate", nil)
 		frame.spellTexture:SetTexture(nil)
-		SetAssignmentFrameOutline(frame, HighlightType.None, 2)
+		SetAssignmentFrameOutline(frame, k.HighlightType.None, 2)
 		if frame.chargeMarker then
 			frame.chargeMarker:ClearAllPoints()
 			frame.chargeMarker:Hide()
@@ -2110,7 +1905,7 @@ local function OnRelease(self)
 	self.fakeAssignmentFrame:SetWidth(0)
 	self.fakeAssignmentFrame.cooldownFrame:Hide()
 	self.fakeAssignmentFrame.spellTexture:SetTexture(nil)
-	SetAssignmentFrameOutline(self.fakeAssignmentFrame, HighlightType.None, 2)
+	SetAssignmentFrameOutline(self.fakeAssignmentFrame, k.HighlightType.None, 2)
 	if self.fakeAssignmentFrame.chargeMarker then
 		self.fakeAssignmentFrame.chargeMarker:ClearAllPoints()
 		self.fakeAssignmentFrame.chargeMarker:Hide()
@@ -2446,15 +2241,15 @@ local function SelectAssignment(self, assignmentIDOrAssignmentFrame, assignmentS
 
 	if frame then
 		if assignmentSelectionType == AssignmentSelectionType.kSelection then
-			SetAssignmentFrameOutline(frame, HighlightType.Full, self.preferences.timelineRows.assignmentHeight)
+			SetAssignmentFrameOutline(frame, k.HighlightType.Full, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = assignmentSelectionType
 		elseif assignmentSelectionType == AssignmentSelectionType.kBossAbilityHover then
 			if frame.selectionType ~= AssignmentSelectionType.kSelection then
-				SetAssignmentFrameOutline(frame, HighlightType.Half, self.preferences.timelineRows.assignmentHeight)
+				SetAssignmentFrameOutline(frame, k.HighlightType.Half, self.preferences.timelineRows.assignmentHeight)
 				frame.selectionType = assignmentSelectionType
 			end
 		elseif assignmentSelectionType == AssignmentSelectionType.kNone then
-			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			SetAssignmentFrameOutline(frame, k.HighlightType.None, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = assignmentSelectionType
 		end
 	end
@@ -2478,7 +2273,7 @@ local function GetSelectedAssignments(self, clear)
 			frame.invalidTexture:Hide()
 			frame.cooldownFrame:Hide()
 			frame.uniqueAssignmentID = 0
-			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			SetAssignmentFrameOutline(frame, k.HighlightType.None, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = AssignmentSelectionType.kNone
 			frame.timelineAssignment = nil
 			if frame.chargeMarker then
@@ -2500,7 +2295,7 @@ local function ClearSelectedAssignment(self, assignmentID, onlyClearIfNotSelecte
 	local frame = FindAssignmentFrame(self.assignmentFrames, assignmentID)
 	if frame then
 		if not onlyClearIfNotSelectedByClicking or frame.selectionType ~= AssignmentSelectionType.kSelection then
-			SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+			SetAssignmentFrameOutline(frame, k.HighlightType.None, self.preferences.timelineRows.assignmentHeight)
 			frame.selectionType = AssignmentSelectionType.kNone
 		end
 	end
@@ -2539,7 +2334,7 @@ end
 ---@param self EPTimeline
 local function ClearSelectedAssignments(self)
 	for _, frame in ipairs(self.assignmentFrames) do
-		SetAssignmentFrameOutline(frame, HighlightType.None, self.preferences.timelineRows.assignmentHeight)
+		SetAssignmentFrameOutline(frame, k.HighlightType.None, self.preferences.timelineRows.assignmentHeight)
 		frame.selectionType = AssignmentSelectionType.kNone
 	end
 end

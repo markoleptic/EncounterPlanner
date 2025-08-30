@@ -35,6 +35,12 @@ local k = {
 	FontPath = LSM:Fetch("font", "PT Sans Narrow"),
 	FrameHeight = 400,
 	FrameWidth = 900,
+	---@enum HighlightType
+	HighlightType = {
+		None = {},
+		Full = {},
+		Half = {},
+	},
 	HorizontalScrollBarHeight = constants.timeline.kHorizontalScrollBarHeight,
 	InvalidTextureColor = { 0.8, 0.1, 0.1, 0.4 },
 	InvalidAssignmentSpellID = constants.kInvalidAssignmentSpellID,
