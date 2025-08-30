@@ -495,6 +495,78 @@ function Private.ParseNote(plan, text, test)
 	return determinedBossDungeonEncounterID
 end
 
+-- Adds assignments and content for the text based on the text content.
+---@param plan Plan Plan to add parsed assignments and text to
+---@param text table<integer, string> content
+function Private.ParseText(plan, text)
+	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, integer>, string: string}>
+	local otherContent = {}
+	local failedOrReplaced = {} ---@type table<integer, FailureTableEntry>
+	local failedCount, defaultedToTimedCount, defaultedSpellCount = 0, 0, 0
+
+	local lastLineWasOtherContent = false
+	for _, line in pairs(text) do
+		local time, options, rest = ParseTime(line)
+		if time and options then
+			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced, plan.ID)
+			failedCount = failedCount + count
+			local defaultedToTimed, defaultedCombatLogAssignment = ProcessOptions(
+				inputs,
+				plan.assignments,
+				time,
+				options,
+				failedOrReplaced,
+				bossDungeonEncounterIDs,
+				plan.ID
+			)
+			defaultedToTimedCount = defaultedToTimedCount + defaultedToTimed
+			defaultedSpellCount = defaultedSpellCount + defaultedCombatLogAssignment
+			lastLineWasOtherContent = false
+		else
+			if line:gsub("%s", ""):len() ~= 0 or lastLineWasOtherContent then
+				tinsert(otherContent, line)
+			end
+			lastLineWasOtherContent = true
+		end
+	end
+
+	for _, contentLine in ipairs(otherContent) do
+		tinsert(plan.content, contentLine)
+	end
+
+	local determinedBossDungeonEncounterID = plan.dungeonEncounterID
+
+	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
+	-- Convert assignments not matching the determined boss dungeon encounter ID to timed assignments
+	for bossDungeonEncounterID, assignmentIDsAndOptions in pairs(bossDungeonEncounterIDs) do
+		if bossDungeonEncounterID ~= determinedBossDungeonEncounterID then
+			for _, assignmentID in pairs(assignmentIDsAndOptions.assignmentIDs) do
+				local assignment = FindAssignmentByUniqueID(plan.assignments, assignmentID)
+				if assignment then
+					assignment = TimedAssignment:New(assignment, plan.ID, true)
+					tinsert(failedOrReplaced, { reason = 7, string = assignmentIDsAndOptions.string })
+					defaultedToTimedCount = defaultedToTimedCount + 1
+				end
+			end
+		end
+	end
+
+	local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(determinedBossDungeonEncounterID, plan.difficulty)
+	local bossPhaseTable = bossUtilities.GetOrderedBossPhases(determinedBossDungeonEncounterID, plan.difficulty)
+	if castTimeTable and bossPhaseTable then
+		for _, assignment in ipairs(plan.assignments) do
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
+				utilities.UpdateAssignmentBossPhase(assignment, determinedBossDungeonEncounterID, plan.difficulty)
+			end
+		end
+	end
+
+	if #failedOrReplaced > 0 then
+		LogFailures(failedOrReplaced, failedCount, defaultedToTimedCount, defaultedSpellCount)
+	end
+end
+
 do
 	---@param assignment CombatLogEventAssignment|TimedAssignment
 	---@return string
@@ -645,26 +717,8 @@ do
 	end
 end
 
--- Clears the current assignments and repopulates it from a string of assignments (note). Updates the roster.
----@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
--- an empty plan will be created.
----@param currentBossDungeonEncounterID integer The current boss dungeon encounter ID to use as a fallback.
----@param content string A string containing assignments.
----@return integer|nil -- Boss dungeon encounter ID for the plan.
-function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, content)
-	local plans = AddOn.db.profile.plans
-
-	if not plans[planName] then
-		utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID, DifficultyType.Mythic)
-	end
-	local plan = plans[planName]
-
-	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
-	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
-	ChangePlanBoss(plans, plan.name, plan.dungeonEncounterID, plan.difficulty)
-
-	UpdateRosterFromAssignments(plan.assignments, plan.roster)
-	UpdateRosterDataFromGroup(plan.roster)
+---@param plan Plan
+local function UpdateRosterFromSharedRoster(plan)
 	for name, sharedRosterEntry in pairs(AddOn.db.profile.sharedRoster) do
 		local planRosterEntry = plan.roster[name]
 		if planRosterEntry then
@@ -694,5 +748,42 @@ function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, con
 			end
 		end
 	end
+end
+
+-- Clears the current assignments and repopulates it from a string of assignments (note). Updates the roster.
+---@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
+-- an empty plan will be created.
+---@param currentBossDungeonEncounterID integer The current boss dungeon encounter ID to use as a fallback.
+---@param content string A string containing assignments.
+---@return integer|nil -- Boss dungeon encounter ID for the plan.
+function Private:ImportPlanFromNote(planName, currentBossDungeonEncounterID, content)
+	local plans = AddOn.db.profile.plans
+
+	if not plans[planName] then
+		utilities.CreatePlan(plans, planName, currentBossDungeonEncounterID, DifficultyType.Mythic)
+	end
+	local plan = plans[planName]
+
+	local bossDungeonEncounterID = self.ParseNote(plan, SplitStringIntoTable(content))
+	plan.dungeonEncounterID = bossDungeonEncounterID or currentBossDungeonEncounterID
+	ChangePlanBoss(plans, plan.name, plan.dungeonEncounterID, plan.difficulty)
+
+	UpdateRosterFromAssignments(plan.assignments, plan.roster)
+	UpdateRosterDataFromGroup(plan.roster)
+	UpdateRosterFromSharedRoster(plan)
+
 	return bossDungeonEncounterID
+end
+
+---@param planName string the name of the existing plan in the database to parse/save the plan. If it does not exist,
+-- an empty plan will be created.
+---@param text string A string containing assignments/content.
+function Private:ImportTextIntoPlan(planName, text)
+	local plans = AddOn.db.profile.plans
+	local plan = plans[planName]
+
+	self.ParseText(plan, SplitStringIntoTable(text))
+	UpdateRosterFromAssignments(plan.assignments, plan.roster)
+	UpdateRosterDataFromGroup(plan.roster)
+	UpdateRosterFromSharedRoster(plan)
 end
