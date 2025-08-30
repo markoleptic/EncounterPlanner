@@ -409,6 +409,38 @@ function Utilities.CreateUniquePlanName(plans, newPlanName)
 	return planName
 end
 
+do
+	---@param str string
+	---@return string|nil
+	---@return integer
+	local function Utf8firstChar(str)
+		local b = str:byte(1)
+		if not b then
+			return nil, 0
+		end
+		if b < 0x80 then
+			return str:sub(1, 1), 1 -- ASCII (1 byte)
+		elseif b < 0xE0 then
+			return str:sub(1, 2), 2 -- 2 byte sequence
+		elseif b < 0xF0 then
+			return str:sub(1, 3), 3 -- 3 byte sequence
+		else
+			return str:sub(1, 4), 4 -- 4 byte sequence
+		end
+	end
+
+	---@param str string
+	---@return string
+	function Utilities.UpperCaseFirst(str)
+		local first, size = Utf8firstChar(str)
+		if not first then
+			return str
+		end
+		local rest = str:sub(size + 1)
+		return first:upper() .. rest:lower()
+	end
+end
+
 ---@param assignments table<integer, Assignment>
 ---@param assignmentID integer
 ---@return Assignment|TimedAssignment|CombatLogEventAssignment|nil
@@ -1817,7 +1849,7 @@ function Utilities.IsValidAssignee(assignee)
 		else
 			local characterMatch, _ = assignee:gsub("%s*%-.*", ""):match("^(%S+)$")
 			if characterMatch then
-				return characterMatch:sub(1, 1):upper() .. characterMatch:sub(2):lower()
+				return Utilities.UpperCaseFirst(characterMatch)
 			end
 		end
 	end

@@ -610,6 +610,31 @@ do
 	end
 
 	do
+		-- cSpell:disable
+		local textOne = [[
+            {time:0:27} - Ãsunä {spell:51052}
+        ]]
+		local textTwo = [[
+            {time:0:23,SAA:1223364:3}{spell:1223364}Powered Automaton - |cffc41e3aÃsunä|r {spell:51052}
+        ]]
+		-- cSpell:enable
+
+		function test.SpecialCharacterParsing()
+			local plan = Plan:New({}, "Test")
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(textOne)), true)
+			-- cSpell:disable-next-line
+			TestContains(plan.assignments, "assignee", { ["Ãsunä"] = true })
+
+			plan = Plan:New({}, "Test")
+			ParseNote(plan, RemoveTabs(SplitStringIntoTable(textTwo)), true)
+			-- cSpell:disable-next-line
+			TestContains(plan.assignments, "assignee", { ["Ãsunä"] = true })
+
+			return "SpecialCharacterParsing"
+		end
+	end
+
+	do
 		local text = [[
             {time:1} Markoleptic {spell:235450}
             {time:0:05} Markoleptic {spell:235450}
