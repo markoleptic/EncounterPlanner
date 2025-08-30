@@ -6,4 +6,6 @@
     <Script file="EPTimelineUtilities.lua" />
     <Script file="EPTimelineAssignment.lua" />
     <Script file="EPTimelineBossAbility.lua" />
+    <Script file="EPTimelineSection.lua" />
+    <Script file="EPTimeline.lua" />
 </Ui>
