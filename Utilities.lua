@@ -542,8 +542,9 @@ do
 						spellTypeIndex = spellTypeIndex + 1
 					end
 					local name = GetSpellName(spell["spellID"])
-					if name then
-						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, spell["icon"])
+					local icon = GetSpellTexture(spell["spellID"])
+					if name and icon then
+						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 						local iconText = format("%s %s", inlineIcon, name)
 						local spellID = spell["commonSpellID"] or spell["spellID"]
 						tinsert(
@@ -555,7 +556,7 @@ do
 						)
 					--@debug@
 					else
-						print(format("%s: %s spell not found.", AddOnName, spell["name"], spell["spellID"]))
+						print(format("%s: %s spell not found.", AddOnName, spell["spellID"]))
 						--@end-debug@
 					end
 				end
@@ -577,7 +578,8 @@ do
 			local dropdownItems = cache["racial"]
 			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
 				local name = GetSpellName(racialInfo["spellID"])
-				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, racialInfo["icon"])
+				local icon = GetSpellTexture(racialInfo["spellID"])
+				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 				local iconText = format("%s %s", inlineIcon, name)
 				tinsert(dropdownItems, {
 					itemValue = racialInfo["spellID"],
@@ -600,7 +602,8 @@ do
 			local dropdownItems = cache["trinket"]
 			for _, trinketInfo in pairs(Private.spellDB.other["TRINKET"]) do
 				local name = GetSpellName(trinketInfo["spellID"])
-				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, trinketInfo["icon"])
+				local icon = GetSpellTexture(trinketInfo["spellID"])
+				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 				local iconText = format("%s %s", inlineIcon, name)
 				tinsert(dropdownItems, {
 					itemValue = trinketInfo["spellID"],
@@ -3131,13 +3134,6 @@ do
 					if cooldownMS then
 						duration = cooldownMS / 1000
 					end
-				end
-			end
-
-			if duration <= 1 then -- Last resort, use spell DB
-				local spellDBDuration = Private.spellDB.FindCooldownDuration(spellID)
-				if spellDBDuration then
-					duration = spellDBDuration
 				end
 			end
 		end
