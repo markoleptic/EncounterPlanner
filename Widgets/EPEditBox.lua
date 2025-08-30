@@ -12,6 +12,8 @@ local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
+local TextImportType = Private.classes.TextImportType
+
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
 	BackdropColor = { 0, 0, 0, 1 },
@@ -30,6 +32,7 @@ local k = {
 	OkayButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 	OkayButtonHeight = 24,
 	OtherPadding = 10,
+	RadioButtonGroupSpacing = { 8, 0 },
 	ResizerIcon = Private.constants.resizer.kIcon,
 	ResizerIconHighlight = Private.constants.resizer.kIconHighlight,
 	ResizerIconPushed = Private.constants.resizer.kIconPushed,
@@ -44,6 +47,71 @@ local k = {
 	},
 	WindowBarHeight = 28,
 }
+
+---@param self EPEditBox
+---@param lineEditLabelText string
+---@param lineEditText string
+---@return EPContainer
+local function CreateLineEditContainer(self, lineEditLabelText, lineEditText)
+	local lineEditLabel = AceGUI:Create("EPLabel")
+	lineEditLabel:SetText(lineEditLabelText)
+	lineEditLabel:SetFrameWidthFromText()
+
+	self.lineEdit = AceGUI:Create("EPLineEdit")
+	if self.lastLineEditText then
+		self.lineEdit:SetText(self.lastLineEditText)
+	else
+		self.lineEdit:SetText(lineEditText)
+	end
+	self.lineEdit:SetText(lineEditText)
+	self.lineEdit:SetMaxLetters(36)
+	self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		self:Fire("ValidatePlanName", value)
+		self.lastLineEditText = value
+	end)
+	self.lineEdit:SetCallback("OnRelease", function()
+		self.lineEdit = nil
+		self.lastLineEditText = nil
+	end)
+
+	local leftSpacer = AceGUI:Create("EPSpacer")
+	leftSpacer:SetFillSpace(true)
+	local rightSpacer = AceGUI:Create("EPSpacer")
+	rightSpacer:SetFillSpace(true)
+	local lineEditContainer = AceGUI:Create("EPContainer")
+	lineEditContainer:SetLayout("EPHorizontalLayout")
+	lineEditContainer:SetSpacing(8, 0)
+	lineEditContainer:AddChildren(leftSpacer, lineEditLabel, self.lineEdit, rightSpacer)
+	lineEditContainer:SetFullWidth(true)
+	return lineEditContainer
+end
+
+---@param self EPEditBox
+---@param importType TextImportType
+---@param radioButton EPRadioButton
+---@param lineEditLabelText string
+---@param lineEditText string
+local function HandleRadioButtonToggled(self, importType, radioButton, lineEditLabelText, lineEditText)
+	if self.radioButtonGroup then
+		if importType == TextImportType.CreateNew then
+			if not self.lineEdit then
+				self.container:AddChild(CreateLineEditContainer(self, lineEditLabelText, lineEditText))
+				self.container:DoLayout()
+			end
+			self:Fire("ValidatePlanName", self.lineEdit:GetText())
+		elseif self.lineEdit and #self.container.children > 1 then
+			self.container:RemoveChild(self.container.children[2])
+		end
+		for _, radioButtonGroupChild in ipairs(self.radioButtonGroup.children) do
+			if radioButtonGroupChild.type == "EPRadioButton" then
+				---@cast radioButtonGroupChild EPRadioButton
+				if radioButtonGroupChild ~= radioButton then
+					radioButtonGroupChild:SetToggled(false)
+				end
+			end
+		end
+	end
+end
 
 ---@param self EPEditBox
 local function OnAcquire(self)
@@ -122,8 +190,8 @@ local function OnRelease(self)
 		self.container:Release()
 	end
 	self.container = nil
-
-	self.checkBox = nil
+	self.radioButtonGroup = nil
+	self.lastLineEditText = nil
 	self.lineEdit = nil
 end
 
@@ -174,10 +242,10 @@ end
 
 ---@param self EPEditBox
 ---@param show boolean
----@param checkBoxText string
+---@param radioButtonText table<integer, string>
 ---@param lineEditLabelText string
 ---@param lineEditText string
-local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelText, lineEditText)
+local function ShowCheckBoxAndLineEdit(self, show, radioButtonText, lineEditLabelText, lineEditText)
 	if show then
 		if not self.container then
 			self.container = AceGUI:Create("EPContainer")
@@ -186,33 +254,26 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 			self.container.frame:SetParent(self.frame --[[@as Frame]])
 			self.container.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
 
-			local lineEditLabel = AceGUI:Create("EPLabel")
-			lineEditLabel:SetText(lineEditLabelText)
-			lineEditLabel:SetFrameWidthFromText()
+			local radioButtonGroupChildren = {}
 
-			self.checkBox = AceGUI:Create("EPCheckBox")
-			self.checkBox:SetText(checkBoxText)
-			self.checkBox:SetChecked(false)
-			self.checkBox:SetFrameWidthFromText()
-			self.checkBox:SetCallback("OnValueChanged", function(_, _, checked)
-				self.lineEdit:SetEnabled(not checked)
-				lineEditLabel:SetEnabled(not checked)
-				self:Fire("OverwriteCheckBoxValueChanged", checked)
-			end)
+			for index, text in ipairs(radioButtonText) do
+				local radioButton = AceGUI:Create("EPRadioButton")
+				radioButton:SetLabelText(text)
+				radioButton:SetToggled(false)
+				radioButton:SetCallback("Toggled", function()
+					HandleRadioButtonToggled(self, index, radioButton, lineEditLabelText, lineEditText)
+				end)
+				tinsert(radioButtonGroupChildren, radioButton)
+			end
+			radioButtonGroupChildren[1]:SetToggled(true)
 
-			self.lineEdit = AceGUI:Create("EPLineEdit")
-			self.lineEdit:SetText(lineEditText)
-			self.lineEdit:SetMaxLetters(36)
-			self.lineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-				self:Fire("ValidatePlanName", value)
-			end)
+			local radioButtonGroup = AceGUI:Create("EPContainer")
+			radioButtonGroup:SetLayout("EPHorizontalLayout")
+			radioButtonGroup:SetSpacing(unpack(k.RadioButtonGroupSpacing))
+			radioButtonGroup:AddChildren(unpack(radioButtonGroupChildren))
+			self.radioButtonGroup = radioButtonGroup
 
-			local container = AceGUI:Create("EPContainer")
-			container:SetLayout("EPHorizontalLayout")
-			container:SetSpacing(8, 0)
-			container:AddChildren(lineEditLabel, self.lineEdit)
-
-			self.container:AddChildren(self.checkBox, container)
+			self.container:AddChild(radioButtonGroup)
 			self.scrollFrame.frame:SetPoint("TOP", self.container.frame, "BOTTOM", 0, -k.OtherPadding)
 		end
 	else
@@ -220,7 +281,7 @@ local function ShowCheckBoxAndLineEdit(self, show, checkBoxText, lineEditLabelTe
 			self.container:Release()
 		end
 		self.container = nil
-		self.checkBox = nil
+		self.radioButtonGroup = nil
 		self.lineEdit = nil
 		self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "TOP", 0, -k.FramePadding)
 	end
@@ -296,8 +357,9 @@ local function Constructor()
 	---@class EPEditBox : AceGUIWidget
 	---@field closeButton EPButton
 	---@field okayButton EPButton
-	---@field checkBox EPCheckBox
+	---@field radioButtonGroup EPContainer
 	---@field lineEdit EPLineEdit
+	---@field lastLineEditText string
 	---@field container EPContainer
 	---@field windowBar Frame|table
 	---@field scrollFrame EPScrollFrame

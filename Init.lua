@@ -125,6 +125,13 @@ Private.classes.PlanDiffType = {
 	Change = 4,
 }
 
+---@enum TextImportType
+Private.classes.TextImportType = {
+	IntoCurrent = 1,
+	OverwriteCurrent = 2,
+	CreateNew = 3,
+}
+
 ---@class Assignment
 Private.classes.Assignment = {
 	uniqueID = 0,

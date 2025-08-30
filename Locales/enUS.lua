@@ -274,6 +274,7 @@ L["Import As"] = true
 L["Import As New Plan"] = true
 L["Import Current Party/Raid Group"] = true
 L["Import From Text"] = true
+L["Import Into Current Plan"] = true
 L["Imported"] = true
 L["Imported plan as"] = true
 L["in"] = true

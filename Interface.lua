@@ -1188,17 +1188,23 @@ do -- Plan Menu Button s.Handlers
 	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
 
-	---@param newPlanName string
-	local function HandleImportPlanFromString(newPlanName)
+	local TextImportType = Private.classes.TextImportType
+
+	---@param importType TextImportType
+	---@param newOrExistingPlanName string
+	local function HandleImportPlanFromString(importType, newOrExistingPlanName)
 		ClosePlanDependentWidgets()
 		local text = Private.importEditBox:GetText()
 		Private.importEditBox:Release()
 		local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
-		bossDungeonEncounterID = Private:ImportPlanFromNote(newPlanName, bossDungeonEncounterID, text)
-			or bossDungeonEncounterID
-
-		AddOn.db.profile.lastOpenPlan = newPlanName
-		local newPlan = AddOn.db.profile.plans[newPlanName]
+		if importType == TextImportType.IntoCurrent then
+			Private:ImportTextIntoPlan(newOrExistingPlanName, text)
+		elseif importType == TextImportType.OverwriteCurrent or importType == TextImportType.CreateNew then
+			bossDungeonEncounterID = Private:ImportPlanFromNote(newOrExistingPlanName, bossDungeonEncounterID, text)
+				or bossDungeonEncounterID
+		end
+		AddOn.db.profile.lastOpenPlan = newOrExistingPlanName
+		local newPlan = AddOn.db.profile.plans[newOrExistingPlanName]
 		AddPlanToDropdown(newPlan, true)
 		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(bossDungeonEncounterID, true)
@@ -1213,26 +1219,13 @@ do -- Plan Menu Button s.Handlers
 			importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
 			importEditBox.frame:SetPoint("CENTER")
 			importEditBox:SetTitle(L["Import From Text"])
-			importEditBox:ShowOkayButton(true, L["Import As New Plan"])
+			importEditBox:ShowOkayButton(true, L["Import"])
 			importEditBox.okayButton:SetEnabled(true)
 			importEditBox:SetCallback("OnRelease", function()
 				Private.importEditBox = nil
 			end)
 			importEditBox:SetCallback("CloseButtonClicked", function()
 				AceGUI:Release(Private.importEditBox)
-			end)
-			importEditBox:SetCallback("OverwriteCheckBoxValueChanged", function(widget, _, checked)
-				if checked then
-					widget.lineEdit:SetText(AddOn.db.profile.lastOpenPlan)
-					widget.okayButton:SetText(L["Overwrite"] .. " " .. AddOn.db.profile.lastOpenPlan)
-					widget.okayButton:SetWidthFromText()
-					widget.okayButton:SetEnabled(true)
-				else
-					widget.lineEdit:SetText("")
-					widget.okayButton:SetEnabled(false)
-					widget.okayButton:SetText(L["Import As New Plan"])
-					widget.okayButton:SetWidthFromText()
-				end
 			end)
 			importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
 				planName = planName:trim()
@@ -1241,27 +1234,35 @@ do -- Plan Menu Button s.Handlers
 				else
 					widget.okayButton:SetEnabled(true)
 				end
-				widget.okayButton:SetText(L["Import As"] .. " " .. planName)
-				widget.okayButton:SetWidthFromText()
 			end)
 			importEditBox:ShowCheckBoxAndLineEdit(
 				true,
-				L["Overwrite Current Plan"],
+				{ L["Import Into Current Plan"], L["Overwrite Current Plan"], L["Create New Plan"] },
 				L["New Plan Name:"],
 				CreateUniquePlanName(AddOn.db.profile.plans, GetCurrentBoss().name)
 			)
 			importEditBox:SetCallback("OkayButtonClicked", function(widget)
-				local checked = Private.importEditBox.checkBox:IsChecked()
-				local planName = Private.importEditBox.lineEdit:GetText()
-				planName = planName:trim()
-				if planName == "" then
-					widget.okayButton:SetEnabled(false)
-				else
-					if not AddOn.db.profile.plans[planName] or checked then
-						HandleImportPlanFromString(planName)
+				local container = Private.importEditBox.radioButtonGroup
+				if container then
+					for index, child in ipairs(container.children) do
+						if child:IsToggled() then
+							if index == TextImportType.CreateNew then
+								local planName = Private.importEditBox.lineEdit:GetText()
+								planName = planName:trim()
+								if planName == "" or AddOn.db.profile.plans[planName] ~= nil then
+									widget.okayButton:SetEnabled(false)
+								else
+									HandleImportPlanFromString(TextImportType.CreateNew, planName)
+								end
+							else
+								HandleImportPlanFromString(index, AddOn.db.profile.lastOpenPlan)
+							end
+							break
+						end
 					end
 				end
 			end)
+			importEditBox:SetFocusAndCursorPosition(0)
 			Private.importEditBox = importEditBox
 		end
 	end
