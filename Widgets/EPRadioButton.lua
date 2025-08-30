@@ -238,6 +238,7 @@ local function Constructor()
 	button:SetPoint("TOPLEFT")
 	button:SetPoint("BOTTOMLEFT")
 	button:SetWidth(k.DefaultFrameHeight)
+	button:SetMouseMotionEnabled(false)
 
 	button.icon = button:CreateTexture(Type .. "Icon" .. count, "OVERLAY")
 	button.icon:SetBlendMode("ADD")
@@ -283,15 +284,18 @@ local function Constructor()
 		white = CreateColor(unpack(k.SelectedButtonColor)),
 	}
 
-	button:SetScript("OnEnter", function()
+	frame:SetScript("OnEnter", function()
 		HandleButtonEnter(widget)
 		widget:Fire("OnEnter")
 	end)
-	button:SetScript("OnLeave", function()
+	frame:SetScript("OnLeave", function()
 		HandleButtonLeave(widget)
 		widget:Fire("OnLeave")
 	end)
 	button:SetScript("OnClick", function()
+		HandleButtonClicked(widget)
+	end)
+	frame:SetScript("OnMouseUp", function()
 		HandleButtonClicked(widget)
 	end)
 
