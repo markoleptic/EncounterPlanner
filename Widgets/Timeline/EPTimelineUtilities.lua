@@ -62,13 +62,15 @@ function EPTimelineUtilities.FindAssignmentFrame(assignmentFrames, uniqueID)
 	return nil
 end
 
----@param timelineAssignments table<integer, TimelineAssignment>
 ---@param uniqueID integer
----@return TimelineAssignment|nil,integer|nil
-function EPTimelineUtilities.FindTimelineAssignment(timelineAssignments, uniqueID)
-	for index, timelineAssignment in ipairs(timelineAssignments) do
-		if timelineAssignment.assignment.uniqueID == uniqueID then
-			return timelineAssignment, index
+---@return TimelineAssignment|nil
+---@return integer|nil
+function EPTimelineUtilities.FindTimelineAssignment(uniqueID)
+	if s.TimelineAssignments then
+		for index, timelineAssignment in ipairs(s.TimelineAssignments) do
+			if timelineAssignment.assignment.uniqueID == uniqueID then
+				return timelineAssignment, index
+			end
 		end
 	end
 	return nil, nil

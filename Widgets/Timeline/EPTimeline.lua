@@ -14,7 +14,6 @@ local s = Private.timeline.state
 local ConvertTimeToTimelineOffset = Private.timeline.utilities.ConvertTimeToTimelineOffset
 local CreateBossPhaseIndicators = Private.timeline.bossAbility.CreateBossPhaseIndicators
 local FindAssignmentFrame = Private.timeline.utilities.FindAssignmentFrame
-local FindTimelineAssignment = Private.timeline.utilities.FindTimelineAssignment
 local IsValidKeyCombination = Private.timeline.utilities.IsValidKeyCombination
 local StopMovingAssignment = Private.timeline.assignment.StopMovingAssignment
 local UpdateAssignmentFrames = Private.timeline.assignment.UpdateAssignmentFrames
@@ -1325,7 +1324,7 @@ local function Constructor()
 		SetIsSimulating = SetIsSimulating,
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
-		FindTimelineAssignment = FindTimelineAssignment,
+		FindTimelineAssignment = Private.timeline.utilities.FindTimelineAssignment,
 		GetOffsetFromTime = GetOffsetFromTime,
 		SetHorizontalScroll = SetHorizontalScroll,
 		SetAssignmentTimelineVerticalScroll = SetAssignmentTimelineVerticalScroll,

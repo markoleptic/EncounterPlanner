@@ -201,10 +201,7 @@ local function FindCurrentAssignmentOrder(self)
 		if self.assignmentEditor then
 			local assignmentID = self.assignmentEditor:GetAssignmentID()
 			if assignmentID then
-				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
-					self.mainFrame.timeline.timelineAssignments,
-					assignmentID
-				)
+				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignmentID)
 				if timelineAssignment then
 					return timelineAssignment.order - 1
 				end
@@ -231,10 +228,7 @@ local function EnsureAssigneeIsExpanded(self, scrollIntoView)
 		if self.assignmentEditor and scrollIntoView then
 			local assignmentID = self.assignmentEditor:GetAssignmentID()
 			if assignmentID then
-				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
-					self.mainFrame.timeline.timelineAssignments,
-					assignmentID
-				)
+				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignmentID)
 				if timelineAssignment then
 					timeline:ScrollAssignmentIntoView(timelineAssignment.assignment.uniqueID)
 				end
@@ -705,10 +699,7 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 			self.mainFrame.timeline.ClearSelectedBossAbilities()
 			self.mainFrame.timeline.ClearSelectedAssignments()
 		end
-		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
-			self.mainFrame.timeline.timelineAssignments,
-			assignment.uniqueID
-		)
+		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignment.uniqueID)
 		if timelineAssignment then
 			return timelineAssignment.order - 1
 		end
@@ -781,10 +772,7 @@ local function IntermissionOkay(
 			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
 		end
-		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(
-			self.mainFrame.timeline.timelineAssignments,
-			assignment.uniqueID
-		)
+		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignment.uniqueID)
 		if timelineAssignment then
 			return timelineAssignment.order - 1
 		end

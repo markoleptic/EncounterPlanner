@@ -282,7 +282,7 @@ local function HandleAssignmentMouseDown(frame, mouseButton)
 
 	ClearSelectedAssignments()
 	s.AssignmentIsDragging = true
-	local timelineAssignment, index = FindTimelineAssignment(s.TimelineAssignments, frame.uniqueAssignmentID)
+	local timelineAssignment, index = FindTimelineAssignment(frame.uniqueAssignmentID)
 
 	if isValidDuplicate then
 		s.AssignmentBeingDuplicated = true
