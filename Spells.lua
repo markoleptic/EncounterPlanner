@@ -681,6 +681,7 @@ Private.spellDB = {
 			{
 				["class"] = "MONK",
 				["type"] = L["Other"],
+				["role"] = { ["role:healer"] = true },
 				["name"] = "Detox",
 				["spellID"] = 115450,
 			},
@@ -786,6 +787,7 @@ Private.spellDB = {
 			{
 				["class"] = "MONK",
 				["type"] = L["Other"],
+				["role"] = { ["role:tank"] = true, ["role:damager"] = true },
 				["name"] = "Detox",
 				["spellID"] = 218164,
 			},
@@ -2286,13 +2288,6 @@ Private.spellDB = {
 			},
 			{
 				["class"] = "PRIEST",
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Rapture",
-				["spellID"] = 47536,
-			},
-			{
-				["class"] = "PRIEST",
 				["type"] = L["Other"],
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Lightwell",
@@ -2353,13 +2348,6 @@ Private.spellDB = {
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Holy Word: Chastise",
 				["spellID"] = 88625,
-			},
-			{
-				["class"] = "PRIEST",
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Mindbender",
-				["spellID"] = 200174,
 			},
 			{
 				["class"] = "PRIEST",
@@ -2505,8 +2493,29 @@ Private.spellDB = {
 				["class"] = "PRIEST",
 				["type"] = L["Other"],
 				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition",
+				["name"] = "Premonition of Clairvoyance",
+				["spellID"] = 440725,
+			},
+			{
+				["class"] = "PRIEST",
+				["type"] = L["Other"],
+				["role"] = { ["role:healer"] = true },
+				["name"] = "Premonition of Insight",
 				["spellID"] = 428933,
+			},
+			{
+				["class"] = "PRIEST",
+				["type"] = L["Other"],
+				["role"] = { ["role:healer"] = true },
+				["name"] = "Premonition of Piety",
+				["spellID"] = 428930,
+			},
+			{
+				["class"] = "PRIEST",
+				["type"] = L["Other"],
+				["role"] = { ["role:healer"] = true },
+				["name"] = "Premonition of Solace",
+				["spellID"] = 428934,
 			},
 			{
 				["class"] = "PRIEST",
@@ -2646,7 +2655,7 @@ Private.spellDB = {
 			},
 			{
 				["class"] = "PALADIN",
-				["type"] = L["External Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Barrier of Faith",
 				["spellID"] = 148039,
@@ -3016,13 +3025,6 @@ Private.spellDB = {
 			{
 				["class"] = "SHAMAN",
 				["type"] = L["Other"],
-				["spec"] = 204403,
-				["name"] = "Traveling Storm",
-				["spellID"] = 204406,
-			},
-			{
-				["class"] = "SHAMAN",
-				["type"] = L["Other"],
 				["name"] = "Healing Stream Totem",
 				["spellID"] = 5394,
 			},
@@ -3271,7 +3273,7 @@ Private.spellDB = {
 			},
 			{
 				["class"] = "MAGE",
-				["type"] = L["Core"],
+				["type"] = L["Other"],
 				["name"] = "Arcane Orb",
 				["spellID"] = 153626,
 			},
@@ -3509,37 +3511,39 @@ Private.spellDB = {
 			{
 				["class"] = "CONSUMABLE",
 				["type"] = L["Consumable"],
-				["name"] = "Algari Healing Potion",
-				["spellID"] = 431416,
-				["item"] = nil,
+				["name"] = "Tempered Potion",
+				["spellID"] = 431932,
 			},
 			{
 				["class"] = "CONSUMABLE",
 				["type"] = L["Consumable"],
 				["name"] = "Invigorating Healing Potion",
 				["spellID"] = 1238009,
-				["item"] = nil,
 			},
+			{
+				["class"] = "CONSUMABLE",
+				["type"] = L["Consumable"],
+				["name"] = "Algari Mana Potion",
+				["spellID"] = 431418,
+			},
+
 			{
 				["class"] = "CONSUMABLE",
 				["type"] = L["Consumable"],
 				["name"] = "Activate Weyrnstone",
 				["spellID"] = 408234,
-				["item"] = 205146,
 			},
 			{
 				["class"] = "CONSUMABLE",
 				["type"] = L["Consumable"],
 				["name"] = "Healthstone",
 				["spellID"] = 6262,
-				["item"] = 5512,
 			},
 			{
 				["class"] = "CONSUMABLE",
 				["type"] = L["Consumable"],
 				["name"] = "Demonic Gateway",
 				["spellID"] = 113942,
-				["item"] = 0,
 			},
 		},
 	},
@@ -3550,5 +3554,6 @@ function Private.spellDB.GetSpellRemappings()
 	return {
 		[430703] = 468037, -- Black Arrow
 		[246287] = 472433, -- Evangelism
+		[200174] = 123040, -- Mindbender
 	}
 end
