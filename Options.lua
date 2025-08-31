@@ -3325,7 +3325,7 @@ end
 function Private:CreateOptionsMenu()
 	if not self.optionsMenu then
 		local optionsMenu = AceGUI:Create("EPOptions")
-		optionsMenu.spellDropdownItems = utilities.GetOrCreateSpellDropdownItems(false).dropdownItemMenuData
+		optionsMenu.spellDropdownItems = utilities.GetOrCreateClassSpellDropdownItems(false).dropdownItemMenuData
 		optionsMenu.FormatTime = utilities.FormatTime
 		optionsMenu.GetSpellCooldownAndCharges = utilities.GetSpellCooldownAndCharges
 		optionsMenu.frame:SetParent(UIParent)

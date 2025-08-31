@@ -519,7 +519,7 @@ do
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
-	function Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
+	function Utilities.GetOrCreateClassSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["spell"] then
 			cache["spell"] = {}--[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["spell"]
@@ -562,7 +562,7 @@ do
 				end
 				tinsert(dropdownItems, classDropdownData)
 			end
-			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			Utilities.SortClassCategoryDropdownItemData(dropdownItems)
 			cache["spell"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
 		SetFavoriteTextureVisibility(cache["spell"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
@@ -572,7 +572,7 @@ do
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
-	local function GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap)
+	local function GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["racial"] then
 			cache["racial"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["racial"]
@@ -596,7 +596,7 @@ do
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
-	local function GetOrCreateConsumableDropdownItems(showFavoriteTexture, favoritedItemsMap)
+	local function GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["consumable"] then
 			cache["consumable"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["consumable"]
@@ -629,9 +629,9 @@ do
 			end
 		end
 		return {
-			Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
-			GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap),
-			GetOrCreateConsumableDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			Utilities.GetOrCreateClassSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
 		}
 	end
 end
@@ -1911,11 +1911,12 @@ end
 
 do
 	local kRegexIconText = constants.kRegexIconText
-	-- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
-	---@param data table<integer, DropdownItemData> Dropdown data to sort
-	function Utilities.SortDropdownDataByItemValue(data)
-		-- Sort the top-level table
-		sort(data, function(a, b)
+
+	do
+		---@param a DropdownItemData
+		---@param b DropdownItemData
+		---@return boolean
+		local function SortFunction(a, b)
 			local itemValueA = a.itemValue
 			local itemValueB = b.itemValue
 			if type(itemValueA) == "number" or itemValueA:find("spec:") then
@@ -1931,12 +1932,71 @@ do
 				end
 			end
 			return itemValueA < itemValueB
-		end)
+		end
 
-		-- Recursively sort any nested dropdownItemMenuData tables
-		for _, item in pairs(data) do
-			if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
-				Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
+		-- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
+		---@param data table<integer, DropdownItemData> Dropdown data to sort
+		function Utilities.SortDropdownDataByItemValue(data)
+			-- Sort the top-level table
+			sort(data, SortFunction)
+
+			-- Recursively sort any nested dropdownItemMenuData tables
+			for _, item in pairs(data) do
+				if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+					Utilities.SortDropdownDataByItemValue(item.dropdownItemMenuData)
+				end
+			end
+		end
+	end
+
+	do
+		local kSortOrder = {
+			[L["Core"]] = 1,
+			[L["Group Utility"]] = 2,
+			[L["Personal Defensive"]] = 3,
+			[L["External Defensive"]] = 4,
+			[L["Other"]] = 5,
+		}
+
+		---@param a DropdownItemData
+		---@param b DropdownItemData
+		---@return boolean
+		local function SortFunction(a, b)
+			local itemValueA = a.itemValue
+			local itemValueB = b.itemValue
+
+			if kSortOrder[itemValueA] then
+				itemValueA = kSortOrder[itemValueA]
+				print(itemValueA)
+			elseif type(itemValueA) == "number" or itemValueA:find("spec:") then
+				local spellName = a.text:match(kRegexIconText)
+				if spellName then
+					itemValueA = spellName
+				end
+			end
+
+			if kSortOrder[itemValueB] then
+				itemValueB = kSortOrder[itemValueB]
+			elseif type(itemValueB) == "number" or itemValueB:find("spec:") then
+				local spellName = b.text:match(kRegexIconText)
+				if spellName then
+					itemValueB = spellName
+				end
+			end
+			return itemValueA < itemValueB
+		end
+
+		-- Sorts a table of possibly nested dropdown item data, removing any inline icons if present before sorting.
+		---@param data table<integer, DropdownItemData> Dropdown data to sort
+		function Utilities.SortClassCategoryDropdownItemData(data)
+			-- Sort the top-level table
+			sort(data, SortFunction)
+
+			-- Recursively sort any nested dropdownItemMenuData tables
+			for _, item in pairs(data) do
+				if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+					Utilities.SortClassCategoryDropdownItemData(item.dropdownItemMenuData)
+				end
 			end
 		end
 	end
@@ -3114,7 +3174,12 @@ end
 do
 	local GetCooldownDurationFromTooltip = Utilities.GetCooldownDurationFromTooltip
 	---@type table<integer, {duration: number, maxCharges: integer}>
-	local cooldowns = {}
+	local cooldowns = {
+		[113942] = {
+			duration = 120.0,
+			maxCharges = 1,
+		},
+	}
 
 	---@param spellID integer
 	---@return number
