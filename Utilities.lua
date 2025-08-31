@@ -546,7 +546,7 @@ do
 					if name and icon then
 						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 						local iconText = format("%s %s", inlineIcon, name)
-						local spellID = spell["commonSpellID"] or spell["spellID"]
+						local spellID = spell["spellID"]
 						tinsert(
 							classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
 							{
@@ -596,7 +596,7 @@ do
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap table<integer, boolean>
 	---@return DropdownItemData
-	local function GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap)
+	local function GetOrCreateConsumableDropdownItems(showFavoriteTexture, favoritedItemsMap)
 		if not cache["consumable"] then
 			cache["consumable"] = {} --[[@as table<string, DropdownItemData>]]
 			local dropdownItems = cache["consumable"]
@@ -631,7 +631,7 @@ do
 		return {
 			Utilities.GetOrCreateSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
 			GetOrCreateRacialDropdownItems(showFavoriteTexture, favoritedItemsMap),
-			GetOrCreateTrinketDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			GetOrCreateConsumableDropdownItems(showFavoriteTexture, favoritedItemsMap),
 		}
 	end
 end

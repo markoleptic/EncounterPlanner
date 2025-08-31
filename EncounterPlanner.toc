@@ -27,8 +27,8 @@ Embeds.xml
 Locales\Locales.xml
 
 Constants.lua
-Spells.lua
 Init.lua
+Spells.lua
 Libs\Cbor.lua
 Widgets\Widgets.xml
 
