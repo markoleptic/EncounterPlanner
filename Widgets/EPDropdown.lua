@@ -164,20 +164,11 @@ do
 
 	---@param self EPDropdownPullout
 	---@param item EPDropdownItemToggle|EPDropdownItemMenu
-	local function AddItem(self, item)
-		self.items[#self.items + 1] = item
-		item:SetHeight(self.dropdownItemHeight)
-		local h = #self.items * self.dropdownItemHeight
-		self.itemFrame:SetHeight(h)
-		self.frame:SetHeight(min(h + k.EdgeSize * 2, self.maxHeight))
-		item:SetPullout(self)
-		item:SetOnEnter(OnEnter)
-	end
-
-	---@param self EPDropdownPullout
-	---@param item EPDropdownItemToggle|EPDropdownItemMenu
-	---@param index integer
+	---@param index? integer
 	local function InsertItem(self, item, index)
+		if not index then
+			index = #self.items + 1
+		end
 		tinsert(self.items, index, item)
 		item:SetHeight(self.dropdownItemHeight)
 		local h = #self.items * self.dropdownItemHeight
@@ -427,7 +418,6 @@ do
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
-			AddItem = AddItem,
 			InsertItem = InsertItem,
 			RemoveItem = RemoveItem,
 			Open = Open,
@@ -957,7 +947,8 @@ do
 	---@param self EPDropdown
 	---@param itemData DropdownItemData
 	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
-	local function AddItem(self, itemData, itemType)
+	---@param index? integer
+	local function AddItem(self, itemData, itemType, index)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -983,7 +974,7 @@ do
 				HandleMenuItemValueChanged(self, widget, selected, value, owningDropdownMenuItem)
 			end)
 			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
-			self.pullout:AddItem(dropdownMenuItem)
+			self.pullout:InsertItem(dropdownMenuItem, index)
 			if itemData.selectable == false then
 				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
 			end
@@ -1025,7 +1016,7 @@ do
 			if itemData.selectable == false then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
 			end
-			self.pullout:AddItem(dropdownItemToggle)
+			self.pullout:InsertItem(dropdownItemToggle, index)
 		end
 	end
 
@@ -1051,10 +1042,12 @@ do
 	-- The type of item to create for direct children of the dropdown. Ignored if any top level itemData has child data
 	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType
 	---@param neverShowItemsAsSelected boolean? If true, items will not be selectable
-	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected)
+	---@param startIndex integer?
+	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected, startIndex)
+		local currentIndex = startIndex
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
-				self:AddItem({ itemValue = index, text = itemData }, leafType)
+				self:AddItem({ itemValue = index, text = itemData }, leafType, currentIndex)
 			elseif type(itemData) == "table" then
 				if neverShowItemsAsSelected == true then
 					itemData.selectable = false
@@ -1062,10 +1055,13 @@ do
 					itemData.selectable = true
 				end
 				if type(itemData.dropdownItemMenuData) == "table" then
-					self:AddItem(itemData, "EPDropdownItemMenu")
+					self:AddItem(itemData, "EPDropdownItemMenu", currentIndex)
 				else
-					self:AddItem(itemData, leafType)
+					self:AddItem(itemData, leafType, currentIndex)
 				end
+			end
+			if currentIndex then
+				currentIndex = currentIndex + 1
 			end
 		end
 	end

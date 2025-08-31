@@ -539,7 +539,7 @@ do
 				HandleMenuItemValueChanged(self, selected, value, dropdownMenuItem)
 			end
 		end)
-		self.childPullout:AddItem(dropdownMenuItem)
+		self.childPullout:InsertItem(dropdownMenuItem)
 		dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, dropdownParent)
 	end
 
@@ -578,11 +578,7 @@ do
 		dropdownItemToggle:SetCallback("OnValueChanged", function(widget)
 			HandleItemValueChanged(self, widget)
 		end)
-		if insertIndex then
-			self.childPullout:InsertItem(dropdownItemToggle, insertIndex)
-		else
-			self.childPullout:AddItem(dropdownItemToggle)
-		end
+		self.childPullout:InsertItem(dropdownItemToggle, insertIndex)
 	end
 
 	---@param self EPDropdownItemMenu
