@@ -3,3 +3,4 @@
 .vscode
 .release
 Libs/*/
+UpdateRelease.sh
