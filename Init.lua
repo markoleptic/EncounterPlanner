@@ -98,13 +98,13 @@ local function ToBase64(num, length)
 	return concat(result)
 end
 
-local version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
+Private.version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 local function GenerateUniqueID()
 	local timePart = ToBase64(GetTime() * 1000, 6)
 	local randomPart1 = ToBase64(random(0, 0xFFFFFFF), 5) -- 5 chars = 30 bits
 	local randomPart2 = ToBase64(random(0, 0xFFFFFFF), 5)
-	return format("%s-%s-%s%s", version, timePart, randomPart1, randomPart2)
+	return format("%s-%s-%s%s", Private.version, timePart, randomPart1, randomPart2)
 end
 
 Private.GenerateUniqueID = GenerateUniqueID
@@ -767,6 +767,7 @@ Private.exportEditBox = nil ---@type EPEditBox
 Private.optionsMenu = nil ---@type EPOptions
 Private.phaseLengthEditor = nil ---@type EPPhaseLengthEditor
 Private.newPlanDialog = nil ---@type EPNewPlanDialog
+Private.patchNotesDialog = nil ---@type EPEditBox
 Private.externalTextEditor = nil ---@type EPEditBox
 Private.tutorial = nil ---@type EPTutorial
 Private.tutorialCallbackObject = nil ---@type table|nil

@@ -1,4 +1,4 @@
-local _, Namespace = ...
+local AddOnName, Namespace = ...
 
 ---@class Private
 local Private = Namespace
@@ -1821,6 +1821,37 @@ local function HandleCloseButtonClicked()
 	Private.mainFrame:Release()
 end
 
+local function HandleVersionButtonClicked()
+	if not Private.patchNotesDialog then
+		local patchNotesDialog = AceGUI:Create("EPEditBox")
+		patchNotesDialog:SetCallback("OnRelease", function()
+			Private.patchNotesDialog.editBox:EnableMouse(true)
+			Private.patchNotesDialog.editBox:SetSpacing(0)
+			Private.patchNotesDialog = nil
+		end)
+		patchNotesDialog:SetCallback("CloseButtonClicked", function()
+			Private.patchNotesDialog:Release()
+		end)
+		patchNotesDialog.editBox:EnableMouse(false)
+		patchNotesDialog.editBox:SetSpacing(2)
+		patchNotesDialog:SetText(constants.kPatchNotesText)
+		patchNotesDialog:SetTitle(
+			format(
+				"%s %s (%s)",
+				L["Encounter Planner"],
+				Private.version,
+				C_AddOns.GetAddOnMetadata(AddOnName, "X-Date")
+			)
+		)
+		patchNotesDialog.frame:SetParent(UIParent)
+		patchNotesDialog.frame:SetFrameStrata("DIALOG")
+		patchNotesDialog.frame:SetFrameLevel(constants.frameLevels.kPatchNotesDialogFrameLevel)
+		patchNotesDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		patchNotesDialog:SetPoint("TOP", UIParent, "TOP", 0, -patchNotesDialog.frame:GetBottom())
+		Private.patchNotesDialog = patchNotesDialog
+	end
+end
+
 local function HandleCollapseAllButtonClicked()
 	local currentPlan = GetCurrentPlan()
 	local sortedTimelineAssignments = SortAssignments(
@@ -1875,6 +1906,9 @@ local function CloseDialogs()
 	if Private.newPlanDialog then
 		Private.newPlanDialog:Release()
 	end
+	if Private.patchNotesDialog then
+		Private.patchNotesDialog:Release()
+	end
 end
 
 local function HandleMainFrameReleased()
@@ -1911,6 +1945,7 @@ function Private:CreateInterface()
 		local x, y = profile.minimizeFramePosition.x, profile.minimizeFramePosition.y
 		mainFrame:SetMinimizeFramePosition(x, y)
 	end
+	mainFrame:SetCallback("VersionButtonClicked", HandleVersionButtonClicked)
 	mainFrame:SetCallback("CloseButtonClicked", HandleCloseButtonClicked)
 	mainFrame:SetCallback("CollapseAllButtonClicked", HandleCollapseAllButtonClicked)
 	mainFrame:SetCallback("ExpandAllButtonClicked", HandleExpandAllButtonClicked)

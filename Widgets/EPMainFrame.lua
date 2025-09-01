@@ -6,7 +6,7 @@ local L = Private.L
 
 local Type = "EPMainFrame"
 local Version = 1
-local addOnVersion = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
+local addOnVersion = Private.version
 
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -97,6 +97,7 @@ end
 ---@field maximizeButton EPButton
 ---@field menuButtonContainer EPContainer
 ---@field minimizeButton EPButton
+---@field nameAndVersionContainer EPContainer
 ---@field padding {left: number, top: number, right: number, bottom: number}
 ---@field planDropdown EPDropdown
 ---@field planMenuButton EPDropdown
@@ -131,6 +132,34 @@ local function OnAcquire(self)
 		-self.padding.right,
 		-(k.WindowBarHeight + self.padding.bottom)
 	)
+
+	local nameAndVersionContainer = AceGUI:Create("EPContainer")
+	nameAndVersionContainer.frame:SetParent(self.windowBar)
+	nameAndVersionContainer.frame:SetPoint("CENTER", self.windowBar, "CENTER")
+	nameAndVersionContainer:SetLayout("EPHorizontalLayout")
+	nameAndVersionContainer:SetSpacing(2, 0)
+
+	local nameLabel = AceGUI:Create("EPLabel")
+	nameLabel.text:SetTextColor(1, 0.82, 0, 1)
+	nameLabel:SetText(L["Encounter Planner"], 0)
+	nameLabel:SetFontSize(16)
+	nameLabel:SetFrameWidthFromText()
+	nameLabel:SetFrameHeightFromText(0)
+
+	local versionButton = AceGUI:Create("EPButton")
+	versionButton:SetText(addOnVersion)
+	versionButton:SetFontSize(16)
+	versionButton:SetWidthFromText(0)
+	versionButton:SetColor(unpack(k.NeutralButtonColor))
+	versionButton.button:GetFontString():SetTextColor(1, 0.82, 0, 1)
+	versionButton:SetHeight(nameLabel.frame:GetHeight())
+	versionButton:SetBackdropColor(0, 0, 0, 0)
+	versionButton:SetCallback("Clicked", function()
+		self:Fire("VersionButtonClicked")
+	end)
+
+	nameAndVersionContainer:AddChildren(nameLabel, versionButton)
+	self.nameAndVersionContainer = nameAndVersionContainer
 
 	self.closeButton = AceGUI:Create("EPButton")
 	self.closeButton:SetIcon(k.CloseIcon)
@@ -302,6 +331,14 @@ end
 
 ---@param self EPMainFrame
 local function OnRelease(self)
+	if self.nameAndVersionContainer then
+		local versionButton = self.nameAndVersionContainer.children[2]
+		if versionButton then
+			versionButton.button:GetFontString():SetTextColor(1, 1, 1, 1)
+		end
+		self.nameAndVersionContainer:Release()
+	end
+
 	if self.menuButtonContainer then
 		self.menuButtonContainer:Release()
 	end
@@ -348,6 +385,7 @@ local function OnRelease(self)
 	self.maximizeButton = nil
 	self.menuButtonContainer = nil
 	self.minimizeButton = nil
+	self.nameAndVersionContainer = nil
 	self.planDropdown = nil
 	self.planMenuButton = nil
 	self.planReminderEnableCheckBox = nil
@@ -502,14 +540,6 @@ local function Constructor()
 	windowBar:SetBackdropColor(unpack(k.BackdropColor))
 	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	windowBar:EnableMouse(true)
-	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(L["Encounter Planner"] .. " " .. addOnVersion)
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
 
 	windowBar:SetScript("OnMouseDown", function()
 		frame:StartMoving()
@@ -535,6 +565,8 @@ local function Constructor()
 	local minimizeFrameText = minimizeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	minimizeFrameText:SetText(L["Encounter Planner"])
 	minimizeFrameText:SetPoint("CENTER", minimizeFrame, "CENTER")
+	local h = minimizeFrameText:GetStringHeight()
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		minimizeFrameText:SetFont(fPath, h)
 	end

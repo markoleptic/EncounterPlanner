@@ -18,6 +18,7 @@ Private.constants = {
 		kNewPlanDialogFrameLevel = 120,
 		kOptionsMenuFrameLevel = 140,
 		kMessageBoxFrameLevel = 160,
+		kPatchNotesDialogFrameLevel = 180,
 		kReminderContainerFrameLevel = 100,
 	},
 	communications = {
@@ -81,3 +82,13 @@ local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 i
 if not isElevenDotTwo then
 	Private.constants.kDefaultBossDungeonEncounterID = 3009
 end
+
+Private.constants.kPatchNotesText = [[-   Re-categorized and updated the spell dropdown menu.
+    -   Each class is now split into five categories: Core, Group Utility, External Defensive, Personal Defensive, and Other.
+    -   Core contains major individual cooldowns.
+    -   Group Utility includes spells which affect others that are typically assigned.
+    -   Not all classes will have all five categories.
+    -   The spell dropdown in the Assignment Editor is now filtered based on the class and role of an individual. It is also filtered when the assignee is a class or spec.
+    -   Removed spells that have been removed from the game, PVP spells, and all equipment trinkets.
+    -   Replaced the "Trinkets" item with "Consumables", and added the most used potions.
+    -   Added some missing spells.]]

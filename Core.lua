@@ -37,8 +37,6 @@ local tonumber = tonumber
 local type = type
 local UIParent = UIParent
 
-local currentVersionString = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
-
 ---@param version string
 ---@return number?
 ---@return number?
@@ -105,7 +103,7 @@ do -- Minimap icon initialization and handling
 		end
 		if tooltip then
 			tooltip:ClearLines()
-			tooltip:AddDoubleLine(AddOnName, currentVersionString)
+			tooltip:AddDoubleLine(AddOnName, Private.version)
 			tooltip:AddLine(" ")
 			tooltip:AddLine("|cffeda55f" .. L["Left-Click|r to toggle showing the main window."], 0.2, 1, 0.2)
 			tooltip:AddLine("|cffeda55f" .. L["Right-Click|r to open the options menu."], 0.2, 1, 0.2)
@@ -492,7 +490,7 @@ do -- Profile updating and refreshing
 			RemoveInvalidActiveBossAbilities(profile.activeBossAbilities, DifficultyType.Mythic)
 			RemoveInvalidActiveBossAbilities(profile.activeBossAbilitiesHeroic, DifficultyType.Heroic)
 
-			local currentMajor, currentMinor, currentPatch = ParseVersion(currentVersionString)
+			local currentMajor, currentMinor, currentPatch = ParseVersion(Private.version)
 			local major, minor, patch = ParseVersion(profile.version)
 			local noVersion = not major or not minor or not patch
 
@@ -527,7 +525,7 @@ do -- Profile updating and refreshing
 				end
 			end
 
-			profile.version = currentVersionString
+			profile.version = Private.version
 		end
 	end
 
