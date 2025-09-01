@@ -232,10 +232,10 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 	local class, role = nil, nil
 	if roster then
 		if roster[assignee] then
-			if roster[assignee].class then
+			if roster[assignee].class and roster[assignee].class:find("class:") then
 				class = roster[assignee].class
 			end
-			if roster[assignee].role then
+			if roster[assignee].role and roster[assignee].role:find("role:") then
 				role = roster[assignee].role
 			end
 		end

@@ -2159,7 +2159,9 @@ end
 ---@param unitData RosterEntry
 local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 	if rosterEntry.class == "" then
-		rosterEntry.class = Utilities.GetFormattedDataClassName(unitData.class)
+		if Utilities.IsValidClassFileName(unitData.class) then
+			rosterEntry.class = Utilities.GetFormattedDataClassName(unitData.class)
+		end
 	end
 
 	if rosterEntry.classColoredName == "" then
