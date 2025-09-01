@@ -155,11 +155,19 @@ do
 		[1473] = "ranged", -- Augmentation
 	}
 
+	-- class as class file name, role as RaidGroupRole
+	---@type table<integer, {class: string, role: RaidGroupRole}>
+	local sSpecIDToClassAndRole = {}
+
 	for specID, _ in pairs(specIDToType) do
-		local _, name, _, icon, _ = GetSpecializationInfoByID(specID)
+		local _, name, _, icon, role, classFile = GetSpecializationInfoByID(specID)
 		local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
 		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
+		sSpecIDToClassAndRole[specID] = {
+			class = classFile,
+			role = "role:" .. role:lower(),
+		}
 	end
 
 	local genericIcons = setmetatable({
@@ -233,6 +241,20 @@ do
 	---@return table<integer, string>
 	function Utilities.GetClassFileNames()
 		return sClassFileNames
+	end
+
+	---@param specIDOrFormattedSpecDataType integer|string
+	---@return string classFileName
+	---@return RaidGroupRole raidGroupRole
+	function Utilities.GetClassAndRoleFromSpecID(specIDOrFormattedSpecDataType)
+		local specID = specIDOrFormattedSpecDataType
+		if type(specIDOrFormattedSpecDataType) == "string" then
+			local match = specIDOrFormattedSpecDataType:match("spec:%s*(%d+)")
+			if match then
+				specID = tonumber(match)
+			end
+		end
+		return sSpecIDToClassAndRole[specID].class, sSpecIDToClassAndRole[specID].role
 	end
 
 	---@param className string

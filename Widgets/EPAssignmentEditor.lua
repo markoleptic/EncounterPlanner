@@ -244,6 +244,8 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 			if assignee:find("class:") then
 				class = assignee
 				role = nil
+			elseif assignee:find("spec:") then
+				class, role = Private.utilities.GetClassAndRoleFromSpecID(assignee)
 			end
 		end
 	end
