@@ -14,7 +14,7 @@ Private.spellDB = {
 				["spellID"] = 355,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Shield Block",
 				["spellID"] = 2565,
@@ -30,7 +30,7 @@ Private.spellDB = {
 				["spellID"] = 100,
 			},
 			{
-				["type"] = L["Core"],
+				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Sweeping Strikes",
 				["spellID"] = 260708,
@@ -42,7 +42,7 @@ Private.spellDB = {
 				["spellID"] = 118038,
 			},
 			{
-				["type"] = L["Core"],
+				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Skullsplitter",
 				["spellID"] = 260643,
@@ -61,13 +61,13 @@ Private.spellDB = {
 				["talent"] = 262161,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Last Stand",
 				["spellID"] = 12975,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Demoralizing Shout",
 				["spellID"] = 1160,
@@ -86,7 +86,7 @@ Private.spellDB = {
 				["talent"] = 386071,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Shield Wall",
 				["spellID"] = 871,
@@ -407,7 +407,7 @@ Private.spellDB = {
 				["spellID"] = 195072,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Demon Spikes",
 				["spellID"] = 203720,
@@ -476,7 +476,7 @@ Private.spellDB = {
 				["spellID"] = 207684,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Fiery Brand",
 				["spellID"] = 204021,
@@ -488,13 +488,13 @@ Private.spellDB = {
 				["spellID"] = 202138,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Soul Barrier",
 				["spellID"] = 263648,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Bulk Extraction",
 				["spellID"] = 320341,
@@ -712,13 +712,13 @@ Private.spellDB = {
 				["spellID"] = 115315,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Celestial Brew",
 				["spellID"] = 322507,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Celestial Infusion",
 				["spellID"] = 1241059,
@@ -742,7 +742,7 @@ Private.spellDB = {
 				["spellID"] = 392983,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Fortifying Brew",
 				["spellID"] = 115203,
@@ -784,7 +784,7 @@ Private.spellDB = {
 				["spellID"] = 388686,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Dampen Harm",
 				["spellID"] = 122278,
@@ -813,7 +813,7 @@ Private.spellDB = {
 				["spellID"] = 132578,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Purifying Brew",
 				["spellID"] = 119582,
@@ -939,19 +939,19 @@ Private.spellDB = {
 				["spellID"] = 194844,
 			},
 			{
-				["type"] = L["Other"],
+				["type"] = L["Group Utility"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Gorefiend's Grasp",
 				["spellID"] = 108199,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Dancing Rune Weapon",
 				["spellID"] = 49028,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Tombstone",
 				["spellID"] = 219809,
@@ -969,13 +969,13 @@ Private.spellDB = {
 				["spellID"] = 206931,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Consumption",
 				["spellID"] = 274156,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Rune Tap",
 				["spellID"] = 194679,
@@ -987,7 +987,7 @@ Private.spellDB = {
 				["spellID"] = 207289,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Vampiric Blood",
 				["spellID"] = 55233,
@@ -1542,13 +1542,13 @@ Private.spellDB = {
 				["spellID"] = 102558,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Rage of the Sleeper",
 				["spellID"] = 200851,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Pulverize",
 				["spellID"] = 80313,
@@ -1580,7 +1580,7 @@ Private.spellDB = {
 				["spellID"] = 132469,
 			},
 			{
-				["type"] = L["Core"],
+				["type"] = L["Other"],
 				["name"] = "Frenzied Regeneration",
 				["spellID"] = 22842,
 			},
@@ -1923,7 +1923,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
 				["name"] = "Mindbender",
 				["spellID"] = 123040,
 			},
@@ -2004,7 +2003,7 @@ Private.spellDB = {
 				["spellID"] = 263165,
 			},
 			{
-				["type"] = L["Other"],
+				["type"] = L["Core"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Dark Ascension",
 				["spellID"] = 391109,
@@ -2079,7 +2078,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
 				["name"] = "Shadowfiend",
 				["spellID"] = 34433,
 			},
@@ -2106,32 +2104,15 @@ Private.spellDB = {
 				["spellID"] = 8092,
 			},
 			{
-				["type"] = L["Other"],
+				["type"] = L["Core"],
 				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition of Clairvoyance",
-				["spellID"] = 440725,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition of Insight",
-				["spellID"] = 428933,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition of Piety",
-				["spellID"] = 428930,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition of Solace",
-				["spellID"] = 428934,
+				["name"] = "Premonition",
+				["spellID"] = 428924,
 			},
 			{
 				["type"] = L["Core"],
 				["name"] = "Voidwraith",
+				["role"] = { ["role:healer"] = true },
 				["spellID"] = 451234,
 			},
 		},
@@ -2164,13 +2145,13 @@ Private.spellDB = {
 				["spellID"] = 498,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Ardent Defender",
 				["spellID"] = 31850,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Gift of the Golden Val'kyr",
 				["spellID"] = 378279,
@@ -2182,7 +2163,7 @@ Private.spellDB = {
 				["spellID"] = 378974,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Guardian of Ancient Kings",
 				["spellID"] = 86659,
@@ -2193,7 +2174,7 @@ Private.spellDB = {
 				["spellID"] = 375576,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Eye of Tyr",
 				["spellID"] = 387174,
@@ -2205,7 +2186,7 @@ Private.spellDB = {
 				["spellID"] = 31935,
 			},
 			{
-				["type"] = L["Personal Defensive"],
+				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Moment of Glory",
 				["spellID"] = 327193,
