@@ -321,9 +321,10 @@ do -- Roster Editor
 		UpdateRosterDataFromGroup(GetCurrentRoster())
 		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
 
-		if Private.assignmentEditor then
-			local assigneeTypeDropdown = Private.assignmentEditor.assigneeTypeDropdown
-			local targetDropdown = Private.assignmentEditor.targetDropdown
+		local assignmentEditor = Private.assignmentEditor
+		if assignmentEditor then
+			local assigneeTypeDropdown = assignmentEditor.assigneeTypeDropdown
+			local targetDropdown = assignmentEditor.targetDropdown
 			local roster = GetCurrentRoster()
 
 			local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
@@ -341,7 +342,20 @@ do -- Roster Editor
 			targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
 			targetDropdown:SetValue(previousTargetValue)
 			targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
-			Private.assignmentEditor:HandleRosterChanged()
+
+			local assignmentID = assignmentEditor:GetAssignmentID()
+			if assignmentID then
+				local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+				if assignment then
+					assignmentEditor:RepopulateSpellDropdown(
+						assignment.assignee,
+						roster,
+						assignment.spellID,
+						AddOn.db.profile.favoritedSpellAssignments
+					)
+					assignmentEditor:HandleRosterChanged()
+				end
+			end
 		end
 
 		if Private.activeTutorialCallbackName then

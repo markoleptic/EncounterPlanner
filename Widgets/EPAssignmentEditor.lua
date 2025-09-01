@@ -121,6 +121,8 @@ k.LineBackdrop = {
 ---@field obj any
 ---@field assignmentID integer|nil
 ---@field FormatTime fun(number): string,string
+---@field lastClassDropdownValue string|nil
+---@field lastRoleDropdownValue string|nil
 
 ---@param children any
 ---@param enable boolean
@@ -219,6 +221,64 @@ local function HandleCustomTextureClicked(self, widget, value)
 	favorites = self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Favorite")
 	self.spellAssignmentDropdown:SetItemEnabled("Favorite", #favorites > 0)
 	self:Fire("FavoriteItemsChanged", favorites)
+end
+
+---@param self EPAssignmentEditor
+---@param assignee string
+---@param roster table<string, RosterEntry>
+---@param spellID integer
+---@param favoritedSpellDropdownItems table<integer, DropdownItemData>
+local function RepopulateSpellDropdown(self, assignee, roster, spellID, favoritedSpellDropdownItems)
+	local class, role = nil, nil
+	if roster then
+		if roster[assignee] then
+			if roster[assignee].class then
+				class = roster[assignee].class
+			end
+			if roster[assignee].role then
+				role = roster[assignee].role
+			end
+		end
+
+		if not class then
+			if assignee:find("class:") then
+				class = assignee
+				role = nil
+			end
+		end
+	end
+
+	if self.lastClassDropdownValue ~= class or self.lastRoleDropdownValue ~= role then
+		local favoritedItemsMap = {}
+		if favoritedSpellDropdownItems then
+			for _, v in ipairs(favoritedSpellDropdownItems) do
+				favoritedItemsMap[v.itemValue] = true
+			end
+		end
+		if class then
+			self.spellAssignmentDropdown:RemoveItem("Class")
+			self.spellAssignmentDropdown:RemoveItem("Core")
+			self.spellAssignmentDropdown:RemoveItem("Group Utility")
+			self.spellAssignmentDropdown:RemoveItem("Personal Defensive")
+			self.spellAssignmentDropdown:RemoveItem("External Defensive")
+			self.spellAssignmentDropdown:RemoveItem("Other")
+			local dropdownItemData =
+				Private.utilities.GetOrCreateSingleClassSpellDropdownItems(class, role, true, favoritedItemsMap)
+			self.spellAssignmentDropdown:AddItems(dropdownItemData, "EPDropdownItemMenu", nil, 3)
+		else
+			self.spellAssignmentDropdown:RemoveItem("Core")
+			self.spellAssignmentDropdown:RemoveItem("Group Utility")
+			self.spellAssignmentDropdown:RemoveItem("Personal Defensive")
+			self.spellAssignmentDropdown:RemoveItem("External Defensive")
+			self.spellAssignmentDropdown:RemoveItem("Other")
+
+			local dropdownItemData = Private.utilities.GetOrCreateClassSpellDropdownItems(true, favoritedItemsMap)
+			self.spellAssignmentDropdown:AddItems({ dropdownItemData }, "EPDropdownItemToggle", nil, 3)
+		end
+	end
+
+	self.lastClassDropdownValue, self.lastRoleDropdownValue = class, role
+	self.spellAssignmentDropdown:SetValue(self.spellAssignmentDropdown.enabled and spellID or nil)
 end
 
 ---@param self EPAssignmentEditor
@@ -613,6 +673,8 @@ local function OnRelease(self)
 	self.targetDropdown = nil
 	self.previewContainer = nil
 	self.previewLabel = nil
+	self.lastClassDropdownValue = nil
+	self.lastRoleDropdownValue = nil
 end
 
 local function OnHeightSet(self, width)
@@ -637,17 +699,21 @@ end
 
 ---@param self EPAssignmentEditor
 ---@param assignment Assignment
+---@param roster table<string, RosterEntry>
 ---@param previewText string
 ---@param metaTables {CombatLogEventAssignment: CombatLogEventAssignment, TimedAssignment:TimedAssignment}
 ---@param availableCombatLogEventTypes table<integer, CombatLogEventType>
 ---@param spellSpecificCombatLogEventTypes table<integer, CombatLogEventType>|nil
+---@param favoritedSpellDropdownItems table<integer, DropdownItemData>
 local function PopulateFields(
 	self,
 	assignment,
+	roster,
 	previewText,
 	metaTables,
 	availableCombatLogEventTypes,
-	spellSpecificCombatLogEventTypes
+	spellSpecificCombatLogEventTypes,
+	favoritedSpellDropdownItems
 )
 	self:SetAssignmentID(assignment.uniqueID)
 	local assignee = assignment.assignee
@@ -665,7 +731,7 @@ local function PopulateFields(
 	local enableSpellAssignmentCheckBox = spellID ~= nil and spellID > constants.kTextAssignmentSpellID
 	self.enableSpellAssignmentCheckBox:SetChecked(enableSpellAssignmentCheckBox)
 	self.spellAssignmentDropdown:SetEnabled(enableSpellAssignmentCheckBox)
-	self.spellAssignmentDropdown:SetValue(enableSpellAssignmentCheckBox and spellID or nil)
+	RepopulateSpellDropdown(self, assignee, roster, spellID, favoritedSpellDropdownItems)
 
 	local enableCombatLogEvents = #availableCombatLogEventTypes > 0
 	local combatLogEventItem, _ = self.assignmentTypeDropdown:FindItemAndText("Combat Log Event")
@@ -816,6 +882,7 @@ local function Constructor()
 		GetAssignmentID = GetAssignmentID,
 		PopulateFields = PopulateFields,
 		HandleRosterChanged = HandleRosterChanged,
+		RepopulateSpellDropdown = RepopulateSpellDropdown,
 		buttonFrame = buttonFrame,
 	}
 

@@ -193,8 +193,15 @@ do
 		genericIcons[format("rt%d", i)] = icon
 	end
 
+	---@type table<integer, string>
+	local sClassFileNames = {}
+
+	---@type table<integer, string>
+	local sUnformattedClassIcons = setmetatable({}, caseAndWhiteSpaceInsensitiveMetaTable)
+
 	for i = 1, kNumberOfClasses do
 		local className, classFile, classID = GetClassInfo(i)
+		tinsert(sClassFileNames, classFile)
 		local enClassName
 		if classFile == "DEATHKNIGHT" then
 			enClassName = "DeathKnight"
@@ -213,10 +220,37 @@ do
 		prettyClassNames[className] = prettyClassName
 
 		local classNameWithoutSpaces = className:gsub(" ", "")
-		local classIcon = "|T" .. "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces .. ":0|t"
+
+		local unformattedClassIcon = "Interface\\Icons\\ClassIcon_" .. classNameWithoutSpaces
+		sUnformattedClassIcons[classFile] = unformattedClassIcon
+
+		local classIcon = "|T" .. unformattedClassIcon .. ":0|t"
 		genericIcons[format("%s", classFile)] = classIcon
 		genericIcons[format("%s", className)] = classIcon
 		genericIcons[format("%d", classID)] = classIcon
+	end
+
+	---@return table<integer, string>
+	function Utilities.GetClassFileNames()
+		return sClassFileNames
+	end
+
+	---@param className string
+	---@return string
+	function Utilities.GetFormattedDataClassName(className)
+		return "class:" .. englishClassNamesWithoutSpaces[className]
+	end
+
+	---@param classFileName string
+	---@return boolean
+	function Utilities.IsValidClassFileName(classFileName)
+		return englishClassNamesWithoutSpaces[classFileName] ~= nil
+	end
+
+	---@param text string Class file name, localized class name, or class ID.
+	---@return string
+	function Utilities.GetUnformattedClassIcon(text)
+		return sUnformattedClassIcons[text]
 	end
 
 	---@param text string
@@ -515,58 +549,109 @@ do
 	end
 
 	local kFormatStringGenericInlineIconWithZoom = constants.kFormatStringGenericInlineIconWithZoom
+	local GetFormattedDataClassName = Utilities.GetFormattedDataClassName
+
+	---@param classFileName string
+	---@param role? RaidGroupRole
+	---@param showFavoriteTexture? boolean
+	---@param favoritedItemsMap? table<integer, boolean>
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateSingleClassSpellDropdownItems(
+		classFileName,
+		role,
+		showFavoriteTexture,
+		favoritedItemsMap
+	)
+		local formattedDataClassName = classFileName
+		local classMatch = formattedDataClassName:match("class:%s*(%a+)")
+		if classMatch then
+			classFileName = classMatch
+		else
+			formattedDataClassName = GetFormattedDataClassName(classFileName)
+		end
+
+		local dropdownItemData = {}
+
+		if cache["class"] ~= nil and role == nil then -- Return unfiltered items for class
+			for _, classDropdownData in ipairs(cache["class"].dropdownItemMenuData) do
+				if classDropdownData.itemValue == formattedDataClassName then
+					dropdownItemData = classDropdownData.dropdownItemMenuData
+					break
+				end
+			end
+		end
+
+		if dropdownItemData and #dropdownItemData == 0 then
+			local classSpells = Private.spellDB.classes[classFileName:upper()]
+			local spellTypeIndex = 1
+			local spellTypeIndexMap = {}
+			for _, spell in pairs(classSpells) do
+				if not role or not spell["role"] or spell["role"][role] == true then
+					local spellType = spell["type"]
+					if not spellTypeIndexMap[spellType] then
+						dropdownItemData[spellTypeIndex] = {
+							itemValue = spellType,
+							text = spellType,
+							dropdownItemMenuData = {},
+						}
+						spellTypeIndexMap[spellType] = spellTypeIndex
+						spellTypeIndex = spellTypeIndex + 1
+					end
+					local currentSpellTypeIndex = spellTypeIndexMap[spellType]
+					local spellID = spell["spellID"]
+					local name = GetSpellName(spellID)
+					local icon = GetSpellTexture(spellID)
+					if name and icon then
+						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
+						local iconAndText = format("%s %s", inlineIcon, name)
+						tinsert(dropdownItemData[currentSpellTypeIndex].dropdownItemMenuData, {
+							itemValue = spellID,
+							text = iconAndText,
+						})
+					--@debug@
+					else
+						print(format("%s: %s spell not found.", AddOnName, spellID))
+						--@end-debug@
+					end
+				end
+			end
+		end
+
+		if favoritedItemsMap then
+			SetFavoriteTextureVisibility(dropdownItemData, showFavoriteTexture, favoritedItemsMap)
+		end
+
+		Utilities.SortClassCategoryDropdownItemData(dropdownItemData)
+		return dropdownItemData
+	end
 
 	---@param showFavoriteTexture boolean
 	---@param favoritedItemsMap? table<integer, boolean>
 	---@return DropdownItemData
 	function Utilities.GetOrCreateClassSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
-		if not cache["spell"] then
-			cache["spell"] = {}--[[@as table<string, DropdownItemData>]]
-			local dropdownItems = cache["spell"]
-			for className, classSpells in pairs(Private.spellDB.classes) do
-				local classDropdownData = {
-					itemValue = className,
-					text = Utilities.GetLocalizedPrettyClassName(className),
-					dropdownItemMenuData = {},
-				}
-				local spellTypeIndex = 1
-				local spellTypeIndexMap = {}
-				for _, spell in pairs(classSpells) do
-					if not spellTypeIndexMap[spell["type"]] then
-						classDropdownData.dropdownItemMenuData[spellTypeIndex] = {
-							itemValue = spell["type"],
-							text = spell["type"],
-							dropdownItemMenuData = {},
-						}
-						spellTypeIndexMap[spell["type"]] = spellTypeIndex
-						spellTypeIndex = spellTypeIndex + 1
-					end
-					local name = GetSpellName(spell["spellID"])
-					local icon = GetSpellTexture(spell["spellID"])
-					if name and icon then
-						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
-						local iconText = format("%s %s", inlineIcon, name)
-						local spellID = spell["spellID"]
-						tinsert(
-							classDropdownData.dropdownItemMenuData[spellTypeIndexMap[spell["type"]]].dropdownItemMenuData,
-							{
-								itemValue = spellID,
-								text = iconText,
-							}
-						)
-					--@debug@
-					else
-						print(format("%s: %s spell not found.", AddOnName, spell["spellID"]))
-						--@end-debug@
-					end
-				end
-				tinsert(dropdownItems, classDropdownData)
+		if not cache["class"] then
+			local dropdownItems = {} ---@type table<integer, DropdownItemData>
+
+			for _, classFileName in ipairs(Utilities.GetClassFileNames()) do
+				tinsert(dropdownItems, {
+					itemValue = GetFormattedDataClassName(classFileName),
+					text = Utilities.GetLocalizedPrettyClassName(classFileName),
+					dropdownItemMenuData = Utilities.GetOrCreateSingleClassSpellDropdownItems(classFileName),
+				})
 			end
 			Utilities.SortClassCategoryDropdownItemData(dropdownItems)
-			cache["spell"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
+			cache["class"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
-		SetFavoriteTextureVisibility(cache["spell"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
-		return cache["spell"]
+
+		-- Remove class icons from text
+		for _, classDropdownData in ipairs(cache["class"].dropdownItemMenuData) do
+			for _, entry in ipairs(classDropdownData.dropdownItemMenuData) do
+				entry.text = entry.itemValue
+			end
+		end
+
+		SetFavoriteTextureVisibility(cache["class"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
+		return cache["class"]
 	end
 
 	---@param showFavoriteTexture boolean
@@ -643,18 +728,10 @@ do
 	function Utilities.GetOrCreateClassDropdownItemData()
 		if not classDropdownData then
 			local dropdownData = {}
-			for className, _ in pairs(Private.spellDB.classes) do
-				local actualClassName
-				if className == "DEATHKNIGHT" then
-					actualClassName = "DeathKnight"
-				elseif className == "DEMONHUNTER" then
-					actualClassName = "DemonHunter"
-				else
-					actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-				end
+			for _, classFileName in ipairs(Utilities.GetClassFileNames()) do
 				local classData = {
-					itemValue = "class:" .. actualClassName:gsub("%s", ""),
-					text = Utilities.GetLocalizedPrettyClassName(className),
+					itemValue = Utilities.GetFormattedDataClassName(classFileName),
+					text = Utilities.GetLocalizedPrettyClassName(classFileName),
 				}
 				tinsert(dropdownData, classData)
 			end
@@ -1761,57 +1838,6 @@ do
 	end
 end
 
--- Attempts to assign roles based on assignment spells. Currently only tries to assign healer roles.
----@param assignments table<integer, Assignment> Assignments to assign roles for
-function Utilities.DetermineRolesFromAssignments(assignments)
-	local assigneeAssignments = {}
-	local healerClasses = {
-		["DRUID"] = "role:healer",
-		["EVOKER"] = "role:healer",
-		["MONK"] = "role:healer",
-		["PALADIN"] = "role:healer",
-		["PRIEST"] = "role:healer",
-		["SHAMAN"] = "role:healer",
-	}
-	for _, assignment in pairs(assignments) do
-		local assignee = assignment.assignee
-		if not assigneeAssignments[assignee] then
-			assigneeAssignments[assignee] = {}
-		end
-		tinsert(assigneeAssignments[assignee], assignment)
-	end
-	local determinedRoles = {}
-	for assignee, currentAssigneeAssignments in pairs(assigneeAssignments) do
-		for _, currentAssigneeAssignment in pairs(currentAssigneeAssignments) do
-			if determinedRoles[assignee] then
-				break
-			end
-			local spellID = currentAssigneeAssignment.spellID
-			if spellID == 98008 or spellID == 108280 then -- Shaman healing bc classified as raid defensive
-				determinedRoles[assignee] = "role:healer"
-				break
-			end
-			for className, classData in pairs(Private.spellDB.classes) do
-				if determinedRoles[assignee] then
-					break
-				end
-				for _, spellInfo in pairs(classData) do
-					if spellInfo["spellID"] == spellID then
-						if spellInfo["type"] == "heal" and healerClasses[className] then
-							determinedRoles[assignee] = "role:healer"
-							break
-						end
-					end
-				end
-			end
-		end
-		if not determinedRoles[assignee] then
-			determinedRoles[assignee] = ""
-		end
-	end
-	return determinedRoles
-end
-
 ---@param assignee string
 ---@return string|nil
 function Utilities.IsValidAssignee(assignee)
@@ -1967,7 +1993,6 @@ do
 
 			if kSortOrder[itemValueA] then
 				itemValueA = kSortOrder[itemValueA]
-				print(itemValueA)
 			elseif type(itemValueA) == "number" or itemValueA:find("spec:") then
 				local spellName = a.text:match(kRegexIconText)
 				if spellName then
@@ -2099,7 +2124,7 @@ local function UpdateRosterEntryClassColoredName(unitName, rosterEntry)
 		local className = rosterEntry.class:match("class:%s*(%a+)")
 		if className then
 			className = className:upper()
-			if Private.spellDB.classes[className] then
+			if Utilities.IsValidClassFileName(className) then
 				local colorMixin = GetClassColor(className)
 				rosterEntry.classColoredName = colorMixin:WrapTextInColorCode(unitName:gsub("%s*%-.*", ""))
 			end
@@ -2112,16 +2137,7 @@ end
 ---@param unitData RosterEntry
 local function UpdateRosterEntryFromUnitData(rosterEntry, unitData)
 	if rosterEntry.class == "" then
-		local className = unitData.class
-		local actualClassName
-		if className == "DEATHKNIGHT" then
-			actualClassName = "DeathKnight"
-		elseif className == "DEMONHUNTER" then
-			actualClassName = "DemonHunter"
-		else
-			actualClassName = className:sub(1, 1):upper() .. className:sub(2):lower()
-		end
-		rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
+		rosterEntry.class = Utilities.GetFormattedDataClassName(unitData.class)
 	end
 
 	if rosterEntry.classColoredName == "" then
@@ -2168,7 +2184,6 @@ end
 ---@param assignments table<integer, Assignment> Assignments to add assignees from
 ---@param roster table<string, RosterEntry> Roster to update
 function Utilities.UpdateRosterFromAssignments(assignments, roster)
-	local determinedRoles = Utilities.DetermineRolesFromAssignments(assignments)
 	local visited = {}
 	for _, assignment in ipairs(assignments) do
 		if assignment.assignee and not visited[assignment.assignee] then
@@ -2183,11 +2198,6 @@ function Utilities.UpdateRosterFromAssignments(assignments, roster)
 			then
 				if not roster[assignee] then
 					roster[assignee] = RosterEntry:New({})
-				end
-				if roster[assignee].role == "" then
-					if determinedRoles[assignee] then
-						roster[assignee].role = determinedRoles[assignee]
-					end
 				end
 				UpdateRosterEntryClassColoredName(assignee, roster[assignee])
 			end

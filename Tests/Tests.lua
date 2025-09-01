@@ -1368,21 +1368,12 @@ do
 	---@return table<string, RosterEntry>
 	local function CreateTestRoster()
 		local roster = {}
-		for i = 1, GetNumClasses() do
-			local _, classFile, _ = GetClassInfo(i)
-			local actualClassName
-			if classFile == "DEATHKNIGHT" then
-				actualClassName = "DeathKnight"
-			elseif classFile == "DEMONHUNTER" then
-				actualClassName = "DemonHunter"
-			else
-				actualClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
-			end
+		for index, classFileName in ipairs(utilities.GetClassFileNames()) do
 			local rosterEntry = RosterEntry:New()
-			rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
-			rosterEntry.classColoredName = utilities.GetLocalizedPrettyClassName(classFile)
+			rosterEntry.class = utilities.GetFormattedDataClassName(classFileName)
+			rosterEntry.classColoredName = utilities.GetLocalizedPrettyClassName(classFileName)
 			rosterEntry.role = "role:damager"
-			roster["Player" .. i] = rosterEntry
+			roster["Player" .. index] = rosterEntry
 		end
 		return roster
 	end
@@ -1457,22 +1448,7 @@ do
 				tinsert(oldPlan.assignments, assignment)
 			end
 
-			for i = 1, GetNumClasses() do
-				local _, classFile, _ = GetClassInfo(i)
-				local actualClassName
-				if classFile == "DEATHKNIGHT" then
-					actualClassName = "DeathKnight"
-				elseif classFile == "DEMONHUNTER" then
-					actualClassName = "DemonHunter"
-				else
-					actualClassName = classFile:sub(1, 1):upper() .. classFile:sub(2):lower()
-				end
-				local rosterEntry = RosterEntry:New()
-				rosterEntry.class = "class:" .. actualClassName:gsub("%s", "")
-				rosterEntry.classColoredName = GetClassColor(classFile):WrapTextInColorCode("Player" .. i)
-				rosterEntry.role = "role:damager"
-				oldPlan.roster["Player" .. i] = rosterEntry
-			end
+			oldPlan.roster = CreateTestRoster()
 
 			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 

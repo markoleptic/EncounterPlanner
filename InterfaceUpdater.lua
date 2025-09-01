@@ -347,10 +347,12 @@ do
 						end
 						assignmentEditor:PopulateFields(
 							assignment,
+							GetCurrentRoster(),
 							previewText,
 							kAssignmentMetaTables,
 							availableCombatLogEventTypes,
-							spellSpecificCombatLogEventTypes
+							spellSpecificCombatLogEventTypes,
+							AddOn.db.profile.favoritedSpellAssignments
 						)
 					else
 						assignmentEditor:Release()
@@ -1009,7 +1011,8 @@ do
 		difficulty
 	)
 		if updateFields and Private.assignmentEditor then
-			local previewText = utilities.CreateReminderText(assignment, GetCurrentRoster(), true)
+			local roster = GetCurrentRoster()
+			local previewText = utilities.CreateReminderText(assignment, roster, true)
 			local availableCombatLogEventTypes =
 				bossUtilities.GetAvailableCombatLogEventTypes(dungeonEncounterID, difficulty)
 			local spellSpecificCombatLogEventTypes = nil
@@ -1022,10 +1025,12 @@ do
 			end
 			Private.assignmentEditor:PopulateFields(
 				assignment,
+				roster,
 				previewText,
 				kAssignmentMetaTables,
 				availableCombatLogEventTypes,
-				spellSpecificCombatLogEventTypes
+				spellSpecificCombatLogEventTypes,
+				AddOn.db.profile.favoritedSpellAssignments
 			)
 		end
 
