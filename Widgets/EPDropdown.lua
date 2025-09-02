@@ -946,7 +946,7 @@ do
 
 	---@param self EPDropdown
 	---@param itemData DropdownItemData
-	---@param itemType EPDropdownItemMenuType|EPDropdownItemToggleType type of item to create
+	---@param itemType "EPDropdownItemMenu"|"EPDropdownItemToggle" type of item to create
 	---@param index? integer
 	local function AddItem(self, itemData, itemType, index)
 		local exists = AceGUI:GetWidgetVersion(itemType)
@@ -1040,7 +1040,7 @@ do
 	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	-- The type of item to create for direct children of the dropdown. Ignored if any top level itemData has child data
-	---@param leafType EPDropdownItemMenuType|EPDropdownItemToggleType
+	---@param leafType "EPDropdownItemMenu"|"EPDropdownItemToggle"
 	---@param neverShowItemsAsSelected boolean? If true, items will not be selectable
 	---@param startIndex integer?
 	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected, startIndex)
