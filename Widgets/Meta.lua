@@ -146,3 +146,38 @@ function AceGUIContainer:SetLayout(layout) end
 
 ---@class EPTimeLabel : FontString
 ---@field wantsToShow boolean
+
+---@class FourNumbers
+---@field [1] number
+---@field [2] number
+---@field [3] number
+---@field [4] number
+
+---@class EPSettingOption
+---@field label string
+---@field labels? string[]|fun():string[]
+---@field type EPSettingOptionType
+---@field get GetFunction|{func1: GetFunction, func2:GetFunction}
+---@field set SetFunction|{func1: SetFunction, func2:SetFunction}
+---@field description? string
+---@field descriptions? string[]|fun():string[]
+---@field validate? ValidateFunction|{func1: ValidateFunction, func2:ValidateFunction}
+---@field category? string
+---@field indent? boolean
+---@field values? table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
+---@field enabled? EnabledFunction|{func1: EnabledFunction, func2: EnabledFunction}
+---@field updateIndices? table<integer, integer>
+---@field buttonText? string
+---@field buttonDescription? string
+---@field buttonEnabled? EnabledFunction
+---@field buttonCallback? fun()
+---@field uncategorizedBottom? boolean
+---@field confirm? boolean
+---@field confirmText? string|fun(arg: string|boolean|number):string
+---@field neverShowItemsAsSelected? boolean
+---@field itemsAreFonts? boolean
+
+---@class RosterWidgetMapping
+---@field name string
+---@field dbEntry RosterEntry
+---@field widgetEntry EPRosterEntry

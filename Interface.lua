@@ -1955,7 +1955,7 @@ function Private:CreateInterface()
 		self:OpenTutorial()
 	end)
 
-	local menuButtonHeight = mainFrame.windowBar:GetHeight() - 2
+	local menuButtonHeight = mainFrame.windowBar.frame:GetHeight() - 2
 
 	local planMenuButton = s.Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
 	planMenuButton:AddItems(s.Creator.PlanMenuItems(), "EPDropdownItemToggle", true)

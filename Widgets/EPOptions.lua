@@ -45,7 +45,6 @@ local k = {
 	CategoryFontSize = 18,
 	CategoryPadding = { 15, 15, 15, 15 },
 	CategoryTextColor = { 1, 0.82, 0, 1 },
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	ContentFramePadding = { x = 15, y = 15 },
 	DoubleLineEditContainerSpacing = { 8, 0 },
 	FrameBackdrop = {
@@ -83,14 +82,6 @@ local k = {
 	SpacingBetweenLabelAndWidget = 8,
 	SpacingBetweenOptions = 10,
 	Title = L["Preferences"],
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-	},
-	WindowBarHeight = 28,
 }
 k.LineBackdrop.insets.top = k.SpacingBetweenOptions / 2
 k.LineBackdrop.insets.bottom = k.SpacingBetweenOptions / 2
@@ -1730,55 +1721,6 @@ local function PopulateActiveTab(self, tab)
 	end
 end
 
----@class FourNumbers
----@field [1] number
----@field [2] number
----@field [3] number
----@field [4] number
-
----@class EPSettingOption
----@field label string
----@field labels? string[]|fun():string[]
----@field type EPSettingOptionType
----@field get GetFunction|{func1: GetFunction, func2:GetFunction}
----@field set SetFunction|{func1: SetFunction, func2:SetFunction}
----@field description? string
----@field descriptions? string[]|fun():string[]
----@field validate? ValidateFunction|{func1: ValidateFunction, func2:ValidateFunction}
----@field category? string
----@field indent? boolean
----@field values? table<integer, DropdownItemData>|fun():table<integer, DropdownItemData>
----@field enabled? EnabledFunction|{func1: EnabledFunction, func2: EnabledFunction}
----@field updateIndices? table<integer, integer>
----@field buttonText? string
----@field buttonDescription? string
----@field buttonEnabled? EnabledFunction
----@field buttonCallback? fun()
----@field uncategorizedBottom? boolean
----@field confirm? boolean
----@field confirmText? string|fun(arg: string|boolean|number):string
----@field neverShowItemsAsSelected? boolean
----@field itemsAreFonts? boolean
-
----@class EPOptions : AceGUIWidget
----@field type string
----@field count number
----@field frame Frame|table
----@field windowBar Frame|table
----@field closeButton EPButton
----@field tabTitleContainer EPContainer
----@field activeContainer EPContainer
----@field labelContainer EPContainer
----@field activeTab string
----@field optionTabs table<string, table<integer, EPSettingOption>>
----@field tabCategories table<string, table<integer, string>>
----@field updateIndices table<string, table<integer, table<integer, fun()>>>
----@field refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
----@field scrollFrame EPScrollFrame
----@field spellDropdownItems table<integer, DropdownItemData>
----@field FormatTime fun(number): string,string
----@field GetSpellCooldownAndCharges fun(integer): number, integer
-
 ---@param self EPOptions
 local function OnAcquire(self)
 	self.activeTab = ""
@@ -1789,27 +1731,37 @@ local function OnAcquire(self)
 
 	self.frame:SetSize(k.FrameWidth, k.FrameHeight)
 
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+		local x, y = self.frame:GetLeft(), self.frame:GetTop()
+		self.frame:StopMovingOrSizing()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
+			"TOP",
+			x - UIParent:GetWidth() / 2.0 + self.frame:GetWidth() / 2.0,
+			-(UIParent:GetHeight() - y)
+		)
+	end)
+	self.windowBar = windowBar
+
 	self.tabTitleContainer = AceGUI:Create("EPContainer")
 	self.tabTitleContainer:SetLayout("EPHorizontalLayout")
 	self.tabTitleContainer:SetSpacing(0, 0)
 	self.tabTitleContainer:SetAlignment("center")
 	self.tabTitleContainer:SetSelfAlignment("center")
 	self.tabTitleContainer.frame:SetParent(self.frame)
-	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.ContentFramePadding.y)
+	self.tabTitleContainer.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.ContentFramePadding.y)
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetParent(self.frame)
@@ -1865,8 +1817,8 @@ local function OnRelease(self)
 	end
 	cooldownOverrideObject.realDropdown = nil
 
-	AceGUI:Release(self.closeButton)
-	self.closeButton = nil
+	AceGUI:Release(self.windowBar)
+	self.windowBar = nil
 
 	AceGUI:Release(self.tabTitleContainer)
 	self.tabTitleContainer = nil
@@ -1955,7 +1907,7 @@ local function Resize(self)
 	-- end
 
 	-- local paddingHeight = k.ContentFramePadding.y * 3
-	-- local height = k.WindowBarHeight + tableTitleContainerHeight + containerHeight + paddingHeight
+	-- local height = self.windowBar.frame:GetHeight() + tableTitleContainerHeight + containerHeight + paddingHeight
 
 	local tabWidth = self.tabTitleContainer.frame:GetWidth()
 	local activeWidth = self.activeContainer.frame:GetWidth() + 2 * wrapperPadding
@@ -1979,34 +1931,6 @@ local function Constructor()
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(k.Title)
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		local x, y = frame:GetLeft(), frame:GetTop()
-		frame:StopMovingOrSizing()
-		frame:ClearAllPoints()
-		frame:SetPoint("TOP", x - UIParent:GetWidth() / 2.0 + frame:GetWidth() / 2.0, -(UIParent:GetHeight() - y))
-	end)
-
 	local frameChooserFrame = CreateFrame("Frame", nil, frame)
 	frameChooserFrame:Hide()
 	local frameChooserBox = CreateFrame("Frame", nil, frameChooserFrame, "BackdropTemplate")
@@ -2019,12 +1943,24 @@ local function Constructor()
 	frameChooserBox:SetBackdropBorderColor(0, 1, 0)
 	frameChooserBox:Hide()
 
-	---@class EPOptions
+	---@class EPOptions : AceGUIWidget
+	---@field windowBar EPWindowBar
+	---@field tabTitleContainer EPContainer
+	---@field activeContainer EPContainer
+	---@field labelContainer EPContainer
+	---@field activeTab string
+	---@field optionTabs table<string, table<integer, EPSettingOption>>
+	---@field tabCategories table<string, table<integer, string>>
+	---@field updateIndices table<string, table<integer, table<integer, fun()>>>
+	---@field refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
+	---@field scrollFrame EPScrollFrame
+	---@field spellDropdownItems table<integer, DropdownItemData>
+	---@field FormatTime fun(number): string,string
+	---@field GetSpellCooldownAndCharges fun(integer): number, integer
 	local widget = {
 		type = Type,
 		count = count,
 		frame = frame,
-		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		AddOptionTab = AddOptionTab,

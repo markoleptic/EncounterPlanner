@@ -25,13 +25,11 @@ local k = {
 	DefaultFrameWidth = 500,
 	DefaultFrameHeight = 500,
 	PreferredHeight = 600,
-	WindowBarHeight = 28,
 	ContentFramePadding = { x = 15, y = 15 },
 	OtherPadding = { x = 10, y = 10 },
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 	BackdropColor = { 0, 0, 0, 1 },
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	ActiveContainerPadding = { 10, 10, 10, 10 },
 	FrameBackdrop = {
 		bgFile = "Interface\\BUTTONS\\White8x8",
@@ -41,13 +39,7 @@ local k = {
 		edgeSize = 2,
 		insets = { left = 0, right = 0, top = 27, bottom = 0 },
 	},
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-	},
+	Title = L["Roster Editor"],
 	ClassRoles = {
 		["class:DeathKnight"] = {
 			["role:damager"] = true,
@@ -358,28 +350,6 @@ local function PopulateActiveTab(self, tab)
 	self.scrollFrame:UpdateThumbPositionAndSize()
 end
 
----@class RosterWidgetMapping
----@field name string
----@field dbEntry RosterEntry
----@field widgetEntry EPRosterEntry
-
----@class EPRosterEditor : AceGUIWidget
----@field frame Frame|table
----@field type string
----@field windowBar table|Frame
----@field closeButton EPButton
----@field children table<integer, AceGUIWidget>
----@field tabContainer EPContainer
----@field currentRosterTab EPButton
----@field sharedRosterTab EPButton
----@field activeContainer EPContainer
----@field buttonContainer EPContainer
----@field classDropdownData DropdownItemData
----@field currentRosterWidgetMap table<integer, RosterWidgetMapping>
----@field sharedRosterWidgetMap table<integer, RosterWidgetMapping>
----@field activeTab EPRosterEditorTab
----@field scrollFrame EPScrollFrame
-
 ---@param self EPRosterEditor
 local function OnAcquire(self)
 	self.activeTab = ""
@@ -388,20 +358,26 @@ local function OnAcquire(self)
 
 	self.frame:SetSize(800, 800)
 
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
-		self:Fire("EditingFinished", self.currentRosterWidgetMap, self.sharedRosterWidgetMap)
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
 	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+		local x, y = self.frame:GetLeft(), self.frame:GetTop()
+		self.frame:StopMovingOrSizing()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
+			"TOP",
+			x - UIParent:GetWidth() / 2.0 + self.frame:GetWidth() / 2.0,
+			-(UIParent:GetHeight() - y)
+		)
+	end)
+	self.windowBar = windowBar
 
 	self.tabContainer = AceGUI:Create("EPContainer")
 	self.tabContainer:SetLayout("EPHorizontalLayout")
@@ -409,7 +385,7 @@ local function OnAcquire(self)
 	self.tabContainer:SetAlignment("center")
 	self.tabContainer:SetSelfAlignment("center")
 	self.tabContainer.frame:SetParent(self.frame)
-	self.tabContainer.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.ContentFramePadding.y)
+	self.tabContainer.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.ContentFramePadding.y)
 
 	local currentRosterTab = AceGUI:Create("EPButton")
 	currentRosterTab:SetIsToggleable(true)
@@ -523,8 +499,8 @@ end
 
 ---@param self EPRosterEditor
 local function OnRelease(self)
-	self.closeButton:Release()
-	self.closeButton = nil
+	self.windowBar:Release()
+	self.windowBar = nil
 
 	self.tabContainer:Release()
 	self.tabContainer = nil
@@ -622,34 +598,19 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(L["Roster Editor"])
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		local x, y = frame:GetLeft(), frame:GetTop()
-		frame:StopMovingOrSizing()
-		frame:ClearAllPoints()
-		frame:SetPoint("TOP", x - UIParent:GetWidth() / 2.0 + frame:GetWidth() / 2.0, -(UIParent:GetHeight() - y))
-	end)
-
-	---@class EPRosterEditor
+	---@class EPRosterEditor : AceGUIWidget
+	---@field windowBar EPWindowBar
+	---@field children table<integer, AceGUIWidget>
+	---@field tabContainer EPContainer
+	---@field currentRosterTab EPButton
+	---@field sharedRosterTab EPButton
+	---@field activeContainer EPContainer
+	---@field buttonContainer EPContainer
+	---@field classDropdownData DropdownItemData
+	---@field currentRosterWidgetMap table<integer, RosterWidgetMapping>
+	---@field sharedRosterWidgetMap table<integer, RosterWidgetMapping>
+	---@field activeTab EPRosterEditorTab
+	---@field scrollFrame EPScrollFrame
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -659,7 +620,6 @@ local function Constructor()
 		Resize = Resize,
 		frame = frame,
 		type = Type,
-		windowBar = windowBar,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

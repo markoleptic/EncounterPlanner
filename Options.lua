@@ -2861,7 +2861,7 @@ do
 			+ constants.timeline.kPaddingBetweenTimelines
 			+ constants.kStatusBarHeight
 			+ constants.kStatusBarPadding
-			+ constants.kWindowBarHeight
+			+ constants.kMainFrameWindowBarHeight
 			+ constants.kMainFramePadding[2]
 			+ constants.kMainFramePadding[4]
 			+ constants.kTopContainerHeight

@@ -11,7 +11,6 @@ local Type = "EPAssignmentEditor"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local getmetatable = getmetatable
@@ -46,7 +45,6 @@ local k = {
 	},
 	ButtonFrameBackdropColor = { 0.1, 0.1, 0.1, 1.0 },
 	ButtonFrameHeight = 28,
-	CloseButtonIconPadding = { 2, 2 },
 	ContainerContainerSpacing = { 0, 4 },
 	ContentFramePadding = { x = 15, y = 15 },
 	DisabledTextColor = { 0.33, 0.33, 0.33, 1 },
@@ -66,14 +64,6 @@ local k = {
 	MaxNumberOfRecentItems = 10,
 	SpacingBetweenOptions = 8,
 	Title = L["Assignment Editor"],
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-		insets = { left = 0, right = 0, top = 0, bottom = 0 },
-	},
 	WindowBarHeight = 28,
 }
 k.LineBackdrop = {
@@ -82,47 +72,6 @@ k.LineBackdrop = {
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = k.SpacingBetweenOptions, bottom = k.SpacingBetweenOptions },
 }
-
----@class EPAssignmentEditor : AceGUIContainer
----@field type string
----@field count number
----@field frame Frame|BackdropTemplate|table
----@field buttonFrame Frame|table
----@field deleteButton EPButton
----@field closeButton EPButton
----@field assignmentTypeContainer EPContainer
----@field assignmentTypeDropdown EPDropdown
----@field assignmentTypeLabel EPLabel
----@field combatLogEventContainer EPContainer
----@field combatLogEventSpellIDDropdown EPDropdown
----@field combatLogEventSpellIDLabel EPLabel
----@field combatLogEventSpellCountLineEdit EPLineEdit
----@field combatLogEventSpellCountLabel EPLabel
----@field spellAssignmentContainer EPContainer
----@field spellAssignmentDropdown EPDropdown
----@field enableSpellAssignmentCheckBox EPCheckBox
----@field assigneeTypeContainer EPContainer
----@field assigneeTypeDropdown EPDropdown
----@field assigneeTypeLabel EPLabel
----@field timeContainer EPContainer
----@field timeMinuteLineEdit EPLineEdit
----@field timeSecondLineEdit EPLineEdit
----@field triggerContainer EPContainer
----@field enableTargetCheckBox EPCheckBox
----@field timeLabel EPLabel
----@field optionalTextContainer EPContainer
----@field optionalTextLineEdit EPLineEdit
----@field optionalTextLabel EPLabel
----@field targetContainer EPContainer
----@field targetDropdown EPDropdown
----@field previewContainer EPContainer
----@field previewLabel EPLabel
----@field windowBar Frame|table
----@field obj any
----@field assignmentID integer|nil
----@field FormatTime fun(number): string,string
----@field lastClassDropdownValue string|nil
----@field lastRoleDropdownValue string|nil
 
 ---@param children any
 ---@param enable boolean
@@ -318,6 +267,22 @@ local function OnAcquire(self)
 	self:SetLayout("EPVerticalLayout")
 	self.frame:Show()
 	self.content.spacing = { x = 0, y = 0 }
+
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
+		self:Fire("CloseButtonClicked")
+	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+	end)
+	self.windowBar = windowBar
 
 	do
 		self.assignmentTypeContainer = AceGUI:Create("EPContainer")
@@ -619,33 +584,18 @@ local function OnAcquire(self)
 	self.deleteButton.frame:SetParent(self.buttonFrame)
 	self.deleteButton.frame:SetPoint("TOP", self.buttonFrame, "TOP", 0, -edgeSize)
 	self.deleteButton.frame:SetPoint("BOTTOM", self.buttonFrame, "BOTTOM", 0, edgeSize)
-
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(unpack(k.CloseButtonIconPadding))
-	self.closeButton:SetBackdropColor(unpack(k.BackdropColor))
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
-		self:Fire("CloseButtonClicked")
-	end)
 end
 
 ---@param self EPAssignmentEditor
 local function OnRelease(self)
-	if self.closeButton then
-		self.closeButton:Release()
+	if self.windowBar then
+		self.windowBar:Release()
 	end
 	if self.deleteButton then
 		self.deleteButton:Release()
 	end
 	self.FormatTime = nil
 	self.deleteButton = nil
-	self.closeButton = nil
 	self.timeMinuteLineEdit = nil
 	self.timeSecondLineEdit = nil
 	self.assignmentTypeContainer = nil
@@ -677,6 +627,7 @@ local function OnRelease(self)
 	self.previewLabel = nil
 	self.lastClassDropdownValue = nil
 	self.lastRoleDropdownValue = nil
+	self.windowBar = nil
 end
 
 local function OnHeightSet(self, width)
@@ -694,7 +645,7 @@ local function LayoutFinished(self, width, height)
 	if width and height then
 		self.frame:SetSize(
 			width + k.ContentFramePadding.x * 2,
-			k.ButtonFrameHeight + height + k.WindowBarHeight + k.ContentFramePadding.y * 2
+			k.ButtonFrameHeight + height + self.windowBar.frame:GetHeight() + k.ContentFramePadding.y * 2
 		)
 	end
 end
@@ -817,30 +768,6 @@ local function Constructor()
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(k.Title)
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-	end)
-
 	local buttonFrame = CreateFrame("Frame", Type .. "ButtonFrame" .. count, frame, "BackdropTemplate")
 	buttonFrame:SetBackdrop(k.ButtonFrameBackdrop)
 	buttonFrame:SetBackdropColor(unpack(k.ButtonFrameBackdropColor))
@@ -867,13 +794,46 @@ local function Constructor()
 		k.ContentFramePadding.y + k.ButtonFrameHeight
 	)
 
-	---@class EPAssignmentEditor
+	---@class EPAssignmentEditor : AceGUIContainer
+	---@field buttonFrame Frame|table
+	---@field deleteButton EPButton
+	---@field assignmentTypeContainer EPContainer
+	---@field assignmentTypeDropdown EPDropdown
+	---@field assignmentTypeLabel EPLabel
+	---@field combatLogEventContainer EPContainer
+	---@field combatLogEventSpellIDDropdown EPDropdown
+	---@field combatLogEventSpellIDLabel EPLabel
+	---@field combatLogEventSpellCountLineEdit EPLineEdit
+	---@field combatLogEventSpellCountLabel EPLabel
+	---@field spellAssignmentContainer EPContainer
+	---@field spellAssignmentDropdown EPDropdown
+	---@field enableSpellAssignmentCheckBox EPCheckBox
+	---@field assigneeTypeContainer EPContainer
+	---@field assigneeTypeDropdown EPDropdown
+	---@field assigneeTypeLabel EPLabel
+	---@field timeContainer EPContainer
+	---@field timeMinuteLineEdit EPLineEdit
+	---@field timeSecondLineEdit EPLineEdit
+	---@field triggerContainer EPContainer
+	---@field enableTargetCheckBox EPCheckBox
+	---@field timeLabel EPLabel
+	---@field optionalTextContainer EPContainer
+	---@field optionalTextLineEdit EPLineEdit
+	---@field optionalTextLabel EPLabel
+	---@field targetContainer EPContainer
+	---@field targetDropdown EPDropdown
+	---@field previewContainer EPContainer
+	---@field previewLabel EPLabel
+	---@field windowBar EPWindowBar
+	---@field assignmentID integer|nil
+	---@field FormatTime fun(number): string,string
+	---@field lastClassDropdownValue string|nil
+	---@field lastRoleDropdownValue string|nil
 	local widget = {
 		type = Type,
 		count = count,
 		frame = frame,
 		content = contentFrame,
-		windowBar = windowBar,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		OnHeightSet = OnHeightSet,

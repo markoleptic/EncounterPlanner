@@ -45,6 +45,7 @@ local k = {
 	StatusBarHeight = Private.constants.kStatusBarHeight,
 	StatusBarPadding = Private.constants.kStatusBarPadding,
 	ThrottleInterval = 0.015, -- Minimum time between executions, in seconds
+	MinimizeFrameTitle = L["Encounter Planner"],
 	TitleBarBackdrop = {
 		bgFile = "Interface\\BUTTONS\\White8x8",
 		edgeFile = "Interface\\BUTTONS\\White8x8",
@@ -55,7 +56,7 @@ local k = {
 	TutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]],
 	UserGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]],
 	UserGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]],
-	WindowBarHeight = Private.constants.kWindowBarHeight,
+	WindowBarHeight = Private.constants.kMainFrameWindowBarHeight,
 }
 
 local lastExecutionTime = 0
@@ -78,41 +79,6 @@ local function HandleButtonClicked(self, buttonFrame, point, relativePoint, text
 	self.editBox:HighlightText(0, self.editBox:GetText():len())
 end
 
----@class EPMainFrame : AceGUIContainer
----@field frame table|Frame
----@field type string
----@field content table|Frame
----@field bossLabel EPLabel
----@field bossMenuButton EPDropdown
----@field children table<integer, EPContainer>
----@field closeButton EPButton
----@field closeButtonMinimizeFrame EPButton
----@field collapseAllButton EPButton
----@field currentPlanWidget EPContainer
----@field difficultyLabel EPLabel
----@field expandAllButton EPButton
----@field externalTextButton EPButton
----@field instanceLabel EPLabel
----@field lowerContainer EPContainer
----@field maximizeButton EPButton
----@field menuButtonContainer EPContainer
----@field minimizeButton EPButton
----@field nameAndVersionContainer EPContainer
----@field padding {left: number, top: number, right: number, bottom: number}
----@field planDropdown EPDropdown
----@field planMenuButton EPDropdown
----@field planReminderEnableCheckBox EPCheckBox
----@field preferencesMenuButton EPDropdown
----@field primaryPlanCheckBox EPCheckBox
----@field proposeChangesButton EPButton
----@field rosterMenuButton EPDropdown
----@field sendPlanButton EPButton
----@field simulateRemindersButton EPButton
----@field statusBar EPStatusBar
----@field timeline EPTimeline
----@field tutorialButton EPButton
----@field windowBar table|Frame
-
 ---@param self EPMainFrame
 local function OnAcquire(self)
 	self.padding =
@@ -120,6 +86,34 @@ local function OnAcquire(self)
 	self.frame:SetParent(UIParent)
 	self.frame:SetFrameStrata("DIALOG")
 	self.frame:Show()
+
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle("")
+	windowBar.frame:SetHeight(k.WindowBarHeight)
+	local windowBarButtonSize = k.WindowBarHeight - 2 * k.FrameBackdrop.edgeSize
+	windowBar.buttons[1]:SetWidth(windowBarButtonSize)
+	windowBar.buttons[1]:SetHeight(windowBarButtonSize)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
+		self:Fire("CloseButtonClicked")
+	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+		local x, y = self.frame:GetLeft(), self.frame:GetTop()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+	end)
+	windowBar:AddButton(k.MinimizeIcon, "MinimizeButtonClicked")
+	windowBar:SetCallback("Clicked", function()
+		self:Minimize()
+		self:Fire("MinimizeButtonClicked")
+	end)
+	self.windowBar = windowBar
 
 	local edgeSize = k.FrameBackdrop.edgeSize
 	local buttonSize = k.WindowBarHeight - 2 * edgeSize
@@ -134,8 +128,8 @@ local function OnAcquire(self)
 	)
 
 	local nameAndVersionContainer = AceGUI:Create("EPContainer")
-	nameAndVersionContainer.frame:SetParent(self.windowBar)
-	nameAndVersionContainer.frame:SetPoint("CENTER", self.windowBar, "CENTER")
+	nameAndVersionContainer.frame:SetParent(self.windowBar.frame)
+	nameAndVersionContainer.frame:SetPoint("CENTER", self.windowBar.frame, "CENTER")
 	nameAndVersionContainer:SetLayout("EPHorizontalLayout")
 	nameAndVersionContainer:SetSpacing(2, 0)
 
@@ -160,63 +154,6 @@ local function OnAcquire(self)
 
 	nameAndVersionContainer:AddChildren(nameLabel, versionButton)
 	self.nameAndVersionContainer = nameAndVersionContainer
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon(k.CloseIcon)
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(k.BackdropColor))
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
-		self:Fire("CloseButtonClicked")
-	end)
-
-	self.minimizeButton = AceGUI:Create("EPButton")
-	self.minimizeButton:SetIcon(k.MinimizeIcon)
-	self.minimizeButton:SetIconPadding(2, 2)
-	self.minimizeButton:SetWidth(buttonSize)
-	self.minimizeButton:SetHeight(buttonSize)
-	self.minimizeButton:SetBackdropColor(unpack(k.BackdropColor))
-	self.minimizeButton.frame:SetParent(self.windowBar)
-	self.minimizeButton.frame:SetPoint("RIGHT", self.closeButton.frame, "LEFT")
-	self.minimizeButton:SetCallback("Clicked", function()
-		self:Minimize()
-		self:Fire("MinimizeButtonClicked")
-	end)
-
-	self.closeButtonMinimizeFrame = AceGUI:Create("EPButton")
-	self.closeButtonMinimizeFrame:SetIcon(k.CloseIcon)
-	self.closeButtonMinimizeFrame:SetIconPadding(2, 2)
-	self.closeButtonMinimizeFrame:SetWidth(buttonSize)
-	self.closeButtonMinimizeFrame:SetHeight(buttonSize)
-	self.closeButtonMinimizeFrame:SetBackdropColor(unpack(k.BackdropColor))
-	self.closeButtonMinimizeFrame.frame:SetParent(self.minimizeFrame --[[@as Frame]])
-	self.closeButtonMinimizeFrame.frame:SetPoint("RIGHT", self.minimizeFrame, "RIGHT", -edgeSize, 0)
-	self.closeButtonMinimizeFrame:SetCallback("Clicked", function()
-		self:Fire("CloseButtonClicked")
-	end)
-
-	self.maximizeButton = AceGUI:Create("EPButton")
-	self.maximizeButton:SetIcon(k.MaximizeIcon)
-	self.maximizeButton:SetIconPadding(2, 2)
-	self.maximizeButton:SetWidth(buttonSize)
-	self.maximizeButton:SetHeight(buttonSize)
-	self.maximizeButton:SetBackdropColor(unpack(k.BackdropColor))
-	self.maximizeButton.frame:SetParent(self.minimizeFrame --[[@as Frame]])
-	self.maximizeButton.frame:SetPoint("RIGHT", self.closeButtonMinimizeFrame.frame, "LEFT", -edgeSize, 0)
-	self.maximizeButton:SetCallback("Clicked", function()
-		self:Maximize()
-		self:Fire("MaximizeButtonClicked")
-	end)
-
-	local minimizeFrameButtonWidths = self.maximizeButton.frame:GetWidth()
-		+ self.closeButtonMinimizeFrame.frame:GetWidth()
-		+ 2 * edgeSize
-	self.minimizeFrame:SetWidth(
-		2 * (minimizeFrameButtonWidths + (self.minimizeFrameText:GetStringWidth() / 2.0) + self.padding.right)
-	)
 
 	self.collapseAllButton = AceGUI:Create("EPButton")
 	self.collapseAllButton:SetIcon(k.CollapseIcon)
@@ -245,9 +182,9 @@ local function OnAcquire(self)
 	self.menuButtonContainer = AceGUI:Create("EPContainer")
 	self.menuButtonContainer:SetLayout("EPHorizontalLayout")
 	self.menuButtonContainer:SetSpacing(0, 0)
-	self.menuButtonContainer.frame:SetParent(self.windowBar)
-	self.menuButtonContainer.frame:SetPoint("TOPLEFT", self.windowBar, "TOPLEFT", 1, -1)
-	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar, "BOTTOMLEFT", 1, 1)
+	self.menuButtonContainer.frame:SetParent(self.windowBar.frame)
+	self.menuButtonContainer.frame:SetPoint("TOPLEFT", self.windowBar.frame, "TOPLEFT", 1, -1)
+	self.menuButtonContainer.frame:SetPoint("BOTTOMLEFT", self.windowBar.frame, "BOTTOMLEFT", 1, 1)
 
 	local buttonSpacing = 4
 	local buttonHeight = (k.StatusBarHeight / 2.0) - buttonSpacing
@@ -339,24 +276,16 @@ local function OnRelease(self)
 		self.nameAndVersionContainer:Release()
 	end
 
+	if self.windowBar then
+		self.windowBar:Release()
+	end
+
+	if self.minimizedWindowBar then
+		self.minimizedWindowBar:Release()
+	end
+
 	if self.menuButtonContainer then
 		self.menuButtonContainer:Release()
-	end
-
-	if self.closeButton then
-		self.closeButton:Release()
-	end
-
-	if self.minimizeButton then
-		self.minimizeButton:Release()
-	end
-
-	if self.maximizeButton then
-		self.maximizeButton:Release()
-	end
-
-	if self.closeButtonMinimizeFrame then
-		self.closeButtonMinimizeFrame:Release()
 	end
 
 	if self.collapseAllButton then
@@ -369,10 +298,6 @@ local function OnRelease(self)
 
 	self.lowerContainer:Release()
 
-	self.minimizeFrame:Hide()
-
-	self.closeButton = nil
-	self.closeButtonMinimizeFrame = nil
 	self.bossLabel = nil
 	self.bossMenuButton = nil
 	self.collapseAllButton = nil
@@ -382,9 +307,9 @@ local function OnRelease(self)
 	self.externalTextButton = nil
 	self.instanceLabel = nil
 	self.lowerContainer = nil
-	self.maximizeButton = nil
 	self.menuButtonContainer = nil
-	self.minimizeButton = nil
+	self.minimizedWindowBar = nil
+	self.minimizedWindowBarFramePosition = nil
 	self.nameAndVersionContainer = nil
 	self.planDropdown = nil
 	self.planMenuButton = nil
@@ -398,6 +323,7 @@ local function OnRelease(self)
 	self.statusBar = nil
 	self.timeline = nil
 	self.tutorialButton = nil
+	self.windowBar = nil
 end
 
 ---@param self EPMainFrame
@@ -408,7 +334,7 @@ local function LayoutFinished(self, _, height)
 		if height then
 			self:SetHeight(
 				height
-					+ k.WindowBarHeight
+					+ self.windowBar.frame:GetHeight()
 					+ self.padding.top
 					+ self.padding.bottom
 					+ self.lowerContainer.frame:GetHeight()
@@ -429,7 +355,8 @@ local function SetPadding(self, top, right, bottom, left)
 	self.padding.bottom = bottom
 	self.padding.left = left
 
-	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(k.WindowBarHeight + self.padding.top))
+	local windowBarHeight = self.windowBar.frame:GetHeight()
+	self.content:SetPoint("TOPLEFT", self.frame, "TOPLEFT", self.padding.left, -(windowBarHeight + self.padding.top))
 	local verticalOffset = self.statusBar.frame:GetHeight() + k.StatusBarPadding + self.padding.bottom
 	self.content:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -self.padding.right, verticalOffset)
 	self.collapseAllButton.frame:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", self.padding.right, verticalOffset)
@@ -453,8 +380,11 @@ end
 ---@param y number
 local function SetMinimizeFramePosition(self, x, y)
 	if type(x) == "number" and type(y) == "number" then
-		self.minimizeFrame:ClearAllPoints()
-		self.minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
+		self.minimizedWindowBarFramePosition = { x = x, y = y }
+		if self.minimizedWindowBar then
+			self.minimizedWindowBar.frame:ClearAllPoints()
+			self.minimizedWindowBar.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
+		end
 	end
 end
 
@@ -505,14 +435,67 @@ end
 
 ---@param self EPMainFrame
 local function Maximize(self)
-	self.minimizeFrame:Hide()
+	if self.minimizedWindowBar then
+		self.minimizedWindowBar:Release()
+		self.minimizedWindowBar = nil
+	end
 	self.frame:Show()
 end
 
 ---@param self EPMainFrame
 local function Minimize(self)
-	self.frame:Hide()
-	self.minimizeFrame:Show()
+	if not self.minimizedWindowBar then
+		local minimizedWindowBar = AceGUI:Create("EPWindowBar")
+		minimizedWindowBar.frame:SetParent(UIParent)
+		minimizedWindowBar.frame:SetMovable(true)
+		minimizedWindowBar.frame:SetClampedToScreen(true)
+		minimizedWindowBar.frame:SetFrameStrata("DIALOG")
+		minimizedWindowBar.frame:SetHeight(k.WindowBarHeight)
+		local windowBarButtonSize = k.WindowBarHeight - 2 * k.FrameBackdrop.edgeSize
+		minimizedWindowBar.buttons[1]:SetWidth(windowBarButtonSize)
+		minimizedWindowBar.buttons[1]:SetHeight(windowBarButtonSize)
+		minimizedWindowBar:SetPoint("TOP")
+		minimizedWindowBar:SetTitle(k.MinimizeFrameTitle)
+		minimizedWindowBar:SetCallback("OnMouseDown", function()
+			self.minimizedWindowBar.frame:StartMoving()
+		end)
+		minimizedWindowBar:SetCallback("OnMouseUp", function()
+			self.minimizedWindowBar.frame:StopMovingOrSizing()
+			local x, y = self.minimizedWindowBar.frame:GetLeft(), self.minimizedWindowBar.frame:GetTop()
+			self.minimizedWindowBar.frame:ClearAllPoints()
+			local newX, newY = x, -(UIParent:GetHeight() - y)
+			self.minimizedWindowBar.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+			self:Fire("MinimizeFramePointChanged", newX, newY)
+		end)
+		minimizedWindowBar:SetCallback("CloseButtonClicked", function()
+			self:Fire("CloseButtonClicked")
+		end)
+		minimizedWindowBar:AddButton(k.MaximizeIcon, "MaximizeButtonClicked")
+		minimizedWindowBar:SetCallback("MaximizeButtonClicked", function()
+			self:Maximize()
+			self:Fire("MaximizeButtonClicked")
+		end)
+		local minimizeFrameButtonWidths = 2 * k.FrameBackdrop.edgeSize
+		for _, button in ipairs(minimizedWindowBar.buttons) do
+			minimizeFrameButtonWidths = minimizeFrameButtonWidths + button.frame:GetWidth()
+		end
+		minimizedWindowBar:SetWidth(
+			2 * (minimizeFrameButtonWidths + (minimizedWindowBar.title:GetStringWidth() / 2.0) + self.padding.right)
+		)
+		if self.minimizedWindowBarFramePosition then
+			minimizedWindowBar.frame:ClearAllPoints()
+			minimizedWindowBar.frame:SetPoint(
+				"TOPLEFT",
+				UIParent,
+				"TOPLEFT",
+				self.minimizedWindowBarFramePosition.x,
+				self.minimizedWindowBarFramePosition.y
+			)
+		end
+		self.frame:Hide()
+		self.minimizedWindowBar.frame:Show()
+		self.minimizedWindowBar = minimizedWindowBar
+	end
 end
 
 local function Constructor()
@@ -532,56 +515,6 @@ local function Constructor()
 	contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", k.DefaultPadding, -(k.WindowBarHeight + k.DefaultPadding))
 	contentFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -k.DefaultPadding, k.DefaultPadding)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		local x, y = frame:GetLeft(), frame:GetTop()
-		frame:ClearAllPoints()
-		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
-	end)
-
-	local minimizeFrame = CreateFrame("Frame", Type .. "MinimizeFrame" .. count, UIParent, "BackdropTemplate")
-	minimizeFrame:SetMovable(true)
-	minimizeFrame:SetResizable(true)
-	minimizeFrame:SetFrameStrata("DIALOG")
-	minimizeFrame:SetHeight(k.WindowBarHeight)
-	minimizeFrame:SetPoint("TOP")
-	minimizeFrame:SetBackdrop(k.TitleBarBackdrop)
-	minimizeFrame:SetBackdropColor(unpack(k.BackdropColor))
-	minimizeFrame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	minimizeFrame:EnableMouse(true)
-	minimizeFrame:SetClampedToScreen(true)
-	local minimizeFrameText = minimizeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	minimizeFrameText:SetText(L["Encounter Planner"])
-	minimizeFrameText:SetPoint("CENTER", minimizeFrame, "CENTER")
-	local h = minimizeFrameText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		minimizeFrameText:SetFont(fPath, h)
-	end
-	minimizeFrame:Hide()
-
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		local x, y = frame:GetLeft(), frame:GetTop()
-		frame:ClearAllPoints()
-		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
-	end)
-
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(16, 16)
@@ -597,6 +530,7 @@ local function Constructor()
 	editBoxFrame:EnableMouseMotion(true)
 
 	local testFontString = editBoxFrame:CreateFontString(nil, "BACKGROUND")
+	local fPath = LSM:Fetch("font", "PT Sans Narrow")
 	if fPath then
 		testFontString:SetFont(fPath, 12)
 	end
@@ -629,7 +563,35 @@ local function Constructor()
 	editBox:SetScript("OnEditFocusLost", HideEditBoxAndClearFocus)
 	editBoxFrame:SetScript("OnLeave", HideEditBoxAndClearFocus)
 
-	---@class EPMainFrame
+	---@class EPMainFrame : AceGUIContainer
+	---@field bossLabel EPLabel
+	---@field bossMenuButton EPDropdown
+	---@field children table<integer, EPContainer>
+	---@field collapseAllButton EPButton
+	---@field currentPlanWidget EPContainer
+	---@field difficultyLabel EPLabel
+	---@field expandAllButton EPButton
+	---@field externalTextButton EPButton
+	---@field instanceLabel EPLabel
+	---@field lowerContainer EPContainer
+	---@field menuButtonContainer EPContainer
+	---@field minimizedWindowBar EPWindowBar
+	---@field minimizedWindowBarFramePosition {x:number, y:number}|nil
+	---@field nameAndVersionContainer EPContainer
+	---@field padding {left: number, top: number, right: number, bottom: number}
+	---@field planDropdown EPDropdown
+	---@field planMenuButton EPDropdown
+	---@field planReminderEnableCheckBox EPCheckBox
+	---@field preferencesMenuButton EPDropdown
+	---@field primaryPlanCheckBox EPCheckBox
+	---@field proposeChangesButton EPButton
+	---@field rosterMenuButton EPDropdown
+	---@field sendPlanButton EPButton
+	---@field simulateRemindersButton EPButton
+	---@field statusBar EPStatusBar
+	---@field timeline EPTimeline
+	---@field tutorialButton EPButton
+	---@field windowBar EPWindowBar
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -644,9 +606,6 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		content = contentFrame,
-		windowBar = windowBar,
-		minimizeFrame = minimizeFrame,
-		minimizeFrameText = minimizeFrameText,
 		editBox = editBox,
 		editBoxFrame = editBoxFrame,
 		testFontString = testFontString,
@@ -678,18 +637,6 @@ local function Constructor()
 				widget:Fire("Resized")
 			end
 		end
-	end)
-
-	minimizeFrame:SetScript("OnMouseDown", function()
-		minimizeFrame:StartMoving()
-	end)
-	minimizeFrame:SetScript("OnMouseUp", function()
-		minimizeFrame:StopMovingOrSizing()
-		local x, y = minimizeFrame:GetLeft(), minimizeFrame:GetTop()
-		minimizeFrame:ClearAllPoints()
-		local newX, newY = x, -(UIParent:GetHeight() - y)
-		minimizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
-		widget:Fire("MinimizeFramePointChanged", newX, newY)
 	end)
 
 	local registered = AceGUI:RegisterAsContainer(widget)

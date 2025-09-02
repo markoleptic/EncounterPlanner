@@ -7,7 +7,6 @@ local Type = "EPEditBox"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
@@ -17,7 +16,6 @@ local TextImportType = Private.classes.TextImportType
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
 	BackdropColor = { 0, 0, 0, 1 },
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	DefaultFrameHeight = 400,
 	DefaultFrameWidth = 600,
 	FrameBackdrop = {
@@ -37,15 +35,6 @@ local k = {
 	ResizerIconHighlight = Private.constants.resizer.kIconHighlight,
 	ResizerIconPushed = Private.constants.resizer.kIconPushed,
 	ResizerSize = 16,
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-		insets = { left = 0, right = 0, top = 0, bottom = 0 },
-	},
-	WindowBarHeight = 28,
 }
 
 ---@param self EPEditBox
@@ -114,27 +103,32 @@ end
 ---@param self EPEditBox
 local function OnAcquire(self)
 	self.editBox:SetText("")
-	self:SetTitle("")
-
-	self.frame:SetHeight(k.DefaultFrameHeight)
-	self.frame:SetWidth(k.DefaultFrameWidth)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self.editBox:SetSize(k.DefaultFrameWidth, k.DefaultFrameWidth)
-	self.frame:Show()
 
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle("")
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+		local x, y = self.frame:GetLeft(), self.frame:GetTop()
+		self.frame:StopMovingOrSizing()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
+			"TOP",
+			x - UIParent:GetWidth() / 2.0 + self.frame:GetWidth() / 2.0,
+			-(UIParent:GetHeight() - y)
+		)
+	end)
+	self.windowBar = windowBar
 
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
 	self.scrollFrame.frame:SetScript("OnMouseUp", function()
@@ -150,7 +144,7 @@ local function OnAcquire(self)
 	end)
 	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
 	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", k.FramePadding, 0)
-	self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
+	self.scrollFrame.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
 	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.FramePadding, 0)
 	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
 	self.scrollFrame:SetScrollChild(self.editBox --[[@as Frame]], true, true)
@@ -160,11 +154,16 @@ local function OnAcquire(self)
 		self.scrollFrame:UpdateThumbPositionAndSize()
 	end)
 
+	self.frame:Show()
+
 	self:ShowOkayButton(false)
 end
 
 ---@param self EPEditBox
 local function OnRelease(self)
+	self.windowBar:Release()
+	self.windowBar = nil
+
 	self.editBox:SetText("")
 	self.editBox:SetScript("OnTextChanged", nil)
 
@@ -173,11 +172,6 @@ local function OnRelease(self)
 		self.scrollFrame:Release()
 	end
 	self.scrollFrame = nil
-
-	if self.closeButton then
-		self.closeButton:Release()
-	end
-	self.closeButton = nil
 
 	if self.okayButton then
 		self.okayButton:Release()
@@ -196,7 +190,7 @@ end
 ---@param self EPEditBox
 ---@param text string
 local function SetTitle(self, text)
-	self.windowBarText:SetText(text or "")
+	self.windowBar:SetTitle(text or "")
 end
 
 ---@param self EPEditBox
@@ -250,7 +244,7 @@ local function ShowRadioButtonGroup(self, show, radioButtonText, lineEditLabelTe
 			self.container:SetLayout("EPVerticalLayout")
 			self.container:SetSpacing(0, 10)
 			self.container.frame:SetParent(self.frame --[[@as Frame]])
-			self.container.frame:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
+			self.container.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
 
 			local radioButtonGroupChildren = {}
 
@@ -281,7 +275,7 @@ local function ShowRadioButtonGroup(self, show, radioButtonText, lineEditLabelTe
 		self.container = nil
 		self.radioButtonGroup = nil
 		self.lineEdit = nil
-		self.scrollFrame.frame:SetPoint("TOP", self.windowBar, "TOP", 0, -k.FramePadding)
+		self.scrollFrame.frame:SetPoint("TOP", self.windowBar.frame, "TOP", 0, -k.FramePadding)
 	end
 end
 
@@ -313,30 +307,6 @@ local function Constructor()
 	frame:SetResizeBounds(k.DefaultFrameWidth, k.DefaultFrameHeight, nil, nil)
 	frame:EnableMouse(true)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("Title")
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-	end)
-
 	local editBox = CreateFrame("EditBox", Type .. "EditBox" .. count, frame)
 	editBox:SetMultiLine(true)
 	editBox:EnableMouse(true)
@@ -353,13 +323,12 @@ local function Constructor()
 	resizer:SetPushedTexture(k.ResizerIconPushed)
 
 	---@class EPEditBox : AceGUIWidget
-	---@field closeButton EPButton
 	---@field okayButton EPButton
 	---@field radioButtonGroup EPContainer
 	---@field lineEdit EPLineEdit
 	---@field lastLineEditText string
 	---@field container EPContainer
-	---@field windowBar Frame|table
+	---@field windowBar EPWindowBar
 	---@field scrollFrame EPScrollFrame
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -374,8 +343,6 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		editBox = editBox,
-		windowBar = windowBar,
-		windowBarText = windowBarText,
 	}
 
 	resizer:SetScript("OnMouseDown", function(_, mouseButton)

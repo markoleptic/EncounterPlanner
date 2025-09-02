@@ -8,7 +8,6 @@ local Type = "EPPhaseLengthEditor"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local CreateFrame = CreateFrame
 local format = string.format
 local ipairs = ipairs
@@ -21,7 +20,6 @@ local UIParent = UIParent
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
 	BackdropColor = { 0, 0, 0, 1 },
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	ContentFramePadding = { x = 15, y = 15 },
 	DefaultFrameHeight = 400,
 	DefaultFrameWidth = 600,
@@ -35,14 +33,7 @@ local k = {
 	},
 	HeadingColor = { 1, 0.82, 0, 1 },
 	OtherPadding = { x = 10, y = 10 },
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-	},
-	WindowBarHeight = 28,
+	Title = L["Phase Timing Editor"],
 }
 
 local s = {
@@ -83,31 +74,33 @@ local function ResetToDefault(self)
 	end
 end
 
----@class EPPhaseLengthEditor : AceGUIWidget
----@field frame Frame|table
----@field type string
----@field windowBar table|Frame
----@field closeButton EPButton
----@field activeContainer EPContainer
----@field resetAllButton EPButton
----@field FormatTime fun(number): string,string
-
 ---@param self EPPhaseLengthEditor
 local function OnAcquire(self)
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton.frame:SetParent(self.windowBar)
-	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+		local x, y = self.frame:GetLeft(), self.frame:GetTop()
+		self.frame:StopMovingOrSizing()
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
+			"TOP",
+			x - UIParent:GetWidth() / 2.0 + self.frame:GetWidth() / 2.0,
+			-(UIParent:GetHeight() - y)
+		)
+	end)
+	self.windowBar = windowBar
 
 	self.resetAllButton = AceGUI:Create("EPButton")
 	self.resetAllButton.frame:SetParent(self.frame)
@@ -127,7 +120,7 @@ local function OnAcquire(self)
 	self.activeContainer.frame:SetParent(self.frame)
 	self.activeContainer.frame:SetPoint(
 		"TOPLEFT",
-		self.windowBar,
+		self.windowBar.frame,
 		"BOTTOMLEFT",
 		k.ContentFramePadding.x,
 		-k.ContentFramePadding.y
@@ -227,8 +220,8 @@ end
 
 ---@param self EPPhaseLengthEditor
 local function OnRelease(self)
-	self.closeButton:Release()
-	self.closeButton = nil
+	self.windowBar:Release()
+	self.windowBar = nil
 
 	self.activeContainer.frame:EnableMouse(false)
 	self.activeContainer:Release()
@@ -350,7 +343,7 @@ end
 ---@param self EPPhaseLengthEditor
 local function Resize(self)
 	local height = k.ContentFramePadding.y
-		+ self.windowBar:GetHeight()
+		+ self.windowBar.frame:GetHeight()
 		+ self.activeContainer.frame:GetHeight()
 		+ k.OtherPadding.y
 		+ self.resetAllButton.frame:GetHeight()
@@ -370,33 +363,11 @@ local function Constructor()
 	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
 	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-	local windowBarText = windowBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(L["Phase Timing Editor"])
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		local x, y = frame:GetLeft(), frame:GetTop()
-		frame:StopMovingOrSizing()
-		frame:ClearAllPoints()
-		frame:SetPoint("TOP", x - UIParent:GetWidth() / 2.0 + frame:GetWidth() / 2.0, -(UIParent:GetHeight() - y))
-	end)
-	---@class EPPhaseLengthEditor
+	---@class EPPhaseLengthEditor : AceGUIWidget
+	---@field windowBar EPWindowBar
+	---@field activeContainer EPContainer
+	---@field resetAllButton EPButton
+	---@field FormatTime fun(number): string,string
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -406,7 +377,6 @@ local function Constructor()
 		SetTotalDurations = SetTotalDurations,
 		frame = frame,
 		type = Type,
-		windowBar = windowBar,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

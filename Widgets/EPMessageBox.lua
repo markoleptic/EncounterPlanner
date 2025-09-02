@@ -32,15 +32,6 @@ local k = {
 	},
 	FramePadding = 15,
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-		insets = { left = 0, right = 0, top = 0, bottom = 0 },
-	},
-	WindowBarHeight = 28,
 }
 
 ---@param container EPContainer
@@ -54,19 +45,28 @@ local function SetButtonWidths(container)
 	end
 end
 
----@class EPMessageBox : AceGUIWidget
----@field frame table|Frame
----@field type string
----@field text FontString
----@field buttonContainer EPContainer
----@field windowBar Frame|table
----@field isCommunicationsMessage boolean|nil
-
 ---@param self EPMessageBox
 local function OnAcquire(self)
 	self:SetTitle("")
-	self.frame:SetHeight(k.DefaultFrameHeight)
-	self.frame:SetWidth(k.DefaultFrameWidth)
+	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
+
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle("Title")
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
+		self:Fire("CloseButtonClicked")
+	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+	end)
+	self.windowBar = windowBar
+
+	self.text:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
 
 	self.buttonContainer = AceGUI:Create("EPContainer")
 	self.buttonContainer:SetLayout("EPHorizontalLayout")
@@ -107,9 +107,12 @@ end
 
 ---@param self EPMessageBox
 local function OnRelease(self)
+	self.windowBar:Release()
+	self.windowBar = nil
 	self.buttonContainer:Release()
 	self.buttonContainer = nil
 	self.isCommunicationsMessage = nil
+	self.text:ClearAllPoints()
 end
 
 ---@param self EPMessageBox
@@ -137,8 +140,8 @@ local function SetText(self, text)
 	self.text:SetWidth(self.frame:GetWidth() - 2 * k.FramePadding)
 	self.text:SetText(text)
 	local textHeight = self.text:GetHeight()
-	self.text:SetPoint("TOP", self.windowBar, "BOTTOM", 0, -k.FramePadding)
-	self:SetHeight(self.windowBar:GetHeight() + textHeight + k.DefaultButtonHeight + k.FramePadding * 3)
+	self.text:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
+	self:SetHeight(self.windowBar.frame:GetHeight() + textHeight + k.DefaultButtonHeight + k.FramePadding * 3)
 end
 
 ---@param self EPMessageBox
@@ -150,7 +153,7 @@ end
 ---@param self EPMessageBox
 ---@param text string
 local function SetTitle(self, text)
-	self.windowBarText:SetText(text or "")
+	self.windowBar:SetTitle(text or "")
 end
 
 ---@param self EPMessageBox
@@ -192,15 +195,6 @@ local function Constructor()
 	frame:SetClampedToScreen(true)
 	frame:EnableMouse(true)
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
 	local text = frame:CreateFontString(nil, "OVERLAY")
 	text:SetWordWrap(true)
 	text:SetSpacing(4)
@@ -208,23 +202,11 @@ local function Constructor()
 	if fPath then
 		text:SetFont(fPath, k.DefaultFontSize)
 	end
-	text:SetPoint("TOP", windowBar, "BOTTOM", 0, -k.FramePadding)
 
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText("Title")
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-	end)
-
-	---@class EPMessageBox
+	---@class EPMessageBox : AceGUIWidget
+	---@field buttonContainer EPContainer
+	---@field windowBar EPWindowBar
+	---@field isCommunicationsMessage boolean|nil
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -236,8 +218,6 @@ local function Constructor()
 		SetRejectButtonText = SetRejectButtonText,
 		frame = frame,
 		type = Type,
-		windowBar = windowBar,
-		windowBarText = windowBarText,
 		text = text,
 	}
 

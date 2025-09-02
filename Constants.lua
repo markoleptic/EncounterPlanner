@@ -42,7 +42,7 @@ Private.constants = {
 		kPaddingBetweenTimelineAndScrollBar = 10,
 		kHorizontalScrollBarHeight = 20,
 	},
-	kWindowBarHeight = 30,
+	kMainFrameWindowBarHeight = 30,
 	kStatusBarHeight = 48,
 	kStatusBarPadding = 5,
 	kMaxBossDuration = 1200.0,

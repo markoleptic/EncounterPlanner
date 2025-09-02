@@ -12,7 +12,6 @@ local Type = "EPNewPlanDialog"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local max = math.max
@@ -21,7 +20,6 @@ local unpack = unpack
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	ContentFramePadding = { x = 15, y = 15 },
 	DefaultFontSize = 14,
 	DefaultHeight = 400,
@@ -42,29 +40,7 @@ local k = {
 	NeutralButtonColor = constants.colors.kNeutralButtonActionColor,
 	OtherPadding = { x = 10, y = 10 },
 	Title = L["Create New Plan"],
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-		insets = { left = 0, right = 0, top = 0, bottom = 0 },
-	},
-	WindowBarHeight = 28,
 }
-
----@class EPNewPlanDialog : AceGUIWidget
----@field frame table|Frame|BackdropTemplate
----@field type string
----@field bossDropdown EPDropdown
----@field difficultyDropdown EPDropdown
----@field planNameLineEdit EPLineEdit
----@field createButton EPButton
----@field cancelButton EPButton
----@field closeButton EPButton
----@field container EPContainer
----@field buttonContainer EPContainer
----@field planNameManuallyChanged boolean
 
 ---@param container EPContainer
 local function SetButtonWidths(container)
@@ -82,20 +58,22 @@ local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultWidth, k.DefaultHeight)
 	self.planNameManuallyChanged = false
 
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton.frame:SetParent(self.windowBar --[[@as Frame]])
-	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+	end)
+	self.windowBar = windowBar
+
 	self.frame:Show()
 
 	self.container = AceGUI:Create("EPContainer")
@@ -105,7 +83,7 @@ local function OnAcquire(self)
 	self.container.frame:EnableMouse(true)
 	self.container.frame:SetPoint(
 		"TOPLEFT",
-		self.windowBar,
+		self.windowBar.frame,
 		"BOTTOMLEFT",
 		k.ContentFramePadding.x,
 		-k.ContentFramePadding.y
@@ -206,8 +184,8 @@ end
 
 ---@param self EPNewPlanDialog
 local function OnRelease(self)
-	self.closeButton:Release()
-	self.closeButton = nil
+	self.windowBar:Release()
+	self.windowBar = nil
 	self.container:Release()
 	self.container = nil
 	self.buttonContainer:Release()
@@ -250,7 +228,7 @@ local function Resize(self)
 	local width = k.ContentFramePadding.x * 2
 	width = width + max(containerWidth, buttonWidth)
 
-	local height = k.WindowBarHeight + buttonContainerHeight + paddingHeight + containerHeight
+	local height = self.windowBar.frame:GetHeight() + buttonContainerHeight + paddingHeight + containerHeight
 	self.frame:SetSize(width, height)
 	self.container:DoLayout()
 end
@@ -266,31 +244,18 @@ local function Constructor()
 	frame:SetMovable(true)
 	frame:SetFrameStrata("DIALOG")
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(k.Title)
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-	end)
-
-	---@class EPNewPlanDialog
+	---@class EPNewPlanDialog : AceGUIWidget
+	---@field frame table|Frame|BackdropTemplate
+	---@field type string
+	---@field bossDropdown EPDropdown
+	---@field difficultyDropdown EPDropdown
+	---@field planNameLineEdit EPLineEdit
+	---@field createButton EPButton
+	---@field cancelButton EPButton
+	---@field container EPContainer
+	---@field buttonContainer EPContainer
+	---@field planNameManuallyChanged boolean
+	---@field windowBar EPWindowBar
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -298,7 +263,6 @@ local function Constructor()
 		SetPlanNameLineEditText = SetPlanNameLineEditText,
 		SetCreateButtonEnabled = SetCreateButtonEnabled,
 		Resize = Resize,
-		windowBar = windowBar,
 		frame = frame,
 		type = Type,
 	}

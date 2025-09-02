@@ -36,11 +36,6 @@ local k = {
 	NeutralButtonColor = constants.colors.kNeutralButtonActionColor,
 }
 
-do
-	local edgeSize = k.FrameBackdrop.edgeSize
-	k.ButtonSize = k.DefaultHeight - 2 * edgeSize
-end
-
 ---@param self EPWindowBar
 local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultWidth, k.DefaultHeight)
@@ -50,11 +45,7 @@ end
 
 ---@param self EPWindowBar
 local function OnRelease(self)
-	for i = #self.buttons, -1, 1 do
-		local button = self.buttons[i]
-		button:Release()
-	end
-	wipe(self.buttons)
+	self:RemoveButtons()
 end
 
 ---@param self EPWindowBar
@@ -68,11 +59,12 @@ end
 ---@param icon string|integer
 ---@param clickedCallbackName string
 local function AddButton(self, icon, clickedCallbackName)
+	local buttonSize = self.frame:GetHeight() - 2 * k.FrameBackdrop.edgeSize
 	local button = AceGUI:Create("EPButton")
 	button:SetIcon(icon)
 	button:SetIconPadding(k.IconPadding, k.IconPadding)
-	button:SetWidth(k.ButtonSize)
-	button:SetHeight(k.ButtonSize)
+	button:SetWidth(buttonSize)
+	button:SetHeight(buttonSize)
 	button:SetBackdropColor(unpack(k.BackdropColor))
 	button.frame:SetParent(self.frame)
 
@@ -87,6 +79,16 @@ local function AddButton(self, icon, clickedCallbackName)
 	end)
 
 	tinsert(self.buttons, 1, button)
+end
+
+-- Removes all buttons from the window bar.
+---@param self EPWindowBar
+local function RemoveButtons(self)
+	for i = #self.buttons, -1, 1 do
+		local button = self.buttons[i]
+		button:Release()
+	end
+	wipe(self.buttons)
 end
 
 local function Constructor()
@@ -116,6 +118,7 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetTitle = SetTitle,
 		AddButton = AddButton,
+		RemoveButtons = RemoveButtons,
 		frame = frame,
 		type = Type,
 		title = title,

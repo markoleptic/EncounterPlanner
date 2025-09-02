@@ -2184,7 +2184,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				if not self:IsSimulatingBoss() then
 					return false
 				else
-					if self.mainFrame.minimizeFrame:IsShown() then
+					if self.mainFrame.minimizedWindowBar and self.mainFrame.minimizedWindowBar.frame:IsShown() then
 						self.mainFrame:Maximize()
 					end
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
@@ -2195,7 +2195,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 						end
 					end)
-					localSelf.frame = self.mainFrame.minimizeButton.frame
+					localSelf.frame = self.mainFrame.windowBar.buttons[1].frame
 					return true
 				end
 			end,
@@ -2208,7 +2208,9 @@ local function CreateTutorialSteps(self, setCurrentStep)
 				if not self:IsSimulatingBoss() then
 					return false
 				else
-					if not self.mainFrame.minimizeFrame:IsShown() then
+					if
+						not self.mainFrame.minimizedWindowBar or not self.mainFrame.minimizedWindowBar.frame:IsShown()
+					then
 						self.mainFrame:Minimize()
 					end
 					self.RegisterCallback(Private.tutorialCallbackObject, localSelf.name, function(_, category)
@@ -2219,7 +2221,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 						end
 					end)
-					HighlightFrame(self.mainFrame.maximizeButton.frame)
+					HighlightFrame(self.mainFrame.minimizedWindowBar.frame)
 					self.tutorial.frame:ClearAllPoints()
 					self.tutorial.frame:SetPoint("TOP", s.HighlightBorderFrame, "BOTTOM", 0, -k.TutorialOffset)
 					self.tutorial.frame:Show()

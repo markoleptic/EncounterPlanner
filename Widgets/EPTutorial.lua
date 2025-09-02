@@ -20,7 +20,6 @@ local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
 	ButtonColor = Private.constants.colors.kNeutralButtonActionColor,
-	CloseButtonBackdropColor = { 0, 0, 0, 0.9 },
 	ContentFramePadding = { x = 10, y = 10 },
 	DefaultButtonHeight = 20,
 	DefaultFontSize = 14,
@@ -36,15 +35,6 @@ local k = {
 	},
 	OtherPadding = { x = 10, y = 10 },
 	Title = L["Tutorial"],
-	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 2,
-		insets = { left = 0, right = 0, top = 0, bottom = 0 },
-	},
-	WindowBarHeight = 28,
 }
 
 ---@param container EPContainer
@@ -69,28 +59,29 @@ local function OnAcquire(self)
 	self.totalSteps = 0
 	self.frame:SetSize(k.DefaultWidth, k.DefaultHeight)
 
-	local edgeSize = k.FrameBackdrop.edgeSize
-	local buttonSize = k.WindowBarHeight - 2 * edgeSize
-
-	self.closeButton = AceGUI:Create("EPButton")
-	self.closeButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
-	self.closeButton:SetIconPadding(2, 2)
-	self.closeButton:SetWidth(buttonSize)
-	self.closeButton:SetHeight(buttonSize)
-	self.closeButton:SetBackdropColor(unpack(k.CloseButtonBackdropColor))
-	self.closeButton.frame:SetParent(self.windowBar --[[@as Frame]])
-	self.closeButton.frame:SetPoint("RIGHT", self.windowBar, "RIGHT", -edgeSize, 0)
-	self.closeButton:SetCallback("Clicked", function()
+	local windowBar = AceGUI:Create("EPWindowBar")
+	windowBar:SetTitle(k.Title)
+	windowBar.frame:SetParent(self.frame)
+	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
+	windowBar:SetCallback("CloseButtonClicked", function()
 		self:Fire("CloseButtonClicked")
 	end)
+	windowBar:SetCallback("OnMouseDown", function()
+		self.frame:StartMoving()
+	end)
+	windowBar:SetCallback("OnMouseUp", function()
+		self.frame:StopMovingOrSizing()
+	end)
+	self.windowBar = windowBar
 
 	self.container = AceGUI:Create("EPContainer")
 	self.container:SetLayout("EPVerticalLayout")
-	self.container.frame:SetParent(self.frame --[[@as Frame]])
+	self.container.frame:SetParent(self.frame)
 	self.container.frame:EnableMouse(true)
 	self.container.frame:SetPoint(
 		"TOPLEFT",
-		self.windowBar,
+		self.windowBar.frame,
 		"BOTTOMLEFT",
 		k.ContentFramePadding.x,
 		-k.ContentFramePadding.y
@@ -107,7 +98,7 @@ local function OnAcquire(self)
 	self.buttonContainer:SetSpacing(k.OtherPadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
-	self.buttonContainer.frame:SetParent(self.frame --[[@as Frame]])
+	self.buttonContainer.frame:SetParent(self.frame)
 	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.ContentFramePadding.y)
 
 	self.progressBar = AceGUI:Create("EPProgressBar")
@@ -144,10 +135,15 @@ end
 
 ---@param self EPTutorial
 local function OnRelease(self)
+	self.windowBar:Release()
+	self.windowBar = nil
+
 	self.container:Release()
 	self.container = nil
+
 	self.buttonContainer:Release()
 	self.buttonContainer = nil
+
 	self.progressBar:Release()
 	self.progressBar = nil
 
@@ -263,31 +259,8 @@ local function Constructor()
 		text:SetFont(fPath, k.DefaultFontSize, "")
 	end
 
-	local windowBar = CreateFrame("Frame", Type .. "WindowBar" .. count, frame, "BackdropTemplate")
-	windowBar:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	windowBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
-	windowBar:SetHeight(k.WindowBarHeight)
-	windowBar:SetBackdrop(k.TitleBarBackdrop)
-	windowBar:SetBackdropColor(unpack(k.BackdropColor))
-	windowBar:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
-	windowBar:EnableMouse(true)
-
-	local windowBarText = windowBar:CreateFontString(Type .. "TitleText" .. count, "OVERLAY", "GameFontNormalLarge")
-	windowBarText:SetText(k.Title)
-	windowBarText:SetPoint("CENTER", windowBar, "CENTER")
-	local h = windowBarText:GetStringHeight()
-	if fPath then
-		windowBarText:SetFont(fPath, h)
-	end
-	windowBar:SetScript("OnMouseDown", function()
-		frame:StartMoving()
-	end)
-	windowBar:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-	end)
-
 	---@class EPTutorial : AceGUIWidget
-	---@field closeButton EPButton
+	---@field windowBar EPWindowBar
 	---@field container EPContainer
 	---@field buttonContainer EPContainer
 	---@field progressBar EPProgressBar
@@ -304,7 +277,6 @@ local function Constructor()
 		InitProgressBar = InitProgressBar,
 		frame = frame,
 		type = Type,
-		windowBar = windowBar,
 		text = text,
 		measureText = measureText,
 	}
