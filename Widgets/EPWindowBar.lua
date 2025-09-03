@@ -84,7 +84,7 @@ end
 -- Removes all buttons from the window bar.
 ---@param self EPWindowBar
 local function RemoveButtons(self)
-	for i = #self.buttons, -1, 1 do
+	for i = #self.buttons, 1, -1 do
 		local button = self.buttons[i]
 		button:Release()
 	end
@@ -94,8 +94,6 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
-	frame:SetPoint("TOPLEFT", frame, "TOPLEFT")
-	frame:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 	frame:SetSize(k.DefaultWidth, k.DefaultHeight)
 	frame:SetBackdrop(k.FrameBackdrop)
 	frame:SetBackdropColor(unpack(k.BackdropColor))

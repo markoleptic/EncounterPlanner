@@ -224,7 +224,11 @@ local function Resize(self)
 	local progressBarHeight = self.progressBar.frame:GetHeight()
 	local paddingHeight = k.ContentFramePadding.y * 4
 
-	local height = k.WindowBarHeight + buttonContainerHeight + paddingHeight + containerHeight + progressBarHeight
+	local height = self.windowBar.frame:GetHeight()
+		+ buttonContainerHeight
+		+ paddingHeight
+		+ containerHeight
+		+ progressBarHeight
 	self.frame:SetSize(k.DefaultWidth, height)
 end
 

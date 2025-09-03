@@ -2221,7 +2221,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 							setCurrentStep(self.tutorial.currentStep, self.tutorial.currentStep + 1)
 						end
 					end)
-					HighlightFrame(self.mainFrame.minimizedWindowBar.frame)
+					HighlightFrame(self.mainFrame.minimizedWindowBar.buttons[1].frame)
 					self.tutorial.frame:ClearAllPoints()
 					self.tutorial.frame:SetPoint("TOP", s.HighlightBorderFrame, "BOTTOM", 0, -k.TutorialOffset)
 					self.tutorial.frame:Show()

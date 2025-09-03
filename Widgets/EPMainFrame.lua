@@ -109,7 +109,7 @@ local function OnAcquire(self)
 		self.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
 	end)
 	windowBar:AddButton(k.MinimizeIcon, "MinimizeButtonClicked")
-	windowBar:SetCallback("Clicked", function()
+	windowBar:SetCallback("MinimizeButtonClicked", function()
 		self:Minimize()
 		self:Fire("MinimizeButtonClicked")
 	end)
@@ -464,7 +464,8 @@ local function Minimize(self)
 			local x, y = self.minimizedWindowBar.frame:GetLeft(), self.minimizedWindowBar.frame:GetTop()
 			self.minimizedWindowBar.frame:ClearAllPoints()
 			local newX, newY = x, -(UIParent:GetHeight() - y)
-			self.minimizedWindowBar.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -(UIParent:GetHeight() - y))
+			self.minimizedWindowBar.frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", newX, newY)
+			self.minimizedWindowBarFramePosition = { x = newX, y = newY }
 			self:Fire("MinimizeFramePointChanged", newX, newY)
 		end)
 		minimizedWindowBar:SetCallback("CloseButtonClicked", function()
@@ -493,7 +494,7 @@ local function Minimize(self)
 			)
 		end
 		self.frame:Hide()
-		self.minimizedWindowBar.frame:Show()
+		minimizedWindowBar.frame:Show()
 		self.minimizedWindowBar = minimizedWindowBar
 	end
 end
