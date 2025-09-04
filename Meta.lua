@@ -419,6 +419,10 @@
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
+---@class PlanTemplate
+---@field name string Name of the template
+---@field assigneesAndSpells table<string, table<integer, integer>> Spells for assignees.
+
 ---@class AssignmentTimelineRow
 ---@field assignee string The row the assignment belongs to
 ---@field spellID integer|nil If specified, the spell ID for the row. Otherwise, the row is only the assignee.

@@ -754,7 +754,7 @@ end
 
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
----@param assigneesAndSpells table<integer, {assignee:string, spellID:number|nil}>
+---@param assigneesAndSpells table<integer, AssignmentTimelineRow>
 ---@param collapsed table<string, boolean>
 local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	s:SetAssignments(assignments, collapsed)
@@ -1286,7 +1286,7 @@ local function Constructor()
 	---@field assignmentTimeline EPTimelineSection
 	---@field bossAbilityTimeline EPTimelineSection
 	---@field addAssigneeDropdown EPDropdown
-	---@field assigneesAndSpells table<integer, {assignee:string, spellID:integer|nil}>
+	---@field assigneesAndSpells table<integer, AssignmentTimelineRow>
 	---@field bossAbilityInstances table<integer, BossAbilityInstance>
 	---@field bossAbilityVisibility table<integer, boolean>
 	---@field bossAbilityOrder table<integer, integer>
