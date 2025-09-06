@@ -47,11 +47,10 @@ end
 
 ---@param self EPMessageBox
 local function OnAcquire(self)
-	self:SetTitle("")
 	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local windowBar = AceGUI:Create("EPWindowBar")
-	windowBar:SetTitle("Title")
+	windowBar:SetTitle("")
 	windowBar.frame:SetParent(self.frame)
 	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
 	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
