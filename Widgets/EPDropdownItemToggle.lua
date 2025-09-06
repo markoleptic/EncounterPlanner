@@ -587,7 +587,7 @@ do
 	local function SetMenuItems(self, dropdownItemData, dropdownParent)
 		InitializeChildPullout(self, dropdownParent)
 		for _, itemData in pairs(dropdownItemData) do
-			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
+			if itemData.dropdownItemMenuData then
 				CreateDropdownItemMenu(self, dropdownParent, itemData)
 			else
 				CreateDropdownItemToggle(self, dropdownParent, itemData)
@@ -605,7 +605,7 @@ do
 		InitializeChildPullout(self, dropdownParent)
 		local currentIndex = index
 		for _, itemData in pairs(dropdownItemData) do
-			if itemData.dropdownItemMenuData and #itemData.dropdownItemMenuData > 0 then
+			if itemData.dropdownItemMenuData then
 				CreateDropdownItemMenu(self, dropdownParent, itemData)
 			else
 				local alreadyExists = false
