@@ -16,6 +16,7 @@ local constants = Private.constants
 
 ---@class Utilities
 local utilities = Private.utilities
+local AddAssignmentToPlan = utilities.AddAssignmentToPlan
 local ChangePlanBoss = utilities.ChangePlanBoss
 local CreateAssigneeDropdownItems = utilities.CreateAssigneeDropdownItems
 local CreateAssignmentTypeWithRosterDropdownItems = utilities.CreateAssignmentTypeWithRosterDropdownItems
@@ -51,6 +52,7 @@ local UpdateBoss = interfaceUpdater.UpdateBoss
 local DifficultyType = Private.classes.DifficultyType
 
 local abs = math.abs
+local assert = assert
 local AceGUI = LibStub("AceGUI-3.0")
 local Clamp = Clamp
 local format = string.format
@@ -59,7 +61,6 @@ local ipairs = ipairs
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local min, max = math.min, math.max
 local pairs = pairs
-local sub = string.sub
 local tinsert = table.insert
 local tonumber = tonumber
 local tremove = table.remove
@@ -96,6 +97,24 @@ local k = {
 	MaxVisibleDropdownItems = 10,
 	TopContainerDropdownWidth = 200,
 	TopContainerWidgetFontSize = 14,
+	PlanMenuItemValues = {
+		NewPlan = {},
+		Templates = {
+			Apply = {},
+			Create = {},
+			Delete = {},
+		},
+		DuplicatePlan = {},
+		Import = {
+			FromMRT = {
+				Create = {},
+				Overwrite = {},
+			},
+			FromString = {},
+		},
+		ExportPlan = {},
+		DeletePlan = {},
+	},
 }
 
 do -- Plan Menu Items
@@ -108,49 +127,72 @@ do -- Plan Menu Items
 		if not planMenuItems then
 			planMenuItems = {
 				{
-					itemValue = "New Plan",
+					itemValue = k.PlanMenuItemValues.NewPlan,
 					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["New Plan"]),
 				},
 				{
-					itemValue = "Duplicate Plan",
+					itemValue = k.PlanMenuItemValues.Templates,
+					text = AddIconBeforeText(
+						[[Interface\AddOns\EncounterPlanner\Media\icons8-template-32]],
+						L["Templates"]
+					),
+					dropdownItemMenuData = {
+						{
+							itemValue = k.PlanMenuItemValues.Templates.Create,
+							text = L["Create Template"],
+						},
+						{
+							itemValue = k.PlanMenuItemValues.Templates.Apply,
+							text = L["Apply Template"],
+							dropdownItemMenuData = {},
+						},
+						{
+							itemValue = k.PlanMenuItemValues.Templates.Delete,
+							text = L["Delete Template"],
+							dropdownItemMenuData = {},
+						},
+					},
+				},
+				{
+					itemValue = k.PlanMenuItemValues.DuplicatePlan,
 					text = AddIconBeforeText(
 						[[Interface\AddOns\EncounterPlanner\Media\icons8-duplicate-32]],
 						L["Duplicate Plan"]
 					),
 				},
 				{
-					itemValue = "Import",
+					itemValue = k.PlanMenuItemValues.Import,
 					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], L["Import"]),
 					dropdownItemMenuData = {
 						{
-							itemValue = "FromMRT",
+							itemValue = k.PlanMenuItemValues.Import.FromMRT,
 							text = L["From"] .. " " .. "MRT",
 							dropdownItemMenuData = {
 								{
-									itemValue = "FromMRTCreateNew",
+									itemValue = k.PlanMenuItemValues.Import.FromMRT.Create,
 									text = L["Import As New Plan"],
 								},
 								{
-									itemValue = "FromMRTOverwriteCurrent",
+									itemValue = k.PlanMenuItemValues.Import.FromMRT.Overwrite,
 									text = L["Overwrite Current Plan"],
 								},
 							},
 						},
 						{
-							itemValue = "FromString",
+							itemValue = k.PlanMenuItemValues.Import.FromString,
 							text = L["From Text"],
 						},
 					},
 				},
 				{
-					itemValue = "Export Current Plan",
+					itemValue = k.PlanMenuItemValues.ExportPlan,
 					text = AddIconBeforeText(
 						[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
 						L["Export Current Plan"]
 					),
 				},
 				{
-					itemValue = "Delete Current Plan",
+					itemValue = k.PlanMenuItemValues.DeletePlan,
 					text = AddIconBeforeText(
 						[[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
 						L["Delete Current Plan"]
@@ -482,15 +524,31 @@ do -- Assignment Editor
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "preAssignmentEditorDeleteButtonClicked")
 		end
 		Private.assignmentEditor:Release()
-		local assignments = GetCurrentAssignments()
-		for i, v in ipairs(assignments) do
-			if v.uniqueID == assignmentID then
-				tremove(assignments, i)
-				interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed"], L["Assignment"]:lower()))
-				break
-			end
+		local plan = GetCurrentPlan()
+		local removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentFromPlan(plan, assignmentID)
+
+		local lowerAssignment, lowerTemplate
+		if removedAssignmentCount == 1 then
+			lowerAssignment = L["Assignment"]:lower()
+		else
+			lowerAssignment = L["assignments"]
 		end
-		UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+		if removedTemplateCount == 1 then
+			lowerTemplate = L["Template"]:lower()
+		else
+			lowerTemplate = L["Templates"]:lower()
+		end
+		interfaceUpdater.LogMessage(
+			format(
+				"%s %d %s, %d %s.",
+				L["Removed"],
+				removedAssignmentCount,
+				lowerAssignment,
+				removedTemplateCount,
+				lowerTemplate
+			)
+		)
+		UpdateAllAssignments(false, plan.dungeonEncounterID)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDeleteButtonClicked")
 		end
@@ -621,11 +679,12 @@ do -- Assignment Editor
 
 		interfaceUpdater.UpdateFromAssignment(
 			dungeonEncounterID,
+			difficulty,
 			assignment,
 			updateFields,
 			true,
 			updateAssignments,
-			difficulty
+			true
 		)
 		if
 			dataType == "SpellAssignment"
@@ -804,7 +863,7 @@ do -- Phase Length Editor
 			secLineEdit:SetText(seconds)
 
 			if not formatAndReturn then
-				local customPhaseDurations = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseDurations
+				local customPhaseDurations = GetCurrentPlan().customPhaseDurations
 				if boss.treatAsSinglePhase then
 					local cumulativePhaseTime = 0.0
 					for index, phase in ipairs(phases) do
@@ -867,7 +926,7 @@ do -- Phase Length Editor
 			end
 			local validatedPhaseCounts =
 				SetPhaseCount(bossDungeonEncounterID, phaseIndex, newCount, kMaxBossDuration, difficulty)
-			local customPhaseCounts = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].customPhaseCounts
+			local customPhaseCounts = GetCurrentPlan().customPhaseCounts
 			for index, count in ipairs(validatedPhaseCounts) do
 				customPhaseCounts[index] = count
 			end
@@ -892,10 +951,10 @@ do -- Phase Length Editor
 				Private.phaseLengthEditor:Release()
 			end)
 			phaseLengthEditor:SetCallback("ResetAllButtonClicked", function()
-				local lastOpenPlan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-				wipe(lastOpenPlan.customPhaseDurations)
-				wipe(lastOpenPlan.customPhaseCounts)
-				local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
+				local currentPlan = GetCurrentPlan()
+				wipe(currentPlan.customPhaseDurations)
+				wipe(currentPlan.customPhaseCounts)
+				local bossDungeonEncounterID = currentPlan.dungeonEncounterID
 				UpdateBoss(bossDungeonEncounterID, true)
 				UpdateAllAssignments(false, bossDungeonEncounterID)
 				UpdateTotalTime()
@@ -975,7 +1034,7 @@ end
 local function HandleChangeBossDropdownValueChanged(value, newDifficulty)
 	local newBossDungeonEncounterID = tonumber(value)
 	if newBossDungeonEncounterID then
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local plan = GetCurrentPlan()
 		local messageBoxData = {
 			ID = Private.GenerateUniqueID(),
 			widgetType = "EPMessageBox",
@@ -1137,11 +1196,12 @@ local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifferen
 		end
 		interfaceUpdater.UpdateFromAssignment(
 			GetCurrentBossDungeonEncounterID(),
+			GetCurrentDifficulty(),
 			assignment,
 			true,
 			true,
 			false,
-			GetCurrentDifficulty()
+			true
 		)
 		if Private.activeTutorialCallbackName and widget then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, timeDifference)
@@ -1154,8 +1214,9 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		return
 	end
 
-	local assignments = GetCurrentAssignments()
-	for _, assignment in pairs(GetCurrentAssignments()) do
+	local plan = GetCurrentPlan()
+	local assignments = plan.assignments
+	for _, assignment in ipairs(assignments) do
 		if assignment.assignee == value then
 			dropdown:SetText(k.AddAssigneeText)
 			return
@@ -1169,7 +1230,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		timelineRows.numberOfAssignmentsToShow = max(timelineRows.numberOfAssignmentsToShow, 2)
 	end
 
-	tinsert(assignments, assignment)
+	AddAssignmentToPlan(plan, assignment)
 	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(k.AddAssigneeText)
@@ -1182,15 +1243,41 @@ end
 ---@param spellID integer|nil
 ---@param time number
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
-	local encounterID = GetCurrentBossDungeonEncounterID()
-	local assignment =
-		utilities.CreateNewAssignment(encounterID, time, assignee, spellID, GetCurrentDifficulty(), GetCurrentPlan().ID)
+	local plan = GetCurrentPlan()
+	local encounterID = plan.dungeonEncounterID
+	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty, plan.ID)
 	if assignment then
-		tinsert(GetCurrentAssignments(), assignment)
+		AddAssignmentToPlan(plan, assignment)
 		UpdateAllAssignments(false, encounterID)
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "added")
+		end
+	end
+end
+
+---@param templates table<integer, PlanTemplate>
+function Private.RepopulateTemplates(templates)
+	if Private.mainFrame then
+		local planMenuButton = Private.mainFrame.planMenuButton
+		if planMenuButton then
+			local templateDropdownMenuItems = {}
+			for _, template in ipairs(templates) do
+				tinsert(templateDropdownMenuItems, { itemValue = template.name, text = template.name })
+			end
+			sort(templateDropdownMenuItems, function(a, b)
+				return a.text < b.text
+			end)
+			planMenuButton:ClearExistingDropdownItemMenu(k.PlanMenuItemValues.Templates.Apply)
+			planMenuButton:ClearExistingDropdownItemMenu(k.PlanMenuItemValues.Templates.Delete)
+			planMenuButton:AddItemsToExistingDropdownItemMenu(
+				k.PlanMenuItemValues.Templates.Apply,
+				templateDropdownMenuItems
+			)
+			planMenuButton:AddItemsToExistingDropdownItemMenu(
+				k.PlanMenuItemValues.Templates.Delete,
+				templateDropdownMenuItems
+			)
 		end
 	end
 end
@@ -1311,12 +1398,15 @@ do -- Plan Menu Button s.Handlers
 		Private.callbacks:Fire("PlanChanged")
 	end
 
-	---@param importType string
+	---@param importType table
 	local function ImportPlan(importType)
 		if not Private.importEditBox then
-			if importType:find("FromMRT") then
+			if
+				importType == k.PlanMenuItemValues.Import.FromMRT.Create
+				or importType == k.PlanMenuItemValues.Import.FromMRT.Overwrite
+			then
 				if VMRT and VMRT.Note and VMRT.Note.Text1 then
-					local createNew = importType:find("CreateNew")
+					local createNew = importType == k.PlanMenuItemValues.Import.FromMRT.Create
 					ClosePlanDependentWidgets()
 					local text = VMRT.Note.Text1
 					local bossDungeonEncounterID = GetCurrentBossDungeonEncounterID()
@@ -1336,7 +1426,7 @@ do -- Plan Menu Button s.Handlers
 					UpdateAllAssignments(true, bossDungeonEncounterID)
 					Private.callbacks:Fire("PlanChanged")
 				end
-			elseif importType:find("FromString") then
+			elseif importType == k.PlanMenuItemValues.Import.FromString then
 				CreateImportEditBox()
 			end
 		end
@@ -1357,8 +1447,7 @@ do -- Plan Menu Button s.Handlers
 			end)
 			Private.exportEditBox = exportEditBox
 		end
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-		local text = Private:ExportPlanToNote(plan, GetCurrentBossDungeonEncounterID())
+		local text = Private:ExportPlanToNote(GetCurrentPlan(), GetCurrentBossDungeonEncounterID())
 		if text then
 			Private.exportEditBox:SetText(text)
 			Private.exportEditBox:HighlightTextAndFocus()
@@ -1478,22 +1567,159 @@ do -- Plan Menu Button s.Handlers
 		end
 	end
 
+	---@param templateName string
+	local function HandleApplyTemplateButtonClicked(templateName)
+		local templates = AddOn.db.profile.templates
+		local _, index = utilities.ContainsValue(templates, "name", templateName)
+		assert(index, "Profile contains template")
+		local template = templates[index]
+		utilities.ApplyPlanTemplate(template, GetCurrentPlan())
+		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+	end
+
+	---@param templateName string
+	local function HandleDeleteTemplateButtonClicked(templateName)
+		local templates = AddOn.db.profile.templates
+		local _, index = utilities.ContainsValue(templates, "name", templateName)
+		assert(index, "Profile contains template")
+		tremove(templates, index)
+		interfaceUpdater.LogMessage(format("%s 1 %s.", L["Removed"], L["Template"]:lower()))
+		Private.RepopulateTemplates(templates)
+	end
+
+	local CreateUniqueTemplateName = utilities.CreateUniqueTemplateName
+
+	local function HandleCreateTemplateButtonClicked()
+		if not Private.newTemplateDialog then
+			local newTemplateDialog = AceGUI:Create("EPNewTemplateDialog")
+			newTemplateDialog:SetCallback("OnRelease", function()
+				Private.newTemplateDialog = nil
+			end)
+			newTemplateDialog:SetCallback("CloseButtonClicked", function()
+				Private.newTemplateDialog:Release()
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newTemplateDialogClosed")
+				end
+			end)
+			newTemplateDialog:SetCallback("CancelButtonClicked", function()
+				Private.newTemplateDialog:Release()
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newTemplateDialogClosed")
+				end
+			end)
+
+			local currentPlan = GetCurrentPlan()
+			local sortType = AddOn.db.profile.preferences.assignmentSortType
+			local sortedTimelineAssignments =
+				SortAssignments(currentPlan, sortType, GetCurrentBossDungeonEncounterID(), true, currentPlan.difficulty)
+			local orderedAssigneeSpellSets =
+				interfaceUpdater.SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
+			local filteredAssignees = {}
+			for _, assigneeSpellSet in ipairs(orderedAssigneeSpellSets) do
+				filteredAssignees[assigneeSpellSet.assignee] = false
+			end
+
+			---@param widget EPNewTemplateDialog
+			---@return integer selectedCount
+			local function UpdateSelectedCount(widget)
+				local count, total = 0, 0
+				for _, isFiltered in pairs(filteredAssignees) do
+					if not isFiltered then
+						count = count + 1
+					end
+					total = total + 1
+				end
+				widget.assigneeDropdown:SetText(format("%d / %d %s", count, total, L["Selected"]))
+				return count
+			end
+
+			---@param widget EPNewTemplateDialog
+			---@param selectedCount integer
+			---@return boolean
+			local function UpdateCreateButtonEnabledState(widget, selectedCount)
+				local validName = false
+				local templateName = widget.templateNameLineEdit:GetText():trim()
+				if templateName ~= "" then
+					local templates = AddOn.db.profile.templates
+					validName = not utilities.ContainsValue(templates, "name", templateName)
+				end
+				local enabled = validName and selectedCount > 0
+				widget:SetCreateButtonEnabled(enabled)
+				return enabled
+			end
+
+			newTemplateDialog:SetCallback("ValidateTemplateName", function(widget)
+				---@cast widget EPNewTemplateDialog
+				UpdateCreateButtonEnabledState(widget, UpdateSelectedCount(widget))
+				if Private.activeTutorialCallbackName then
+					Private.callbacks:Fire(Private.activeTutorialCallbackName, "newTemplateDialogValidate")
+				end
+			end)
+			newTemplateDialog:SetCallback("AssigneeChanged", function(widget, _, value, selected)
+				---@cast widget EPNewTemplateDialog
+				filteredAssignees[value] = not selected
+				UpdateCreateButtonEnabledState(widget, UpdateSelectedCount(widget))
+			end)
+			newTemplateDialog:SetCallback("CreateButtonClicked", function(widget, _, templateName)
+				---@cast widget EPNewTemplateDialog
+				if UpdateCreateButtonEnabledState(widget, UpdateSelectedCount(widget)) then
+					templateName = templateName:trim()
+					widget:Release()
+					local templates = AddOn.db.profile.templates
+					utilities.CreatePlanTemplate(templates, templateName, orderedAssigneeSpellSets, filteredAssignees)
+					Private.RepopulateTemplates(templates)
+					if Private.activeTutorialCallbackName then
+						Private.callbacks:Fire(Private.activeTutorialCallbackName, "newTemplateDialogTemplateCreated")
+					end
+				end
+			end)
+
+			newTemplateDialog.frame:SetParent(UIParent)
+			newTemplateDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
+			local assigneeDropdownItemData = {}
+			local roster = GetCurrentRoster()
+			for _, assigneeSpellSet in ipairs(orderedAssigneeSpellSets) do
+				local assignee = assigneeSpellSet.assignee
+				local entryText = utilities.ConvertAssigneeToLegibleString(assignee, roster)
+				tinsert(assigneeDropdownItemData, {
+					itemValue = assignee,
+					text = entryText,
+				})
+			end
+			newTemplateDialog:SetAssigneeDropdownItems(assigneeDropdownItemData)
+			local templateName = CreateUniqueTemplateName(AddOn.db.profile.templates, L["New"] .. L["Template"])
+			newTemplateDialog:SetTemplateNameLineEditText(templateName)
+			UpdateCreateButtonEnabledState(newTemplateDialog, UpdateSelectedCount(newTemplateDialog))
+			UpdateSelectedCount(newTemplateDialog)
+			newTemplateDialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+			newTemplateDialog:Resize()
+			newTemplateDialog:SetPoint("TOP", UIParent, "TOP", 0, -newTemplateDialog.frame:GetBottom())
+
+			Private.newTemplateDialog = newTemplateDialog
+		end
+	end
+
 	---@param planMenuButton EPDropdown
 	---@param value any
-	function s.Handler.PlanMenuButtonClicked(planMenuButton, _, value)
+	---@param parentValue any
+	---@param valueOwningDropdownItemMenu EPDropdownItemMenu?
+	function s.Handler.PlanMenuButtonClicked(planMenuButton, _, value, _, parentValue, valueOwningDropdownItemMenu)
 		if value == "Plan" then
 			return
 		end
-		if value == "New Plan" then
+
+		if value == k.PlanMenuItemValues.NewPlan then
 			Private.CreateNewPlanDialog()
 			if Private.activeTutorialCallbackName then
 				Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanButtonClicked")
 			end
-		elseif value == "Duplicate Plan" then
+		elseif value == k.PlanMenuItemValues.Templates.Create then
+			HandleCreateTemplateButtonClicked()
+		elseif value == k.PlanMenuItemValues.DuplicatePlan then
 			HandleDuplicatePlanButtonClicked()
-		elseif value == "Export Current Plan" then
+		elseif value == k.PlanMenuItemValues.ExportPlan then
 			HandleExportPlanButtonClicked()
-		elseif value == "Delete Current Plan" then
+		elseif value == k.PlanMenuItemValues.DeletePlan then
 			local messageBoxData = {
 				ID = Private.GenerateUniqueID(),
 				widgetType = "EPMessageBox",
@@ -1515,8 +1741,17 @@ do -- Plan Menu Button s.Handlers
 				buttonsToAdd = {},
 			} --[[@as MessageBoxData]]
 			CreateMessageBox(messageBoxData, false)
-		elseif sub(value, 1, 4) == "From" then
+		elseif parentValue == k.PlanMenuItemValues.Import.FromMRT or parentValue == k.PlanMenuItemValues.Import then
 			ImportPlan(value)
+		else
+			if valueOwningDropdownItemMenu then
+				local valueOwningDropdownValue = valueOwningDropdownItemMenu:GetValue()
+				if valueOwningDropdownValue == k.PlanMenuItemValues.Templates.Apply then
+					HandleApplyTemplateButtonClicked(value)
+				elseif valueOwningDropdownValue == k.PlanMenuItemValues.Templates.Delete then
+					HandleDeleteTemplateButtonClicked(value)
+				end
+			end
 		end
 		planMenuButton:SetValue("Plan")
 		planMenuButton:SetText(L["Plan"])
@@ -1594,7 +1829,7 @@ end
 
 local function HandleExternalTextButtonClicked()
 	if not Private.externalTextEditor then
-		local currentPlan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local currentPlan = GetCurrentPlan()
 		local currentPlanID = currentPlan.ID
 		local externalTextEditor = AceGUI:Create("EPEditBox")
 		externalTextEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
@@ -1607,12 +1842,9 @@ local function HandleExternalTextButtonClicked()
 		externalTextEditor:SetCallback("CloseButtonClicked", function()
 			local text = Private.externalTextEditor:GetText()
 			AceGUI:Release(Private.externalTextEditor)
-
-			if AddOn.db and AddOn.db.profile then
-				local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
-				if plan.ID == currentPlanID then
-					plan.content = utilities.SplitStringIntoTable(text)
-				end
+			local plan = GetCurrentPlan()
+			if plan.ID == currentPlanID then
+				plan.content = utilities.SplitStringIntoTable(text)
 			end
 		end)
 		externalTextEditor:SetText(("\n"):join(unpack(currentPlan.content)))
@@ -1772,23 +2004,22 @@ end
 ---@param timelineAssignment TimelineAssignment
 ---@param absoluteTime number
 local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTime)
+	local plan = GetCurrentPlan()
 	local assignment = timelineAssignment.assignment
-	local newAssignment = Private.DuplicateAssignment(assignment, GetCurrentPlan().ID)
-	tinsert(GetCurrentAssignments(), newAssignment)
+	local newAssignment = Private.DuplicateAssignment(assignment, plan.ID)
+	AddAssignmentToPlan(plan, newAssignment)
 
 	local newAssignmentTime = utilities.Round(absoluteTime, 1)
 	local relativeTime = nil
-	local encounterID = GetCurrentBossDungeonEncounterID()
-
 	if getmetatable(assignment) == CombatLogEventAssignment then
 		---@cast assignment CombatLogEventAssignment
 		relativeTime = ConvertAbsoluteTimeToCombatLogEventTime(
 			absoluteTime,
-			encounterID,
+			plan.dungeonEncounterID,
 			assignment.combatLogEventSpellID,
 			assignment.spellCount,
 			assignment.combatLogEventType,
-			GetCurrentDifficulty()
+			plan.difficulty
 		)
 	end
 	if relativeTime then
@@ -1799,7 +2030,7 @@ local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTi
 		newAssignment.time = newAssignmentTime
 	end
 
-	UpdateAllAssignments(false, encounterID)
+	UpdateAllAssignments(false, plan.dungeonEncounterID)
 	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "duplicated")
@@ -1854,33 +2085,35 @@ end
 
 local function HandleCollapseAllButtonClicked()
 	local currentPlan = GetCurrentPlan()
-	local sortedTimelineAssignments = SortAssignments(
-		currentPlan,
-		AddOn.db.profile.preferences.assignmentSortType,
-		currentPlan.dungeonEncounterID,
-		nil,
-		currentPlan.difficulty
-	)
-	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
-		collapsed[timelineAssignment.assignment.assignee] = true
+
+	local collapsed = currentPlan.collapsed
+
+	local assignments = currentPlan.assignments
+	for _, assignment in ipairs(assignments) do
+		collapsed[assignment.assignee] = true
+	end
+
+	local assigneesAndSpells = currentPlan.assigneesAndSpells
+	for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+		collapsed[assigneeSpellSet.assignee] = true
 	end
 	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
 end
 
 local function HandleExpandAllButtonClicked()
 	local currentPlan = GetCurrentPlan()
-	local sortedTimelineAssignments = SortAssignments(
-		currentPlan,
-		AddOn.db.profile.preferences.assignmentSortType,
-		currentPlan.dungeonEncounterID,
-		nil,
-		currentPlan.difficulty
-	)
-	local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
-		collapsed[timelineAssignment.assignment.assignee] = false
+	local collapsed = currentPlan.collapsed
+
+	local assignments = currentPlan.assignments
+	for _, assignment in ipairs(assignments) do
+		collapsed[assignment.assignee] = false
 	end
+
+	local assigneesAndSpells = currentPlan.assigneesAndSpells
+	for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+		collapsed[assigneeSpellSet.assignee] = false
+	end
+
 	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
 	Private.mainFrame.timeline:SetMaxAssignmentHeight()
 	Private.mainFrame:DoLayout()
@@ -1905,6 +2138,9 @@ local function CloseDialogs()
 	end
 	if Private.newPlanDialog then
 		Private.newPlanDialog:Release()
+	end
+	if Private.newTemplateDialog then
+		Private.newTemplateDialog:Release()
 	end
 	if Private.patchNotesDialog then
 		Private.patchNotesDialog:Release()
@@ -1961,7 +2197,7 @@ function Private:CreateInterface()
 	planMenuButton:AddItems(s.Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
 	planMenuButton:SetCallback("OnValueChanged", s.Handler.PlanMenuButtonClicked)
 	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
-	planMenuButton:SetItemEnabled("From MRT", MRTLoadingOrLoaded or MRTLoaded)
+	planMenuButton:SetItemEnabled(k.PlanMenuItemValues.Import.FromMRT, MRTLoadingOrLoaded or MRTLoaded)
 
 	local bossMenuButton = s.Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)
 	bossMenuButton:SetMultiselect(true)
@@ -2198,6 +2434,7 @@ function Private:CreateInterface()
 	mainFrame.menuButtonContainer:DoLayout()
 
 	interfaceUpdater.RepopulatePlanWidgets()
+	Private.RepopulateTemplates(AddOn.db.profile.templates)
 	UpdateBoss(encounterID, true)
 	UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 	UpdateRosterDataFromGroup(GetCurrentRoster())

@@ -160,11 +160,12 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 			needToCreateNewAssignment = false
 			interfaceUpdater.UpdateFromAssignment(
 				GetCurrentBossDungeonEncounterID(),
+				GetCurrentDifficulty(),
 				assignment,
 				true,
 				true,
 				true,
-				GetCurrentDifficulty()
+				true
 			)
 			break
 		end
@@ -179,14 +180,15 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 		if plan then
 			local assignment = TimedAssignment:New(nil, plan.ID)
 			assignment.assignee = name
-			tinsert(GetCurrentAssignments(), assignment)
+			utilities.AddAssignmentToPlan(plan, assignment)
 			interfaceUpdater.UpdateFromAssignment(
 				GetCurrentBossDungeonEncounterID(),
+				GetCurrentDifficulty(),
 				assignment,
 				true,
 				true,
 				true,
-				GetCurrentDifficulty()
+				true
 			)
 		else
 			error("Couldn't find a tutorial plan.")
@@ -201,10 +203,7 @@ local function FindCurrentAssignmentOrder(self)
 		if self.assignmentEditor then
 			local assignmentID = self.assignmentEditor:GetAssignmentID()
 			if assignmentID then
-				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignmentID)
-				if timelineAssignment then
-					return timelineAssignment.order - 1
-				end
+				return self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignmentID)
 			end
 		end
 	end
@@ -228,10 +227,7 @@ local function EnsureAssigneeIsExpanded(self, scrollIntoView)
 		if self.assignmentEditor and scrollIntoView then
 			local assignmentID = self.assignmentEditor:GetAssignmentID()
 			if assignmentID then
-				local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignmentID)
-				if timelineAssignment then
-					timeline:ScrollAssignmentIntoView(timelineAssignment.assignment.uniqueID)
-				end
+				timeline:ScrollAssignmentIntoView(assignmentID)
 			end
 		end
 	end
@@ -414,32 +410,32 @@ local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setT
 		else
 			error("Couldn't find a tutorial plan.")
 		end
+		assignment.assignee = k.PlayerName
+		if assignmentNumber == 1 then
+			if AddOn.db.global.tutorial.firstSpell > 0 then
+				assignment.spellID = AddOn.db.global.tutorial.firstSpell
+			end
+			if setTime then
+				assignment.time = 15.0
+			end
+		elseif assignmentNumber == 2 then
+			if setSpellID and AddOn.db.global.tutorial.secondSpell > 0 then
+				assignment.spellID = AddOn.db.global.tutorial.secondSpell
+			end
+			if setTime then
+				assignment.time = 20.0
+			end
+		elseif assignmentNumber == 3 then
+			if setSpellID and AddOn.db.global.tutorial.secondSpell > 0 then
+				assignment.spellID = AddOn.db.global.tutorial.secondSpell
+			end
+			if setTime then
+				assignment.time = 120.0
+			end
+		end
+		utilities.AddAssignmentToPlan(plan, assignment)
+		return assignment
 	end
-	assignment.assignee = k.PlayerName
-	if assignmentNumber == 1 then
-		if AddOn.db.global.tutorial.firstSpell > 0 then
-			assignment.spellID = AddOn.db.global.tutorial.firstSpell
-		end
-		if setTime then
-			assignment.time = 15.0
-		end
-	elseif assignmentNumber == 2 then
-		if setSpellID and AddOn.db.global.tutorial.secondSpell > 0 then
-			assignment.spellID = AddOn.db.global.tutorial.secondSpell
-		end
-		if setTime then
-			assignment.time = 20.0
-		end
-	elseif assignmentNumber == 3 then
-		if setSpellID and AddOn.db.global.tutorial.secondSpell > 0 then
-			assignment.spellID = AddOn.db.global.tutorial.secondSpell
-		end
-		if setTime then
-			assignment.time = 120.0
-		end
-	end
-	tinsert(GetCurrentAssignments(), assignment)
-	return assignment
 end
 
 ---@return boolean
@@ -602,7 +598,7 @@ local function FindOrCreateIntermissionAssignment(
 			assignment.time = time
 		end
 	end
-	tinsert(GetCurrentAssignments(), assignment)
+	utilities.AddAssignmentToPlan(plan, assignment)
 	return assignment
 end
 
@@ -689,19 +685,21 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 		local assignment = FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setTime, allowUnknown)
 		interfaceUpdater.UpdateFromAssignment(
 			GetCurrentBossDungeonEncounterID(),
+			GetCurrentDifficulty(),
 			assignment,
 			true,
 			true,
 			true,
-			GetCurrentDifficulty()
+			true
 		)
 		if not openAssignmentEditor then
 			self.mainFrame.timeline.ClearSelectedBossAbilities()
 			self.mainFrame.timeline.ClearSelectedAssignments()
 		end
-		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignment.uniqueID)
-		if timelineAssignment then
-			return timelineAssignment.order - 1
+		local assignmentRowIndex =
+			self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.uniqueID)
+		if assignmentRowIndex then
+			return assignmentRowIndex - 1
 		end
 		return 1
 	end
@@ -762,19 +760,21 @@ local function IntermissionOkay(
 		)
 		interfaceUpdater.UpdateFromAssignment(
 			GetCurrentBossDungeonEncounterID(),
+			GetCurrentDifficulty(),
 			assignment,
 			true,
 			true,
 			true,
-			GetCurrentDifficulty()
+			true
 		)
 		if not openAssignmentEditor then
 			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
 		end
-		local timelineAssignment, _ = self.mainFrame.timeline.FindTimelineAssignment(assignment.uniqueID)
-		if timelineAssignment then
-			return timelineAssignment.order - 1
+		local assignmentRowIndex =
+			self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.uniqueID)
+		if assignmentRowIndex then
+			return assignmentRowIndex - 1
 		end
 		return 1
 	end

@@ -14,6 +14,7 @@ local s = Private.timeline.state
 local ConvertTimeToTimelineOffset = Private.timeline.utilities.ConvertTimeToTimelineOffset
 local CreateBossPhaseIndicators = Private.timeline.bossAbility.CreateBossPhaseIndicators
 local FindAssignmentFrame = Private.timeline.utilities.FindAssignmentFrame
+local FindAssigneeAndSpellFromDistanceFromTop = Private.timeline.utilities.FindAssigneeAndSpellFromDistanceFromTop
 local IsValidKeyCombination = Private.timeline.utilities.IsValidKeyCombination
 local StopMovingAssignment = Private.timeline.assignment.StopMovingAssignment
 local UpdateAssignmentFrames = Private.timeline.assignment.UpdateAssignmentFrames
@@ -67,19 +68,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 			return
 		end
 
-		local relativeDistanceFromTop = abs(s.AssignmentTimeline.timelineFrame:GetTop() - currentY)
-		local totalAssignmentHeight = 0
-		local assignee, spellID = nil, nil
-		for _, assigneeAndSpell in ipairs(self.assigneesAndSpells) do
-			if assigneeAndSpell.spellID == nil or not s.Collapsed[assigneeAndSpell.assignee] then
-				totalAssignmentHeight = totalAssignmentHeight
-					+ (s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
-				if totalAssignmentHeight >= relativeDistanceFromTop then
-					assignee, spellID = assigneeAndSpell.assignee, assigneeAndSpell.spellID
-					break
-				end
-			end
-		end
+		local assignee, spellID = FindAssigneeAndSpellFromDistanceFromTop(s.AssigneesAndSpells, currentY)
 
 		if assignee then
 			self:Fire("CreateNewAssignment", assignee, spellID, time)
@@ -421,14 +410,17 @@ end
 local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentHeight = 0
 	local totalAssignmentRows = 0
-	local rowHeight = s.Preferences.timelineRows.assignmentHeight
-	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not s.Collapsed[as.assignee] then
-			totalAssignmentHeight = totalAssignmentHeight + (rowHeight + k.PaddingBetweenAssignments)
-			totalAssignmentRows = totalAssignmentRows + 1
+	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
+	for _, assigneeSpellSet in ipairs(s.AssigneesAndSpells) do
+		totalAssignmentHeight = totalAssignmentHeight + assignmentHeight
+		totalAssignmentRows = totalAssignmentRows + 1
+		if not s.Collapsed[assigneeSpellSet.assignee] then
+			local spellCount = #assigneeSpellSet.spells
+			totalAssignmentHeight = totalAssignmentHeight + (spellCount * assignmentHeight)
+			totalAssignmentRows = totalAssignmentRows + spellCount
 		end
 	end
-	if totalAssignmentHeight >= (rowHeight + k.PaddingBetweenAssignments) then
+	if totalAssignmentHeight >= assignmentHeight then
 		totalAssignmentHeight = totalAssignmentHeight - k.PaddingBetweenAssignments
 	end
 	return totalAssignmentHeight
@@ -505,17 +497,28 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	local usableHeight = availableHeight - bossTimelineHeight - 2
 	local maximumNumberOfAssignmentRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
 
-	for _, as in ipairs(self.assigneesAndSpells) do
-		if as.spellID == nil or not s.Collapsed[as.assignee] then
-			if totalAssignmentRows <= maximumNumberOfAssignmentRows then
-				maxH = maxH + stepH
+	for _, assigneeSpellSet in ipairs(s.AssigneesAndSpells) do
+		if totalAssignmentRows <= maximumNumberOfAssignmentRows then
+			maxH = maxH + stepH
+		end
+		if totalAssignmentRows <= k.MinimumNumberOfAssignmentRows then
+			minH = maxH
+		end
+		totalAssignmentRows = totalAssignmentRows + 1
+
+		if not s.Collapsed[assigneeSpellSet.assignee] then
+			for _ = 1, #assigneeSpellSet.spells do
+				if totalAssignmentRows <= maximumNumberOfAssignmentRows then
+					maxH = maxH + stepH
+				end
+				if totalAssignmentRows <= k.MinimumNumberOfAssignmentRows then
+					minH = maxH
+				end
+				totalAssignmentRows = totalAssignmentRows + 1
 			end
-			if totalAssignmentRows <= k.MinimumNumberOfAssignmentRows then
-				minH = maxH
-			end
-			totalAssignmentRows = totalAssignmentRows + 1
 		end
 	end
+
 	if minH >= stepH then
 		minH = minH - k.PaddingBetweenAssignments
 	end
@@ -536,7 +539,7 @@ local function OnAcquire(self)
 	self.bossAbilityOrder = {}
 	self.bossPhaseOrder = {}
 	self.bossPhases = {}
-	self.assigneesAndSpells = {}
+	s.AssigneesAndSpells = {}
 	self.bossAbilityVisibility = {}
 	self.allowHeightResizing = false
 	self.bossAbilityDimensions = { min = 0, max = 0, step = 0 }
@@ -709,7 +712,6 @@ local function OnRelease(self)
 	self.bossAbilityOrder = nil
 	self.bossPhaseOrder = nil
 	self.bossPhases = nil
-	self.assigneesAndSpells = nil
 	self.bossAbilityVisibility = nil
 	self.allowHeightResizing = nil
 	self.bossAbilityDimensions = nil
@@ -754,11 +756,11 @@ end
 
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
----@param assigneesAndSpells table<integer, AssignmentTimelineRow>
+---@param assigneesAndSpells table<integer, AssigneeSpellSet>
 ---@param collapsed table<string, boolean>
 local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
 	s:SetAssignments(assignments, collapsed)
-	self.assigneesAndSpells = assigneesAndSpells
+	s.AssigneesAndSpells = assigneesAndSpells
 	self:UpdateHeightFromAssignments()
 	self:SetAssignmentTimelineVerticalScroll()
 end
@@ -768,12 +770,6 @@ end
 local function UpdateAssignmentsAndTickMarks(self)
 	UpdateAssignmentFrames()
 	UpdateTickMarks()
-end
-
----@param self EPTimeline
----@return table<integer, TimelineAssignment>
-local function GetAssignments(self)
-	return s.TimelineAssignments
 end
 
 ---@param self EPTimeline
@@ -1286,7 +1282,6 @@ local function Constructor()
 	---@field assignmentTimeline EPTimelineSection
 	---@field bossAbilityTimeline EPTimelineSection
 	---@field addAssigneeDropdown EPDropdown
-	---@field assigneesAndSpells table<integer, AssignmentTimelineRow>
 	---@field bossAbilityInstances table<integer, BossAbilityInstance>
 	---@field bossAbilityVisibility table<integer, boolean>
 	---@field bossAbilityOrder table<integer, integer>
@@ -1301,7 +1296,6 @@ local function Constructor()
 		OnRelease = OnRelease,
 		SetBossAbilities = SetBossAbilities,
 		SetAssignments = SetAssignments,
-		GetAssignments = GetAssignments,
 		GetAssignmentContainer = GetAssignmentContainer,
 		GetBossAbilityContainer = GetBossAbilityContainer,
 		GetAddAssigneeDropdown = GetAddAssigneeDropdown,
@@ -1325,6 +1319,7 @@ local function Constructor()
 		ScrollAssignmentIntoView = ScrollAssignmentIntoView,
 		ConvertTimeToTimelineOffset = ConvertTimeToTimelineOffset,
 		FindTimelineAssignment = Private.timeline.utilities.FindTimelineAssignment,
+		ComputeAssignmentRowIndexFromAssignmentID = Private.timeline.utilities.ComputeAssignmentRowIndexFromAssignmentID,
 		GetOffsetFromTime = GetOffsetFromTime,
 		SetHorizontalScroll = SetHorizontalScroll,
 		SetAssignmentTimelineVerticalScroll = SetAssignmentTimelineVerticalScroll,

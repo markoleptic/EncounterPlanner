@@ -189,7 +189,7 @@ do
 	---@param bossDungeonEncounterID integer
 	---@param updateBossAbilitySelectDropdown boolean Whether to update the boss ability select dropdown
 	function InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, updateBossAbilitySelectDropdown)
-		local plan = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan]
+		local plan = GetCurrentPlan()
 		local difficulty = plan.difficulty
 		if sLastBossDungeonEncounterID ~= 0 then
 			ResetBossPhaseTimings(sLastBossDungeonEncounterID, sLastDifficulty)
@@ -222,7 +222,6 @@ do
 end
 
 do
-	local CreateAssignmentListTable = utilities.CreateAssignmentListTable
 	local CreateReminderText = utilities.CreateReminderText
 	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 	local FindBossAbility = bossUtilities.FindBossAbility
@@ -241,34 +240,41 @@ do
 		if Private.assignmentEditor then
 			Private.assignmentEditor:Release()
 		end
-
 		local key = abilityEntry:GetKey()
-		local removed = 0
 		if key then
 			local plan = GetCurrentPlan()
-			local assignments = plan.assignments
+
+			local removedAssignmentCount, removedTemplateCount = 0, 0
 			if type(key) == "string" then
-				for i = #assignments, 1, -1 do
-					if assignments[i].assignee == key then
-						tremove(assignments, i)
-						removed = removed + 1
-					end
-				end
-				plan.collapsed[key] = nil
+				removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentFromPlan(plan, key)
 			elseif type(key) == "table" then
 				local assignee = key.assignee
 				local spellID = key.spellID
-				for i = #assignments, 1, -1 do
-					if assignments[i].assignee == assignee and assignments[i].spellID == spellID then
-						tremove(assignments, i)
-						removed = removed + 1
-					end
-				end
-				plan.collapsed[assignee] = nil
+				removedAssignmentCount, removedTemplateCount =
+					utilities.RemoveAssignmentFromPlan(plan, assignee, spellID)
 			end
+			local lowerAssignment, lowerTemplate
+			if removedAssignmentCount == 1 then
+				lowerAssignment = L["Assignment"]:lower()
+			else
+				lowerAssignment = L["assignments"]
+			end
+			if removedTemplateCount == 1 then
+				lowerTemplate = L["Template"]:lower()
+			else
+				lowerTemplate = L["Templates"]:lower()
+			end
+			InterfaceUpdater.LogMessage(
+				format(
+					"%s %d %s, %d %s.",
+					L["Removed"],
+					removedAssignmentCount,
+					lowerAssignment,
+					removedTemplateCount,
+					lowerTemplate
+				)
+			)
 			InterfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
-			local assignmentString = removed == 1 and L["Assignment"]:lower() or L["assignments"]
-			InterfaceUpdater.LogMessage(format("%s %d %s.", L["Removed"], removed, assignmentString))
 			if Private.activeTutorialCallbackName then
 				Private.callbacks:Fire(Private.activeTutorialCallbackName, "deleteAssigneeRowClicked")
 			end
@@ -276,9 +282,10 @@ do
 	end
 
 	---@param abilityEntry EPAbilityEntry
-	---@param collapsed boolean
-	local function HandleCollapseButtonClicked(abilityEntry, _, collapsed)
-		AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed[abilityEntry:GetKey()] = collapsed
+	---@param shouldCollapse boolean
+	local function HandleCollapseButtonClicked(abilityEntry, _, shouldCollapse)
+		local collapsed = GetCurrentPlan().collapsed
+		collapsed[abilityEntry:GetKey()] = shouldCollapse
 		local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
@@ -288,7 +295,7 @@ do
 				Private.activeTutorialCallbackName,
 				"assigneeCollapsed",
 				abilityEntry:GetKey(),
-				collapsed
+				shouldCollapse
 			)
 		end
 	end
@@ -371,9 +378,8 @@ do
 			isCommunication = false,
 			title = L["Delete Assignments Confirmation"],
 			message = format(
-				"%s %s %s?",
-				L["Are you sure you want to delete all"],
-				L["assignments for"],
+				"%s %s?",
+				format(L["Are you sure you want to delete all %s assignments and templates for"], ""):gsub("  ", " "),
 				widget:GetText()
 			),
 			acceptButtonText = L["Okay"],
@@ -409,10 +415,8 @@ do
 			isCommunication = false,
 			title = L["Delete Assignments Confirmation"],
 			message = format(
-				"%s %s %s %s?",
-				L["Are you sure you want to delete all"],
-				spellName,
-				L["assignments for"],
+				"%s %s?",
+				format(L["Are you sure you want to delete all %s assignments and templates for"], spellName),
 				spellEntryKey.coloredAssignee or spellEntryKey.assignee
 			),
 			acceptButtonText = L["Okay"],
@@ -429,22 +433,22 @@ do
 	end
 
 	-- Clears and repopulates the list of assignments and spells.
-	---@param timelineAssignmentRows table<integer, AssignmentTimelineRow>
+	---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 	---@param firstUpdate boolean|nil
-	local function UpdateAssignmentList(timelineAssignmentRows, firstUpdate)
+	local function UpdateAssignmentList(assigneeSpellSets, firstUpdate)
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			local assignmentContainer = timeline:GetAssignmentContainer()
 			if assignmentContainer then
 				assignmentContainer:ReleaseChildren()
 				local children = {}
-				local roster = GetCurrentRoster()
-				local map = CreateAssignmentListTable(timelineAssignmentRows, roster)
-				local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
+				local plan = GetCurrentPlan()
+				local roster = plan.roster
+				local collapsed = plan.collapsed
 				local assignmentHeight = AddOn.db.profile.preferences.timelineRows.assignmentHeight
-				for _, textTable in ipairs(map) do
-					local assignee = textTable.assignee
-					local coloredAssignee = textTable.text
+				for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
+					local assignee = assigneeSpellSet.assignee
+					local entryText = utilities.ConvertAssigneeToLegibleString(assignee, roster)
 					local assigneeCollapsed = collapsed[assignee]
 
 					local specIconID = nil
@@ -454,12 +458,12 @@ do
 						if specIDMatch then
 							local _, _, _, icon, _ = GetSpecializationInfoByID(specIDMatch)
 							specIconID = icon
-							coloredAssignee = coloredAssignee:gsub("|T[^|]+|t%s*", "")
+							entryText = entryText:gsub("|T[^|]+|t%s*", "")
 						end
 					end
 
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
-					assigneeEntry:SetText(coloredAssignee, assignee, 2)
+					assigneeEntry:SetText(entryText, assignee, 2)
 					assigneeEntry:SetFullWidth(true)
 					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
 					assigneeEntry:SetRoleOrSpec(roster[assignee] and roster[assignee].role or specIconID or nil)
@@ -474,9 +478,9 @@ do
 					tinsert(children, assigneeEntry)
 
 					if not assigneeCollapsed then
-						for _, spellID in ipairs(textTable.spells) do
+						for _, spellID in ipairs(assigneeSpellSet.spells) do
 							local spellEntry = AceGUI:Create("EPAbilityEntry")
-							local key = { assignee = assignee, spellID = spellID, coloredAssignee = coloredAssignee }
+							local key = { assignee = assignee, spellID = spellID, coloredAssignee = entryText }
 							if spellID == kInvalidAssignmentSpellID then
 								spellEntry:SetNullAbility(key)
 							elseif spellID == kTextAssignmentSpellID then
@@ -568,9 +572,9 @@ do
 	-- Also returns a table where timeline assignments are grouped by assignee.
 	---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
 	---@param collapsed table<string, boolean> Table indicating if assignees are to appear collapsed on the timeline
-	---@return table<integer, AssignmentTimelineRow> -- Sorted assignees and spells
-	---@return table<string, table<integer, TimelineAssignment>> -- Timeline assignments grouped by assignee
-	local function SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
+	---@return table<integer, AssigneeSpellSet> orderedAssigneeSpellSets
+	---@return table<string, table<integer, TimelineAssignment>> groupedByAssignee
+	function InterfaceUpdater.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
 		local assigneeIndices = {} ---@type table<integer, string>
 		local groupedByAssignee = {} ---@type table<string, table<integer, TimelineAssignment>>
 
@@ -583,36 +587,25 @@ do
 			tinsert(groupedByAssignee[assignee], timelineAssignment)
 		end
 
-		local order = 0
-		local assigneeMap = {} ---@type table<string, {order: integer, spellIDs: table<integer, integer>}>
-		local assigneeOrder = {} ---@type table<integer, AssignmentTimelineRow>
-
+		local assigneeOrder = {} ---@type table<integer, AssigneeSpellSet>
 		for _, assignee in ipairs(assigneeIndices) do
+			tinsert(assigneeOrder, { assignee = assignee, spells = {} })
+			local visited = {} ---@type table<integer, boolean>
 			for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
 				local spellID = timelineAssignment.assignment.spellID
-				if not assigneeMap[assignee] then
-					assigneeMap[assignee] = {
-						order = order,
-						spellIDs = {},
-					}
-					tinsert(assigneeOrder, { assignee = assignee, spellID = nil })
-					order = order + 1 -- Increase order each time a new assignee is added
+				if not visited[spellID] then
+					visited[spellID] = true
+					tinsert(assigneeOrder[#assigneeOrder].spells, spellID)
 				end
-
-				if not assigneeMap[assignee].spellIDs[spellID] then
-					if not collapsed[assignee] then
-						order = order + 1 -- Increase order each time a new spell is added
-					end
-					assigneeMap[assignee].spellIDs[spellID] = order
-					tinsert(assigneeOrder, { assignee = assignee, spellID = spellID })
-				end
-
-				timelineAssignment.order = assigneeMap[assignee].spellIDs[spellID]
 			end
 		end
 
 		return assigneeOrder, groupedByAssignee
 	end
+
+	local SortAssigneesWithSpellID = InterfaceUpdater.SortAssigneesWithSpellID
+	local ComputeChargeStates = InterfaceUpdater.ComputeChargeStates
+	local MergeTemplatesSorted = utilities.MergeTemplatesSorted
 
 	-- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 	-- dropdown.
@@ -630,17 +623,19 @@ do
 		local sortType = AddOn.db.profile.preferences.assignmentSortType
 		local sortedTimelineAssignments =
 			SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve, currentPlan.difficulty)
-		local sortedWithSpellID, groupedByAssignee =
+		local orderedAssigneeSpellSets, groupedByAssignee =
 			SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
 		for _, timelineAssignments in pairs(groupedByAssignee) do
-			InterfaceUpdater.ComputeChargeStates(timelineAssignments)
+			ComputeChargeStates(timelineAssignments)
 		end
-		UpdateAssignmentList(sortedWithSpellID, firstUpdate)
+		orderedAssigneeSpellSets =
+			MergeTemplatesSorted(orderedAssigneeSpellSets, currentPlan.assigneesAndSpells, currentPlan.roster, sortType)
+
+		UpdateAssignmentList(orderedAssigneeSpellSets, firstUpdate)
 
 		local timeline = Private.mainFrame.timeline
 		if timeline then
-			local collapsed = AddOn.db.profile.plans[AddOn.db.profile.lastOpenPlan].collapsed
-			timeline:SetAssignments(sortedTimelineAssignments, sortedWithSpellID, collapsed)
+			timeline:SetAssignments(sortedTimelineAssignments, orderedAssigneeSpellSets, currentPlan.collapsed)
 			if not firstUpdate then
 				timeline:UpdateTimeline()
 				Private.mainFrame:DoLayout()
@@ -1044,20 +1039,23 @@ do
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
 		TimedAssignment = Private.classes.TimedAssignment,
 	}
+
 	-- Syncs the Assignment Editor and optionally the timeline with data from the assignment.
-	---@param dungeonEncounterID any
-	---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
+	---@param dungeonEncounterID integer Boss dungeon encounter ID.
+	---@param difficulty DifficultyType
+	---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment Assignment to update from.
 	---@param updateFields boolean If true, updates all fields in the Assignment Editor from the assignment.
 	---@param updateTimeline boolean If true, the timeline assignment start time is updated, UpdateTimeline is called, and selected boss abilities are updated.
-	---@param updateAssignments boolean If true, UpdateAllAssignments is called, and assignment is scrolled into view.
-	---@param difficulty DifficultyType
+	---@param updateAssignments boolean If true, UpdateAllAssignments is called
+	---@param scrollAssignmentIntoView boolean If true, assignment is scrolled into view.
 	function InterfaceUpdater.UpdateFromAssignment(
 		dungeonEncounterID,
+		difficulty,
 		assignment,
 		updateFields,
 		updateTimeline,
 		updateAssignments,
-		difficulty
+		scrollAssignmentIntoView
 	)
 		if updateFields and Private.assignmentEditor then
 			local roster = GetCurrentRoster()
@@ -1090,15 +1088,9 @@ do
 			end
 			if updateTimeline then
 				if not updateAssignments then
-					for _, timelineAssignment in pairs(timeline:GetAssignments()) do
-						if timelineAssignment.assignment.uniqueID == assignment.uniqueID then
-							utilities.UpdateTimelineAssignmentStartTime(
-								timelineAssignment,
-								dungeonEncounterID,
-								difficulty
-							)
-							break
-						end
+					local timelineAssignment = timeline.FindTimelineAssignment(assignment.uniqueID)
+					if timelineAssignment then
+						utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID, difficulty)
 					end
 					timeline:UpdateTimeline()
 				end
@@ -1113,7 +1105,7 @@ do
 					)
 				end
 			end
-			if updateAssignments then
+			if scrollAssignmentIntoView then
 				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
 			end
 		end

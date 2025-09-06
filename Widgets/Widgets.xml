@@ -25,6 +25,7 @@
     <Script file="EPCheckBox.lua" />
     <Script file="EPStatusBar.lua" />
     <Script file="EPNewPlanDialog.lua" />
+    <Script file="EPNewTemplateDialog.lua" />
     <Script file="EPTutorial.lua" />
     <Script file="EPPhaseLengthEditor.lua" />
     <Script file="EPAssignmentEditor.lua" />

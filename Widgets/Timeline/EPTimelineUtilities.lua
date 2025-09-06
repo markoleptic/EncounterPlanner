@@ -13,6 +13,7 @@ local EPTimelineUtilities = Private.timeline.utilities
 local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 
+local abs = math.abs
 local Clamp = Clamp
 local floor = math.floor
 local format = string.format
@@ -469,5 +470,81 @@ function EPTimelineUtilities.UpdateTickMarks()
 		label:SetPoint("CENTER", s.MainTimelineSplitterFrame, "LEFT", tickPosition, 0)
 		label:Show()
 		label.wantsToShow = true
+	end
+end
+
+---@param assigneesAndSpells table<integer, AssigneeSpellSet>
+---@param currentY number
+---@return string? assignee
+---@return integer? spellID
+function EPTimelineUtilities.FindAssigneeAndSpellFromDistanceFromTop(assigneesAndSpells, currentY)
+	local relativeDistanceFromTop = abs(s.AssignmentTimeline.timelineFrame:GetTop() - currentY)
+	local totalAssignmentHeight = 0
+	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
+	for _, assigneeAndSpell in ipairs(assigneesAndSpells) do
+		totalAssignmentHeight = totalAssignmentHeight + assignmentHeight -- Row for assignee
+		if totalAssignmentHeight >= relativeDistanceFromTop then
+			return assigneeAndSpell.assignee, nil
+		end
+		if not s.Collapsed[assigneeAndSpell.assignee] then
+			for _, currentSpellID in ipairs(assigneeAndSpell.spells) do
+				totalAssignmentHeight = totalAssignmentHeight + assignmentHeight -- Row for spell
+				if totalAssignmentHeight >= relativeDistanceFromTop then
+					return assigneeAndSpell.assignee, currentSpellID
+				end
+			end
+		end
+	end
+end
+
+---@param assignee string
+---@param spellID integer
+---@return integer
+function EPTimelineUtilities.ComputeAssignmentRowIndex(assignee, spellID)
+	local rowIndex = 0
+	for _, assigneesAndSpell in ipairs(s.AssigneesAndSpells) do
+		local assigneeEqual = assigneesAndSpell.assignee == assignee
+		if not s.Collapsed[assigneesAndSpell.assignee] then
+			for _, currentSpellID in ipairs(assigneesAndSpell.spells) do
+				rowIndex = rowIndex + 1
+				if assigneeEqual == true and spellID == currentSpellID then
+					break
+				end
+			end
+		end
+
+		rowIndex = rowIndex + 1
+		if assigneeEqual == true then
+			break
+		end
+	end
+	return rowIndex
+end
+
+---@param uniqueID integer
+---@return integer|nil
+function EPTimelineUtilities.ComputeAssignmentRowIndexFromAssignmentID(uniqueID)
+	local timelineAssignment = EPTimelineUtilities.FindTimelineAssignment(uniqueID)
+	if timelineAssignment then
+		local rowIndex = 0
+		local assignee = timelineAssignment.assignment.assignee
+		local spellID = timelineAssignment.assignment.spellID
+		for _, assigneesAndSpell in ipairs(s.AssigneesAndSpells) do
+			local assigneeEqual = assigneesAndSpell.assignee == assignee
+			if not s.Collapsed[assigneesAndSpell.assignee] then
+				for _, currentSpellID in ipairs(assigneesAndSpell.spells) do
+					rowIndex = rowIndex + 1
+					if assigneeEqual == true and spellID == currentSpellID then
+						break
+					end
+				end
+			end
+
+			rowIndex = rowIndex + 1
+			if assigneeEqual == true then
+				break
+			end
+		end
+		return rowIndex
 	end
 end

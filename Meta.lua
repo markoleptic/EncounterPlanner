@@ -30,7 +30,6 @@
 ---@class TimelineAssignment
 ---@field assignment Assignment The assignment.
 ---@field startTime number Time used to place the assignment on the timeline.
----@field order number The row of the assignment in the timeline.
 ---@field cooldownDuration number The cooldown duration of the spell assignment, or 0 if no spell.
 -- The maximum number of charges the spell assignment, or 1 if no spell or the spell does not have charges.
 ---@field maxCharges integer
@@ -193,6 +192,7 @@
 ---@field content table<integer, string> Miscellaneous text that other addons or WeakAuras can use for the encounter.
 ---@field assignments table<integer, Assignment> Assignments for the plan.
 ---@field roster table<string, RosterEntry> Roster for the plan.
+---@field assigneesAndSpells table<integer, AssigneeSpellSet> Assignees and spells
 ---@field collapsed table<string, boolean> Which assignees are collapsed in the assignment timeline.
 ---@field customPhaseDurations table<integer, number> Overridden boss phase durations.
 ---@field customPhaseCounts table<integer, number> Overridden boss phase counts.
@@ -352,6 +352,7 @@
 ---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
 ---@field activeBossAbilitiesHeroic table<integer, table<integer, boolean>> Heroic abilities to show on the timeline.
 ---@field plans table<string, Plan> All plans.
+---@field templates table<integer, PlanTemplate> Plan templates.
 ---@field sharedRoster table<string, RosterEntry> A roster that is persistent across plans.
 ---@field lastOpenPlan string The last open plan.
 ---@field recentSpellAssignments table<integer, DropdownItemData> Recently assigned spells (up to 10).
@@ -419,13 +420,13 @@
 ---@field assignment CombatLogEventAssignment
 ---@field roster table<string, RosterEntry>
 
+---@class AssigneeSpellSet
+---@field assignee string
+---@field spells table<integer, integer> Table of spellIDs to for this assignee.
+
 ---@class PlanTemplate
 ---@field name string Name of the template
----@field assigneesAndSpells table<string, table<integer, integer>> Spells for assignees.
-
----@class AssignmentTimelineRow
----@field assignee string The row the assignment belongs to
----@field spellID integer|nil If specified, the spell ID for the row. Otherwise, the row is only the assignee.
+---@field assigneesAndSpells table<integer, AssigneeSpellSet> Sorted entries.
 
 ---@class CustomDungeonInstanceGroup
 ---@field instanceName string Custom text to use as the group name in a dropdown.

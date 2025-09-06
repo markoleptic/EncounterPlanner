@@ -50,6 +50,7 @@ local GetSpellTexture = C_Spell.GetSpellTexture
 local ipairs = ipairs
 local IsInRaid = IsInRaid
 local max, min = math.max, math.min
+local next = next
 local pairs = pairs
 local select = select
 local sort = table.sort
@@ -438,6 +439,41 @@ end
 ---@return number
 function Utilities.Clamp(value, minValue, maxValue)
 	return min(maxValue, max(minValue, value))
+end
+
+---@param templates table<integer, PlanTemplate>
+---@param newTemplateName string
+---@return string
+function Utilities.CreateUniqueTemplateName(templates, newTemplateName)
+	local templateName = newTemplateName
+
+	local function ContainsTemplateName(name)
+		for _, template in ipairs(templates) do
+			if template.name == name then
+				return true
+			end
+		end
+		return false
+	end
+
+	if templates then
+		local baseName, suffix = templateName:match("^(.-)%s*(%d*)$")
+		baseName = baseName or ""
+		local num = tonumber(suffix) or 1
+
+		if ContainsTemplateName(templateName) then
+			num = suffix ~= "" and (num + 1) or 2
+		end
+
+		while ContainsTemplateName(templateName) do
+			local suffixStr = " " .. num
+			local maxBaseLength = 36 - #suffixStr
+			local truncatedBase = #baseName > 0 and baseName:sub(1, maxBaseLength) or tostring(num)
+			templateName = truncatedBase .. suffixStr
+			num = num + 1
+		end
+	end
+	return templateName
 end
 
 ---@param plans table<string, Plan>
@@ -1213,7 +1249,6 @@ do
 
 	local AddOn = Private.addOn
 	local concat = table.concat
-	local next = next
 
 	local GetTotalDurations = bossUtilities.GetTotalDurations
 	local GetMaxAbsoluteSpellCastTimeTable = bossUtilities.GetMaxAbsoluteSpellCastTimeTable
@@ -1726,15 +1761,21 @@ do
 end
 
 do
-	local function RolePriority(role)
-		if role == "role:healer" then
-			return 1
-		elseif role == "role:tank" then
-			return 2
-		elseif role == "role:damager" then
-			return 3
-		elseif role == nil or role == "" then
-			return 4
+	local kRolePriority = {
+		["role:healer"] = 1,
+		["role:tank"] = 2,
+		["role:damager"] = 3,
+		[""] = 4,
+	}
+
+	---@param a integer
+	---@param b integer
+	---@return boolean
+	local function SpellPriority(a, b)
+		if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
+			return a < b
+		else
+			return GetSpellName(a) < GetSpellName(b)
 		end
 	end
 
@@ -1748,46 +1789,57 @@ do
 		return function(a, b)
 			local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
 			local spellIDA, spellIDB = a.assignment.spellID, b.assignment.spellID
-			if assignmentSortType == "Alphabetical" then
+			if assignmentSortType == "Alphabetical" then -- Assignee > Spell Name > Start Time
 				if assigneeA == assigneeB then
 					if spellIDA == spellIDB then
 						return a.startTime < b.startTime
+					else
+						return SpellPriority(spellIDA, spellIDB)
 					end
-					return spellIDA < spellIDB
-				end
-				return assigneeA < assigneeB
-			elseif assignmentSortType == "First Appearance" then
-				if a.startTime == b.startTime then
-					if assigneeA == assigneeB then
-						return spellIDA < spellIDB
-					end
+				else
 					return assigneeA < assigneeB
 				end
-				return a.startTime < b.startTime
+			elseif assignmentSortType == "First Appearance" then -- Start Time > Assignee > Spell Name
+				if a.startTime == b.startTime then
+					if assigneeA == assigneeB then
+						return SpellPriority(spellIDA, spellIDB)
+					else
+						return assigneeA < assigneeB
+					end
+				else
+					return a.startTime < b.startTime
+				end
 			elseif assignmentSortType:match("^Role") then
-				local roleA, roleB = roster[assigneeA], roster[assigneeB]
-				local rolePriorityA, rolePriorityB =
-					RolePriority(roleA and roleA.role), RolePriority(roleB and roleB.role)
+				local rolePriorityA, rolePriorityB = kRolePriority[""], kRolePriority[""]
+				if roster[assigneeA] and roster[assigneeB] then
+					rolePriorityA, rolePriorityB =
+						kRolePriority[roster[assigneeA].role], kRolePriority[roster[assigneeB].role]
+				end
 				if rolePriorityA == rolePriorityB then
-					if assignmentSortType == "Role > Alphabetical" then
+					if assignmentSortType == "Role > Alphabetical" then -- Role > Assignee > Spell Name > Start Time
 						if assigneeA == assigneeB then
 							if spellIDA == spellIDB then
 								return a.startTime < b.startTime
+							else
+								return SpellPriority(spellIDA, spellIDB)
 							end
-							return spellIDA < spellIDB
-						end
-						return assigneeA < assigneeB
-					elseif assignmentSortType == "Role > First Appearance" then
-						if a.startTime == b.startTime then
-							if assigneeA == assigneeB then
-								return spellIDA < spellIDB
-							end
+						else
 							return assigneeA < assigneeB
 						end
-						return a.startTime < b.startTime
+					else -- Role > Start Time > Assignee > Spell Name
+						if a.startTime == b.startTime then
+							if assigneeA == assigneeB then
+								return SpellPriority(spellIDA, spellIDB)
+							else
+								return assigneeA < assigneeB
+							end
+						else
+							return a.startTime < b.startTime
+						end
 					end
+				else
+					return rolePriorityA < rolePriorityB
 				end
-				return rolePriorityA < rolePriorityB
 			else
 				return false
 			end
@@ -1807,6 +1859,116 @@ do
 			Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog, difficulty)
 		sort(timelineAssignments, CompareAssignments(plan.roster, assignmentSortType))
 		return timelineAssignments
+	end
+
+	-- Creates a AssigneeSpellSet comparator function.
+	---@param roster table<string, RosterEntry> Roster associated with the current plan.
+	---@param assignmentSortType AssignmentSortType Sort method.
+	---@return fun(a:AssigneeSpellSet, b:AssigneeSpellSet):boolean
+	local function ComparePlanTemplateEntries(roster, assignmentSortType)
+		---@param a AssigneeSpellSet
+		---@param b AssigneeSpellSet
+		return function(a, b)
+			local assigneeA, assigneeB = a.assignee, b.assignee
+			if assignmentSortType:match("^Role") then -- Role > Assignee > Spell Name
+				local rolePriorityA, rolePriorityB = kRolePriority[""], kRolePriority[""]
+				if roster[assigneeA] and roster[assigneeB] then
+					rolePriorityA, rolePriorityB =
+						kRolePriority[roster[assigneeA].role], kRolePriority[roster[assigneeB].role]
+				end
+				if rolePriorityA == rolePriorityB then
+					if assignmentSortType == "Role > Alphabetical" then
+						return assigneeA < assigneeB
+					end
+				end
+				return rolePriorityA < rolePriorityB
+			else -- Assignee > Spell Name
+				return assigneeA < assigneeB
+			end
+		end
+	end
+
+	-- Sorts templates based on the assignmentSortType.
+	---@param assigneeSpellSets table<integer, AssigneeSpellSet>
+	---@param assignmentSortType AssignmentSortType Sort method.
+	---@param roster table<string, RosterEntry> Roster associated with the current plan.
+	function Utilities.SortTemplates(assigneeSpellSets, roster, assignmentSortType)
+		sort(assigneeSpellSets, ComparePlanTemplateEntries(roster, assignmentSortType))
+	end
+
+	---@param assigneeSpellSetsFromAssignments table<integer, AssigneeSpellSet>
+	---@param assigneeSpellSetsFromTemplate table<integer, AssigneeSpellSet>
+	---@param roster table<string, RosterEntry> Roster associated with the current plan.
+	---@param assignmentSortType AssignmentSortType Sort method.
+	---@return table<integer, AssigneeSpellSet>
+	function Utilities.MergeTemplatesSorted(
+		assigneeSpellSetsFromAssignments,
+		assigneeSpellSetsFromTemplate,
+		roster,
+		assignmentSortType
+	)
+		local assigneeOrderIndex = {} ---@type table<string, integer>
+		for index, assigneeSpellSet in ipairs(assigneeSpellSetsFromAssignments) do
+			assigneeOrderIndex[assigneeSpellSet.assignee] = index
+		end
+
+		local newEntries = {}
+
+		for _, templateSpellSets in ipairs(assigneeSpellSetsFromTemplate) do
+			local assigneeIndex = assigneeOrderIndex[templateSpellSets.assignee]
+			if assigneeIndex then
+				local assignmentSpellSets = assigneeSpellSetsFromAssignments[assigneeIndex]
+
+				local existing = {}
+				for _, spellID in ipairs(assignmentSpellSets.spells) do
+					existing[spellID] = true
+				end
+
+				local missingSpellIDs = {}
+				for _, spellID in ipairs(templateSpellSets.spells) do
+					if not existing[spellID] then
+						tinsert(missingSpellIDs, spellID)
+						existing[spellID] = true
+					end
+				end
+
+				sort(missingSpellIDs, function(a, b)
+					if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
+						return a < b
+					end
+					return GetSpellName(a) < GetSpellName(b)
+				end)
+				for i = #missingSpellIDs, 1, -1 do
+					tinsert(assignmentSpellSets.spells, 1, missingSpellIDs[i])
+				end
+			else
+				tinsert(newEntries, Private.DeepCopy(templateSpellSets))
+			end
+		end
+
+		if assignmentSortType == "Alphabetical" then -- Assignee > Spell Name > Start Time
+			for _, newEntry in pairs(newEntries) do
+				tinsert(assigneeSpellSetsFromAssignments, newEntry)
+			end
+			sort(assigneeSpellSetsFromAssignments, ComparePlanTemplateEntries(roster, assignmentSortType))
+		elseif assignmentSortType == "First Appearance" then -- Start Time > Assignee > Spell Name
+			sort(newEntries, ComparePlanTemplateEntries(roster, assignmentSortType))
+			for i = #newEntries, 1, -1 do
+				tinsert(assigneeSpellSetsFromAssignments, 1, newEntries[i])
+			end
+		elseif assignmentSortType == "Role > Alphabetical" then -- Role > Assignee > Spell Name > Start Time
+			for _, newEntry in pairs(newEntries) do
+				tinsert(assigneeSpellSetsFromAssignments, newEntry)
+			end
+			sort(assigneeSpellSetsFromAssignments, ComparePlanTemplateEntries(roster, assignmentSortType))
+		elseif assignmentSortType == "Role > First Appearance" then -- Role > Start Time > Assignee > Spell Name
+			sort(newEntries, ComparePlanTemplateEntries(roster, assignmentSortType))
+			for i = #newEntries, 1, -1 do
+				tinsert(assigneeSpellSetsFromAssignments, 1, newEntries[i])
+			end
+		end
+
+		return assigneeSpellSetsFromAssignments
 	end
 end
 
@@ -1997,31 +2159,6 @@ do
 			end
 		end
 	end
-end
-
--- Creates a sorted table used to populate the assignment list.
----@param sortedAssigneesAndSpells table<integer, {assignee:string, spellID:number|nil}> Sorted assignment list
----@param roster table<string, RosterEntry> Roster for the assignments
----@return table<integer, {assignee:string, text:string, spells:table<integer, integer>}>
-function Utilities.CreateAssignmentListTable(sortedAssigneesAndSpells, roster)
-	local visited = {}
-	local map = {}
-	for _, nameAndSpell in ipairs(sortedAssigneesAndSpells) do
-		local assignee = nameAndSpell.assignee
-		local abilityEntryText = Utilities.ConvertAssigneeToLegibleString(assignee, roster)
-		if not visited[abilityEntryText] then
-			tinsert(map, {
-				assignee = assignee,
-				text = abilityEntryText,
-				spells = {},
-			})
-			visited[abilityEntryText] = map[#map]
-		end
-		if nameAndSpell.spellID then
-			tinsert(visited[abilityEntryText].spells, nameAndSpell.spellID)
-		end
-	end
-	return map
 end
 
 -- Creates a table of unit types for the current raid or party group.
@@ -2417,6 +2554,77 @@ function Utilities.CreateRosterEntryForSelf()
 		})
 end
 
+---@generic T
+---@param tbl table<integer, T>
+---@param tblValue string
+---@param value any
+---@return boolean contains
+---@return integer? index
+function Utilities.ContainsValue(tbl, tblValue, value)
+	for k, v in ipairs(tbl) do
+		if v[tblValue] == value then
+			return true, k
+		end
+	end
+	return false
+end
+
+---@param templates table<integer, PlanTemplate>
+---@param newTemplateName string
+---@param assigneeSpellSets table<integer, AssigneeSpellSet>
+---@param filteredAssignees table<string, boolean>?
+---@return PlanTemplate
+function Utilities.CreatePlanTemplate(templates, newTemplateName, assigneeSpellSets, filteredAssignees)
+	newTemplateName = Utilities.CreateUniqueTemplateName(templates, newTemplateName)
+	if filteredAssignees then
+		for assignee, filtered in pairs(filteredAssignees) do
+			if filtered then
+				for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
+					if assigneeSpellSet.assignee == assignee then
+						tremove(assigneeSpellSets, index)
+						break
+					end
+				end
+			end
+		end
+	end
+	local template = {
+		name = newTemplateName,
+		assigneesAndSpells = assigneeSpellSets,
+	}
+	tinsert(templates, template)
+	return template
+end
+
+---@param template PlanTemplate
+---@param plan Plan
+function Utilities.ApplyPlanTemplate(template, plan)
+	local assigneeOrderIndex = {} ---@type table<string, integer>
+
+	for index, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
+		assigneeOrderIndex[assigneeSpellSet.assignee] = index
+	end
+
+	for _, assigneeSpellSet in ipairs(template.assigneesAndSpells) do
+		local index = assigneeOrderIndex[assigneeSpellSet.assignee]
+		if index then -- Add missing spells for assignee
+			local existingAssigneeSpellSet = plan.assigneesAndSpells[index]
+			local existing = {}
+			for _, spellID in ipairs(existingAssigneeSpellSet.spells) do
+				existing[spellID] = true
+			end
+			for _, spellID in ipairs(assigneeSpellSet.spells) do
+				if not existing[spellID] then
+					tinsert(existingAssigneeSpellSet.spells, spellID)
+					existing[spellID] = true
+				end
+			end
+		else -- Add assignee and spells
+			tinsert(plan.assigneesAndSpells, Private.DeepCopy(assigneeSpellSet))
+		end
+	end
+end
+
 ---@param plans table<string, Plan>
 ---@param newPlanName string|nil
 ---@param encounterID integer
@@ -2455,6 +2663,137 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 	Utilities.SetAssignmentMetaTables(newPlan.assignments, newPlan.ID)
 	plans[newPlanName] = newPlan
 	return newPlan
+end
+
+---@param plan Plan
+---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
+function Utilities.AddAssignmentToPlan(plan, assignment)
+	tinsert(plan.assignments, assignment)
+	local assignee, spellID = assignment.assignee, assignment.spellID
+	for _, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
+		if assigneeSpellSet.assignee == assignee then
+			for index, currentSpellID in ipairs(assigneeSpellSet.spells) do
+				if spellID == currentSpellID then
+					tremove(assigneeSpellSet.spells, index)
+					break
+				end
+			end
+			break
+		end
+	end
+end
+
+---@param plan Plan Plan to remove assignments and template entries from.
+---@param assigneeOrUniqueID string|integer Either the assignee or the assignment's uniqueID.
+---@param spellID integer? If using an assignee, the spellID to further filter assignments to remove.
+---@return integer removedAssignmentCount
+---@return integer removedTemplateCount
+function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
+	local removedAssignmentCount, removedTemplateCount = 0, 0
+	local assignments = plan.assignments
+	local assigneesAndSpells = plan.assigneesAndSpells
+
+	if type(assigneeOrUniqueID) == "string" then
+		-- Remove assignments
+		local assigneeHasOtherSpellIDs = false
+		if spellID then
+			for i = #assignments, 1, -1 do
+				local currentAssignee, currentSpellID = assignments[i].assignee, assignments[i].spellID
+				if currentAssignee == assigneeOrUniqueID then
+					if currentSpellID == spellID then
+						tremove(assignments, i)
+						removedAssignmentCount = removedAssignmentCount + 1
+					else
+						assigneeHasOtherSpellIDs = true
+					end
+				end
+			end
+		else
+			for i = #assignments, 1, -1 do
+				if assignments[i].assignee == assigneeOrUniqueID then
+					tremove(assignments, i)
+					removedAssignmentCount = removedAssignmentCount + 1
+				end
+			end
+		end
+
+		-- Remove templates
+		for index, assigneeSpellSet in ipairs(assigneesAndSpells) do
+			if assigneeSpellSet.assignee == assigneeOrUniqueID then
+				local spells = assigneeSpellSet.spells
+				if spellID then
+					for spellIDIndex, currentSpellID in ipairs(spells) do
+						if currentSpellID == spellID then
+							tremove(spells, spellIDIndex)
+							removedTemplateCount = removedTemplateCount + 1
+							break
+						end
+					end
+				else
+					removedTemplateCount = removedTemplateCount + #spells
+					wipe(spells)
+				end
+
+				if not next(spells) then
+					tremove(assigneesAndSpells, index)
+				end
+				break
+			end
+		end
+
+		-- Remove from collapsed
+		if not assigneeHasOtherSpellIDs then
+			plan.collapsed[assigneeOrUniqueID] = nil
+		end
+	elseif type(assigneeOrUniqueID) == "number" then
+		local assignmentToRemove = Utilities.FindAssignmentByUniqueID(assignments, assigneeOrUniqueID)
+		if assignmentToRemove then -- Remove assignments
+			local matchingAssignee, matchingSpellID = assignmentToRemove.assignee, assignmentToRemove.spellID
+			local foundMatchingAssigneeAndSpellID = false
+			local assigneeHasOtherAssignments = false
+			for i = #assignments, 1, -1 do
+				local currentAssignment = assignments[i]
+				if currentAssignment.uniqueID == assigneeOrUniqueID then
+					tremove(assignments, i)
+					removedAssignmentCount = removedAssignmentCount + 1
+				else
+					local currentAssignee, currentSpellID = currentAssignment.assignee, currentAssignment.spellID
+					if currentAssignee == matchingAssignee then
+						if currentSpellID == matchingSpellID then
+							foundMatchingAssigneeAndSpellID = true
+						end
+						assigneeHasOtherAssignments = true
+					end
+				end
+			end
+			if foundMatchingAssigneeAndSpellID == false then -- Remove templates
+				for index, assigneeSpellSet in ipairs(assigneesAndSpells) do
+					if assigneeSpellSet.assignee == matchingAssignee then
+						local spells = assigneeSpellSet.spells
+
+						for spellIDIndex, currentSpellID in ipairs(spells) do
+							if currentSpellID == matchingSpellID then
+								tremove(spells, spellIDIndex)
+								removedTemplateCount = removedTemplateCount + 1
+								break
+							end
+						end
+
+						if not next(spells) then
+							tremove(assigneesAndSpells, index)
+						end
+						break
+					end
+				end
+			end
+
+			if not assigneeHasOtherAssignments then -- Remove from collapsed
+				plan.collapsed[matchingAssignee] = nil
+			end
+		end
+	end
+
+	return removedAssignmentCount, removedTemplateCount
 end
 
 do

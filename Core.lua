@@ -544,6 +544,7 @@ do -- Profile updating and refreshing
 				timeline.SetPreferences(profile.preferences)
 			end
 			interfaceUpdater.RepopulatePlanWidgets()
+			Private.RepopulateTemplates(profile.templates)
 			interfaceUpdater.UpdateFromPlan(plans[profile.lastOpenPlan])
 		end
 		if Private.optionsMenu then

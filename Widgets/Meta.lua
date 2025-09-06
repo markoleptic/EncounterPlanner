@@ -41,6 +41,7 @@
 ---| EPDiffViewerEntry
 ---| EPMultiLineText
 ---| EPWindowBar
+---| EPNewTemplateDialog
 
 ---@alias EPContainerType
 ---| EPAssignmentEditor

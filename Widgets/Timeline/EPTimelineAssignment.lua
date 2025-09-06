@@ -12,6 +12,7 @@ local AssignmentSelectionType = Private.constants.AssignmentSelectionType
 ---@class EPTimelineAssignment
 local EPTimelineAssignment = Private.timeline.assignment
 
+local ComputeAssignmentRowIndex = Private.timeline.utilities.ComputeAssignmentRowIndex
 local ConvertTimelineOffsetToTime = Private.timeline.utilities.ConvertTimelineOffsetToTime
 local ConvertTimeToTimelineOffset = Private.timeline.utilities.ConvertTimeToTimelineOffset
 local FindTimelineAssignment = Private.timeline.utilities.FindTimelineAssignment
@@ -25,6 +26,7 @@ local GetSelectedAssignments = Private.timeline.utilities.GetSelectedAssignments
 local UpdateTimeLabels = Private.timeline.utilities.UpdateTimeLabels
 
 local abs = math.abs
+local assert = assert
 local Clamp = Clamp
 local CreateFrame = CreateFrame
 local GetCursorPosition = GetCursorPosition
@@ -62,14 +64,15 @@ function EPTimelineAssignment.StopMovingAssignment(assignmentFrame)
 		s.AssignmentBeingDuplicated = false
 		if timelineAssignment then
 			local spellID = timelineAssignment.assignment.spellID
-			local orderTable = s.OrderedSpellIDFrameIndices[timelineAssignment.order]
-			local spellIDTable = orderTable[spellID]
-			for index, assignmentFrameIndex in ipairs(spellIDTable) do
+			local rowIndex = ComputeAssignmentRowIndex(timelineAssignment.assignment.assignee, spellID)
+			local spellIDAssignmentFrameIndicesAtRow = s.AssignmentRowSpellFrameMap[rowIndex]
+			local assignmentFrameIndices = spellIDAssignmentFrameIndicesAtRow[spellID]
+			for index, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
 				if assignmentFrameIndex == s.FakeAssignmentFrame.temporaryAssignmentFrameIndex then
 					tremove(s.AssignmentFrames, assignmentFrameIndex)
-					tremove(spellIDTable, index)
-					if not next(orderTable[spellID]) then
-						orderTable[spellID] = nil
+					tremove(assignmentFrameIndices, index)
+					if not next(spellIDAssignmentFrameIndicesAtRow[spellID]) then
+						spellIDAssignmentFrameIndicesAtRow[spellID] = nil
 					end
 					break
 				end
@@ -186,9 +189,15 @@ local function HandleAssignmentUpdate(frame)
 		)
 	end
 
-	local verticalOffsetFromTimelineFrameTop = (frame.timelineAssignment.order - 1)
-		* (s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
-	frame:SetPoint("TOPLEFT", assignmentFrameOffsetFromTimelineFrameLeft, -verticalOffsetFromTimelineFrameTop)
+	do
+		local rowIndex = ComputeAssignmentRowIndex(
+			frame.timelineAssignment.assignment.assignee,
+			frame.timelineAssignment.assignment.spellID
+		)
+		local verticalOffsetFromTimelineFrameTop = (rowIndex - 1)
+			* (s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
+		frame:SetPoint("TOPLEFT", assignmentFrameOffsetFromTimelineFrameLeft, -verticalOffsetFromTimelineFrameTop)
+	end
 
 	local frameTimelineFrameDifference = timelineFrameLeft - (s.AssignmentTimeline.frame:GetLeft() or 0)
 	local overrideLineLeft = assignmentFrameOffsetFromTimelineFrameLeft + frameTimelineFrameDifference
@@ -196,67 +205,59 @@ local function HandleAssignmentUpdate(frame)
 	UpdateLinePosition(s.BossAbilityTimeline.frame, s.BossAbilityTimeline.verticalPositionLine, nil, overrideLineLeft)
 	UpdateTimeLabels()
 
-	if s.AssignmentFrameBeingDragged and s.AssignmentFrameBeingDragged.timelineAssignment then
-		local time = ConvertTimelineOffsetToTime(s.AssignmentFrameBeingDragged, s.BossAbilityTimeline.timelineFrame)
-		if time then
-			s.AssignmentFrameBeingDragged.timelineAssignment.startTime = time
-			local order = s.AssignmentFrameBeingDragged.timelineAssignment.order
-			local spellIDAssignmentFrameIndices = s.OrderedSpellIDFrameIndices[order]
+	if s.AssignmentFrameBeingDragged then
+		local timelineAssignmentBeingDragged = s.AssignmentFrameBeingDragged.timelineAssignment
+		if timelineAssignmentBeingDragged then
+			local time = ConvertTimelineOffsetToTime(s.AssignmentFrameBeingDragged, s.BossAbilityTimeline.timelineFrame)
+			if time then
+				timelineAssignmentBeingDragged.startTime = time
+				local assignee, spellID =
+					timelineAssignmentBeingDragged.assignment.assignee,
+					timelineAssignmentBeingDragged.assignment.spellID
+				local rowIndex = ComputeAssignmentRowIndex(assignee, spellID)
+				local spellIDAssignmentFrameIndicesAtRow = s.AssignmentRowSpellFrameMap[rowIndex]
 
-			local sortedAssignmentFrameIndices = {} ---@type table<integer,integer>
-			for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndices) do
-				for _, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
-					sortedAssignmentFrameIndices[#sortedAssignmentFrameIndices + 1] = assignmentFrameIndex
+				local sortedAssignmentFrameIndices = {} ---@type table<integer, integer>
+				for _, assignmentFrameIndices in pairs(spellIDAssignmentFrameIndicesAtRow) do
+					for _, assignmentFrameIndex in ipairs(assignmentFrameIndices) do
+						sortedAssignmentFrameIndices[#sortedAssignmentFrameIndices + 1] = assignmentFrameIndex
+					end
 				end
-			end
-			local assignmentFrames = s.AssignmentFrames
-			-- Need to sort by offset due to the fake assignment frame
-			SortAssignmentFrameIndices(assignmentFrames, sortedAssignmentFrameIndices)
+				local assignmentFrames = s.AssignmentFrames
+				-- Need to sort by offset due to the fake assignment frame
+				SortAssignmentFrameIndices(assignmentFrames, sortedAssignmentFrameIndices)
 
-			local spellID = s.AssignmentFrameBeingDragged.timelineAssignment.assignment.spellID
-			local matchingSpellIDAssignmentFrameIndices = {} ---@type table<integer, integer>
-			local matchingTimelineAssignments = {} ---@type table<integer, TimelineAssignment>
+				local matchingSpellIDAssignmentFrameIndices = {} ---@type table<integer, integer>
+				local matchingTimelineAssignments = {} ---@type table<integer, TimelineAssignment>
 
-			-- Only compute charge states for matching spellIDs
-			for _, index in ipairs(sortedAssignmentFrameIndices) do
-				if assignmentFrames[index].spellID == spellID then
-					local newIndex = #matchingSpellIDAssignmentFrameIndices + 1
-					matchingSpellIDAssignmentFrameIndices[newIndex] = index
-					matchingTimelineAssignments[newIndex] = assignmentFrames[index].timelineAssignment
+				-- Only compute charge states for matching spellIDs
+				for _, index in ipairs(sortedAssignmentFrameIndices) do
+					if assignmentFrames[index].spellID == spellID then
+						local newIndex = #matchingSpellIDAssignmentFrameIndices + 1
+						matchingSpellIDAssignmentFrameIndices[newIndex] = index
+						matchingTimelineAssignments[newIndex] = assignmentFrames[index].timelineAssignment
+					end
 				end
-			end
-			s.ComputeChargeStates(matchingTimelineAssignments)
+				s.ComputeChargeStates(matchingTimelineAssignments)
 
-			local showSpellCooldownDuration = s.Preferences.showSpellCooldownDuration
-			local collapsed = s.Collapsed
-			for _, assignmentFrameIndex in ipairs(matchingSpellIDAssignmentFrameIndices) do
-				local timelineAssignment = assignmentFrames[assignmentFrameIndex].timelineAssignment
-				if timelineAssignment then
-					local assignee = timelineAssignment.assignment.assignee
-					local showCooldown = showSpellCooldownDuration and not collapsed[assignee]
-					local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
-					EPTimelineAssignment.DrawAssignment(
-						timelineAssignment.startTime,
-						timelineAssignment.assignment.spellID,
-						assignmentFrameIndex,
-						timelineAssignment.assignment.uniqueID,
-						timelineAssignment.order,
-						cooldown,
-						timelineAssignment.relativeChargeRestoreTime,
-						timelineAssignment.invalidChargeCast
-					)
+				-- Redraw assignments for assignments frames with the same spellID
+				for _, assignmentFrameIndex in ipairs(matchingSpellIDAssignmentFrameIndices) do
+					local timelineAssignment = assignmentFrames[assignmentFrameIndex].timelineAssignment
+					if timelineAssignment then
+						EPTimelineAssignment.DrawAssignment(timelineAssignment, assignmentFrameIndex)
+					end
 				end
-			end
 
-			local timelineFrame = s.AssignmentTimeline.timelineFrame
-			local minFrameLevel = timelineFrame:GetFrameLevel() + 1
-			local left = (-s.Preferences.timelineRows.assignmentHeight * order)
+				local timelineFrame = s.AssignmentTimeline.timelineFrame
+				local minFrameLevel = timelineFrame:GetFrameLevel() + 1
+				local left = (-s.Preferences.timelineRows.assignmentHeight * rowIndex)
 
-			for _, index in ipairs(sortedAssignmentFrameIndices) do
-				local assignmentFrame = assignmentFrames[index]
-				assignmentFrame:SetFrameLevel(minFrameLevel)
-				assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
-				minFrameLevel = minFrameLevel + 1
+				for _, index in ipairs(sortedAssignmentFrameIndices) do
+					local assignmentFrame = assignmentFrames[index]
+					assignmentFrame:SetFrameLevel(minFrameLevel)
+					assignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
+					minFrameLevel = minFrameLevel + 1
+				end
 			end
 		end
 	end
@@ -282,25 +283,27 @@ local function HandleAssignmentMouseDown(frame, mouseButton)
 
 	ClearSelectedAssignments()
 	s.AssignmentIsDragging = true
-	local timelineAssignment, index = FindTimelineAssignment(frame.uniqueAssignmentID)
+	local timelineAssignment, assignmentFrameIndex = FindTimelineAssignment(frame.uniqueAssignmentID)
 
 	if isValidDuplicate then
 		s.AssignmentBeingDuplicated = true
-		if timelineAssignment and index then
+		if timelineAssignment and assignmentFrameIndex then
 			local spellID = timelineAssignment.assignment.spellID
-			local orderTable = s.OrderedSpellIDFrameIndices[timelineAssignment.order]
-			local spellIDTable = orderTable[spellID]
+			local rowIndex =
+				ComputeAssignmentRowIndex(timelineAssignment.assignment.assignee, timelineAssignment.assignment.spellID)
+			local spellIDAssignmentFrameIndices = s.AssignmentRowSpellFrameMap[rowIndex]
+			local assignmentFrameIndices = spellIDAssignmentFrameIndices[spellID]
 
 			local newTimelineAssignment = {}
 			s.Fire("DuplicateAssignmentStart", timelineAssignment, newTimelineAssignment)
 
-			for spellIDTablePositionIndex, assignmentFrameIndex in ipairs(spellIDTable) do
-				if assignmentFrameIndex == index then
+			for assignmentFrameIndexIndex, currentAssignmentFrameIndex in ipairs(assignmentFrameIndices) do
+				if currentAssignmentFrameIndex == assignmentFrameIndex then
 					local newIndex = #s.AssignmentFrames + 1
 					s.FakeAssignmentFrame.temporaryAssignmentFrameIndex = newIndex
 					s.FakeAssignmentFrame.timelineAssignment = newTimelineAssignment
 					s.AssignmentFrames[newIndex] = s.FakeAssignmentFrame
-					tinsert(spellIDTable, spellIDTablePositionIndex, newIndex)
+					tinsert(assignmentFrameIndices, assignmentFrameIndexIndex, newIndex)
 					break
 				end
 			end
@@ -318,7 +321,7 @@ local function HandleAssignmentMouseDown(frame, mouseButton)
 				if frame.cooldownFrame:IsShown() then
 					fakeAssignmentFrame.cooldownFrame:SetWidth(frame.cooldownFrame:GetWidth())
 					fakeAssignmentFrame.cooldownFrame:Show()
-					local left = -s.Preferences.timelineRows.assignmentHeight * timelineAssignment.order
+					local left = -s.Preferences.timelineRows.assignmentHeight * rowIndex
 					fakeAssignmentFrame.cooldownParent:SetPoint("LEFT", left, 0)
 				else
 					fakeAssignmentFrame.cooldownFrame:Hide()
@@ -443,45 +446,33 @@ function EPTimelineAssignment.CreateAssignmentFrame(spellID, offsetX, offsetY)
 end
 
 -- Helper function to draw a spell icon for an assignment.
----@param startTime number absolute start time of the assignment
----@param spellID integer spellID of the spell being assigned
----@param index integer index of the AssignmentFrame to use to display the assignment
----@param uniqueID integer unique index of the assignment
----@param order number the relative order of the assignee of the assignment
----@param cooldownDuration number|nil
----@param relativeChargeRestoreTime number|nil
----@param invalidChargeCast boolean|nil
-function EPTimelineAssignment.DrawAssignment(
-	startTime,
-	spellID,
-	index,
-	uniqueID,
-	order,
-	cooldownDuration,
-	relativeChargeRestoreTime,
-	invalidChargeCast
-)
+---@param timelineAssignment TimelineAssignment
+---@param assignmentFrameIndex integer index of the AssignmentFrame to use to display the assignment
+function EPTimelineAssignment.DrawAssignment(timelineAssignment, assignmentFrameIndex)
 	if s.TotalTimelineDuration <= 0.0 then
 		return
 	end
 
+	local spellID = timelineAssignment.assignment.spellID
+	local assignee = timelineAssignment.assignment.assignee
+	local rowIndex = ComputeAssignmentRowIndex(assignee, spellID)
 	local padding = k.TimelineLinePadding
 	local timelineFrame = s.AssignmentTimeline.timelineFrame
 	local timelineWidth = timelineFrame:GetWidth() - 2 * padding.x
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
 
-	local timelineStartPosition = (startTime / s.TotalTimelineDuration) * timelineWidth
+	local timelineStartPosition = (timelineAssignment.startTime / s.TotalTimelineDuration) * timelineWidth
 	local offsetX = timelineStartPosition + k.TimelineLinePadding.x
-	local offsetY = (order - 1) * (assignmentHeight + k.PaddingBetweenAssignments)
+	local offsetY = (rowIndex - 1) * (assignmentHeight + k.PaddingBetweenAssignments)
 
-	local assignmentFrame = s.AssignmentFrames[index]
+	local assignmentFrame = s.AssignmentFrames[assignmentFrameIndex]
 	if not assignmentFrame then
 		assignmentFrame = EPTimelineAssignment.CreateAssignmentFrame(spellID, offsetX, offsetY)
-		s.AssignmentFrames[index] = assignmentFrame
+		s.AssignmentFrames[assignmentFrameIndex] = assignmentFrame
 	end
 
 	assignmentFrame.spellID = spellID
-	assignmentFrame.uniqueAssignmentID = uniqueID
+	assignmentFrame.uniqueAssignmentID = timelineAssignment.assignment.uniqueID
 
 	assignmentFrame:SetHeight(assignmentHeight)
 	assignmentFrame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)
@@ -495,8 +486,11 @@ function EPTimelineAssignment.DrawAssignment(
 	else
 		local iconID, _ = GetSpellTexture(spellID)
 		assignmentFrame.spellTexture:SetTexture(iconID)
-		if cooldownDuration then
-			local cooldownEndPosition = (startTime + cooldownDuration) / s.TotalTimelineDuration * timelineWidth
+		if s.Preferences.showSpellCooldownDuration and not s.Collapsed[assignee] then
+			local cooldownDuration = timelineAssignment.effectiveCooldownDuration
+			local cooldownEndPosition = (timelineAssignment.startTime + cooldownDuration)
+				/ s.TotalTimelineDuration
+				* timelineWidth
 			local cooldownWidth = (cooldownEndPosition - timelineStartPosition) - k.CooldownWidthTolerance
 			local visibleCooldownWidth = cooldownWidth - assignmentHeight
 			local cooldownFrame = assignmentFrame.cooldownFrame
@@ -508,7 +502,7 @@ function EPTimelineAssignment.DrawAssignment(
 				cooldownFrame:Hide()
 			end
 
-			if relativeChargeRestoreTime then
+			if timelineAssignment.relativeChargeRestoreTime then
 				local chargeMarker = assignmentFrame.chargeMarker
 				if not chargeMarker then
 					chargeMarker =
@@ -518,7 +512,7 @@ function EPTimelineAssignment.DrawAssignment(
 					chargeMarker:SetWidth(2)
 					assignmentFrame.chargeMarker = chargeMarker
 				end
-				local left = (relativeChargeRestoreTime / s.TotalTimelineDuration) * timelineWidth
+				local left = (timelineAssignment.relativeChargeRestoreTime / s.TotalTimelineDuration) * timelineWidth
 				chargeMarker:SetHeight(assignmentHeight - 2)
 				chargeMarker:SetTexCoord(0.1, 0.4, 0, 4.5)
 				chargeMarker:SetPoint("LEFT", assignmentFrame, "LEFT", left - 1, 0)
@@ -530,7 +524,7 @@ function EPTimelineAssignment.DrawAssignment(
 	if assignmentFrame.chargeMarker and hideMarker then
 		assignmentFrame.chargeMarker:Hide()
 	end
-	if invalidChargeCast == true then
+	if timelineAssignment.invalidChargeCast == true then
 		assignmentFrame.invalidTexture:Show()
 	else
 		assignmentFrame.invalidTexture:Hide()
@@ -542,53 +536,43 @@ function EPTimelineAssignment.UpdateAssignmentFrames()
 	-- Clears/resets assignment frames
 	local selected = GetSelectedAssignments(true)
 
-	wipe(s.OrderedSpellIDFrameIndices)
-	local orderedFrameIndices = {}
-	local showSpellCooldownDuration = s.Preferences.showSpellCooldownDuration
+	local assignmentRowSpellFrameMap = s.AssignmentRowSpellFrameMap
+	assert(assignmentRowSpellFrameMap, "Assignment Frames valid")
+	wipe(assignmentRowSpellFrameMap)
 
+	local timelineAssignments = s.TimelineAssignments
+	local assignmentFrames = s.AssignmentFrames
+
+	local assignmentRowFrameMap = {} ---@type table<integer, table<integer, integer>> RowIndex -> [frame indices]
 	local DrawAssignment = EPTimelineAssignment.DrawAssignment
-	for index, timelineAssignment in ipairs(s.TimelineAssignments) do
-		local order = timelineAssignment.order
+	for index, timelineAssignment in ipairs(timelineAssignments) do
 		local assignment = timelineAssignment.assignment
 		local spellID = assignment.spellID
-		if not s.OrderedSpellIDFrameIndices[order] then
-			s.OrderedSpellIDFrameIndices[order] = {}
-			orderedFrameIndices[order] = {}
+		local rowIndex = ComputeAssignmentRowIndex(timelineAssignment.assignment.assignee, spellID)
+		if not assignmentRowSpellFrameMap[rowIndex] then
+			assignmentRowSpellFrameMap[rowIndex] = {}
+			assignmentRowFrameMap[rowIndex] = {}
 		end
-		if not s.OrderedSpellIDFrameIndices[order][spellID] then
-			s.OrderedSpellIDFrameIndices[order][spellID] = {}
+		if not assignmentRowSpellFrameMap[rowIndex][spellID] then
+			assignmentRowSpellFrameMap[rowIndex][spellID] = {}
 		end
-		local showCooldown = showSpellCooldownDuration and not s.Collapsed[assignment.assignee]
-		local cooldown = showCooldown and timelineAssignment.effectiveCooldownDuration or nil
-		DrawAssignment(
-			timelineAssignment.startTime,
-			spellID,
-			index,
-			assignment.uniqueID,
-			order,
-			cooldown,
-			timelineAssignment.relativeChargeRestoreTime,
-			timelineAssignment.invalidChargeCast
-		)
-		s.AssignmentFrames[index].timelineAssignment = timelineAssignment
-		s.OrderedSpellIDFrameIndices[order][spellID][#s.OrderedSpellIDFrameIndices[order][spellID] + 1] = index
-		orderedFrameIndices[order][#orderedFrameIndices[order] + 1] = index
+		DrawAssignment(timelineAssignment, index)
+		assignmentFrames[index].timelineAssignment = timelineAssignment
+		assignmentRowSpellFrameMap[rowIndex][spellID][#assignmentRowSpellFrameMap[rowIndex][spellID] + 1] = index
+		assignmentRowFrameMap[rowIndex][#assignmentRowFrameMap[rowIndex] + 1] = index
 	end
 
-	local assignmentFrames = s.AssignmentFrames
-	local timelineFrame = s.AssignmentTimeline.timelineFrame
-	local timelineAssignments = s.TimelineAssignments
-	local timelineFrameLevel = timelineFrame:GetFrameLevel()
+	local timelineFrameLevel = s.AssignmentTimeline.timelineFrame:GetFrameLevel()
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
 
 	local maxFrameLevel = 0
-	for order, assignmentFrameIndices in pairs(orderedFrameIndices) do
+	for rowIndex, assignmentFrameIndices in pairs(assignmentRowFrameMap) do
 		sort(assignmentFrameIndices, function(a, b)
 			---@diagnostic disable-next-line: need-check-nil
 			return timelineAssignments[a].startTime < timelineAssignments[b].startTime
 		end)
 		local minFrameLevel = timelineFrameLevel + 1
-		local left = (-assignmentHeight * order)
+		local left = (-assignmentHeight * rowIndex)
 		for _, index in ipairs(assignmentFrameIndices) do
 			local assignmentFrame = assignmentFrames[index]
 			assignmentFrame:SetFrameLevel(minFrameLevel)

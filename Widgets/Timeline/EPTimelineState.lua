@@ -14,9 +14,14 @@ local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 
 ---@class EPTimelineState
 local s = {
+	-- Used to determine which assignee or spell to create when the timeline is clicked, total assignment timeline
+	-- height, and assignment dimensions (min/max/step).
+	AssigneesAndSpells = {}, ---@type table<integer, AssigneeSpellSet>
 	AssignmentBeingDuplicated = false,
 	AssignmentFrameBeingDragged = nil, ---@type AssignmentFrame|nil
 	AssignmentIsDragging = false,
+	-- Row Index -> spellID -> [frame indices]
+	AssignmentRowSpellFrameMap = nil, ---@type table<integer, table<integer, table<integer, integer>>>|nil
 	AssignmentTimeline = nil, ---@type EPTimelineSection|nil
 	BossAbilityTimeline = nil, ---@type EPTimelineSection|nil
 	CalculateAssignmentTimeFromStart = nil, ---@type fun(timelineAssignment: TimelineAssignment): number|nil
@@ -34,7 +39,6 @@ local s = {
 	MainTimelineSplitterScrollFrame = nil, ---@type ScrollFrame|BackdropTemplate
 	MainTimelineThumb = nil, ---@type Button
 	MinTickInterval = k.MinimumSpacingBetweenLabels,
-	OrderedSpellIDFrameIndices = nil, ---@type table<integer, table<integer, table<integer, integer>>>|nil
 	Preferences = nil, ---@type Preferences|nil
 	ScrollBarWidthWhenThumbClicked = 0.0,
 	SelectedAssignmentIDsFromBossAbilityFrameEnter = {},
@@ -66,7 +70,7 @@ local s = {
 ---@param thumb Button
 function s:Init(splitterFrame, splitterScrollFrame, chargeFrame, scrollBar, thumb)
 	self.TimelineAssignments = {}
-	self.OrderedSpellIDFrameIndices = {}
+	self.AssignmentRowSpellFrameMap = {}
 	self.MainTimelineSplitterFrame = splitterFrame
 	self.MainTimelineSplitterScrollFrame = splitterScrollFrame
 	self.MainTimelineChargeFrame = chargeFrame
@@ -152,6 +156,7 @@ end
 
 ---@param self EPTimelineState
 function s:Reset()
+	self.AssigneesAndSpells = {}
 	local SetAssignmentFrameOutline = Private.timeline.utilities.SetAssignmentFrameOutline
 
 	for _, frame in ipairs(self.AssignmentFrames) do
@@ -232,7 +237,7 @@ function s:Reset()
 	self.MainTimelineSplitterScrollFrame = nil
 	self.MainTimelineThumb = nil
 	self.MinTickInterval = k.MinimumSpacingBetweenLabels
-	self.OrderedSpellIDFrameIndices = nil
+	self.AssignmentRowSpellFrameMap = nil
 	self.Preferences = nil
 	self.ScrollBarWidthWhenThumbClicked = 0.0
 	self.SelectedAssignmentIDsFromBossAbilityFrameEnter = {}
