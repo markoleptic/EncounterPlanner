@@ -207,6 +207,7 @@
 ---@field [6] table<integer, SerializedAssignment> assignments
 ---@field [7] table<string, SerializedRosterEntry> roster
 ---@field [8] table<integer, string> content
+---@field [9] table<integer, SerializedAssigneeSpellSet> assignees and spells (templates)
 
 ---@class SerializedAssignment
 ---@field [1] string assignee
@@ -225,6 +226,10 @@
 ---@field [2] string class
 ---@field [3] RaidGroupRole role
 ---@field [4] string classColoredName
+
+---@class SerializedAssigneeSpellSet
+---@field [1] string assignee
+---@field [2] table<integer, integer> Table of spellIDs for this assignee.
 
 ---@class AdditionalMessageBoxButtonData Data needed to add additional buttons an EPMessageBox widget.
 -- The child widget index (of EPMessageBox) to insert the button before, at the time of insertion.
@@ -422,7 +427,12 @@
 
 ---@class AssigneeSpellSet
 ---@field assignee string
----@field spells table<integer, integer> Table of spellIDs to for this assignee.
+---@field assigneeRosterEntry? RosterEntry
+---@field spells table<integer, integer> Table of spellIDs for this assignee.
+
+---@class FlatAssigneeSpellSet
+---@field assignee string
+---@field spellID integer
 
 ---@class PlanTemplate
 ---@field name string Name of the template
@@ -470,6 +480,7 @@
 ---@field assignments table<integer, PlanDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>>
 ---@field content table<integer, PlanDiffEntry<string>>
 ---@field roster table<integer, PlanRosterDiff>
+---@field assigneesAndSpells table<integer, PlanDiffEntry<FlatAssigneeSpellSet>>
 ---@field metaData PlanMetaDataDiff
 ---@field empty boolean
 

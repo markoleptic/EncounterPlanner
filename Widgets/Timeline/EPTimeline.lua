@@ -759,8 +759,7 @@ end
 ---@param assigneesAndSpells table<integer, AssigneeSpellSet>
 ---@param collapsed table<string, boolean>
 local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
-	s:SetAssignments(assignments, collapsed)
-	s.AssigneesAndSpells = assigneesAndSpells
+	s:SetAssignments(assignments, collapsed, assigneesAndSpells)
 	self:UpdateHeightFromAssignments()
 	self:SetAssignmentTimelineVerticalScroll()
 end

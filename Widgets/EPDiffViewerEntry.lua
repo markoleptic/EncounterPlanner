@@ -84,6 +84,27 @@ local function CreateAssignmentDiffText(value, roster)
 	return text
 end
 
+---@param value FlatAssigneeSpellSet
+---@param roster table<string, RosterEntry>
+---@return string
+local function CreateFlatAssigneeSpellSetDiffText(value, roster)
+	local assignee = utilities.ConvertAssigneeToLegibleString(value.assignee, roster)
+	local text = format("%s: %s", L["Assignee"], assignee)
+	local spellName = tostring(value.spellID)
+	if value.spellID == Private.constants.kInvalidAssignmentSpellID then
+		spellName = L["Unknown"]
+	elseif value.spellID == Private.constants.kTextAssignmentSpellID then
+		text = text .. format("\n%s: %s", L["Text"], spellName)
+	else
+		local maybeSpellName = GetSpellName(value.spellID)
+		if maybeSpellName then
+			spellName = maybeSpellName
+		end
+	end
+	text = text .. format("\n%s: %s", L["Spell"], spellName)
+	return text
+end
+
 ---@param assignee string
 ---@param class string
 ---@param role RaidGroupRole
@@ -202,6 +223,60 @@ local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRo
 		newValueLabel.frame:SetPoint("RIGHT", self.checkBoxDividerLine, "LEFT", 0, -1)
 		newValueLabel:SetFullHeight(true)
 		newValueLabel:SetText(CreateAssignmentDiffText(newValue, newRoster))
+		self.valueLabelTwo = newValueLabel
+
+		maxLabelHeight = max(maxLabelHeight, newValueLabel.frame:GetHeight())
+	else
+		oldValueLabel.frame:SetPoint("RIGHT", self.checkBoxDividerLine, "LEFT", 0, -1)
+		self.diffDividerLine:Hide()
+	end
+
+	self.frame:SetHeight(maxLabelHeight)
+end
+
+---@param self EPDiffViewerEntry
+---@param oldValue FlatAssigneeSpellSet
+---@param newValue? FlatAssigneeSpellSet
+---@param oldRoster table<string, RosterEntry>
+---@param newRoster table<string, RosterEntry>
+---@param diffType PlanDiffType
+local function SetAssigneeSpellSetEntryData(self, oldValue, newValue, oldRoster, newRoster, diffType)
+	if not oldValue then
+		return
+	end
+
+	local typeText = ""
+	if diffType == PlanDiffType.Insert then
+		typeText = L["Added"]
+	elseif diffType == PlanDiffType.Delete then
+		typeText = L["Removed"]
+	elseif diffType == PlanDiffType.Change then
+		typeText = L["Changed"]
+	end
+	self.typeLabel:SetText(typeText)
+
+	local oldValueLabel = AceGUI:Create("EPMultiLineText")
+	oldValueLabel.frame:SetParent(self.frame)
+	oldValueLabel.frame:SetPoint("LEFT", self.typeDividerLine, "RIGHT", 0, -1)
+	oldValueLabel:SetFullHeight(true)
+	oldValueLabel:SetText(CreateFlatAssigneeSpellSetDiffText(oldValue, oldRoster))
+	self.valueLabel = oldValueLabel
+
+	local maxLabelHeight = max(oldValueLabel.frame:GetHeight(), self.checkBox.frame:GetHeight() + 12)
+
+	if newValue then
+		self.diffDividerLine:SetPoint("TOP", self.frame, "TOP")
+		self.diffDividerLine:SetPoint("BOTTOM", self.frame, "BOTTOM")
+		self.diffDividerLine:Show()
+
+		oldValueLabel.frame:SetPoint("RIGHT", self.diffDividerLine, "LEFT", 0, -1)
+
+		local newValueLabel = AceGUI:Create("EPMultiLineText")
+		newValueLabel.frame:SetParent(self.frame)
+		newValueLabel.frame:SetPoint("LEFT", self.diffDividerLine, "RIGHT", 0, -1)
+		newValueLabel.frame:SetPoint("RIGHT", self.checkBoxDividerLine, "LEFT", 0, -1)
+		newValueLabel:SetFullHeight(true)
+		newValueLabel:SetText(CreateFlatAssigneeSpellSetDiffText(newValue, newRoster))
 		self.valueLabelTwo = newValueLabel
 
 		maxLabelHeight = max(maxLabelHeight, newValueLabel.frame:GetHeight())
@@ -400,6 +475,7 @@ local function Constructor()
 		SetRosterEntryData = SetRosterEntryData,
 		SetMetaDataEntryData = SetMetaDataEntryData,
 		SetContentEntryData = SetContentEntryData,
+		SetAssigneeSpellSetEntryData = SetAssigneeSpellSetEntryData,
 		frame = frame,
 		type = Type,
 		typeDividerLine = typeDividerLine,

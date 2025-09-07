@@ -141,9 +141,11 @@ end
 ---@param self EPTimelineState
 ---@param assignments table<integer, TimelineAssignment>
 ---@param collapsed table<string, boolean>
-function s:SetAssignments(assignments, collapsed)
+---@param assigneeAndSpellSets table<integer, AssigneeSpellSet>
+function s:SetAssignments(assignments, collapsed, assigneeAndSpellSets)
 	self.TimelineAssignments = assignments
 	self.Collapsed = collapsed
+	self.AssigneesAndSpells = assigneeAndSpellSets
 end
 
 ---@param self EPTimelineState

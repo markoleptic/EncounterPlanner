@@ -154,6 +154,12 @@ do
 			roster[#roster + 1] = SerializeRosterEntry(name, rosterInfo)
 		end
 		serializedPlan[8] = plan.content
+		serializedPlan[9] = {}
+		local assigneesAndSpells = serializedPlan[9]
+		for _, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
+			assigneesAndSpells[#assigneesAndSpells + 1] =
+				{ [1] = assigneeSpellSet.assignee, [2] = assigneeSpellSet.spells }
+		end
 		return serializedPlan
 	end
 
@@ -175,6 +181,9 @@ do
 			plan.roster[rosterEntryName] = rosterEntry
 		end
 		plan.content = serializedPlan[8]
+		for _, assigneeSpellSet in ipairs(serializedPlan[9]) do
+			tinsert(plan.assigneesAndSpells, { assignee = assigneeSpellSet[1], spells = assigneeSpellSet[2] })
+		end
 		return plan
 	end
 end

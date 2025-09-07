@@ -250,6 +250,9 @@ local function ClosePlanDependentWidgets()
 	if Private.externalTextEditor then
 		Private.externalTextEditor:Release()
 	end
+	if Private.newTemplateDialog then
+		Private.newTemplateDialog:Release()
+	end
 	interfaceUpdater.RemoveMessageBoxes(true)
 end
 
@@ -1666,7 +1669,13 @@ do -- Plan Menu Button s.Handlers
 					templateName = templateName:trim()
 					widget:Release()
 					local templates = AddOn.db.profile.templates
-					utilities.CreatePlanTemplate(templates, templateName, orderedAssigneeSpellSets, filteredAssignees)
+					utilities.CreatePlanTemplate(
+						templates,
+						GetCurrentPlan(),
+						templateName,
+						orderedAssigneeSpellSets,
+						filteredAssignees
+					)
 					Private.RepopulateTemplates(templates)
 					if Private.activeTutorialCallbackName then
 						Private.callbacks:Fire(Private.activeTutorialCallbackName, "newTemplateDialogTemplateCreated")

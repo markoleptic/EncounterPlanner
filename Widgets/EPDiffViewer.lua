@@ -66,6 +66,12 @@ local function AddSectionLabel(self, text, dividerLineIndex)
 	sectionLabel:SetTextColor(1, 0.82, 0, 1)
 	sectionLabel.frame:SetHeight(28)
 	self.mainContainer:AddChild(sectionLabel)
+	if not self.dividerLines[dividerLineIndex] then
+		local dividerLine = self.frame:CreateTexture(nil, "OVERLAY")
+		dividerLine:SetColorTexture(unpack(k.LineColor))
+		dividerLine:SetHeight(2)
+		self.dividerLines[dividerLineIndex] = dividerLine
+	end
 	self.dividerLines[dividerLineIndex]:SetParent(self.mainContainer.frame)
 	self.dividerLines[dividerLineIndex]:SetPoint("LEFT", self.mainContainer.frame, "LEFT")
 	self.dividerLines[dividerLineIndex]:SetPoint("RIGHT", self.mainContainer.frame, "RIGHT")
@@ -221,7 +227,8 @@ end
 ---@param newPlan Plan
 local function AddDiffs(self, diffs, oldPlan, newPlan)
 	self.planDiff = diffs
-	local addedMetaDataSection, addedAssignmentSection, addedRosterSection, addedContentSection = nil, nil, nil, nil
+	local addedMetaDataSection, addedAssignmentSection, addedRosterSection = nil, nil, nil
+	local addedAssigneeSpellSetsSection, addedContentSection = nil, nil
 	local dividerLineIndex = 1
 
 	if diffs.metaData.instanceID then
@@ -339,6 +346,34 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
 					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
 				end
+			end
+		end
+	end
+
+	for index, planTemplateDiff in ipairs(diffs.assigneesAndSpells) do
+		if not addedAssigneeSpellSetsSection then
+			dividerLineIndex = AddSectionLabel(self, L["Templates"], dividerLineIndex)
+			addedAssigneeSpellSetsSection = true
+		end
+		local entry = AceGUI:Create("EPDiffViewerEntry")
+		entry:SetFullWidth(true)
+		entry:SetAssigneeSpellSetEntryData(
+			planTemplateDiff.oldValue,
+			planTemplateDiff.newValue,
+			oldPlan.roster,
+			newPlan.roster,
+			planTemplateDiff.type
+		)
+		entry:SetCallback("OnValueChanged", function(_, _, checked)
+			self.planDiff.assigneesAndSpells[index].result = checked
+		end)
+		self.mainContainer:AddChild(entry)
+
+		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
+			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
+		elseif entry.valueLabelTwo then
+			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
+				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
 			end
 		end
 	end
@@ -476,14 +511,6 @@ local function Constructor()
 		text:SetFont(fPath, k.DefaultFontSize)
 	end
 
-	local dividerLines = {}
-	for _ = 1, 4 do
-		local dividerLine = frame:CreateTexture(nil, "OVERLAY")
-		dividerLine:SetColorTexture(unpack(k.LineColor))
-		dividerLine:SetHeight(2)
-		tinsert(dividerLines, dividerLine)
-	end
-
 	---@class EPDiffViewer : AceGUIWidget
 	---@field frame table|Frame|BackdropTemplate
 	---@field mainContainer EPContainer
@@ -501,7 +528,7 @@ local function Constructor()
 		SetText = SetText,
 		frame = frame,
 		type = Type,
-		dividerLines = dividerLines,
+		dividerLines = {},
 		text = text,
 		isCommunicationsMessage = true,
 	}

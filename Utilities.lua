@@ -1888,14 +1888,6 @@ do
 		end
 	end
 
-	-- Sorts templates based on the assignmentSortType.
-	---@param assigneeSpellSets table<integer, AssigneeSpellSet>
-	---@param assignmentSortType AssignmentSortType Sort method.
-	---@param roster table<string, RosterEntry> Roster associated with the current plan.
-	function Utilities.SortTemplates(assigneeSpellSets, roster, assignmentSortType)
-		sort(assigneeSpellSets, ComparePlanTemplateEntries(roster, assignmentSortType))
-	end
-
 	---@param assigneeSpellSetsFromAssignments table<integer, AssigneeSpellSet>
 	---@param assigneeSpellSetsFromTemplate table<integer, AssigneeSpellSet>
 	---@param roster table<string, RosterEntry> Roster associated with the current plan.
@@ -2569,12 +2561,29 @@ function Utilities.ContainsValue(tbl, tblValue, value)
 	return false
 end
 
+---@param assigneeSpellSets table<integer, AssigneeSpellSet>
+function Utilities.SortAssigneeSpellSets(assigneeSpellSets)
+	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
+		sort(assigneeSpellSet.spells, function(a, b)
+			if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
+				return a < b
+			else
+				return GetSpellName(a) < GetSpellName(b)
+			end
+		end)
+	end
+	sort(assigneeSpellSets, function(a, b)
+		return a.assignee < b.assignee
+	end)
+end
+
 ---@param templates table<integer, PlanTemplate>
+---@param plan Plan
 ---@param newTemplateName string
 ---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 ---@param filteredAssignees table<string, boolean>?
 ---@return PlanTemplate
-function Utilities.CreatePlanTemplate(templates, newTemplateName, assigneeSpellSets, filteredAssignees)
+function Utilities.CreatePlanTemplate(templates, plan, newTemplateName, assigneeSpellSets, filteredAssignees)
 	newTemplateName = Utilities.CreateUniqueTemplateName(templates, newTemplateName)
 	if filteredAssignees then
 		for assignee, filtered in pairs(filteredAssignees) do
@@ -2588,6 +2597,17 @@ function Utilities.CreatePlanTemplate(templates, newTemplateName, assigneeSpellS
 			end
 		end
 	end
+	Utilities.SortAssigneeSpellSets(assigneeSpellSets)
+
+	-- Import roster entries
+	local DeepCopy = Private.DeepCopy
+	local roster = plan.roster
+	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
+		if roster[assigneeSpellSet.assignee] then
+			assigneeSpellSet.assigneeRosterEntry = DeepCopy(roster[assigneeSpellSet.assignee])
+		end
+	end
+
 	local template = {
 		name = newTemplateName,
 		assigneesAndSpells = assigneeSpellSets,
@@ -2605,7 +2625,19 @@ function Utilities.ApplyPlanTemplate(template, plan)
 		assigneeOrderIndex[assigneeSpellSet.assignee] = index
 	end
 
+	local roster = plan.roster
 	for _, assigneeSpellSet in ipairs(template.assigneesAndSpells) do
+		local assignee = assigneeSpellSet.assignee
+		if not roster[assignee] then
+			if assignee ~= "{everyone}" and not assignee:find(":") then
+				roster[assignee] = RosterEntry:New()
+				if assigneeSpellSet.assigneeRosterEntry then
+					roster[assignee].class = assigneeSpellSet.assigneeRosterEntry.class
+					roster[assignee].role = assigneeSpellSet.assigneeRosterEntry.role
+					roster[assignee].classColoredName = assigneeSpellSet.assigneeRosterEntry.classColoredName
+				end
+			end
+		end
 		local index = assigneeOrderIndex[assigneeSpellSet.assignee]
 		if index then -- Add missing spells for assignee
 			local existingAssigneeSpellSet = plan.assigneesAndSpells[index]
@@ -3111,6 +3143,33 @@ do
 		return result
 	end
 
+	---@param a FlatAssigneeSpellSet
+	---@param b FlatAssigneeSpellSet
+	---@return boolean
+	local function SortFlattenedAssigneesAndSpells(a, b)
+		if a.assignee == b.assignee then
+			if a.spellID <= constants.kTextAssignmentSpellID or b.spellID <= constants.kTextAssignmentSpellID then
+				return a.spellID < b.spellID
+			else
+				return GetSpellName(a.spellID) < GetSpellName(b.spellID)
+			end
+		end
+		return a.assignee < b.assignee
+	end
+
+	---@param assigneesAndSpells table<integer, AssigneeSpellSet>
+	---@return table<integer, FlatAssigneeSpellSet>
+	local function FlattenAssigneesAndSpells(assigneesAndSpells)
+		local flattened = {}
+		for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+			for _, spellID in ipairs(assigneeSpellSet.spells) do
+				tinsert(flattened, { assignee = assigneeSpellSet.assignee, spellID = spellID })
+			end
+		end
+		sort(flattened, SortFlattenedAssigneesAndSpells)
+		return flattened
+	end
+
 	-- Creates a diff between two plans.
 	---@param oldPlan Plan Existing plan.
 	---@param newPlan Plan New plan.
@@ -3126,6 +3185,7 @@ do
 				return a == b
 			end)),
 			metaData = {},
+			assigneesAndSpells = {},
 			empty = true,
 		}
 
@@ -3192,8 +3252,24 @@ do
 			end
 		end
 
+		-- Assignee spell sets
+		local oldAssigneesAndSpells = FlattenAssigneesAndSpells(oldPlan.assigneesAndSpells)
+		local newAssigneesAndSpells = FlattenAssigneesAndSpells(newPlan.assigneesAndSpells)
+		diff.assigneesAndSpells =
+			Utilities.CoalesceChanges(Utilities.MyersDiff(oldAssigneesAndSpells, newAssigneesAndSpells, function(a, b)
+				return a.assignee == b.assignee and a.spellID == b.spellID
+			end))
+
 		if diff.empty == true then
 			for _, entry in ipairs(diff.assignments) do
+				if entry.result == true then
+					diff.empty = false
+					break
+				end
+			end
+		end
+		if diff.empty == true then
+			for _, entry in ipairs(diff.assigneesAndSpells) do
 				if entry.result == true then
 					diff.empty = false
 					break
@@ -3267,6 +3343,64 @@ do
 		return addedCount, removedCount, changedCount
 	end
 
+	---@param existingPlan Plan Existing plan to apply the diff to.
+	---@param tableDiff table<integer, PlanDiffEntry<FlatAssigneeSpellSet>> Diff between existing and new table.
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, tableDiff)
+		local addedCount, removedCount, changedCount = 0, 0, 0
+
+		local existingAssigneeSpellSets = existingPlan.assigneesAndSpells
+		local flattenedAssigneeSpellSets = FlattenAssigneesAndSpells(existingAssigneeSpellSets)
+
+		-- Apply deletes first (reverse order)
+		for i = #tableDiff, 1, -1 do
+			local diff = tableDiff[i]
+			if diff.result and diff.type == PlanDiffType.Delete then
+				tremove(flattenedAssigneeSpellSets, diff.index)
+				removedCount = removedCount + 1
+			end
+		end
+
+		-- Apply inserts and changes in forward order
+		for i = 1, #tableDiff do
+			local diff = tableDiff[i]
+			if diff.result then
+				if diff.type == PlanDiffType.Insert then
+					tinsert(flattenedAssigneeSpellSets, diff.index, diff.value)
+					addedCount = addedCount + 1
+				elseif diff.type == PlanDiffType.Change then
+					flattenedAssigneeSpellSets[diff.index].assignee = diff.newValue.assignee
+					flattenedAssigneeSpellSets[diff.index].spellID = diff.newValue.spellID
+					changedCount = changedCount + 1
+				end
+			end
+		end
+
+		local roster = existingPlan.roster
+		local newAssigneeSpellSets = {} ---@type table<integer, AssigneeSpellSet>
+		local indexMap = {}
+		for _, flatAssigneeSpellSet in ipairs(flattenedAssigneeSpellSets) do
+			local assignee = flatAssigneeSpellSet.assignee
+			if not indexMap[assignee] then
+				if not roster[assignee] then
+					if assignee ~= "{everyone}" and not assignee:find(":") then
+						roster[assignee] = RosterEntry:New()
+					end
+				end
+				tinsert(newAssigneeSpellSets, { assignee = assignee, spells = {} })
+				indexMap[assignee] = #newAssigneeSpellSets
+			end
+			local index = indexMap[assignee]
+			tinsert(newAssigneeSpellSets[index], flatAssigneeSpellSet.spellID)
+		end
+		Utilities.SortAssigneeSpellSets(newAssigneeSpellSets)
+		existingAssigneeSpellSets = newAssigneeSpellSets
+
+		return addedCount, removedCount, changedCount
+	end
+
 	local DuplicateAssignment = Private.DuplicateAssignment
 
 	-- Merges an existing plan using a plan diff.
@@ -3335,6 +3469,25 @@ do
 					L["Changed"]:lower(),
 					changed,
 					L["roster members"]
+				)
+			)
+			added, removed, changed = 0, 0, 0
+		end
+
+		removed, added, changed = Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, planDiff.assigneesAndSpells)
+		if added > 0 or removed > 0 or changed > 0 then
+			tinsert(
+				messages,
+				format(
+					"%s %d, %s %d, %s %s %d %s.",
+					L["Added"],
+					added,
+					L["Removed"]:lower(),
+					removed,
+					L["and"],
+					L["Changed"]:lower(),
+					changed,
+					L["Templates"]:lower()
 				)
 			)
 			added, removed, changed = 0, 0, 0
