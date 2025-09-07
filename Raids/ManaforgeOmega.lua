@@ -588,6 +588,18 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					allowedCombatLogEventTypes = { "SCC" },
 					additionalContext = L["Effect"],
 				}),
+				[1226311] = BossAbility:New({ -- Infusion Tether
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.0 },
+							repeatInterval = { 44.0, 40.0 },
+						}),
+					},
+					halfHeight = true,
+					duration = 10.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
 				[1226395] = BossAbility:New({ -- Overinfusion Burst
 					phases = {
 						[1] = BossAbilityPhase:New({
