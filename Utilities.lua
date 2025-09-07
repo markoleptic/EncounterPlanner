@@ -3270,8 +3270,8 @@ do
 			if not oldRosterEntry then
 				local planRosterDiff = {
 					assignee = newRosterName,
-					type = PlanDiffType.Delete,
-					oldValue = DeepCopy(newRosterEntry),
+					type = PlanDiffType.Insert,
+					newValue = DeepCopy(newRosterEntry),
 					result = true,
 				} ---@type PlanRosterDiff
 				tinsert(diff.roster, planRosterDiff)
@@ -3293,8 +3293,8 @@ do
 			if not seen[oldRosterName] then
 				local planRosterDiff = {
 					assignee = oldRosterName,
-					type = PlanDiffType.Insert,
-					newValue = DeepCopy(oldRosterEntry),
+					type = PlanDiffType.Delete,
+					oldValue = DeepCopy(oldRosterEntry),
 					result = true,
 				} ---@type PlanRosterDiff
 				tinsert(diff.roster, planRosterDiff)
