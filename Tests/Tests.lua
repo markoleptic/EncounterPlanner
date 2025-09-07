@@ -1477,11 +1477,11 @@ do
 			TestEqual(diff.metaData.difficulty.oldValue, DifficultyType.Mythic, "Changed difficulty")
 			TestEqual(diff.metaData.difficulty.newValue, DifficultyType.Heroic, "Changed difficulty")
 
-			TestEqual(diff.roster[1].type, PlanDiffType.Delete, "Deleted roster member")
+			TestEqual(diff.roster[1].type, PlanDiffType.Insert, "Deleted roster member")
 			TestEqual(diff.roster[2].type, PlanDiffType.Change, "Changed roster member")
 			TestEqual(diff.roster[2].oldValue.role, "role:damager", "Changed roster member")
 			TestEqual(diff.roster[2].newValue.role, "role:healer", "Changed roster member")
-			TestEqual(diff.roster[3].type, PlanDiffType.Insert, "Inserted roster member")
+			TestEqual(diff.roster[3].type, PlanDiffType.Delete, "Inserted roster member")
 
 			TestEqual(diff.assignments[1].type, PlanDiffType.Delete, "Deleted assignment")
 			TestEqual(diff.assignments[2].type, PlanDiffType.Equal, "Equal assignment")
@@ -1509,13 +1509,75 @@ do
 			local oldPlan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
 
+			local maxPlayerIndex = 30
+			for i = 11, maxPlayerIndex do
+				local assignee = "Player" .. i
+				oldPlan.roster[assignee] = RosterEntry:New()
+				if i % 2 == 0 then
+					oldPlan.roster[assignee].role = "role:damager"
+				end
+				tinsert(oldPlan.assigneesAndSpells, { assignee = assignee, spells = {} })
+				for spellID = 1, random(5, 10) do
+					tinsert(oldPlan.assigneesAndSpells[#oldPlan.assigneesAndSpells].spells, spellID)
+				end
+			end
+
 			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 			do
 				local diff = DiffPlans(oldPlan, newPlan)
 				TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
 			end
 
+			newPlan.roster["Player13"] = nil
+			newPlan.roster["Player8"].role = "role:healer"
+			newPlan.roster["Player22"] = {
+				class = "class:DemonHunter",
+				classColoredName = GetClassColor("DEMONHUNTER"):WrapTextInColorCode("Player22"),
+				role = "role:tank",
+			}
+
 			newPlan.content = RemoveTabs(SplitStringIntoTable(textTwo))
+
+			local function AddRosterMember()
+				maxPlayerIndex = maxPlayerIndex + 1
+				local assignee = "Player" .. maxPlayerIndex
+				newPlan.roster[assignee] = RosterEntry:New()
+				if maxPlayerIndex % 2 == 0 then
+					newPlan.roster[assignee].role = "role:damager"
+				end
+				return assignee
+			end
+
+			for _ = 1, floor(#newPlan.assigneesAndSpells * 0.5) do
+				local choice = random() -- [0,1)
+				local assigneesAndSpellsCount = #newPlan.assigneesAndSpells
+				if choice < 0.3 and assigneesAndSpellsCount > 0 then -- delete
+					local idx = random(1, assigneesAndSpellsCount)
+					tremove(newPlan.assigneesAndSpells, idx)
+				elseif choice < 0.6 then -- insert
+					local newAssignee = AddRosterMember()
+					local idx = random(1, assigneesAndSpellsCount + 1)
+					tinsert(newPlan.assigneesAndSpells, idx, { assignee = newAssignee, spells = {} })
+					local spells = newPlan.assigneesAndSpells[idx].spells
+					for spellID = 1, random(5, 10) do
+						tinsert(spells, spellID)
+					end
+				elseif assigneesAndSpellsCount > 0 then -- change
+					local idx = random(1, assigneesAndSpellsCount)
+					local spells = newPlan.assigneesAndSpells[idx].spells
+					if #spells > 1 then
+						if random() < 0.5 then
+							for spellIndex = 1, random(1, #spells - 1) do
+								tremove(spells, spellIndex)
+							end
+						else
+							for spellID = 6, random(11, 16) do
+								tinsert(spells, spellID)
+							end
+						end
+					end
+				end
+			end
 
 			local rosterCount = 0
 			for _ in pairs(newPlan.roster) do
@@ -1523,21 +1585,25 @@ do
 			end
 
 			local assignees = {}
+			local seen = {}
 			for _, assignment in ipairs(newPlan.assignments) do
-				tinsert(assignees, assignment.assignee)
+				if not seen[assignment.assignee] then
+					tinsert(assignees, assignment.assignee)
+					seen[assignment.assignee] = true
+				end
 			end
 
-			for _ = 1, math.random(20, 60) do
-				local choice = math.random() -- [0,1)
+			for _ = 1, random(20, 60) do
+				local choice = random() -- [0,1)
 				local len = #newPlan.assignments
 				if choice < 0.3 and len > 0 then -- delete
-					local idx = math.random(1, len)
+					local idx = random(1, len)
 					tremove(newPlan.assignments, idx)
 				elseif choice < 0.6 then -- insert
-					local idx = math.random(1, len + 1)
+					local idx = random(1, len + 1)
 					tinsert(newPlan.assignments, idx, testUtilities.CreateRandomAssignment(newPlan, boss, assignees))
 				elseif len > 0 then -- change
-					local idx = math.random(1, len)
+					local idx = random(1, len)
 					newPlan.assignments[idx].assignee = testUtilities.GetRandomAssignee(newPlan.roster, rosterCount)
 				end
 			end
@@ -1554,8 +1620,121 @@ do
 			TestEqual(oldPlan.roster, newPlan.roster, "New plan roster applied correctly")
 			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
 			TestEqual(oldPlan.content, newPlan.content, "New plan content applied correctly")
+			TestEqual(
+				oldPlan.assigneesAndSpells,
+				newPlan.assigneesAndSpells,
+				"New plan assigneesAndSpells applied correctly"
+			)
 
 			return "MergePlan"
+		end
+
+		function test.CreatePlanTemplate()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			local assigneeSpellSets = utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance")
+			local templates = {}
+			local filteredAssignees = {}
+			for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
+				local randomNumber = random()
+				if randomNumber < 0.2 then
+					filteredAssignees[assigneeSpellSet.assignee] = true
+				end
+			end
+			local template = utilities.CreatePlanTemplate(templates, plan, "Test", assigneeSpellSets, filteredAssignees)
+			TestEqual(templates[1], template, "Template added")
+
+			local assigneesAndSpellsAsKeysFromAssignments = {}
+			for _, assignment in ipairs(plan.assignments) do
+				local assignee = assignment.assignee
+				if not filteredAssignees[assignee] then
+					if not assigneesAndSpellsAsKeysFromAssignments[assignee] then
+						assigneesAndSpellsAsKeysFromAssignments[assignee] = {}
+					end
+					assigneesAndSpellsAsKeysFromAssignments[assignee][assignment.spellID] = true
+				end
+			end
+
+			local assigneeRosterEntries = {}
+			local assigneesAndSpellsAsKeys = {}
+			for _, assigneeSpellSet in ipairs(template.assigneesAndSpells) do
+				assigneesAndSpellsAsKeys[assigneeSpellSet.assignee] = {}
+				if assigneeSpellSet.assigneeRosterEntry then
+					assigneeRosterEntries[assigneeSpellSet.assignee] = assigneeSpellSet.assigneeRosterEntry
+				end
+				for _, spellID in ipairs(assigneeSpellSet.spells) do
+					assigneesAndSpellsAsKeys[assigneeSpellSet.assignee][spellID] = true
+				end
+			end
+
+			for assignee, rosterEntry in pairs(plan.roster) do
+				if not filteredAssignees[assignee] and assigneesAndSpellsAsKeysFromAssignments[assignee] then
+					local containsAssignee = assigneesAndSpellsAsKeys[assignee] ~= nil
+					TestEqual(containsAssignee, true, "Contains assignee")
+					TestEqual(assigneeRosterEntries[assignee], rosterEntry, "Contains roster entry")
+				end
+			end
+
+			TestEqual(assigneesAndSpellsAsKeysFromAssignments, assigneesAndSpellsAsKeys, "Assignees and spells created")
+
+			return "CreatePlanTemplate"
+		end
+
+		function test.ApplyPlanTemplate()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			plan.roster["Buh"] = Private.classes.RosterEntry:New()
+			plan.roster["Guh"] = Private.classes.RosterEntry:New()
+			local assigneeSpellSets = utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance")
+			local templates = {}
+			local filteredAssignees = {}
+			for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
+				local randomNumber = random()
+				if randomNumber < 0.2 and assigneeSpellSet.assignee ~= "Buh" then
+					filteredAssignees[assigneeSpellSet.assignee] = true
+				end
+			end
+
+			local assigneesAndSpellsAsKeysFromAssignments = {}
+			for _, assignment in ipairs(plan.assignments) do
+				local assignee = assignment.assignee
+				if not filteredAssignees[assignee] then
+					if not assigneesAndSpellsAsKeysFromAssignments[assignee] then
+						assigneesAndSpellsAsKeysFromAssignments[assignee] = {}
+					end
+					assigneesAndSpellsAsKeysFromAssignments[assignee][assignment.spellID] = true
+				end
+			end
+
+			local template = utilities.CreatePlanTemplate(templates, plan, "Test", assigneeSpellSets, filteredAssignees)
+			local planTwo = CreatePlan(plans, "Test2", boss.dungeonEncounterID, DifficultyType.Mythic)
+			utilities.ApplyPlanTemplate(template, planTwo)
+
+			local assigneeRosterEntries = {}
+			local assigneesAndSpellsAsKeys = {}
+			for _, assigneeSpellSet in ipairs(planTwo.assigneesAndSpells) do
+				assigneesAndSpellsAsKeys[assigneeSpellSet.assignee] = {}
+				if assigneeSpellSet.assigneeRosterEntry then
+					assigneeRosterEntries[assigneeSpellSet.assignee] = assigneeSpellSet.assigneeRosterEntry
+				end
+				for _, spellID in ipairs(assigneeSpellSet.spells) do
+					assigneesAndSpellsAsKeys[assigneeSpellSet.assignee][spellID] = true
+				end
+			end
+
+			for assignee, rosterEntry in pairs(plan.roster) do
+				if not filteredAssignees[assignee] and assigneesAndSpellsAsKeysFromAssignments[assignee] then
+					local containsAssignee = assigneesAndSpellsAsKeys[assignee] ~= nil
+					TestEqual(containsAssignee, true, "Contains assignee")
+					TestEqual(assigneeRosterEntries[assignee], rosterEntry, "Contains roster entry")
+				end
+			end
+
+			TestEqual(assigneesAndSpellsAsKeysFromAssignments, assigneesAndSpellsAsKeys, "Assignees and spells applied")
+
+			return "ApplyPlanTemplate"
 		end
 	end
 end

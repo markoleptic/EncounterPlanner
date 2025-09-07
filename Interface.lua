@@ -1591,6 +1591,7 @@ do -- Plan Menu Button s.Handlers
 	end
 
 	local CreateUniqueTemplateName = utilities.CreateUniqueTemplateName
+	local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 
 	local function HandleCreateTemplateButtonClicked()
 		if not Private.newTemplateDialog then
@@ -1615,8 +1616,7 @@ do -- Plan Menu Button s.Handlers
 			local sortType = AddOn.db.profile.preferences.assignmentSortType
 			local sortedTimelineAssignments =
 				SortAssignments(currentPlan, sortType, GetCurrentBossDungeonEncounterID(), true, currentPlan.difficulty)
-			local orderedAssigneeSpellSets =
-				interfaceUpdater.SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
+			local orderedAssigneeSpellSets = SortAssigneesWithSpellID(sortedTimelineAssignments)
 			local filteredAssignees = {}
 			for _, assigneeSpellSet in ipairs(orderedAssigneeSpellSets) do
 				filteredAssignees[assigneeSpellSet.assignee] = false

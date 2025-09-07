@@ -1927,8 +1927,14 @@ do
 				sort(missingSpellIDs, function(a, b)
 					if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
 						return a < b
+					else
+						local nameA, nameB = GetSpellName(a), GetSpellName(b)
+						if nameA and nameB then
+							return nameA < nameB
+						else
+							return a < b
+						end
 					end
-					return GetSpellName(a) < GetSpellName(b)
 				end)
 				for i = #missingSpellIDs, 1, -1 do
 					tinsert(assignmentSpellSets.spells, 1, missingSpellIDs[i])
@@ -1962,6 +1968,40 @@ do
 
 		return assigneeSpellSetsFromAssignments
 	end
+end
+
+-- Sets the order field for timeline assignments and creates a sorted table for rows in the assignment timeline.
+-- Also returns a table where timeline assignments are grouped by assignee.
+---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
+---@return table<integer, AssigneeSpellSet> orderedAssigneeSpellSets
+---@return table<string, table<integer, TimelineAssignment>> groupedByAssignee
+function Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	local assigneeIndices = {} ---@type table<integer, string>
+	local groupedByAssignee = {} ---@type table<string, table<integer, TimelineAssignment>>
+
+	for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
+		local assignee = timelineAssignment.assignment.assignee
+		if not groupedByAssignee[assignee] then
+			groupedByAssignee[assignee] = {}
+			tinsert(assigneeIndices, assignee)
+		end
+		tinsert(groupedByAssignee[assignee], timelineAssignment)
+	end
+
+	local assigneeOrder = {} ---@type table<integer, AssigneeSpellSet>
+	for _, assignee in ipairs(assigneeIndices) do
+		tinsert(assigneeOrder, { assignee = assignee, spells = {} })
+		local visited = {} ---@type table<integer, boolean>
+		for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
+			local spellID = timelineAssignment.assignment.spellID
+			if not visited[spellID] then
+				visited[spellID] = true
+				tinsert(assigneeOrder[#assigneeOrder].spells, spellID)
+			end
+		end
+	end
+
+	return assigneeOrder, groupedByAssignee
 end
 
 ---@param assignee string
@@ -2564,17 +2604,21 @@ end
 ---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 function Utilities.SortAssigneeSpellSets(assigneeSpellSets)
 	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
-		sort(assigneeSpellSet.spells, function(a, b)
-			if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
-				return a < b
-			else
-				return GetSpellName(a) < GetSpellName(b)
-			end
-		end)
+		sort(assigneeSpellSet.spells)
 	end
 	sort(assigneeSpellSets, function(a, b)
 		return a.assignee < b.assignee
 	end)
+end
+
+---@param plan Plan
+---@param assignmentSortType AssignmentSortType
+---@return table<integer, AssigneeSpellSet>
+function Utilities.CreateAssigneeSpellSetsFromPlan(plan, assignmentSortType)
+	local sortedTimelineAssignments =
+		Utilities.SortAssignments(plan, assignmentSortType, plan.dungeonEncounterID, true, plan.difficulty)
+	local assigneeSpellSets, _ = Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
+	return assigneeSpellSets
 end
 
 ---@param templates table<integer, PlanTemplate>
@@ -3151,7 +3195,12 @@ do
 			if a.spellID <= constants.kTextAssignmentSpellID or b.spellID <= constants.kTextAssignmentSpellID then
 				return a.spellID < b.spellID
 			else
-				return GetSpellName(a.spellID) < GetSpellName(b.spellID)
+				local nameA, nameB = GetSpellName(a.spellID), GetSpellName(b.spellID)
+				if nameA and nameB then
+					return nameA < nameB
+				else
+					return a.spellID < b.spellID
+				end
 			end
 		end
 		return a.assignee < b.assignee
@@ -3253,6 +3302,8 @@ do
 		end
 
 		-- Assignee spell sets
+		Utilities.SortAssigneeSpellSets(oldPlan.assigneesAndSpells)
+		Utilities.SortAssigneeSpellSets(newPlan.assigneesAndSpells)
 		local oldAssigneesAndSpells = FlattenAssigneesAndSpells(oldPlan.assigneesAndSpells)
 		local newAssigneesAndSpells = FlattenAssigneesAndSpells(newPlan.assigneesAndSpells)
 		diff.assigneesAndSpells =
@@ -3378,25 +3429,19 @@ do
 			end
 		end
 
-		local roster = existingPlan.roster
 		local newAssigneeSpellSets = {} ---@type table<integer, AssigneeSpellSet>
 		local indexMap = {}
 		for _, flatAssigneeSpellSet in ipairs(flattenedAssigneeSpellSets) do
 			local assignee = flatAssigneeSpellSet.assignee
 			if not indexMap[assignee] then
-				if not roster[assignee] then
-					if assignee ~= "{everyone}" and not assignee:find(":") then
-						roster[assignee] = RosterEntry:New()
-					end
-				end
 				tinsert(newAssigneeSpellSets, { assignee = assignee, spells = {} })
 				indexMap[assignee] = #newAssigneeSpellSets
 			end
 			local index = indexMap[assignee]
-			tinsert(newAssigneeSpellSets[index], flatAssigneeSpellSet.spellID)
+			tinsert(newAssigneeSpellSets[index].spells, flatAssigneeSpellSet.spellID)
 		end
 		Utilities.SortAssigneeSpellSets(newAssigneeSpellSets)
-		existingAssigneeSpellSets = newAssigneeSpellSets
+		existingPlan.assigneesAndSpells = newAssigneeSpellSets
 
 		return addedCount, removedCount, changedCount
 	end

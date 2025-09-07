@@ -568,42 +568,7 @@ do
 		end
 	end
 
-	-- Sets the order field for timeline assignments and creates a sorted table for rows in the assignment timeline.
-	-- Also returns a table where timeline assignments are grouped by assignee.
-	---@param sortedTimelineAssignments table<integer, TimelineAssignment> Sorted timeline assignments
-	---@param collapsed table<string, boolean> Table indicating if assignees are to appear collapsed on the timeline
-	---@return table<integer, AssigneeSpellSet> orderedAssigneeSpellSets
-	---@return table<string, table<integer, TimelineAssignment>> groupedByAssignee
-	function InterfaceUpdater.SortAssigneesWithSpellID(sortedTimelineAssignments, collapsed)
-		local assigneeIndices = {} ---@type table<integer, string>
-		local groupedByAssignee = {} ---@type table<string, table<integer, TimelineAssignment>>
-
-		for _, timelineAssignment in ipairs(sortedTimelineAssignments) do
-			local assignee = timelineAssignment.assignment.assignee
-			if not groupedByAssignee[assignee] then
-				groupedByAssignee[assignee] = {}
-				tinsert(assigneeIndices, assignee)
-			end
-			tinsert(groupedByAssignee[assignee], timelineAssignment)
-		end
-
-		local assigneeOrder = {} ---@type table<integer, AssigneeSpellSet>
-		for _, assignee in ipairs(assigneeIndices) do
-			tinsert(assigneeOrder, { assignee = assignee, spells = {} })
-			local visited = {} ---@type table<integer, boolean>
-			for _, timelineAssignment in ipairs(groupedByAssignee[assignee]) do
-				local spellID = timelineAssignment.assignment.spellID
-				if not visited[spellID] then
-					visited[spellID] = true
-					tinsert(assigneeOrder[#assigneeOrder].spells, spellID)
-				end
-			end
-		end
-
-		return assigneeOrder, groupedByAssignee
-	end
-
-	local SortAssigneesWithSpellID = InterfaceUpdater.SortAssigneesWithSpellID
+	local SortAssigneesWithSpellID = utilities.SortAssigneesWithSpellID
 	local ComputeChargeStates = InterfaceUpdater.ComputeChargeStates
 	local MergeTemplatesSorted = utilities.MergeTemplatesSorted
 
@@ -623,8 +588,7 @@ do
 		local sortType = AddOn.db.profile.preferences.assignmentSortType
 		local sortedTimelineAssignments =
 			SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve, currentPlan.difficulty)
-		local orderedAssigneeSpellSets, groupedByAssignee =
-			SortAssigneesWithSpellID(sortedTimelineAssignments, currentPlan.collapsed)
+		local orderedAssigneeSpellSets, groupedByAssignee = SortAssigneesWithSpellID(sortedTimelineAssignments)
 		for _, timelineAssignments in pairs(groupedByAssignee) do
 			ComputeChargeStates(timelineAssignments)
 		end
