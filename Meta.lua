@@ -192,7 +192,7 @@
 ---@field content table<integer, string> Miscellaneous text that other addons or WeakAuras can use for the encounter.
 ---@field assignments table<integer, Assignment> Assignments for the plan.
 ---@field roster table<string, RosterEntry> Roster for the plan.
----@field assigneesAndSpells table<integer, AssigneeSpellSet> Assignees and spells
+---@field assigneeSpellSets table<integer, AssigneeSpellSet> Assignees and spells (templates)
 ---@field collapsed table<string, boolean> Which assignees are collapsed in the assignment timeline.
 ---@field customPhaseDurations table<integer, number> Overridden boss phase durations.
 ---@field customPhaseCounts table<integer, number> Overridden boss phase counts.
@@ -207,7 +207,7 @@
 ---@field [6] table<integer, SerializedAssignment> assignments
 ---@field [7] table<string, SerializedRosterEntry> roster
 ---@field [8] table<integer, string> content
----@field [9] table<integer, SerializedAssigneeSpellSet> assignees and spells (templates)
+---@field [9] table<integer, SerializedAssigneeSpellSet> Assignees and spells (templates)
 
 ---@class SerializedAssignment
 ---@field [1] string assignee
@@ -436,7 +436,7 @@
 
 ---@class PlanTemplate
 ---@field name string Name of the template
----@field assigneesAndSpells table<integer, AssigneeSpellSet> Sorted entries.
+---@field assigneeSpellSets table<integer, AssigneeSpellSet> Sorted entries.
 
 ---@class CustomDungeonInstanceGroup
 ---@field instanceName string Custom text to use as the group name in a dropdown.
@@ -480,7 +480,7 @@
 ---@field assignments table<integer, PlanDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>>
 ---@field content table<integer, PlanDiffEntry<string>>
 ---@field roster table<integer, PlanRosterDiff>
----@field assigneesAndSpells table<integer, PlanDiffEntry<FlatAssigneeSpellSet>>
+---@field assigneeSpellSets table<integer, PlanDiffEntry<FlatAssigneeSpellSet>>
 ---@field metaData PlanMetaDataDiff
 ---@field empty boolean
 

@@ -473,15 +473,15 @@ function EPTimelineUtilities.UpdateTickMarks()
 	end
 end
 
----@param assigneesAndSpells table<integer, AssigneeSpellSet>
+---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 ---@param currentY number
 ---@return string? assignee
 ---@return integer? spellID
-function EPTimelineUtilities.FindAssigneeAndSpellFromDistanceFromTop(assigneesAndSpells, currentY)
+function EPTimelineUtilities.FindAssigneeAndSpellFromDistanceFromTop(assigneeSpellSets, currentY)
 	local relativeDistanceFromTop = abs(s.AssignmentTimeline.timelineFrame:GetTop() - currentY)
 	local totalAssignmentHeight = 0
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
-	for _, assigneeAndSpell in ipairs(assigneesAndSpells) do
+	for _, assigneeAndSpell in ipairs(assigneeSpellSets) do
 		totalAssignmentHeight = totalAssignmentHeight + assignmentHeight -- Row for assignee
 		if totalAssignmentHeight >= relativeDistanceFromTop then
 			return assigneeAndSpell.assignee, nil
@@ -502,7 +502,7 @@ end
 ---@return integer
 function EPTimelineUtilities.ComputeAssignmentRowIndex(assignee, spellID)
 	local rowIndex = 0
-	for _, assigneesAndSpell in ipairs(s.AssigneesAndSpells) do
+	for _, assigneesAndSpell in ipairs(s.AssigneeSpellSets) do
 		local assigneeEqual = assigneesAndSpell.assignee == assignee
 		if not s.Collapsed[assigneesAndSpell.assignee] then
 			for _, currentSpellID in ipairs(assigneesAndSpell.spells) do
@@ -529,7 +529,7 @@ function EPTimelineUtilities.ComputeAssignmentRowIndexFromAssignmentID(uniqueID)
 		local rowIndex = 0
 		local assignee = timelineAssignment.assignment.assignee
 		local spellID = timelineAssignment.assignment.spellID
-		for _, assigneesAndSpell in ipairs(s.AssigneesAndSpells) do
+		for _, assigneesAndSpell in ipairs(s.AssigneeSpellSets) do
 			local assigneeEqual = assigneesAndSpell.assignee == assignee
 			if not s.Collapsed[assigneesAndSpell.assignee] then
 				for _, currentSpellID in ipairs(assigneesAndSpell.spells) do

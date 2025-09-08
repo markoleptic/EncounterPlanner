@@ -2654,8 +2654,8 @@ function Utilities.CreatePlanTemplate(templates, plan, newTemplateName, assignee
 
 	local template = {
 		name = newTemplateName,
-		assigneesAndSpells = assigneeSpellSets,
-	}
+		assigneeSpellSets = assigneeSpellSets,
+	} ---@type PlanTemplate
 	tinsert(templates, template)
 	return template
 end
@@ -2665,12 +2665,12 @@ end
 function Utilities.ApplyPlanTemplate(template, plan)
 	local assigneeOrderIndex = {} ---@type table<string, integer>
 
-	for index, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
+	for index, assigneeSpellSet in ipairs(plan.assigneeSpellSets) do
 		assigneeOrderIndex[assigneeSpellSet.assignee] = index
 	end
 
 	local roster = plan.roster
-	for _, assigneeSpellSet in ipairs(template.assigneesAndSpells) do
+	for _, assigneeSpellSet in ipairs(template.assigneeSpellSets) do
 		local assignee = assigneeSpellSet.assignee
 		if not roster[assignee] then
 			if assignee ~= "{everyone}" and not assignee:find(":") then
@@ -2684,7 +2684,7 @@ function Utilities.ApplyPlanTemplate(template, plan)
 		end
 		local index = assigneeOrderIndex[assigneeSpellSet.assignee]
 		if index then -- Add missing spells for assignee
-			local existingAssigneeSpellSet = plan.assigneesAndSpells[index]
+			local existingAssigneeSpellSet = plan.assigneeSpellSets[index]
 			local existing = {}
 			for _, spellID in ipairs(existingAssigneeSpellSet.spells) do
 				existing[spellID] = true
@@ -2696,7 +2696,7 @@ function Utilities.ApplyPlanTemplate(template, plan)
 				end
 			end
 		else -- Add assignee and spells
-			tinsert(plan.assigneesAndSpells, Private.DeepCopy(assigneeSpellSet))
+			tinsert(plan.assigneeSpellSets, Private.DeepCopy(assigneeSpellSet))
 		end
 	end
 end
@@ -2746,7 +2746,7 @@ end
 function Utilities.AddAssignmentToPlan(plan, assignment)
 	tinsert(plan.assignments, assignment)
 	local assignee, spellID = assignment.assignee, assignment.spellID
-	for _, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
+	for _, assigneeSpellSet in ipairs(plan.assigneeSpellSets) do
 		if assigneeSpellSet.assignee == assignee then
 			for index, currentSpellID in ipairs(assigneeSpellSet.spells) do
 				if spellID == currentSpellID then
@@ -2767,7 +2767,7 @@ end
 function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 	local removedAssignmentCount, removedTemplateCount = 0, 0
 	local assignments = plan.assignments
-	local assigneesAndSpells = plan.assigneesAndSpells
+	local assigneeSpellSets = plan.assigneeSpellSets
 
 	if type(assigneeOrUniqueID) == "string" then
 		-- Remove assignments
@@ -2794,7 +2794,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 		end
 
 		-- Remove templates
-		for index, assigneeSpellSet in ipairs(assigneesAndSpells) do
+		for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
 			if assigneeSpellSet.assignee == assigneeOrUniqueID then
 				local spells = assigneeSpellSet.spells
 				if spellID then
@@ -2811,7 +2811,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 				end
 
 				if not next(spells) then
-					tremove(assigneesAndSpells, index)
+					tremove(assigneeSpellSets, index)
 				end
 				break
 			end
@@ -2843,7 +2843,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 				end
 			end
 			if foundMatchingAssigneeAndSpellID == false then -- Remove templates
-				for index, assigneeSpellSet in ipairs(assigneesAndSpells) do
+				for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
 					if assigneeSpellSet.assignee == matchingAssignee then
 						local spells = assigneeSpellSet.spells
 
@@ -2856,7 +2856,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 						end
 
 						if not next(spells) then
-							tremove(assigneesAndSpells, index)
+							tremove(assigneeSpellSets, index)
 						end
 						break
 					end
@@ -3190,7 +3190,7 @@ do
 	---@param a FlatAssigneeSpellSet
 	---@param b FlatAssigneeSpellSet
 	---@return boolean
-	local function SortFlattenedAssigneesAndSpells(a, b)
+	local function SortFlattenedAssigneeSpellSets(a, b)
 		if a.assignee == b.assignee then
 			if a.spellID <= constants.kTextAssignmentSpellID or b.spellID <= constants.kTextAssignmentSpellID then
 				return a.spellID < b.spellID
@@ -3206,16 +3206,16 @@ do
 		return a.assignee < b.assignee
 	end
 
-	---@param assigneesAndSpells table<integer, AssigneeSpellSet>
+	---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 	---@return table<integer, FlatAssigneeSpellSet>
-	local function FlattenAssigneesAndSpells(assigneesAndSpells)
+	local function FlattenAssigneeSpellSets(assigneeSpellSets)
 		local flattened = {}
-		for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+		for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 			for _, spellID in ipairs(assigneeSpellSet.spells) do
 				tinsert(flattened, { assignee = assigneeSpellSet.assignee, spellID = spellID })
 			end
 		end
-		sort(flattened, SortFlattenedAssigneesAndSpells)
+		sort(flattened, SortFlattenedAssigneeSpellSets)
 		return flattened
 	end
 
@@ -3234,7 +3234,7 @@ do
 				return a == b
 			end)),
 			metaData = {},
-			assigneesAndSpells = {},
+			assigneeSpellSets = {},
 			empty = true,
 		}
 
@@ -3302,12 +3302,12 @@ do
 		end
 
 		-- Assignee spell sets
-		Utilities.SortAssigneeSpellSets(oldPlan.assigneesAndSpells)
-		Utilities.SortAssigneeSpellSets(newPlan.assigneesAndSpells)
-		local oldAssigneesAndSpells = FlattenAssigneesAndSpells(oldPlan.assigneesAndSpells)
-		local newAssigneesAndSpells = FlattenAssigneesAndSpells(newPlan.assigneesAndSpells)
-		diff.assigneesAndSpells =
-			Utilities.CoalesceChanges(Utilities.MyersDiff(oldAssigneesAndSpells, newAssigneesAndSpells, function(a, b)
+		Utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
+		Utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
+		local oldAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
+		local newAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
+		diff.assigneeSpellSets =
+			Utilities.CoalesceChanges(Utilities.MyersDiff(oldAssigneeSpellSets, newAssigneeSpellSets, function(a, b)
 				return a.assignee == b.assignee and a.spellID == b.spellID
 			end))
 
@@ -3325,7 +3325,7 @@ do
 		end
 
 		CheckIfNotEmpty(diff.assignments)
-		CheckIfNotEmpty(diff.assigneesAndSpells)
+		CheckIfNotEmpty(diff.assigneeSpellSets)
 		CheckIfNotEmpty(diff.roster)
 		CheckIfNotEmpty(diff.content)
 
@@ -3385,11 +3385,11 @@ do
 	---@return integer addedCount
 	---@return integer removedCount
 	---@return integer changedCount
-	function Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, tableDiff)
+	function Utilities.ApplyDiffToAssigneeSpellSets(existingPlan, tableDiff)
 		local addedCount, removedCount, changedCount = 0, 0, 0
 
-		local existingAssigneeSpellSets = existingPlan.assigneesAndSpells
-		local flattenedAssigneeSpellSets = FlattenAssigneesAndSpells(existingAssigneeSpellSets)
+		local existingAssigneeSpellSets = existingPlan.assigneeSpellSets
+		local flattenedAssigneeSpellSets = FlattenAssigneeSpellSets(existingAssigneeSpellSets)
 
 		-- Apply deletes first (reverse order)
 		for i = #tableDiff, 1, -1 do
@@ -3427,7 +3427,7 @@ do
 			tinsert(newAssigneeSpellSets[index].spells, flatAssigneeSpellSet.spellID)
 		end
 		Utilities.SortAssigneeSpellSets(newAssigneeSpellSets)
-		existingPlan.assigneesAndSpells = newAssigneeSpellSets
+		existingPlan.assigneeSpellSets = newAssigneeSpellSets
 
 		return addedCount, removedCount, changedCount
 	end
@@ -3505,7 +3505,7 @@ do
 			added, removed, changed = 0, 0, 0
 		end
 
-		added, removed, changed = Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, planDiff.assigneesAndSpells)
+		added, removed, changed = Utilities.ApplyDiffToAssigneeSpellSets(existingPlan, planDiff.assigneeSpellSets)
 		if added > 0 or removed > 0 or changed > 0 then
 			tinsert(
 				messages,

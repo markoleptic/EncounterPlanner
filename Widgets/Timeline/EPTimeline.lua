@@ -68,7 +68,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 			return
 		end
 
-		local assignee, spellID = FindAssigneeAndSpellFromDistanceFromTop(s.AssigneesAndSpells, currentY)
+		local assignee, spellID = FindAssigneeAndSpellFromDistanceFromTop(s.AssigneeSpellSets, currentY)
 
 		if assignee then
 			self:Fire("CreateNewAssignment", assignee, spellID, time)
@@ -411,7 +411,7 @@ local function CalculateRequiredAssignmentHeight(self)
 	local totalAssignmentHeight = 0
 	local totalAssignmentRows = 0
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
-	for _, assigneeSpellSet in ipairs(s.AssigneesAndSpells) do
+	for _, assigneeSpellSet in ipairs(s.AssigneeSpellSets) do
 		totalAssignmentHeight = totalAssignmentHeight + assignmentHeight
 		totalAssignmentRows = totalAssignmentRows + 1
 		if not s.Collapsed[assigneeSpellSet.assignee] then
@@ -497,7 +497,7 @@ local function CalculateMinMaxStepAssignmentHeight(self)
 	local usableHeight = availableHeight - bossTimelineHeight - 2
 	local maximumNumberOfAssignmentRows = floor(usableHeight / (timelineRows.assignmentHeight + 2))
 
-	for _, assigneeSpellSet in ipairs(s.AssigneesAndSpells) do
+	for _, assigneeSpellSet in ipairs(s.AssigneeSpellSets) do
 		if totalAssignmentRows <= maximumNumberOfAssignmentRows then
 			maxH = maxH + stepH
 		end
@@ -539,7 +539,7 @@ local function OnAcquire(self)
 	self.bossAbilityOrder = {}
 	self.bossPhaseOrder = {}
 	self.bossPhases = {}
-	s.AssigneesAndSpells = {}
+	s.AssigneeSpellSets = {}
 	self.bossAbilityVisibility = {}
 	self.allowHeightResizing = false
 	self.bossAbilityDimensions = { min = 0, max = 0, step = 0 }
@@ -756,10 +756,10 @@ end
 
 ---@param self EPTimeline
 ---@param assignments table<integer, TimelineAssignment>
----@param assigneesAndSpells table<integer, AssigneeSpellSet>
+---@param assigneeSpellSets table<integer, AssigneeSpellSet>
 ---@param collapsed table<string, boolean>
-local function SetAssignments(self, assignments, assigneesAndSpells, collapsed)
-	s:SetAssignments(assignments, collapsed, assigneesAndSpells)
+local function SetAssignments(self, assignments, assigneeSpellSets, collapsed)
+	s:SetAssignments(assignments, collapsed, assigneeSpellSets)
 	self:UpdateHeightFromAssignments()
 	self:SetAssignmentTimelineVerticalScroll()
 end

@@ -348,7 +348,7 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 		end
 	end
 
-	for index, planTemplateDiff in ipairs(diffs.assigneesAndSpells) do
+	for index, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
 		if planTemplateDiff.type ~= PlanDiffType.Equal then
 			if not addedAssigneeSpellSetsSection then
 				dividerLineIndex = AddSectionLabel(self, L["Templates"], dividerLineIndex)
@@ -374,7 +374,7 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 				planTemplateDiff.type
 			)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
-				self.planDiff.assigneesAndSpells[index].result = checked
+				self.planDiff.assigneeSpellSets[index].result = checked
 			end)
 
 			self.mainContainer:AddChild(entry)

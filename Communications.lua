@@ -155,9 +155,9 @@ do
 		end
 		serializedPlan[8] = plan.content
 		serializedPlan[9] = {}
-		local assigneesAndSpells = serializedPlan[9]
-		for _, assigneeSpellSet in ipairs(plan.assigneesAndSpells) do
-			assigneesAndSpells[#assigneesAndSpells + 1] =
+		local assigneeSpellSets = serializedPlan[9]
+		for _, assigneeSpellSet in ipairs(plan.assigneeSpellSets) do
+			assigneeSpellSets[#assigneeSpellSets + 1] =
 				{ [1] = assigneeSpellSet.assignee, [2] = assigneeSpellSet.spells }
 		end
 		return serializedPlan
@@ -182,7 +182,7 @@ do
 		end
 		plan.content = serializedPlan[8]
 		for _, assigneeSpellSet in ipairs(serializedPlan[9]) do
-			tinsert(plan.assigneesAndSpells, { assignee = assigneeSpellSet[1], spells = assigneeSpellSet[2] })
+			tinsert(plan.assigneeSpellSets, { assignee = assigneeSpellSet[1], spells = assigneeSpellSet[2] })
 		end
 		return plan
 	end

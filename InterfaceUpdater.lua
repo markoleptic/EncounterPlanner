@@ -593,7 +593,7 @@ do
 			ComputeChargeStates(timelineAssignments)
 		end
 		orderedAssigneeSpellSets =
-			MergeTemplatesSorted(orderedAssigneeSpellSets, currentPlan.assigneesAndSpells, currentPlan.roster, sortType)
+			MergeTemplatesSorted(orderedAssigneeSpellSets, currentPlan.assigneeSpellSets, currentPlan.roster, sortType)
 
 		UpdateAssignmentList(orderedAssigneeSpellSets, firstUpdate)
 

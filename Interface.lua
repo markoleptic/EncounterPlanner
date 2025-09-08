@@ -2103,8 +2103,8 @@ local function HandleCollapseAllButtonClicked()
 		collapsed[assignment.assignee] = true
 	end
 
-	local assigneesAndSpells = currentPlan.assigneesAndSpells
-	for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+	local assigneeSpellSets = currentPlan.assigneeSpellSets
+	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 		collapsed[assigneeSpellSet.assignee] = true
 	end
 	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
@@ -2119,8 +2119,8 @@ local function HandleExpandAllButtonClicked()
 		collapsed[assignment.assignee] = false
 	end
 
-	local assigneesAndSpells = currentPlan.assigneesAndSpells
-	for _, assigneeSpellSet in ipairs(assigneesAndSpells) do
+	local assigneeSpellSets = currentPlan.assigneeSpellSets
+	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 		collapsed[assigneeSpellSet.assignee] = false
 	end
 

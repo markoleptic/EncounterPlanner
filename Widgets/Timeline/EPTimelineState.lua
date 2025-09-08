@@ -16,7 +16,7 @@ local BossAbilitySelectionType = Private.constants.BossAbilitySelectionType
 local s = {
 	-- Used to determine which assignee or spell to create when the timeline is clicked, total assignment timeline
 	-- height, and assignment dimensions (min/max/step).
-	AssigneesAndSpells = {}, ---@type table<integer, AssigneeSpellSet>
+	AssigneeSpellSets = {}, ---@type table<integer, AssigneeSpellSet>
 	AssignmentBeingDuplicated = false,
 	AssignmentFrameBeingDragged = nil, ---@type AssignmentFrame|nil
 	AssignmentIsDragging = false,
@@ -145,7 +145,7 @@ end
 function s:SetAssignments(assignments, collapsed, assigneeAndSpellSets)
 	self.TimelineAssignments = assignments
 	self.Collapsed = collapsed
-	self.AssigneesAndSpells = assigneeAndSpellSets
+	self.AssigneeSpellSets = assigneeAndSpellSets
 end
 
 ---@param self EPTimelineState
@@ -158,7 +158,7 @@ end
 
 ---@param self EPTimelineState
 function s:Reset()
-	self.AssigneesAndSpells = {}
+	self.AssigneeSpellSets = {}
 	local SetAssignmentFrameOutline = Private.timeline.utilities.SetAssignmentFrameOutline
 
 	for _, frame in ipairs(self.AssignmentFrames) do
