@@ -86,12 +86,10 @@ local function OnAcquire(self)
 
 	local windowBar = AceGUI:Create("EPWindowBar")
 	windowBar:SetTitle(k.Title)
+	windowBar:RemoveButtons()
 	windowBar.frame:SetParent(self.frame)
 	windowBar.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
 	windowBar.frame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT")
-	windowBar:SetCallback("CloseButtonClicked", function()
-		self:Fire("CloseButtonClicked")
-	end)
 	windowBar:SetCallback("OnMouseDown", function()
 		self.frame:StartMoving()
 	end)
@@ -100,7 +98,7 @@ local function OnAcquire(self)
 	end)
 	self.windowBar = windowBar
 
-	self.text:SetPoint("TOP", windowBar, "BOTTOM", 0, -k.ContentFramePadding.y)
+	self.text:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.ContentFramePadding.y)
 	self.text:SetPoint("LEFT", self.frame, "LEFT", k.ContentFramePadding.x, 0)
 	self.text:SetPoint("RIGHT", self.frame, "RIGHT", -k.ContentFramePadding.x, 0)
 
@@ -351,29 +349,42 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 	end
 
 	for index, planTemplateDiff in ipairs(diffs.assigneesAndSpells) do
-		if not addedAssigneeSpellSetsSection then
-			dividerLineIndex = AddSectionLabel(self, L["Templates"], dividerLineIndex)
-			addedAssigneeSpellSetsSection = true
-		end
-		local entry = AceGUI:Create("EPDiffViewerEntry")
-		entry:SetFullWidth(true)
-		entry:SetAssigneeSpellSetEntryData(
-			planTemplateDiff.oldValue,
-			planTemplateDiff.newValue,
-			oldPlan.roster,
-			newPlan.roster,
-			planTemplateDiff.type
-		)
-		entry:SetCallback("OnValueChanged", function(_, _, checked)
-			self.planDiff.assigneesAndSpells[index].result = checked
-		end)
-		self.mainContainer:AddChild(entry)
+		if planTemplateDiff.type ~= PlanDiffType.Equal then
+			if not addedAssigneeSpellSetsSection then
+				dividerLineIndex = AddSectionLabel(self, L["Templates"], dividerLineIndex)
+				addedAssigneeSpellSetsSection = true
+			end
 
-		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-		elseif entry.valueLabelTwo then
-			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
+			local oldValue, newValue
+			if planTemplateDiff.type == PlanDiffType.Insert then
+				oldValue = planTemplateDiff.value
+			elseif planTemplateDiff.type == PlanDiffType.Delete then
+				oldValue = planTemplateDiff.value
+			elseif planTemplateDiff.type == PlanDiffType.Change then
+				oldValue = planTemplateDiff.oldValue
+				newValue = planTemplateDiff.newValue
+			end
+			local entry = AceGUI:Create("EPDiffViewerEntry")
+			entry:SetFullWidth(true)
+			entry:SetAssigneeSpellSetEntryData(
+				oldValue,
+				newValue,
+				oldPlan.roster,
+				newPlan.roster,
+				planTemplateDiff.type
+			)
+			entry:SetCallback("OnValueChanged", function(_, _, checked)
+				self.planDiff.assigneesAndSpells[index].result = checked
+			end)
+
+			self.mainContainer:AddChild(entry)
+
+			if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
+				entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
+			elseif entry.valueLabelTwo then
+				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
+					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
+				end
 			end
 		end
 	end
