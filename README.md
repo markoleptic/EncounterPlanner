@@ -1,9 +1,8 @@
 # Encounter Planner
 
-Encounter Planner is an assignment planning and reminder tool for mythic dungeon and mythic raid boss encounters.
+Encounter Planner is an assignment planning and reminder tool for dungeon and raid boss encounters.
 
 It is designed to be easy to use while providing a feature set you would expect from a website.
-Timers for all bosses in Liberation of Undermine and Season 2 Mythic+ dungeons are included.
 
 If you encounter bugs, unexpected behavior, inaccurate timers, or have any suggestions, please let me know in the [Encounter Planner Discord](https://discord.gg/9bmH43JSzy) and I will do my best to fix or improve it.
 
@@ -18,10 +17,12 @@ If you encounter bugs, unexpected behavior, inaccurate timers, or have any sugge
 -   Encounter Planners uses _plans_ to store assignments.
 -   Import notes from other sources such as MRT, Viserio, or plain text.
 -   Export plans from Encounter Planner to plain text.
--   Create any number of plans per boss; Your shared raid plan and personal plan can both be active so you receive reminders from both.
+-   Create any number of plans per boss; Reminders can be active for more than one plan at once.
+-   Templates can be applied to quickly add placeholders for assignees and spells to the timeline.
 -   Plans can be swapped between bosses, even if they contain combat log event assignments.
 -   Each plan has its own roster that can be populated quickly from a shared roster or from your group.
--   Players with group lead or assistant roles can easily share plans with others in the raid or party.
+-   Players with group lead or assistant roles can share plans with others in the raid or party.
+-   Players without group lead can propose changes to plans to the group leader, who can choose which changes to accept or reject.
 
 **Boss Timeline**
 
@@ -92,3 +93,7 @@ How do I know which assignment type to use?
     Combat log event assignments should be used when timed assignments would be unreliable, such as when a boss phase is triggered by percent health.
     Every spell of every boss is limited to only combat log event types that will actually occur.
     When adding an assignment in a boss phase that is triggered by something other than time, a curated ability and combat log event type is automatically chosen.
+
+## Credits
+
+Icons provided by [Icons8](https://icons8.com)
