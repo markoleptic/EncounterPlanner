@@ -3505,7 +3505,7 @@ do
 			added, removed, changed = 0, 0, 0
 		end
 
-		removed, added, changed = Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, planDiff.assigneesAndSpells)
+		added, removed, changed = Utilities.ApplyDiffForAssigneesAndSpells(existingPlan, planDiff.assigneesAndSpells)
 		if added > 0 or removed > 0 or changed > 0 then
 			tinsert(
 				messages,
@@ -3525,7 +3525,7 @@ do
 		end
 
 		local existingContent = existingPlan.content
-		removed, added, changed = Utilities.ApplyDiff(existingContent, planDiff.content, function(v)
+		added, removed, changed = Utilities.ApplyDiff(existingContent, planDiff.content, function(v)
 			return v
 		end)
 
