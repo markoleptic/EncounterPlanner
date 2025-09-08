@@ -68,7 +68,7 @@ local function HandleAssignmentTimelineFrameMouseUp(self, mouseButton)
 			return
 		end
 
-		local assignee, spellID = FindAssigneeAndSpellFromDistanceFromTop(s.AssigneeSpellSets, currentY)
+		local assignee, spellID = FindAssigneeAndSpellFromDistanceFromTop(currentY)
 
 		if assignee then
 			self:Fire("CreateNewAssignment", assignee, spellID, time)

@@ -424,6 +424,8 @@ function EPTimelineUtilities.UpdateTickMarks()
 	end
 
 	local Round = Private.utilities.Round
+	local tickHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
+	local mainTimelineSplitterFrame = s.MainTimelineSplitterFrame
 	for i = 0, s.TotalTimelineDuration, tickInterval do
 		local position = (i / s.TotalTimelineDuration) * timelineWidthWithoutPadding
 		local tickPosition = position + padding.x
@@ -447,7 +449,7 @@ function EPTimelineUtilities.UpdateTickMarks()
 		end
 
 		assignmentTick:SetWidth(tickWidth)
-		assignmentTick:SetHeight(s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments)
+		assignmentTick:SetHeight(tickHeight)
 		assignmentTick:SetPoint("TOP", assignmentTimelineFrame, "TOPLEFT", tickPosition, 0)
 		assignmentTick:SetPoint("BOTTOM", assignmentTimelineFrame, "BOTTOMLEFT", tickPosition, 0)
 		assignmentTick:Show()
@@ -455,7 +457,7 @@ function EPTimelineUtilities.UpdateTickMarks()
 		local label = s.TimelineLabels[i]
 		if not label then
 			---@type EPTimeLabel
-			label = s.MainTimelineSplitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+			label = mainTimelineSplitterFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 			s.TimelineLabels[i] = label
 			if k.FontPath then
 				label:SetFont(k.FontPath, k.TickFontSize)
@@ -467,26 +469,26 @@ function EPTimelineUtilities.UpdateTickMarks()
 		local seconds = time % 60
 
 		label:SetText(format("%d:%02d", minutes, seconds))
-		label:SetPoint("CENTER", s.MainTimelineSplitterFrame, "LEFT", tickPosition, 0)
+		label:SetPoint("CENTER", mainTimelineSplitterFrame, "LEFT", tickPosition, 0)
 		label:Show()
 		label.wantsToShow = true
 	end
 end
 
----@param assigneeSpellSets table<integer, AssigneeSpellSet>
 ---@param currentY number
 ---@return string? assignee
 ---@return integer? spellID
-function EPTimelineUtilities.FindAssigneeAndSpellFromDistanceFromTop(assigneeSpellSets, currentY)
+function EPTimelineUtilities.FindAssigneeAndSpellFromDistanceFromTop(currentY)
 	local relativeDistanceFromTop = abs(s.AssignmentTimeline.timelineFrame:GetTop() - currentY)
 	local totalAssignmentHeight = 0
+	local collapsed = s.Collapsed
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight + k.PaddingBetweenAssignments
-	for _, assigneeAndSpell in ipairs(assigneeSpellSets) do
+	for _, assigneeAndSpell in ipairs(s.AssigneeSpellSets) do
 		totalAssignmentHeight = totalAssignmentHeight + assignmentHeight -- Row for assignee
 		if totalAssignmentHeight >= relativeDistanceFromTop then
 			return assigneeAndSpell.assignee, nil
 		end
-		if not s.Collapsed[assigneeAndSpell.assignee] then
+		if not collapsed[assigneeAndSpell.assignee] then
 			for _, currentSpellID in ipairs(assigneeAndSpell.spells) do
 				totalAssignmentHeight = totalAssignmentHeight + assignmentHeight -- Row for spell
 				if totalAssignmentHeight >= relativeDistanceFromTop then
@@ -502,9 +504,10 @@ end
 ---@return integer
 function EPTimelineUtilities.ComputeAssignmentRowIndex(assignee, spellID)
 	local rowIndex = 0
+	local collapsed = s.Collapsed
 	for _, assigneesAndSpell in ipairs(s.AssigneeSpellSets) do
 		local assigneeEqual = assigneesAndSpell.assignee == assignee
-		if not s.Collapsed[assigneesAndSpell.assignee] then
+		if not collapsed[assigneesAndSpell.assignee] then
 			for _, currentSpellID in ipairs(assigneesAndSpell.spells) do
 				rowIndex = rowIndex + 1
 				if assigneeEqual == true and spellID == currentSpellID then
