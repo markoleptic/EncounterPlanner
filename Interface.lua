@@ -1291,6 +1291,7 @@ do -- Plan Menu Button s.Handlers
 	local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
 	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
+	local kNewTemplateDialogFrameLevel = constants.frameLevels.kNewTemplateDialogFrameLevel
 
 	local TextImportType = Private.classes.TextImportType
 
@@ -1684,7 +1685,7 @@ do -- Plan Menu Button s.Handlers
 			end)
 
 			newTemplateDialog.frame:SetParent(UIParent)
-			newTemplateDialog.frame:SetFrameLevel(kNewPlanDialogFrameLevel)
+			newTemplateDialog.frame:SetFrameLevel(kNewTemplateDialogFrameLevel)
 			local assigneeDropdownItemData = {}
 			local roster = GetCurrentRoster()
 			for _, assigneeSpellSet in ipairs(orderedAssigneeSpellSets) do

@@ -16,6 +16,7 @@ Private.constants = {
 		kExportEditBoxFrameLevel = 100,
 		kExternalTextEditorFrameLevel = 110,
 		kNewPlanDialogFrameLevel = 120,
+		kNewTemplateDialogFrameLevel = 130,
 		kOptionsMenuFrameLevel = 140,
 		kMessageBoxFrameLevel = 160,
 		kPatchNotesDialogFrameLevel = 180,
