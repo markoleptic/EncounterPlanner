@@ -3311,38 +3311,24 @@ do
 				return a.assignee == b.assignee and a.spellID == b.spellID
 			end))
 
-		if diff.empty == true then
-			for _, entry in ipairs(diff.assignments) do
-				if entry.result == true then
-					diff.empty = false
-					break
+		---@generic T
+		---@param tbl table<integer, PlanDiffEntry<T>>
+		local function CheckIfNotEmpty(tbl)
+			if diff.empty == true then
+				for _, entry in ipairs(tbl) do
+					if entry.result == true then
+						diff.empty = false
+						return
+					end
 				end
 			end
 		end
-		if diff.empty == true then
-			for _, entry in ipairs(diff.assigneesAndSpells) do
-				if entry.result == true then
-					diff.empty = false
-					break
-				end
-			end
-		end
-		if diff.empty == true then
-			for _, entry in ipairs(diff.roster) do
-				if entry.result == true then
-					diff.empty = false
-					break
-				end
-			end
-		end
-		if diff.empty == true then
-			for _, entry in ipairs(diff.content) do
-				if entry.result == true then
-					diff.empty = false
-					break
-				end
-			end
-		end
+
+		CheckIfNotEmpty(diff.assignments)
+		CheckIfNotEmpty(diff.assigneesAndSpells)
+		CheckIfNotEmpty(diff.roster)
+		CheckIfNotEmpty(diff.content)
+
 		if diff.empty == true then
 			if diff.metaData.difficulty then
 				diff.empty = false
