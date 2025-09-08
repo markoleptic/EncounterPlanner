@@ -94,7 +94,7 @@ local function CreateFlatAssigneeSpellSetDiffText(value, roster)
 	if value.spellID == Private.constants.kInvalidAssignmentSpellID then
 		spellName = L["Unknown"]
 	elseif value.spellID == Private.constants.kTextAssignmentSpellID then
-		text = text .. format("\n%s: %s", L["Text"], spellName)
+		spellName = L["Text"]
 	else
 		local maybeSpellName = GetSpellName(value.spellID)
 		if maybeSpellName then
