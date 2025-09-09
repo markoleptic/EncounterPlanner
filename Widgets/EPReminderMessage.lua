@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPReminderMessage"
 local Version = 1
 
@@ -24,7 +29,7 @@ local k = {
 	GreaterThanTenSecondsFormat = "%.0f",
 	LessThanTenSecondsFormat = "%.1f",
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
 		edgeFile = nil,
 		tile = true,
 		tileSize = 0,

@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPScrollFrame"
 local Version = 1
 
@@ -21,10 +26,10 @@ local k = {
 	MinEdgeMultiplier = 0.05,
 	MinThumbSize = 20,
 	ScrollFrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		edgeSize = 2,
 	},
 	ScrollFrameBackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },

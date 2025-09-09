@@ -580,6 +580,8 @@ end
 
 do
 	local cache = setmetatable({}, { __mode = "kv" })
+	local kFavoriteFilledTexture = constants.textures.kFavoriteFilled
+	local kFavoriteOutlineTexture = constants.textures.kFavoriteOutlined
 
 	---@param dropdownItemMenuData table<integer, DropdownItemData>
 	---@param visible boolean
@@ -589,9 +591,9 @@ do
 			if not data.dropdownItemMenuData then
 				if visible then
 					if favoritedItemsMap and favoritedItemsMap[data.itemValue] then
-						data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]]
+						data.customTexture = kFavoriteFilledTexture
 					else
-						data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]]
+						data.customTexture = kFavoriteOutlineTexture
 					end
 					data.customTextureVertexColor = { 1, 1, 1, 1 }
 					data.customTextureSelectable = true
@@ -961,16 +963,17 @@ do
 	end
 
 	local kFormatStringDifficultyIcon = constants.kFormatStringDifficultyIcon
-	local kEncounterJournalIcon = constants.kEncounterJournalIcon
+	local kEncounterJournalIcons = constants.textures.kEncounterJournalIcons
+	local kUnknownTexture = constants.textures.kUnknown
 
 	do
 		local kOffsetX = -6
 		local difficultyTextCoordPadding = 6
 		local l, r, t, b =
 			Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, difficultyTextCoordPadding)
-		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
 		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, difficultyTextCoordPadding)
-		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
 		local kFormatStringPlanName = constants.kFormatStringGenericInlineIconWithZoom .. "%s%s"
 
 		---@param planName string
@@ -991,9 +994,9 @@ do
 	do
 		local kOffsetX = 0
 		local l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Heroic, false, 6)
-		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
 		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, 6)
-		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcon, kOffsetX, l, r, t, b)
+		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
 		local kHeroicIconText = format("%s %s", kHeroicIcon, L["Heroic"])
 		local kMythicIconText = format("%s %s", kMythicIcon, L["Mythic"])
 
@@ -1077,7 +1080,7 @@ do
 				instanceIconText =
 					format(kFormatStringGenericInlineIconWithText, instanceToUseForIcon.icon, instanceName)
 			else
-				instanceIconText = format(kFormatStringGenericInlineIconWithText, constants.kUnknownIcon, instanceName)
+				instanceIconText = format(kFormatStringGenericInlineIconWithText, kUnknownTexture, instanceName)
 			end
 
 			tinsert(

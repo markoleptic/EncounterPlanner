@@ -36,8 +36,8 @@ local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
 	ButtonFrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = constants.textures.kGenericWhite,
+		edgeFile = constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -47,10 +47,13 @@ local k = {
 	ButtonFrameHeight = 28,
 	ContainerContainerSpacing = { 0, 4 },
 	ContentFramePadding = { x = 15, y = 15 },
+	CloseTexture = constants.textures.kClose,
 	DisabledTextColor = { 0.33, 0.33, 0.33, 1 },
+	FavoriteFilledTexture = constants.textures.kFavoriteFilled,
+	FavoriteOutlineTexture = constants.textures.kFavoriteOutlined,
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = constants.textures.kGenericWhite,
+		edgeFile = constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -67,7 +70,7 @@ local k = {
 	WindowBarHeight = 28,
 }
 k.LineBackdrop = {
-	bgFile = "Interface\\BUTTONS\\White8x8",
+	bgFile = constants.textures.kGenericWhite,
 	tile = false,
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = k.SpacingBetweenOptions, bottom = k.SpacingBetweenOptions },
@@ -148,21 +151,21 @@ local function HandleCustomTextureClicked(self, widget, value)
 				itemValue = value,
 				text = itemText,
 				customTextureSelectable = true,
-				customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
+				customTexture = k.CloseTexture,
 				customTextureVertexColor = { 1, 1, 1, 1 },
 			},
 		})
 		self.spellAssignmentDropdown:Sort("Favorite", true)
-		widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-filled-96]])
+		widget.customTexture:SetTexture(k.FavoriteFilledTexture)
 	else -- Remove favorite from favorite menu and update texture
 		local parentItemMenu = widget.parentDropdownItemMenu
 		if parentItemMenu and parentItemMenu:GetValue() == "Favorite" then
 			local item = self.spellAssignmentDropdown:FindItemAndText(value)
 			if item then
-				item.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
+				item.customTexture:SetTexture(k.FavoriteOutlineTexture)
 			end
 		else
-			widget.customTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-favorite-outline-96]])
+			widget.customTexture:SetTexture(k.FavoriteOutlineTexture)
 		end
 		self.spellAssignmentDropdown:RemoveItemsFromExistingDropdownItemMenu("Favorite", { dropdownItemDataToRemove })
 	end

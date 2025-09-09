@@ -45,11 +45,12 @@ local k = {
 	CategoryFontSize = 18,
 	CategoryPadding = { 15, 15, 15, 15 },
 	CategoryTextColor = { 1, 0.82, 0, 1 },
+	CloseTexture = Private.constants.textures.kClose,
 	ContentFramePadding = { x = 15, y = 15 },
 	DoubleLineEditContainerSpacing = { 8, 0 },
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -59,8 +60,8 @@ local k = {
 	FrameHeight = 500,
 	FrameWidth = 500,
 	GroupBoxBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -69,7 +70,7 @@ local k = {
 	IndentWidth = 20,
 	LabelTextColor = { 1, 1, 1, 1 },
 	LineBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		edgeSize = 0,
 		insets = { left = 0, right = 0 },
@@ -82,6 +83,7 @@ local k = {
 	SpacingBetweenLabelAndWidget = 8,
 	SpacingBetweenOptions = 10,
 	Title = L["Preferences"],
+	TooltipBorderTexture = Private.constants.textures.kTooltipBorder,
 }
 k.LineBackdrop.insets.top = k.SpacingBetweenOptions / 2
 k.LineBackdrop.insets.bottom = k.SpacingBetweenOptions / 2
@@ -431,7 +433,7 @@ do
 		end)
 
 		local deleteButton = AceGUI:Create("EPButton")
-		deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+		deleteButton:SetIcon(k.CloseTexture)
 		deleteButton:SetIconPadding(0, 0)
 		deleteButton:SetWidth(kDeleteButtonSize)
 		deleteButton:SetHeight(kDeleteButtonSize)
@@ -1936,7 +1938,7 @@ local function Constructor()
 	local frameChooserBox = CreateFrame("Frame", nil, frameChooserFrame, "BackdropTemplate")
 	frameChooserBox:SetFrameStrata("TOOLTIP")
 	frameChooserBox:SetBackdrop({
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		edgeFile = k.TooltipBorderTexture,
 		edgeSize = 12,
 		insets = { left = 0, right = 0, top = 0, bottom = 0 },
 	})

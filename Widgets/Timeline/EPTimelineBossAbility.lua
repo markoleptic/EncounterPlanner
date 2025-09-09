@@ -148,7 +148,7 @@ local function CreateBossAbilityFrame(width, height, color)
 	frame:SetSize(width, height)
 	local borderSize = 2
 	frame:SetBackdrop({
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = k.GenericWhite,
 		edgeSize = borderSize,
 	})
 	frame:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))
@@ -179,7 +179,7 @@ local function CreateBossAbilityFrame(width, height, color)
 	cooldownBackground:EnableMouse(false)
 
 	local cooldownTexture = cooldownFrame:CreateTexture(nil, "ARTWORK", nil, -1)
-	cooldownTexture:SetTexture([[Interface\AddOns\EncounterPlanner\Media\DiagonalLineSmall]], "REPEAT", "REPEAT")
+	cooldownTexture:SetTexture(k.BossAbilityDurationTexture, "REPEAT", "REPEAT")
 	cooldownTexture:SetSnapToPixelGrid(false)
 	cooldownTexture:SetTexelSnappingBias(0)
 	cooldownTexture:SetHorizTile(true)

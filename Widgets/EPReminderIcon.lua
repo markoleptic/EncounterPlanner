@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPReminderIcon"
 local Version = 1
 
@@ -11,7 +16,9 @@ local k = {
 	BackdropBorderColor = { 0, 0, 0, 1 },
 	DefaultFrameHeight = 30,
 	DefaultFrameWidth = 30,
+	GenericWhite = Private.constants.textures.kGenericWhite,
 	MinimumFontSize = 8,
+	UnknownTexture = Private.constants.textures.kUnknown,
 }
 
 local s = {
@@ -74,7 +81,7 @@ local function SetIcon(self, iconID)
 	if iconID then
 		self.icon:SetTexture(iconID)
 	else
-		self.icon:SetTexture("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		self.icon:SetTexture(k.UnknownTexture)
 	end
 end
 
@@ -144,7 +151,7 @@ local function SetBorderSize(self, borderSize)
 	self.frame:ClearBackdrop()
 	if borderSize > 1 then
 		self.frame:SetBackdrop({
-			edgeFile = "Interface\\BUTTONS\\White8x8",
+			edgeFile = k.GenericWhite,
 			edgeSize = borderSize,
 		})
 		self.frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
@@ -190,7 +197,7 @@ local function Constructor()
 	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	frame:SetBackdrop({
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = k.GenericWhite,
 		edgeSize = 2,
 	})
 	frame:SetBackdropBorderColor(unpack(k.BackdropBorderColor))

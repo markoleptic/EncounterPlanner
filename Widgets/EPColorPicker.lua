@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPColorPicker"
 local Version = 1
 
@@ -9,6 +14,7 @@ local CreateFrame = CreateFrame
 local unpack = unpack
 
 local k = {
+	CheckeredTexture = Private.constants.textures.kCheckered,
 	DefaultFrameHeight = 24,
 	DefaultFrameWidth = 24,
 	DefaultFontHeight = 14,
@@ -19,8 +25,8 @@ local k = {
 	EnabledTextColor = { 1, 1, 1, 1 },
 	DefaultHorizontalPadding = 0,
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		edgeSize = 2,
 		insets = { left = 0, right = 0, top = 0, bottom = 0 },
@@ -177,7 +183,7 @@ local function Constructor()
 	checkers:SetPoint("TOP", -k.FrameBackdrop.edgeSize)
 	checkers:SetPoint("BOTTOM", k.FrameBackdrop.edgeSize)
 	checkers:SetSize(k.DefaultFontHeight - k.FrameBackdrop.edgeSize, k.DefaultFontHeight - k.FrameBackdrop.edgeSize)
-	checkers:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]], "REPEAT", "REPEAT")
+	checkers:SetTexture(k.CheckeredTexture, "REPEAT", "REPEAT")
 	checkers:SetVertTile(true)
 	checkers:SetHorizTile(true)
 	checkers:SetDesaturated(true)

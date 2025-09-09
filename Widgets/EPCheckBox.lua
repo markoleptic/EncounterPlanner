@@ -19,12 +19,13 @@ local k = {
 	ButtonBackdropColor = { 0, 0, 0, 0 },
 	CheckBackdropColor = { 0, 0, 0, 0 },
 	CheckBackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
+	CheckTexture = Private.constants.textures.kCheck,
 	TextColor = { 1, 0.82, 0, 1 },
 	ButtonPadding = 1,
 	DefaultFontSize = 14,
 	CheckBackdrop = {
 		bgFile = nil,
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		tileSize = nil,
 		edgeSize = 1,
@@ -48,7 +49,7 @@ local function OnAcquire(self)
 	self.autoCheckSize = true
 
 	self.button = AceGUI:Create("EPButton")
-	self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+	self.button:SetIcon(k.CheckTexture)
 	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])
 	self.button.frame:SetPoint("TOPLEFT", k.ButtonPadding, -k.ButtonPadding)
 	self.button.frame:SetPoint("BOTTOMRIGHT", -k.ButtonPadding, k.ButtonPadding)
@@ -112,7 +113,7 @@ end
 local function SetChecked(self, checked)
 	self.checked = checked
 	if checked then
-		self.button:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+		self.button:SetIcon(k.CheckTexture)
 	else
 		self.button:SetIcon(nil)
 	end

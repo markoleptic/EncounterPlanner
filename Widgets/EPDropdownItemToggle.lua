@@ -15,9 +15,11 @@ local k = {
 	CheckedVertexColor = { 226.0 / 255, 180.0 / 255, 36.0 / 255.0, 1.0 },
 	CheckOffsetX = 2,
 	CheckSize = 16,
+	CheckTexture = Private.constants.textures.kCheck,
 	DisabledTextColor = { 0.5, 0.5, 0.5, 1 },
 	DisabledVertexColor = { 0.5, 0.5, 0.5, 1 },
 	DropdownItemHeight = 24,
+	DropdownTexture = Private.constants.textures.kDropdown,
 	EnabledTextColor = { 1, 1, 1, 1 },
 	FontSize = 14,
 	MenuIndicatorOffsetX = 3,
@@ -247,7 +249,7 @@ function EPItemBase.Create(type)
 	check:SetWidth(k.CheckSize)
 	check:SetHeight(k.CheckSize)
 	check:SetPoint("RIGHT", frame, "RIGHT", -k.CheckOffsetX, 0)
-	check:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+	check:SetTexture(k.CheckTexture)
 	check:Hide()
 
 	local customTextureFrame = CreateFrame("Button", type .. "CustomTextureFrame" .. count, frame)
@@ -775,7 +777,7 @@ do
 		menuIndicator:SetWidth(k.SubHeight)
 		menuIndicator:SetHeight(k.SubHeight)
 		menuIndicator:SetPoint("RIGHT", widget.frame, "RIGHT", -k.MenuIndicatorOffsetX, -k.MenuIndicatorOffsetY)
-		menuIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+		menuIndicator:SetTexture(k.DropdownTexture)
 		menuIndicator:SetRotation(k.Pi / 2)
 
 		widget.menuIndicatorOffsetX = k.MenuIndicatorOffsetX

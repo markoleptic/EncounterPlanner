@@ -26,15 +26,17 @@ local k = {
 		{ 0.09, 0.745, 0.812, 1 },
 	},
 	BossAbilityTextureSubLevel = 0,
+	BossAbilityDurationTexture = constants.textures.kDiagonalLineSmall,
 	CooldownBackgroundColor = { 0.25, 0.25, 0.25, 1 },
 	CooldownPadding = 1,
 	CooldownTextureAlpha = 0.5,
-	CooldownTextureFile = [[Interface\AddOns\EncounterPlanner\Media\DiagonalLine]],
+	CooldownTextureFile = constants.textures.kDiagonalLine,
 	CooldownWidthTolerance = 0.01,
 	DefaultTickWidth = 2,
 	FontPath = LSM:Fetch("font", "PT Sans Narrow"),
 	FrameHeight = 400,
 	FrameWidth = 900,
+	GenericWhite = constants.textures.kGenericWhite,
 	---@enum HighlightType
 	HighlightType = {
 		None = 1,
@@ -66,7 +68,7 @@ local k = {
 	PaddingBetweenTimelines = constants.timeline.kPaddingBetweenTimelines,
 	PhaseIndicatorColor = { 1, 0.82, 0, 1 },
 	PhaseIndicatorFontSize = 12,
-	PhaseIndicatorTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-checkered-50]],
+	PhaseIndicatorTexture = constants.textures.kCheckered,
 	PhaseIndicatorWidth = 2,
 	ScrollBackgroundColor = { 0.25, 0.25, 0.25, 1 },
 	ScrollThumbBackgroundColor = { 0.05, 0.05, 0.05, 1 },
@@ -80,7 +82,7 @@ local k = {
 	TickIntervals = { 5, 10, 30, 60, 90 },
 	TickLabelColor = { 1, 1, 1, 1 },
 	TimelineLinePadding = { x = 25, y = 25 },
-	UnknownIcon = constants.kUnknownIcon,
+	UnknownIcon = constants.textures.kUnknown,
 	ZoomStep = 0.05,
 }
 

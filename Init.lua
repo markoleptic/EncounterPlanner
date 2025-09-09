@@ -561,7 +561,7 @@ local defaults = {
 				glowTargetFrame = true,
 				messages = {
 					enabled = true,
-					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+					font = Private.constants.kDefaultFont,
 					fontSize = 24,
 					fontOutline = "",
 					point = "BOTTOM",
@@ -576,7 +576,7 @@ local defaults = {
 				},
 				progressBars = {
 					enabled = true,
-					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+					font = Private.constants.kDefaultFont,
 					fontSize = 16,
 					fontOutline = "",
 					point = "BOTTOMRIGHT",
@@ -586,7 +586,7 @@ local defaults = {
 					y = 0,
 					alpha = 0.90,
 					soonestExpirationOnBottom = true,
-					texture = "Interface\\AddOns\\WeakAuras\\Media\\Textures\\Statusbar_Clean",
+					texture = Private.constants.kDefaultFont,
 					iconPosition = "LEFT",
 					height = 24,
 					width = 200,
@@ -601,7 +601,7 @@ local defaults = {
 				},
 				icons = {
 					enabled = true,
-					font = "Interface\\Addons\\EncounterPlanner\\Media\\Fonts\\PTSansNarrow-Bold.ttf",
+					font = Private.constants.kDefaultFont,
 					fontSize = 12,
 					fontOutline = "",
 					point = "TOPLEFT",
@@ -780,7 +780,7 @@ Private.tooltip = CreateFrame("GameTooltip", "EncounterPlannerTooltip", UIParent
 -- Use font early so that it is available when InitializeInterface is called
 local fontInitializer = Private.tooltip:CreateFontString(nil, "OVERLAY")
 local obj = CreateFont("EPFontInitializerObject")
-local fontPath = [[Interface\Addons\EncounterPlanner\Media\Fonts\PTSansNarrow-Bold.ttf]]
+local fontPath = Private.constants.kDefaultFont
 obj:SetFont(fontPath, 16, "")
 fontInitializer:SetFontObject(obj)
 fontInitializer:Hide()

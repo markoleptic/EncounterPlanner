@@ -13,6 +13,7 @@ local CreateFrame = CreateFrame
 local max = math.max
 
 local k = {
+	CloseTexture = Private.constants.textures.kClose,
 	MainFrameWidth = 400,
 	MainFrameHeight = 400,
 	ContentFramePadding = { x = 4, y = 4 },
@@ -55,7 +56,7 @@ local function OnAcquire(self)
 	end)
 
 	self.deleteButton = AceGUI:Create("EPButton")
-	self.deleteButton:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+	self.deleteButton:SetIcon(k.CloseTexture)
 	self.deleteButton:SetIconPadding(0, 0)
 	self.deleteButton:SetHeight(k.WidgetHeight)
 	self.deleteButton:SetWidth(k.WidgetHeight)

@@ -44,6 +44,7 @@ local k = {
 	AbilityEntryWidth = 200,
 	AssignmentSpacing = 2,
 	BrewmasterAldryrEncounterID = 2900,
+	DropdownTexture = Private.constants.textures.kDropdown,
 	HappyHourSpellID = 442525,
 	HighlightPadding = 2,
 	TutorialFrameLevel = 250,
@@ -55,7 +56,7 @@ local k = {
 local s = {
 	HighlightBorderFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate"),
 }
-s.HighlightBorderFrame:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 2 })
+s.HighlightBorderFrame:SetBackdrop({ edgeFile = constants.textures.kGenericWhite, edgeSize = 2 })
 s.HighlightBorderFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
 s.HighlightBorderFrame:EnableMouse(false)
 s.HighlightBorderFrame:Hide()
@@ -1836,7 +1837,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["Drag the"],
-				"|T" .. constants.resizer.kIcon .. ":0:0:0:-4|t",
+				"|T" .. constants.textures.kResizer .. ":0:0:0:-4|t",
 				L["button to resize the main window"]
 			),
 			enableNextButton = false,
@@ -1862,7 +1863,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["Click the"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]] .. ":16:16:0:-4|t",
+				"|T" .. k.DropdownTexture .. ":16:16:0:-4|t",
 				L["button to collapse spells for an assignee"]
 			),
 			enableNextButton = function()
@@ -1938,7 +1939,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "collapseAllAssigneeSpells",
 			text = FormatText(
 				L["The"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]] .. ":0:0:0:-6|t",
+				"|T" .. constants.textures.kCollapse .. ":0:0:0:-6|t",
 				L["button"],
 				L["collapses all spells for all assignees"]
 			),
@@ -1956,7 +1957,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "expandAllAssigneeSpells",
 			text = FormatText(
 				L["Click the"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]] .. ":0:0:0:-6|t",
+				"|T" .. constants.textures.kExpand .. ":0:0:0:-6|t",
 				L["button to expand all spells for all assignees"]
 			),
 			enableNextButton = function()
@@ -2335,7 +2336,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["All assignments for a specific spell of an assignee can be deleted by clicking the"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]] .. ":0:0:0:-6|t",
+				"|T" .. constants.textures.kClose .. ":0:0:0:-6|t",
 				L["button beside the spell"]
 			),
 			enableNextButton = true,
@@ -2375,7 +2376,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["All assignments for an assignee can be deleted by clicking the"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]] .. ":0:0:0:-6|t",
+				"|T" .. constants.textures.kClose .. ":0:0:0:-6|t",
 				L["button beside the assignee"]
 			),
 			enableNextButton = true,
@@ -2413,7 +2414,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			text = format(
 				"%s %s %s.",
 				L["Assignments can be swapped between assignees by clicking the"],
-				"|T" .. [[Interface\AddOns\EncounterPlanner\Media\icons8-swap-32]] .. ":0:0:0:-6|t",
+				"|T" .. constants.textures.kSwap .. ":0:0:0:-6|t",
 				L["button beside the assignee"]
 			),
 			enableNextButton = true,

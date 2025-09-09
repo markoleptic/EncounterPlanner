@@ -28,21 +28,22 @@ local k = {
 	DefaultPulloutWidth = 200,
 	DisabledTextColor = Private.constants.colors.kDisabledTextColor,
 	DropdownBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 1,
 	},
 	DropdownBackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
 	DropdownBackdropColor = { 0.1, 0.1, 0.1, 1 },
+	DropdownTexture = Private.constants.textures.kDropdown,
 	EnabledTextColor = Private.constants.colors.kEnabledTextColor,
 	FontSize = 14,
 	MinimumPulloutWidth = 100,
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 	PulloutBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 1,
@@ -50,7 +51,8 @@ local k = {
 	PulloutBackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
 	PulloutBackdropColor = { 0.1, 0.1, 0.1, 1 },
 	RegexIconText = Private.constants.kRegexIconText,
-	RightArrow = " |TInterface\\AddOns\\EncounterPlanner\\Media\\icons8-right-arrow-32:16|t ",
+	RightArrow = " |T" .. Private.constants.textures.kRightArrow .. ":16|t ",
+	SortDownTexture = Private.constants.textures.kSortDown,
 }
 k.EdgeSize = k.DropdownBackdrop.edgeSize
 
@@ -408,7 +410,7 @@ do
 		local scrollIndicator = scrollIndicatorFrame:CreateTexture(nil, "OVERLAY")
 		scrollIndicatorFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", k.EdgeSize, k.EdgeSize)
 		scrollIndicatorFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -k.EdgeSize, k.EdgeSize)
-		scrollIndicator:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-sort-down-32]])
+		scrollIndicator:SetTexture(k.SortDownTexture)
 		scrollIndicator:SetPoint("CENTER")
 		scrollIndicatorFrame:Hide()
 		scrollFrame:Show()
@@ -1325,10 +1327,10 @@ do
 		button:ClearAllPoints()
 		button:SetPoint("TOPRIGHT", frame, "TOPRIGHT")
 		button:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT")
-		button:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-		button:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-		button:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-		button:SetDisabledTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+		button:SetNormalTexture(k.DropdownTexture)
+		button:SetPushedTexture(k.DropdownTexture)
+		button:SetHighlightTexture(k.DropdownTexture)
+		button:SetDisabledTexture(k.DropdownTexture)
 		button:GetDisabledTexture():SetVertexColor(unpack(k.DisabledTextColor))
 
 		local buttonCover = CreateFrame("Button", Type .. "ButtonCover" .. count, frame)

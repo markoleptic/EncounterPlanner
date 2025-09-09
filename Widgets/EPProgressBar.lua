@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPProgressBar"
 local Version = 1
 
@@ -19,7 +24,7 @@ local k = {
 	DefaultHeight = 24,
 	DefaultWidth = 200,
 	FrameBackdrop = {
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		edgeSize = 1,
 		insets = { left = 0, right = 0, top = 0, bottom = 0 },
@@ -27,7 +32,7 @@ local k = {
 	GreaterThanMinuteFormat = "%d:%02d",
 	GreaterThanTenSecondsFormat = "%.0f",
 	IconFrameBackdrop = {
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		edgeSize = 1,
 		insets = { left = 0, right = 0, top = 0, bottom = 0 },

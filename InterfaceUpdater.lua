@@ -234,6 +234,7 @@ do
 		TimedAssignment = Private.classes.TimedAssignment,
 		PhasedAssignment = Private.classes.PhasedAssignment,
 	}
+	local kCloseTexture = constants.textures.kClose
 
 	---@param abilityEntry EPAbilityEntry
 	local function HandleDeleteAssigneeRowClicked(abilityEntry)
@@ -465,7 +466,7 @@ do
 					local assigneeEntry = AceGUI:Create("EPAbilityEntry")
 					assigneeEntry:SetText(entryText, assignee, 2)
 					assigneeEntry:SetFullWidth(true)
-					assigneeEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+					assigneeEntry:SetCheckedTexture(kCloseTexture)
 					assigneeEntry:SetRoleOrSpec(roster[assignee] and roster[assignee].role or specIconID or nil)
 					assigneeEntry:SetCollapsible(true)
 					assigneeEntry:ShowSwapIcon(true)
@@ -491,7 +492,7 @@ do
 							spellEntry:SetFullWidth(true)
 							spellEntry:SetLeftIndent(assignmentHeight / 2.0 - 2)
 							spellEntry:SetHeight(assignmentHeight)
-							spellEntry:SetCheckedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]])
+							spellEntry:SetCheckedTexture(kCloseTexture)
 							spellEntry:SetCallback("OnValueChanged", HandleAssigneeSpellRowDeleteButtonClicked)
 							tinsert(children, spellEntry)
 						end
@@ -619,7 +620,7 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 	local addAssigneeDropdown = Private.mainFrame.timeline:GetAddAssigneeDropdown()
 	if addAssigneeDropdown then
 		addAssigneeDropdown:Clear()
-		local text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["Add Assignee"])
+		local text = AddIconBeforeText(constants.textures.kAdd, L["Add Assignee"])
 		addAssigneeDropdown:SetText(text)
 		local roster = GetCurrentRoster()
 		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
@@ -649,9 +650,9 @@ end
 
 do
 	local kReminderDisabledIconColor = { 0.35, 0.35, 0.35, 1 }
-	local kReminderDisabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-no-reminder-24]]
+	local kReminderDisabledTexture = constants.textures.kNoReminder
 	local kReminderEnabledIconColor = { 1, 0.82, 0, 1 }
-	local kReminderEnabledTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-reminder-24]]
+	local kReminderEnabledTexture = constants.textures.kReminder
 
 	---@param plan Plan
 	function InterfaceUpdater.UpdatePlanCheckBoxes(plan)

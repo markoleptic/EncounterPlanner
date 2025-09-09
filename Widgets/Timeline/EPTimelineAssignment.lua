@@ -381,7 +381,7 @@ function EPTimelineAssignment.CreateAssignmentFrame(spellID, offsetX, offsetY)
 	local assignmentHeight = s.Preferences.timelineRows.assignmentHeight
 	local assignment = CreateFrame("Frame", nil, timelineFrame, "BackdropTemplate")
 	assignment:SetBackdrop({
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = k.GenericWhite,
 		edgeSize = 2,
 	})
 	assignment:SetBackdropBorderColor(unpack(k.AssignmentOutlineColor))

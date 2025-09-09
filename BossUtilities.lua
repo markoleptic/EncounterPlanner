@@ -294,9 +294,9 @@ function BossUtilities.GetInstanceBossOrder(dungeonInstanceID)
 end
 
 do
-	local unknownIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
-	local deathIcon = [[Interface\TargetingFrame\UI-RaidTargetingIcon_8]]
-	local tankIcon = "|T" .. "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES" .. ":14:14:0:0:64:64:0:19:22:41|t"
+	local kUnknownTexture = Private.constants.textures.kUnknown
+	local kDeathTexture = Private.constants.textures.kSkull
+	local kTankTexture = "|T" .. Private.constants.textures.kLfgPortraitRoles .. ":14:14:0:0:64:64:0:19:22:41|t"
 	local GetSpellName = C_Spell.GetSpellName
 	local GetSpellTexture = C_Spell.GetSpellTexture
 
@@ -305,12 +305,12 @@ do
 	---@param difficulty DifficultyType
 	---@return string|integer, string
 	function BossUtilities.GetBossAbilityIconAndLabel(boss, abilityID, difficulty)
-		local icon, label = unknownIcon, ""
+		local icon, label = kUnknownTexture, ""
 
 		local bossAbilities = BossUtilities.GetBossAbilities(boss, difficulty)
 
 		if boss.hasBossDeath and bossAbilities[abilityID].bossNpcID then
-			icon = deathIcon
+			icon = kDeathTexture
 			local bossNpcID = bossAbilities[abilityID].bossNpcID
 			label = boss.bossNames[bossNpcID] .. " " .. L["Death"]
 		else
@@ -334,7 +334,7 @@ do
 		end
 
 		if bossAbilities[abilityID].tankAbility then
-			label = label .. " " .. tankIcon
+			label = label .. " " .. kTankTexture
 		end
 
 		if bossAbilities[abilityID].additionalContext then

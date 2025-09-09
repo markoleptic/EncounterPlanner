@@ -209,7 +209,7 @@ local ProgressBarManager = {}
 do
 	local kGenericTimerMultiplier = 0.33
 	local kProgressBarText = L["Progress Bar Text"]
-	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kQuestionMarkIcon = constants.textures.kUnknown
 
 	local sIsAddingProgressBars = false
 	local sTimers = {}
@@ -300,7 +300,7 @@ local MessageManager = {}
 do
 	local kGenericTimerMultiplier = 0.33
 	local kMessageText = L["Cast spell or something"]
-	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kQuestionMarkIcon = constants.textures.kUnknown
 	local kSecondTimerDurationNoCountdown = 1.2
 	local kThirdTimerDurationNoCountdown = 2.4
 
@@ -400,7 +400,7 @@ local IconManager = {}
 do
 	local kGenericTimerMultiplier = 0.33
 	local kIconText = L["Icon Text"]
-	local kQuestionMarkIcon = [[Interface\Icons\INV_MISC_QUESTIONMARK]]
+	local kQuestionMarkIcon = constants.textures.kUnknown
 
 	local sIsAddingIcons = false
 	local sTimers = {}
@@ -1904,10 +1904,7 @@ do
 								preferences.fontOutline,
 								preferences.shrinkTextToFit
 							)
-							progressBar:SetIconAndText(
-								[[Interface\Icons\INV_MISC_QUESTIONMARK]],
-								L["Progress Bar Text"]
-							)
+							progressBar:SetIconAndText(constants.textures.kUnknown, L["Progress Bar Text"])
 						end)
 					end
 				end,

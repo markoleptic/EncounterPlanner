@@ -19,8 +19,8 @@ local k = {
 	DefaultFrameHeight = 400,
 	DefaultFrameWidth = 600,
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -31,9 +31,9 @@ local k = {
 	OkayButtonHeight = 24,
 	OtherPadding = 10,
 	RadioButtonGroupSpacing = { 8, 0 },
-	ResizerIcon = Private.constants.resizer.kIcon,
-	ResizerIconHighlight = Private.constants.resizer.kIconHighlight,
-	ResizerIconPushed = Private.constants.resizer.kIconPushed,
+	ResizerTexture = Private.constants.textures.kResizer,
+	ResizerTextureHighlight = Private.constants.textures.kResizerHighlight,
+	ResizerTexturePushed = Private.constants.textures.kResizerPushed,
 	ResizerSize = 16,
 }
 
@@ -318,9 +318,9 @@ local function Constructor()
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(k.ResizerSize, k.ResizerSize)
-	resizer:SetNormalTexture(k.ResizerIcon)
-	resizer:SetHighlightTexture(k.ResizerIconHighlight)
-	resizer:SetPushedTexture(k.ResizerIconPushed)
+	resizer:SetNormalTexture(k.ResizerTexture)
+	resizer:SetHighlightTexture(k.ResizerTextureHighlight)
+	resizer:SetPushedTexture(k.ResizerTexturePushed)
 
 	---@class EPEditBox : AceGUIWidget
 	---@field okayButton EPButton

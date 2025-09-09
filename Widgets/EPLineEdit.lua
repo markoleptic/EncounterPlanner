@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPLineEdit"
 local Version = 1
 
@@ -11,8 +16,8 @@ local unpack = unpack
 
 local k = {
 	Backdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 1,

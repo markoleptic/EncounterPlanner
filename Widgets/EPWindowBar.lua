@@ -20,13 +20,13 @@ local wipe = table.wipe
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
-	CloseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
+	CloseTexture = Private.constants.textures.kClose,
 	DefaultHeight = 28,
 	DefaultWidth = 100,
 	FontPath = LSM:Fetch("font", "PT Sans Narrow"),
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -39,7 +39,7 @@ local k = {
 ---@param self EPWindowBar
 local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultWidth, k.DefaultHeight)
-	self:AddButton(k.CloseIcon, "CloseButtonClicked")
+	self:AddButton(k.CloseTexture, "CloseButtonClicked")
 	self.frame:Show()
 end
 

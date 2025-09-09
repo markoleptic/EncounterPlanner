@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 ---@diagnostic disable: invisible
 
 local AceGUI = LibStub("AceGUI-3.0")
@@ -10,9 +15,11 @@ local tremove = table.remove
 local unpack = unpack
 
 local k = {
+	AnchorTexture = Private.constants.textures.kAnchor,
 	DefaultSpacing = { x = 10, y = 10 },
 	DefaultHeight = 100,
 	DefaultWidth = 100,
+	GenericWhite = Private.constants.textures.kGenericWhite,
 }
 
 ---@param self EPAnchorContainer|EPContainer
@@ -350,7 +357,7 @@ do
 
 		local anchorFrame = CreateFrame("Frame", Type .. "Anchor" .. count, frame, "BackdropTemplate")
 		anchorFrame:SetBackdrop({
-			bgFile = "Interface\\BUTTONS\\White8x8",
+			bgFile = k.GenericWhite,
 			edgeFile = nil,
 			tile = false,
 		})
@@ -358,7 +365,7 @@ do
 		anchorFrame:SetSize(16, 16)
 		local resizer = anchorFrame:CreateTexture(nil, "OVERLAY")
 		resizer:SetAllPoints()
-		resizer:SetTexture("Interface\\AddOns\\EncounterPlanner\\Media\\icons8-anchor-32")
+		resizer:SetTexture(k.AnchorTexture)
 		resizer:SetVertexColor(1, 0.82, 0, 1)
 		anchorFrame:Hide()
 

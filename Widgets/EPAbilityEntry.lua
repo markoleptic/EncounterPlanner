@@ -19,25 +19,30 @@ local k = {
 	BackdropColor = { 0, 0, 0, 0.9 },
 	CheckBackdrop = {
 		bgFile = nil,
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = false,
 		tileSize = nil,
 		edgeSize = 1,
 	},
 	CheckBackdropColor = { 0, 0, 0, 0 },
+	CheckTexture = Private.constants.textures.kCheck,
+	DropdownTexture = Private.constants.textures.kDropdown,
 	FrameHeight = 30,
 	FrameWidth = 200,
 	ListItemBackdrop = {
 		bgFile = nil,
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 1,
 	},
+	LfgPortraitRolesTexture = Private.constants.textures.kLfgPortraitRoles,
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 	Padding = { x = 2, y = 2 },
 	PiOverTwo = math.pi / 2,
+	SwapTexture = Private.constants.textures.kSwap,
 	TextAssignmentTexture = Private.constants.kTextAssignmentTexture,
+	kUnknownTexture = Private.constants.textures.kUnknown,
 }
 
 ---@class EPAbilityEntry : AceGUIWidget
@@ -84,7 +89,7 @@ local function OnAcquire(self)
 	local checkSize = k.FrameHeight - 2 * checkSpacing
 
 	self.check = AceGUI:Create("EPButton")
-	self.check:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-check-64]])
+	self.check:SetIcon(k.CheckTexture)
 	self.check.frame:SetParent(self.checkBackground --[[@as Frame]])
 	self.check.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
 	self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
@@ -183,7 +188,7 @@ local function SetAbility(self, spellID, key)
 		self.label:SetIcon(iconID, k.Padding.x, k.Padding.y, spellID)
 	else
 		self.label:SetText(L["Unknown"], k.Padding.x * 2)
-		self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK")
+		self.label:SetIcon(k.kUnknownTexture)
 	end
 	self.key = key
 end
@@ -216,7 +221,7 @@ end
 ---@param text string|nil
 local function SetNullAbility(self, key, text)
 	self.label:SetText(text or L["Unknown"], k.Padding.x * 2)
-	self.label:SetIcon("Interface\\Icons\\INV_MISC_QUESTIONMARK", k.Padding.x, k.Padding.y, 0)
+	self.label:SetIcon(k.kUnknownTexture, k.Padding.x, k.Padding.y, 0)
 	self.key = key
 end
 
@@ -254,7 +259,7 @@ local function SetRoleOrSpec(self, role)
 	if role == "role:tank" or role == "role:healer" or role == "role:damager" then
 		self.label:SetHorizontalTextPadding(k.Padding.x * 2)
 		local iconPadding = self.frame:GetHeight() * 0.25
-		self.label:SetIcon("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES", k.Padding.x, iconPadding)
+		self.label:SetIcon(k.LfgPortraitRolesTexture, k.Padding.x, iconPadding)
 		if role == "role:tank" then
 			self.label.icon:SetTexCoord(0, 19 / 64, 22 / 64, 41 / 64)
 		elseif role == "role:healer" then
@@ -331,7 +336,7 @@ local function ShowSwapIcon(self, show)
 		local checkSize = self.frame:GetHeight() - 2 * checkSpacing
 
 		self.swap = AceGUI:Create("EPButton")
-		self.swap:SetIcon([[Interface\AddOns\EncounterPlanner\Media\icons8-swap-32]])
+		self.swap:SetIcon(k.SwapTexture)
 		self.swap.frame:SetParent(self.swapBackground --[[@as Frame]])
 		self.swap.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
 		self.swap.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
@@ -445,9 +450,9 @@ local function Constructor()
 	local collapseButton = CreateFrame("Button", Type .. "CollapseButton" .. count, frame)
 	collapseButton:SetPoint("LEFT", frame, "LEFT", k.Padding.x, 0)
 	collapseButton:SetSize(k.FrameHeight - 2 * k.Padding.y, k.FrameHeight - 2 * k.Padding.y)
-	collapseButton:SetNormalTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	collapseButton:SetPushedTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
-	collapseButton:SetHighlightTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-dropdown-96]])
+	collapseButton:SetNormalTexture(k.DropdownTexture)
+	collapseButton:SetPushedTexture(k.DropdownTexture)
+	collapseButton:SetHighlightTexture(k.DropdownTexture)
 	collapseButton:RegisterForClicks("LeftButtonUp")
 	collapseButton:Hide()
 

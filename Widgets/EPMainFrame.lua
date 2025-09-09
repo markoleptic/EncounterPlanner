@@ -21,17 +21,17 @@ local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
 	ButtonWidth = 200,
-	CloseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
-	CollapseIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-collapse-64]],
+	CloseIcon = Private.constants.textures.kClose,
+	CollapseIcon = Private.constants.textures.kCollapse,
 	DefaultPadding = 10,
-	DiscordIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-discord-new-48]],
+	DiscordIcon = Private.constants.textures.kDiscord,
 	DiscordUrl = [[discord.gg/9bmH43JSzy]],
 	EditBoxFrameBackdropBorderColor = { 0.15, 0.15, 0.15, 1.0 },
 	EditBoxFrameBackdropColor = { 0, 0, 0, 1.0 },
-	ExpandIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-expand-64]],
+	ExpandIcon = Private.constants.textures.kExpand,
 	FrameBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
@@ -39,22 +39,22 @@ local k = {
 	},
 	MainFrameHeight = 600,
 	MainFrameWidth = 1200,
-	MaximizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-maximize-button-32]],
-	MinimizeIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-minus-32]],
+	MaximizeIcon = Private.constants.textures.kMaximize,
+	MinimizeIcon = Private.constants.textures.kMinus,
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 	StatusBarHeight = Private.constants.kStatusBarHeight,
 	StatusBarPadding = Private.constants.kStatusBarPadding,
 	ThrottleInterval = 0.015, -- Minimum time between executions, in seconds
 	MinimizeFrameTitle = L["Encounter Planner"],
 	TitleBarBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
+		edgeFile = Private.constants.textures.kGenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,
 	},
-	TutorialIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-learning-30]],
-	UserGuideIcon = [[Interface\AddOns\EncounterPlanner\Media\icons8-user-manual-32]],
+	TutorialIcon = Private.constants.textures.kLearning,
+	UserGuideIcon = Private.constants.textures.kUserManual,
 	UserGuideUrl = [[github.com/markoleptic/EncounterPlanner/wiki/User-Guide]],
 	WindowBarHeight = Private.constants.kMainFrameWindowBarHeight,
 }
@@ -519,9 +519,9 @@ local function Constructor()
 	local resizer = CreateFrame("Button", Type .. "Resizer" .. count, frame)
 	resizer:SetPoint("BOTTOMRIGHT", -1, 1)
 	resizer:SetSize(16, 16)
-	resizer:SetNormalTexture(Private.constants.resizer.kIcon)
-	resizer:SetHighlightTexture(Private.constants.resizer.kIconHighlight)
-	resizer:SetPushedTexture(Private.constants.resizer.kIconPushed)
+	resizer:SetNormalTexture(Private.constants.textures.kResizer)
+	resizer:SetHighlightTexture(Private.constants.textures.kResizerHighlight)
+	resizer:SetPushedTexture(Private.constants.textures.kResizerPushed)
 
 	local editBoxFrame = CreateFrame("Frame", Type .. "EditBoxFrame" .. count, frame, "BackdropTemplate")
 	editBoxFrame:SetFrameStrata("TOOLTIP")

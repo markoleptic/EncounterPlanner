@@ -90,10 +90,8 @@ local s = {
 }
 
 local k = {
-	AddAssigneeText = utilities.AddIconBeforeText(
-		[[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]],
-		L["Add Assignee"]
-	),
+	AddAssigneeText = utilities.AddIconBeforeText(constants.textures.kAdd, L["Add Assignee"]),
+	GenericWhite = constants.textures.kGenericWhite,
 	MaxVisibleDropdownItems = 10,
 	TopContainerDropdownWidth = 200,
 	TopContainerWidgetFontSize = 14,
@@ -128,14 +126,11 @@ do -- Plan Menu Items
 			planMenuItems = {
 				{
 					itemValue = k.PlanMenuItemValues.NewPlan,
-					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-add-32]], L["New Plan"]),
+					text = AddIconBeforeText(constants.textures.kAdd, L["New Plan"]),
 				},
 				{
 					itemValue = k.PlanMenuItemValues.Templates,
-					text = AddIconBeforeText(
-						[[Interface\AddOns\EncounterPlanner\Media\icons8-template-32]],
-						L["Templates"]
-					),
+					text = AddIconBeforeText(constants.textures.kTemplate, L["Templates"]),
 					dropdownItemMenuData = {
 						{
 							itemValue = k.PlanMenuItemValues.Templates.Create,
@@ -155,14 +150,11 @@ do -- Plan Menu Items
 				},
 				{
 					itemValue = k.PlanMenuItemValues.DuplicatePlan,
-					text = AddIconBeforeText(
-						[[Interface\AddOns\EncounterPlanner\Media\icons8-duplicate-32]],
-						L["Duplicate Plan"]
-					),
+					text = AddIconBeforeText(constants.textures.kDuplicate, L["Duplicate Plan"]),
 				},
 				{
 					itemValue = k.PlanMenuItemValues.Import,
-					text = AddIconBeforeText([[Interface\AddOns\EncounterPlanner\Media\icons8-import-32]], L["Import"]),
+					text = AddIconBeforeText(constants.textures.kImport, L["Import"]),
 					dropdownItemMenuData = {
 						{
 							itemValue = k.PlanMenuItemValues.Import.FromMRT,
@@ -186,17 +178,11 @@ do -- Plan Menu Items
 				},
 				{
 					itemValue = k.PlanMenuItemValues.ExportPlan,
-					text = AddIconBeforeText(
-						[[Interface\AddOns\EncounterPlanner\Media\icons8-export-32]],
-						L["Export Current Plan"]
-					),
+					text = AddIconBeforeText(constants.textures.kExport, L["Export Current Plan"]),
 				},
 				{
 					itemValue = k.PlanMenuItemValues.DeletePlan,
-					text = AddIconBeforeText(
-						[[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]],
-						L["Delete Current Plan"]
-					),
+					text = AddIconBeforeText(constants.textures.kClose, L["Delete Current Plan"]),
 				},
 			}
 		end
@@ -306,8 +292,8 @@ do -- Menu Button
 	end
 
 	local menuButtonBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = k.GenericWhite,
+		edgeFile = k.GenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 1,
@@ -764,7 +750,7 @@ do -- Assignment Editor
 		local favoritedItems = Private.DeepCopy(favoritedSpellAssignments)
 		for _, data in ipairs(favoritedItems) do
 			data.customTextureSelectable = true
-			data.customTexture = [[Interface\AddOns\EncounterPlanner\Media\icons8-close-32]]
+			data.customTexture = constants.textures.kClose
 			data.customTextureVertexColor = { 1, 1, 1, 1 }
 		end
 		assignmentEditor.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu("Favorite", favoritedItems)
@@ -2264,7 +2250,7 @@ function Private:CreateInterface()
 	difficultyLabel:SetFontSize(k.TopContainerWidgetFontSize)
 	difficultyLabel:SetHeight(16)
 	difficultyLabel:SetWidth(k.TopContainerDropdownWidth)
-	difficultyLabel:SetIcon(constants.kEncounterJournalIcon, 0, 2, 0, 0, 2)
+	difficultyLabel:SetIcon(constants.textures.kEncounterJournalIcons, 0, 2, 0, 0, 2)
 
 	local instanceBossContainer = AceGUI:Create("EPContainer")
 	instanceBossContainer:SetLayout("EPVerticalLayout")
@@ -2393,8 +2379,8 @@ function Private:CreateInterface()
 	)
 	topContainer:SetPadding(10, 10, 10, 10)
 	local topContainerBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
-		edgeFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = k.GenericWhite,
+		edgeFile = k.GenericWhite,
 		tile = true,
 		tileSize = 16,
 		edgeSize = 2,

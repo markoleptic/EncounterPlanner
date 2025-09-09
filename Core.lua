@@ -179,7 +179,7 @@ do -- Minimap icon initialization and handling
 
 	local AddonCompartmentFrameObject = {
 		text = AddOnName,
-		icon = "Interface\\AddOns\\EncounterPlanner\\Media\\ep-logo.tga",
+		icon = constants.textures.kLogo,
 		registerForAnyClick = true,
 		notCheckable = true,
 		func = HandleMinimapButtonClicked,
@@ -197,7 +197,7 @@ do -- Minimap icon initialization and handling
 	local dataBrokerObject = {
 		type = "launcher",
 		text = AddOnName,
-		icon = "Interface\\AddOns\\EncounterPlanner\\Media\\ep-logo.tga",
+		icon = constants.textures.kLogo,
 		OnClick = HandleMinimapButtonClicked,
 		OnEnter = function(frame)
 			GameTooltip:SetOwner(frame, "ANCHOR_NONE")
@@ -556,7 +556,7 @@ end
 function AddOn:OnInitialize()
 	local loadedOrLoading, loaded = IsAddOnLoaded("WeakAuras")
 	if not loadedOrLoading and not loaded then
-		self.defaults.profile.preferences.reminder.progressBars.texture = [[Interface\Buttons\WHITE8X8]]
+		self.defaults.profile.preferences.reminder.progressBars.texture = constants.textures.kGenericWhite
 	end
 	self.db = AceDB:New(AddOnName .. "DB", self.defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")

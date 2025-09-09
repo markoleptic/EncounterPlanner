@@ -1,3 +1,8 @@
+local _, Namespace = ...
+
+---@class Private
+local Private = Namespace
+
 local Type = "EPRadioButton"
 local Version = 1
 
@@ -10,7 +15,7 @@ local unpack = unpack
 local k = {
 	BackdropColor = { 0, 0, 0, 0 },
 	ButtonBackdrop = {
-		bgFile = "Interface\\BUTTONS\\White8x8",
+		bgFile = Private.constants.textures.kGenericWhite,
 		edgeFile = nil,
 		tile = false,
 		tileSize = 0,
@@ -22,7 +27,9 @@ local k = {
 	DisabledIconColor = { 0.5, 0.5, 0.5, 1 },
 	HoverButtonColor = { 74 / 255.0, 174 / 255.0, 242 / 255.0 },
 	IconColor = { 1, 1, 1, 1 },
+	RadioButtonCenterTexture = Private.constants.textures.kRadioButtonCenter,
 	SelectedButtonColor = { 1, 1, 1 },
+	UncheckedRadioButtonTexture = Private.constants.textures.kUncheckedRadioButton,
 }
 
 ---@param self EPRadioButton
@@ -244,7 +251,7 @@ local function Constructor()
 	button.icon:SetBlendMode("ADD")
 	button.icon:SetPoint("TOPLEFT")
 	button.icon:SetPoint("BOTTOMRIGHT")
-	button.icon:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-unchecked-radio-button-96]])
+	button.icon:SetTexture(k.UncheckedRadioButtonTexture)
 	button.icon:SetSnapToPixelGrid(false)
 	button.icon:SetTexelSnappingBias(0)
 
@@ -253,7 +260,7 @@ local function Constructor()
 	button.iconCenter:SetPoint("BOTTOMRIGHT")
 	button.iconCenter:SetSnapToPixelGrid(false)
 	button.iconCenter:SetTexelSnappingBias(0)
-	button.iconCenter:SetTexture([[Interface\AddOns\EncounterPlanner\Media\icons8-radio-button-center-96]])
+	button.iconCenter:SetTexture(k.RadioButtonCenterTexture)
 	button.iconCenter:SetAlpha(0.0)
 
 	button.fadeColor = button.iconCenter:CreateAnimationGroup()
