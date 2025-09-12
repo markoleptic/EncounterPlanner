@@ -463,7 +463,7 @@ local function Constructor()
 	checkBackground:SetSize(k.FrameHeight - 2 * k.Padding.y, k.FrameHeight - 2 * k.Padding.y)
 	checkBackground:SetPoint("RIGHT", -k.Padding.x, 0)
 
-	local swapBackground = CreateFrame("Frame", Type .. "CheckBackground" .. count, frame, "BackdropTemplate")
+	local swapBackground = CreateFrame("Frame", Type .. "SwapBackground" .. count, frame, "BackdropTemplate")
 	swapBackground:SetBackdrop(k.CheckBackdrop)
 	swapBackground:SetBackdropColor(unpack(k.CheckBackdropColor))
 	swapBackground:SetBackdropBorderColor(unpack(k.BackdropBorderColor))
