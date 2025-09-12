@@ -66,22 +66,22 @@ local function UpdateIconAndTextAnchors(self)
 	self.duration:ClearAllPoints()
 
 	local lineHeight = self.text:GetLineHeight()
-	local hasDuration = self.remaining > 0
+	local showDuration = self.remaining > 0
 	local hasIcon = self.showIcon
 	local horizontalPadding = self.horizontalTextPadding
 
 	self.frame:SetHeight(lineHeight + horizontalPadding * 2)
 
-	local durationWidth = hasDuration and self.duration:GetWidth() or 0
+	local durationWidth = showDuration and self.duration:GetWidth() or 0
 	local offset = 0
 	if hasIcon then
-		if hasDuration then
+		if showDuration then
 			offset = (lineHeight - durationWidth) / 2.0
 		else
 			offset = (horizontalPadding + lineHeight) / 2.0
 		end
 	else
-		if hasDuration then
+		if showDuration then
 			offset = -(horizontalPadding + durationWidth) / 2.0
 			-- else offset = 0
 		end
@@ -96,7 +96,7 @@ local function UpdateIconAndTextAnchors(self)
 		self.icon:Hide()
 	end
 
-	if hasDuration then
+	if showDuration then
 		self.duration:SetPoint("LEFT", self.text, "RIGHT", horizontalPadding, 0)
 		self.duration:Show()
 	else
@@ -166,7 +166,7 @@ sharedUpdater:SetScript("OnLoop", SharedMessageUpdate)
 ---@field icon Texture|nil
 ---@field showIcon boolean
 ---@field horizontalTextPadding number
----@field remaining number
+---@field remaining number A value of 0 indicates not to show the duration text.
 ---@field expirationTime number
 ---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
 ---@field running boolean
@@ -347,7 +347,7 @@ local function Constructor()
 	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
-	text:SetJustifyH("CENTER")
+	text:SetJustifyH("LEFT")
 	text:SetWordWrap(false)
 
 	local duration = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
