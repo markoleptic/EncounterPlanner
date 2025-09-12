@@ -72,6 +72,7 @@ Private.constants = {
 		kRightArrow = [[Interface\AddOns\EncounterPlanner\Media\icons8-right-arrow-32.tga]],
 		kSettings = [[Interface\AddOns\EncounterPlanner\Media\icons8-settings-96.tga]],
 		kSortDown = [[Interface\AddOns\EncounterPlanner\Media\icons8-sort-down-32.tga]],
+		kStatusBarClean = [[Interface\AddOns\WeakAuras\Media\Textures\Statusbar_Clean]],
 		kSwap = [[Interface\AddOns\EncounterPlanner\Media\icons8-swap-32.tga]],
 		kTemplate = [[Interface\AddOns\EncounterPlanner\Media\icons8-template-32.tga]],
 		kTooltipBorder = [[Interface\Tooltips\UI-Tooltip-Border]],
