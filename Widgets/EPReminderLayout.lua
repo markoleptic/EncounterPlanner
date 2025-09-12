@@ -34,7 +34,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				local child = children[i]
 				local frame = child.frame
 				frame:ClearAllPoints()
-				frame:Show()
 
 				frame:SetPoint("BOTTOM", content, "BOTTOM", 0, cumulativeHeight)
 
@@ -46,7 +45,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				local child = children[i]
 				local frame = child.frame
 				frame:ClearAllPoints()
-				frame:Show()
 
 				frame:SetPoint("TOP", content, "TOP", 0, -cumulativeHeight)
 
@@ -64,7 +62,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				local child = children[i]
 				local frame = child.frame
 				frame:ClearAllPoints()
-				frame:Show()
 
 				frame:SetPoint("LEFT", content, "LEFT", cumulativeWidth, 0)
 
@@ -76,7 +73,6 @@ AceGUI:RegisterLayout(Type, function(content, children)
 				local child = children[i]
 				local frame = child.frame
 				frame:ClearAllPoints()
-				frame:Show()
 
 				frame:SetPoint("RIGHT", content, "RIGHT", -cumulativeWidth, 0)
 

@@ -39,7 +39,6 @@ local GetSpellTexture = C_Spell.GetSpellTexture
 local GetTime = GetTime
 local ipairs = ipairs
 local max = math.max
-local NewTicker = C_Timer.NewTicker
 local NewTimer = C_Timer.NewTimer
 local next = next
 local pairs = pairs
@@ -75,8 +74,6 @@ local k = {
 	MaxGlowDuration = 10.0,
 	PlayerGUID = UnitGUID("player"),
 	TextAssignmentSpellID = constants.kTextAssignmentSpellID,
-	UpdateTimerIterations = 30000,
-	UpdateTimerTickRate = 0.04,
 }
 
 local s = {
@@ -113,27 +110,9 @@ local s = {
 
 	HideIfAlreadyCasted = false,
 	IsSimulating = false,
-
-	UpdateTimer = nil, ---@type FunctionContainer|nil
-	IconsToAdd = {}, ---@type table<integer, EPReminderIcon>
-	IconsToRemove = {}, ---@type table<integer, EPReminderIcon>
-	MessagesToAdd = {}, ---@type table<integer, EPReminderMessage>
-	MessagesToRemove = {}, ---@type table<integer, EPReminderMessage>
-	ProgressBarsToAdd = {}, ---@type table<integer, EPProgressBar>
-	ProgressBarsToRemove = {}, ---@type table<integer, EPProgressBar>
-}
-s.WidgetTypeToRemoveContainer = {
-	["EPProgressBar"] = s.ProgressBarsToRemove,
-	["EPReminderIcon"] = s.IconsToRemove,
-	["EPReminderMessage"] = s.MessagesToRemove,
 }
 
 local function ResetLocalVariables()
-	if s.UpdateTimer and not s.UpdateTimer:IsCancelled() then
-		s.UpdateTimer:Cancel()
-	end
-	s.UpdateTimer = nil
-
 	for _, timer in pairs(s.Timers) do
 		if timer.Cancel then
 			timer:Cancel()
@@ -183,31 +162,6 @@ local function ResetLocalVariables()
 	wipe(s.BufferTimers)
 	wipe(s.BufferDurations)
 	wipe(s.ActiveBuffers)
-
-	for _, widget in ipairs(s.IconsToAdd) do
-		if widget then
-			AceGUI:Release(widget)
-		end
-	end
-
-	for _, widget in ipairs(s.MessagesToAdd) do
-		if widget then
-			AceGUI:Release(widget)
-		end
-	end
-
-	for _, widget in ipairs(s.ProgressBarsToAdd) do
-		if widget then
-			AceGUI:Release(widget)
-		end
-	end
-
-	wipe(s.IconsToAdd)
-	wipe(s.IconsToRemove)
-	wipe(s.MessagesToAdd)
-	wipe(s.MessagesToRemove)
-	wipe(s.ProgressBarsToAdd)
-	wipe(s.ProgressBarsToRemove)
 
 	if s.MessageContainer then
 		AceGUI:Release(s.MessageContainer)
@@ -271,27 +225,6 @@ local function CreateTimerWithCleanup(duration, func, ...)
 	return timer
 end
 
-local function ProcessNextOperation()
-	if s.MessageContainer then
-		s.MessageContainer:RemoveChildren(unpack(s.MessagesToRemove))
-		wipe(s.MessagesToRemove)
-		s.MessageContainer:AddChildren(unpack(s.MessagesToAdd))
-		wipe(s.MessagesToAdd)
-	end
-	if s.ProgressBarContainer then
-		s.ProgressBarContainer:RemoveChildren(unpack(s.ProgressBarsToRemove))
-		wipe(s.ProgressBarsToRemove)
-		s.ProgressBarContainer:AddChildren(unpack(s.ProgressBarsToAdd))
-		wipe(s.ProgressBarsToAdd)
-	end
-	if s.IconContainer then
-		s.IconContainer:RemoveChildren(unpack(s.IconsToRemove))
-		wipe(s.IconsToRemove)
-		s.IconContainer:AddChildren(unpack(s.IconsToAdd))
-		wipe(s.IconsToAdd)
-	end
-end
-
 -- Creates a container for adding messages to using preferences.
 ---@param preferences MessagePreferences
 local function CreateMessageContainer(preferences)
@@ -335,7 +268,13 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 		if s.HideWidgetIfCasted[spellID] then
 			s.HideWidgetIfCasted[spellID][uniqueID] = nil
 		end
-		tinsert(s.WidgetTypeToRemoveContainer[w.type], w)
+		if w.type == "EPReminderIcon" then
+			s.IconContainer:RemoveChild(widget)
+		elseif w.type == "EPProgressBar" then
+			s.ProgressBarContainer:RemoveChild(widget)
+		elseif w.type == "EPReminderMessage" then
+			s.MessageContainer:RemoveChild(widget)
+		end
 	end)
 
 	if s.HideIfAlreadyCasted and spellID > k.TextAssignmentSpellID then
@@ -355,7 +294,7 @@ local function AddProgressBar(assignment, duration, reminderText, icon, progress
 	local progressBar = AceGUI:Create("EPProgressBar")
 	progressBar:Set(progressBarPreferences, reminderText, duration, icon)
 	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex)
-	tinsert(s.ProgressBarsToAdd, progressBar)
+	s.ProgressBarContainer:AddChild(progressBar)
 	progressBar:Start()
 end
 
@@ -370,7 +309,7 @@ local function AddMessage(assignment, duration, reminderText, icon, messagePrefe
 	local message = AceGUI:Create("EPReminderMessage")
 	message:Set(messagePreferences, reminderText, icon)
 	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex)
-	tinsert(s.MessagesToAdd, message)
+	s.MessageContainer:AddChild(message)
 	message:Start(duration)
 end
 
@@ -385,7 +324,7 @@ local function AddIcon(assignment, duration, reminderText, icon, iconPreferences
 	local reminderIcon = AceGUI:Create("EPReminderIcon")
 	reminderIcon:Set(iconPreferences, reminderText, icon)
 	CreateReminderWidgetCallback(reminderIcon, assignment.spellID, bossPhaseOrderIndex)
-	tinsert(s.IconsToAdd, reminderIcon)
+	s.IconContainer:AddChild(reminderIcon)
 	reminderIcon:Start(GetTime(), duration)
 end
 
@@ -587,7 +526,6 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 		end
 	end
 
-	s.UpdateTimer = NewTicker(k.UpdateTimerTickRate, ProcessNextOperation, k.UpdateTimerIterations)
 	return atLeastOneAssignmentActive
 end
 
@@ -604,7 +542,7 @@ local function ApplyBuffer(spellID, combatLogEventType)
 	end, s.BufferTimers)
 end
 
--- Cancels active s.timers and queues widgets associated with a spellID for release.
+-- Cancels active timers and queues widgets associated with a spellID for release.
 ---@param spellID integer
 local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	if type(s.CancelTimerIfCasted[spellID]) == "table" then
@@ -616,15 +554,19 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 	if type(s.HideWidgetIfCasted[spellID]) == "table" then
 		for _, widget in pairs(s.HideWidgetIfCasted[spellID]) do
-			if s.WidgetTypeToRemoveContainer[widget.type] then
-				tinsert(s.WidgetTypeToRemoveContainer[widget.type], widget)
+			if widget.type == "EPReminderIcon" then
+				s.IconContainer:RemoveChild(widget)
+			elseif widget.type == "EPProgressBar" then
+				s.ProgressBarContainer:RemoveChild(widget)
+			elseif widget.type == "EPReminderMessage" then
+				s.MessageContainer:RemoveChild(widget)
 			end
 		end
 		s.HideWidgetIfCasted[spellID] = nil
 	end
 end
 
--- Callback for CombatLogEventUnfiltered events. Creates s.timers from previously created reminders for
+-- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
 	local _, subEvent, _, sourceGUID, _, _, _, destGUID, _, _, _, spellID, _, _, _, _ = CombatLogGetCurrentEventInfo()
@@ -860,7 +802,6 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 				CreateSimulationTimer(timelineAssignment, roster, preferences, 0.0)
 			end
 			s.SimulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
-			s.UpdateTimer = NewTicker(k.UpdateTimerTickRate, ProcessNextOperation, k.UpdateTimerIterations)
 			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end
