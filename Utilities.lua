@@ -67,6 +67,7 @@ local wipe = table.wipe
 do
 	local GetClassInfo = GetClassInfo
 	local GetClassIDFromSpecID = C_SpecializationInfo.GetClassIDFromSpecID
+	local GetSpecializationInfoForSpecID = GetSpecializationInfoForSpecID
 	local rawget = rawget
 	local rawset = rawset
 	local kNumberOfClasses = GetNumClasses()
@@ -162,8 +163,7 @@ do
 	local sSpecIDToClassAndRole = {}
 
 	for specID, _ in pairs(specIDToType) do
-		local _, name, _, icon, role = GetSpecializationInfo(specID)
-		assert(role)
+		local _, name, _, icon, role = GetSpecializationInfoForSpecID(specID)
 		local classID = GetClassIDFromSpecID(specID)
 		local classFile = select(2, GetClassInfo(classID))
 		local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
@@ -1115,7 +1115,6 @@ do
 					},
 					text = instanceIconText,
 					dropdownItemMenuData = {},
-					customGroups = dungeonInstance.customGroups,
 				}
 			else
 				instanceDropdownData =
@@ -2883,70 +2882,116 @@ do
 	---@param plans table<string, Plan>
 	---@param instanceID integer
 	---@param encounterID integer
+	---@param planToDeleteName string
 	---@return string|nil
-	local function SelectNewLastOpenPlan(plans, instanceID, encounterID)
-		local sortedBossIDs = Utilities.GetOrCreateBossDropdownItems()
-		local table = {}
+	local function SelectNewLastOpenPlan(plans, instanceID, encounterID, planToDeleteName)
+		local instanceBossOrder = bossUtilities.GetInstanceBossOrder()
+		---@type table<integer, table<integer, table<integer, string>>>
+		local planNamesByInstanceAndEncounterID = {}
+		planNamesByInstanceAndEncounterID[instanceID] = {}
+		planNamesByInstanceAndEncounterID[instanceID][encounterID] = { planToDeleteName }
 
 		for currentPlanName, currentPlan in pairs(plans) do
-			table[currentPlan.instanceID] = table[currentPlan.instanceID] or {}
-			table[currentPlan.instanceID][currentPlan.dungeonEncounterID] = table[currentPlan.instanceID][currentPlan.dungeonEncounterID]
-				or {}
-			tinsert(table[currentPlan.instanceID][currentPlan.dungeonEncounterID], currentPlanName)
+			if not planNamesByInstanceAndEncounterID[currentPlan.instanceID] then
+				planNamesByInstanceAndEncounterID[currentPlan.instanceID] = {}
+			end
+			local instanceTable = planNamesByInstanceAndEncounterID[currentPlan.instanceID]
+
+			if not instanceTable[currentPlan.dungeonEncounterID] then
+				instanceTable[currentPlan.dungeonEncounterID] = {}
+			end
+			local bossTable = instanceTable[currentPlan.dungeonEncounterID]
+
+			tinsert(bossTable, currentPlanName)
 		end
 
-		if table[instanceID] then
-			if table[instanceID][encounterID] then -- Other plans available from same boss
-				sort(table[instanceID][encounterID])
-				return table[instanceID][encounterID][1]
+		for _, planNamesByInstanceID in pairs(planNamesByInstanceAndEncounterID) do
+			for _, planNamesByEncounterID in pairs(planNamesByInstanceID) do
+				sort(planNamesByEncounterID)
 			end
-			local mapChallengeModeID
-			local boss = bossUtilities.GetBoss(encounterID)
-			if boss then
-				mapChallengeModeID = boss.mapChallengeModeID
-			end
+		end
 
-			for _, instanceDropdownData in ipairs(sortedBossIDs) do
-				local currentInstanceID, currentMapChallengeModeID
-				if type(instanceDropdownData.itemValue) == "table" then
-					currentInstanceID = instanceDropdownData.itemValue.dungeonInstanceID
-					currentMapChallengeModeID = instanceDropdownData.itemValue.mapChallengeModeID
-				else
-					currentInstanceID = instanceDropdownData.itemValue
-				end
+		local mapChallengeModeID = bossUtilities.GetBoss(encounterID).mapChallengeModeID
 
-				if not mapChallengeModeID or mapChallengeModeID == currentMapChallengeModeID then
-					if instanceID == currentInstanceID then
-						for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
-							local currentEncounterID = bossDropdownData.itemValue
-							if table[instanceID][currentEncounterID] then
-								sort(table[instanceID][currentEncounterID])
-								return table[instanceID][currentEncounterID][1]
+		local deletedEncounterReached = false
+		local previousCandidate = nil
+		local firstForwardCandidate = nil
+		local candidateWithSameInstanceIDBefore = nil
+		local candidateWithSameInstanceIDAfter = nil
+
+		for _, sortedDungeonInstanceEntry in ipairs(instanceBossOrder) do
+			local currentInstanceID = sortedDungeonInstanceEntry.dungeonInstanceID
+			local currentMapChallengeModeID = sortedDungeonInstanceEntry.mapChallengeModeID
+			local planNamesByEncounterID = planNamesByInstanceAndEncounterID[currentInstanceID]
+			if planNamesByEncounterID then
+				for _, sortedDungeonInstanceEntryBossEntry in ipairs(sortedDungeonInstanceEntry.sortedBosses) do
+					local currentEncounterID = sortedDungeonInstanceEntryBossEntry.dungeonEncounterID
+					local planNames = planNamesByEncounterID[currentEncounterID]
+					if planNames then
+						if
+							currentInstanceID == instanceID
+							and currentMapChallengeModeID == mapChallengeModeID
+							and currentEncounterID == encounterID
+						then
+							local deletedIndex = nil
+							for i, name in ipairs(planNames) do
+								if name == planToDeleteName then
+									deletedIndex = i
+									break
+								end
+							end
+							if deletedIndex then
+								tremove(planNames, deletedIndex)
+							end
+
+							-- Neighbor selection
+							if #planNames > 0 then
+								if deletedIndex and deletedIndex <= #planNames then
+									return planNames[deletedIndex] or planNames[#planNames]
+								else
+									return planNames[1]
+								end
+							end
+
+							deletedEncounterReached = true
+						else
+							if currentInstanceID == instanceID and currentMapChallengeModeID == mapChallengeModeID then
+								if deletedEncounterReached then
+									if not candidateWithSameInstanceIDAfter then
+										candidateWithSameInstanceIDAfter = planNames[1]
+									end
+								else
+									candidateWithSameInstanceIDBefore = planNames[#planNames]
+								end
+							end
+
+							if deletedEncounterReached then
+								if not firstForwardCandidate then
+									firstForwardCandidate = planNames[1]
+								end
+							else
+								-- Otherwise keep this as last known previous candidate
+								previousCandidate = planNames[#planNames]
 							end
 						end
-						break
+					end
+				end
+				if deletedEncounterReached then
+					if candidateWithSameInstanceIDAfter then
+						return candidateWithSameInstanceIDAfter
+					elseif candidateWithSameInstanceIDBefore then
+						return candidateWithSameInstanceIDBefore
+					elseif firstForwardCandidate then
+						return firstForwardCandidate
+					elseif previousCandidate then
+						return previousCandidate
 					end
 				end
 			end
 		end
 
-		for _, instanceDropdownData in ipairs(sortedBossIDs) do
-			local currentInstanceID
-			if type(instanceDropdownData.itemValue) == "table" then
-				currentInstanceID = instanceDropdownData.itemValue.dungeonInstanceID
-			else
-				currentInstanceID = instanceDropdownData.itemValue
-			end
-			for _, bossDropdownData in ipairs(instanceDropdownData.dropdownItemMenuData) do
-				local currentEncounterID = bossDropdownData.itemValue
-				if table[currentInstanceID] and table[currentInstanceID][currentEncounterID] then
-					sort(table[currentInstanceID][currentEncounterID])
-					return table[currentInstanceID][currentEncounterID][1]
-				end
-			end
-		end
-
-		return nil
+		-- If no forward candidates found, fallback to the last valid previous
+		return previousCandidate
 	end
 
 	-- Reassigns a primary plan for the encounterID and difficulty only if none exist.
@@ -3031,7 +3076,7 @@ do
 			plans[planToDeleteName] = nil
 
 			if profile.lastOpenPlan == planToDeleteName then
-				local newPlanName = SelectNewLastOpenPlan(plans, instanceID, encounterID)
+				local newPlanName = SelectNewLastOpenPlan(plans, instanceID, encounterID, planToDeleteName)
 				if newPlanName then
 					profile.lastOpenPlan = newPlanName
 				else
@@ -4009,6 +4054,7 @@ do
 	local kRegexIconText = constants.kRegexIconText
 	local GetInstanceBossOrder = bossUtilities.GetInstanceBossOrder
 
+	-- Creates a function that can sort dropdown item data for plans.
 	---@param dropdownItemData DropdownItemData
 	---@return fun(a: DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}, b: DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}):boolean
 	function Utilities.CreateDropdownItemDataPlanSorter(dropdownItemData)
@@ -4018,7 +4064,7 @@ do
 		else
 			dungeonInstanceID = dropdownItemData.itemValue
 		end
-		---@type table<integer, integer>|table<integer, table<integer, integer>>
+
 		local instanceBossOrder = GetInstanceBossOrder(dungeonInstanceID)
 
 		---@param a DropdownItemData|{dungeonEncounterID:integer, mapChallengeModeID?:integer}
@@ -4026,15 +4072,25 @@ do
 		---@return boolean
 		return function(a, b)
 			local aOrder, bOrder = nil, nil
+			local firstEntry, secondEntry = instanceBossOrder[1], instanceBossOrder[2]
+
 			if a.mapChallengeModeID then
-				aOrder = instanceBossOrder[a.mapChallengeModeID][a.dungeonEncounterID]
+				if firstEntry.mapChallengeModeID == a.mapChallengeModeID then
+					aOrder = firstEntry.bosses[a.dungeonEncounterID].index
+				elseif secondEntry and secondEntry.mapChallengeModeID == a.mapChallengeModeID then
+					aOrder = secondEntry.bosses[a.dungeonEncounterID].index
+				end
 			else
-				aOrder = instanceBossOrder[a.dungeonEncounterID]
+				aOrder = firstEntry.bosses[a.dungeonEncounterID].index
 			end
 			if b.mapChallengeModeID then
-				bOrder = instanceBossOrder[b.mapChallengeModeID][b.dungeonEncounterID]
+				if firstEntry.mapChallengeModeID == b.mapChallengeModeID then
+					aOrder = firstEntry.bosses[b.dungeonEncounterID].index
+				elseif secondEntry and secondEntry.mapChallengeModeID == b.mapChallengeModeID then
+					aOrder = secondEntry.bosses[b.dungeonEncounterID].index
+				end
 			else
-				bOrder = instanceBossOrder[b.dungeonEncounterID]
+				bOrder = firstEntry.bosses[b.dungeonEncounterID].index
 			end
 			if aOrder and bOrder then
 				if aOrder ~= bOrder then
@@ -4046,15 +4102,12 @@ do
 		end
 	end
 
+	-- Creates a function that can sort dropdown items for plans.
 	---@param boss Boss
 	---@return fun(a: EPItemBase, b: EPItemBase):boolean
-	function Utilities.CreatePlanSorter(boss)
-		local instanceBossOrder
-		if boss.mapChallengeModeID then
-			instanceBossOrder = GetInstanceBossOrder(boss.instanceID)[boss.mapChallengeModeID]
-		else
-			instanceBossOrder = GetInstanceBossOrder(boss.instanceID)
-		end
+	function Utilities.CreateDropdownItemPlanSorter(boss)
+		local instanceBossOrder = GetInstanceBossOrder(boss.instanceID)
+		local firstEntry = instanceBossOrder[1]
 		local plans = Private.addOn.db.profile.plans
 
 		return function(a, b)
@@ -4064,8 +4117,8 @@ do
 			if instanceBossOrder then
 				local aPlan, bPlan = plans[a:GetUserDataTable().value], plans[b:GetUserDataTable().value]
 				if aPlan and bPlan then
-					aOrder = instanceBossOrder[aPlan.dungeonEncounterID]
-					bOrder = instanceBossOrder[bPlan.dungeonEncounterID]
+					aOrder = firstEntry.bosses[aPlan.dungeonEncounterID].index
+					bOrder = firstEntry.bosses[bPlan.dungeonEncounterID].index
 				end
 			end
 			if aOrder ~= bOrder then

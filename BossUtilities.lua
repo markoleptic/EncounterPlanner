@@ -24,16 +24,15 @@ local tinsert = table.insert
 local wipe = table.wipe
 
 local s = {
-	-- Boss dungeon encounter ID -> boss ability spell ID -> SpellCastStartTableEntry
+	-- Boss dungeon encounter ID -> boss ability spell ID -> [SpellCastStartTableEntry]
 	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 	AbsoluteSpellCastStartTables = {},
 
-	-- Boss dungeon encounter ID -> boss ability spell ID -> {castStart, boss phase order index}
+	-- Boss dungeon encounter ID -> boss ability spell ID -> [SpellCastStartTableEntry]
 	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
 	AbsoluteSpellCastStartTablesHeroic = {},
 
-	--- Dungeon Instance ID -> [mapChallengeModeID, [encounterID, order]] | [encounterID, order]
-	---@type table<integer, table<integer, table<integer, integer>>|table<integer, integer>>
+	---@type table<integer, SortedDungeonInstanceEntry>
 	InstanceBossOrder = {},
 
 	---@type table<integer, table<integer, table<integer, SpellCastStartTableEntry>>>
@@ -285,12 +284,6 @@ do
 			return bossAbilityCache[encounterID][difficulty][spellID]
 		end
 	end
-end
-
----@param dungeonInstanceID integer Dungeon instance ID
----@return table<integer, integer>|table<integer, table<integer, integer>>|nil
-function BossUtilities.GetInstanceBossOrder(dungeonInstanceID)
-	return s.InstanceBossOrder[dungeonInstanceID]
 end
 
 do
@@ -1991,20 +1984,68 @@ do
 		wipe(phaseCountDurationMap)
 	end
 
-	---@param dungeonInstance DungeonInstance
-	---@param order table
-	local function GenerateInstanceBossOrder(dungeonInstance, order)
-		local dungeonInstanceID = dungeonInstance.instanceID
-		order[dungeonInstanceID] = order[dungeonInstanceID] or {}
-		if dungeonInstance.mapChallengeModeID then
-			order[dungeonInstanceID][dungeonInstance.mapChallengeModeID] = {}
-			for index, boss in ipairs(dungeonInstance.bosses) do
-				order[dungeonInstanceID][dungeonInstance.mapChallengeModeID][boss.dungeonEncounterID] = index
+	local sInstanceIDToInstanceBossOrderIndices = {}
+
+	local function GenerateInstanceBossOrder()
+		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
+			local dungeonInstanceID = dungeonInstance.instanceID
+			if not sInstanceIDToInstanceBossOrderIndices[dungeonInstanceID] then
+				sInstanceIDToInstanceBossOrderIndices[dungeonInstanceID] = {}
 			end
+
+			---@type SortedDungeonInstanceEntry
+			local entry = {
+				dungeonInstanceID = dungeonInstance.instanceID,
+				name = dungeonInstance.name,
+				bosses = {},
+				sortedBosses = {},
+				isRaid = dungeonInstance.isRaid,
+				mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+			}
+
+			for index, boss in ipairs(dungeonInstance.bosses) do
+				entry.bosses[boss.dungeonEncounterID] = {
+					dungeonEncounterID = boss.dungeonEncounterID,
+					index = index,
+				}
+				tinsert(entry.sortedBosses, {
+					dungeonEncounterID = boss.dungeonEncounterID,
+					index = index,
+				})
+			end
+			tinsert(s.InstanceBossOrder, entry)
+		end
+
+		sort(s.InstanceBossOrder, function(a, b)
+			if a.isRaid then
+				if not b.isRaid then
+					return true
+				end
+			elseif b.isRaid then
+				return false
+			end
+
+			return a.name < b.name
+		end)
+
+		for index, sortedDungeonInstanceEntry in ipairs(s.InstanceBossOrder) do
+			local dungeonInstanceID = sortedDungeonInstanceEntry.dungeonInstanceID
+			tinsert(sInstanceIDToInstanceBossOrderIndices[dungeonInstanceID], index)
+		end
+	end
+
+	---@param dungeonInstanceID? integer Dungeon instance ID
+	---@return table<integer, SortedDungeonInstanceEntry>
+	function BossUtilities.GetInstanceBossOrder(dungeonInstanceID)
+		if not dungeonInstanceID then
+			return s.InstanceBossOrder
 		else
-			for index, boss in ipairs(dungeonInstance.bosses) do
-				order[dungeonInstanceID][boss.dungeonEncounterID] = index
+			---@type table<integer, SortedDungeonInstanceEntry>
+			local instanceEntries = {}
+			for _, index in ipairs(sInstanceIDToInstanceBossOrderIndices[dungeonInstanceID]) do
+				tinsert(instanceEntries, s.InstanceBossOrder[index])
 			end
+			return instanceEntries
 		end
 	end
 
@@ -2013,8 +2054,8 @@ do
 	-- Creates the following tables for all dungeon instance bosses: boss ordering, max, max absolute, and ordered boss
 	-- phases, spell cast times, sorted abilities, and ability instances for a boss.
 	function BossUtilities.Initialize()
+		GenerateInstanceBossOrder()
 		for dungeonInstance in BossUtilities.IterateDungeonInstances() do
-			GenerateInstanceBossOrder(dungeonInstance, s.InstanceBossOrder)
 			for _, boss in ipairs(dungeonInstance.bosses) do
 				local encounterID = boss.dungeonEncounterID
 				if boss.phases then

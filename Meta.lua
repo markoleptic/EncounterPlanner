@@ -484,6 +484,18 @@
 ---@field metaData PlanMetaDataDiff
 ---@field empty boolean
 
+---@class SortedDungeonInstanceEntryBossEntry
+---@field dungeonEncounterID integer
+---@field index integer
+
+---@class SortedDungeonInstanceEntry
+---@field name string
+---@field dungeonInstanceID integer
+---@field mapChallengeModeID? integer
+---@field bosses table<integer, SortedDungeonInstanceEntryBossEntry> Keys are dungeonEncounterID
+---@field sortedBosses table<integer, SortedDungeonInstanceEntryBossEntry> Keys are sequential indices
+---@field isRaid boolean
+
 ---@alias CombatLogEventType
 ---| "SCC" SPELL_CAST_SUCCESS
 ---| "SCS" SPELL_CAST_START

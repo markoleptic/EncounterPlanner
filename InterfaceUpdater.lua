@@ -739,7 +739,7 @@ do
 		end
 	end
 
-	local CreatePlanSorter = utilities.CreatePlanSorter
+	local CreatePlanSorter = utilities.CreateDropdownItemPlanSorter
 
 	-- Adds a new plan name to the plan dropdown and optionally selects it and updates the reminder enabled check box.
 	---@param plan Plan

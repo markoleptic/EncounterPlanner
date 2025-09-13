@@ -1159,7 +1159,11 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 		if planDropdown then
 			local newDropdownItemText = utilities.FormatPlanText(newPlanName, boss.icon, currentPlan.difficulty)
 			planDropdown:EditItemValueAndText(currentPlanName, newPlanName, newDropdownItemText)
-			planDropdown:Sort(AddOn.db.profile.plans[newPlanName].instanceID, nil, utilities.CreatePlanSorter(boss))
+			planDropdown:Sort(
+				AddOn.db.profile.plans[newPlanName].instanceID,
+				nil,
+				utilities.CreateDropdownItemPlanSorter(boss)
+			)
 			planDropdown:SetText(newPlanName)
 		end
 	end
