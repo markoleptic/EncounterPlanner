@@ -132,6 +132,18 @@ Private.classes.TextImportType = {
 	CreateNew = 3,
 }
 
+---@enum AssignmentEditorDataType
+Private.classes.AssignmentEditorDataType = {
+	AssignmentType = 1,
+	CombatLogEventSpellID = 2,
+	CombatLogEventSpellCount = 3,
+	SpellAssignment = 4,
+	AssigneeType = 5,
+	Time = 6,
+	OptionalText = 7,
+	Target = 8,
+}
+
 ---@class Assignment
 Private.classes.Assignment = {
 	uniqueID = 0,

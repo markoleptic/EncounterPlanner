@@ -10,6 +10,8 @@ local constants = Private.constants
 local Type = "EPAssignmentEditor"
 local Version = 1
 
+local AssignmentEditorDataType = Private.classes.AssignmentEditorDataType
+
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
@@ -94,10 +96,10 @@ end
 local function HandleAssignmentTypeDropdownValueChanged(self, value)
 	if value == "SCC" or value == "SCS" or value == "SAA" or value == "SAR" or value == "UD" then -- Combat Log Event
 		SetEnabled(self.combatLogEventContainer.children, true)
-		self:Fire("DataChanged", "AssignmentType", value)
+		self:Fire("DataChanged", AssignmentEditorDataType.AssignmentType, value)
 	elseif value == "Fixed Time" then
 		SetEnabled(self.combatLogEventContainer.children, false)
-		self:Fire("DataChanged", "AssignmentType", value)
+		self:Fire("DataChanged", AssignmentEditorDataType.AssignmentType, value)
 	end
 end
 
@@ -127,7 +129,7 @@ local function HandleSpellAssignmentDropdownValueChanged(self, value)
 	end
 	self.spellAssignmentDropdown:ClearHighlightsForExistingDropdownItemMenu("Recent")
 	self:Fire("RecentItemsChanged", self.spellAssignmentDropdown:GetItemsFromDropdownItemMenu("Recent"))
-	self:Fire("DataChanged", "SpellAssignment", value)
+	self:Fire("DataChanged", AssignmentEditorDataType.SpellAssignment, value)
 end
 
 ---@param self EPAssignmentEditor
@@ -237,7 +239,7 @@ end
 
 ---@param self EPAssignmentEditor
 local function HandleAssigneeTypeDropdownValueChanged(self, value)
-	self:Fire("DataChanged", "AssigneeType", value)
+	self:Fire("DataChanged", AssignmentEditorDataType.AssigneeType, value)
 end
 
 ---@param self EPAssignmentEditor
@@ -330,7 +332,7 @@ local function OnAcquire(self)
 		self.combatLogEventSpellIDDropdown = AceGUI:Create("EPDropdown")
 		self.combatLogEventSpellIDDropdown:SetFullWidth(true)
 		self.combatLogEventSpellIDDropdown:SetCallback("OnValueChanged", function(_, _, value)
-			self:Fire("DataChanged", "CombatLogEventSpellID", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.CombatLogEventSpellID, value)
 		end)
 
 		local rightContainer = AceGUI:Create("EPContainer")
@@ -347,7 +349,7 @@ local function OnAcquire(self)
 		self.combatLogEventSpellCountLineEdit = AceGUI:Create("EPLineEdit")
 		self.combatLogEventSpellCountLineEdit:SetFullWidth(true)
 		self.combatLogEventSpellCountLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-			self:Fire("DataChanged", "CombatLogEventSpellCount", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.CombatLogEventSpellCount, value)
 		end)
 
 		self.combatLogEventSpellIDLabel:SetWidth(maxLabelWidth)
@@ -384,7 +386,7 @@ local function OnAcquire(self)
 		self.timeMinuteLineEdit = AceGUI:Create("EPLineEdit")
 		self.timeMinuteLineEdit:SetRelativeWidth(0.475)
 		self.timeMinuteLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-			self:Fire("DataChanged", "Time", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.Time, value)
 		end)
 
 		local separatorLabel = AceGUI:Create("EPLabel")
@@ -396,7 +398,7 @@ local function OnAcquire(self)
 		self.timeSecondLineEdit = AceGUI:Create("EPLineEdit")
 		self.timeSecondLineEdit:SetRelativeWidth(0.475)
 		self.timeSecondLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-			self:Fire("DataChanged", "Time", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.Time, value)
 		end)
 
 		doubleLineEditContainer:AddChildren(self.timeMinuteLineEdit, separatorLabel, self.timeSecondLineEdit)
@@ -438,7 +440,7 @@ local function OnAcquire(self)
 			if not checked then
 				self.spellAssignmentDropdown:SetValue(constants.kInvalidAssignmentSpellID)
 				self.spellAssignmentDropdown:SetText("")
-				self:Fire("DataChanged", "SpellAssignment", constants.kInvalidAssignmentSpellID)
+				self:Fire("DataChanged", AssignmentEditorDataType.SpellAssignment, constants.kInvalidAssignmentSpellID)
 			end
 		end)
 
@@ -479,14 +481,14 @@ local function OnAcquire(self)
 			if not checked then
 				self.targetDropdown:SetValue("")
 				self.targetDropdown:SetText("")
-				self:Fire("DataChanged", "Target", "")
+				self:Fire("DataChanged", AssignmentEditorDataType.Target, "")
 			end
 		end)
 
 		self.targetDropdown = AceGUI:Create("EPDropdown")
 		self.targetDropdown:SetFullWidth(true)
 		self.targetDropdown:SetCallback("OnValueChanged", function(_, _, value)
-			self:Fire("DataChanged", "Target", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.Target, value)
 		end)
 
 		self.targetContainer:AddChildren(self.enableTargetCheckBox, self.targetDropdown)
@@ -506,7 +508,7 @@ local function OnAcquire(self)
 		self.optionalTextLineEdit = AceGUI:Create("EPLineEdit")
 		self.optionalTextLineEdit:SetFullWidth(true)
 		self.optionalTextLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
-			self:Fire("DataChanged", "OptionalText", value)
+			self:Fire("DataChanged", AssignmentEditorDataType.OptionalText, value)
 		end)
 
 		self.optionalTextContainer:AddChildren(self.optionalTextLabel, self.optionalTextLineEdit)
@@ -756,7 +758,7 @@ local function HandleRosterChanged(self)
 		self.targetDropdown:SetEnabled(false)
 		self.targetDropdown:SetValue("")
 		self.targetDropdown:SetText("")
-		self:Fire("DataChanged", "Target", "")
+		self:Fire("DataChanged", AssignmentEditorDataType.Target, "")
 	end
 end
 

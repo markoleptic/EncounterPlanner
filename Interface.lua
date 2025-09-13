@@ -548,8 +548,10 @@ do -- Assignment Editor
 	local IsValidSpellCount = bossUtilities.IsValidSpellCount
 	local UpdateAssignmentBossPhase = utilities.UpdateAssignmentBossPhase
 
+	local AssignmentEditorDataType = Private.classes.AssignmentEditorDataType
+
 	---@param assignmentEditor EPAssignmentEditor
-	---@param dataType string
+	---@param dataType AssignmentEditorDataType
 	---@param value string
 	local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, value)
 		local assignmentID = assignmentEditor:GetAssignmentID()
@@ -567,12 +569,12 @@ do -- Assignment Editor
 		local updateFields = false
 		local updateAssignments = false
 
-		if dataType == "AssignmentType" then
+		if dataType == AssignmentEditorDataType.AssignmentType then
 			---@cast assignment CombatLogEventAssignment|TimedAssignment
 			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty, GetCurrentPlan().ID)
 			updateFields = true
 			updateAssignments = true
-		elseif dataType == "CombatLogEventSpellID" then
+		elseif dataType == AssignmentEditorDataType.CombatLogEventSpellID then
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
 				local spellID = tonumber(value)
@@ -581,7 +583,7 @@ do -- Assignment Editor
 				end
 				updateFields = true
 			end
-		elseif dataType == "CombatLogEventSpellCount" then
+		elseif dataType == AssignmentEditorDataType.CombatLogEventSpellCount then
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				---@cast assignment CombatLogEventAssignment
 				local spellCount = tonumber(value)
@@ -599,15 +601,7 @@ do -- Assignment Editor
 				end
 				updateFields = true
 			end
-		elseif dataType == "PhaseNumber" then
-			if getmetatable(assignment) == PhasedAssignment then
-				---@cast assignment PhasedAssignment
-				local phase = tonumber(value, 10)
-				if phase then
-					assignment.phase = phase
-				end
-			end
-		elseif dataType == "SpellAssignment" then
+		elseif dataType == AssignmentEditorDataType.SpellAssignment then
 			if value == constants.kInvalidAssignmentSpellID then
 				if assignment.text:len() > 0 then
 					assignment.spellID = constants.kTextAssignmentSpellID
@@ -622,11 +616,11 @@ do -- Assignment Editor
 			end
 			updateAssignments = true
 			updateFields = true
-		elseif dataType == "AssigneeType" then
+		elseif dataType == AssignmentEditorDataType.AssigneeType then
 			assignment.assignee = value
 			updateFields = true
 			updateAssignments = true
-		elseif dataType == "Time" then
+		elseif dataType == AssignmentEditorDataType.Time then
 			local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
 			local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
 			---@cast assignment CombatLogEventAssignment|TimedAssignment
@@ -651,7 +645,7 @@ do -- Assignment Editor
 			assignmentEditor.timeMinuteLineEdit:SetText(minutes)
 			assignmentEditor.timeSecondLineEdit:SetText(seconds)
 			updateAssignments = true
-		elseif dataType == "OptionalText" then
+		elseif dataType == AssignmentEditorDataType.OptionalText then
 			assignment.text = value
 			if assignment.text:len() > 0 and assignment.spellID == constants.kInvalidAssignmentSpellID then
 				assignment.spellID = constants.kTextAssignmentSpellID
@@ -661,7 +655,7 @@ do -- Assignment Editor
 				updateAssignments = true
 			end
 			updateFields = true
-		elseif dataType == "Target" then
+		elseif dataType == AssignmentEditorDataType.Target then
 			assignment.targetName = value
 			updateFields = true
 		end
@@ -676,10 +670,10 @@ do -- Assignment Editor
 			true
 		)
 		if
-			dataType == "SpellAssignment"
-			or dataType == "OptionalText"
-			or dataType == "Time"
-			or dataType == "AssignmentType"
+			dataType == AssignmentEditorDataType.SpellAssignment
+			or dataType == AssignmentEditorDataType.OptionalText
+			or dataType == AssignmentEditorDataType.Time
+			or dataType == AssignmentEditorDataType.AssignmentType
 		then
 			if Private.activeTutorialCallbackName then
 				Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDataChanged")
