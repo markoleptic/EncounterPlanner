@@ -226,7 +226,7 @@ do
 	local FindAssignmentByUniqueID = utilities.FindAssignmentByUniqueID
 	local FindBossAbility = bossUtilities.FindBossAbility
 	local GetAvailableCombatLogEventTypes = bossUtilities.GetAvailableCombatLogEventTypes
-	local GetSpecializationInfoByID = GetSpecializationInfoByID
+	local GetSpecializationInfo = C_SpecializationInfo.GetSpecializationInfo
 	local GetSpellName = C_Spell.GetSpellName
 
 	local kAssignmentMetaTables = {
@@ -457,7 +457,7 @@ do
 					if specMatch then
 						local specIDMatch = tonumber(specMatch)
 						if specIDMatch then
-							local _, _, _, icon, _ = GetSpecializationInfoByID(specIDMatch)
+							local _, _, _, icon, _ = GetSpecializationInfo(specIDMatch)
 							specIconID = icon
 							entryText = entryText:gsub("|T[^|]+|t%s*", "")
 						end

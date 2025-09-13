@@ -35,14 +35,15 @@ local GetOrderedBossPhases = bossUtilities.GetOrderedBossPhases
 
 local DifficultyType = Private.classes.DifficultyType
 
+local assert = assert
 local floor = math.floor
 local format = string.format
 local GetClassColor = C_ClassColor.GetClassColor
 local getmetatable, setmetatable = getmetatable, setmetatable
 local GetNumGroupMembers = GetNumGroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
-local GetSpecialization = GetSpecialization
-local GetSpecializationInfo = GetSpecializationInfo
+local GetSpecialization = C_SpecializationInfo.GetSpecialization
+local GetSpecializationInfo = C_SpecializationInfo.GetSpecializationInfo
 local GetSpellBaseCooldown = GetSpellBaseCooldown
 local GetSpellCharges = C_Spell.GetSpellCharges
 local GetSpellName = C_Spell.GetSpellName
@@ -65,7 +66,7 @@ local wipe = table.wipe
 
 do
 	local GetClassInfo = GetClassInfo
-	local GetSpecializationInfoByID = GetSpecializationInfoByID
+	local GetClassIDFromSpecID = C_SpecializationInfo.GetClassIDFromSpecID
 	local rawget = rawget
 	local rawset = rawset
 	local kNumberOfClasses = GetNumClasses()
@@ -161,7 +162,10 @@ do
 	local sSpecIDToClassAndRole = {}
 
 	for specID, _ in pairs(specIDToType) do
-		local _, name, _, icon, role, classFile = GetSpecializationInfoByID(specID)
+		local _, name, _, icon, role = GetSpecializationInfo(specID)
+		assert(role)
+		local classID = GetClassIDFromSpecID(specID)
+		local classFile = select(2, GetClassInfo(classID))
 		local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
 		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
@@ -3740,7 +3744,6 @@ do
 end
 
 do
-	local assert = assert
 	local ConvertCombatLogEventTimeToAbsoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime
 	local FindNearestCombatLogEvent = bossUtilities.FindNearestCombatLogEvent
 	local FindNearestSpellCount = bossUtilities.FindNearestSpellCount
