@@ -350,7 +350,7 @@ do -- Roster Editor
 		Private.rosterEditor:Release()
 		UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
 		UpdateRosterDataFromGroup(GetCurrentRoster())
-		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		UpdateAllAssignments(true)
 
 		local assignmentEditor = Private.assignmentEditor
 		if assignmentEditor then
@@ -537,7 +537,7 @@ do -- Assignment Editor
 				lowerTemplate
 			)
 		)
-		UpdateAllAssignments(false, plan.dungeonEncounterID)
+		UpdateAllAssignments(false)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDeleteButtonClicked")
 		end
@@ -710,7 +710,7 @@ do -- Assignment Editor
 		assignmentEditor:SetCallback("DeleteButtonClicked", HandleAssignmentEditorDeleteButtonClicked)
 		assignmentEditor:SetCallback("CloseButtonClicked", function()
 			Private.assignmentEditor:Release()
-			UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+			UpdateAllAssignments(false)
 		end)
 		assignmentEditor:SetCallback("RecentItemsChanged", function(_, _, recentItems)
 			AddOn.db.profile.recentSpellAssignments = recentItems
@@ -872,7 +872,7 @@ do -- Phase Length Editor
 				end
 
 				UpdateBoss(bossDungeonEncounterID, true)
-				UpdateAllAssignments(false, bossDungeonEncounterID)
+				UpdateAllAssignments(false)
 				UpdateTotalTime()
 
 				if Private.activeTutorialCallbackName then
@@ -915,7 +915,7 @@ do -- Phase Length Editor
 			end
 			Private.phaseLengthEditor:SetPhaseCounts(validatedPhaseCounts)
 			UpdateBoss(bossDungeonEncounterID, true)
-			UpdateAllAssignments(false, bossDungeonEncounterID)
+			UpdateAllAssignments(false)
 			UpdateTotalTime()
 		end
 	end
@@ -939,7 +939,7 @@ do -- Phase Length Editor
 				wipe(currentPlan.customPhaseCounts)
 				local bossDungeonEncounterID = currentPlan.dungeonEncounterID
 				UpdateBoss(bossDungeonEncounterID, true)
-				UpdateAllAssignments(false, bossDungeonEncounterID)
+				UpdateAllAssignments(false)
 				UpdateTotalTime()
 			end)
 			phaseLengthEditor:SetCallback("DataChanged", HandlePhaseLengthEditorDataChanged)
@@ -1008,7 +1008,7 @@ local function HandleConvertAssignments(plan, newBossDungeonEncounterID, newDiff
 
 		AddPlanToDropdown(newPlan, true)
 		UpdateBoss(newBossDungeonEncounterID, true)
-		UpdateAllAssignments(false, newBossDungeonEncounterID)
+		UpdateAllAssignments(false)
 	end
 end
 
@@ -1097,7 +1097,7 @@ local function HandlePlanDropdownValueChanged(dropdown, _, value)
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 
 		UpdateBoss(bossDungeonEncounterID, true)
-		UpdateAllAssignments(true, bossDungeonEncounterID)
+		UpdateAllAssignments(true)
 		interfaceUpdater.UpdatePlanCheckBoxes(plan)
 		Private.mainFrame:DoLayout()
 		Private.callbacks:Fire("PlanChanged")
@@ -1218,7 +1218,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 	end
 
 	AddAssignmentToPlan(plan, assignment)
-	UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+	UpdateAllAssignments(false)
 	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 	dropdown:SetText(k.AddAssigneeText)
 	if Private.activeTutorialCallbackName then
@@ -1235,7 +1235,7 @@ local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty, plan.ID)
 	if assignment then
 		AddAssignmentToPlan(plan, assignment)
-		UpdateAllAssignments(false, encounterID)
+		UpdateAllAssignments(false)
 		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "added")
@@ -1297,7 +1297,7 @@ do -- Plan Menu Button s.Handlers
 		AddPlanToDropdown(newPlan, true)
 		interfaceUpdater.RepopulatePlanWidgets()
 		UpdateBoss(bossDungeonEncounterID, true)
-		UpdateAllAssignments(true, bossDungeonEncounterID)
+		UpdateAllAssignments(true)
 		Private.callbacks:Fire("PlanChanged")
 	end
 
@@ -1364,7 +1364,7 @@ do -- Plan Menu Button s.Handlers
 		local newPlan = utilities.DuplicatePlan(plans, planToDuplicateName, planToDuplicateName)
 		AddOn.db.profile.lastOpenPlan = newPlan.name
 
-		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		UpdateAllAssignments(true)
 		AddPlanToDropdown(newPlan, true)
 	end
 
@@ -1382,7 +1382,7 @@ do -- Plan Menu Button s.Handlers
 
 		local newEncounterID = newLastOpenPlan.dungeonEncounterID
 		UpdateBoss(newEncounterID, true)
-		UpdateAllAssignments(true, newEncounterID)
+		UpdateAllAssignments(true)
 		Private.callbacks:Fire("PlanChanged")
 	end
 
@@ -1411,7 +1411,7 @@ do -- Plan Menu Button s.Handlers
 					AddOn.db.profile.lastOpenPlan = planName
 					AddPlanToDropdown(plans[planName], true)
 					UpdateBoss(bossDungeonEncounterID, true)
-					UpdateAllAssignments(true, bossDungeonEncounterID)
+					UpdateAllAssignments(true)
 					Private.callbacks:Fire("PlanChanged")
 				end
 			elseif importType == k.PlanMenuItemValues.Import.FromString then
@@ -1511,7 +1511,7 @@ do -- Plan Menu Button s.Handlers
 						AddOn.db.profile.lastOpenPlan = newPlan.name
 						AddPlanToDropdown(newPlan, true)
 						UpdateBoss(currentBossDungeonEncounterID, true)
-						UpdateAllAssignments(true, currentBossDungeonEncounterID)
+						UpdateAllAssignments(true)
 						Private.callbacks:Fire("PlanChanged")
 						if Private.activeTutorialCallbackName then
 							Private.callbacks:Fire(Private.activeTutorialCallbackName, "newPlanDialogPlanCreated")
@@ -1565,7 +1565,7 @@ do -- Plan Menu Button s.Handlers
 		assert(index, "Profile contains template")
 		local template = templates[index]
 		utilities.ApplyPlanTemplate(template, GetCurrentPlan())
-		UpdateAllAssignments(true, GetCurrentBossDungeonEncounterID())
+		UpdateAllAssignments(true)
 	end
 
 	---@param templateName string
@@ -2029,7 +2029,7 @@ local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTi
 		newAssignment.time = newAssignmentTime
 	end
 
-	UpdateAllAssignments(false, plan.dungeonEncounterID)
+	UpdateAllAssignments(false)
 	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "duplicated")
@@ -2096,7 +2096,7 @@ local function HandleCollapseAllButtonClicked()
 	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 		collapsed[assigneeSpellSet.assignee] = true
 	end
-	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
+	UpdateAllAssignments(false)
 end
 
 local function HandleExpandAllButtonClicked()
@@ -2113,7 +2113,7 @@ local function HandleExpandAllButtonClicked()
 		collapsed[assigneeSpellSet.assignee] = false
 	end
 
-	UpdateAllAssignments(false, currentPlan.dungeonEncounterID)
+	UpdateAllAssignments(false)
 	Private.mainFrame.timeline:SetMaxAssignmentHeight()
 	Private.mainFrame:DoLayout()
 	if Private.activeTutorialCallbackName then
@@ -2435,10 +2435,11 @@ function Private:CreateInterface()
 	interfaceUpdater.RepopulatePlanWidgets()
 	Private.RepopulateTemplates(AddOn.db.profile.templates)
 	UpdateBoss(encounterID, true)
-	UpdateRosterFromAssignments(GetCurrentAssignments(), GetCurrentRoster())
-	UpdateRosterDataFromGroup(GetCurrentRoster())
+	local roster = GetCurrentRoster()
+	UpdateRosterFromAssignments(GetCurrentAssignments(), roster)
+	UpdateRosterDataFromGroup(roster)
 	UpdateRosterDataFromGroup(profile.sharedRoster)
-	UpdateAllAssignments(true, encounterID, true)
+	UpdateAllAssignments(true, true)
 	if profile.windowSize then
 		local minWidth, minHeight, _, _ = mainFrame.frame:GetResizeBounds()
 		profile.windowSize.x = max(profile.windowSize.x, minWidth)

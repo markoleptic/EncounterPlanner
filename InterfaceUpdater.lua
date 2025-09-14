@@ -275,7 +275,7 @@ do
 					lowerTemplate
 				)
 			)
-			InterfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
+			InterfaceUpdater.UpdateAllAssignments(false)
 			if Private.activeTutorialCallbackName then
 				Private.callbacks:Fire(Private.activeTutorialCallbackName, "deleteAssigneeRowClicked")
 			end
@@ -287,10 +287,7 @@ do
 	local function HandleCollapseButtonClicked(abilityEntry, _, shouldCollapse)
 		local collapsed = GetCurrentPlan().collapsed
 		collapsed[abilityEntry:GetKey()] = shouldCollapse
-		local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-		if bossDungeonEncounterID then
-			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-		end
+		InterfaceUpdater.UpdateAllAssignments(false)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(
 				Private.activeTutorialCallbackName,
@@ -334,7 +331,7 @@ do
 			end
 			local bossDungeonEncounterID = plan.dungeonEncounterID
 			local difficulty = plan.difficulty
-			InterfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
+			InterfaceUpdater.UpdateAllAssignments(false)
 			if Private.assignmentEditor then
 				local assignmentEditor = Private.assignmentEditor
 				local assignmentID = assignmentEditor:GetAssignmentID()
@@ -576,15 +573,9 @@ do
 	-- Sorts assignments & assignees, updates the assignment list, timeline assignments, and optionally the add assignee
 	-- dropdown.
 	---@param updateAddAssigneeDropdown boolean Whether or not to update the add assignee dropdown
-	---@param bossDungeonEncounterID integer
-	---@param firstUpdate boolean|nil
+	---@param firstUpdate boolean|nil Whether or not this is the first update.
 	---@param preserve boolean|nil Whether or not to preserve the current message log.
-	function InterfaceUpdater.UpdateAllAssignments(
-		updateAddAssigneeDropdown,
-		bossDungeonEncounterID,
-		firstUpdate,
-		preserve
-	)
+	function InterfaceUpdater.UpdateAllAssignments(updateAddAssigneeDropdown, firstUpdate, preserve)
 		local currentPlan = GetCurrentPlan()
 		local profile = AddOn.db.profile
 		local sortType = profile.preferences.assignmentSortType
@@ -650,7 +641,7 @@ function InterfaceUpdater.UpdateFromPlan(plan, preserve)
 		local bossDungeonEncounterID = plan.dungeonEncounterID
 		if bossDungeonEncounterID then
 			InterfaceUpdater.UpdateBoss(bossDungeonEncounterID, true)
-			InterfaceUpdater.UpdateAllAssignments(true, bossDungeonEncounterID, nil, preserve)
+			InterfaceUpdater.UpdateAllAssignments(true, nil, preserve)
 		end
 		Private.mainFrame:DoLayout()
 	end
@@ -1057,7 +1048,7 @@ do
 		local timeline = Private.mainFrame.timeline
 		if timeline then
 			if updateAssignments then
-				InterfaceUpdater.UpdateAllAssignments(false, dungeonEncounterID)
+				InterfaceUpdater.UpdateAllAssignments(false)
 			end
 			if updateTimeline then
 				if not updateAssignments then

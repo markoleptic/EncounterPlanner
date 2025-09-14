@@ -220,7 +220,7 @@ local function EnsureAssigneeIsExpanded(self, scrollIntoView)
 	if collapsed[k.PlayerName] ~= nil then
 		if collapsed[k.PlayerName] == true then
 			collapsed[k.PlayerName] = false
-			interfaceUpdater.UpdateAllAssignments(false, GetCurrentBossDungeonEncounterID())
+			interfaceUpdater.UpdateAllAssignments(false)
 		end
 	end
 	local timeline = self.mainFrame.timeline

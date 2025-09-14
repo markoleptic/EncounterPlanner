@@ -2943,10 +2943,8 @@ do
 					local value = tonumber(key)
 					if value then
 						GetPreferences().timelineRows.assignmentHeight = utilities.Round(value, 0)
-						if Private.mainFrame and Private.mainFrame.timeline then
-							local lastOpenPlan = AddOn.db.profile.lastOpenPlan
-							local plan = AddOn.db.profile.plans[lastOpenPlan]
-							interfaceUpdater.UpdateAllAssignments(false, plan.dungeonEncounterID)
+						if Private.mainFrame then
+							UpdateAllAssignments(false)
 						end
 					end
 				end,
@@ -2992,11 +2990,8 @@ do
 						local preferences = GetPreferences()
 						if key ~= preferences.assignmentSortType then
 							preferences.assignmentSortType = key
-							if Private.mainFrame and Private.mainFrame.bossLabel then
-								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-								if bossDungeonEncounterID then
-									UpdateAllAssignments(false, bossDungeonEncounterID)
-								end
+							if Private.mainFrame then
+								UpdateAllAssignments(false)
 							end
 						end
 					end
@@ -3035,20 +3030,17 @@ do
 						local preferences = GetPreferences()
 						if key ~= preferences.timelineRows.onlyShowMe then
 							preferences.timelineRows.onlyShowMe = key
-							if Private.mainFrame and Private.mainFrame.bossLabel then
-								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-								if bossDungeonEncounterID then
-									if Private.assignmentEditor then
-										Private.assignmentEditor:Release()
-									end
-									if Private.rosterEditor then
-										Private.rosterEditor:Release()
-									end
-									if Private.newTemplateDialog then
-										Private.newTemplateDialog:Release()
-									end
-									UpdateAllAssignments(false, bossDungeonEncounterID)
+							if Private.mainFrame then
+								if Private.assignmentEditor then
+									Private.assignmentEditor:Release()
 								end
+								if Private.rosterEditor then
+									Private.rosterEditor:Release()
+								end
+								if Private.newTemplateDialog then
+									Private.newTemplateDialog:Release()
+								end
+								UpdateAllAssignments(false)
 							end
 						end
 					end
@@ -3265,11 +3257,8 @@ do
 					if type(value) == "table" then
 						---@cast value table<integer, CooldownAndChargeOverride>
 						AddOn.db.profile.cooldownAndChargeOverrides = value
-						if Private.mainFrame and Private.mainFrame.bossLabel then
-							local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-							if bossDungeonEncounterID then
-								UpdateAllAssignments(false, bossDungeonEncounterID)
-							end
+						if Private.mainFrame then
+							UpdateAllAssignments(false)
 						end
 					end
 				end,

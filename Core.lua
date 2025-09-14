@@ -577,11 +577,8 @@ local function HandlePlayerTalentUpdate(_, configID)
 	if configInfo.type == TraitConfigType.Combat then
 		NewTimer(0, function()
 			utilities.RefreshCachedCooldowns()
-			if Private.mainFrame and Private.mainFrame.bossLabel then
-				local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
-				if bossDungeonEncounterID then
-					interfaceUpdater.UpdateAllAssignments(false, bossDungeonEncounterID)
-				end
+			if Private.mainFrame then
+				interfaceUpdater.UpdateAllAssignments(false)
 			end
 		end)
 	end
