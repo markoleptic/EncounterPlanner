@@ -326,7 +326,7 @@ local function Set(self, preferences, text, icon)
 	local r, g, b, a = unpack(preferences.textColor)
 	self.text:SetTextColor(r, g, b, a)
 	self.duration:SetTextColor(r, g, b, a)
-	if icon then
+	if icon and preferences.showIcon == true then
 		self.showIcon = true
 		self.icon:SetTexture(icon)
 	else

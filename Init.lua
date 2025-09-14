@@ -585,6 +585,7 @@ local defaults = {
 					soonestExpirationOnBottom = true,
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
+					showIcon = true,
 				},
 				progressBars = {
 					enabled = true,

@@ -442,6 +442,7 @@ L["Shift + Mouse Scroll"] = true
 L["Shift + Right Click"] = true
 L["Show Border"] = true
 L["Show Edge"] = true
+L["Show Icon"] = true
 L["Show Icon Border"] = true
 L["Show Spell Cooldown Duration And Charges"] = true
 L["Show Swipe"] = true
@@ -592,6 +593,8 @@ L["Whether to play text to speech sound at the end of the countdown (i.e. speak 
 L["Whether to play text to speech sound at the start of the countdown (i.e. Spell in x seconds)."] = true
 L["Whether to show a 1px border around Progress Bar icons."] = true
 L["Whether to show a 1px border around Progress Bars."] = true
+L["Whether to show a spell icon beside the message for spell assignments (does not apply to text only assignments)."] =
+	true
 L["Whether to show cooldown-style icons for spell assignments (does not apply to text only assignments)."] = true
 L["Whether to show Messages for assignments."] = true
 L["Whether to show Progress Bars for assignments."] = true

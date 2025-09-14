@@ -1228,6 +1228,30 @@ do
 				enabled = enableMessageOption,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Show Icon"],
+				type = "checkBox",
+				description = L["Whether to show a spell icon beside the message for spell assignments (does not apply to text only assignments)."],
+				category = L["Messages"],
+				get = function()
+					return GetMessagePreferences().showIcon
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetMessagePreferences()
+						preferences.showIcon = key
+						CallAnchorFunction(AnchorType.Message, function(message)
+							---@cast message EPReminderMessage
+							if preferences.showIcon == true then
+								message:SetIcon(constants.textures.kUnknown)
+							else
+								message:SetIcon(nil)
+							end
+						end)
+					end
+				end,
+				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Message Transparency"],
 				type = "lineEdit",
 				description = L["Transparency of Messages (0.0 - 1.0)."],

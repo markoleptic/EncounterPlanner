@@ -319,6 +319,7 @@
 ---@class MessagePreferences : GenericReminderPreferences
 ---@field showOnlyAtExpiration boolean If true, only shows Messages at expiration time.
 ---@field textColor Color Text color of Messages.
+---@field showIcon boolean If true, show the spell icon associated with the assignment.
 
 ---@class IconPreferences : GenericReminderPreferences
 ---@field width number The width of Cooldown Icons.
