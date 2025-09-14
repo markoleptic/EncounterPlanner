@@ -3023,6 +3023,38 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Only Show Timeline Assignments For Me"],
+				type = "checkBox",
+				category = L["Assignment Timeline"],
+				description = L["Whether to only show timeline assignments that are relevant to you."],
+				get = function()
+					return GetPreferences().timelineRows.onlyShowMe
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						local preferences = GetPreferences()
+						if key ~= preferences.timelineRows.onlyShowMe then
+							preferences.timelineRows.onlyShowMe = key
+							if Private.mainFrame and Private.mainFrame.bossLabel then
+								local bossDungeonEncounterID = Private.mainFrame.bossLabel:GetValue()
+								if bossDungeonEncounterID then
+									if Private.assignmentEditor then
+										Private.assignmentEditor:Release()
+									end
+									if Private.rosterEditor then
+										Private.rosterEditor:Release()
+									end
+									if Private.newTemplateDialog then
+										Private.newTemplateDialog:Release()
+									end
+									UpdateAllAssignments(false, bossDungeonEncounterID)
+								end
+							end
+						end
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Number of Visible Rows"],
 				type = "lineEdit",
 				category = L["Boss Ability Timeline"],

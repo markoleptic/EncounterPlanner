@@ -899,7 +899,7 @@ do
 			ChangePlanBoss({ plan }, plan.name, plan.dungeonEncounterID, plan.difficulty)
 			UpdateRosterFromAssignments(plan.assignments, plan.roster)
 
-			local exportString = Private:ExportPlanToNote(plan, bossDungeonEncounterID) --[[@as string]]
+			local exportString = Private:ExportPlanToNote(plan, {}, false) --[[@as string]]
 			local exportStringTable = SplitStringIntoTable(exportString)
 			for index, line in ipairs(exportStringTable) do
 				TestEqual(line, textTable[index], "")
@@ -1633,7 +1633,8 @@ do
 			local plans = {}
 			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
 			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
-			local assigneeSpellSets = utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance")
+			local assigneeSpellSets =
+				utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance", {}, false)
 			local templates = {}
 			local filteredAssignees = {}
 			for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
@@ -1687,7 +1688,8 @@ do
 			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			plan.roster["Buh"] = Private.classes.RosterEntry:New()
 			plan.roster["Guh"] = Private.classes.RosterEntry:New()
-			local assigneeSpellSets = utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance")
+			local assigneeSpellSets =
+				utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance", {}, false)
 			local templates = {}
 			local filteredAssignees = {}
 			for _, assigneeSpellSet in ipairs(assigneeSpellSets) do

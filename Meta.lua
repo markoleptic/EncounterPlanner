@@ -265,6 +265,7 @@
 ---@field numberOfBossAbilitiesToShow integer Number of visible rows in the boss timeline.
 ---@field assignmentHeight integer Height of individual rows in the assignment timeline.
 ---@field bossAbilityHeight integer Height of individual rows in the boss timeline.
+---@field onlyShowMe boolean Whether to only show assignments on timeline that are relevant to the player.
 
 ---@class Preferences
 ---@field lastOpenTab string Last open preferences menu tab.

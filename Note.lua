@@ -648,10 +648,11 @@ do
 
 	-- Exports a plan in MRT/KAZE format.
 	---@param plan Plan
-	---@param bossDungeonEncounterID integer
+	---@param cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride> Cooldown duration and charge overrides for spells.
+	---@param onlyShowMe boolean Whether to only show assignments on timeline that are relevant to the player.
 	---@return string
-	function Private:ExportPlanToNote(plan, bossDungeonEncounterID)
-		local timelineAssignments = CreateTimelineAssignments(plan, bossDungeonEncounterID, nil, DifficultyType.Mythic)
+	function Private:ExportPlanToNote(plan, cooldownAndChargeOverrides, onlyShowMe)
+		local timelineAssignments = CreateTimelineAssignments(plan, cooldownAndChargeOverrides, onlyShowMe, nil)
 		sort(timelineAssignments, function(a, b)
 			if a.startTime == b.startTime then
 				return a.assignment.assignee < b.assignment.assignee

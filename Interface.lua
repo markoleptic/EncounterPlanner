@@ -1435,7 +1435,10 @@ do -- Plan Menu Button s.Handlers
 			end)
 			Private.exportEditBox = exportEditBox
 		end
-		local text = Private:ExportPlanToNote(GetCurrentPlan(), GetCurrentBossDungeonEncounterID())
+		local profile = AddOn.db.profile
+		local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
+		local onlyShowMe = profile.preferences.timelineRows.onlyShowMe
+		local text = Private:ExportPlanToNote(GetCurrentPlan(), cooldownAndChargeOverrides, onlyShowMe)
 		if text then
 			Private.exportEditBox:SetText(text)
 			Private.exportEditBox:HighlightTextAndFocus()
@@ -1598,9 +1601,12 @@ do -- Plan Menu Button s.Handlers
 			end)
 
 			local currentPlan = GetCurrentPlan()
-			local sortType = AddOn.db.profile.preferences.assignmentSortType
+			local profile = AddOn.db.profile
+			local sortType = profile.preferences.assignmentSortType
+			local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
+			local onlyShowMe = profile.preferences.timelineRows.onlyShowMe
 			local sortedTimelineAssignments =
-				SortAssignments(currentPlan, sortType, GetCurrentBossDungeonEncounterID(), true, currentPlan.difficulty)
+				SortAssignments(currentPlan, sortType, cooldownAndChargeOverrides, onlyShowMe, true)
 			local orderedAssigneeSpellSets = SortAssigneesWithSpellID(sortedTimelineAssignments)
 			local filteredAssignees = {}
 			for _, assigneeSpellSet in ipairs(orderedAssigneeSpellSets) do
@@ -1858,13 +1864,12 @@ local function HandleSimulateRemindersButtonClicked(simulateReminderButton)
 		ClosePlanDependentWidgets()
 		simulateReminderButton:SetText(L["Stop Simulating"])
 		local currentPlan = GetCurrentPlan()
-		local sortedTimelineAssignments = SortAssignments(
-			currentPlan,
-			AddOn.db.profile.preferences.assignmentSortType,
-			currentPlan.dungeonEncounterID,
-			nil,
-			currentPlan.difficulty
-		)
+		local profile = AddOn.db.profile
+		local sortType = profile.preferences.assignmentSortType
+		local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
+		-- Use reminder.onlyShowMe since timelineRows.onlyShowMe only applies to timeline assignments
+		local onlyShowMe = profile.preferences.reminder.onlyShowMe
+		local sortedTimelineAssignments = SortAssignments(currentPlan, sortType, cooldownAndChargeOverrides, onlyShowMe)
 		Private:SimulateBoss(
 			currentPlan.dungeonEncounterID,
 			sortedTimelineAssignments,

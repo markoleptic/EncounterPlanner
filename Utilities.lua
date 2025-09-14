@@ -17,6 +17,7 @@ local PhasedAssignment = Private.classes.PhasedAssignment
 local RosterEntry = Private.classes.RosterEntry
 ---@class TimelineAssignment
 local TimelineAssignment = Private.classes.TimelineAssignment
+local DeepCopy = Private.DeepCopy
 
 ---@class Constants
 local constants = Private.constants
@@ -1625,44 +1626,42 @@ do
 	end
 
 	-- Creates unsorted timeline assignments from assignments and sets the timeline assignments' start times.
+	-- The message log is cleared when the plan is changed and preserveMessageLog is nil/false.
 	---@param plan Plan Plan containing assignments to create timeline assignments from
-	---@param bossDungeonEncounterID integer The boss to obtain cast times from if the assignment requires it
+	---@param cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride> Cooldown duration and charge overrides for spells.
+	---@param onlyShowMe boolean Whether to only show assignments on timeline that are relevant to the player.
 	---@param preserveMessageLog boolean|nil Whether or not to preserve the current message log.
-	---@param difficulty DifficultyType
 	---@return table<integer, TimelineAssignment> -- Unsorted timeline assignments
-	function Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog, difficulty)
+	function Utilities.CreateTimelineAssignments(plan, cooldownAndChargeOverrides, onlyShowMe, preserveMessageLog)
+		---@type table<integer, TimelineAssignment>
 		local timelineAssignments = {}
-		if AddOn.db then
-			local cooldownAndChargeOverrides = AddOn.db.profile.cooldownAndChargeOverrides
-			for _, assignment in pairs(plan.assignments) do
-				local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
-				local spellID = assignment.spellID
-				local cooldownAndChargeOverride = cooldownAndChargeOverrides[spellID]
 
-				if cooldownAndChargeOverride then
-					timelineAssignment.cooldownDuration = cooldownAndChargeOverride.duration
-					if cooldownAndChargeOverride.maxCharges then
-						timelineAssignment.maxCharges = cooldownAndChargeOverride.maxCharges
-					else
-						local _, charges = Utilities.GetSpellCooldownAndCharges(spellID)
-						timelineAssignment.maxCharges = charges
-					end
+		for _, assignment in pairs(plan.assignments) do
+			local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
+			local spellID = assignment.spellID
+			local cooldownAndChargeOverride = cooldownAndChargeOverrides[spellID]
+
+			if cooldownAndChargeOverride then
+				timelineAssignment.cooldownDuration = cooldownAndChargeOverride.duration
+				if cooldownAndChargeOverride.maxCharges then
+					timelineAssignment.maxCharges = cooldownAndChargeOverride.maxCharges
 				else
-					timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
-						Utilities.GetSpellCooldownAndCharges(spellID)
+					local _, charges = Utilities.GetSpellCooldownAndCharges(spellID)
+					timelineAssignment.maxCharges = charges
 				end
-				tinsert(timelineAssignments, timelineAssignment)
-			end
-		else
-			for _, assignment in pairs(plan.assignments) do
-				local spellID = assignment.spellID
-				local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
+			else
 				timelineAssignment.cooldownDuration, timelineAssignment.maxCharges =
 					Utilities.GetSpellCooldownAndCharges(spellID)
-				tinsert(timelineAssignments, timelineAssignment)
 			end
+			tinsert(timelineAssignments, timelineAssignment)
 		end
 
+		if onlyShowMe == true then
+			timelineAssignments = Utilities.FilterSelf(timelineAssignments)
+		end
+
+		local bossDungeonEncounterID = plan.dungeonEncounterID
+		local difficulty = plan.difficulty
 		local success, failTable =
 			Utilities.UpdateTimelineAssignmentsStartTime(timelineAssignments, bossDungeonEncounterID, difficulty)
 
@@ -1852,17 +1851,23 @@ do
 		end
 	end
 
-	-- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the timeline.
-	-- Sorts assignments based on the assignmentSortType.
+	-- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the
+	-- timeline. Sorts assignments based on the assignmentSortType.
 	---@param plan Plan Plan containing assignments to sort.
 	---@param assignmentSortType AssignmentSortType Sort method.
-	---@param bossDungeonEncounterID integer Used to get boss timers to set the proper timeline assignment start time for combat log assignments.
+	---@param cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride> Cooldown duration and charge overrides for spells.
+	---@param onlyShowMe boolean Whether to only show assignments on timeline that are relevant to the player.
 	---@param preserveMessageLog boolean|nil Whether or not to preserve the current message log.
-	---@param difficulty DifficultyType
 	---@return table<integer, TimelineAssignment>
-	function Utilities.SortAssignments(plan, assignmentSortType, bossDungeonEncounterID, preserveMessageLog, difficulty)
+	function Utilities.SortAssignments(
+		plan,
+		assignmentSortType,
+		cooldownAndChargeOverrides,
+		onlyShowMe,
+		preserveMessageLog
+	)
 		local timelineAssignments =
-			Utilities.CreateTimelineAssignments(plan, bossDungeonEncounterID, preserveMessageLog, difficulty)
+			Utilities.CreateTimelineAssignments(plan, cooldownAndChargeOverrides, onlyShowMe, preserveMessageLog)
 		sort(timelineAssignments, CompareAssignments(plan.roster, assignmentSortType))
 		return timelineAssignments
 	end
@@ -1894,31 +1899,50 @@ do
 		end
 	end
 
-	---@param assigneeSpellSetsFromAssignments table<integer, AssigneeSpellSet>
-	---@param assigneeSpellSetsFromTemplate table<integer, AssigneeSpellSet>
+	---@param assigneeSpellSetsFromAssignments table<integer, AssigneeSpellSet> Spells sets from assignments.
+	---@param assigneeSpellSetsFromTemplate table<integer, AssigneeSpellSet> Spells sets from a template.
 	---@param roster table<string, RosterEntry> Roster associated with the current plan.
 	---@param assignmentSortType AssignmentSortType Sort method.
+	---@param onlyShowMe boolean If true, only add templates relevant to self.
 	---@return table<integer, AssigneeSpellSet>
 	function Utilities.MergeTemplatesSorted(
 		assigneeSpellSetsFromAssignments,
 		assigneeSpellSetsFromTemplate,
 		roster,
-		assignmentSortType
+		assignmentSortType,
+		onlyShowMe
 	)
-		local assigneeOrderIndex = {} ---@type table<string, integer>
-		for index, assigneeSpellSet in ipairs(assigneeSpellSetsFromAssignments) do
-			assigneeOrderIndex[assigneeSpellSet.assignee] = index
+		---@type table<integer, AssigneeSpellSet>
+		local combined = {}
+
+		local unitName, unitRealm = UnitFullName("player")
+		local unitClass = select(2, UnitClass("player"))
+		local specID, _, _, _, role = GetSpecializationInfo(GetSpecialization())
+		local classType = Utilities.GetTypeFromSpecID(specID)
+
+		---@type table<string, integer>
+		local combinedAssigneeIndices = {}
+		for _, assigneeSpellSet in ipairs(assigneeSpellSetsFromAssignments) do
+			local assignee = assigneeSpellSet.assignee
+			if
+				onlyShowMe == false
+				or Utilities.IsRelevantToSelf(assignee, unitName, unitRealm, unitClass, specID, role, classType)
+			then
+				tinsert(combined, DeepCopy(assigneeSpellSet))
+				combinedAssigneeIndices[assignee] = #combined
+			end
 		end
 
 		local newEntries = {}
 
 		for _, templateSpellSets in ipairs(assigneeSpellSetsFromTemplate) do
-			local assigneeIndex = assigneeOrderIndex[templateSpellSets.assignee]
-			if assigneeIndex then
-				local assignmentSpellSets = assigneeSpellSetsFromAssignments[assigneeIndex]
+			local assignee = templateSpellSets.assignee
+			local combinedAssigneeIndex = combinedAssigneeIndices[assignee]
+			if combinedAssigneeIndex then
+				local combinedSpellSetsForAssignee = combined[combinedAssigneeIndex]
 
 				local existing = {}
-				for _, spellID in ipairs(assignmentSpellSets.spells) do
+				for _, spellID in ipairs(combinedSpellSetsForAssignee.spells) do
 					existing[spellID] = true
 				end
 
@@ -1942,37 +1966,43 @@ do
 						end
 					end
 				end)
+
 				for i = #missingSpellIDs, 1, -1 do
-					tinsert(assignmentSpellSets.spells, 1, missingSpellIDs[i])
+					tinsert(combinedSpellSetsForAssignee.spells, 1, missingSpellIDs[i])
 				end
 			else
-				tinsert(newEntries, Private.DeepCopy(templateSpellSets))
+				if
+					onlyShowMe == false
+					or Utilities.IsRelevantToSelf(assignee, unitName, unitRealm, unitClass, specID, role, classType)
+				then
+					tinsert(newEntries, DeepCopy(templateSpellSets))
+				end
 			end
 		end
 
 		if assignmentSortType == "Alphabetical" then -- Assignee > Spell Name > Start Time
 			for _, newEntry in pairs(newEntries) do
-				tinsert(assigneeSpellSetsFromAssignments, newEntry)
+				tinsert(combined, newEntry)
 			end
-			sort(assigneeSpellSetsFromAssignments, ComparePlanTemplateEntries(roster, assignmentSortType))
+			sort(combined, ComparePlanTemplateEntries(roster, assignmentSortType))
 		elseif assignmentSortType == "First Appearance" then -- Start Time > Assignee > Spell Name
 			sort(newEntries, ComparePlanTemplateEntries(roster, assignmentSortType))
 			for i = #newEntries, 1, -1 do
-				tinsert(assigneeSpellSetsFromAssignments, 1, newEntries[i])
+				tinsert(combined, 1, newEntries[i])
 			end
 		elseif assignmentSortType == "Role > Alphabetical" then -- Role > Assignee > Spell Name > Start Time
 			for _, newEntry in pairs(newEntries) do
-				tinsert(assigneeSpellSetsFromAssignments, newEntry)
+				tinsert(combined, newEntry)
 			end
-			sort(assigneeSpellSetsFromAssignments, ComparePlanTemplateEntries(roster, assignmentSortType))
+			sort(combined, ComparePlanTemplateEntries(roster, assignmentSortType))
 		elseif assignmentSortType == "Role > First Appearance" then -- Role > Start Time > Assignee > Spell Name
 			sort(newEntries, ComparePlanTemplateEntries(roster, assignmentSortType))
 			for i = #newEntries, 1, -1 do
-				tinsert(assigneeSpellSetsFromAssignments, 1, newEntries[i])
+				tinsert(combined, 1, newEntries[i])
 			end
 		end
 
-		return assigneeSpellSetsFromAssignments
+		return combined
 	end
 end
 
@@ -2409,56 +2439,75 @@ local function GetGroupNumber()
 	return myGroup
 end
 
----@param timelineAssignmentsOrAssignments table<integer, TimelineAssignment>|table<integer, Assignment>
----@return table<integer, TimelineAssignment|Assignment>
-function Utilities.FilterSelf(timelineAssignmentsOrAssignments)
-	local filtered = {}
-	local unitName, unitRealm = UnitFullName("player")
-	local unitClass = select(2, UnitClass("player"))
-	local specID, _, _, _, role = GetSpecializationInfo(GetSpecialization())
-	local classType = Utilities.GetTypeFromSpecID(specID)
-	for _, timelineAssignment in ipairs(timelineAssignmentsOrAssignments) do
-		local assignee = timelineAssignment.assignee or timelineAssignment.assignment.assignee
-		if assignee:find("class:") then
-			local classMatch = assignee:match("class:%s*(%a+)")
-			if classMatch then
-				if classMatch:upper() == unitClass then
-					tinsert(filtered, timelineAssignment)
-				end
+---@param assignee string Assignee string as found in an assignment or template.
+---@param unitName string Player name.
+---@param unitRealm string Player realm.
+---@param unitClass string Player class file name.
+---@param specID integer Player specialization ID.
+---@param role string Player role.
+---@param classType "melee"|"ranged" Player class type.
+---@return boolean
+function Utilities.IsRelevantToSelf(assignee, unitName, unitRealm, unitClass, specID, role, classType)
+	if assignee:find("class:") then
+		local classMatch = assignee:match("class:%s*(%a+)")
+		if classMatch then
+			if classMatch:upper() == unitClass then
+				return true
 			end
-		elseif assignee:find("group:") then
-			if assignee:find(tostring(GetGroupNumber())) then
+		end
+	elseif assignee:find("group:") then
+		if assignee:find(tostring(GetGroupNumber())) then
+			return true
+		end
+	elseif assignee:find("role:") then
+		local roleMatch = assignee:match("role:%s*(%a+)")
+		if roleMatch then
+			if roleMatch:upper() == role then
+				return true
+			end
+		end
+	elseif assignee:find("type:") then
+		local typeMatch = assignee:match("type:%s*(%a+)")
+		if typeMatch then
+			if typeMatch:lower() == classType then
+				return true
+			end
+		end
+	elseif assignee:find("spec:") then
+		local specMatch = assignee:match("spec:%s*(%d+)")
+		if specMatch then
+			local foundSpecID = tonumber(specMatch)
+			if foundSpecID and foundSpecID == specID then
+				return true
+			end
+		end
+	elseif assignee:find("{everyone}") then
+		return true
+	elseif unitName == assignee or unitName .. "-" .. unitRealm == assignee then
+		return true
+	end
+	return false
+end
+
+do
+	local IsRelevantToSelf = Utilities.IsRelevantToSelf
+
+	---@param timelineAssignmentsOrAssignments table<integer, TimelineAssignment|Assignment>
+	---@return table<integer, TimelineAssignment|Assignment>
+	function Utilities.FilterSelf(timelineAssignmentsOrAssignments)
+		local filtered = {}
+		local unitName, unitRealm = UnitFullName("player")
+		local unitClass = select(2, UnitClass("player"))
+		local specID, _, _, _, role = GetSpecializationInfo(GetSpecialization())
+		local classType = Utilities.GetTypeFromSpecID(specID)
+		for _, timelineAssignment in ipairs(timelineAssignmentsOrAssignments) do
+			local assignee = timelineAssignment.assignee or timelineAssignment.assignment.assignee
+			if IsRelevantToSelf(assignee, unitName, unitRealm, unitClass, specID, role, classType) then
 				tinsert(filtered, timelineAssignment)
 			end
-		elseif assignee:find("role:") then
-			local roleMatch = assignee:match("role:%s*(%a+)")
-			if roleMatch then
-				if roleMatch:upper() == role then
-					tinsert(filtered, timelineAssignment)
-				end
-			end
-		elseif assignee:find("type:") then
-			local typeMatch = assignee:match("type:%s*(%a+)")
-			if typeMatch then
-				if typeMatch:lower() == classType then
-					tinsert(filtered, timelineAssignment)
-				end
-			end
-		elseif assignee:find("spec:") then
-			local specMatch = assignee:match("spec:%s*(%d+)")
-			if specMatch then
-				local foundSpecID = tonumber(specMatch)
-				if foundSpecID and foundSpecID == specID then
-					tinsert(filtered, timelineAssignment)
-				end
-			end
-		elseif assignee:find("{everyone}") then
-			tinsert(filtered, timelineAssignment)
-		elseif unitName == assignee or unitName .. "-" .. unitRealm == assignee then
-			tinsert(filtered, timelineAssignment)
 		end
+		return filtered
 	end
-	return filtered
 end
 
 ---@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
@@ -2617,12 +2666,14 @@ function Utilities.SortAssigneeSpellSets(assigneeSpellSets)
 	end)
 end
 
----@param plan Plan
----@param assignmentSortType AssignmentSortType
+---@param plan Plan Plan.
+---@param assignmentSortType AssignmentSortType Sort method.
+---@param cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride> Cooldown duration and charge overrides for spells.
+---@param onlyShowMe boolean Whether to only show assignments on timeline that are relevant to the player.
 ---@return table<integer, AssigneeSpellSet>
-function Utilities.CreateAssigneeSpellSetsFromPlan(plan, assignmentSortType)
+function Utilities.CreateAssigneeSpellSetsFromPlan(plan, assignmentSortType, cooldownAndChargeOverrides, onlyShowMe)
 	local sortedTimelineAssignments =
-		Utilities.SortAssignments(plan, assignmentSortType, plan.dungeonEncounterID, true, plan.difficulty)
+		Utilities.SortAssignments(plan, assignmentSortType, cooldownAndChargeOverrides, onlyShowMe, true)
 	local assigneeSpellSets, _ = Utilities.SortAssigneesWithSpellID(sortedTimelineAssignments)
 	return assigneeSpellSets
 end
@@ -2650,7 +2701,6 @@ function Utilities.CreatePlanTemplate(templates, plan, newTemplateName, assignee
 	Utilities.SortAssigneeSpellSets(assigneeSpellSets)
 
 	-- Import roster entries
-	local DeepCopy = Private.DeepCopy
 	local roster = plan.roster
 	for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 		if roster[assigneeSpellSet.assignee] then
@@ -2702,7 +2752,7 @@ function Utilities.ApplyPlanTemplate(template, plan)
 				end
 			end
 		else -- Add assignee and spells
-			tinsert(plan.assigneeSpellSets, Private.DeepCopy(assigneeSpellSet))
+			tinsert(plan.assigneeSpellSets, DeepCopy(assigneeSpellSet))
 		end
 	end
 end
@@ -2729,11 +2779,11 @@ end
 ---@return Plan
 function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 	newPlanName = Utilities.CreateUniquePlanName(plans, newPlanName)
-	local newPlan = Private.classes.Plan:New({}, newPlanName)
+	local newPlan = Plan:New({}, newPlanName)
 	local newID = newPlan.ID
 
 	local planToCopy = plans[planToCopyName]
-	for key, value in pairs(Private.DeepCopy(planToCopy)) do
+	for key, value in pairs(DeepCopy(planToCopy)) do
 		newPlan[key] = value
 	end
 
@@ -3126,7 +3176,6 @@ do
 		return copy
 	end
 
-	local DeepCopy = Private.DeepCopy
 	local PlanDiffType = Private.classes.PlanDiffType
 
 	---@generic T

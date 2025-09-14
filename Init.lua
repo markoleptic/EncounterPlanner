@@ -558,6 +558,7 @@ local defaults = {
 				numberOfBossAbilitiesToShow = 8,
 				assignmentHeight = 30.0,
 				bossAbilityHeight = 30.0,
+				onlyShowMe = false,
 			},
 			zoomCenteredOnCursor = true,
 			showSpellCooldownDuration = true,

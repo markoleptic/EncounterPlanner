@@ -586,15 +586,23 @@ do
 		preserve
 	)
 		local currentPlan = GetCurrentPlan()
-		local sortType = AddOn.db.profile.preferences.assignmentSortType
+		local profile = AddOn.db.profile
+		local sortType = profile.preferences.assignmentSortType
+		local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
+		local onlyShowMe = profile.preferences.timelineRows.onlyShowMe
 		local sortedTimelineAssignments =
-			SortAssignments(currentPlan, sortType, bossDungeonEncounterID, preserve, currentPlan.difficulty)
+			SortAssignments(currentPlan, sortType, cooldownAndChargeOverrides, onlyShowMe, preserve)
 		local orderedAssigneeSpellSets, groupedByAssignee = SortAssigneesWithSpellID(sortedTimelineAssignments)
 		for _, timelineAssignments in pairs(groupedByAssignee) do
 			ComputeChargeStates(timelineAssignments)
 		end
-		orderedAssigneeSpellSets =
-			MergeTemplatesSorted(orderedAssigneeSpellSets, currentPlan.assigneeSpellSets, currentPlan.roster, sortType)
+		orderedAssigneeSpellSets = MergeTemplatesSorted(
+			orderedAssigneeSpellSets,
+			currentPlan.assigneeSpellSets,
+			currentPlan.roster,
+			sortType,
+			onlyShowMe
+		)
 
 		UpdateAssignmentList(orderedAssigneeSpellSets, firstUpdate)
 

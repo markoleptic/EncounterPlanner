@@ -350,6 +350,7 @@ L["Number of assignment rows visible before scrolling is required."] = true
 L["Number of boss ability rows visible before scrolling is required."] = true
 L["Okay"] = true
 L["Only Show Reminders For Me"] = true
+L["Only Show Timeline Assignments For Me"] = true
 L["Only shows Messages at the end of the countdown. Messages are displayed for 2 seconds before fading for 1.2 seconds."] =
 	true
 L["Open Preferences"] = true
@@ -587,6 +588,7 @@ L["Whether External Text of this plan should be made available to other addons o
 	true
 L["Whether to enable reminders for assignments."] = true
 L["Whether to only show assignment reminders that are relevant to you."] = true
+L["Whether to only show timeline assignments that are relevant to you."] = true
 L["Whether to play a sound at the end of the countdown."] = true
 L["Whether to play a sound at the start of the countdown."] = true
 L["Whether to play text to speech sound at the end of the countdown (i.e. speak spell or text)."] = true
