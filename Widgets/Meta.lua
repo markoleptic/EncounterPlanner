@@ -182,3 +182,9 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field name string
 ---@field dbEntry RosterEntry
 ---@field widgetEntry EPRosterEntry
+
+---@class EPContainerContentFrame : Frame
+---@field spacing {x: number, y:number}
+---@field sortAscending? boolean
+---@field alignment? "center"
+---@field orientation? "vertical"|"horizontal"

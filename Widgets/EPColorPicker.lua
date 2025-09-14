@@ -77,15 +77,6 @@ local function HandleColorSwatchClicked(self)
 	AceGUI:ClearFocus()
 end
 
----@class EPColorPicker : AceGUIWidget
----@field frame Frame
----@field type string
----@field label FontString
----@field enabled boolean
----@field hasAlpha boolean
----@field colorSwatch Frame|table
----@field color [number, number, number, number]
-
 ---@param self EPColorPicker
 local function OnAcquire(self)
 	ColorPickerFrame = ColorPickerFrame or _G["ColorPickerFrame"]
@@ -199,7 +190,11 @@ local function Constructor()
 		label:SetFont(fPath, k.DefaultFontHeight)
 	end
 
-	---@class EPColorPicker
+	---@class EPColorPicker : AceGUIWidget
+	---@field enabled boolean
+	---@field hasAlpha boolean
+	---@field colorSwatch Frame|table
+	---@field color [number, number, number, number]
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -209,6 +204,7 @@ local function Constructor()
 		SetLabelText = SetLabelText,
 		frame = frame,
 		type = Type,
+		count = count,
 		label = label,
 		checkers = checkers,
 		colorSwatch = colorSwatch,

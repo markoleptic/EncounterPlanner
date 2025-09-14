@@ -192,24 +192,6 @@ local function RestyleBar(self)
 	end
 end
 
----@class EPProgressBar : AceGUIWidget
----@field frame table|Frame
----@field type string
----@field statusBar StatusBar
----@field background Texture
----@field iconBackdrop table|Frame|BackdropTemplate
----@field duration FontString
----@field label FontString
----@field fill boolean
----@field remaining number
----@field expirationTime number
----@field startTime number
----@field running boolean
----@field gap number
----@field iconPosition "LEFT"|"RIGHT"
----@field iconTexture string|integer|nil
----@field parent EPContainer
-
 ---@param self EPProgressBar
 local function OnAcquire(self)
 	self.frame:Show()
@@ -486,7 +468,16 @@ local function Constructor()
 	duration:SetJustifyH("RIGHT")
 	duration:SetJustifyV("MIDDLE")
 
-	---@class EPProgressBar
+	---@class EPProgressBar : AceGUIWidget
+	---@field fill boolean
+	---@field remaining number
+	---@field expirationTime number
+	---@field startTime number
+	---@field running boolean
+	---@field gap number
+	---@field iconPosition "LEFT"|"RIGHT"
+	---@field iconTexture string|integer|nil
+	---@field parent EPContainer
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -508,6 +499,7 @@ local function Constructor()
 		Set = Set,
 		frame = frame,
 		type = Type,
+		count = count,
 		statusBar = statusBar,
 		background = background,
 		icon = icon,

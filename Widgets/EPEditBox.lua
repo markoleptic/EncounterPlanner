@@ -142,12 +142,12 @@ local function OnAcquire(self)
 			end
 		end
 	end)
-	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
+	self.scrollFrame.frame:SetParent(self.frame)
 	self.scrollFrame.frame:SetPoint("LEFT", self.frame, "LEFT", k.FramePadding, 0)
 	self.scrollFrame.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
 	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.FramePadding, 0)
 	self.scrollFrame.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.FramePadding)
-	self.scrollFrame:SetScrollChild(self.editBox --[[@as Frame]], true, true)
+	self.scrollFrame:SetScrollChild(self.editBox, true, true)
 
 	self.editBox:SetScript("OnTextChanged", function()
 		self.scrollFrame:UpdateVerticalScroll()
@@ -212,7 +212,7 @@ local function ShowOkayButton(self, show, okayButtonText)
 	if show then
 		if not self.okayButton then
 			self.okayButton = AceGUI:Create("EPButton")
-			self.okayButton.frame:SetParent(self.frame --[[@as Frame]])
+			self.okayButton.frame:SetParent(self.frame)
 			self.okayButton:SetText(okayButtonText or "Okay")
 			self.okayButton:SetHeight(k.OkayButtonHeight)
 			self.okayButton:SetWidthFromText()
@@ -243,7 +243,7 @@ local function ShowRadioButtonGroup(self, show, radioButtonText, lineEditLabelTe
 			self.container = AceGUI:Create("EPContainer")
 			self.container:SetLayout("EPVerticalLayout")
 			self.container:SetSpacing(0, 10)
-			self.container.frame:SetParent(self.frame --[[@as Frame]])
+			self.container.frame:SetParent(self.frame)
 			self.container.frame:SetPoint("TOP", self.windowBar.frame, "BOTTOM", 0, -k.FramePadding)
 
 			local radioButtonGroupChildren = {}
@@ -342,6 +342,7 @@ local function Constructor()
 		SetFocusAndCursorPosition = SetFocusAndCursorPosition,
 		frame = frame,
 		type = Type,
+		count = count,
 		editBox = editBox,
 	}
 

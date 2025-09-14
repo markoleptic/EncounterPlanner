@@ -495,7 +495,7 @@ local function OnAcquire(self)
 	self.scrollFrame.frame:SetPoint("TOP", self.tabContainer.frame, "BOTTOM", 0, -k.ContentFramePadding.y)
 	self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.ContentFramePadding.x, 0)
 	self.scrollFrame.frame:SetPoint("BOTTOM", self.buttonContainer.frame, "TOP", 0, k.ContentFramePadding.y)
-	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
+	self.scrollFrame:SetScrollChild(self.activeContainer.frame, true, false)
 
 	self.frame:Show()
 end
@@ -603,7 +603,6 @@ local function Constructor()
 
 	---@class EPRosterEditor : AceGUIWidget
 	---@field windowBar EPWindowBar
-	---@field children table<integer, AceGUIWidget>
 	---@field tabContainer EPContainer
 	---@field currentRosterTab EPButton
 	---@field sharedRosterTab EPButton
@@ -623,6 +622,7 @@ local function Constructor()
 		Resize = Resize,
 		frame = frame,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

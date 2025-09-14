@@ -45,21 +45,6 @@ local k = {
 	kUnknownTexture = Private.constants.textures.kUnknown,
 }
 
----@class EPAbilityEntry : AceGUIWidget
----@field frame table|BackdropTemplate|Frame
----@field type string
----@field count number
----@field label EPLabel
----@field check EPButton
----@field swap EPButton|nil
----@field dropdown EPDropdown
----@field checkBackground table|BackdropTemplate|Frame
----@field collapseButton Button|table
----@field enabled boolean
----@field key string|table|nil
----@field collapsed boolean
----@field role string|number|nil
-
 ---@param self EPAbilityEntry
 local function OnAcquire(self)
 	self.frame:Show()
@@ -79,7 +64,7 @@ local function OnAcquire(self)
 	self.swapBackground:Hide()
 
 	self.label = AceGUI:Create("EPLabel")
-	self.label.frame:SetParent(self.frame --[[@as Frame]])
+	self.label.frame:SetParent(self.frame)
 	self.label.frame:SetPoint("LEFT")
 	self.label.frame:SetPoint("RIGHT", self.checkBackground, "LEFT")
 	self.label:SetHorizontalTextAlignment("LEFT")
@@ -90,7 +75,7 @@ local function OnAcquire(self)
 
 	self.check = AceGUI:Create("EPButton")
 	self.check:SetIcon(k.CheckTexture)
-	self.check.frame:SetParent(self.checkBackground --[[@as Frame]])
+	self.check.frame:SetParent(self.checkBackground)
 	self.check.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
 	self.check.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
 	self.check:SetWidth(checkSize)
@@ -337,7 +322,7 @@ local function ShowSwapIcon(self, show)
 
 		self.swap = AceGUI:Create("EPButton")
 		self.swap:SetIcon(k.SwapTexture)
-		self.swap.frame:SetParent(self.swapBackground --[[@as Frame]])
+		self.swap.frame:SetParent(self.swapBackground)
 		self.swap.frame:SetPoint("TOPLEFT", checkSpacing, -checkSpacing)
 		self.swap.frame:SetPoint("BOTTOMRIGHT", -checkSpacing, checkSpacing)
 		self.swap:SetWidth(checkSize)
@@ -356,8 +341,8 @@ local function ShowSwapIcon(self, show)
 		end)
 
 		self.dropdown = AceGUI:Create("EPDropdown")
-		self.dropdown.frame:SetParent(self.swap.frame --[[@as Frame]])
-		self.dropdown.frame:SetPoint("BOTTOMLEFT", self.swapBackground --[[@as Frame]], "BOTTOMLEFT", 0, -1)
+		self.dropdown.frame:SetParent(self.swap.frame)
+		self.dropdown.frame:SetPoint("BOTTOMLEFT", self.swapBackground, "BOTTOMLEFT", 0, -1)
 		self.dropdown.frame:SetWidth(1)
 		self.dropdown.frame:ClearBackdrop()
 		self.dropdown.text:Hide()
@@ -471,7 +456,15 @@ local function Constructor()
 	swapBackground:SetPoint("RIGHT", checkBackground, "LEFT", -k.Padding.x / 2, 0)
 	swapBackground:Hide()
 
-	---@class EPAbilityEntry
+	---@class EPAbilityEntry : AceGUIWidget
+	---@field label EPLabel
+	---@field check EPButton
+	---@field swap EPButton|nil
+	---@field dropdown EPDropdown
+	---@field enabled boolean
+	---@field key string|table|nil
+	---@field collapsed boolean
+	---@field role string|number|nil
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,

@@ -80,32 +80,6 @@ local function HandleVerticalThumbMouseUp(self)
 	self.thumb:SetScript("OnUpdate", nil)
 end
 
----@class SharedTimelineSectionData
----@field verticalPositionLineOffset number
----@field verticalPositionLineVisible boolean
----@field timelineFrameWidth number
----@field horizontalScroll number
----@field zoomFactor number
----@field timelineLinePadding {x: number, y: number}
-
----@class EPTimelineSection : AceGUIWidget
----@field type string
----@field frame table|Frame
----@field listScrollFrame table|ScrollFrame
----@field scrollFrame table|ScrollFrame
----@field timelineFrame table|Frame
----@field verticalPositionLine Texture
----@field scrollBar table|Frame
----@field thumb table|Frame
----@field ticks table<number, Texture>
----@field verticalThumbOffsetWhenThumbClicked number
----@field verticalScrollBarHeightWhenThumbClicked number
----@field verticalThumbHeightWhenThumbClicked number
----@field verticalThumbIsDragging boolean
----@field textureHeight number
----@field listPadding number
----@field listContainer EPContainer
-
 ---@param self EPTimelineSection
 local function OnAcquire(self)
 	self.ticks = self.ticks or {}
@@ -131,7 +105,7 @@ local function OnAcquire(self)
 	self.listContainer:SetWidth(k.ListFrameWidth)
 	self:SetListPadding(k.DefaultListPadding)
 
-	self.listScrollFrame:SetScrollChild(self.listContainer.frame --[[@as Frame]])
+	self.listScrollFrame:SetScrollChild(self.listContainer.frame)
 
 	self.scrollFrame:ClearAllPoints()
 	self.scrollFrame:SetParent(self.frame)
@@ -366,11 +340,20 @@ local function Constructor()
 	verticalThumbBackground:SetAllPoints()
 	verticalThumbBackground:SetColorTexture(unpack(k.VerticalThumbBackgroundColor))
 
-	---@class EPTimelineSection
+	---@class EPTimelineSection : AceGUIWidget
+	---@field ticks table<number, Texture>
+	---@field verticalThumbOffsetWhenThumbClicked number
+	---@field verticalScrollBarHeightWhenThumbClicked number
+	---@field verticalThumbHeightWhenThumbClicked number
+	---@field verticalThumbIsDragging boolean
+	---@field textureHeight number
+	---@field listPadding number
+	---@field listContainer EPContainer
 	local widget = {
 		frame = frame,
 		scrollFrame = scrollFrame,
 		type = Type,
+		count = count,
 		timelineFrame = timelineFrame,
 		listScrollFrame = listScrollFrame,
 		verticalPositionLine = verticalPositionLine,

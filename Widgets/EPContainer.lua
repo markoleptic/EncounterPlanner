@@ -27,6 +27,9 @@ local function OnAcquire(self)
 	self.frame:ClearBackdrop()
 	self.frame:Show()
 	self.content.spacing = { x = k.DefaultSpacing.x, y = k.DefaultSpacing.y }
+	self.content.alignment = nil
+	self.content.orientation = nil
+	self.content.sortAscending = nil
 	self:SetPadding(0, 0, 0, 0)
 	self:SetHeight(k.DefaultHeight)
 	self:SetWidth(k.DefaultWidth)
@@ -74,6 +77,18 @@ end
 ---@param alignment string
 local function SetSelfAlignment(self, alignment)
 	self.selfAlignment = alignment
+end
+
+---@param self EPAnchorContainer|EPContainer
+---@param orientation "vertical"|"horizontal"
+local function SetOrientation(self, orientation)
+	self.content.orientation = orientation
+end
+
+---@param self EPAnchorContainer|EPContainer
+---@param ascending boolean
+local function SetSortAscending(self, ascending)
+	self.content.sortAscending = ascending
 end
 
 ---@param self EPAnchorContainer|EPContainer
@@ -173,18 +188,12 @@ do
 	local Type = "EPContainer"
 	local Version = 1
 
-	---@class EPContainer : AceGUIContainer
-	---@field frame table|Frame|BackdropTemplate
-	---@field type string
-	---@field content table|Frame
-	---@field children table<AceGUIWidget>
-	---@field selfAlignment string|nil
-	---@field padding {left: number, top: number, right: number, bottom: number}
-
 	---@param self EPContainer
 	local function OnRelease(self)
 		self.content.alignment = nil
 		self.content.sortAscending = nil
+		self.content.spacing = nil
+		self.content.orientation = nil
 		self.selfAlignment = nil
 	end
 
@@ -199,7 +208,11 @@ do
 		content:SetPoint("TOPLEFT")
 		content:SetPoint("BOTTOMRIGHT")
 
-		---@class EPContainer
+		---@class EPContainer : AceGUIContainer
+		---@field content EPContainerContentFrame
+		---@field children table<AceGUIWidget>
+		---@field selfAlignment string|nil
+		---@field padding {left: number, top: number, right: number, bottom: number}
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
@@ -207,6 +220,8 @@ do
 			SetSpacing = SetSpacing,
 			SetAlignment = SetAlignment,
 			SetSelfAlignment = SetSelfAlignment,
+			SetOrientation = SetOrientation,
+			SetSortAscending = SetSortAscending,
 			InsertChildren = InsertChildren,
 			AddChildNoDoLayout = AddChildNoDoLayout,
 			RemoveChild = RemoveChild,
@@ -216,6 +231,7 @@ do
 			SetPadding = SetPadding,
 			frame = frame,
 			type = Type,
+			count = count,
 			content = content,
 		}
 
@@ -256,15 +272,6 @@ do
 		end
 	end
 
-	---@class EPAnchorContainer : AceGUIContainer
-	---@field frame table|Frame
-	---@field type string
-	---@field content table|Frame
-	---@field children table<AceGUIWidget>
-	---@field selfAlignment string|nil
-	---@field padding {left: number, top: number, right: number, bottom: number}
-	---@field anchorMode boolean|nil
-
 	---@param self EPAnchorContainer
 	local function OnRelease(self)
 		self.frame:Hide()
@@ -281,6 +288,8 @@ do
 		end
 		self.content.alignment = nil
 		self.content.sortAscending = nil
+		self.content.spacing = nil
+		self.content.orientation = nil
 		self.selfAlignment = nil
 	end
 
@@ -369,7 +378,12 @@ do
 		resizer:SetVertexColor(1, 0.82, 0, 1)
 		anchorFrame:Hide()
 
-		---@class EPAnchorContainer
+		---@class EPAnchorContainer : AceGUIContainer
+		---@field content EPContainerContentFrame
+		---@field children table<AceGUIWidget>
+		---@field selfAlignment string|nil
+		---@field padding {left: number, top: number, right: number, bottom: number}
+		---@field anchorMode boolean|nil
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
@@ -377,6 +391,8 @@ do
 			SetSpacing = SetSpacing,
 			SetAlignment = SetAlignment,
 			SetSelfAlignment = SetSelfAlignment,
+			SetOrientation = SetOrientation,
+			SetSortAscending = SetSortAscending,
 			InsertChildren = InsertChildren,
 			AddChildNoDoLayout = AddChildNoDoLayout,
 			RemoveChild = RemoveChild,
@@ -388,6 +404,7 @@ do
 			SetAnchorMode = SetAnchorMode,
 			frame = frame,
 			type = Type,
+			count = count,
 			content = content,
 			anchorFrame = anchorFrame,
 		}

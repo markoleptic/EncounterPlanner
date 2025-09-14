@@ -1328,6 +1328,7 @@ local function Constructor()
 		splitterScrollFrame = splitterScrollFrame,
 		contentFrame = contentFrame,
 		type = Type,
+		count = count,
 		horizontalScrollBar = horizontalScrollBar,
 		thumb = thumb,
 		phaseNameFrame = phaseNameFrame,

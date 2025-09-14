@@ -59,19 +59,6 @@ local function UpdateIconAndTextAnchors(self)
 	end
 end
 
----@class EPLabel : AceGUIWidget
----@field frame Frame
----@field type string
----@field text FontString
----@field highlight Texture
----@field icon Texture|nil
----@field spellID number|nil
----@field enabled boolean
----@field showIcon boolean
----@field value any
----@field horizontalTextPadding {left: number, right:number}
----@field iconPadding {left:number, top:number, right:number, bottom:number}
-
 ---@param self EPLabel
 ---@param enabled boolean
 local function SetEnabled(self, enabled)
@@ -230,7 +217,13 @@ local function Constructor()
 	text:SetPoint("RIGHT", frame, "RIGHT", k.DefaultTextPadding.x, 0)
 	text:SetWordWrap(false)
 
-	---@class EPLabel
+	---@class EPLabel : AceGUIWidget
+	---@field spellID number|nil
+	---@field enabled boolean
+	---@field showIcon boolean
+	---@field value any
+	---@field horizontalTextPadding {left: number, right:number}
+	---@field iconPadding {left:number, top:number, right:number, bottom:number}
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -248,6 +241,7 @@ local function Constructor()
 		SetIconPadding = SetIconPadding,
 		frame = frame,
 		type = Type,
+		count = count,
 		icon = icon,
 		text = text,
 		spellID = nil,

@@ -20,15 +20,6 @@ local k = {
 	WidgetHeight = 20,
 }
 
----@class EPRosterEntry : AceGUIContainer
----@field frame table|BackdropTemplate|Frame
----@field content table|Frame
----@field nameLineEdit EPLineEdit
----@field classDropdown EPDropdown
----@field roleDropdown EPDropdown
----@field deleteButton EPButton
----@field type string
-
 ---@param self EPRosterEntry
 local function OnAcquire(self)
 	self.frame:SetParent(UIParent)
@@ -140,7 +131,11 @@ local function Constructor()
 	content:SetPoint("BOTTOMRIGHT")
 	content.spacing = k.ContentFramePadding
 
-	---@class EPRosterEntry
+	---@class EPRosterEntry : AceGUIContainer
+	---@field nameLineEdit EPLineEdit
+	---@field classDropdown EPDropdown
+	---@field roleDropdown EPDropdown
+	---@field deleteButton EPButton
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -152,6 +147,7 @@ local function Constructor()
 		frame = frame,
 		content = content,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsContainer(widget)

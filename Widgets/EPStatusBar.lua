@@ -23,17 +23,6 @@ local k = {
 	Padding = { left = 2, top = 2, right = 2, bottom = 2 },
 }
 
----@class EPStatusBar : AceGUIWidget
----@field frame table|Frame|BackdropTemplate
----@field messageFrame table|Frame
----@field scrollFrame EPScrollFrame
----@field activeMessages table<integer, {lineNumber: FontString, line:FontString}>
----@field messagePool table<integer, {lineNumber: FontString, line:FontString}>
----@field lineNumberPool table<integer, FontString>
----@field type string
----@field lineNumber integer
----@field setScrollMultiplier boolean|nil
-
 ---@param self EPStatusBar
 local function OnAcquire(self)
 	self.lineNumber = 1
@@ -42,7 +31,7 @@ local function OnAcquire(self)
 	self.activeMessages = {}
 	self.frame:Show()
 	self.scrollFrame = AceGUI:Create("EPScrollFrame")
-	self.scrollFrame.frame:SetParent(self.frame --[[@as Frame]])
+	self.scrollFrame.frame:SetParent(self.frame)
 	self.scrollFrame.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
 	self.scrollFrame.frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT")
 	self.scrollFrame:SetScrollBarWidth(k.ScrollFrameScrollBarWidth)
@@ -190,7 +179,13 @@ local function Constructor()
 	messageFrame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	messageFrame:EnableMouse(true)
 
-	---@class EPStatusBar
+	---@class EPStatusBar : AceGUIWidget
+	---@field scrollFrame EPScrollFrame
+	---@field activeMessages table<integer, {lineNumber: FontString, line:FontString}>
+	---@field messagePool table<integer, {lineNumber: FontString, line:FontString}>
+	---@field lineNumberPool table<integer, FontString>
+	---@field lineNumber integer
+	---@field setScrollMultiplier boolean|nil
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -201,6 +196,7 @@ local function Constructor()
 		frame = frame,
 		messageFrame = messageFrame,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

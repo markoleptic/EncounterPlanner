@@ -32,17 +32,6 @@ local k = {
 	},
 }
 
----@class EPCheckBox : AceGUIWidget
----@field frame Frame
----@field label EPLabel
----@field button EPButton
----@field type string
----@field enabled boolean
----@field checked boolean
----@field checkBackground Frame|BackdropTemplate|table
----@field autoCheckSize boolean
----@field fireEventsIfDisabled boolean|nil
-
 ---@param self EPCheckBox
 local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
@@ -50,7 +39,7 @@ local function OnAcquire(self)
 
 	self.button = AceGUI:Create("EPButton")
 	self.button:SetIcon(k.CheckTexture)
-	self.button.frame:SetParent(self.checkBackground --[[@as Frame]])
+	self.button.frame:SetParent(self.checkBackground)
 	self.button.frame:SetPoint("TOPLEFT", k.ButtonPadding, -k.ButtonPadding)
 	self.button.frame:SetPoint("BOTTOMRIGHT", -k.ButtonPadding, k.ButtonPadding)
 	self.button:SetWidth(k.DefaultFrameHeight - 2 * k.ButtonPadding)
@@ -171,7 +160,14 @@ local function Constructor()
 	checkBackground:SetPoint("LEFT")
 	checkBackground:SetSize(k.DefaultFrameHeight, k.DefaultFrameHeight)
 
-	---@class EPCheckBox
+	---@class EPCheckBox : AceGUIWidget
+	---@field label EPLabel
+	---@field button EPButton
+	---@field enabled boolean
+	---@field checked boolean
+	---@field checkBackground Frame|BackdropTemplate|table
+	---@field autoCheckSize boolean
+	---@field fireEventsIfDisabled boolean|nil
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -185,6 +181,7 @@ local function Constructor()
 		SetCheckSize = SetCheckSize,
 		frame = frame,
 		type = Type,
+		count = count,
 		checkBackground = checkBackground,
 	}
 

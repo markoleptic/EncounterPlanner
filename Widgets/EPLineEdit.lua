@@ -32,14 +32,6 @@ local k = {
 	TextInsets = { 4, 4, 0, 0 },
 }
 
----@class EPLineEdit : AceGUIWidget
----@field frame table|Frame
----@field type string
----@field editBox EditBox|BackdropTemplate
----@field enabled boolean
----@field readOnly boolean
----@field lastText string
-
 local function HandleEditBoxTextChanged(self, frame)
 	local value = frame:GetText()
 	if tostring(value) ~= tostring(self.lastText) then
@@ -169,7 +161,10 @@ local function Constructor()
 		editBox:SetFont(fPath, k.DefaultFontSize, "")
 	end
 
-	---@class EPLineEdit
+	---@class EPLineEdit : AceGUIWidget
+	---@field enabled boolean
+	---@field readOnly boolean
+	---@field lastText string
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -185,6 +180,7 @@ local function Constructor()
 		SetTextInsets = SetTextInsets,
 		frame = frame,
 		type = Type,
+		count = count,
 		editBox = editBox,
 	}
 

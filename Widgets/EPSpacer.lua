@@ -10,11 +10,6 @@ local k = {
 	DefaultWidth = 1,
 }
 
----@class EPSpacer : AceGUIWidget
----@field frame table|Frame|BackdropTemplate
----@field type string
----@field fillSpace boolean
-
 ---@param self EPSpacer
 local function OnAcquire(self)
 	self.frame:Show()
@@ -37,13 +32,15 @@ local function Constructor()
 	frame:SetWidth(k.DefaultWidth)
 	frame:Hide()
 
-	---@class EPSpacer
+	---@class EPSpacer : AceGUIWidget
+	---@field fillSpace boolean
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
 		SetFillSpace = SetFillSpace,
 		frame = frame,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

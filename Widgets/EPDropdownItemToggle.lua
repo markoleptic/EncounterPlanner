@@ -42,28 +42,6 @@ local function FixLevels(parent, ...)
 	end
 end
 
----@class EPItemBase : AceGUIWidget
----@field type string
----@field version integer
----@field counter integer
----@field count integer
----@field enabled boolean
----@field frame Frame
----@field customTexture Texture Optional custom texture owned by customTextureFrame
----@field customTextureFrame Button Allows for the custom texture to be clicked, causing the OnClick signal to be fired.
----@field specialOnEnter function Executed when frame is entered.
----@field parentPullout EPDropdownPullout Reference to the owning dropdown pullout of this item.
----@field highlight Texture Texture that is shown when the mouse is hovering over an item.
----@field useHighlight boolean Whether to show the highlight when the mouse is hovering over an item.
----@field text FontString Main text of the item.
----@field check Texture Shown if an item is selected and neverShowItemsAsSelected is false/nil.
----@field changedFont? boolean If true, the font was changed and needs to be changed back to default on release.
----@field parentDropdownItemMenu? EPDropdownItemMenu Reference to the owning item menu of the parentPullout.
----@field parentDropdown? EPDropdown Reference to the top-level dropdown parent.
--- If true, the child selected indicator will never be visible and child pullout items will never be set to selected
--- (never show check mark).
----@field neverShowItemsAsSelected boolean
-
 local EPItemBase = {
 	version = 1000,
 	counter = 0,
@@ -261,7 +239,22 @@ function EPItemBase.Create(type)
 	local customTexture = customTextureFrame:CreateTexture(type .. "CustomTexture" .. count, "OVERLAY")
 	customTexture:SetAllPoints(customTextureFrame)
 
-	---@class EPItemBase
+	---@class EPItemBase : AceGUIWidget
+	---@field enabled boolean
+	---@field customTexture Texture Optional custom texture owned by customTextureFrame
+	---@field customTextureFrame Button Allows for the custom texture to be clicked, causing the OnClick signal to be fired.
+	---@field specialOnEnter function Executed when frame is entered.
+	---@field parentPullout EPDropdownPullout Reference to the owning dropdown pullout of this item.
+	---@field highlight Texture Texture that is shown when the mouse is hovering over an item.
+	---@field useHighlight boolean Whether to show the highlight when the mouse is hovering over an item.
+	---@field text FontString Main text of the item.
+	---@field check Texture Shown if an item is selected and neverShowItemsAsSelected is false/nil.
+	---@field changedFont? boolean If true, the font was changed and needs to be changed back to default on release.
+	---@field parentDropdownItemMenu? EPDropdownItemMenu Reference to the owning item menu of the parentPullout.
+	---@field parentDropdown? EPDropdown Reference to the top-level dropdown parent.
+	-- If true, the child selected indicator will never be visible and child pullout items will never be set to selected
+	-- (never show check mark).
+	---@field neverShowItemsAsSelected boolean
 	local widget = {
 		frame = frame,
 		type = type,
@@ -311,9 +304,6 @@ function EPItemBase.Create(type)
 	return widget
 end
 
----@class EPDropdownItemToggle : EPItemBase
----@field selected boolean
----@field neverShowItemsAsSelected boolean
 do
 	local widgetType = "EPDropdownItemToggle"
 	local widgetVersion = 1
@@ -387,7 +377,9 @@ do
 	end
 
 	local function Constructor()
-		---@class EPDropdownItemToggle
+		---@class EPDropdownItemToggle : EPItemBase
+		---@field selected boolean
+		---@field neverShowItemsAsSelected boolean
 		local widget = EPItemBase.Create(widgetType)
 		widget.OnAcquire = OnAcquire
 		widget.OnRelease = OnRelease
@@ -407,14 +399,6 @@ do
 	AceGUI:RegisterWidgetType(widgetType, Constructor, widgetVersion + EPItemBase.version)
 end
 
----@class EPDropdownItemMenu : EPItemBase
----@field childPullout EPDropdownPullout Child dropdown pullout.
----@field multiselect boolean|nil Whether multiple child pullout items can be selected at once.
----@field open boolean True if the child pullout is open.
----@field clickable boolean|nil If true, clicking on the frame will fire the OnValueChanged signal with no arguments.
--- Indicates the dropdown menu has children. Vertex color updated if selected. Attached to base frame.
----@field menuIndicator Texture
----@field menuIndicatorOffsetX integer Horizontal offset of the menuIndicator.
 do
 	local widgetType = "EPDropdownItemMenu"
 	local widgetVersion = 1
@@ -769,7 +753,14 @@ do
 	end
 
 	local function Constructor()
-		---@class EPDropdownItemMenu
+		---@class EPDropdownItemMenu : EPItemBase
+		---@field childPullout EPDropdownPullout Child dropdown pullout.
+		---@field multiselect boolean|nil Whether multiple child pullout items can be selected at once.
+		---@field open boolean True if the child pullout is open.
+		---@field clickable boolean|nil If true, clicking on the frame will fire the OnValueChanged signal with no arguments.
+		-- Indicates the dropdown menu has children. Vertex color updated if selected. Attached to base frame.
+		---@field menuIndicator Texture
+		---@field menuIndicatorOffsetX integer Horizontal offset of the menuIndicator.
 		local widget = EPItemBase.Create(widgetType)
 		local count = AceGUI:GetNextWidgetNum(widgetType)
 

@@ -377,6 +377,7 @@ local function Constructor()
 		SetTotalDurations = SetTotalDurations,
 		frame = frame,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

@@ -33,20 +33,6 @@ local k = {
 	},
 }
 
----@class EPButton : AceGUIWidget
----@field frame Frame
----@field button table|BackdropTemplate|Button
----@field icon Texture
----@field background Texture
----@field toggleIndicator Texture
----@field type string
----@field enabled boolean
----@field obj any
----@field toggleable boolean|nil
----@field toggled boolean|nil
----@field value any
----@field fireEventsIfDisabled boolean|nil
-
 ---@param self EPButton
 local function OnAcquire(self)
 	self:SetIsToggleable(false)
@@ -280,7 +266,12 @@ local function Constructor()
 	fadeOut:SetDuration(0.3)
 	fadeOut:SetSmoothing("OUT")
 
-	---@class EPButton
+	---@class EPButton : AceGUIWidget
+	---@field enabled boolean
+	---@field toggleable boolean|nil
+	---@field toggled boolean|nil
+	---@field value any
+	---@field fireEventsIfDisabled boolean|nil
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -300,6 +291,7 @@ local function Constructor()
 		GetValue = GetValue,
 		frame = frame,
 		type = Type,
+		count = count,
 		button = button,
 		icon = icon,
 		background = background,

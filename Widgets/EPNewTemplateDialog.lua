@@ -73,7 +73,7 @@ local function OnAcquire(self)
 	self.container = AceGUI:Create("EPContainer")
 	self.container:SetLayout("EPVerticalLayout")
 	self.container:SetSpacing(k.OtherPadding.x, k.OtherPadding.y)
-	self.container.frame:SetParent(self.frame --[[@as Frame]])
+	self.container.frame:SetParent(self.frame)
 	self.container.frame:EnableMouse(true)
 	self.container.frame:SetPoint(
 		"TOPLEFT",
@@ -132,7 +132,7 @@ local function OnAcquire(self)
 	self.buttonContainer:SetSpacing(k.OtherPadding.x, 0)
 	self.buttonContainer:SetAlignment("center")
 	self.buttonContainer:SetSelfAlignment("center")
-	self.buttonContainer.frame:SetParent(self.frame --[[@as Frame]])
+	self.buttonContainer.frame:SetParent(self.frame)
 	self.buttonContainer.frame:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, k.ContentFramePadding.y)
 
 	self.createButton = AceGUI:Create("EPButton")
@@ -221,8 +221,6 @@ local function Constructor()
 	frame:SetFrameStrata("DIALOG")
 
 	---@class EPNewTemplateDialog : AceGUIWidget
-	---@field frame table|Frame|BackdropTemplate
-	---@field type string
 	---@field templateNameLineEdit EPLineEdit
 	---@field assigneeDropdown EPDropdown
 	---@field createButton EPButton
@@ -239,6 +237,7 @@ local function Constructor()
 		Resize = Resize,
 		frame = frame,
 		type = Type,
+		count = count,
 	}
 
 	return AceGUI:RegisterAsWidget(widget)

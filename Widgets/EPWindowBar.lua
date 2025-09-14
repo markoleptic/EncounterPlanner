@@ -119,6 +119,7 @@ local function Constructor()
 		RemoveButtons = RemoveButtons,
 		frame = frame,
 		type = Type,
+		count = count,
 		title = title,
 		buttons = {},
 	}

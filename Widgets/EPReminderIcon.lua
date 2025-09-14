@@ -237,6 +237,7 @@ local function Constructor()
 		cooldown = cooldown,
 		icon = icon,
 		type = Type,
+		count = count,
 		text = text,
 		remaining = 0,
 		expirationTime = 0,

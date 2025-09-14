@@ -120,18 +120,6 @@ local function CreateCombinedLevelString(levelsToInclude, textLevels)
 end
 
 do
-	---@class EPDropdownPullout : AceGUIWidget
-	---@field frame table|BackdropTemplate|Frame
-	---@field scrollFrame ScrollFrame
-	---@field itemFrame table|Frame
-	---@field type string
-	---@field count integer
-	---@field maxHeight number
-	---@field maxItems integer
-	---@field items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
-	---@field dropdownItemHeight number
-	---@field autoWidth boolean
-
 	local Type = "EPDropdownPullout"
 	local Version = 1
 
@@ -416,7 +404,12 @@ do
 		scrollFrame:Show()
 		itemFrame:Show()
 
-		---@class EPDropdownPullout
+		---@class EPDropdownPullout : AceGUIWidget
+		---@field maxHeight number
+		---@field maxItems integer
+		---@field items table<integer, EPDropdownItemToggle|EPDropdownItemMenu>
+		---@field dropdownItemHeight number
+		---@field autoWidth boolean
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,
@@ -466,33 +459,6 @@ do
 end
 
 do
-	---@class EPDropdown : AceGUIWidget
-	---@field frame table|Frame
-	---@field dropdown table|Frame
-	---@field text FontString
-	---@field slider table|BackdropTemplate|Slider
-	---@field type string
-	---@field count integer
-	---@field buttonCover Button
-	---@field button Button
-	---@field enabled boolean
-	---@field pullout EPDropdownPullout
-	---@field lineEdit EPLineEdit|nil
-	---@field value any|nil
-	---@field open boolean|nil
-	---@field hasClose boolean|nil
-	---@field disabled boolean|nil
-	---@field multiselect boolean|nil
-	---@field pulloutWidth number
-	---@field dropdownItemHeight number
-	---@field showHighlight boolean
-	---@field itemTextFontSize number
-	---@field itemHorizontalPadding number
-	---@field textHorizontalPadding number
-	---@field maxItems integer
-	---@field showPathText boolean
-	---@field levelsToInclude table<integer|string>
-
 	local Type = "EPDropdown"
 	local Version = 1
 
@@ -1373,7 +1339,28 @@ do
 			text:SetFont(fPath, k.FontSize)
 		end
 
-		---@class EPDropdown
+		---@class EPDropdown : AceGUIWidget
+		---@field text FontString
+		---@field slider table|BackdropTemplate|Slider
+		---@field buttonCover Button
+		---@field button Button
+		---@field enabled boolean
+		---@field pullout EPDropdownPullout
+		---@field lineEdit EPLineEdit|nil
+		---@field value any|nil
+		---@field open boolean|nil
+		---@field hasClose boolean|nil
+		---@field disabled boolean|nil
+		---@field multiselect boolean|nil
+		---@field pulloutWidth number
+		---@field dropdownItemHeight number
+		---@field showHighlight boolean
+		---@field itemTextFontSize number
+		---@field itemHorizontalPadding number
+		---@field textHorizontalPadding number
+		---@field maxItems integer
+		---@field showPathText boolean
+		---@field levelsToInclude table<integer|string>
 		local widget = {
 			OnAcquire = OnAcquire,
 			OnRelease = OnRelease,

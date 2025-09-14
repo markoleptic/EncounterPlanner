@@ -113,15 +113,6 @@ local function HandleButtonClicked(self)
 	end
 end
 
----@class EPRadioButton : AceGUIWidget
----@field frame Frame
----@field button table|BackdropTemplate|Button
----@field label EPLabel
----@field type string
----@field obj any
----@field toggled boolean|nil
----@field enabled boolean
-
 ---@param self EPRadioButton
 local function OnAcquire(self)
 	self.toggled = false
@@ -273,7 +264,10 @@ local function Constructor()
 	button.fadeAlphaAnimation:SetDuration(0.3)
 	button.fadeAlphaAnimation:SetSmoothing("OUT")
 
-	---@class EPRadioButton
+	---@class EPRadioButton : AceGUIWidget
+	---@field label EPLabel
+	---@field toggled boolean|nil
+	---@field enabled boolean
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -286,6 +280,7 @@ local function Constructor()
 		SetEnabled = SetEnabled,
 		frame = frame,
 		type = Type,
+		count = count,
 		button = button,
 		blue = CreateColor(unpack(k.HoverButtonColor)),
 		white = CreateColor(unpack(k.SelectedButtonColor)),

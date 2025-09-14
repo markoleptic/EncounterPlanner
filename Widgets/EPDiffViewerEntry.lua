@@ -28,16 +28,6 @@ local k = {
 	LineColor = { 0.25, 0.25, 0.25, 1.0 },
 }
 
----@class EPDiffViewerEntry : AceGUIWidget
----@field frame table|Frame|BackdropTemplate
----@field diffContainer EPMultiLineText
----@field diffContainerTwo EPMultiLineText
----@field checkBox EPCheckBox
----@field typeLabel EPMultiLineText
----@field type string
----@field valueLabel EPMultiLineText
----@field valueLabelTwo EPMultiLineText
-
 ---@param eventType CombatLogEventType
 ---@return string
 local function GetCombatLogEventString(eventType)
@@ -467,7 +457,13 @@ local function Constructor()
 	diffDividerLine:SetColorTexture(unpack(k.LineColor))
 	diffDividerLine:SetWidth(2)
 
-	---@class EPDiffViewerEntry
+	---@class EPDiffViewerEntry : AceGUIWidget
+	---@field diffContainer EPMultiLineText
+	---@field diffContainerTwo EPMultiLineText
+	---@field checkBox EPCheckBox
+	---@field typeLabel EPMultiLineText
+	---@field valueLabel EPMultiLineText
+	---@field valueLabelTwo EPMultiLineText
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -478,6 +474,7 @@ local function Constructor()
 		SetAssigneeSpellSetEntryData = SetAssigneeSpellSetEntryData,
 		frame = frame,
 		type = Type,
+		count = count,
 		typeDividerLine = typeDividerLine,
 		checkBoxDividerLine = checkBoxDividerLine,
 		diffDividerLine = diffDividerLine,

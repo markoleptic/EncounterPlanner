@@ -800,7 +800,6 @@ local function Constructor()
 	)
 
 	---@class EPAssignmentEditor : AceGUIContainer
-	---@field buttonFrame Frame|table
 	---@field deleteButton EPButton
 	---@field assignmentTypeContainer EPContainer
 	---@field assignmentTypeDropdown EPDropdown

@@ -4095,18 +4095,18 @@ do
 	---@param spacing number|nil
 	---@return T
 	local function Create(containerType, preferences, spacing)
-		local container = AceGUI:Create(containerType) --[[@as EPContainer]]
+		local container = AceGUI:Create(containerType) --[[@as EPContainer|EPAnchorContainer]]
 		container:SetLayout("EPReminderLayout")
 		container.frame:SetParent(UIParent)
 		container.frame:SetFrameStrata("MEDIUM")
 		container.frame:SetFrameLevel(kReminderContainerFrameLevel)
 		container:SetSpacing(spacing or 0, spacing or 0)
 		if preferences.orientation then
-			container.content.orientation = preferences.orientation
+			container:SetOrientation(preferences.orientation)
 		else
-			container.content.orientation = "vertical"
+			container:SetOrientation("vertical")
 		end
-		container.content.sortAscending = preferences.soonestExpirationOnBottom
+		container:SetSortAscending(preferences.soonestExpirationOnBottom)
 		local regionName = Utilities.IsValidRegionName(preferences.relativeTo) and preferences.relativeTo or "UIParent"
 		local region = _G[regionName] or UIParent
 		local point, relativePoint = preferences.point, preferences.relativePoint

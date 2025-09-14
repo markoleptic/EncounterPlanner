@@ -215,6 +215,7 @@ local function Constructor()
 		SetRejectButtonText = SetRejectButtonText,
 		frame = frame,
 		type = Type,
+		count = count,
 		text = text,
 	}
 

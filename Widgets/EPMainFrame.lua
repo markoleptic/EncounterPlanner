@@ -606,6 +606,7 @@ local function Constructor()
 		Minimize = Minimize,
 		frame = frame,
 		type = Type,
+		count = count,
 		content = contentFrame,
 		editBox = editBox,
 		editBoxFrame = editBoxFrame,

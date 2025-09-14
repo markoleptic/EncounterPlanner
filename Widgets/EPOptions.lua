@@ -105,7 +105,7 @@ local function GetName(frame)
 end
 
 ---@param frameChooserFrame Frame
----@param frameChooserBox table|BackdropTemplate|Frame
+---@param frameChooserBox Frame|BackdropTemplate
 ---@param focusName string|nil
 ---@param setFunc fun(value: string|nil)|nil
 local function StopChoosingFrame(frameChooserFrame, frameChooserBox, focusName, setFunc)
@@ -121,7 +121,7 @@ local function StopChoosingFrame(frameChooserFrame, frameChooserBox, focusName, 
 end
 
 ---@param frameChooserFrame Frame
----@param frameChooserBox table|BackdropTemplate|Frame
+---@param frameChooserBox Frame|BackdropTemplate
 ---@param setFunc fun(value: string|nil)
 local function StartChoosingFrame(frameChooserFrame, frameChooserBox, setFunc)
 	frameChooserFrame:Show()
@@ -1774,7 +1774,7 @@ local function OnAcquire(self)
 	self.activeContainer:SetLayout("EPVerticalLayout")
 	self.activeContainer:SetSpacing(0, 0)
 	self.activeContainer:SetPadding(unpack(k.ActiveContainerPadding))
-	self.scrollFrame:SetScrollChild(self.activeContainer.frame --[[@as Frame]], true, false)
+	self.scrollFrame:SetScrollChild(self.activeContainer.frame, true, false)
 
 	self.labelContainer = AceGUI:Create("EPContainer")
 	self.labelContainer:SetLayout("EPHorizontalLayout")

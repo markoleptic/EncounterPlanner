@@ -158,20 +158,6 @@ end
 
 sharedUpdater:SetScript("OnLoop", SharedMessageUpdate)
 
----@class EPReminderMessage : AceGUIWidget
----@field frame Frame|table
----@field type string
----@field text FontString
----@field duration FontString
----@field icon Texture|nil
----@field showIcon boolean
----@field horizontalTextPadding number
----@field remaining number A value of 0 indicates not to show the duration text.
----@field expirationTime number
----@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
----@field running boolean
----@field parent EPContainer
-
 ---@param self EPReminderMessage
 local function OnAcquire(self)
 	self.frame:Show()
@@ -368,7 +354,14 @@ local function Constructor()
 	iconFade:SetFromAlpha(1)
 	iconFade:SetToAlpha(0)
 
-	---@class EPReminderMessage
+	---@class EPReminderMessage : AceGUIWidget
+	---@field showIcon boolean
+	---@field horizontalTextPadding number
+	---@field remaining number A value of 0 indicates not to show the duration text.
+	---@field expirationTime number
+	---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
+	---@field running boolean
+	---@field parent EPContainer
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -383,6 +376,7 @@ local function Constructor()
 		Set = Set,
 		frame = frame,
 		type = Type,
+		count = count,
 		icon = icon,
 		text = text,
 		duration = duration,

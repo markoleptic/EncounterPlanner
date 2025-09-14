@@ -681,7 +681,7 @@ do -- Assignment Editor
 	function Private.CreateAssignmentEditor()
 		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		assignmentEditor.FormatTime = FormatTime
-		assignmentEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		assignmentEditor.frame:SetParent(Private.mainFrame.frame)
 		assignmentEditor.frame:SetFrameLevel(kAssignmentEditorFrameLevel)
 		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
 		assignmentEditor:SetLayout("EPVerticalLayout")
@@ -1288,7 +1288,7 @@ do -- Plan Menu Button s.Handlers
 	local function CreateImportEditBox()
 		if not Private.importEditBox then
 			local importEditBox = AceGUI:Create("EPEditBox")
-			importEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			importEditBox.frame:SetParent(Private.mainFrame.frame)
 			importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
 			importEditBox.frame:SetPoint("CENTER")
 			importEditBox:SetTitle(L["Import From Text"])
@@ -1407,7 +1407,7 @@ do -- Plan Menu Button s.Handlers
 	local function HandleExportPlanButtonClicked()
 		if not Private.exportEditBox then
 			local exportEditBox = AceGUI:Create("EPEditBox")
-			exportEditBox.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+			exportEditBox.frame:SetParent(Private.mainFrame.frame)
 			exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
 			exportEditBox.frame:SetPoint("CENTER")
 			exportEditBox:SetTitle(L["Export"])
@@ -1816,7 +1816,7 @@ local function HandleExternalTextButtonClicked()
 		local currentPlan = GetCurrentPlan()
 		local currentPlanID = currentPlan.ID
 		local externalTextEditor = AceGUI:Create("EPEditBox")
-		externalTextEditor.frame:SetParent(Private.mainFrame.frame --[[@as Frame]])
+		externalTextEditor.frame:SetParent(Private.mainFrame.frame)
 		externalTextEditor.frame:SetFrameLevel(constants.frameLevels.kExternalTextEditorFrameLevel)
 		externalTextEditor.frame:SetPoint("CENTER")
 		externalTextEditor:SetTitle(L["External Text Editor"])

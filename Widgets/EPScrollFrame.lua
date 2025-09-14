@@ -183,7 +183,7 @@ local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self.frame:Show()
 
-	self.scrollFrameWrapper:SetParent(self.frame --[[@as Frame]])
+	self.scrollFrameWrapper:SetParent(self.frame)
 	self.scrollFrame:SetSize(
 		k.DefaultFrameWidth - k.DefaultScrollBarScrollFramePadding - k.DefaultScrollBarWidth,
 		k.DefaultFrameHeight
@@ -196,7 +196,7 @@ local function OnAcquire(self)
 	self.scrollFrameWrapper:Show()
 
 	self.scrollFrame:ClearAllPoints()
-	self.scrollFrame:SetParent(self.scrollFrameWrapper --[[@as Frame]])
+	self.scrollFrame:SetParent(self.scrollFrameWrapper)
 	self.scrollFrame:SetSize(
 		k.DefaultFrameWidth - k.DefaultScrollBarScrollFramePadding - k.DefaultScrollBarWidth - 2 * k.WrapperPadding,
 		k.DefaultFrameHeight - 2 * k.WrapperPadding
@@ -206,7 +206,7 @@ local function OnAcquire(self)
 	self.scrollFrame:Show()
 
 	self.scrollBar:ClearAllPoints()
-	self.scrollBar:SetParent(self.frame --[[@as Frame]])
+	self.scrollBar:SetParent(self.frame)
 	self.scrollBar:SetSize(k.DefaultScrollBarWidth, k.DefaultFrameHeight)
 	self.scrollBar:SetPoint("TOPRIGHT")
 	self.scrollBar:SetPoint("BOTTOMRIGHT")
@@ -280,7 +280,7 @@ local function SetScrollChild(self, child, needsWidthSetting, enableEdgeScrollin
 
 	child:ClearAllPoints()
 	child:EnableMouse(true)
-	child:SetParent(self.scrollFrame --[[@as Frame]])
+	child:SetParent(self.scrollFrame)
 	child:Show()
 	child:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT")
 
@@ -473,9 +473,10 @@ local function Constructor()
 		SetScroll = SetScroll,
 		SetScrollMultiplier = SetScrollMultiplier,
 		frame = frame,
-		scrollFrame = scrollFrame --[[@as Frame]],
+		scrollFrame = scrollFrame,
 		scrollFrameWrapper = scrollFrameWrapper,
 		type = Type,
+		count = count,
 		scrollBar = scrollBar,
 		thumb = verticalThumb,
 		verticalThumbOffsetWhenThumbClicked = 0,

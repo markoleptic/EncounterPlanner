@@ -14,10 +14,6 @@ local k = {
 	Font = LSM:Fetch("font", "PT Sans Narrow"),
 }
 
----@class EPMultiLineText : AceGUIWidget
----@field frame table|Frame
----@field type string
-
 ---@param self EPMultiLineText
 local function OnAcquire(self)
 	self.text:SetTextColor(unpack(k.TextColor))
@@ -59,7 +55,7 @@ local function Constructor()
 	text:SetFont(k.Font, h)
 	text:SetWordWrap(true)
 
-	---@class EPMultiLineText
+	---@class EPMultiLineText : AceGUIWidget
 	local widget = {
 		OnAcquire = OnAcquire,
 		SetText = SetText,
@@ -67,6 +63,7 @@ local function Constructor()
 		SetTextColor = SetTextColor,
 		frame = frame,
 		type = Type,
+		count = count,
 		text = text,
 		defaultTextHeight = h,
 	}

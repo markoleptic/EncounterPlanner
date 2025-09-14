@@ -523,12 +523,10 @@ local function Constructor()
 	end
 
 	---@class EPDiffViewer : AceGUIWidget
-	---@field frame table|Frame|BackdropTemplate
 	---@field mainContainer EPContainer
 	---@field scrollFrame EPScrollFrame
 	---@field buttonContainer EPContainer
 	---@field selectAllButton EPButton
-	---@field type string
 	---@field planDiff PlanDiff
 	---@field windowBar EPWindowBar
 	local widget = {
@@ -539,6 +537,7 @@ local function Constructor()
 		SetText = SetText,
 		frame = frame,
 		type = Type,
+		count = count,
 		dividerLines = {},
 		text = text,
 		isCommunicationsMessage = true,
