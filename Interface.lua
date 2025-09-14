@@ -30,6 +30,7 @@ local GetCurrentDifficulty = utilities.GetCurrentDifficulty
 local GetCurrentPlan = utilities.GetCurrentPlan
 local GetCurrentRoster = utilities.GetCurrentRoster
 local ImportGroupIntoRoster = utilities.ImportGroupIntoRoster
+local ParseTime = Private.utilities.ParseTime
 local Round = utilities.Round
 local SortAssignments = utilities.SortAssignments
 local UpdateRosterDataFromGroup = utilities.UpdateRosterDataFromGroup
@@ -621,24 +622,15 @@ do -- Assignment Editor
 			updateFields = true
 			updateAssignments = true
 		elseif dataType == AssignmentEditorDataType.Time then
-			local timeMinutes = tonumber(assignmentEditor.timeMinuteLineEdit:GetText())
-			local timeSeconds = tonumber(assignmentEditor.timeSecondLineEdit:GetText())
-			---@cast assignment CombatLogEventAssignment|TimedAssignment
-			local newTime = assignment.time
-			if timeMinutes and timeSeconds then
-				local roundedMinutes = Round(timeMinutes, 0)
-				local roundedSeconds = Round(timeSeconds, 1)
-				local timeValue = roundedMinutes * 60 + roundedSeconds
-				local maxTime = Private.mainFrame.timeline.GetTotalTimelineDuration()
-				if timeValue < 0 or timeValue > maxTime then
-					newTime = max(min(timeValue, maxTime), 0)
-				else
-					newTime = timeValue
-				end
+			local timeMinutes = assignmentEditor.timeMinuteLineEdit:GetText()
+			local timeSeconds = assignmentEditor.timeSecondLineEdit:GetText()
+			local maxTime = Private.mainFrame.timeline.GetTotalTimelineDuration()
+			local newTime = ParseTime(timeMinutes, timeSeconds, 0.0, maxTime)
+			if not newTime then
+				newTime = assignment.time
 			end
 			if getmetatable(assignment) == CombatLogEventAssignment or getmetatable(assignment) == TimedAssignment then
 				---@cast assignment CombatLogEventAssignment|TimedAssignment
-				newTime = Round(newTime, 1)
 				assignment.time = newTime
 			end
 			local minutes, seconds = FormatTime(newTime)
@@ -815,29 +807,21 @@ do -- Phase Length Editor
 			end
 
 			local formatAndReturn = false
-			local newDuration = previousDuration
-			local timeMinutes = tonumber(minLineEdit:GetText())
-			local timeSeconds = tonumber(secLineEdit:GetText())
-			if timeMinutes and timeSeconds then
-				local roundedMinutes = Round(timeMinutes, 0)
-				local roundedSeconds = Round(timeSeconds, 1)
-				newDuration = roundedMinutes * 60 + roundedSeconds
-				local maxPhaseDuration =
-					CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration, difficulty)
-				if maxPhaseDuration then
-					if boss.treatAsSinglePhase then
-						maxPhaseDuration = kMaxBossDuration
-					end
-					if phases[phaseIndex].minDuration then
-						newDuration = Clamp(newDuration, phases[phaseIndex].minDuration, maxPhaseDuration)
-					else
-						newDuration = Clamp(newDuration, kMinBossPhaseDuration, maxPhaseDuration)
-					end
-				end
-				if abs(newDuration - previousDuration) < 0.01 then
-					formatAndReturn = true
-				end
-			else
+			local minPhaseDuration = kMinBossPhaseDuration
+			if phases[phaseIndex] and phases[phaseIndex].minDuration then
+				minPhaseDuration = phases[phaseIndex].minDuration
+			end
+			local maxPhaseDuration =
+				CalculateMaxPhaseDuration(bossDungeonEncounterID, phaseIndex, kMaxBossDuration, difficulty)
+			if maxPhaseDuration and boss.treatAsSinglePhase then
+				maxPhaseDuration = kMaxBossDuration
+			end
+			local newDuration =
+				ParseTime(minLineEdit:GetText(), secLineEdit:GetText(), minPhaseDuration, maxPhaseDuration)
+			if not newDuration then
+				newDuration = previousDuration
+			end
+			if abs(newDuration - previousDuration) < 0.01 then
 				formatAndReturn = true
 			end
 

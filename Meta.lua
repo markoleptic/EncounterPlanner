@@ -662,6 +662,12 @@ function C_Timer.NewTicker(seconds, callback, iterations) end
 ---@return FunctionContainer cbObject
 function C_Timer.NewTimer(seconds, callback) end
 
+---@param value number
+---@param min number
+---@param max number
+---@return number
+function Clamp(value, min, max) end
+
 ---@alias TickerTimerObjectCallback FunctionContainer|fun(cb: FunctionContainer)
 
 ---@alias TimerTimerObjectCallback FunctionContainer|fun(cb: FunctionContainer)

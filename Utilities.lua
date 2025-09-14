@@ -3733,6 +3733,39 @@ function Utilities.FormatTime(time)
 	return formattedMinutes, formattedSeconds
 end
 
+---@param minutes string|number Minutes string or number
+---@param seconds string|number Seconds string or number
+---@param minTime? number Optional minimum bound
+---@param maxTime? number Optional maximum bound
+---@return number? time
+function Utilities.ParseTime(minutes, seconds, minTime, maxTime)
+	local timeMinutes, timeSeconds = tonumber(minutes), tonumber(seconds)
+	if timeMinutes and timeSeconds then
+		local wholeMinutes = floor(timeMinutes)
+		local timeValue = 0.0
+		if timeMinutes % 1 ~= 0 then
+			local secondsFromFractionalMinutes = (timeMinutes - wholeMinutes) * 60.0
+			timeValue = Utilities.Round(wholeMinutes * 60.0 + secondsFromFractionalMinutes, 1)
+		else
+			if timeSeconds >= 60.0 then
+				timeValue = Utilities.Round(timeSeconds, 1)
+			else
+				timeValue = Utilities.Round(wholeMinutes * 60.0 + timeSeconds, 1)
+			end
+		end
+		if minTime and maxTime then
+			timeValue = Clamp(timeValue, minTime, maxTime)
+		elseif minTime then
+			timeValue = Clamp(timeValue, minTime, timeValue)
+		elseif maxTime then
+			timeValue = Clamp(timeValue, timeValue, maxTime)
+		end
+		return timeValue
+	else
+		return nil
+	end
+end
+
 ---@param strTable table<integer, string>
 ---@return table<integer, table<integer, string>>
 function Utilities.SplitStringTableByWhiteSpace(strTable)

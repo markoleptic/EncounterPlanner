@@ -237,19 +237,16 @@ do
 	---@param secLineEdit EPLineEdit
 	local function UpdateCooldown(spellID, minLineEdit, secLineEdit)
 		local previousDuration = cooldownOverrideObject.cooldownAndChargeOverrides[spellID].duration
-		local newDuration = previousDuration
-		local timeMinutes = tonumber(minLineEdit:GetText())
-		local timeSeconds = tonumber(secLineEdit:GetText())
-		if timeMinutes and timeSeconds then
-			local roundedMinutes = Round(timeMinutes, 0)
-			local roundedSeconds = Round(timeSeconds, 1)
-			newDuration = roundedMinutes * 60 + roundedSeconds
-			local maxDuration = cooldownOverrideObject.GetSpellCooldownAndCharges(spellID) * 2.0
-			newDuration = Clamp(newDuration, kMinDuration, maxDuration)
+		local timeMinutes, timeSeconds = minLineEdit:GetText(), secLineEdit:GetText()
+		local maxDuration = cooldownOverrideObject.GetSpellCooldownAndCharges(spellID) * 2.0
+		local newDuration = Private.utilities.ParseTime(timeMinutes, timeSeconds, kMinDuration, maxDuration)
+		if not newDuration then
+			newDuration = previousDuration
+		end
+
+		if abs(previousDuration - newDuration) > 0.01 then
 			cooldownOverrideObject.cooldownAndChargeOverrides[spellID].duration = newDuration
-			if abs(previousDuration - newDuration) > 0.01 then
-				CopyAndSet()
-			end
+			CopyAndSet()
 		end
 
 		local minutes, seconds = cooldownOverrideObject.FormatTime(newDuration)
@@ -1808,7 +1805,7 @@ local function OnRelease(self)
 	self.activeContainer = nil
 
 	cooldownOverrideObject.FormatTime = nil
-	cooldownOverrideObject.GetSpellCooldown = nil
+	cooldownOverrideObject.GetSpellCooldownAndCharges = nil
 	cooldownOverrideObject.cooldownAndChargeOverrides = nil
 	cooldownOverrideObject.labelContainer = nil
 	cooldownOverrideObject.activeContainer = nil
