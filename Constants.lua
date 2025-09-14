@@ -121,11 +121,9 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   New Feature: Plan templates
-    -   Applying a template to a plan adds placeholders for assignees and spells to the timeline. It also adds any assignees from the template to the plan roster.
-    -   Templates can be created, applied, and deleted by navigating to Plan -> Templates.
--   Added Mythic Dimensius.
--   Added Infusion Tether spell to Loom'ithar.
--   Fixed a bug where the roster may not have resolved correctly after approving plan changes.
--   Fixed a bug where add/remove message counts were swapped for external text after approving plan changes.
+-   Added the option to hide spell icons for message reminders. This can be found by navigating to Preferences -> Reminder -> Messages -> Show Icon.
+-   Added the option to only show timeline assignments relevant to the player. This can be found by navigating to Preferences -> View -> Only Show Timeline Assignments For Me.
+-   Improved behavior for which plan is selected when a plan is deleted.
+-   Improved efficiency of reminders.
+-   Fixed an issue where OmniCC sometimes wouldn't provide countdown numbers for reminder icons.
 ]]
