@@ -453,12 +453,12 @@ local function OnAcquire(self)
 			HandleCustomTextureClicked(self, widget, value)
 		end)
 		self.spellAssignmentDropdown:AddItem(
-			{ itemValue = "Favorite", text = L["Favorite"], selectable = false },
+			{ itemValue = "Favorite", text = L["Favorite"], notSelectable = true },
 			"EPDropdownItemMenu"
 		)
 		self.spellAssignmentDropdown:SetItemEnabled("Favorite", false)
 		self.spellAssignmentDropdown:AddItem(
-			{ itemValue = "Recent", text = L["Recent"], selectable = false },
+			{ itemValue = "Recent", text = L["Recent"], notSelectable = true },
 			"EPDropdownItemMenu"
 		)
 		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)

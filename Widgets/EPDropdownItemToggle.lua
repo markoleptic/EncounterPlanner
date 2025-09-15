@@ -517,6 +517,7 @@ do
 		dropdownMenuItem.parentDropdown = dropdownParent
 		dropdownMenuItem.parentDropdownItemMenu = self
 		dropdownMenuItem:GetUserDataTable().level = self:GetUserDataTable().level + 1
+		dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
 		dropdownMenuItem:SetNeverShowItemsAsSelected(self.neverShowItemsAsSelected)
 		dropdownMenuItem:SetCallback("OnValueChanged", function(_, _, selected, value, childDropdownMenuItem)
 			if childDropdownMenuItem then
@@ -561,9 +562,11 @@ do
 				dropdownParent:Fire("CustomTextureClicked", widget, itemData.itemValue)
 			end)
 		end
-		dropdownItemToggle:SetCallback("OnValueChanged", function(widget)
-			HandleItemValueChanged(self, widget)
-		end)
+		if not itemData.notClickable then
+			dropdownItemToggle:SetCallback("OnValueChanged", function(widget)
+				HandleItemValueChanged(self, widget)
+			end)
+		end
 		self.childPullout:InsertItem(dropdownItemToggle, insertIndex)
 	end
 

@@ -687,12 +687,6 @@ do
 				planDropdown:Clear()
 				local instanceDropdownData = utilities.GetOrCreateInstanceDropdownItems()
 				local plans = AddOn.db.profile.plans
-				for _, dropdownData in pairs(instanceDropdownData) do
-					if not dropdownData.neverHasChildren then
-						dropdownData.dropdownItemMenuData = {}
-						dropdownData.itemMenuClickable = true
-					end
-				end
 				for planName, plan in pairs(plans) do
 					local instanceID = plan.instanceID
 					local customTexture = plan.remindersEnabled and kReminderEnabledTexture or kReminderDisabledTexture

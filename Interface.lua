@@ -206,7 +206,7 @@ do -- Boss Menu Items
 				{
 					itemValue = "Edit Phase Timings",
 					text = L["Edit Phase Timings"],
-					selectable = false,
+					notSelectable = true,
 				},
 				{
 					itemValue = "Filter Spells",

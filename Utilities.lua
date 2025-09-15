@@ -1088,17 +1088,15 @@ do
 				instanceIconText = format(kFormatStringGenericInlineIconWithText, kUnknownTexture, instanceName)
 			end
 
-			tinsert(
-				customInstanceDropdownItems,
-				{
-					itemValue = customDungeonInstanceGroup.instanceName,
-					text = instanceIconText,
-					neverHasChildren = true,
-					selectable = false,
-					clickable = false,
-					order = customDungeonInstanceGroup.order,
-				} ---@type DropdownItemData|{order:integer}
-			)
+			---@type DropdownItemData|{order:integer}
+			local customInstanceDropdownData = {
+				itemValue = customDungeonInstanceGroup.instanceName,
+				text = instanceIconText,
+				notSelectable = true,
+				notClickable = true,
+				order = customDungeonInstanceGroup.order,
+			}
+			tinsert(customInstanceDropdownItems, customInstanceDropdownData)
 			customInstanceDropdownItemChildren[instanceName] = {}
 		end
 
@@ -1107,19 +1105,20 @@ do
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 			local instanceIconText =
 				format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
-			local instanceDropdownData
+			---@type DropdownItemData
+			local instanceDropdownData = {
+				text = instanceIconText,
+				dropdownItemMenuData = {},
+				itemMenuClickable = true,
+				itemValue = nil,
+			}
 			if dungeonInstance.mapChallengeModeID then
-				instanceDropdownData = {
-					itemValue = {
-						dungeonInstanceID = dungeonInstance.instanceID,
-						mapChallengeModeID = dungeonInstance.mapChallengeModeID,
-					},
-					text = instanceIconText,
-					dropdownItemMenuData = {},
+				instanceDropdownData.itemValue = {
+					dungeonInstanceID = dungeonInstance.instanceID,
+					mapChallengeModeID = dungeonInstance.mapChallengeModeID,
 				}
 			else
-				instanceDropdownData =
-					{ itemValue = dungeonInstance.instanceID, text = instanceIconText, dropdownItemMenuData = {} }
+				instanceDropdownData.itemValue = dungeonInstance.instanceID
 			end
 			if dungeonInstance.customGroups then
 				instanceDropdownData.indent = kCustomGroupIndent

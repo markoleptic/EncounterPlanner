@@ -446,19 +446,20 @@
 ---@field order integer The sort index when comparing against other custom groups.
 
 ---@class DropdownItemData
----@field itemValue string|number|table the internal value used to index a dropdown item
----@field text string the value shown in the dropdown
----@field dropdownItemMenuData table<integer, DropdownItemData>|nil nested dropdown item menus
----@field selectable? boolean If true, the dropdown item can be selected and a check can be shown
----@field customTexture? string|integer A custom texture to add beside the check or checked indicator
----@field customTextureVertexColor? number[] The color of the texture
+---@field itemValue string|number|table The internal value used to index a dropdown item.
+---@field text string The value shown in the dropdown.
+-- If not nil and not empty, indicates it should be a menu. Data will be used to create submenus or sub-items.
+---@field dropdownItemMenuData table<integer, DropdownItemData>|nil
+-- If true, the dropdown item will not show that it is selected or that a child is selected.
+---@field notSelectable? boolean
+---@field customTexture? string|integer A custom texture to add beside the check or checked indicator.
+---@field customTextureVertexColor? number[] The color of the texture.
 -- Whether or not the custom texture should be allowed to fire the CustomTextureClicked callback after user left mouse
--- button mouse up
+-- button mouse up.
 ---@field customTextureSelectable? boolean
----@field itemMenuClickable? boolean If true, item menus can be clicked and trigger OnValueChanged
----@field neverHasChildren? boolean If true, a EPDropdownItemToggle is created instead of an EPDropdownItemMenu
----@field indent? integer
----@field clickable? boolean
+---@field notClickable? boolean If true, the OnValueChanged event for the dropdown item toggle will not be connected.
+---@field itemMenuClickable? boolean If true, item menus can be clicked and trigger OnValueChanged.
+---@field indent? integer If specified, additional horizontal padding is applied to the left.
 
 ---@class SpellCastStartTableEntry
 ---@field castStart number

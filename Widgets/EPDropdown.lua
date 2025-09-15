@@ -942,10 +942,8 @@ do
 				HandleMenuItemValueChanged(self, widget, selected, value, owningDropdownMenuItem)
 			end)
 			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
+			dropdownMenuItem:SetNeverShowItemsAsSelected(itemData.notSelectable)
 			self.pullout:InsertItem(dropdownMenuItem, index)
-			if itemData.selectable == false then
-				dropdownMenuItem:SetNeverShowItemsAsSelected(true)
-			end
 			if itemData.dropdownItemMenuData then
 				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, self)
 			end
@@ -967,7 +965,7 @@ do
 					itemData.customTexture,
 					itemData.customTextureVertexColor,
 					itemData.customTextureSelectable,
-					itemData.selectable == false
+					itemData.notSelectable == true
 				)
 			end
 			if itemData.customTextureSelectable then
@@ -976,12 +974,12 @@ do
 					self:Fire("CustomTextureClicked", widget, itemValue)
 				end)
 			end
-			if itemData.clickable == nil or itemData.clickable == true then
+			if not itemData.notClickable then
 				dropdownItemToggle:SetCallback("OnValueChanged", function(widget, _, selected)
 					HandleItemValueChanged(self, widget, selected)
 				end)
 			end
-			if itemData.selectable == false then
+			if itemData.notSelectable == true then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
 			end
 			self.pullout:InsertItem(dropdownItemToggle, index)
@@ -1009,18 +1007,16 @@ do
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	-- The type of item to create for direct children of the dropdown. Ignored if any top level itemData has child data
 	---@param leafType "EPDropdownItemMenu"|"EPDropdownItemToggle"
-	---@param neverShowItemsAsSelected boolean? If true, items will not be selectable
+	---@param notSelectable boolean? If true, items will not be selectable. If unspecified, uses value provided for each item.
 	---@param startIndex integer?
-	local function AddItems(self, dropdownItemData, leafType, neverShowItemsAsSelected, startIndex)
+	local function AddItems(self, dropdownItemData, leafType, notSelectable, startIndex)
 		local currentIndex = startIndex
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
 				self:AddItem({ itemValue = index, text = itemData }, leafType, currentIndex)
 			elseif type(itemData) == "table" then
-				if neverShowItemsAsSelected == true then
-					itemData.selectable = false
-				elseif neverShowItemsAsSelected == false then
-					itemData.selectable = true
+				if notSelectable == true then
+					itemData.notSelectable = true
 				end
 				if type(itemData.dropdownItemMenuData) == "table" then
 					self:AddItem(itemData, "EPDropdownItemMenu", currentIndex)
