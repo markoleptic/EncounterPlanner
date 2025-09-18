@@ -21,11 +21,6 @@
 ---@class TimedAssignment : Assignment
 ---@field time number The length of time from the beginning of the fight to when this assignment is triggered.
 
--- An assignment dependent only upon a boss phase. Currently half-implemented.
----@class PhasedAssignment : Assignment
----@field phase integer The boss phase this assignment is triggered by.
----@field time number The time from the start of the phase to trigger the assignment.
-
 -- Wrapper around an assignment with additional info about where to draw the assignment on the timeline.
 ---@class TimelineAssignment
 ---@field assignment Assignment The assignment.
@@ -516,7 +511,6 @@
 ---@alias AssignmentType
 ---| "CombatLogEventAssignment"
 ---| "TimedAssignment"
----| "PhasedAssignment"
 
 ---@alias AssigneeType
 ---| "Everyone"

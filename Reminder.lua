@@ -284,7 +284,7 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 end
 
 -- Creates an EPProgressBar widget and schedules its cleanup on the Completed callback. Starts the countdown.
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 ---@param duration number
 ---@param reminderText string
 ---@param icon integer|nil
@@ -299,7 +299,7 @@ local function AddProgressBar(assignment, duration, reminderText, icon, progress
 end
 
 -- Creates an EPReminderMessage widget and schedules its cleanup based on completion. Starts the countdown if applicable.
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 ---@param duration number
 ---@param reminderText string
 ---@param icon integer|nil
@@ -314,7 +314,7 @@ local function AddMessage(assignment, duration, reminderText, icon, messagePrefe
 end
 
 -- Creates an EPReminderIcon widget and schedules its cleanup based on completion. Starts the countdown.
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 ---@param duration number
 ---@param reminderText string
 ---@param icon integer
@@ -331,7 +331,7 @@ end
 -- Starts glowing the frame for the unit and creates a timer to stop the glowing of the frame.
 ---@param unit string
 ---@param frame Frame
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 local function GlowFrameAndCreateTimer(unit, frame, assignment)
 	local spellID = assignment.spellID
 	if spellID > k.TextAssignmentSpellID then
@@ -357,7 +357,7 @@ end
 -- Executes the actions that occur at the time in which reminders are first displayed. This is usually at countdown start
 -- time before the assignment, but can also be sooner if towards the start of the encounter. Creates s.timers for actions
 -- that occur at assignment time.
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 ---@param roster table<string, RosterEntry>
 ---@param reminderPreferences ReminderPreferences
 ---@param duration number

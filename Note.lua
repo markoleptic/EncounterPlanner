@@ -8,8 +8,6 @@ local L = Private.L
 local Assignment = Private.classes.Assignment
 ---@class CombatLogEventAssignment
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
----@class PhasedAssignment
-local PhasedAssignment = Private.classes.PhasedAssignment
 ---@class Plan
 local Plan = Private.classes.Plan
 ---@class TimedAssignment
@@ -245,19 +243,6 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 	elseif option:sub(1, 1) == "p" then
 		tinsert(replaced, { reason = 1, string = option })
 		defaultedToTimedCount = defaultedToTimedCount + #assignments
-		-- local _, phase = option:match(phaseNumberRegex)
-		-- if phase and phase ~= "" then
-		-- 	local phaseNumber = tonumber(phase, 10)
-		-- 	if phaseNumber then
-		-- 		for _, assignment in pairs(assignments) do
-		-- 			local phasedAssignment = PhasedAssignment:New(assignment)
-		-- 			phasedAssignment.time = time
-		-- 			phasedAssignment.phase = phaseNumber
-		-- 			tinsert(derivedAssignments, phasedAssignment)
-		-- 		end
-		-- 	end
-		-- 	regularTimer = false
-		-- end
 	else
 		local success, replacedInvalidSpellCount, invalidCombatLogEventTypeOrCombatLogEventSpellID =
 			ProcessCombatEventLogEventOption(

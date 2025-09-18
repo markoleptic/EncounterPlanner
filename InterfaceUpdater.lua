@@ -232,7 +232,6 @@ do
 	local kAssignmentMetaTables = {
 		CombatLogEventAssignment = Private.classes.CombatLogEventAssignment,
 		TimedAssignment = Private.classes.TimedAssignment,
-		PhasedAssignment = Private.classes.PhasedAssignment,
 	}
 	local kCloseTexture = constants.textures.kClose
 

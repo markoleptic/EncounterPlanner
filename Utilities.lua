@@ -11,8 +11,6 @@ local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 local TimedAssignment = Private.classes.TimedAssignment
 ---@class Plan
 local Plan = Private.classes.Plan
----@class PhasedAssignment
-local PhasedAssignment = Private.classes.PhasedAssignment
 ---@class RosterEntry
 local RosterEntry = Private.classes.RosterEntry
 ---@class TimelineAssignment
@@ -2509,7 +2507,7 @@ do
 	end
 end
 
----@param assignment CombatLogEventAssignment|TimedAssignment|PhasedAssignment|Assignment
+---@param assignment CombatLogEventAssignment|TimedAssignment|Assignment
 ---@param roster table<string, RosterEntry>
 ---@param addIcon boolean
 ---@return string

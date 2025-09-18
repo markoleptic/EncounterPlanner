@@ -249,8 +249,6 @@ local function SetAssignmentType(self, assignmentType)
 		SetEnabled(self.combatLogEventContainer.children, true)
 	elseif assignmentType == "TimedAssignment" then
 		SetEnabled(self.combatLogEventContainer.children, false)
-	elseif assignmentType == "PhasedAssignment" then
-		SetEnabled(self.combatLogEventContainer.children, false)
 	end
 end
 

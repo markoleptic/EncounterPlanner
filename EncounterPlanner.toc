@@ -30,6 +30,7 @@ Locales\Locales.xml
 
 Constants.lua
 Init.lua
+Assignment.lua
 Spells.lua
 Libs\Cbor.lua
 Widgets\Widgets.xml

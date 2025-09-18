@@ -8,8 +8,6 @@ local L = Private.L
 local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 ---@class TimedAssignment
 local TimedAssignment = Private.classes.TimedAssignment
----@class PhasedAssignment
-local PhasedAssignment = Private.classes.PhasedAssignment
 
 ---@class Constants
 local constants = Private.constants
