@@ -7,6 +7,9 @@
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellID integer The spell ID for the assignment.
 ---@field targetName string The target's name if the assignment has a '@'.
+---@field countdownLength number The length of time in advance a reminder should begin to show.
+---@field cancelIfAlreadyCasted boolean If true, hide reminder once the spell has been cast.
+---@field holdDuration number The length a text or icon reminder should show after countdown length is completed.
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment

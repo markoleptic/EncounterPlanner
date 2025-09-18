@@ -11,6 +11,9 @@ local constants = Private.constants
 ---@class InterfaceUpdater
 local interfaceUpdater = Private.interfaceUpdater
 
+---@class AssignmentUtilities
+local assignmentUtilities = Private.assignmentUtilities
+
 ---@class Utilities
 local utilities = Private.utilities
 local CreatePlan = utilities.CreatePlan
@@ -358,7 +361,7 @@ do -- Profile updating and refreshing
 	local SetPhaseDurations = bossUtilities.SetPhaseDurations
 
 	local ChangePlanBoss = utilities.ChangePlanBoss
-	local SetAssignmentMetaTables = utilities.SetAssignmentMetaTables
+	local SetAssignmentMetaTables = assignmentUtilities.SetAssignmentMetaTables
 
 	local function RemoveInvalidActiveBossAbilities(activeBossAbilities, difficulty)
 		for dungeonEncounterID, activeBossAbilitiesForEncounterID in pairs(activeBossAbilities) do

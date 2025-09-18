@@ -12,6 +12,9 @@ local TimedAssignment = Private.classes.TimedAssignment
 ---@class Constants
 local constants = Private.constants
 
+---@class AssignmentUtilities
+local assignmentUtilities = Private.assignmentUtilities
+
 ---@class Utilities
 local utilities = Private.utilities
 local AddAssignmentToPlan = utilities.AddAssignmentToPlan
@@ -542,7 +545,7 @@ do -- Assignment Editor
 		end
 	end
 
-	local ChangeAssignmentType = utilities.ChangeAssignmentType
+	local ChangeAssignmentType = assignmentUtilities.ChangeAssignmentType
 	local ClampSpellCount = bossUtilities.ClampSpellCount
 	local IsValidSpellCount = bossUtilities.IsValidSpellCount
 	local UpdateAssignmentBossPhase = utilities.UpdateAssignmentBossPhase
@@ -578,7 +581,12 @@ do -- Assignment Editor
 				---@cast assignment CombatLogEventAssignment
 				local spellID = tonumber(value)
 				if spellID then
-					utilities.ChangeAssignmentCombatLogEventSpellID(assignment, dungeonEncounterID, spellID, difficulty)
+					assignmentUtilities.ChangeAssignmentCombatLogEventSpellID(
+						assignment,
+						dungeonEncounterID,
+						spellID,
+						difficulty
+					)
 				end
 				updateFields = true
 			end
@@ -1214,7 +1222,8 @@ end
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local plan = GetCurrentPlan()
 	local encounterID = plan.dungeonEncounterID
-	local assignment = utilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty, plan.ID)
+	local assignment =
+		assignmentUtilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty, plan.ID)
 	if assignment then
 		AddAssignmentToPlan(plan, assignment)
 		UpdateAllAssignments(false)

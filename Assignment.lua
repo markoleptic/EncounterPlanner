@@ -1,13 +1,23 @@
-local AddOnName, Namespace = ...
+local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
-local L = Private.L
+
+---@class AssignmentUtilities
+local AssignmentUtilities = Private.assignmentUtilities
+
+---@class BossUtilities
+local bossUtilities = Private.bossUtilities
+
+---@class Utilities
+local utilities = Private.utilities
+
 local CreateNewInstance = Private.CreateNewInstance
 
+local assert = assert
+local getmetatable, setmetatable = getmetatable, setmetatable
 local pairs = pairs
 local type = type
-local getmetatable, setmetatable = getmetatable, setmetatable
 
 --- Collects all valid fields recursively from the inheritance chain.
 ---@param classTable table The class table to collect fields from
@@ -50,7 +60,13 @@ Private.classes.Assignment = {
 	text = "",
 	spellID = 0,
 	targetName = "",
+	countdownLength = 10,
+	cancelIfAlreadyCasted = false,
+	holdDuration = 0,
+	fadeDuration = 1.2,
 }
+---@class Assignment
+local Assignment = Private.classes.Assignment
 
 ---@class CombatLogEventAssignment
 Private.classes.CombatLogEventAssignment = setmetatable({
@@ -62,12 +78,16 @@ Private.classes.CombatLogEventAssignment = setmetatable({
 	bossPhaseOrderIndex = 0,
 }, { __index = Private.classes.Assignment })
 Private.classes.CombatLogEventAssignment.__index = Private.classes.CombatLogEventAssignment
+---@class CombatLogEventAssignment
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
 
 ---@class TimedAssignment
 Private.classes.TimedAssignment = setmetatable({
 	time = 0.0,
 }, { __index = Private.classes.Assignment })
 Private.classes.TimedAssignment.__index = Private.classes.TimedAssignment
+---@class TimedAssignment
+local TimedAssignment = Private.classes.TimedAssignment
 
 ---@class TimelineAssignment
 Private.classes.TimelineAssignment = {
@@ -77,11 +97,13 @@ Private.classes.TimelineAssignment = {
 	effectiveCooldownDuration = 0.0,
 }
 Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
+---@class TimelineAssignment
+local TimelineAssignment = Private.classes.TimelineAssignment
 
 ---@param o any
 ---@param planID string
 ---@return Assignment
-function Private.classes.Assignment:New(o, planID)
+function Assignment:New(o, planID)
 	local instance = CreateNewInstance(self, o)
 	instance.uniqueID = Private.GetNewAssignmentID(planID)
 	return instance
@@ -91,7 +113,7 @@ end
 ---@param planID string
 ---@param removeInvalidFields boolean|nil
 ---@return CombatLogEventAssignment
-function Private.classes.CombatLogEventAssignment:New(o, planID, removeInvalidFields)
+function CombatLogEventAssignment:New(o, planID, removeInvalidFields)
 	if not o or getmetatable(o) ~= Private.classes.Assignment then
 		o = Private.classes.Assignment:New(o, planID)
 	end
@@ -107,7 +129,7 @@ end
 ---@param planID string
 ---@param removeInvalidFields boolean|nil
 ---@return TimedAssignment
-function Private.classes.TimedAssignment:New(o, planID, removeInvalidFields)
+function TimedAssignment:New(o, planID, removeInvalidFields)
 	if not o or getmetatable(o) ~= Private.classes.Assignment then
 		o = Private.classes.Assignment:New(o, planID)
 	end
@@ -138,7 +160,7 @@ end
 ---@param o any
 ---@param planID string
 ---@return TimelineAssignment
-function Private.classes.TimelineAssignment:New(assignment, o, planID)
+function TimelineAssignment:New(assignment, o, planID)
 	local instance = CreateNewInstance(self, o)
 	instance.assignment = assignment or Private.classes.Assignment:New(assignment, planID)
 	return instance
@@ -159,4 +181,265 @@ function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, o, planID
 	o.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment, planID)
 	setmetatable(o, getmetatable(timelineAssignmentToCopy))
 	return o
+end
+
+---@param assignment CombatLogEventAssignment
+---@param dungeonEncounterID integer
+---@param difficulty DifficultyType
+function AssignmentUtilities.UpdateAssignmentBossPhase(assignment, dungeonEncounterID, difficulty)
+	local castTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(dungeonEncounterID, difficulty)
+	local bossPhaseTable = bossUtilities.GetOrderedBossPhases(dungeonEncounterID, difficulty)
+	if castTimeTable and bossPhaseTable then
+		local combatLogEventSpellID = assignment.combatLogEventSpellID
+		local spellCount = assignment.spellCount
+		if castTimeTable[combatLogEventSpellID] and castTimeTable[combatLogEventSpellID][spellCount] then
+			local orderedBossPhaseIndex = castTimeTable[combatLogEventSpellID][spellCount].bossPhaseOrderIndex
+			assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+			assignment.phase = bossPhaseTable[orderedBossPhaseIndex]
+		end
+	end
+end
+
+do
+	-- Finds the nearest combat log event corresponding to spellID to make a valid combat log event assignment.
+	---@param assignment CombatLogEventAssignment Combat log event assignment.
+	---@param dungeonEncounterID integer Boss dungeon encounter ID.
+	---@param spellID integer Combat log event spell ID.
+	---@param difficulty DifficultyType Encounter difficulty.
+	local function ConvertToValidCombatLogEventType(assignment, dungeonEncounterID, spellID, difficulty)
+		local validTypes = bossUtilities.GetValidCombatLogEventTypes(dungeonEncounterID, spellID, difficulty)
+		assert(#validTypes > 0, "Combat log event spell ID has at least one valid combat log event type")
+		if #validTypes > 0 then
+			local relativeTime, currentEventType = assignment.time, assignment.combatLogEventType
+			local currentSpellID, currentSpellCount = assignment.combatLogEventSpellID, assignment.spellCount
+			local absoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+				relativeTime,
+				dungeonEncounterID,
+				currentSpellID,
+				currentSpellCount,
+				currentEventType,
+				difficulty
+			)
+			local newEventType = validTypes[1]
+			local newSpellCount =
+				bossUtilities.FindNearestSpellCount(absoluteTime, dungeonEncounterID, spellID, newEventType, difficulty)
+			if newSpellCount then
+				assignment.combatLogEventType = newEventType
+				assignment.combatLogEventSpellID = spellID
+				assignment.spellCount = newSpellCount
+			end
+		end
+	end
+
+	---@param assignment CombatLogEventAssignment
+	---@param dungeonEncounterID integer
+	---@param newSpellID integer
+	---@param difficulty DifficultyType
+	function AssignmentUtilities.ChangeAssignmentCombatLogEventSpellID(
+		assignment,
+		dungeonEncounterID,
+		newSpellID,
+		difficulty
+	)
+		local currentEventType = assignment.combatLogEventType
+		local valid, newEventType =
+			bossUtilities.IsValidCombatLogEventType(dungeonEncounterID, newSpellID, currentEventType, difficulty)
+		if valid or (not valid and newEventType) then
+			local currentSpellID, currentSpellCount = assignment.combatLogEventSpellID, assignment.spellCount
+
+			local assignNewSpellIDAndEventType = false
+			if bossUtilities.IsValidSpellCount(dungeonEncounterID, newSpellID, currentSpellCount, nil, difficulty) then
+				assignNewSpellIDAndEventType = true
+			else
+				local relativeTime = assignment.time
+				local absoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					relativeTime,
+					dungeonEncounterID,
+					currentSpellID,
+					currentSpellCount,
+					currentEventType,
+					difficulty
+				)
+				local newSpellCount = bossUtilities.FindNearestSpellCount(
+					absoluteTime,
+					dungeonEncounterID,
+					newSpellID,
+					newEventType,
+					difficulty
+				)
+				if newSpellCount then
+					assignment.spellCount = newSpellCount
+					assignNewSpellIDAndEventType = true
+				end
+			end
+
+			if assignNewSpellIDAndEventType then
+				assignment.combatLogEventSpellID = newSpellID
+				if newEventType then
+					assignment.combatLogEventType = newEventType
+				end
+			end
+		else
+			ConvertToValidCombatLogEventType(assignment, dungeonEncounterID, newSpellID, difficulty)
+		end
+
+		AssignmentUtilities.UpdateAssignmentBossPhase(
+			assignment --[[@as CombatLogEventAssignment]],
+			dungeonEncounterID,
+			difficulty
+		)
+	end
+end
+
+local kValidCombatLogEventTypes = { ["SCS"] = true, ["SCC"] = true, ["SAA"] = true, ["SAR"] = true, ["UD"] = true }
+
+---@param assignment CombatLogEventAssignment|TimedAssignment
+---@param dungeonEncounterID integer
+---@param newType "Fixed Time"|CombatLogEventType
+---@param difficulty DifficultyType
+---@param planID string
+function AssignmentUtilities.ChangeAssignmentType(assignment, dungeonEncounterID, newType, difficulty, planID)
+	if kValidCombatLogEventTypes[newType] then
+		local newEventType = newType --[[@as CombatLogEventType]]
+		if getmetatable(assignment) ~= CombatLogEventAssignment then
+			local combatLogEventSpellID, spellCount, minTime =
+				bossUtilities.FindNearestCombatLogEvent(assignment.time, dungeonEncounterID, newEventType, difficulty)
+			assignment = CombatLogEventAssignment:New(assignment, planID, true)
+			assignment.combatLogEventType = newEventType
+			if combatLogEventSpellID and spellCount and minTime then
+				assignment.combatLogEventSpellID = combatLogEventSpellID
+				assignment.spellCount = spellCount
+				assignment.time = utilities.Round(minTime, 1)
+			end
+		else
+			local currentSpellID = assignment.combatLogEventSpellID
+			if
+				bossUtilities.IsValidCombatLogEventType(dungeonEncounterID, currentSpellID, newEventType, difficulty)
+			then
+				assignment.combatLogEventType = newEventType
+			else
+				local currentSpellCount, currentEventType = assignment.spellCount, assignment.combatLogEventType
+				local absoluteTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					dungeonEncounterID,
+					currentSpellID,
+					currentSpellCount,
+					currentEventType,
+					difficulty
+				)
+				if absoluteTime then
+					--- Ignore new time offset to keep things similar to before
+					local newCombatLogEventSpellID, newSpellCount = bossUtilities.FindNearestCombatLogEvent(
+						absoluteTime,
+						dungeonEncounterID,
+						newEventType,
+						difficulty
+					)
+					if newCombatLogEventSpellID and newSpellCount then
+						assignment.combatLogEventSpellID = newCombatLogEventSpellID
+						assignment.combatLogEventType = newEventType
+						assignment.spellCount = newSpellCount
+					end
+				end
+			end
+		end
+		AssignmentUtilities.UpdateAssignmentBossPhase(
+			assignment --[[@as CombatLogEventAssignment]],
+			dungeonEncounterID,
+			difficulty
+		)
+	elseif newType == "Fixed Time" then
+		if getmetatable(assignment) ~= TimedAssignment then
+			local convertedTime = nil
+			if getmetatable(assignment) == CombatLogEventAssignment then
+				convertedTime = bossUtilities.ConvertCombatLogEventTimeToAbsoluteTime(
+					assignment.time,
+					dungeonEncounterID,
+					assignment.combatLogEventSpellID,
+					assignment.spellCount,
+					assignment.combatLogEventType,
+					difficulty
+				)
+			end
+			assignment = TimedAssignment:New(assignment, planID, true)
+			if convertedTime then
+				assignment.time = utilities.Round(convertedTime, 1)
+			end
+		end
+	end
+end
+
+---@param encounterID integer Boss dungeon encounter ID.
+---@param absoluteTime number Time from the start of the boss encounter.
+---@param assignee string Assignee name or assignee type.
+---@param assignmentSpellID integer|nil Assignment spell ID.
+---@param difficulty DifficultyType Encounter difficulty.
+---@param planID string Unique plan ID.
+---@return TimedAssignment|CombatLogEventAssignment|nil
+function AssignmentUtilities.CreateNewAssignment(
+	encounterID,
+	absoluteTime,
+	assignee,
+	assignmentSpellID,
+	difficulty,
+	planID
+)
+	local assignment = nil
+	local boss = bossUtilities.GetBoss(encounterID)
+	local preferredAbilities = bossUtilities.GetBossPreferredCombatLogEventAbilities(boss, difficulty)
+
+	if preferredAbilities then
+		local phases = bossUtilities.GetBossPhases(boss, difficulty)
+		local orderedBossPhaseTable = bossUtilities.GetOrderedBossPhases(encounterID, difficulty)
+		local absoluteSpellCastTimeTable = bossUtilities.GetAbsoluteSpellCastTimeTable(encounterID, difficulty)
+		local newSpellID, newSpellCount, newEventType, newTime = bossUtilities.FindNearestPreferredCombatLogEvent(
+			absoluteTime,
+			encounterID,
+			preferredAbilities,
+			phases,
+			orderedBossPhaseTable,
+			difficulty
+		)
+		if newSpellID and newSpellCount and newEventType and newTime then
+			local orderedBossPhaseIndex = absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
+			assignment = CombatLogEventAssignment:New(assignment, planID, true)
+			assignment.combatLogEventType = newEventType
+			assignment.combatLogEventSpellID = newSpellID
+			assignment.spellCount = newSpellCount
+			assignment.time = utilities.Round(newTime, 1)
+			assignment.phase = absoluteSpellCastTimeTable[orderedBossPhaseIndex]
+			assignment.bossPhaseOrderIndex = orderedBossPhaseIndex
+		end
+	end
+
+	if not assignment then
+		assignment = TimedAssignment:New(assignment, planID, true)
+		assignment.time = utilities.Round(absoluteTime, 1)
+	end
+
+	assignment.assignee = assignee
+	if assignmentSpellID then
+		assignment.spellID = assignmentSpellID
+	end
+
+	return assignment
+end
+
+---@param assignments table<integer, Assignment>
+---@param planID string
+function AssignmentUtilities.SetAssignmentMetaTables(assignments, planID)
+	for _, assignment in pairs(assignments) do
+		assignment = Assignment:New(assignment, planID)
+		if
+			---@diagnostic disable-next-line: undefined-field
+			assignment.combatLogEventType
+			---@diagnostic disable-next-line: undefined-field
+			and assignment.combatLogEventSpellID
+		then
+			assignment = CombatLogEventAssignment:New(assignment, planID)
+			---@diagnostic disable-next-line: undefined-field
+		else
+			assignment = TimedAssignment:New(assignment, planID)
+		end
+	end
 end
