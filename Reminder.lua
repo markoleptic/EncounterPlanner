@@ -185,10 +185,11 @@ end
 
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
+---@param assignmentCancelIfAlreadyCasted boolean|nil
 ---@return table
-local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex)
+local function CreateTimerWithCleanupArgs(spellID, bossPhaseOrderIndex, assignmentCancelIfAlreadyCasted)
 	local args = {}
-	if s.HideIfAlreadyCasted and spellID > k.TextAssignmentSpellID then
+	if (s.HideIfAlreadyCasted or assignmentCancelIfAlreadyCasted) and spellID > k.TextAssignmentSpellID then
 		s.CancelTimerIfCasted[spellID] = s.CancelTimerIfCasted[spellID] or {}
 		args[#args + 1] = s.CancelTimerIfCasted[spellID]
 	end
@@ -261,7 +262,8 @@ end
 ---@param widget EPReminderMessage|EPProgressBar|EPReminderIcon
 ---@param spellID integer
 ---@param bossPhaseOrderIndex integer|nil
-local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex)
+---@param assignmentCancelIfAlreadyCasted boolean|nil
+local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex, assignmentCancelIfAlreadyCasted)
 	local uniqueID = GenerateUniqueID()
 
 	widget:SetCallback("Completed", function(w)
@@ -277,7 +279,7 @@ local function CreateReminderWidgetCallback(widget, spellID, bossPhaseOrderIndex
 		end
 	end)
 
-	if s.HideIfAlreadyCasted and spellID > k.TextAssignmentSpellID then
+	if (s.HideIfAlreadyCasted or assignmentCancelIfAlreadyCasted) and spellID > k.TextAssignmentSpellID then
 		s.HideWidgetIfCasted[spellID] = s.HideWidgetIfCasted[spellID] or {}
 		s.HideWidgetIfCasted[spellID][uniqueID] = widget
 	end
@@ -293,7 +295,7 @@ local function AddProgressBar(assignment, duration, reminderText, icon, progress
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local progressBar = AceGUI:Create("EPProgressBar")
 	progressBar:Set(progressBarPreferences, reminderText, duration, icon)
-	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex)
+	CreateReminderWidgetCallback(progressBar, assignment.spellID, bossPhaseOrderIndex, assignment.cancelIfAlreadyCasted)
 	s.ProgressBarContainer:AddChild(progressBar)
 	progressBar:Start()
 end
@@ -308,9 +310,9 @@ local function AddMessage(assignment, duration, reminderText, icon, messagePrefe
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local message = AceGUI:Create("EPReminderMessage")
 	message:Set(messagePreferences, reminderText, icon)
-	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex)
+	CreateReminderWidgetCallback(message, assignment.spellID, bossPhaseOrderIndex, assignment.cancelIfAlreadyCasted)
 	s.MessageContainer:AddChild(message)
-	message:Start(duration)
+	message:Start(duration, assignment.holdDuration or messagePreferences.holdDuration)
 end
 
 -- Creates an EPReminderIcon widget and schedules its cleanup based on completion. Starts the countdown.
@@ -323,7 +325,12 @@ local function AddIcon(assignment, duration, reminderText, icon, iconPreferences
 	local bossPhaseOrderIndex = assignment.bossPhaseOrderIndex
 	local reminderIcon = AceGUI:Create("EPReminderIcon")
 	reminderIcon:Set(iconPreferences, reminderText, icon)
-	CreateReminderWidgetCallback(reminderIcon, assignment.spellID, bossPhaseOrderIndex)
+	CreateReminderWidgetCallback(
+		reminderIcon,
+		assignment.spellID,
+		bossPhaseOrderIndex,
+		assignment.cancelIfAlreadyCasted
+	)
 	s.IconContainer:AddChild(reminderIcon)
 	reminderIcon:Start(GetTime(), duration)
 end
@@ -426,7 +433,8 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	end
 
 	if #deferredFunctions > 0 then
-		local args = CreateTimerWithCleanupArgs(spellID, assignment.bossPhaseOrderIndex)
+		local args =
+			CreateTimerWithCleanupArgs(spellID, assignment.bossPhaseOrderIndex, assignment.cancelIfAlreadyCasted)
 		CreateTimerWithCleanup(duration, function()
 			for _, func in ipairs(deferredFunctions) do
 				func()
@@ -440,7 +448,7 @@ end
 ---@param reminderPreferences ReminderPreferences
 ---@param elapsed number
 local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
-	local duration = reminderPreferences.countdownLength
+	local duration = assignment.countdownLength or reminderPreferences.countdownLength
 	local startTime = assignment.time - duration - elapsed
 
 	if startTime < 0 then
@@ -629,10 +637,8 @@ local function HandleCombatLogEventUnfiltered()
 			end
 		end
 		if k.PlayerGUID == sourceGUID then
-			if s.HideIfAlreadyCasted then
-				if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" then
-					CancelRemindersDueToSpellAlreadyCast(spellID)
-				end
+			if subEvent == "SPELL_CAST_START" or subEvent == "SPELL_CAST_SUCCESS" then
+				CancelRemindersDueToSpellAlreadyCast(spellID)
 			end
 			if s.StopGlowIfCasted[spellID] then
 				for glowSpellID, obj in pairs(s.StopGlowIfCasted[spellID]) do

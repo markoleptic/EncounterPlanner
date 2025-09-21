@@ -11,6 +11,7 @@ local Type = "EPAssignmentEditor"
 local Version = 1
 
 local AssignmentEditorDataType = Private.classes.AssignmentEditorDataType
+local tooltip = Private.tooltip
 
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
@@ -62,12 +63,12 @@ local k = {
 		insets = { left = 0, right = 0, top = 0, bottom = 0 },
 	},
 	FrameHeight = 200,
-	FrameWidth = 200,
+	FrameWidth = 220,
 	HalfDisabledTextColor = { 0.66, 0.66, 0.66, 1 },
 	IndentWidth = 20,
 	LabelWidgetSpacing = { 2, 2 },
 	MaxNumberOfRecentItems = 10,
-	SpacingBetweenOptions = 8,
+	SpacingBetweenOptions = 6,
 	Title = L["Assignment Editor"],
 	WindowBarHeight = 28,
 }
@@ -77,6 +78,16 @@ k.LineBackdrop = {
 	edgeSize = 0,
 	insets = { left = 0, right = 0, top = k.SpacingBetweenOptions, bottom = k.SpacingBetweenOptions },
 }
+
+---@param frame Frame
+---@param label string
+---@param description string
+local function ShowTooltip(frame, label, description)
+	tooltip:SetOwner(frame, "ANCHOR_TOP")
+	tooltip:SetText(label, 1, 0.82, 0, true)
+	tooltip:AddLine(description, 1, 1, 1, true)
+	tooltip:Show()
+end
 
 ---@param children any
 ---@param enable boolean
@@ -220,7 +231,7 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 			self.spellAssignmentDropdown:RemoveItem("Other")
 			local dropdownItemData =
 				Private.utilities.GetOrCreateSingleClassSpellDropdownItems(class, role, true, favoritedItemsMap)
-			self.spellAssignmentDropdown:AddItems(dropdownItemData, "EPDropdownItemMenu", nil, 3)
+			self.spellAssignmentDropdown:AddItems(dropdownItemData, "EPDropdownItemMenu", false, 3)
 		else
 			self.spellAssignmentDropdown:RemoveItem("Core")
 			self.spellAssignmentDropdown:RemoveItem("Group Utility")
@@ -229,7 +240,7 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 			self.spellAssignmentDropdown:RemoveItem("Other")
 
 			local dropdownItemData = Private.utilities.GetOrCreateClassSpellDropdownItems(true, favoritedItemsMap)
-			self.spellAssignmentDropdown:AddItems({ dropdownItemData }, "EPDropdownItemToggle", nil, 3)
+			self.spellAssignmentDropdown:AddItems({ dropdownItemData }, "EPDropdownItemToggle", false, 3)
 		end
 	end
 
@@ -238,8 +249,10 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 end
 
 ---@param self EPAssignmentEditor
-local function HandleAssigneeTypeDropdownValueChanged(self, value)
-	self:Fire("DataChanged", AssignmentEditorDataType.AssigneeType, value)
+local function RepopulateReminderOverridesFromPreferences(self)
+	self.countdownLengthLineEdit:SetText(select(2, self.FormatTime(self.reminderPreferences.countdownLength)))
+	self.cancelIfAlreadyCastedCheckBox:SetChecked(self.reminderPreferences.cancelIfAlreadyCasted)
+	self.holdDurationLineEdit:SetText(select(2, self.FormatTime(self.reminderPreferences.messages.holdDuration)))
 end
 
 ---@param self EPAssignmentEditor
@@ -266,7 +279,7 @@ end
 
 ---@param self EPAssignmentEditor
 local function OnAcquire(self)
-	self.assignmentID = nil
+	self.frame:SetSize(k.FrameWidth, k.FrameHeight)
 	self:SetLayout("EPVerticalLayout")
 	self.frame:Show()
 	self.content.spacing = { x = 0, y = 0 }
@@ -287,105 +300,110 @@ local function OnAcquire(self)
 	end)
 	self.windowBar = windowBar
 
+	local assignmentTypeContainer = AceGUI:Create("EPContainer")
+	assignmentTypeContainer:SetLayout("EPVerticalLayout")
+	assignmentTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	assignmentTypeContainer:SetFullWidth(true)
+
 	do
-		self.assignmentTypeContainer = AceGUI:Create("EPContainer")
-		self.assignmentTypeContainer:SetLayout("EPVerticalLayout")
-		self.assignmentTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.assignmentTypeContainer:SetFullWidth(true)
+		local assignmentTypeLabel = AceGUI:Create("EPLabel")
+		assignmentTypeLabel:SetText(L["Trigger:"], 0)
+		assignmentTypeLabel:SetFrameHeightFromText()
+		assignmentTypeLabel:SetFullWidth(true)
 
-		self.assignmentTypeLabel = AceGUI:Create("EPLabel")
-		self.assignmentTypeLabel:SetText(L["Trigger:"], 0)
-		self.assignmentTypeLabel:SetFrameHeightFromText()
-		self.assignmentTypeLabel:SetFullWidth(true)
-
-		self.assignmentTypeDropdown = AceGUI:Create("EPDropdown")
-		self.assignmentTypeDropdown:SetFullWidth(true)
-		self.assignmentTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		local assignmentTypeDropdown = AceGUI:Create("EPDropdown")
+		assignmentTypeDropdown:SetFullWidth(true)
+		assignmentTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleAssignmentTypeDropdownValueChanged(self, value)
 		end)
-		self.assignmentTypeDropdown:AddItems(k.AssignmentTriggers, "EPDropdownItemToggle")
+		assignmentTypeDropdown:AddItems(k.AssignmentTriggers)
+		self.assignmentTypeDropdown = assignmentTypeDropdown
 
-		self.assignmentTypeContainer:AddChildren(self.assignmentTypeLabel, self.assignmentTypeDropdown)
+		assignmentTypeContainer:AddChildren(assignmentTypeLabel, assignmentTypeDropdown)
 	end
 
 	do
-		local maxLabelWidth = 0.0
-		self.combatLogEventContainer = AceGUI:Create("EPContainer")
-		self.combatLogEventContainer:SetLayout("EPVerticalLayout")
-		self.combatLogEventContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
-		self.combatLogEventContainer:SetFullWidth(true)
-		self.combatLogEventContainer:SetPadding(k.IndentWidth, 0, 0, 0)
+		local combatLogEventContainer = AceGUI:Create("EPContainer")
+		combatLogEventContainer:SetLayout("EPVerticalLayout")
+		combatLogEventContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
+		combatLogEventContainer:SetFullWidth(true)
+		combatLogEventContainer:SetPadding(k.IndentWidth, 0, 0, 0)
+		self.combatLogEventContainer = combatLogEventContainer
 
-		local leftContainer = AceGUI:Create("EPContainer")
-		leftContainer:SetLayout("EPHorizontalLayout")
-		leftContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		leftContainer:SetFullWidth(true)
+		local combatLogEventSpellIDContainer = AceGUI:Create("EPContainer")
+		combatLogEventSpellIDContainer:SetLayout("EPHorizontalLayout")
+		combatLogEventSpellIDContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+		combatLogEventSpellIDContainer:SetFullWidth(true)
 
-		self.combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
-		self.combatLogEventSpellIDLabel:SetText(L["Spell"] .. ":", 0)
-		self.combatLogEventSpellIDLabel:SetFullHeight(true)
-		self.combatLogEventSpellIDLabel:SetFrameWidthFromText()
-		maxLabelWidth = max(maxLabelWidth, self.combatLogEventSpellIDLabel.frame:GetWidth())
+		local combatLogEventSpellIDLabel = AceGUI:Create("EPLabel")
+		combatLogEventSpellIDLabel:SetText(L["Spell"] .. ":", 0)
+		combatLogEventSpellIDLabel:SetFullHeight(true)
+		combatLogEventSpellIDLabel:SetFrameWidthFromText()
 
-		self.combatLogEventSpellIDDropdown = AceGUI:Create("EPDropdown")
-		self.combatLogEventSpellIDDropdown:SetFullWidth(true)
-		self.combatLogEventSpellIDDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		local combatLogEventSpellIDDropdown = AceGUI:Create("EPDropdown")
+		combatLogEventSpellIDDropdown:SetWidth(100)
+		combatLogEventSpellIDDropdown:SetFullWidth(true)
+		combatLogEventSpellIDDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.CombatLogEventSpellID, value)
 		end)
+		self.combatLogEventSpellIDDropdown = combatLogEventSpellIDDropdown
 
-		local rightContainer = AceGUI:Create("EPContainer")
-		rightContainer:SetLayout("EPHorizontalLayout")
-		rightContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		rightContainer:SetFullWidth(true)
+		local combatLogEventSpellCountContainer = AceGUI:Create("EPContainer")
+		combatLogEventSpellCountContainer:SetLayout("EPHorizontalLayout")
+		combatLogEventSpellCountContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+		combatLogEventSpellCountContainer:SetFullWidth(true)
 
-		self.combatLogEventSpellCountLabel = AceGUI:Create("EPLabel")
-		self.combatLogEventSpellCountLabel:SetText(L["Count:"], 0)
-		self.combatLogEventSpellCountLabel:SetFullHeight(true)
-		self.combatLogEventSpellCountLabel:SetFrameWidthFromText()
-		maxLabelWidth = max(maxLabelWidth, self.combatLogEventSpellCountLabel.frame:GetWidth())
+		local combatLogEventSpellCountLabel = AceGUI:Create("EPLabel")
+		combatLogEventSpellCountLabel:SetText(L["Count:"], 0)
+		combatLogEventSpellCountLabel:SetFullHeight(true)
+		combatLogEventSpellCountLabel:SetFrameWidthFromText()
 
-		self.combatLogEventSpellCountLineEdit = AceGUI:Create("EPLineEdit")
-		self.combatLogEventSpellCountLineEdit:SetFullWidth(true)
-		self.combatLogEventSpellCountLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		local combatLogEventSpellCountLineEdit = AceGUI:Create("EPLineEdit")
+		combatLogEventSpellCountLineEdit:SetWidth(100)
+		combatLogEventSpellCountLineEdit:SetFullWidth(true)
+		combatLogEventSpellCountLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.CombatLogEventSpellCount, value)
 		end)
+		self.combatLogEventSpellCountLineEdit = combatLogEventSpellCountLineEdit
 
-		self.combatLogEventSpellIDLabel:SetWidth(maxLabelWidth)
-		self.combatLogEventSpellCountLabel:SetWidth(maxLabelWidth)
+		local maxLabelWidth =
+			max(combatLogEventSpellIDLabel.frame:GetWidth(), combatLogEventSpellCountLabel.frame:GetWidth())
+		combatLogEventSpellIDLabel:SetWidth(maxLabelWidth)
+		combatLogEventSpellCountLabel:SetWidth(maxLabelWidth)
 
-		leftContainer:AddChildren(self.combatLogEventSpellIDLabel, self.combatLogEventSpellIDDropdown)
-		rightContainer:AddChildren(self.combatLogEventSpellCountLabel, self.combatLogEventSpellCountLineEdit)
-		self.combatLogEventContainer:AddChildren(leftContainer, rightContainer)
+		combatLogEventSpellIDContainer:AddChildren(combatLogEventSpellIDLabel, combatLogEventSpellIDDropdown)
+		combatLogEventSpellCountContainer:AddChildren(combatLogEventSpellCountLabel, combatLogEventSpellCountLineEdit)
+		self.combatLogEventContainer:AddChildren(combatLogEventSpellIDContainer, combatLogEventSpellCountContainer)
 	end
 
 	local triggerContainer = AceGUI:Create("EPContainer")
 	triggerContainer:SetLayout("EPVerticalLayout")
 	triggerContainer:SetSpacing(unpack(k.ContainerContainerSpacing))
 	triggerContainer:SetFullWidth(true)
-	triggerContainer:AddChildren(self.assignmentTypeContainer, self.combatLogEventContainer)
+	triggerContainer:AddChildren(assignmentTypeContainer, self.combatLogEventContainer)
 	self.triggerContainer = triggerContainer
 
+	local timeContainer = AceGUI:Create("EPContainer")
+	timeContainer:SetLayout("EPVerticalLayout")
+	timeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	timeContainer:SetFullWidth(true)
 	do
-		self.timeContainer = AceGUI:Create("EPContainer")
-		self.timeContainer:SetLayout("EPVerticalLayout")
-		self.timeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.timeContainer:SetFullWidth(true)
-
-		self.timeLabel = AceGUI:Create("EPLabel")
-		self.timeLabel:SetText(L["Time:"], 0)
-		self.timeLabel:SetFrameHeightFromText()
-		self.timeLabel:SetFullWidth(true)
+		local timeLabel = AceGUI:Create("EPLabel")
+		timeLabel:SetText(L["Time:"], 0)
+		timeLabel:SetFrameHeightFromText()
+		timeLabel:SetFullWidth(true)
 
 		local doubleLineEditContainer = AceGUI:Create("EPContainer")
 		doubleLineEditContainer:SetFullWidth(true)
 		doubleLineEditContainer:SetLayout("EPHorizontalLayout")
 		doubleLineEditContainer:SetSpacing(0, 0)
 
-		self.timeMinuteLineEdit = AceGUI:Create("EPLineEdit")
-		self.timeMinuteLineEdit:SetRelativeWidth(0.475)
-		self.timeMinuteLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		local timeMinuteLineEdit = AceGUI:Create("EPLineEdit")
+		timeMinuteLineEdit:SetRelativeWidth(0.475)
+		timeMinuteLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.Time, value)
 		end)
+		self.timeMinuteLineEdit = timeMinuteLineEdit
 
 		local separatorLabel = AceGUI:Create("EPLabel")
 		separatorLabel:SetText(":", 0)
@@ -393,88 +411,94 @@ local function OnAcquire(self)
 		separatorLabel:SetRelativeWidth(0.05)
 		separatorLabel:SetFullHeight(true)
 
-		self.timeSecondLineEdit = AceGUI:Create("EPLineEdit")
-		self.timeSecondLineEdit:SetRelativeWidth(0.475)
-		self.timeSecondLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		local timeSecondLineEdit = AceGUI:Create("EPLineEdit")
+		timeSecondLineEdit:SetRelativeWidth(0.475)
+		timeSecondLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.Time, value)
 		end)
+		self.timeSecondLineEdit = timeSecondLineEdit
 
-		doubleLineEditContainer:AddChildren(self.timeMinuteLineEdit, separatorLabel, self.timeSecondLineEdit)
-		self.timeContainer:AddChildren(self.timeLabel, doubleLineEditContainer)
+		doubleLineEditContainer:AddChildren(timeMinuteLineEdit, separatorLabel, timeSecondLineEdit)
+		timeContainer:AddChildren(timeLabel, doubleLineEditContainer)
 	end
 
+	local assigneeTypeContainer = AceGUI:Create("EPContainer")
+	assigneeTypeContainer:SetLayout("EPVerticalLayout")
+	assigneeTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	assigneeTypeContainer:SetFullWidth(true)
 	do
-		self.assigneeTypeContainer = AceGUI:Create("EPContainer")
-		self.assigneeTypeContainer:SetLayout("EPVerticalLayout")
-		self.assigneeTypeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.assigneeTypeContainer:SetFullWidth(true)
+		local assigneeTypeLabel = AceGUI:Create("EPLabel")
+		assigneeTypeLabel:SetText(L["Assignee"] .. ":", 0)
+		assigneeTypeLabel:SetFrameHeightFromText()
+		assigneeTypeLabel:SetFullWidth(true)
 
-		self.assigneeTypeLabel = AceGUI:Create("EPLabel")
-		self.assigneeTypeLabel:SetText(L["Assignee"] .. ":", 0)
-		self.assigneeTypeLabel:SetFrameHeightFromText()
-		self.assigneeTypeLabel:SetFullWidth(true)
-
-		self.assigneeTypeDropdown = AceGUI:Create("EPDropdown")
-		self.assigneeTypeDropdown:SetFullWidth(true)
-		self.assigneeTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
-			HandleAssigneeTypeDropdownValueChanged(self, value)
+		local assigneeTypeDropdown = AceGUI:Create("EPDropdown")
+		assigneeTypeDropdown:SetFullWidth(true)
+		assigneeTypeDropdown:SetCallback("OnValueChanged", function(_, _, value)
+			self:Fire("DataChanged", AssignmentEditorDataType.AssigneeType, value)
 		end)
-		self.assigneeTypeDropdown:SetShowPathText(true, { 1, 2 })
-		self.assigneeTypeContainer:AddChildren(self.assigneeTypeLabel, self.assigneeTypeDropdown)
+		assigneeTypeDropdown:SetShowPathText(true, { 1, 2 })
+		self.assigneeTypeDropdown = assigneeTypeDropdown
+
+		assigneeTypeContainer:AddChildren(assigneeTypeLabel, assigneeTypeDropdown)
 	end
 
+	local spellAssignmentContainer = AceGUI:Create("EPContainer")
+	spellAssignmentContainer:SetLayout("EPVerticalLayout")
+	spellAssignmentContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	spellAssignmentContainer:SetFullWidth(true)
 	do
-		self.spellAssignmentContainer = AceGUI:Create("EPContainer")
-		self.spellAssignmentContainer:SetLayout("EPVerticalLayout")
-		self.spellAssignmentContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.spellAssignmentContainer:SetFullWidth(true)
-
-		self.enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableSpellAssignmentCheckBox:SetText(L["Spell"] .. ":")
-		self.enableSpellAssignmentCheckBox:SetFullWidth(true)
-		self.enableSpellAssignmentCheckBox:SetFrameHeightFromText()
-		self.enableSpellAssignmentCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
+		local enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
+		enableSpellAssignmentCheckBox:SetText(L["Spell"] .. ":")
+		enableSpellAssignmentCheckBox:SetFullWidth(true)
+		enableSpellAssignmentCheckBox:SetFrameHeightFromText()
+		enableSpellAssignmentCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
 			self.spellAssignmentDropdown:SetEnabled(checked)
+			self.cancelIfAlreadyCastedCheckBox:SetEnabled(
+				checked and self.reminderOverridesLabel.labelAndCheckBox:IsChecked()
+			)
 			if not checked then
 				self.spellAssignmentDropdown:SetValue(constants.kInvalidAssignmentSpellID)
 				self.spellAssignmentDropdown:SetText("")
 				self:Fire("DataChanged", AssignmentEditorDataType.SpellAssignment, constants.kInvalidAssignmentSpellID)
 			end
 		end)
+		self.enableSpellAssignmentCheckBox = enableSpellAssignmentCheckBox
 
-		self.spellAssignmentDropdown = AceGUI:Create("EPDropdown")
-		self.spellAssignmentDropdown:SetFullWidth(true)
-		self.spellAssignmentDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		local spellAssignmentDropdown = AceGUI:Create("EPDropdown")
+		spellAssignmentDropdown:SetFullWidth(true)
+		spellAssignmentDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			HandleSpellAssignmentDropdownValueChanged(self, value)
 		end)
-		self.spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, widget, value)
+		spellAssignmentDropdown:SetCallback("CustomTextureClicked", function(_, _, widget, value)
 			HandleCustomTextureClicked(self, widget, value)
 		end)
-		self.spellAssignmentDropdown:AddItem(
+		spellAssignmentDropdown:AddItem(
 			{ itemValue = "Favorite", text = L["Favorite"], notSelectable = true },
 			"EPDropdownItemMenu"
 		)
-		self.spellAssignmentDropdown:SetItemEnabled("Favorite", false)
-		self.spellAssignmentDropdown:AddItem(
+		spellAssignmentDropdown:SetItemEnabled("Favorite", false)
+		spellAssignmentDropdown:AddItem(
 			{ itemValue = "Recent", text = L["Recent"], notSelectable = true },
 			"EPDropdownItemMenu"
 		)
-		self.spellAssignmentDropdown:SetItemEnabled("Recent", false)
+		spellAssignmentDropdown:SetItemEnabled("Recent", false)
+		self.spellAssignmentDropdown = spellAssignmentDropdown
 
-		self.spellAssignmentContainer:AddChildren(self.enableSpellAssignmentCheckBox, self.spellAssignmentDropdown)
+		spellAssignmentContainer:AddChildren(enableSpellAssignmentCheckBox, spellAssignmentDropdown)
 	end
 
-	do
-		self.targetContainer = AceGUI:Create("EPContainer")
-		self.targetContainer:SetLayout("EPVerticalLayout")
-		self.targetContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.targetContainer:SetFullWidth(true)
+	local targetContainer = AceGUI:Create("EPContainer")
+	targetContainer:SetLayout("EPVerticalLayout")
+	targetContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	targetContainer:SetFullWidth(true)
 
-		self.enableTargetCheckBox = AceGUI:Create("EPCheckBox")
-		self.enableTargetCheckBox:SetText(L["Target?"])
-		self.enableTargetCheckBox:SetFullWidth(true)
-		self.enableTargetCheckBox:SetFrameHeightFromText()
-		self.enableTargetCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
+	do
+		local enableTargetCheckBox = AceGUI:Create("EPCheckBox")
+		enableTargetCheckBox:SetText(L["Target"] .. ":")
+		enableTargetCheckBox:SetFullWidth(true)
+		enableTargetCheckBox:SetFrameHeightFromText()
+		enableTargetCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
 			self.targetDropdown:SetEnabled(checked)
 			if not checked then
 				self.targetDropdown:SetValue("")
@@ -482,111 +506,247 @@ local function OnAcquire(self)
 				self:Fire("DataChanged", AssignmentEditorDataType.Target, "")
 			end
 		end)
+		self.enableTargetCheckBox = enableTargetCheckBox
 
-		self.targetDropdown = AceGUI:Create("EPDropdown")
-		self.targetDropdown:SetFullWidth(true)
-		self.targetDropdown:SetCallback("OnValueChanged", function(_, _, value)
+		local targetDropdown = AceGUI:Create("EPDropdown")
+		targetDropdown:SetFullWidth(true)
+		targetDropdown:SetCallback("OnValueChanged", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.Target, value)
 		end)
+		self.targetDropdown = targetDropdown
 
-		self.targetContainer:AddChildren(self.enableTargetCheckBox, self.targetDropdown)
+		targetContainer:AddChildren(enableTargetCheckBox, targetDropdown)
 	end
 
+	local optionalTextContainer = AceGUI:Create("EPContainer")
+	optionalTextContainer:SetLayout("EPVerticalLayout")
+	optionalTextContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	optionalTextContainer:SetFullWidth(true)
 	do
-		self.optionalTextContainer = AceGUI:Create("EPContainer")
-		self.optionalTextContainer:SetLayout("EPVerticalLayout")
-		self.optionalTextContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.optionalTextContainer:SetFullWidth(true)
+		local optionalTextLabel = AceGUI:Create("EPLabel")
+		optionalTextLabel:SetText(L["Text"] .. ":", 0)
+		optionalTextLabel:SetFrameHeightFromText()
+		optionalTextLabel:SetFullWidth(true)
 
-		self.optionalTextLabel = AceGUI:Create("EPLabel")
-		self.optionalTextLabel:SetText(L["Text"] .. ":", 0)
-		self.optionalTextLabel:SetFrameHeightFromText()
-		self.optionalTextLabel:SetFullWidth(true)
-
-		self.optionalTextLineEdit = AceGUI:Create("EPLineEdit")
-		self.optionalTextLineEdit:SetFullWidth(true)
-		self.optionalTextLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+		local optionalTextLineEdit = AceGUI:Create("EPLineEdit")
+		optionalTextLineEdit:SetFullWidth(true)
+		optionalTextLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
 			self:Fire("DataChanged", AssignmentEditorDataType.OptionalText, value)
 		end)
+		self.optionalTextLineEdit = optionalTextLineEdit
 
-		self.optionalTextContainer:AddChildren(self.optionalTextLabel, self.optionalTextLineEdit)
+		optionalTextContainer:AddChildren(optionalTextLabel, optionalTextLineEdit)
 	end
 
+	local previewContainer = AceGUI:Create("EPContainer")
+	previewContainer:SetLayout("EPVerticalLayout")
+	previewContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	previewContainer:SetFullWidth(true)
 	do
-		self.previewContainer = AceGUI:Create("EPContainer")
-		self.previewContainer:SetLayout("EPVerticalLayout")
-		self.previewContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
-		self.previewContainer:SetFullWidth(true)
-
 		local previewLabelLabel = AceGUI:Create("EPLabel")
 		previewLabelLabel:SetText(L["Preview:"], 0)
 		previewLabelLabel:SetFullWidth(true)
 		previewLabelLabel:SetFrameHeightFromText()
 
-		self.previewLabel = AceGUI:Create("EPLabel")
-		self.previewLabel:SetText("", 0)
-		self.previewLabel:SetFullWidth(true)
-		self.previewLabel:SetFrameHeightFromText()
+		local previewLabel = AceGUI:Create("EPLabel")
+		previewLabel:SetText("", 0)
+		previewLabel:SetFullWidth(true)
+		previewLabel:SetFrameHeightFromText()
+		self.previewLabel = previewLabel
 
-		self.previewContainer:AddChildren(previewLabelLabel, self.previewLabel)
+		previewContainer:AddChildren(previewLabelLabel, previewLabel)
 	end
 
-	local line = AceGUI:Create("EPSpacer")
-	line.frame:SetBackdrop(k.LineBackdrop)
-	line.frame:SetBackdropColor(unpack(k.BackdropBorderColor))
-	line:SetFullWidth(true)
-	line:SetHeight(2 + 2 * k.SpacingBetweenOptions)
+	local reminderOverridesContainer = AceGUI:Create("EPContainer")
+	reminderOverridesContainer:SetLayout("EPVerticalLayout")
+	reminderOverridesContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	reminderOverridesContainer:SetPadding(k.IndentWidth, 0, 0, 0)
+	reminderOverridesContainer:SetFullWidth(true)
+	self.reminderOverridesContainer = reminderOverridesContainer
 
-	local triggerTimeSpacer = AceGUI:Create("EPSpacer")
-	triggerTimeSpacer:SetFullWidth(true)
-	triggerTimeSpacer:SetHeight(k.SpacingBetweenOptions)
+	local reminderOverridesLabel = AceGUI:Create("EPExpanderHeader")
+	reminderOverridesLabel:SetText(L["Reminder Overrides"])
+	reminderOverridesLabel:SetFullWidth(true)
+	reminderOverridesLabel:SetCallback("OnValueChanged", function(_, _, checked)
+		self:Fire("DataChanged", AssignmentEditorDataType.CancelIfAlreadyCasted, checked)
+	end)
+	reminderOverridesLabel.labelAndCheckBox:SetCallback("OnEnter", function()
+		ShowTooltip(
+			reminderOverridesLabel.labelAndCheckBox.frame,
+			L["Reminder Overrides"],
+			L["If checked, default reminder preferences for this assignment are overridden."]
+		)
+	end)
+	reminderOverridesLabel.labelAndCheckBox:SetCallback("OnLeave", function()
+		tooltip:Hide()
+	end)
+	reminderOverridesLabel:SetCallback("Clicked", function(_, _, open)
+		reminderOverridesContainer:SetIgnoreFromLayout(not open)
+		self:DoLayout()
+	end)
+	reminderOverridesLabel:SetCallback("OnValueChanged", function(_, _, checked)
+		reminderOverridesLabel:SetExpanded(checked)
+		reminderOverridesContainer:SetIgnoreFromLayout(not checked)
+		SetEnabled(reminderOverridesContainer.children, checked)
+		local countdownLength, holdDuration, cancelIfAlreadyCasted = nil, nil, nil
+		if checked then -- Set all three values from reminder preferences
+			local reminderPreferences = self.reminderPreferences
+			countdownLength = reminderPreferences.countdownLength
+			holdDuration = reminderPreferences.messages.holdDuration
+			cancelIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+		end
+		self:Fire("DataChanged", AssignmentEditorDataType.CountdownLength, countdownLength)
+		self:Fire("DataChanged", AssignmentEditorDataType.HoldDuration, holdDuration)
+		self:Fire("DataChanged", AssignmentEditorDataType.CancelIfAlreadyCasted, cancelIfAlreadyCasted)
+		RepopulateReminderOverridesFromPreferences(self) -- Display values from reminder preferences even if nil
+		self.cancelIfAlreadyCastedCheckBox:SetEnabled(checked and self.spellAssignmentDropdown.enabled)
+		self:DoLayout()
+	end)
+	self.reminderOverridesLabel = reminderOverridesLabel
 
-	local timeTypeSpacer = AceGUI:Create("EPSpacer")
-	timeTypeSpacer:SetFullWidth(true)
-	timeTypeSpacer:SetHeight(k.SpacingBetweenOptions)
+	local countdownLengthContainer = AceGUI:Create("EPContainer")
+	countdownLengthContainer:SetLayout("EPVerticalLayout")
+	countdownLengthContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	countdownLengthContainer:SetFullWidth(true)
 
-	local spellTargetSpacer = AceGUI:Create("EPSpacer")
-	spellTargetSpacer:SetFullWidth(true)
-	spellTargetSpacer:SetHeight(k.SpacingBetweenOptions)
+	do
+		self.cancelIfAlreadyCastedCheckBox = AceGUI:Create("EPCheckBox")
+		self.cancelIfAlreadyCastedCheckBox:SetText(L["Hide on Spell Cast"])
+		self.cancelIfAlreadyCastedCheckBox:SetFullWidth(true)
+		self.cancelIfAlreadyCastedCheckBox:SetFrameHeightFromText()
+		self.cancelIfAlreadyCastedCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
+			self:Fire("DataChanged", AssignmentEditorDataType.CancelIfAlreadyCasted, checked)
+		end)
+		self.cancelIfAlreadyCastedCheckBox:SetCallback("OnEnter", function()
+			ShowTooltip(
+				self.cancelIfAlreadyCastedCheckBox.frame,
+				L["Hide on Spell Cast"],
+				L["If an assignment has a spell and is cast during the countdown, reminders for it will be hidden."]
+			)
+		end)
+		self.cancelIfAlreadyCastedCheckBox:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
 
-	local spellTextSpacer = AceGUI:Create("EPSpacer")
-	spellTextSpacer:SetFullWidth(true)
-	spellTextSpacer:SetHeight(k.SpacingBetweenOptions)
+		local countdownLengthLabel = AceGUI:Create("EPLabel")
+		countdownLengthLabel:SetText(L["Countdown Length"] .. ":", 0)
+		countdownLengthLabel:SetFullWidth(true)
+		countdownLengthLabel:SetFrameHeightFromText()
 
-	local line2 = AceGUI:Create("EPSpacer")
-	line2.frame:SetBackdrop(k.LineBackdrop)
-	line2.frame:SetBackdropColor(unpack(k.BackdropBorderColor))
-	line2:SetFullWidth(true)
-	line2:SetHeight(2 + 2 * k.SpacingBetweenOptions)
+		self.countdownLengthLineEdit = AceGUI:Create("EPLineEdit")
+		self.countdownLengthLineEdit:SetFullWidth(true)
+		self.countdownLengthLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+			self:Fire("DataChanged", AssignmentEditorDataType.CountdownLength, value)
+		end)
+		self.countdownLengthLineEdit:SetCallback("OnEnter", function()
+			ShowTooltip(
+				self.countdownLengthLineEdit.frame,
+				L["Countdown Length"],
+				L["How far in advance to begin showing reminders for an assignment."]
+			)
+		end)
+		self.countdownLengthLineEdit:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
+
+		countdownLengthContainer:AddChildren(countdownLengthLabel, self.countdownLengthLineEdit)
+	end
+
+	local holdDurationContainer = AceGUI:Create("EPContainer")
+	holdDurationContainer:SetLayout("EPVerticalLayout")
+	holdDurationContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
+	holdDurationContainer:SetFullWidth(true)
+
+	do
+		local holdDurationLabel = AceGUI:Create("EPLabel")
+		holdDurationLabel:SetText(L["Message Hold Duration"] .. ":", 0)
+		holdDurationLabel:SetFullWidth(true)
+		holdDurationLabel:SetFrameHeightFromText()
+
+		self.holdDurationLineEdit = AceGUI:Create("EPLineEdit")
+		self.holdDurationLineEdit:SetFullWidth(true)
+		self.holdDurationLineEdit:SetCallback("OnTextSubmitted", function(_, _, value)
+			self:Fire("DataChanged", AssignmentEditorDataType.HoldDuration, value)
+		end)
+		self.holdDurationLineEdit:SetCallback("OnEnter", function()
+			ShowTooltip(
+				self.holdDurationLineEdit.frame,
+				L["Message Hold Duration"],
+				L["How long to keep showing Messages after the countdown has completed."]
+			)
+		end)
+		self.holdDurationLineEdit:SetCallback("OnLeave", function()
+			tooltip:Hide()
+		end)
+
+		holdDurationContainer:AddChildren(holdDurationLabel, self.holdDurationLineEdit)
+	end
+
+	local function CreateSpacer()
+		local spacer = AceGUI:Create("EPSpacer")
+		spacer:SetFullWidth(true)
+		spacer:SetHeight(k.SpacingBetweenOptions)
+		return spacer
+	end
+
+	local function CreateSpacer2()
+		local spacer = AceGUI:Create("EPSpacer")
+		spacer:SetFullWidth(true)
+		spacer:SetHeight(4)
+		return spacer
+	end
+
+	local function CreateLine()
+		local line = AceGUI:Create("EPSpacer")
+		line.frame:SetBackdrop(k.LineBackdrop)
+		line.frame:SetBackdropColor(unpack(k.BackdropBorderColor))
+		line:SetFullWidth(true)
+		line:SetHeight(2 + 2 * k.SpacingBetweenOptions)
+		return line
+	end
+
+	reminderOverridesContainer:AddChildren(
+		CreateSpacer2(),
+		self.cancelIfAlreadyCastedCheckBox,
+		CreateSpacer2(),
+		countdownLengthContainer,
+		CreateSpacer2(),
+		holdDurationContainer
+	)
+	reminderOverridesContainer:SetIgnoreFromLayout(true)
 
 	self:AddChildren(
 		triggerContainer,
-		triggerTimeSpacer,
-		self.timeContainer,
-		timeTypeSpacer,
-		self.assigneeTypeContainer,
-		line,
-		self.spellAssignmentContainer,
-		spellTargetSpacer,
-		self.targetContainer,
-		spellTextSpacer,
-		self.optionalTextContainer,
-		line2,
-		self.previewContainer
+		CreateSpacer(),
+		timeContainer,
+		CreateSpacer(),
+		assigneeTypeContainer,
+		CreateSpacer(),
+		spellAssignmentContainer,
+		CreateSpacer(),
+		targetContainer,
+		CreateSpacer(),
+		optionalTextContainer,
+		CreateLine(),
+		previewContainer,
+		CreateLine(),
+		reminderOverridesLabel,
+		reminderOverridesContainer
 	)
 
 	local edgeSize = k.FrameBackdrop.edgeSize
 
-	self.deleteButton = AceGUI:Create("EPButton")
-	self.deleteButton:SetText(L["Delete Assignment"])
-	self.deleteButton:SetWidthFromText()
-	self.deleteButton:SetBackdropColor(unpack(k.BackdropColor))
-	self.deleteButton:SetCallback("Clicked", function()
+	local deleteButton = AceGUI:Create("EPButton")
+	deleteButton:SetText(L["Delete Assignment"])
+	deleteButton:SetWidthFromText()
+	deleteButton:SetBackdropColor(unpack(k.BackdropColor))
+	deleteButton:SetCallback("Clicked", function()
 		self:Fire("DeleteButtonClicked")
 	end)
-	self.deleteButton.frame:SetParent(self.buttonFrame)
-	self.deleteButton.frame:SetPoint("TOP", self.buttonFrame, "TOP", 0, -edgeSize)
-	self.deleteButton.frame:SetPoint("BOTTOM", self.buttonFrame, "BOTTOM", 0, edgeSize)
+	deleteButton.frame:SetParent(self.buttonFrame)
+	deleteButton.frame:SetPoint("TOP", self.buttonFrame, "TOP", 0, -edgeSize)
+	deleteButton.frame:SetPoint("BOTTOM", self.buttonFrame, "BOTTOM", 0, edgeSize)
+	self.deleteButton = deleteButton
 end
 
 ---@param self EPAssignmentEditor
@@ -597,60 +757,48 @@ local function OnRelease(self)
 	if self.deleteButton then
 		self.deleteButton:Release()
 	end
-	self.FormatTime = nil
-	self.deleteButton = nil
-	self.timeMinuteLineEdit = nil
-	self.timeSecondLineEdit = nil
-	self.assignmentTypeContainer = nil
-	self.assignmentTypeDropdown = nil
-	self.assignmentTypeLabel = nil
-	self.combatLogEventContainer = nil
-	self.combatLogEventSpellIDDropdown = nil
-	self.combatLogEventSpellIDLabel = nil
-	self.combatLogEventSpellCountLineEdit = nil
-	self.combatLogEventSpellCountLabel = nil
-	self.spellAssignmentContainer = nil
-	self.spellAssignmentDropdown = nil
-	self.enableSpellAssignmentCheckBox = nil
-	self.assigneeTypeContainer = nil
 	self.assigneeTypeDropdown = nil
-	self.assigneeTypeLabel = nil
-	self.timeContainer = nil
+	self.assignmentID = nil
+	self.assignmentTypeDropdown = nil
+	self.cancelIfAlreadyCastedCheckBox = nil
+	self.combatLogEventContainer = nil
+	self.combatLogEventSpellCountLineEdit = nil
+	self.combatLogEventSpellIDDropdown = nil
+	self.countdownLengthLineEdit = nil
+	self.deleteButton = nil
+	self.enableSpellAssignmentCheckBox = nil
+	self.enableTargetCheckBox = nil
+	self.FormatTime = nil
+	self.holdDurationLineEdit = nil
+	self.lastClassDropdownValue = nil
+	self.lastRoleDropdownValue = nil
+	self.optionalTextLineEdit = nil
+	self.previewLabel = nil
+	self.reminderOverridesContainer = nil
+	self.reminderOverridesLabel = nil
+	self.reminderPreferences = nil
+	self.spellAssignmentDropdown = nil
+	self.targetDropdown = nil
 	self.timeMinuteLineEdit = nil
 	self.timeSecondLineEdit = nil
 	self.triggerContainer = nil
-	self.enableTargetCheckBox = nil
-	self.timeLabel = nil
-	self.optionalTextContainer = nil
-	self.optionalTextLineEdit = nil
-	self.optionalTextLabel = nil
-	self.targetContainer = nil
-	self.targetDropdown = nil
-	self.previewContainer = nil
-	self.previewLabel = nil
-	self.lastClassDropdownValue = nil
-	self.lastRoleDropdownValue = nil
 	self.windowBar = nil
-end
-
-local function OnHeightSet(self, width)
-	self.content:SetHeight(width)
-	self.content.height = width
-end
-
-local function OnWidthSet(self, width)
-	self.content:SetWidth(width)
-	self.content.width = width
 end
 
 ---@param self EPAssignmentEditor
 local function LayoutFinished(self, width, height)
 	if width and height then
 		self.frame:SetSize(
-			width + k.ContentFramePadding.x * 2,
+			k.FrameWidth + k.ContentFramePadding.x * 2,
 			k.ButtonFrameHeight + height + self.windowBar.frame:GetHeight() + k.ContentFramePadding.y * 2
 		)
 	end
+end
+
+---@param self EPAssignmentEditor
+---@param reminderPreferences ReminderPreferences
+local function SetReminderPreferences(self, reminderPreferences)
+	self.reminderPreferences = reminderPreferences
 end
 
 ---@param self EPAssignmentEditor
@@ -746,6 +894,21 @@ local function PopulateFields(
 		self.timeMinuteLineEdit:SetText(minutes)
 		self.timeSecondLineEdit:SetText(seconds)
 	end
+
+	if assignment.countdownLength and assignment.cancelIfAlreadyCasted ~= nil and assignment.holdDuration then
+		self.countdownLengthLineEdit:SetText(select(2, self.FormatTime(assignment.countdownLength)))
+		self.cancelIfAlreadyCastedCheckBox:SetChecked(assignment.cancelIfAlreadyCasted)
+		self.holdDurationLineEdit:SetText(select(2, self.FormatTime(assignment.holdDuration)))
+
+		self.reminderOverridesLabel:SetChecked(true)
+		SetEnabled(self.reminderOverridesContainer.children, true)
+		self.cancelIfAlreadyCastedCheckBox:SetEnabled(enableSpellAssignmentCheckBox)
+	else
+		RepopulateReminderOverridesFromPreferences(self)
+
+		self.reminderOverridesLabel:SetChecked(false)
+		SetEnabled(self.reminderOverridesContainer.children, false)
+	end
 end
 
 ---@param self EPAssignmentEditor
@@ -798,48 +961,40 @@ local function Constructor()
 	)
 
 	---@class EPAssignmentEditor : AceGUIContainer
-	---@field deleteButton EPButton
-	---@field assignmentTypeContainer EPContainer
-	---@field assignmentTypeDropdown EPDropdown
-	---@field assignmentTypeLabel EPLabel
-	---@field combatLogEventContainer EPContainer
-	---@field combatLogEventSpellIDDropdown EPDropdown
-	---@field combatLogEventSpellIDLabel EPLabel
-	---@field combatLogEventSpellCountLineEdit EPLineEdit
-	---@field combatLogEventSpellCountLabel EPLabel
-	---@field spellAssignmentContainer EPContainer
-	---@field spellAssignmentDropdown EPDropdown
-	---@field enableSpellAssignmentCheckBox EPCheckBox
-	---@field assigneeTypeContainer EPContainer
 	---@field assigneeTypeDropdown EPDropdown
-	---@field assigneeTypeLabel EPLabel
-	---@field timeContainer EPContainer
+	---@field assignmentID integer|nil
+	---@field assignmentTypeDropdown EPDropdown
+	---@field cancelIfAlreadyCastedCheckBox EPCheckBox
+	---@field combatLogEventContainer EPContainer
+	---@field combatLogEventSpellCountLineEdit EPLineEdit
+	---@field combatLogEventSpellIDDropdown EPDropdown
+	---@field countdownLengthLineEdit EPLineEdit
+	---@field deleteButton EPButton
+	---@field enableSpellAssignmentCheckBox EPCheckBox
+	---@field enableTargetCheckBox EPCheckBox
+	---@field FormatTime fun(number): string,string
+	---@field holdDurationLineEdit EPLineEdit
+	---@field lastClassDropdownValue string|nil
+	---@field lastRoleDropdownValue string|nil
+	---@field optionalTextLineEdit EPLineEdit
+	---@field previewLabel EPLabel
+	---@field reminderOverridesContainer EPContainer
+	---@field reminderOverridesLabel EPExpanderHeader
+	---@field reminderPreferences ReminderPreferences
+	---@field spellAssignmentDropdown EPDropdown
+	---@field targetDropdown EPDropdown
 	---@field timeMinuteLineEdit EPLineEdit
 	---@field timeSecondLineEdit EPLineEdit
 	---@field triggerContainer EPContainer
-	---@field enableTargetCheckBox EPCheckBox
-	---@field timeLabel EPLabel
-	---@field optionalTextContainer EPContainer
-	---@field optionalTextLineEdit EPLineEdit
-	---@field optionalTextLabel EPLabel
-	---@field targetContainer EPContainer
-	---@field targetDropdown EPDropdown
-	---@field previewContainer EPContainer
-	---@field previewLabel EPLabel
 	---@field windowBar EPWindowBar
-	---@field assignmentID integer|nil
-	---@field FormatTime fun(number): string,string
-	---@field lastClassDropdownValue string|nil
-	---@field lastRoleDropdownValue string|nil
 	local widget = {
 		type = Type,
 		count = count,
 		frame = frame,
 		content = contentFrame,
+		buttonFrame = buttonFrame,
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
-		OnHeightSet = OnHeightSet,
-		OnWidthSet = OnWidthSet,
 		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
 		SetAssignmentID = SetAssignmentID,
@@ -847,7 +1002,7 @@ local function Constructor()
 		PopulateFields = PopulateFields,
 		HandleRosterChanged = HandleRosterChanged,
 		RepopulateSpellDropdown = RepopulateSpellDropdown,
-		buttonFrame = buttonFrame,
+		SetReminderPreferences = SetReminderPreferences,
 	}
 
 	return AceGUI:RegisterAsContainer(widget)

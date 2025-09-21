@@ -142,6 +142,9 @@ Private.classes.AssignmentEditorDataType = {
 	Time = 6,
 	OptionalText = 7,
 	Target = 8,
+	CountdownLength = 9,
+	CancelIfAlreadyCasted = 10,
+	HoldDuration = 11,
 }
 
 ---@class DungeonInstance
@@ -413,6 +416,7 @@ local defaults = {
 					showOnlyAtExpiration = true,
 					textColor = { 1, 0.82, 0, 0.95 },
 					showIcon = true,
+					holdDuration = 2.0,
 				},
 				progressBars = {
 					enabled = true,

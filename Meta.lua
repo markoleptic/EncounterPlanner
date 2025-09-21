@@ -7,9 +7,9 @@
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellID integer The spell ID for the assignment.
 ---@field targetName string The target's name if the assignment has a '@'.
----@field countdownLength number The length of time in advance a reminder should begin to show.
----@field cancelIfAlreadyCasted boolean If true, hide reminder once the spell has been cast.
----@field holdDuration number The length a text or icon reminder should show after countdown length is completed.
+---@field countdownLength number|nil The length of time in advance a reminder should begin to show.
+---@field cancelIfAlreadyCasted boolean|nil If true, hide reminder once the spell has been cast.
+---@field holdDuration number|nil The length a text or icon reminder should show after countdown length is completed.
 
 -- An assignment based on a combat log event.
 ---@class CombatLogEventAssignment : Assignment
@@ -319,6 +319,7 @@
 ---@field showOnlyAtExpiration boolean If true, only shows Messages at expiration time.
 ---@field textColor Color Text color of Messages.
 ---@field showIcon boolean If true, show the spell icon associated with the assignment.
+---@field holdDuration number How long to hold messages before hiding/fading.
 
 ---@class IconPreferences : GenericReminderPreferences
 ---@field width number The width of Cooldown Icons.
@@ -338,10 +339,9 @@
 ---@field enabled boolean
 ---@field onlyShowMe boolean Whether to only show assignment reminders that are relevant to the player.
 ---@field removeDueToPhaseChange boolean Not currently used.
--- If an assignment is a spell and it already on cooldown, the reminder will not be shown. If the spell is cast during
--- the reminder countdown, it will be cancelled.
+-- If an assignment has a spell and is cast during the countdown, reminders for it will be hidden.
 ---@field cancelIfAlreadyCasted boolean
----@field countdownLength number How far ahead to begin showing reminders.
+---@field countdownLength number How far in advance to begin showing reminders for an assignment.
 ---@field glowTargetFrame boolean Glows the unit frame of the target at the end of the countdown.
 ---@field progressBars ProgressBarPreferences
 ---@field messages MessagePreferences

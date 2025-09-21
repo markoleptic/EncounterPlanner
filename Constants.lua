@@ -113,6 +113,12 @@ Private.constants = {
 	kFormatStringDifficultyIcon = "|T%s:16:16:%d:0:64:64:%d:%d:%d:%d|t",
 	kFormatStringGenericInlineIconWithText = "|T%s:16|t %s",
 	kFormatStringGenericInlineIconWithZoom = "|T%s:16:16:0:0:64:64:5:59:5:59|t",
+	kRolePriority = {
+		["role:healer"] = 1,
+		["role:tank"] = 2,
+		["role:damager"] = 3,
+		[""] = 4,
+	},
 }
 
 local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live

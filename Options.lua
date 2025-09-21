@@ -301,8 +301,6 @@ do
 	local kGenericTimerMultiplier = 0.33
 	local kMessageText = L["Cast spell or something"]
 	local kQuestionMarkIcon = constants.textures.kUnknown
-	local kSecondTimerDurationNoCountdown = 1.2
-	local kThirdTimerDurationNoCountdown = 2.4
 
 	local sIsAddingMessages = false
 	local sTimers = {}
@@ -318,36 +316,31 @@ do
 	local function AddSecondAndThirdMessagesDelayed()
 		sIsAddingMessages = true
 		local reminderPreferences = GetReminderPreferences()
-		if reminderPreferences.messages.showOnlyAtExpiration then
-			AddMessageDelayed(kSecondTimerDurationNoCountdown)
-			AddMessageDelayed(kThirdTimerDurationNoCountdown)
-		else
-			local secondTimerDuration = reminderPreferences.countdownLength * kGenericTimerMultiplier
-			local thirdTimerDuration = secondTimerDuration * 2.0
-			AddMessageDelayed(secondTimerDuration)
-			AddMessageDelayed(thirdTimerDuration)
+		local duration = reminderPreferences.messages.holdDuration
+		if reminderPreferences.messages.showOnlyAtExpiration == false then
+			duration = duration + reminderPreferences.countdownLength
 		end
+		AddMessageDelayed(duration * kGenericTimerMultiplier)
+		AddMessageDelayed(duration * 2 * kGenericTimerMultiplier)
 	end
 
 	function MessageManager:AddMessage()
 		if s.MessageAnchor then
-			local reminderPreferences = GetReminderPreferences()
-			local preferences = reminderPreferences.messages
 			local message = AceGUI:Create("EPReminderMessage")
-			message:Set(preferences, kMessageText, kQuestionMarkIcon)
 			message:SetAnchorMode(true)
 			message:SetCallback("Completed", function(widget)
 				---@cast widget EPReminderMessage
 				if s.MessageAnchor then
 					if not sIsAddingMessages and #s.MessageAnchor.children == 1 then
-						local p = GetReminderPreferences()
-						widget:Start(p.messages.showOnlyAtExpiration and 0 or p.countdownLength)
-						widget.frame:Show()
-						AddSecondAndThirdMessagesDelayed()
+						self:AddMessagesOnTimer()
 					elseif mouseIsDown then
-						local p = GetMessagePreferences()
-						local p1, p2, p3, p4, p5 =
-							ApplyPoint(s.MessageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+						local messagePreferences = GetReminderPreferences().messages
+						local p1, p2, p3, p4, p5 = ApplyPoint(
+							s.MessageAnchor.frame,
+							messagePreferences.point,
+							messagePreferences.relativeTo,
+							messagePreferences.relativePoint
+						)
 						s.MessageAnchor:RemoveChild(widget)
 						if mouseIsDown and p1 then
 							s.MessageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
@@ -357,10 +350,17 @@ do
 					end
 				end
 			end)
+			local reminderPreferences = GetReminderPreferences()
+			local messagesPreferences = reminderPreferences.messages
+			message:Set(messagesPreferences, kMessageText, kQuestionMarkIcon)
 
 			if mouseIsDown then
-				local p = GetMessagePreferences()
-				local p1, p2, p3, p4, p5 = ApplyPoint(s.MessageAnchor.frame, p.point, p.relativeTo, p.relativePoint)
+				local p1, p2, p3, p4, p5 = ApplyPoint(
+					s.MessageAnchor.frame,
+					messagesPreferences.point,
+					messagesPreferences.relativeTo,
+					messagesPreferences.relativePoint
+				)
 				s.MessageAnchor:AddChild(message)
 				if mouseIsDown and p1 then
 					s.MessageAnchor.frame:SetPoint(p1, p2, p3, p4, p5)
@@ -368,7 +368,12 @@ do
 			else
 				s.MessageAnchor:AddChild(message)
 			end
-			message:Start(preferences.showOnlyAtExpiration and 0 or reminderPreferences.countdownLength)
+
+			local countdownDuration = 0
+			if messagesPreferences.showOnlyAtExpiration == false then
+				countdownDuration = reminderPreferences.countdownLength
+			end
+			message:Start(countdownDuration, reminderPreferences.messages.holdDuration)
 
 			if #s.MessageAnchor.children >= 3 then
 				sIsAddingMessages = false
@@ -979,20 +984,40 @@ do
 
 	---@return table<integer, EPSettingOption>
 	local function CreateReminderOptions()
-		local enableReminderOption = function()
+		local function enableReminderOption()
 			return GetReminderPreferences().enabled == true
 		end
-		local enableMessageOption = function()
+		local function enableMessageOption()
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.messages.enabled == true
 		end
-		local enableProgressBarOption = function()
+		local function enableProgressBarOption()
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.progressBars.enabled == true
 		end
-		local enableIconOption = function()
+		local function enableIconOption()
 			local preferences = GetReminderPreferences()
 			return preferences.enabled == true and preferences.icons.enabled == true
+		end
+		local function MaybeUpdateAssignmentEditor()
+			if Private.mainFrame and Private.assignmentEditor then
+				local lastOpenPlan = AddOn.db.profile.lastOpenPlan
+				local plan = AddOn.db.profile.plans[lastOpenPlan]
+				local assignment =
+					utilities.FindAssignmentByUniqueID(plan.assignments, Private.assignmentEditor:GetAssignmentID())
+				if assignment then
+					local encounterID, difficulty = plan.dungeonEncounterID, plan.difficulty
+					interfaceUpdater.UpdateFromAssignment(
+						encounterID,
+						difficulty,
+						assignment,
+						true,
+						false,
+						false,
+						false
+					)
+				end
+			end
 		end
 
 		local kMinIconSize = 10.0
@@ -1003,6 +1028,8 @@ do
 		local kMaxSpacing = 100
 		local kMinCountdownLength = 2.0
 		local kMaxCountdownLength = 30.0
+		local kMinHoldDuration = 0.0
+		local kMaxHoldDuration = 30.0
 		local kMinFontSize = 8
 		local kMaxFontSize = 64
 		local kMaxVolume = 100.0
@@ -1059,20 +1086,6 @@ do
 					end
 				end,
 			} --[[@as EPSettingOption]],
-			{
-				label = L["Hide or Cancel if Spell on Cooldown"],
-				type = "checkBox",
-				description = L["If an assignment is a spell and it already on cooldown, the reminder will not be shown. If the spell is cast during the reminder countdown, it will be cancelled."],
-				enabled = enableReminderOption,
-				get = function()
-					return GetReminderPreferences().cancelIfAlreadyCasted
-				end,
-				set = function(key)
-					if type(key) == "boolean" then
-						GetReminderPreferences().cancelIfAlreadyCasted = key
-					end
-				end,
-			} --[[@as EPSettingOption]],
 			-- {
 			-- 	label = L["Hide or Cancel on Phase Change"],
 			-- 	type = "checkBox",
@@ -1102,9 +1115,24 @@ do
 				end,
 			} --[[@as EPSettingOption]],
 			{
+				label = L["Hide on Spell Cast"],
+				type = "checkBox",
+				description = L["If an assignment has a spell and is cast during the countdown, reminders for it will be hidden."],
+				enabled = enableReminderOption,
+				get = function()
+					return GetReminderPreferences().cancelIfAlreadyCasted
+				end,
+				set = function(key)
+					if type(key) == "boolean" then
+						GetReminderPreferences().cancelIfAlreadyCasted = key
+						MaybeUpdateAssignmentEditor()
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
 				label = L["Countdown Length"],
 				type = "lineEdit",
-				description = L["How far ahead to begin showing reminders."],
+				description = L["How far in advance to begin showing reminders for an assignment."],
 				get = function()
 					return tostring(GetReminderPreferences().countdownLength)
 				end,
@@ -1112,7 +1140,16 @@ do
 					local value = tonumber(key)
 					if value then
 						GetReminderPreferences().countdownLength = value
-						ProgressBarManager:AddProgressBarsOnTimer()
+						if s.MessageAnchor and s.MessageAnchor.frame:IsShown() then
+							ShowAnchor(AnchorType.Message)
+						end
+						if s.ProgressBarAnchor and s.ProgressBarAnchor.frame:IsShown() then
+							ShowAnchor(AnchorType.ProgressBar)
+						end
+						if s.IconAnchor and s.IconAnchor.frame:IsShown() then
+							ShowAnchor(AnchorType.Icon)
+						end
+						MaybeUpdateAssignmentEditor()
 					end
 				end,
 				validate = function(value)
@@ -1168,8 +1205,8 @@ do
 				labels = { L["Expiration Only"], L["With Countdown"] },
 				type = "radioButtonGroup",
 				descriptions = {
-					L["Only shows Messages at the end of the countdown. Messages are displayed for 2 seconds before fading for 1.2 seconds."],
-					L["Messages are displayed for the duration of the countdown, including time, before fading for 1.2 seconds."],
+					L["Messages are not displayed during the countdown."],
+					L["Messages are displayed for the duration of the countdown."],
 				},
 				category = L["Messages"],
 				values = {
@@ -1226,6 +1263,35 @@ do
 					end
 				end,
 				enabled = enableMessageOption,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Message Hold Duration"],
+				type = "lineEdit",
+				description = L["How long to keep showing Messages after the countdown has completed."],
+				category = L["Messages"],
+				get = function()
+					return tostring(GetMessagePreferences().holdDuration)
+				end,
+				set = function(key)
+					local value = tonumber(key)
+					if value then
+						GetMessagePreferences().holdDuration = value
+						MaybeUpdateAssignmentEditor()
+					end
+				end,
+				validate = function(value)
+					local numericValue = tonumber(value)
+					if numericValue then
+						if numericValue > kMinHoldDuration and numericValue < kMaxHoldDuration then
+							return true
+						else
+							return false, Clamp(numericValue, kMinHoldDuration, kMaxHoldDuration)
+						end
+					else
+						return false, GetMessagePreferences().holdDuration
+					end
+				end,
+				enabled = enableReminderOption,
 			} --[[@as EPSettingOption]],
 			{
 				label = L["Show Icon"],

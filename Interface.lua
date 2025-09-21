@@ -366,13 +366,13 @@ do -- Roster Editor
 
 			local previousValue = assigneeTypeDropdown:GetValue()
 			assigneeTypeDropdown:Clear()
-			assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle", false)
+			assigneeTypeDropdown:AddItems(updatedDropdownItems)
 			assigneeTypeDropdown:SetValue(previousValue)
 			assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
 			local previousTargetValue = targetDropdown:GetValue()
 			targetDropdown:Clear()
-			targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+			targetDropdown:AddItems(assigneeDropdownItems)
 			targetDropdown:SetValue(previousTargetValue)
 			targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
@@ -656,6 +656,30 @@ do -- Assignment Editor
 		elseif dataType == AssignmentEditorDataType.Target then
 			assignment.targetName = value
 			updateFields = true
+		elseif dataType == AssignmentEditorDataType.CountdownLength then
+			local numericValue = tonumber(value)
+			if numericValue then
+				assignment.countdownLength = Clamp(numericValue, 2.0, 30.0)
+				local _, seconds = FormatTime(assignment.countdownLength)
+				assignmentEditor.countdownLengthLineEdit:SetText(seconds)
+			else
+				assignment.countdownLength = nil
+				local _, seconds = FormatTime(AddOn.db.profile.preferences.reminder.countdownLength)
+				assignmentEditor.holdDurationLineEdit:SetText(seconds)
+			end
+		elseif dataType == AssignmentEditorDataType.HoldDuration then
+			local numericValue = tonumber(value)
+			if numericValue then
+				assignment.holdDuration = Clamp(numericValue, 0.0, 30.0)
+				local _, seconds = FormatTime(assignment.holdDuration)
+				assignmentEditor.holdDurationLineEdit:SetText(seconds)
+			else
+				assignment.holdDuration = nil
+				local _, seconds = FormatTime(AddOn.db.profile.preferences.reminder.messages.holdDuration)
+				assignmentEditor.holdDurationLineEdit:SetText(seconds)
+			end
+		elseif dataType == AssignmentEditorDataType.CancelIfAlreadyCasted then
+			assignment.cancelIfAlreadyCasted = value
 		end
 
 		interfaceUpdater.UpdateFromAssignment(
@@ -687,6 +711,7 @@ do -- Assignment Editor
 	function Private.CreateAssignmentEditor()
 		local assignmentEditor = AceGUI:Create("EPAssignmentEditor")
 		assignmentEditor.FormatTime = FormatTime
+		assignmentEditor:SetReminderPreferences(AddOn.db.profile.preferences.reminder)
 		assignmentEditor.frame:SetParent(Private.mainFrame.frame)
 		assignmentEditor.frame:SetFrameLevel(kAssignmentEditorFrameLevel)
 		assignmentEditor.frame:SetPoint("TOPRIGHT", Private.mainFrame.frame, "TOPLEFT", -2, 0)
@@ -722,16 +747,16 @@ do -- Assignment Editor
 
 		local updatedDropdownItems, enableIndividualItem =
 			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
-		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems, "EPDropdownItemToggle", false)
+		DevTool:AddData(updatedDropdownItems)
+		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
-		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.targetDropdown:AddItems(assigneeDropdownItems)
 		assignmentEditor.targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
 		local favoritedSpellAssignments = AddOn.db.profile.favoritedSpellAssignments
 		assignmentEditor.spellAssignmentDropdown:AddItems(
-			GetOrCreateSpellAssignmentDropdownItems(true, favoritedSpellAssignments),
-			"EPDropdownItemToggle"
+			GetOrCreateSpellAssignmentDropdownItems(true, favoritedSpellAssignments)
 		)
 		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Recent", #AddOn.db.profile.recentSpellAssignments > 0)
 		assignmentEditor.spellAssignmentDropdown:SetItemEnabled("Favorite", #favoritedSpellAssignments > 0)
@@ -762,12 +787,14 @@ do -- Assignment Editor
 				end
 			end
 		end
-		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems, "EPDropdownItemToggle")
+		assignmentEditor.combatLogEventSpellIDDropdown:AddItems(dropdownItems)
 		for _, abilityID in ipairs(itemsToDisable) do
 			assignmentEditor.combatLogEventSpellIDDropdown:SetItemEnabled(abilityID, false)
 		end
-		assignmentEditor:SetWidth(assignmentEditorWidth)
+		-- assignmentEditor:SetWidth(assignmentEditorWidth)
+		Private.printLayoutStuff = true
 		assignmentEditor:DoLayout()
+		Private.printLayoutStuff = false
 		Private.assignmentEditor = assignmentEditor
 	end
 end
@@ -2191,7 +2218,7 @@ function Private:CreateInterface()
 
 	local bossMenuButton = s.Creator.DropdownMenuButton(L["Boss"], menuButtonHeight)
 	bossMenuButton:SetMultiselect(true)
-	bossMenuButton:AddItems(s.Creator.BossMenuItems(), "EPDropdownItemToggle")
+	bossMenuButton:AddItems(s.Creator.BossMenuItems())
 	bossMenuButton:SetCallback("OnValueChanged", HandleBossMenuButtonClicked)
 
 	local rosterMenuButton = s.Creator.MenuButton(L["Roster"], menuButtonHeight, HandleRosterMenuButtonClicked)

@@ -1766,90 +1766,7 @@ do
 end
 
 do
-	local kRolePriority = {
-		["role:healer"] = 1,
-		["role:tank"] = 2,
-		["role:damager"] = 3,
-		[""] = 4,
-	}
-
-	---@param a integer
-	---@param b integer
-	---@return boolean
-	local function SpellPriority(a, b)
-		if a <= constants.kTextAssignmentSpellID or b <= constants.kTextAssignmentSpellID then
-			return a < b
-		else
-			return GetSpellName(a) < GetSpellName(b)
-		end
-	end
-
-	-- Creates a Timeline Assignment comparator function.
-	---@param roster table<string, RosterEntry> Roster associated with the assignments.
-	---@param assignmentSortType AssignmentSortType Sort method.
-	---@return fun(a:TimelineAssignment, b:TimelineAssignment):boolean
-	local function CompareAssignments(roster, assignmentSortType)
-		---@param a TimelineAssignment
-		---@param b TimelineAssignment
-		return function(a, b)
-			local assigneeA, assigneeB = a.assignment.assignee, b.assignment.assignee
-			local spellIDA, spellIDB = a.assignment.spellID, b.assignment.spellID
-			if assignmentSortType == "Alphabetical" then -- Assignee > Spell Name > Start Time
-				if assigneeA == assigneeB then
-					if spellIDA == spellIDB then
-						return a.startTime < b.startTime
-					else
-						return SpellPriority(spellIDA, spellIDB)
-					end
-				else
-					return assigneeA < assigneeB
-				end
-			elseif assignmentSortType == "First Appearance" then -- Start Time > Assignee > Spell Name
-				if a.startTime == b.startTime then
-					if assigneeA == assigneeB then
-						return SpellPriority(spellIDA, spellIDB)
-					else
-						return assigneeA < assigneeB
-					end
-				else
-					return a.startTime < b.startTime
-				end
-			elseif assignmentSortType:match("^Role") then
-				local rolePriorityA, rolePriorityB = kRolePriority[""], kRolePriority[""]
-				if roster[assigneeA] and roster[assigneeB] then
-					rolePriorityA, rolePriorityB =
-						kRolePriority[roster[assigneeA].role], kRolePriority[roster[assigneeB].role]
-				end
-				if rolePriorityA == rolePriorityB then
-					if assignmentSortType == "Role > Alphabetical" then -- Role > Assignee > Spell Name > Start Time
-						if assigneeA == assigneeB then
-							if spellIDA == spellIDB then
-								return a.startTime < b.startTime
-							else
-								return SpellPriority(spellIDA, spellIDB)
-							end
-						else
-							return assigneeA < assigneeB
-						end
-					else -- Role > Start Time > Assignee > Spell Name
-						if a.startTime == b.startTime then
-							if assigneeA == assigneeB then
-								return SpellPriority(spellIDA, spellIDB)
-							else
-								return assigneeA < assigneeB
-							end
-						else
-							return a.startTime < b.startTime
-						end
-					end
-				else
-					return rolePriorityA < rolePriorityB
-				end
-			else
-				return false
-			end
-		end
-	end
+	local kRolePriority = constants.kRolePriority
 
 	-- Creates and sorts a table of TimelineAssignments and sets the start time used for each assignment on the
 	-- timeline. Sorts assignments based on the assignmentSortType.
@@ -1868,7 +1785,7 @@ do
 	)
 		local timelineAssignments =
 			Utilities.CreateTimelineAssignments(plan, cooldownAndChargeOverrides, onlyShowMe, preserveMessageLog)
-		sort(timelineAssignments, CompareAssignments(plan.roster, assignmentSortType))
+		sort(timelineAssignments, assignmentUtilities.CompareAssignments(plan.roster, assignmentSortType))
 		return timelineAssignments
 	end
 
@@ -3122,33 +3039,6 @@ do
 end
 
 do
-	---@param a TimedAssignment|CombatLogEventAssignment
-	---@param b TimedAssignment|CombatLogEventAssignment
-	---@return boolean
-	local function AssignmentsEqual(a, b)
-		local metatableA, metatableB = getmetatable(a), getmetatable(b)
-		if metatableA ~= metatableB then
-			return false
-		end
-		if metatableA == TimedAssignment then
-			return a.assignee == b.assignee
-				and a.spellID == b.spellID
-				and a.time == b.time
-				and a.targetName == b.targetName
-				and a.text == b.text
-		elseif metatableA == CombatLogEventAssignment then
-			return a.assignee == b.assignee
-				and a.spellID == b.spellID
-				and a.time == b.time
-				and a.combatLogEventSpellID == b.combatLogEventSpellID
-				and a.combatLogEventType == b.combatLogEventType
-				and a.spellCount == b.spellCount
-				and a.targetName == b.targetName
-				and a.text == b.text
-		end
-		return true
-	end
-
 	local ShallowCopy = function(tbl)
 		local copy = {}
 		for k, v in pairs(tbl) do
@@ -3309,7 +3199,7 @@ do
 		---@type PlanDiff
 		local diff = {
 			assignments = Utilities.CoalesceChanges(
-				Utilities.MyersDiff(oldPlan.assignments, newPlan.assignments, AssignmentsEqual)
+				Utilities.MyersDiff(oldPlan.assignments, newPlan.assignments, assignmentUtilities.AssignmentsEqual)
 			),
 			roster = {},
 			content = Utilities.CoalesceChanges(Utilities.MyersDiff(oldPlan.content, newPlan.content, function(a, b)

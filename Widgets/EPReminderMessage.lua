@@ -40,18 +40,27 @@ local k = {
 k.SlightlyUnderSecondsInMinute = k.SecondsInMinute - k.TimeThreshold
 k.SlightlyUnderTenSeconds = 10.0 - k.TimeThreshold
 
+---@enum TimeThreshold
+local TimeThreshold = {
+	None = 0,
+	OverHour = 1,
+	OverMinute = 2,
+	OverTenSeconds = 3,
+	UnderTenSeconds = 4,
+}
+
 ---@param self EPReminderMessage
 local function UpdateFrameWidth(self)
 	if self.showIcon then
-		if self.remaining > 0 then
-			local textWidth = self.text:GetWidth() + self.duration:GetWidth()
+		if self.countdownDuration > 0 then
+			local textWidth = self.text:GetWidth() + self.durationText:GetWidth()
 			self.frame:SetWidth(self.frame:GetHeight() + textWidth + self.horizontalTextPadding * 3)
 		else
 			self.frame:SetWidth(self.frame:GetHeight() + self.text:GetWidth() + self.horizontalTextPadding * 2)
 		end
 	else
-		if self.remaining > 0 then
-			local textWidth = self.text:GetWidth() + self.duration:GetWidth()
+		if self.countdownDuration > 0 then
+			local textWidth = self.text:GetWidth() + self.durationText:GetWidth()
 			self.frame:SetWidth(textWidth + self.horizontalTextPadding * 3)
 		else
 			self.frame:SetWidth(self.text:GetWidth() + self.horizontalTextPadding * 2)
@@ -63,16 +72,16 @@ end
 local function UpdateIconAndTextAnchors(self)
 	self.icon:ClearAllPoints()
 	self.text:ClearAllPoints()
-	self.duration:ClearAllPoints()
+	self.durationText:ClearAllPoints()
 
 	local lineHeight = self.text:GetLineHeight()
-	local showDuration = self.remaining > 0
+	local showDuration = self.countdownDuration > 0
 	local hasIcon = self.showIcon
 	local horizontalPadding = self.horizontalTextPadding
 
 	self.frame:SetHeight(lineHeight + horizontalPadding * 2)
 
-	local durationWidth = showDuration and self.duration:GetWidth() or 0
+	local durationWidth = showDuration and self.durationText:GetWidth() or 0
 	local offset = 0
 	if hasIcon then
 		if showDuration then
@@ -97,10 +106,10 @@ local function UpdateIconAndTextAnchors(self)
 	end
 
 	if showDuration then
-		self.duration:SetPoint("LEFT", self.text, "RIGHT", horizontalPadding, 0)
-		self.duration:Show()
+		self.durationText:SetPoint("LEFT", self.text, "RIGHT", horizontalPadding, 0)
+		self.durationText:Show()
 	else
-		self.duration:Hide()
+		self.durationText:Hide()
 	end
 end
 
@@ -115,36 +124,36 @@ repeater:SetDuration(k.TimerTickRate)
 local function SharedMessageUpdate()
 	local currentTime = GetTime()
 	for message in pairs(activeMessages) do
-		if currentTime >= message.expirationTime then
+		if currentTime >= message.countdownDurationEndTime then
 			activeMessages[message] = nil
-			message.currentThreshold = ""
-			message.remaining = 0
-			message.expirationTime = 0
+			message.currentThreshold = TimeThreshold.None
+			message.countdownDuration = 0
+			message.countdownDurationEndTime = 0
 			UpdateIconAndTextAnchors(message)
 			UpdateFrameWidth(message)
 		else
-			local relativeTime = message.expirationTime - currentTime
-			message.remaining = relativeTime
+			local relativeTime = message.countdownDurationEndTime - currentTime
+			message.countdownDuration = relativeTime
 			if relativeTime <= k.SlightlyUnderTenSeconds then
-				message.duration:SetFormattedText(k.LessThanTenSecondsFormat, relativeTime)
-				if message.currentThreshold ~= "UnderTenSeconds" then
-					message.currentThreshold = "UnderTenSeconds"
+				message.durationText:SetFormattedText(k.LessThanTenSecondsFormat, relativeTime)
+				if message.currentThreshold ~= TimeThreshold.UnderTenSeconds then
+					message.currentThreshold = TimeThreshold.UnderTenSeconds
 					UpdateIconAndTextAnchors(message)
 					UpdateFrameWidth(message)
 				end
 			elseif relativeTime <= k.SlightlyUnderSecondsInMinute then
-				message.duration:SetFormattedText(k.GreaterThanTenSecondsFormat, relativeTime)
-				if message.currentThreshold ~= "OverTenSeconds" then
-					message.currentThreshold = "OverTenSeconds"
+				message.durationText:SetFormattedText(k.GreaterThanTenSecondsFormat, relativeTime)
+				if message.currentThreshold ~= TimeThreshold.OverTenSeconds then
+					message.currentThreshold = TimeThreshold.OverTenSeconds
 					UpdateIconAndTextAnchors(message)
 					UpdateFrameWidth(message)
 				end
 			else
 				local minutes = floor(relativeTime / k.SecondsInMinute)
 				local seconds = relativeTime - (minutes * k.SecondsInMinute)
-				message.duration:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
-				if message.currentThreshold ~= "OverMinute" then
-					message.currentThreshold = "OverMinute"
+				message.durationText:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
+				if message.currentThreshold ~= TimeThreshold.OverMinute then
+					message.currentThreshold = TimeThreshold.OverMinute
 					UpdateIconAndTextAnchors(message)
 					UpdateFrameWidth(message)
 				end
@@ -167,9 +176,9 @@ end
 local function OnRelease(self)
 	self.iconAnimationGroup:Stop()
 	self.textAnimationGroup:Stop()
-	self.remaining = 0
-	self.expirationTime = 0
-	self.currentThreshold = ""
+	self.countdownDuration = 0
+	self.countdownDurationEndTime = 0
+	self.currentThreshold = TimeThreshold.None
 	self.running = false
 	self:SetAnchorMode(false)
 	self.icon:SetTexture(nil)
@@ -200,37 +209,40 @@ local function SetText(self, text, paddingX, fontFile, size, flags)
 	self.horizontalTextPadding = paddingX or self.horizontalTextPadding
 	if fontFile and size then
 		self.text:SetFont(fontFile, size, flags)
-		self.duration:SetFont(fontFile, size, flags)
+		self.durationText:SetFont(fontFile, size, flags)
 	end
 	UpdateIconAndTextAnchors(self)
 end
 
 ---@param self EPReminderMessage
----@param duration number
-local function SetDuration(self, duration)
-	self.remaining = duration
-	if duration == 0.0 then
-		self.duration:SetText("")
-		self.currentThreshold = ""
-	elseif duration <= k.SlightlyUnderTenSeconds then
-		self.currentThreshold = "UnderTenSeconds"
-		self.duration:SetFormattedText(k.LessThanTenSecondsFormat, duration)
-	elseif duration <= k.SlightlyUnderSecondsInMinute then
-		self.currentThreshold = "OverTenSeconds"
-		self.duration:SetFormattedText(k.GreaterThanTenSecondsFormat, duration)
+---@param countdownDuration number
+---@param holdDuration number
+local function SetDuration(self, countdownDuration, holdDuration)
+	self.countdownDuration = countdownDuration
+	self.holdDuration = holdDuration
+	if countdownDuration == 0.0 then
+		self.durationText:SetText("")
+		self.currentThreshold = TimeThreshold.None
+	elseif countdownDuration <= k.SlightlyUnderTenSeconds then
+		self.currentThreshold = TimeThreshold.UnderTenSeconds
+		self.durationText:SetFormattedText(k.LessThanTenSecondsFormat, countdownDuration)
+	elseif countdownDuration <= k.SlightlyUnderSecondsInMinute then
+		self.currentThreshold = TimeThreshold.OverTenSeconds
+		self.durationText:SetFormattedText(k.GreaterThanTenSecondsFormat, countdownDuration)
 	else
-		local minutes = floor(duration / k.SecondsInMinute)
-		local seconds = duration - (minutes * k.SecondsInMinute)
-		self.duration:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
-		self.currentThreshold = "OverMinute"
+		local minutes = floor(countdownDuration / k.SecondsInMinute)
+		local seconds = countdownDuration - (minutes * k.SecondsInMinute)
+		self.durationText:SetFormattedText(k.GreaterThanMinuteFormat, minutes, seconds)
+		self.currentThreshold = TimeThreshold.OverMinute
 	end
 	UpdateIconAndTextAnchors(self)
 	UpdateFrameWidth(self)
 end
 
 ---@param self EPReminderMessage
----@param duration number
-local function Start(self, duration)
+---@param countdownDuration number
+---@param holdDuration number
+local function Start(self, countdownDuration, holdDuration)
 	if self.running then
 		return
 	end
@@ -239,18 +251,23 @@ local function Start(self, duration)
 	self.textAnimationGroup:Stop()
 
 	self.text:Show()
-	SetDuration(self, duration)
+	SetDuration(self, countdownDuration, holdDuration)
 
-	local startDelay = duration == 0 and k.DefaultDisplayTime or self.remaining
-	self.textFade:SetStartDelay(startDelay)
-	self.iconFade:SetStartDelay(startDelay)
+	local fadeStartDelay = 0.0
+	if self.countdownDuration == 0.0 then
+		fadeStartDelay = self.holdDuration
+	else
+		fadeStartDelay = self.countdownDuration + self.holdDuration
+	end
+
+	self.textFade:SetStartDelay(fadeStartDelay)
+	self.iconFade:SetStartDelay(fadeStartDelay)
 
 	self.iconAnimationGroup:Play()
 	self.textAnimationGroup:Play()
 
-	if duration > 0.0 then
-		local time = self.remaining
-		self.expirationTime = GetTime() + time
+	if self.countdownDuration > 0.0 then
+		self.countdownDurationEndTime = GetTime() + self.countdownDuration
 		activeMessages[self] = true
 		if not sharedUpdater:IsPlaying() then
 			sharedUpdater:Play()
@@ -267,7 +284,7 @@ end
 local function SetFont(self, fontFile, size, flags)
 	if fontFile then
 		self.text:SetFont(fontFile, size, flags)
-		self.duration:SetFont(fontFile, size, flags)
+		self.durationText:SetFont(fontFile, size, flags)
 		UpdateIconAndTextAnchors(self)
 	end
 end
@@ -279,7 +296,7 @@ end
 ---@param a number
 local function SetTextColor(self, r, g, b, a)
 	self.text:SetTextColor(r, g, b, a)
-	self.duration:SetTextColor(r, g, b, a)
+	self.durationText:SetTextColor(r, g, b, a)
 end
 
 ---@param self EPReminderMessage
@@ -306,12 +323,12 @@ local function Set(self, preferences, text, icon)
 	self.text:SetText(text or "")
 	if preferences.font and preferences.fontSize then
 		self.text:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
-		self.duration:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
+		self.durationText:SetFont(preferences.font, preferences.fontSize, preferences.fontOutline)
 	end
 	self.frame:SetAlpha(preferences.alpha)
 	local r, g, b, a = unpack(preferences.textColor)
 	self.text:SetTextColor(r, g, b, a)
-	self.duration:SetTextColor(r, g, b, a)
+	self.durationText:SetTextColor(r, g, b, a)
 	if icon and preferences.showIcon == true then
 		self.showIcon = true
 		self.icon:SetTexture(icon)
@@ -336,9 +353,9 @@ local function Constructor()
 	text:SetJustifyH("LEFT")
 	text:SetWordWrap(false)
 
-	local duration = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY", "GameFontNormal")
-	duration:SetJustifyH("RIGHT")
-	duration:Hide()
+	local durationText = frame:CreateFontString(Type .. "DurationText" .. count, "OVERLAY", "GameFontNormal")
+	durationText:SetJustifyH("RIGHT")
+	durationText:Hide()
 
 	local textAnimationGroup = text:CreateAnimationGroup()
 	local textFade = textAnimationGroup:CreateAnimation("Alpha")
@@ -357,10 +374,10 @@ local function Constructor()
 	---@class EPReminderMessage : AceGUIWidget
 	---@field showIcon boolean
 	---@field horizontalTextPadding number
-	---@field remaining number A value of 0 indicates not to show the duration text.
-	---@field expirationTime number
-	---@field currentThreshold "OverHour"|"OverMinute"|"OverTenSeconds"|"UnderTenSeconds"|""
-	---@field running boolean
+	---@field countdownDuration number A value of 0 indicates not to show the duration text.
+	---@field holdDuration number
+	---@field countdownDurationEndTime number
+	---@field currentThreshold TimeThreshold
 	---@field parent EPContainer
 	local widget = {
 		OnAcquire = OnAcquire,
@@ -379,12 +396,13 @@ local function Constructor()
 		count = count,
 		icon = icon,
 		text = text,
-		duration = duration,
+		durationText = durationText,
 		showIcon = false,
 		horizontalTextPadding = k.DefaultTextPadding,
-		remaining = 0,
-		expirationTime = 0,
-		currentThreshold = "",
+		countdownDuration = 0,
+		holdDuration = 0,
+		countdownDurationEndTime = 0,
+		currentThreshold = TimeThreshold.None,
 		running = false,
 		textFade = textFade,
 		iconFade = iconFade,
