@@ -21,6 +21,7 @@
     <Script file="EPMessageBox.lua" />
     <Script file="EPDropdownItemToggle.lua" />
     <Script file="EPDropdown.lua" />
+    <Script file="EPExpanderHeader.lua" />
     <Script file="EPAbilityEntry.lua" />
     <Script file="EPCheckBox.lua" />
     <Script file="EPStatusBar.lua" />

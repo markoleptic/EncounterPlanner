@@ -42,6 +42,7 @@
 ---| EPMultiLineText
 ---| EPWindowBar
 ---| EPNewTemplateDialog
+---| EPExpanderHeader
 
 ---@alias EPContainerType
 ---| EPAssignmentEditor
@@ -54,6 +55,7 @@
 local AceGUI = {}
 
 ---@class AceGUIWidget
+---@field relWidth? number
 local AceGUIWidget = {}
 
 ---@class AceGUIContainer : AceGUIWidget
@@ -188,3 +190,5 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field sortAscending? boolean
 ---@field alignment? "center"
 ---@field orientation? "vertical"|"horizontal"
+---@field ignoreFromLayout? boolean
+---@field obj EPWidgetType
