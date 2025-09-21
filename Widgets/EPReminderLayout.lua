@@ -2,9 +2,9 @@ local Type = "EPReminderLayout"
 
 local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler
-local xpcall = xpcall
 local max = math.max
-local defaultSpacing = 10
+local xpcall = xpcall
+local kDefaultSpacing = 10
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -17,7 +17,9 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
-	local paddingX, paddingY = defaultSpacing, defaultSpacing
+	---@cast content EPContainerContentFrame
+	---@cast children table<integer, EPWidgetType>
+	local paddingX, paddingY = kDefaultSpacing, kDefaultSpacing
 	if content.spacing then
 		paddingX = content.spacing.x
 		paddingY = content.spacing.y

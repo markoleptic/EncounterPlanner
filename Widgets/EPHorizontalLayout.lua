@@ -1,12 +1,15 @@
 local Type = "EPHorizontalLayout"
 
+---@diagnostic disable: invisible
+
 local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler
-local xpcall = xpcall
 local max = math.max
 local pairs = pairs
 local tinsert = table.insert
-local defaultSpacing = 10
+local xpcall = xpcall
+
+local kDefaultSpacing = 10
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -19,34 +22,35 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
+	---@cast content EPContainerContentFrame
+	---@cast children table<integer, EPWidgetType|EPContainerType>
 	local contentWidth = content:GetWidth()
 	local totalWidth = 0
 	local maxHeight = 0
-	local paddingX = defaultSpacing
-	local alignment = "default"
+	local paddingX = kDefaultSpacing
 	if content.spacing and content.spacing.x then
 		paddingX = content.spacing.x
 	end
-	if content.alignment then
-		alignment = content.alignment
-	end
 
+	---@type table<integer, integer>
 	local spacers = {}
 	local childCount = #children
 
-	if alignment == "center" then
+	if content.alignment and content.alignment == "center" then
 		for i = 1, childCount do
 			local child = children[i]
 			local frame = child.frame
 			frame:ClearAllPoints()
 			frame:Show()
 
-			if child.type == "EPSpacer" and child.fillSpace then
+			if child.content and child.content.ignoreFromLayout == true then
+				frame:Hide()
+			elseif child.type == "EPSpacer" and child.fillSpace then
 				tinsert(spacers, i)
 			else
 				if i > 1 then
 					if i == childCount then
-						if child.selfAlignment == "right" then
+						if child.selfAlignment and child.selfAlignment == "right" then
 							frame:SetPoint("RIGHT", content, "RIGHT")
 						else
 							frame:SetPoint("RIGHT", content, "RIGHT")
@@ -84,7 +88,9 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:ClearAllPoints()
 			frame:Show()
 
-			if child.type == "EPSpacer" and child.fillSpace then
+			if child.content and child.content.ignoreFromLayout == true then
+				frame:Hide()
+			elseif child.type == "EPSpacer" and child.fillSpace then
 				tinsert(spacers, i)
 			else
 				if i > 1 then
@@ -129,18 +135,22 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		local splitWidth = remainingWidth / #spacers
 
 		for _, i in pairs(spacers) do
+			---@type EPSpacer
 			local spacer = children[i]
-			spacer.frame:ClearAllPoints()
+			local frame = spacer.frame
 			if remainingWidth > 1 then
-				spacer.frame:SetWidth(splitWidth)
+				frame:SetWidth(splitWidth)
 			end
 			if i == 1 then
-				spacer.frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
 			else
-				spacer.frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT")
+				frame:SetPoint("TOPLEFT", children[i - 1].frame, "TOPRIGHT")
 			end
 			if i ~= childCount then
-				children[i + 1].frame:SetPoint("TOPLEFT", spacer.frame, "TOPRIGHT")
+				children[i + 1].frame:SetPoint("TOPLEFT", frame, "TOPRIGHT")
+			end
+			if spacer.height == "fill" then
+				frame:SetPoint("BOTTOM", content, "BOTTOM")
 			end
 		end
 	end

@@ -92,6 +92,12 @@ local function SetSortAscending(self, ascending)
 end
 
 ---@param self EPAnchorContainer|EPContainer
+---@param ignore boolean
+local function SetIgnoreFromLayout(self, ignore)
+	self.content.ignoreFromLayout = ignore
+end
+
+---@param self EPAnchorContainer|EPContainer
 ---@param backdropInfo backdropInfo
 ---@param backdropColor table<number>?
 ---@param backdropBorderColor table<number>?
@@ -194,6 +200,7 @@ do
 		self.content.sortAscending = nil
 		self.content.spacing = nil
 		self.content.orientation = nil
+		self.content.ignoreFromLayout = nil
 		self.selfAlignment = nil
 	end
 
@@ -222,6 +229,7 @@ do
 			SetSelfAlignment = SetSelfAlignment,
 			SetOrientation = SetOrientation,
 			SetSortAscending = SetSortAscending,
+			SetIgnoreFromLayout = SetIgnoreFromLayout,
 			InsertChildren = InsertChildren,
 			AddChildNoDoLayout = AddChildNoDoLayout,
 			RemoveChild = RemoveChild,
@@ -290,6 +298,7 @@ do
 		self.content.sortAscending = nil
 		self.content.spacing = nil
 		self.content.orientation = nil
+		self.content.ignoreFromLayout = nil
 		self.selfAlignment = nil
 	end
 
@@ -381,7 +390,7 @@ do
 		---@class EPAnchorContainer : AceGUIContainer
 		---@field content EPContainerContentFrame
 		---@field children table<AceGUIWidget>
-		---@field selfAlignment string|nil
+		---@field selfAlignment "topRight"|"center"|nil
 		---@field padding {left: number, top: number, right: number, bottom: number}
 		---@field anchorMode boolean|nil
 		local widget = {
@@ -393,6 +402,7 @@ do
 			SetSelfAlignment = SetSelfAlignment,
 			SetOrientation = SetOrientation,
 			SetSortAscending = SetSortAscending,
+			SetIgnoreFromLayout = SetIgnoreFromLayout,
 			InsertChildren = InsertChildren,
 			AddChildNoDoLayout = AddChildNoDoLayout,
 			RemoveChild = RemoveChild,

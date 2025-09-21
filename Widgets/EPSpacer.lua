@@ -33,7 +33,7 @@ local function Constructor()
 	frame:Hide()
 
 	---@class EPSpacer : AceGUIWidget
-	---@field fillSpace boolean
+	---@field fillSpace boolean If true, spacer will consume remaining space of the layout evenly.
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,

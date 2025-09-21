@@ -1,11 +1,15 @@
 local Type = "EPVerticalLayout"
 
+---@diagnostic disable: invisible
+
 local AceGUI = LibStub("AceGUI-3.0")
 local geterrorhandler = geterrorhandler
-local xpcall = xpcall
+local ipairs = ipairs
 local max = math.max
 local tinsert = table.insert
-local defaultSpacing = 10
+local xpcall = xpcall
+
+local kDefaultSpacing = 10
 
 local function errorhandler(err)
 	return geterrorhandler()(err)
@@ -18,18 +22,21 @@ local function SafeCall(func, ...)
 end
 
 AceGUI:RegisterLayout(Type, function(content, children)
+	---@cast content EPContainerContentFrame
+	---@cast children table<integer, EPWidgetType|EPContainerType>
 	local totalHeight = 0
 	local contentWidth = content:GetWidth() or 0
 	local maxWidth = 0
-	local paddingY = defaultSpacing
+	local paddingY = kDefaultSpacing
 	if content.spacing and content.spacing.y then
 		paddingY = content.spacing.y
 	end
 
+	---@type table<integer, integer>
 	local spacers = {}
 	local childCount = #children
 
-	if content.alignment == "center" then
+	if content.alignment and content.alignment == "center" then
 		for i = 1, childCount do
 			local child = children[i]
 			local frame = child.frame
@@ -73,7 +80,9 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:ClearAllPoints()
 			frame:Show()
 
-			if child.type == "EPSpacer" and child.fillSpace then
+			if child.content and child.content.ignoreFromLayout == true then
+				frame:Hide()
+			elseif child.type == "EPSpacer" and child.fillSpace then
 				tinsert(spacers, i)
 			else
 				if i > 1 then
@@ -110,20 +119,24 @@ AceGUI:RegisterLayout(Type, function(content, children)
 		remainingHeight = remainingHeight - totalHeight
 		local splitHeight = remainingHeight / #spacers
 
-		for _, i in pairs(spacers) do
+		for _, i in ipairs(spacers) do
+			---@type EPSpacer
 			local spacer = children[i]
-			spacer.frame:ClearAllPoints()
+			local frame = spacer.frame
 			if remainingHeight > 1 then
-				spacer.frame:SetHeight(splitHeight)
+				frame:SetHeight(splitHeight)
 			end
 			if i == 1 then
-				spacer.frame:SetPoint("TOPLEFT", content, "TOPLEFT")
+				frame:SetPoint("TOPLEFT", content, "TOPLEFT")
 			else
-				spacer.frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT")
+				frame:SetPoint("TOPLEFT", children[i - 1].frame, "BOTTOMLEFT")
 			end
 			if i ~= childCount then
-				children[i + 1].frame:SetPoint("TOPLEFT", spacer.frame, "BOTTOMLEFT")
+				children[i + 1].frame:SetPoint("TOPLEFT", frame, "BOTTOMLEFT")
 			end
+			-- if spacer.width == "fill" then
+			-- 	frame:SetPoint("RIGHT", content, "RIGHT")
+			-- end
 		end
 	end
 
