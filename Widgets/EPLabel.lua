@@ -213,8 +213,6 @@ local function Constructor()
 	if fPath then
 		text:SetFont(fPath, k.DefaultFontHeight)
 	end
-	text:SetPoint("LEFT", frame, "LEFT", k.DefaultTextPadding.x, 0)
-	text:SetPoint("RIGHT", frame, "RIGHT", k.DefaultTextPadding.x, 0)
 	text:SetWordWrap(false)
 
 	---@class EPLabel : AceGUIWidget
