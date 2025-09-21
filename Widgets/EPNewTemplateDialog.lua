@@ -176,7 +176,7 @@ local function SetAssigneeDropdownItems(self, items)
 	for _, data in ipairs(items) do
 		selectedItems[data.itemValue] = true
 	end
-	self.assigneeDropdown:AddItems(items, "EPDropdownItemToggle")
+	self.assigneeDropdown:AddItems(items)
 	self.assigneeDropdown:SetSelectedItems(selectedItems)
 end
 

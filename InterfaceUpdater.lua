@@ -723,7 +723,7 @@ do
 						sort(dropdownData.dropdownItemMenuData, CreateDropdownItemDataPlanSorter(dropdownData))
 					end
 				end
-				planDropdown:AddItems(instanceDropdownData, "EPDropdownItemToggle")
+				planDropdown:AddItems(instanceDropdownData)
 				planDropdown:SetValue(lastOpenPlan)
 				planDropdown:SetText(lastOpenPlan)
 			end

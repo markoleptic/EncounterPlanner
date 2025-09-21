@@ -78,7 +78,7 @@ end
 ---@param self EPRosterEntry
 ---@param dropdownItemData table<integer, DropdownItemData>
 local function PopulateClassDropdown(self, dropdownItemData)
-	self.classDropdown:AddItems(dropdownItemData, "EPDropdownItemToggle")
+	self.classDropdown:AddItems(dropdownItemData)
 end
 
 ---@param self EPRosterEntry
@@ -96,7 +96,7 @@ local function PopulateRoleDropdown(self, roles)
 		items[#items + 1] = { itemValue = "role:damager", text = L["Damager"] }
 	end
 	if #items > 0 then
-		self.roleDropdown:AddItems(items, "EPDropdownItemToggle")
+		self.roleDropdown:AddItems(items)
 	end
 end
 

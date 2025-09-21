@@ -1236,7 +1236,7 @@ local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIn
 	elseif type(option.values) == "function" then
 		values = option.values()
 	end
-	dropdown:AddItems(values, "EPDropdownItemToggle")
+	dropdown:AddItems(values, "EPDropdownItemToggle", option.neverShowItemsAsSelected)
 	dropdown:SetValue(option.get())
 
 	local button = AceGUI:Create("EPButton")
@@ -1607,7 +1607,7 @@ local function PopulateActiveTab(self, tab)
 		cooldownOverrideObject.option = self.optionTabs[tab][1]
 		cooldownOverrideObject.cooldownAndChargeOverrides = {} ---@type table<integer, CooldownAndChargeOverride>
 		cooldownOverrideObject.realDropdown = AceGUI:Create("EPDropdown")
-		cooldownOverrideObject.realDropdown:AddItems(self.spellDropdownItems, "EPDropdownItemToggle")
+		cooldownOverrideObject.realDropdown:AddItems(self.spellDropdownItems)
 		cooldownOverrideObject.realDropdown.frame:Hide()
 		cooldownOverrideObject.CreateCooldownOverrideTab(self.optionTabs[tab][1])
 

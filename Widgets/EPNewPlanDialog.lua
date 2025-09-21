@@ -118,7 +118,7 @@ local function OnAcquire(self)
 	self.difficultyDropdown:SetWidth(k.DropdownWidth)
 	self.difficultyDropdown:SetTextFontSize(k.DefaultFontSize)
 	self.difficultyDropdown:SetItemTextFontSize(k.DefaultFontSize)
-	self.difficultyDropdown:AddItems(k.DifficultyDropdownItemData, "EPDropdownItemToggle")
+	self.difficultyDropdown:AddItems(k.DifficultyDropdownItemData)
 
 	local planNameContainer = AceGUI:Create("EPContainer")
 	planNameContainer:SetLayout("EPHorizontalLayout")
@@ -200,7 +200,7 @@ end
 ---@param items table<integer, string|DropdownItemData>
 ---@param valueToSelect string|integer
 local function SetBossDropdownItems(self, items, valueToSelect)
-	self.bossDropdown:AddItems(items, "EPDropdownItemToggle")
+	self.bossDropdown:AddItems(items)
 	self.bossDropdown:SetValue(valueToSelect)
 end
 

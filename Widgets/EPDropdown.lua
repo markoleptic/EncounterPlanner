@@ -916,7 +916,8 @@ do
 	---@param itemData DropdownItemData
 	---@param itemType "EPDropdownItemMenu"|"EPDropdownItemToggle" type of item to create
 	---@param index? integer
-	local function AddItem(self, itemData, itemType, index)
+	---@param notSelectable boolean? If true, items will not be selectable. If unspecified, uses value provided for each item.
+	local function AddItem(self, itemData, itemType, index, notSelectable)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -942,7 +943,7 @@ do
 				HandleMenuItemValueChanged(self, widget, selected, value, owningDropdownMenuItem)
 			end)
 			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
-			dropdownMenuItem:SetNeverShowItemsAsSelected(itemData.notSelectable)
+			dropdownMenuItem:SetNeverShowItemsAsSelected(notSelectable)
 			self.pullout:InsertItem(dropdownMenuItem, index)
 			if itemData.dropdownItemMenuData then
 				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, self)
@@ -965,7 +966,7 @@ do
 					itemData.customTexture,
 					itemData.customTextureVertexColor,
 					itemData.customTextureSelectable,
-					itemData.notSelectable == true
+					notSelectable == true
 				)
 			end
 			if itemData.customTextureSelectable then
@@ -979,7 +980,7 @@ do
 					HandleItemValueChanged(self, widget, selected)
 				end)
 			end
-			if itemData.notSelectable == true then
+			if notSelectable == true then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
 			end
 			self.pullout:InsertItem(dropdownItemToggle, index)
@@ -1006,11 +1007,12 @@ do
 	---@param self EPDropdown
 	---@param dropdownItemData table<integer, DropdownItemData|string> table describing items to add
 	-- The type of item to create for direct children of the dropdown. Ignored if any top level itemData has child data
-	---@param leafType "EPDropdownItemMenu"|"EPDropdownItemToggle"
+	---@param leafType "EPDropdownItemMenu"|"EPDropdownItemToggle"?
 	---@param notSelectable boolean? If true, items will not be selectable. If unspecified, uses value provided for each item.
 	---@param startIndex integer?
 	local function AddItems(self, dropdownItemData, leafType, notSelectable, startIndex)
 		local currentIndex = startIndex
+		leafType = leafType or "EPDropdownItemToggle"
 		for index, itemData in ipairs(dropdownItemData) do
 			if type(itemData) == "string" then
 				self:AddItem({ itemValue = index, text = itemData }, leafType, currentIndex)
