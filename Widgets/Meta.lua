@@ -120,7 +120,7 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field timelineAssignment TimelineAssignment|nil
 ---@field spellID integer
 ---@field selectionType AssignmentSelectionType
----@field uniqueAssignmentID integer
+---@field uniqueAssignmentID string
 ---@field chargeMarker Texture|nil
 
 ---@class FakeAssignmentFrame : AssignmentFrame

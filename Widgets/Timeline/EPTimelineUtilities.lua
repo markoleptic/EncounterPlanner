@@ -52,7 +52,7 @@ function EPTimelineUtilities.ConvertTimeToTimelineOffset(time, timelineFrameWidt
 end
 
 ---@param assignmentFrames table<integer, AssignmentFrame>
----@param uniqueID integer
+---@param uniqueID string
 ---@return AssignmentFrame|nil
 function EPTimelineUtilities.FindAssignmentFrame(assignmentFrames, uniqueID)
 	for _, frame in ipairs(assignmentFrames) do
@@ -63,13 +63,13 @@ function EPTimelineUtilities.FindAssignmentFrame(assignmentFrames, uniqueID)
 	return nil
 end
 
----@param uniqueID integer
+---@param uniqueID string
 ---@return TimelineAssignment|nil
 ---@return integer|nil
 function EPTimelineUtilities.FindTimelineAssignment(uniqueID)
 	if s.TimelineAssignments then
 		for index, timelineAssignment in ipairs(s.TimelineAssignments) do
-			if timelineAssignment.assignment.uniqueID == uniqueID then
+			if timelineAssignment.assignment.ID == uniqueID then
 				return timelineAssignment, index
 			end
 		end
@@ -201,7 +201,7 @@ function EPTimelineUtilities.UpdateLinePosition(timelineFrame, verticalPositionL
 	verticalPositionLine:Show()
 end
 
----@param assignmentIDOrAssignmentFrame integer|AssignmentFrame
+---@param assignmentIDOrAssignmentFrame string|AssignmentFrame
 ---@param assignmentSelectionType AssignmentSelectionType
 function EPTimelineUtilities.SelectAssignment(assignmentIDOrAssignmentFrame, assignmentSelectionType)
 	local frame = nil
@@ -228,7 +228,7 @@ function EPTimelineUtilities.SelectAssignment(assignmentIDOrAssignmentFrame, ass
 	end
 end
 
----@param assignmentID integer
+---@param assignmentID string
 ---@param onlyClearIfNotSelectedByClicking boolean|nil
 function EPTimelineUtilities.ClearSelectedAssignment(assignmentID, onlyClearIfNotSelectedByClicking)
 	local frame = EPTimelineUtilities.FindAssignmentFrame(s.AssignmentFrames, assignmentID)
@@ -254,7 +254,7 @@ end
 
 -- Returns tables of selected assignments and optionally resets assignment frames.
 ---@param clear boolean If true, assignment frames are reset
----@return table<AssignmentSelectionType, table<integer, integer>> -- Unique assignment IDs of the selected frames
+---@return table<AssignmentSelectionType, table<integer, string>> -- Unique assignment IDs of the selected frames
 function EPTimelineUtilities.GetSelectedAssignments(clear)
 	local selection, bossAbilityHover = {}, {}
 	local SetAssignmentFrameOutline = EPTimelineUtilities.SetAssignmentFrameOutline
@@ -524,7 +524,7 @@ function EPTimelineUtilities.ComputeAssignmentRowIndex(assignee, spellID)
 	return rowIndex
 end
 
----@param uniqueID integer
+---@param uniqueID string
 ---@return integer|nil
 function EPTimelineUtilities.ComputeAssignmentRowIndexFromAssignmentID(uniqueID)
 	local timelineAssignment = EPTimelineUtilities.FindTimelineAssignment(uniqueID)

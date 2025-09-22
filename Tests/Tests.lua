@@ -250,17 +250,19 @@ end
 do
 	---@class BossUtilities
 	local bossUtilities = Private.bossUtilities
-	local GeneratePhaseCountDurationMap = bossUtilities.GeneratePhaseCountDurationMap
+	local GeneratePhaseCountDurationMap = Private.testReferences.GeneratePhaseCountDurationMap
+	local SetPhaseCountDurationMap = Private.testReferences.SetPhaseCountDurationMap
+	local GenerateBossAbilityInstances = Private.testReferences.GenerateBossAbilityInstances
 
 	---@param boss Boss
 	---@param difficulty DifficultyType
 	local function testSpellCastTimeTablesForBoss(boss, difficulty)
 		local encounterID = boss.dungeonEncounterID
-		bossUtilities.SetPhaseCountDurationMap(GeneratePhaseCountDurationMap(boss, nil, difficulty))
+		SetPhaseCountDurationMap(GeneratePhaseCountDurationMap(boss, nil, difficulty))
 		local castTimeTable = {}
 		local ordered = bossUtilities.GetOrderedBossPhases(encounterID, difficulty)
 
-		bossUtilities.GenerateBossAbilityInstances(boss, ordered, castTimeTable, difficulty)
+		GenerateBossAbilityInstances(boss, ordered, castTimeTable, difficulty)
 		for _, spellOccurrenceNumbers in pairs(castTimeTable) do
 			sort(spellOccurrenceNumbers)
 		end
@@ -284,7 +286,7 @@ do
 			end
 		end
 
-		bossUtilities.SetPhaseCountDurationMap({})
+		SetPhaseCountDurationMap({})
 	end
 
 	function test.CompareSpellCastTimeTables()
@@ -348,12 +350,11 @@ end
 do
 	---@class Plan
 	local Plan = Private.classes.Plan
-	local PlanSerializer = Private.PlanSerializer
-
 	local ChangePlanBoss = utilities.ChangePlanBoss
 	local UpdateRosterFromAssignments = utilities.UpdateRosterFromAssignments
-	local TableToString = Private.TableToString
-	local StringToTable = Private.StringToTable
+	local TableToString = Private.testReferences.TableToString
+	local StringToTable = Private.testReferences.StringToTable
+	local PlanSerializer = Private.testReferences.PlanSerializer
 
 	do
 		-- cSpell:disable
@@ -447,15 +448,11 @@ do
 			return "TableToStringToTable"
 		end
 	end
-
-	Private.TableToString = nil
-	Private.StringToTable = nil
-	Private.PlanSerializer = nil
 end
 
 do
-	local IsVersionLessThan = Private.IsVersionLessThan
-	local ParseVersion = Private.ParseVersion
+	local IsVersionLessThan = Private.testReferences.IsVersionLessThan
+	local ParseVersion = Private.testReferences.ParseVersion
 
 	function test.VersionParsing()
 		local major, minor, patch = ParseVersion("")
@@ -509,9 +506,6 @@ do
 
 		return "VersionParsing"
 	end
-
-	Private.IsVersionLessThan = nil
-	Private.ParseVersion = nil
 end
 
 do
@@ -911,16 +905,16 @@ do
 end
 
 do
-	local CombatLogEventMap = Private.CombatLogEventMap
-	local CombatLogEventReminders = Private.CombatLogEventReminders
-	local CombatLogGetCurrentEventInfo = Private.CombatLogGetCurrentEventInfo
-	local CreateSpellCountEntry = Private.CreateSpellCountEntry
-	local CreateTimer = Private.CreateTimer
-	local HandleCombatLogEventUnfiltered = Private.HandleCombatLogEventUnfiltered
-	local ResetLocalVariables = Private.ResetLocalVariables
-	local SetCombatLogGetCurrentEventInfo = Private.SetCombatLogGetCurrentEventInfo
-	local SetCreateTimer = Private.SetCreateTimer
-	local SpellCounts = Private.SpellCounts
+	local CombatLogEventMap = Private.testReferences.CombatLogEventMap
+	local CombatLogEventReminders = Private.testReferences.CombatLogEventReminders
+	local CombatLogGetCurrentEventInfo = Private.testReferences.CombatLogGetCurrentEventInfo
+	local CreateSpellCountEntry = Private.testReferences.CreateSpellCountEntry
+	local CreateTimer = Private.testReferences.CreateTimer
+	local HandleCombatLogEventUnfiltered = Private.testReferences.HandleCombatLogEventUnfiltered
+	local ResetLocalVariables = Private.testReferences.ResetLocalVariables
+	local SetCombatLogGetCurrentEventInfo = Private.testReferences.SetCombatLogGetCurrentEventInfo
+	local SetCreateTimer = Private.testReferences.SetCreateTimer
+	local SpellCounts = Private.testReferences.SpellCounts
 
 	---@param testSpellCounts table<FullCombatLogEventType, table<integer, integer>>
 	---@param testCombatLogEventReminders table<FullCombatLogEventType, table<integer, table<integer, table>>>
@@ -1111,17 +1105,6 @@ do
 		ResetLocalVariables()
 		return "UnitDied"
 	end
-
-	Private.CombatLogEventMap = nil
-	Private.CombatLogEventReminders = nil
-	Private.CombatLogGetCurrentEventInfo = nil
-	Private.CreateSpellCountEntry = nil
-	Private.CreateTimer = nil
-	Private.HandleCombatLogEventUnfiltered = nil
-	Private.ResetLocalVariables = nil
-	Private.SetCombatLogGetCurrentEventInfo = nil
-	Private.SetCreateTimer = nil
-	Private.SpellCounts = nil
 end
 
 do
@@ -1440,7 +1423,7 @@ do
 			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
 
 			for i = 1, 10 do
-				local assignment = TimedAssignment:New(nil, oldPlan.ID)
+				local assignment = TimedAssignment:New()
 				assignment.assignee = "Player" .. i
 				assignment.time = 60.0
 				assignment.text = "Buh"
@@ -1495,7 +1478,7 @@ do
 			-- TestEqual(diff.assignments[9].newValue.assignee, "{everyone}", "Changed assignment")
 			-- TestEqual(diff.assignments[10].type, PlanDiffType.Equal, "Equal assignment")
 
-			ApplyDiff(oldPlan.assignments, diff.assignments, DuplicateAssignment, oldPlan.ID)
+			ApplyDiff(oldPlan.assignments, diff.assignments, DuplicateAssignment)
 			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
 
 			return "PlanDiff"

@@ -540,11 +540,11 @@ do
 end
 
 ---@param assignments table<integer, Assignment>
----@param assignmentID integer
+---@param assignmentID string
 ---@return Assignment|TimedAssignment|CombatLogEventAssignment|nil
 function Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 	for _, assignment in pairs(assignments) do
-		if assignment.uniqueID == assignmentID then
+		if assignment.ID == assignmentID then
 			return assignment
 		end
 	end
@@ -1637,7 +1637,7 @@ do
 		local timelineAssignments = {}
 
 		for _, assignment in pairs(plan.assignments) do
-			local timelineAssignment = TimelineAssignment:New(assignment, nil, plan.ID)
+			local timelineAssignment = TimelineAssignment:New(assignment)
 			local spellID = assignment.spellID
 			local cooldownAndChargeOverride = cooldownAndChargeOverrides[spellID]
 
@@ -2690,7 +2690,7 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 	newPlan.isPrimaryPlan = false
 
 	setmetatable(newPlan, getmetatable(planToCopy))
-	assignmentUtilities.SetAssignmentMetaTables(newPlan.assignments, newPlan.ID)
+	assignmentUtilities.RegenerateIDsAndSetMetaTables(newPlan.assignments)
 	plans[newPlanName] = newPlan
 	return newPlan
 end
@@ -2714,22 +2714,23 @@ function Utilities.AddAssignmentToPlan(plan, assignment)
 end
 
 ---@param plan Plan Plan to remove assignments and template entries from.
----@param assigneeOrUniqueID string|integer Either the assignee or the assignment's uniqueID.
+---@param assignee string? Find all using assignee
+---@param assignmentID string? Find assignment with the matching ID. Only used if assignee is nil.
 ---@param spellID integer? If using an assignee, the spellID to further filter assignments to remove.
 ---@return integer removedAssignmentCount
 ---@return integer removedTemplateCount
-function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
+function Utilities.RemoveAssignmentFromPlan(plan, assignee, assignmentID, spellID)
 	local removedAssignmentCount, removedTemplateCount = 0, 0
 	local assignments = plan.assignments
 	local assigneeSpellSets = plan.assigneeSpellSets
 
-	if type(assigneeOrUniqueID) == "string" then
+	if assignee then
 		-- Remove assignments
 		local assigneeHasOtherSpellIDs = false
 		if spellID then
 			for i = #assignments, 1, -1 do
 				local currentAssignee, currentSpellID = assignments[i].assignee, assignments[i].spellID
-				if currentAssignee == assigneeOrUniqueID then
+				if currentAssignee == assignee then
 					if currentSpellID == spellID then
 						tremove(assignments, i)
 						removedAssignmentCount = removedAssignmentCount + 1
@@ -2740,7 +2741,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 			end
 		else
 			for i = #assignments, 1, -1 do
-				if assignments[i].assignee == assigneeOrUniqueID then
+				if assignments[i].assignee == assignee then
 					tremove(assignments, i)
 					removedAssignmentCount = removedAssignmentCount + 1
 				end
@@ -2749,7 +2750,7 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 
 		-- Remove templates
 		for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
-			if assigneeSpellSet.assignee == assigneeOrUniqueID then
+			if assigneeSpellSet.assignee == assignee then
 				local spells = assigneeSpellSet.spells
 				if spellID then
 					for spellIDIndex, currentSpellID in ipairs(spells) do
@@ -2773,17 +2774,17 @@ function Utilities.RemoveAssignmentFromPlan(plan, assigneeOrUniqueID, spellID)
 
 		-- Remove from collapsed
 		if not assigneeHasOtherSpellIDs then
-			plan.collapsed[assigneeOrUniqueID] = nil
+			plan.collapsed[assignee] = nil
 		end
-	elseif type(assigneeOrUniqueID) == "number" then
-		local assignmentToRemove = Utilities.FindAssignmentByUniqueID(assignments, assigneeOrUniqueID)
+	elseif assignmentID then
+		local assignmentToRemove = Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 		if assignmentToRemove then -- Remove assignments
 			local matchingAssignee, matchingSpellID = assignmentToRemove.assignee, assignmentToRemove.spellID
 			local foundMatchingAssigneeAndSpellID = false
 			local assigneeHasOtherAssignments = false
 			for i = #assignments, 1, -1 do
 				local currentAssignment = assignments[i]
-				if currentAssignment.uniqueID == assigneeOrUniqueID then
+				if currentAssignment.ID == assignmentID then
 					tremove(assignments, i)
 					removedAssignmentCount = removedAssignmentCount + 1
 				else

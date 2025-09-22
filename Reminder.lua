@@ -826,18 +826,18 @@ function Private.IsSimulatingBoss()
 end
 
 --@debug@
-Private.CreateSpellCountEntry = CreateSpellCountEntry
-Private.HandleCombatLogEventUnfiltered = HandleCombatLogEventUnfiltered
-Private.CombatLogEventMap = k.CombatLogEventMap
-Private.ResetLocalVariables = ResetLocalVariables
-Private.SpellCounts = s.SpellCounts
-Private.CombatLogEventReminders = s.CombatLogEventReminders
-Private.CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
-Private.SetCombatLogGetCurrentEventInfo = function(func)
+Private.testReferences.CreateSpellCountEntry = CreateSpellCountEntry
+Private.testReferences.HandleCombatLogEventUnfiltered = HandleCombatLogEventUnfiltered
+Private.testReferences.CombatLogEventMap = k.CombatLogEventMap
+Private.testReferences.ResetLocalVariables = ResetLocalVariables
+Private.testReferences.SpellCounts = s.SpellCounts
+Private.testReferences.CombatLogEventReminders = s.CombatLogEventReminders
+Private.testReferences.CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+Private.testReferences.SetCombatLogGetCurrentEventInfo = function(func)
 	CombatLogGetCurrentEventInfo = func
 end
-Private.CreateTimer = CreateTimer
-Private.SetCreateTimer = function(func)
+Private.testReferences.CreateTimer = CreateTimer
+Private.testReferences.SetCreateTimer = function(func)
 	CreateTimer = func
 end
 --@end-debug@

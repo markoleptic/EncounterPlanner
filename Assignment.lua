@@ -13,6 +13,8 @@ local bossUtilities = Private.bossUtilities
 local utilities = Private.utilities
 
 local CreateNewInstance = Private.CreateNewInstance
+local GenerateUniqueID = Private.GenerateUniqueID
+local GenerateTransitionalID = Private.GenerateTransitionalID
 
 local assert = assert
 local getmetatable, setmetatable = getmetatable, setmetatable
@@ -40,10 +42,14 @@ end
 --- Removes invalid fields not present in the inheritance chain of the class.
 ---@param classTable table The target class table
 ---@param o table The object to clean up
-local function RemoveInvalidFields(classTable, o)
+---@param additionalValidFields table<string, boolean>
+local function RemoveInvalidFields(classTable, o, additionalValidFields)
 	local validFields = {}
 	local visited = {}
 	CollectValidFields(classTable, validFields, visited)
+	for _, additionalValidField in pairs(additionalValidFields) do
+		validFields[additionalValidField] = true
+	end
 	for k, _ in pairs(o) do
 		if k ~= "__index" and k ~= "New" then
 			if not validFields[k] then
@@ -55,7 +61,7 @@ end
 
 ---@class Assignment
 Private.classes.Assignment = {
-	uniqueID = 0,
+	ID = "",
 	assignee = "",
 	text = "",
 	spellID = 0,
@@ -96,87 +102,102 @@ Private.classes.TimelineAssignment.__index = Private.classes.TimelineAssignment
 ---@class TimelineAssignment
 local TimelineAssignment = Private.classes.TimelineAssignment
 
----@param o any
----@param planID string
+---@param assignment TimedAssignment|CombatLogEventAssignment
+---@return string
+function AssignmentUtilities.GetStructuralID(assignment)
+	if getmetatable(assignment) == TimedAssignment then
+		return table.concat(
+			{ assignment.assignee, assignment.spellID, assignment.time, assignment.targetName, assignment.text },
+			","
+		)
+	elseif getmetatable(assignment) == CombatLogEventAssignment then
+		return table.concat({
+			assignment.assignee,
+			assignment.spellID,
+			assignment.time,
+			assignment.combatLogEventSpellID,
+			assignment.combatLogEventType,
+			assignment.spellCount,
+			assignment.targetName,
+			assignment.text,
+		}, ",")
+	end
+	error("No metatable for assignment entry")
+end
+
 ---@return Assignment
-function Assignment:New(o, planID)
-	local instance = CreateNewInstance(self, o)
-	instance.uniqueID = Private.GetNewAssignmentID(planID)
+function Assignment:New()
+	local instance = CreateNewInstance(self)
+	if instance.ID == "" then
+		instance.ID = GenerateUniqueID()
+	end
 	return instance
 end
 
----@param o any
----@param planID string
+---@param o Assignment|CombatLogEventAssignment|TimedAssignment|nil
 ---@param removeInvalidFields boolean|nil
 ---@return CombatLogEventAssignment
-function CombatLogEventAssignment:New(o, planID, removeInvalidFields)
-	if not o or getmetatable(o) ~= Private.classes.Assignment then
-		o = Private.classes.Assignment:New(o, planID)
+function CombatLogEventAssignment:New(o, removeInvalidFields)
+	local instance = CreateNewInstance(Assignment, o)
+	if instance.ID == "" then
+		instance.ID = GenerateUniqueID()
 	end
-
-	local instance = CreateNewInstance(self, o)
+	instance = CreateNewInstance(self, instance)
 	if removeInvalidFields then
-		RemoveInvalidFields(self, instance)
+		RemoveInvalidFields(self, instance, { "countdownLength", "holdDuration", "cancelIfAlreadyCasted" })
 	end
 	return instance
 end
 
----@param o any
----@param planID string
+---@param o Assignment|CombatLogEventAssignment|TimedAssignment|nil
 ---@param removeInvalidFields boolean|nil
 ---@return TimedAssignment
-function TimedAssignment:New(o, planID, removeInvalidFields)
-	if not o or getmetatable(o) ~= Private.classes.Assignment then
-		o = Private.classes.Assignment:New(o, planID)
+function TimedAssignment:New(o, removeInvalidFields)
+	local instance = CreateNewInstance(Assignment, o)
+	if instance.ID == "" then
+		instance.ID = GenerateUniqueID()
 	end
-	local instance = CreateNewInstance(self, o)
+	instance = CreateNewInstance(self, instance)
 	if removeInvalidFields then
-		RemoveInvalidFields(self, instance)
+		RemoveInvalidFields(self, instance, { "countdownLength", "holdDuration", "cancelIfAlreadyCasted" })
 	end
 	return instance
 end
 
 -- Copies an assignment with a new uniqueID.
 ---@param assignmentToCopy Assignment
----@param planID string
 ---@return Assignment
-function Private.DuplicateAssignment(assignmentToCopy, planID)
-	local newAssignment = Private.classes.Assignment:New(nil, planID)
-	local newId = newAssignment.uniqueID
+function Private.DuplicateAssignment(assignmentToCopy)
+	local newAssignment = Private.classes.Assignment:New()
+	local newId = newAssignment.ID
 	for key, value in pairs(Private.DeepCopy(assignmentToCopy)) do
 		newAssignment[key] = value
 	end
-	newAssignment.uniqueID = newId
+	newAssignment.ID = newId
 	setmetatable(newAssignment, getmetatable(assignmentToCopy))
 	return newAssignment
 end
 
 -- Creates a timeline assignment from an assignment.
 ---@param assignment Assignment
----@param o any
----@param planID string
 ---@return TimelineAssignment
-function TimelineAssignment:New(assignment, o, planID)
-	local instance = CreateNewInstance(self, o)
-	instance.assignment = assignment or Private.classes.Assignment:New(assignment, planID)
+function TimelineAssignment:New(assignment)
+	local instance = CreateNewInstance(self)
+	instance.assignment = assignment
 	return instance
 end
 
--- Creates a timeline assignment from an assignment.
+-- Creates a timeline assignment from an existing timeline assignment.
 ---@param timelineAssignmentToCopy TimelineAssignment
----@param o any
----@param planID string
----@return TimelineAssignment
-function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, o, planID)
-	o = o or {}
+---@param oNewTimelineAssignment table
+function Private.DuplicateTimelineAssignment(timelineAssignmentToCopy, oNewTimelineAssignment)
 	for key, value in pairs(Private.DeepCopy(timelineAssignmentToCopy)) do
 		if key ~= "assignment" then
-			o[key] = value
+			oNewTimelineAssignment[key] = value
 		end
 	end
-	o.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment, planID)
-	setmetatable(o, getmetatable(timelineAssignmentToCopy))
-	return o
+	oNewTimelineAssignment.assignment = Private.DuplicateAssignment(timelineAssignmentToCopy.assignment)
+	setmetatable(oNewTimelineAssignment, TimelineAssignment)
 end
 
 do
@@ -403,14 +424,13 @@ local kValidCombatLogEventTypes = { ["SCS"] = true, ["SCC"] = true, ["SAA"] = tr
 ---@param dungeonEncounterID integer
 ---@param newType "Fixed Time"|CombatLogEventType
 ---@param difficulty DifficultyType
----@param planID string
-function AssignmentUtilities.ChangeAssignmentType(assignment, dungeonEncounterID, newType, difficulty, planID)
+function AssignmentUtilities.ChangeAssignmentType(assignment, dungeonEncounterID, newType, difficulty)
 	if kValidCombatLogEventTypes[newType] then
 		local newEventType = newType --[[@as CombatLogEventType]]
 		if getmetatable(assignment) ~= CombatLogEventAssignment then
 			local combatLogEventSpellID, spellCount, minTime =
 				bossUtilities.FindNearestCombatLogEvent(assignment.time, dungeonEncounterID, newEventType, difficulty)
-			assignment = CombatLogEventAssignment:New(assignment, planID, true)
+			assignment = CombatLogEventAssignment:New(assignment, true)
 			assignment.combatLogEventType = newEventType
 			if combatLogEventSpellID and spellCount and minTime then
 				assignment.combatLogEventSpellID = combatLogEventSpellID
@@ -467,7 +487,7 @@ function AssignmentUtilities.ChangeAssignmentType(assignment, dungeonEncounterID
 					difficulty
 				)
 			end
-			assignment = TimedAssignment:New(assignment, planID, true)
+			assignment = TimedAssignment:New(assignment, true)
 			if convertedTime then
 				assignment.time = utilities.Round(convertedTime, 1)
 			end
@@ -480,16 +500,8 @@ end
 ---@param assignee string Assignee name or assignee type.
 ---@param assignmentSpellID integer|nil Assignment spell ID.
 ---@param difficulty DifficultyType Encounter difficulty.
----@param planID string Unique plan ID.
 ---@return TimedAssignment|CombatLogEventAssignment|nil
-function AssignmentUtilities.CreateNewAssignment(
-	encounterID,
-	absoluteTime,
-	assignee,
-	assignmentSpellID,
-	difficulty,
-	planID
-)
+function AssignmentUtilities.CreateNewAssignment(encounterID, absoluteTime, assignee, assignmentSpellID, difficulty)
 	local assignment = nil
 	local boss = bossUtilities.GetBoss(encounterID)
 	local preferredAbilities = bossUtilities.GetBossPreferredCombatLogEventAbilities(boss, difficulty)
@@ -508,7 +520,7 @@ function AssignmentUtilities.CreateNewAssignment(
 		)
 		if newSpellID and newSpellCount and newEventType and newTime then
 			local orderedBossPhaseIndex = absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-			assignment = CombatLogEventAssignment:New(assignment, planID, true)
+			assignment = CombatLogEventAssignment:New(assignment, true)
 			assignment.combatLogEventType = newEventType
 			assignment.combatLogEventSpellID = newSpellID
 			assignment.spellCount = newSpellCount
@@ -519,7 +531,7 @@ function AssignmentUtilities.CreateNewAssignment(
 	end
 
 	if not assignment then
-		assignment = TimedAssignment:New(assignment, planID, true)
+		assignment = TimedAssignment:New()
 		assignment.time = utilities.Round(absoluteTime, 1)
 	end
 
@@ -532,23 +544,61 @@ function AssignmentUtilities.CreateNewAssignment(
 end
 
 ---@param assignments table<integer, Assignment>
----@param planID string
-function AssignmentUtilities.SetAssignmentMetaTables(assignments, planID)
-	for _, assignment in pairs(assignments) do
-		assignment.countdownLength = nil
-		assignment.cancelIfAlreadyCasted = nil
-		assignment.holdDuration = nil
-		assignment = Assignment:New(assignment, planID)
+function AssignmentUtilities.RegenerateIDsAndSetMetaTables(assignments)
+	for _, assignment in ipairs(assignments) do
+		assignment.ID = GenerateUniqueID()
 		if
 			---@diagnostic disable-next-line: undefined-field
 			assignment.combatLogEventType
 			---@diagnostic disable-next-line: undefined-field
 			and assignment.combatLogEventSpellID
 		then
-			assignment = CombatLogEventAssignment:New(assignment, planID)
+			assignment = CombatLogEventAssignment:New(assignment)
 			---@diagnostic disable-next-line: undefined-field
 		else
-			assignment = TimedAssignment:New(assignment, planID)
+			assignment = TimedAssignment:New(assignment)
+		end
+	end
+end
+do
+	---@param assignment any
+	---@return string
+	local function GetStructuralIDRaw(assignment)
+		if assignment.combatLogEventSpellID and assignment.combatLogEventType and assignment.spellCount then
+			return table.concat({
+				assignment.assignee,
+				assignment.spellID,
+				assignment.time,
+				assignment.targetName,
+				assignment.text,
+				assignment.combatLogEventSpellID,
+				assignment.combatLogEventType,
+				assignment.spellCount,
+			}, ",")
+		else
+			return table.concat(
+				{ assignment.assignee, assignment.spellID, assignment.time, assignment.targetName, assignment.text },
+				","
+			)
+		end
+	end
+	---@param assignments table<integer, Assignment>
+	function AssignmentUtilities.LoadAssignments(assignments)
+		for _, assignment in pairs(assignments) do
+			if assignment.ID == nil then
+				assignment.ID = GenerateTransitionalID(GetStructuralIDRaw(assignment))
+			end
+			if
+				---@diagnostic disable-next-line: undefined-field
+				assignment.combatLogEventType
+				---@diagnostic disable-next-line: undefined-field
+				and assignment.combatLogEventSpellID
+			then
+				assignment = CombatLogEventAssignment:New(assignment, true)
+			---@diagnostic disable-next-line: undefined-field
+			else
+				assignment = TimedAssignment:New(assignment, true)
+			end
 		end
 	end
 end

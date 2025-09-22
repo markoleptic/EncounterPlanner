@@ -93,7 +93,7 @@ local function ToBase64(num, length)
 	local result = {}
 	for i = 1, length do
 		result[i] = byteToBase64[band(num, 63)] -- Last 6 bits
-		num = rshift(num, length)
+		num = rshift(num, 6)
 	end
 	return concat(result)
 end
@@ -102,12 +102,33 @@ Private.version = C_AddOns.GetAddOnMetadata(AddOnName, "Version")
 
 local function GenerateUniqueID()
 	local timePart = ToBase64(GetTime() * 1000, 6)
-	local randomPart1 = ToBase64(random(0, 0xFFFFFFF), 5) -- 5 chars = 30 bits
-	local randomPart2 = ToBase64(random(0, 0xFFFFFFF), 5)
+	local randomPart1 = ToBase64(random(0, 0x7FFFFFFF), 6) -- 6 chars (from 32 bits)
+	local randomPart2 = ToBase64(random(0, 0x7FFFFFFF), 6)
 	return format("%s-%s-%s%s", Private.version, timePart, randomPart1, randomPart2)
 end
-
 Private.GenerateUniqueID = GenerateUniqueID
+
+---@param str string
+---@return number
+local function Hash32(str)
+	local hash = 5381
+	for i = 1, #str do
+		hash = (hash * 33 + str:byte(i)) % 4294967296
+	end
+	return hash
+end
+
+---@param assignmentKey string
+---@return string
+local function GenerateTransitionalID(assignmentKey)
+	local hash1 = Hash32(assignmentKey)
+	local hash2 = Hash32("salt2-" .. assignmentKey)
+
+	local s1 = ToBase64(hash1, 6) -- 6 chars (from 32 bits)
+	local s2 = ToBase64(hash2, 6)
+	return "T-" .. s1 .. s2 -- ~64 bits effective
+end
+Private.GenerateTransitionalID = GenerateTransitionalID
 
 Private.classes = {}
 
@@ -271,30 +292,6 @@ function Private.CreateNewInstance(classTable, o)
 	return o
 end
 
-do
-	local sPlanAssignmentCounters = {}
-
-	---@param planID string
-	function Private.AddPlanAssignmentCounter(planID)
-		if not sPlanAssignmentCounters[planID] then
-			sPlanAssignmentCounters[planID] = 0
-		end
-	end
-
-	function Private.ResetPlanAssignmentCounter()
-		sPlanAssignmentCounters = {}
-	end
-
-	---@param planID string
-	function Private.GetNewAssignmentID(planID)
-		if not sPlanAssignmentCounters[planID] then
-			sPlanAssignmentCounters[planID] = 0
-		end
-		sPlanAssignmentCounters[planID] = sPlanAssignmentCounters[planID] + 1
-		return sPlanAssignmentCounters[planID]
-	end
-end
-
 ---@param o any
 ---@return DungeonInstance
 function Private.classes.DungeonInstance:New(o)
@@ -343,7 +340,6 @@ function Private.classes.Plan:New(o, name, existingID)
 	else
 		instance.ID = GenerateUniqueID()
 	end
-	Private.AddPlanAssignmentCounter(instance.ID)
 	return instance
 end
 
@@ -631,3 +627,7 @@ fontInitializer:SetFontObject(obj)
 fontInitializer:Hide()
 fontInitializer:SetParent(UIParent)
 LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))
+
+--@debug@
+Private.testReferences = {}
+--@end-debug@

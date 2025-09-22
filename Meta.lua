@@ -2,7 +2,8 @@
 
 -- Abstract base class for assignments.
 ---@class Assignment
----@field uniqueID integer Incremented each time a new assignment is created used to distinguish in-memory assignments.
+-- Uniquely generated ID. If loading from disk and not present, creates a hash-based ID, otherwise uses GUID.
+---@field ID string
 ---@field assignee string Who to assign the assignment to, AssigneeType.
 ---@field text string Text to display for the assignment. If empty, the spell name is used.
 ---@field spellID integer The spell ID for the assignment.
@@ -208,16 +209,17 @@
 ---@field [9] table<integer, SerializedAssigneeSpellSet> Assignees and spells (templates)
 
 ---@class SerializedAssignment
----@field [1] string assignee
----@field [2] number spellID
----@field [3] string text
----@field [4] string targetName
----@field [5] number time
----@field [6] CombatLogEventType|nil combatLogEventType
----@field [7] integer|nil combatLogEventSpellID
----@field [8] integer|nil spellCount
----@field [9] integer|nil phase
----@field [10] integer|nil bossPhaseOrderIndex
+---@field [1] string ID
+---@field [2] string assignee
+---@field [3] number spellID
+---@field [4] string text
+---@field [5] string targetName
+---@field [6] number time
+---@field [7] CombatLogEventType|nil combatLogEventType
+---@field [8] integer|nil combatLogEventSpellID
+---@field [9] integer|nil spellCount
+---@field [10] integer|nil phase
+---@field [11] integer|nil bossPhaseOrderIndex
 
 ---@class SerializedRosterEntry
 ---@field [1] string name

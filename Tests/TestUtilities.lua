@@ -101,7 +101,7 @@ do
 	local function TestEqualTable(t1, t2)
 		if type(t1) == "table" and type(t2) == "table" then
 			for k, v in pairs(t1) do
-				if k ~= "__index" and k ~= "uniqueID" then -- Ignore metatables
+				if k ~= "__index" and k ~= "ID" then -- Ignore metatables
 					local equal, err = TestEqualTable(v, t2[k])
 					if not equal then
 						return false, "Mismatch at key '" .. tostring(k) .. "': " .. err
@@ -289,7 +289,7 @@ do
 			local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
 			if #types > 0 then
 				local allowedType = types[random(1, #types)]
-				local assignment = CombatLogEventAssignment:New(nil, plan.ID)
+				local assignment = CombatLogEventAssignment:New()
 				assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
 				assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
 				assignment.phase = abilityInstance.bossPhaseIndex
@@ -304,7 +304,7 @@ do
 		end
 		local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
 		do
-			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			local assignment = Private.classes.TimedAssignment:New()
 			assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
 			assignment.time = 0
 			assignment.spellID = 1
@@ -312,7 +312,7 @@ do
 			tinsert(plan.assignments, assignment)
 		end
 		for i = 5, floor(d * 0.6), 30 do
-			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			local assignment = Private.classes.TimedAssignment:New()
 			assignment.assignee = TestUtilities.GetRandomAssignee(roster, rosterCount)
 			assignment.time = i
 			assignment.spellID = 1
@@ -332,7 +332,7 @@ do
 		local types = bossAbilities[abilityInstance.bossAbilitySpellID].allowedCombatLogEventTypes
 		if #types > 0 then
 			local allowedType = types[random(1, #types)]
-			local assignment = CombatLogEventAssignment:New(nil, plan.ID)
+			local assignment = CombatLogEventAssignment:New()
 			assignment.assignee = assignees[random(1, #assignees)]
 			assignment.combatLogEventSpellID = abilityInstance.bossAbilitySpellID
 			assignment.phase = abilityInstance.bossPhaseIndex
@@ -345,7 +345,7 @@ do
 			return assignment
 		else
 			local _, d = bossUtilities.GetTotalDurations(boss.dungeonEncounterID, plan.difficulty)
-			local assignment = Private.classes.TimedAssignment:New(nil, plan.ID)
+			local assignment = Private.classes.TimedAssignment:New()
 			assignment.assignee = assignees[random(1, #assignees)]
 			assignment.time = random() * d
 			assignment.spellID = 1

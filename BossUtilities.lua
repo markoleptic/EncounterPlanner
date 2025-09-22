@@ -1211,7 +1211,7 @@ do
 				if newSpellID and newSpellCount and newEventType and newTime then
 					local orderedBossPhaseIndex =
 						absoluteSpellCastTimeTable[newSpellID][newSpellCount].bossPhaseOrderIndex
-					assignment = CombatLogEventAssignment:New(assignment, plan.ID, true)
+					assignment = CombatLogEventAssignment:New(assignment, true)
 					assignment.combatLogEventType = newEventType
 					assignment.combatLogEventSpellID = newSpellID
 					assignment.spellCount = newSpellCount
@@ -1222,7 +1222,7 @@ do
 				end
 			end
 			if createTimed then
-				assignment = TimedAssignment:New(assignment, plan.ID, true)
+				assignment = TimedAssignment:New(assignment, true)
 				assignment.time = absoluteTime
 			end
 		end
@@ -2078,10 +2078,10 @@ do
 
 	--@debug@
 	---@param map table<integer, {startTime: number, endTime: number, count: integer, index: integer}>
-	function BossUtilities.SetPhaseCountDurationMap(map)
+	Private.testReferences.SetPhaseCountDurationMap = function(map)
 		phaseCountDurationMap = map
 	end
-	BossUtilities.GeneratePhaseCountDurationMap = GeneratePhaseCountDurationMap
-	BossUtilities.GenerateBossAbilityInstances = GenerateBossAbilityInstances
+	Private.testReferences.GeneratePhaseCountDurationMap = GeneratePhaseCountDurationMap
+	Private.testReferences.GenerateBossAbilityInstances = GenerateBossAbilityInstances
 	--@end-debug@
 end

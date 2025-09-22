@@ -376,18 +376,15 @@ do -- Roster Editor
 			targetDropdown:SetValue(previousTargetValue)
 			targetDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
-			local assignmentID = assignmentEditor:GetAssignmentID()
-			if assignmentID then
-				local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-				if assignment then
-					assignmentEditor:RepopulateSpellDropdown(
-						assignment.assignee,
-						roster,
-						assignment.spellID,
-						AddOn.db.profile.favoritedSpellAssignments
-					)
-					assignmentEditor:HandleRosterChanged()
-				end
+			local assignment = assignmentEditor:GetAssignment()
+			if assignment then
+				assignmentEditor:RepopulateSpellDropdown(
+					assignment.assignee,
+					roster,
+					assignment.spellID,
+					AddOn.db.profile.favoritedSpellAssignments
+				)
+				assignmentEditor:HandleRosterChanged()
 			end
 		end
 
@@ -507,41 +504,43 @@ do -- Assignment Editor
 	local GetOrCreateSpellAssignmentDropdownItems = utilities.GetOrCreateSpellAssignmentDropdownItems
 
 	local kAssignmentEditorFrameLevel = constants.frameLevels.kAssignmentEditorFrameLevel
-	local assignmentEditorWidth = 240
 
 	local function HandleAssignmentEditorDeleteButtonClicked()
-		local assignmentID = Private.assignmentEditor:GetAssignmentID()
-		if Private.activeTutorialCallbackName then
-			Private.callbacks:Fire(Private.activeTutorialCallbackName, "preAssignmentEditorDeleteButtonClicked")
-		end
-		Private.assignmentEditor:Release()
-		local plan = GetCurrentPlan()
-		local removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentFromPlan(plan, assignmentID)
+		local assignment = Private.assignmentEditor:GetAssignment()
+		if assignment then
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "preAssignmentEditorDeleteButtonClicked")
+			end
+			Private.assignmentEditor:Release()
+			local plan = GetCurrentPlan()
+			local removedAssignmentCount, removedTemplateCount =
+				utilities.RemoveAssignmentFromPlan(plan, nil, assignment.ID)
 
-		local lowerAssignment, lowerTemplate
-		if removedAssignmentCount == 1 then
-			lowerAssignment = L["Assignment"]:lower()
-		else
-			lowerAssignment = L["assignments"]
-		end
-		if removedTemplateCount == 1 then
-			lowerTemplate = L["Template"]:lower()
-		else
-			lowerTemplate = L["Templates"]:lower()
-		end
-		interfaceUpdater.LogMessage(
-			format(
-				"%s %d %s, %d %s.",
-				L["Removed"],
-				removedAssignmentCount,
-				lowerAssignment,
-				removedTemplateCount,
-				lowerTemplate
+			local lowerAssignment, lowerTemplate
+			if removedAssignmentCount == 1 then
+				lowerAssignment = L["Assignment"]:lower()
+			else
+				lowerAssignment = L["assignments"]
+			end
+			if removedTemplateCount == 1 then
+				lowerTemplate = L["Template"]:lower()
+			else
+				lowerTemplate = L["Templates"]:lower()
+			end
+			interfaceUpdater.LogMessage(
+				format(
+					"%s %d %s, %d %s.",
+					L["Removed"],
+					removedAssignmentCount,
+					lowerAssignment,
+					removedTemplateCount,
+					lowerTemplate
+				)
 			)
-		)
-		UpdateAllAssignments(false)
-		if Private.activeTutorialCallbackName then
-			Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDeleteButtonClicked")
+			UpdateAllAssignments(false)
+			if Private.activeTutorialCallbackName then
+				Private.callbacks:Fire(Private.activeTutorialCallbackName, "assignmentEditorDeleteButtonClicked")
+			end
 		end
 	end
 
@@ -556,12 +555,7 @@ do -- Assignment Editor
 	---@param dataType AssignmentEditorDataType
 	---@param value string
 	local function HandleAssignmentEditorDataChanged(assignmentEditor, _, dataType, value)
-		local assignmentID = assignmentEditor:GetAssignmentID()
-		if not assignmentID then
-			return
-		end
-
-		local assignment = FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
+		local assignment = assignmentEditor:GetAssignment()
 		if not assignment then
 			return
 		end
@@ -573,7 +567,7 @@ do -- Assignment Editor
 
 		if dataType == AssignmentEditorDataType.AssignmentType then
 			---@cast assignment CombatLogEventAssignment|TimedAssignment
-			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty, GetCurrentPlan().ID)
+			ChangeAssignmentType(assignment, dungeonEncounterID, value, difficulty)
 			updateFields = true
 			updateAssignments = true
 		elseif dataType == AssignmentEditorDataType.CombatLogEventSpellID then
@@ -1187,7 +1181,7 @@ local function HandlePlanNameChanged(lineEdit, _, text)
 end
 
 ---@param widget EPTimeline|nil
----@param uniqueID integer
+---@param uniqueID string
 ---@param timeDifference number|nil
 local function HandleTimelineAssignmentClicked(widget, _, uniqueID, timeDifference)
 	if Private.IsSimulatingBoss() then
@@ -1227,7 +1221,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 		end
 	end
 
-	local assignment = TimedAssignment:New(nil, GetCurrentPlan().ID)
+	local assignment = TimedAssignment:New()
 	assignment.assignee = value
 	if #assignments == 0 then
 		local timelineRows = AddOn.db.profile.preferences.timelineRows
@@ -1236,7 +1230,7 @@ local function HandleAddAssigneeRowDropdownValueChanged(dropdown, _, value)
 
 	AddAssignmentToPlan(plan, assignment)
 	UpdateAllAssignments(false)
-	HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+	HandleTimelineAssignmentClicked(nil, nil, assignment.ID)
 	dropdown:SetText(k.AddAssigneeText)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "assigneeAdded")
@@ -1249,12 +1243,11 @@ end
 local function HandleCreateNewAssignment(_, _, assignee, spellID, time)
 	local plan = GetCurrentPlan()
 	local encounterID = plan.dungeonEncounterID
-	local assignment =
-		assignmentUtilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty, plan.ID)
+	local assignment = assignmentUtilities.CreateNewAssignment(encounterID, time, assignee, spellID, plan.difficulty)
 	if assignment then
 		AddAssignmentToPlan(plan, assignment)
 		UpdateAllAssignments(false)
-		HandleTimelineAssignmentClicked(nil, nil, assignment.uniqueID)
+		HandleTimelineAssignmentClicked(nil, nil, assignment.ID)
 		if Private.activeTutorialCallbackName then
 			Private.callbacks:Fire(Private.activeTutorialCallbackName, "added")
 		end
@@ -2015,7 +2008,7 @@ end
 ---@param timelineAssignment TimelineAssignment
 ---@param newTimelineAssignment table
 local function HandleDuplicateAssignmentStart(_, _, timelineAssignment, newTimelineAssignment)
-	Private.DuplicateTimelineAssignment(timelineAssignment, newTimelineAssignment, GetCurrentPlan().ID)
+	Private.DuplicateTimelineAssignment(timelineAssignment, newTimelineAssignment)
 end
 
 ---@param timelineAssignment TimelineAssignment
@@ -2023,8 +2016,7 @@ end
 local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTime)
 	local plan = GetCurrentPlan()
 	local assignment = timelineAssignment.assignment
-	local newAssignment = Private.DuplicateAssignment(assignment, plan.ID)
-	AddAssignmentToPlan(plan, newAssignment)
+	AddAssignmentToPlan(plan, assignment)
 
 	local newAssignmentTime = utilities.Round(absoluteTime, 1)
 	local relativeTime = nil
@@ -2040,15 +2032,15 @@ local function HandleDuplicateAssignmentEnd(_, _, timelineAssignment, absoluteTi
 		)
 	end
 	if relativeTime then
-		---@cast newAssignment CombatLogEventAssignment
-		newAssignment.time = utilities.Round(relativeTime, 1)
+		---@cast assignment CombatLogEventAssignment
+		assignment.time = utilities.Round(relativeTime, 1)
 	else
-		---@cast newAssignment TimedAssignment
-		newAssignment.time = newAssignmentTime
+		---@cast assignment TimedAssignment
+		assignment.time = newAssignmentTime
 	end
 
 	UpdateAllAssignments(false)
-	HandleTimelineAssignmentClicked(nil, nil, newAssignment.uniqueID)
+	HandleTimelineAssignmentClicked(nil, nil, assignment.ID)
 	if Private.activeTutorialCallbackName then
 		Private.callbacks:Fire(Private.activeTutorialCallbackName, "duplicated")
 	end

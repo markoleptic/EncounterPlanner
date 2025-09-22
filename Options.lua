@@ -1003,8 +1003,7 @@ do
 			if Private.mainFrame and Private.assignmentEditor then
 				local lastOpenPlan = AddOn.db.profile.lastOpenPlan
 				local plan = AddOn.db.profile.plans[lastOpenPlan]
-				local assignment =
-					utilities.FindAssignmentByUniqueID(plan.assignments, Private.assignmentEditor:GetAssignmentID())
+				local assignment = Private.assignmentEditor:GetAssignment()
 				if assignment then
 					local encounterID, difficulty = plan.dungeonEncounterID, plan.difficulty
 					interfaceUpdater.UpdateFromAssignment(

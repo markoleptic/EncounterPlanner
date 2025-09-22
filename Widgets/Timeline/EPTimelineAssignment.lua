@@ -472,7 +472,7 @@ function EPTimelineAssignment.DrawAssignment(timelineAssignment, assignmentFrame
 	end
 
 	assignmentFrame.spellID = spellID
-	assignmentFrame.uniqueAssignmentID = timelineAssignment.assignment.uniqueID
+	assignmentFrame.uniqueAssignmentID = timelineAssignment.assignment.ID
 
 	assignmentFrame:SetHeight(assignmentHeight)
 	assignmentFrame:SetPoint("TOPLEFT", timelineFrame, "TOPLEFT", offsetX, -offsetY)

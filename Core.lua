@@ -361,7 +361,7 @@ do -- Profile updating and refreshing
 	local SetPhaseDurations = bossUtilities.SetPhaseDurations
 
 	local ChangePlanBoss = utilities.ChangePlanBoss
-	local SetAssignmentMetaTables = assignmentUtilities.SetAssignmentMetaTables
+	local LoadAssignments = assignmentUtilities.LoadAssignments
 
 	local function RemoveInvalidActiveBossAbilities(activeBossAbilities, difficulty)
 		for dungeonEncounterID, activeBossAbilitiesForEncounterID in pairs(activeBossAbilities) do
@@ -381,7 +381,6 @@ do -- Profile updating and refreshing
 	---@param profile DefaultProfile
 	function AddOn.UpdateProfile(profile)
 		if profile then
-			Private.ResetPlanAssignmentCounter()
 			local remappings = Private.spellDB.GetSpellRemappings()
 
 			---@type table<integer, table<DifficultyType, boolean>>
@@ -390,7 +389,7 @@ do -- Profile updating and refreshing
 			local plans = profile.plans
 			for planName, plan in pairs(plans) do
 				plan = Plan:New(plan, planName, plan.ID)
-				SetAssignmentMetaTables(plan.assignments, plan.ID) -- Convert tables from DB into classes
+				LoadAssignments(plan.assignments) -- Convert tables from DB into classes
 
 				local boss = GetBoss(plan.dungeonEncounterID)
 				if not boss then
@@ -696,6 +695,6 @@ function AddOn:SlashCommand(input)
 end
 
 --@debug@
-Private.ParseVersion = ParseVersion
-Private.IsVersionLessThan = IsVersionLessThan
+Private.testReferences.ParseVersion = ParseVersion
+Private.testReferences.IsVersionLessThan = IsVersionLessThan
 --@end-debug@

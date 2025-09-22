@@ -120,12 +120,15 @@ local function CreateAssignmentsFromLine(line, failed, planID)
 			end)
 			local assignee = IsValidAssignee(entry)
 			if assignee then
-				local assignment = Assignment:New({
-					assignee = assignee,
-					text = text,
-					spellID = spellID,
-					targetName = targetName,
-				}, planID)
+				local assignment = Assignment:New()
+				assignment.assignee = assignee
+				assignment.spellID = spellID
+				if text then
+					assignment.text = text
+				end
+				if targetName then
+					assignment.targetName = targetName
+				end
 				if assignment.spellID == kInvalidAssignmentSpellID then
 					if assignment.text:len() > 0 then
 						assignment.spellID = kTextAssignmentSpellID
@@ -146,20 +149,11 @@ end
 ---@param assignments table<integer, Assignment>
 ---@param derivedAssignments table<integer, Assignment>
 ---@param replaced table<integer, FailureTableEntry>
----@param encounterIDs table<integer, {assignmentIDs: table<integer, integer>, string: string}> Boss encounter spell IDs
----@param planID string
+---@param encounterIDs table<integer, {assignmentIDs: table<integer, string>, string: string}> Boss encounter spell IDs
 ---@return boolean -- True if combat log event assignments were added
 ---@return boolean -- True if first first return value is true and replaced invalid spell count
 ---@return boolean -- True if invalid combat log event type or combat log event spell ID
-local function ProcessCombatEventLogEventOption(
-	option,
-	time,
-	assignments,
-	derivedAssignments,
-	replaced,
-	encounterIDs,
-	planID
-)
+local function ProcessCombatEventLogEventOption(option, time, assignments, derivedAssignments, replaced, encounterIDs)
 	local combatLogEventAbbreviation, spellIDStr, spellCountStr, _ = split(":", option, 4)
 	if k.CombatLogEventFromAbbreviation[combatLogEventAbbreviation] then
 		local spellID = tonumber(spellIDStr)
@@ -191,13 +185,13 @@ local function ProcessCombatEventLogEventOption(
 				end
 				if spellCount then
 					for _, assignment in pairs(assignments) do
-						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment, planID)
+						local combatLogEventAssignment = CombatLogEventAssignment:New(assignment)
 						combatLogEventAssignment.combatLogEventType = combatLogEventAbbreviation
 						combatLogEventAssignment.time = time
 						combatLogEventAssignment.spellCount = spellCount
 						combatLogEventAssignment.combatLogEventSpellID = spellID
 						tinsert(derivedAssignments, combatLogEventAssignment)
-						tinsert(encounterIDs[bossDungeonEncounterID].assignmentIDs, combatLogEventAssignment.uniqueID)
+						tinsert(encounterIDs[bossDungeonEncounterID].assignmentIDs, combatLogEventAssignment.ID)
 					end
 					return true, replacedInvalidSpellCount, false
 				end
@@ -222,11 +216,10 @@ end
 ---@param time number
 ---@param options string
 ---@param replaced table<integer, FailureTableEntry>
----@param encounterIDs table<integer, {assignmentIDs: table<integer, integer>, string: string}>
----@param planID string
+---@param encounterIDs table<integer, {assignmentIDs: table<integer, string>, string: string}>
 ---@return integer -- defaultedToTimedAssignmentCount
 ---@return integer -- defaultedToNearestSpellCountCount
-local function ProcessOptions(assignments, derivedAssignments, time, options, replaced, encounterIDs, planID)
+local function ProcessOptions(assignments, derivedAssignments, time, options, replaced, encounterIDs)
 	local regularTimer = true
 	local defaultedToTimedCount = 0
 
@@ -245,15 +238,7 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 		defaultedToTimedCount = defaultedToTimedCount + #assignments
 	else
 		local success, replacedInvalidSpellCount, invalidCombatLogEventTypeOrCombatLogEventSpellID =
-			ProcessCombatEventLogEventOption(
-				option,
-				time,
-				assignments,
-				derivedAssignments,
-				replaced,
-				encounterIDs,
-				planID
-			)
+			ProcessCombatEventLogEventOption(option, time, assignments, derivedAssignments, replaced, encounterIDs)
 		if success then
 			if replacedInvalidSpellCount then
 				return 0, #assignments
@@ -266,7 +251,7 @@ local function ProcessOptions(assignments, derivedAssignments, time, options, re
 	end
 	if regularTimer then
 		for _, assignment in pairs(assignments) do
-			local timedAssignment = TimedAssignment:New(assignment, planID)
+			local timedAssignment = TimedAssignment:New(assignment)
 			timedAssignment.time = time
 			tinsert(derivedAssignments, timedAssignment)
 		end
@@ -374,7 +359,7 @@ end
 ---@return integer|nil
 function Private.ParseNote(plan, text, test)
 	wipe(plan.assignments)
-	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, integer>, string: string}>
+	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, string>, string: string}>
 	local lowerPriorityEncounterIDs = {} ---@type table<integer, integer>
 	local otherContent = {}
 	local failedOrReplaced = {} ---@type table<integer, FailureTableEntry>
@@ -400,15 +385,8 @@ function Private.ParseNote(plan, text, test)
 			end
 			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced, plan.ID)
 			failedCount = failedCount + count
-			local defaultedToTimed, defaultedCombatLogAssignment = ProcessOptions(
-				inputs,
-				plan.assignments,
-				time,
-				options,
-				failedOrReplaced,
-				bossDungeonEncounterIDs,
-				plan.ID
-			)
+			local defaultedToTimed, defaultedCombatLogAssignment =
+				ProcessOptions(inputs, plan.assignments, time, options, failedOrReplaced, bossDungeonEncounterIDs)
 			defaultedToTimedCount = defaultedToTimedCount + defaultedToTimed
 			defaultedSpellCount = defaultedSpellCount + defaultedCombatLogAssignment
 			lastLineWasOtherContent = false
@@ -446,7 +424,7 @@ function Private.ParseNote(plan, text, test)
 			for _, assignmentID in pairs(assignmentIDsAndOptions.assignmentIDs) do
 				local assignment = FindAssignmentByUniqueID(plan.assignments, assignmentID)
 				if assignment then
-					assignment = TimedAssignment:New(assignment, plan.ID, true)
+					assignment = TimedAssignment:New(assignment, true)
 					tinsert(failedOrReplaced, { reason = 7, string = assignmentIDsAndOptions.string })
 					defaultedToTimedCount = defaultedToTimedCount + 1
 				end
@@ -484,7 +462,7 @@ end
 ---@param plan Plan Plan to add parsed assignments and text to
 ---@param text table<integer, string> content
 function Private.ParseText(plan, text)
-	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, integer>, string: string}>
+	local bossDungeonEncounterIDs = {} ---@type table<integer, {assignmentIDs: table<integer, string>, string: string}>
 	local otherContent = {}
 	local failedOrReplaced = {} ---@type table<integer, FailureTableEntry>
 	local failedCount, defaultedToTimedCount, defaultedSpellCount = 0, 0, 0
@@ -495,15 +473,8 @@ function Private.ParseText(plan, text)
 		if time and options then
 			local inputs, count = CreateAssignmentsFromLine(rest, failedOrReplaced, plan.ID)
 			failedCount = failedCount + count
-			local defaultedToTimed, defaultedCombatLogAssignment = ProcessOptions(
-				inputs,
-				plan.assignments,
-				time,
-				options,
-				failedOrReplaced,
-				bossDungeonEncounterIDs,
-				plan.ID
-			)
+			local defaultedToTimed, defaultedCombatLogAssignment =
+				ProcessOptions(inputs, plan.assignments, time, options, failedOrReplaced, bossDungeonEncounterIDs)
 			defaultedToTimedCount = defaultedToTimedCount + defaultedToTimed
 			defaultedSpellCount = defaultedSpellCount + defaultedCombatLogAssignment
 			lastLineWasOtherContent = false
@@ -528,7 +499,7 @@ function Private.ParseText(plan, text)
 			for _, assignmentID in pairs(assignmentIDsAndOptions.assignmentIDs) do
 				local assignment = FindAssignmentByUniqueID(plan.assignments, assignmentID)
 				if assignment then
-					assignment = TimedAssignment:New(assignment, plan.ID, true)
+					assignment = TimedAssignment:New(assignment, true)
 					tinsert(failedOrReplaced, { reason = 7, string = assignmentIDsAndOptions.string })
 					defaultedToTimedCount = defaultedToTimedCount + 1
 				end

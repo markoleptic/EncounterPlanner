@@ -245,13 +245,13 @@ do
 			local plan = GetCurrentPlan()
 
 			local removedAssignmentCount, removedTemplateCount = 0, 0
-			if type(key) == "string" then
+			if type(key) == "string" then -- Key is assignee
 				removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentFromPlan(plan, key)
 			elseif type(key) == "table" then
 				local assignee = key.assignee
 				local spellID = key.spellID
 				removedAssignmentCount, removedTemplateCount =
-					utilities.RemoveAssignmentFromPlan(plan, assignee, spellID)
+					utilities.RemoveAssignmentFromPlan(plan, assignee, nil, spellID)
 			end
 			local lowerAssignment, lowerTemplate
 			if removedAssignmentCount == 1 then
@@ -333,33 +333,28 @@ do
 			InterfaceUpdater.UpdateAllAssignments(false)
 			if Private.assignmentEditor then
 				local assignmentEditor = Private.assignmentEditor
-				local assignmentID = assignmentEditor:GetAssignmentID()
-				if assignmentID then
-					local assignment = FindAssignmentByUniqueID(assignments, assignmentID)
-					if assignment then
-						local previewText = CreateReminderText(assignment, plan.roster, true)
-						local availableCombatLogEventTypes =
-							GetAvailableCombatLogEventTypes(bossDungeonEncounterID, difficulty)
-						local spellSpecificCombatLogEventTypes = nil
-						local combatLogEventSpellID = assignment.combatLogEventSpellID
-						if combatLogEventSpellID then
-							local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID, difficulty)
-							if ability then
-								spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
-							end
+				local assignment = assignmentEditor:GetAssignment()
+				if assignment then
+					local previewText = CreateReminderText(assignment, plan.roster, true)
+					local availableCombatLogEventTypes =
+						GetAvailableCombatLogEventTypes(bossDungeonEncounterID, difficulty)
+					local spellSpecificCombatLogEventTypes = nil
+					local combatLogEventSpellID = assignment.combatLogEventSpellID
+					if combatLogEventSpellID then
+						local ability = FindBossAbility(bossDungeonEncounterID, combatLogEventSpellID, difficulty)
+						if ability then
+							spellSpecificCombatLogEventTypes = ability.allowedCombatLogEventTypes
 						end
-						assignmentEditor:PopulateFields(
-							assignment,
-							GetCurrentRoster(),
-							previewText,
-							kAssignmentMetaTables,
-							availableCombatLogEventTypes,
-							spellSpecificCombatLogEventTypes,
-							AddOn.db.profile.favoritedSpellAssignments
-						)
-					else
-						assignmentEditor:Release()
 					end
+					assignmentEditor:PopulateFields(
+						assignment,
+						GetCurrentRoster(),
+						previewText,
+						kAssignmentMetaTables,
+						availableCombatLogEventTypes,
+						spellSpecificCombatLogEventTypes,
+						AddOn.db.profile.favoritedSpellAssignments
+					)
 				else
 					assignmentEditor:Release()
 				end
@@ -1045,7 +1040,7 @@ do
 			end
 			if updateTimeline then
 				if not updateAssignments then
-					local timelineAssignment = timeline.FindTimelineAssignment(assignment.uniqueID)
+					local timelineAssignment = timeline.FindTimelineAssignment(assignment.ID)
 					if timelineAssignment then
 						utilities.UpdateTimelineAssignmentStartTime(timelineAssignment, dungeonEncounterID, difficulty)
 					end
@@ -1053,7 +1048,7 @@ do
 				end
 				timeline.ClearSelectedAssignments()
 				timeline.ClearSelectedBossAbilities()
-				timeline.SelectAssignment(assignment.uniqueID, AssignmentSelectionType.kSelection)
+				timeline.SelectAssignment(assignment.ID, AssignmentSelectionType.kSelection)
 				if assignment.combatLogEventSpellID and assignment.spellCount then
 					timeline.SelectBossAbility(
 						assignment.combatLogEventSpellID,
@@ -1063,7 +1058,7 @@ do
 				end
 			end
 			if scrollAssignmentIntoView then
-				timeline:ScrollAssignmentIntoView(assignment.uniqueID)
+				timeline:ScrollAssignmentIntoView(assignment.ID)
 			end
 		end
 	end

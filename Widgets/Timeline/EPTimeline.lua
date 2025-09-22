@@ -1011,7 +1011,7 @@ local function OnHeightSet(self, height)
 end
 
 ---@param self EPTimeline
----@param assignmentID integer
+---@param assignmentID string
 local function ScrollAssignmentIntoView(self, assignmentID)
 	local frame = FindAssignmentFrame(s.AssignmentFrames, assignmentID)
 	if frame then

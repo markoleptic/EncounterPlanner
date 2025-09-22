@@ -68,44 +68,45 @@ do
 	---@return SerializedAssignment
 	local function SerializeAssignment(assignment)
 		local required = {}
-		required[1] = assignment.assignee
-		required[2] = assignment.spellID
-		required[3] = assignment.text
-		required[4] = assignment.targetName
+		required[1] = assignment.ID
+		required[2] = assignment.assignee
+		required[3] = assignment.spellID
+		required[4] = assignment.text
+		required[5] = assignment.targetName
 		if assignment.time then
-			required[5] = assignment.time
+			required[6] = assignment.time
 		end
 		if assignment.combatLogEventType then
-			required[6] = assignment.combatLogEventType
-			required[7] = assignment.combatLogEventSpellID
-			required[8] = assignment.spellCount
-			required[9] = assignment.phase
-			required[10] = assignment.bossPhaseOrderIndex
+			required[7] = assignment.combatLogEventType
+			required[8] = assignment.combatLogEventSpellID
+			required[9] = assignment.spellCount
+			required[10] = assignment.phase
+			required[11] = assignment.bossPhaseOrderIndex
 		end
 		return required
 	end
 
 	---@param data SerializedAssignment
-	---@param planID string
 	---@return CombatLogEventAssignment|TimedAssignment
-	local function DeserializeAssignment(data, planID)
-		local assignment = Assignment:New(nil, planID)
-		assignment.assignee = data[1]
-		assignment.spellID = data[2]
-		assignment.text = data[3]
-		assignment.targetName = data[4]
+	local function DeserializeAssignment(data)
+		local assignment = Assignment:New()
+		assignment.ID = data[1]
+		assignment.assignee = data[2]
+		assignment.spellID = data[3]
+		assignment.text = data[4]
+		assignment.targetName = data[5]
 
-		if data[10] then
-			assignment = CombatLogEventAssignment:New(assignment, planID)
-			assignment.time = data[5]
-			assignment.combatLogEventType = data[6]
-			assignment.combatLogEventSpellID = data[7]
-			assignment.spellCount = data[8]
-			assignment.phase = data[9]
-			assignment.bossPhaseOrderIndex = data[10]
+		if data[11] then
+			assignment = CombatLogEventAssignment:New(assignment)
+			assignment.time = data[6]
+			assignment.combatLogEventType = data[7]
+			assignment.combatLogEventSpellID = data[8]
+			assignment.spellCount = data[9]
+			assignment.phase = data[10]
+			assignment.bossPhaseOrderIndex = data[11]
 		else
-			assignment = TimedAssignment:New(assignment, planID)
-			assignment.time = data[5]
+			assignment = TimedAssignment:New(assignment)
+			assignment.time = data[6]
 		end
 
 		return assignment
@@ -173,7 +174,7 @@ do
 		plan.instanceID = serializedPlan[4]
 		plan.difficulty = serializedPlan[5]
 		for _, serializedAssignment in ipairs(serializedPlan[6]) do
-			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment, planID)
+			plan.assignments[#plan.assignments + 1] = DeserializeAssignment(serializedAssignment)
 		end
 		for _, serializedRosterEntry in ipairs(serializedPlan[7]) do
 			---@cast serializedRosterEntry SerializedRosterEntry
@@ -887,7 +888,7 @@ function Private:UnregisterCommunications()
 end
 
 --@debug@
-Private.TableToString = TableToString
-Private.StringToTable = StringToTable
-Private.PlanSerializer = PlanSerializer
+Private.testReferences.TableToString = TableToString
+Private.testReferences.StringToTable = StringToTable
+Private.testReferences.PlanSerializer = PlanSerializer
 --@end-debug@

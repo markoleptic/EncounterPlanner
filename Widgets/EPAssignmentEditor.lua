@@ -266,15 +266,15 @@ local function SetAssignmentType(self, assignmentType)
 end
 
 ---@param self EPAssignmentEditor
----@param assignmentID integer
-local function SetAssignmentID(self, assignmentID)
-	self.assignmentID = assignmentID
+---@param assignment Assignment|CombatLogEventAssignment|TimedAssignment
+local function SetAssignment(self, assignment)
+	self.assignment = assignment
 end
 
 ---@param self EPAssignmentEditor
----@return integer|nil
-local function GetAssignmentID(self)
-	return self.assignmentID
+---@return Assignment|CombatLogEventAssignment|TimedAssignment|nil
+local function GetAssignment(self)
+	return self.assignment
 end
 
 ---@param self EPAssignmentEditor
@@ -762,7 +762,7 @@ local function OnRelease(self)
 		self.deleteButton:Release()
 	end
 	self.assigneeTypeDropdown = nil
-	self.assignmentID = nil
+	self.assignment = nil
 	self.assignmentTypeDropdown = nil
 	self.cancelIfAlreadyCastedCheckBox = nil
 	self.combatLogEventContainer = nil
@@ -828,7 +828,7 @@ local function PopulateFields(
 	spellSpecificCombatLogEventTypes,
 	favoritedSpellDropdownItems
 )
-	self:SetAssignmentID(assignment.uniqueID)
+	self:SetAssignment(assignment)
 	local assignee = assignment.assignee
 	self.assigneeTypeDropdown:SetValue(assignee)
 
@@ -971,7 +971,7 @@ local function Constructor()
 
 	---@class EPAssignmentEditor : AceGUIContainer
 	---@field assigneeTypeDropdown EPDropdown
-	---@field assignmentID integer|nil
+	---@field assignment Assignment|CombatLogEventAssignment|TimedAssignment|nil
 	---@field assignmentTypeDropdown EPDropdown
 	---@field cancelIfAlreadyCastedCheckBox EPCheckBox
 	---@field combatLogEventContainer EPContainer
@@ -1011,8 +1011,8 @@ local function Constructor()
 		OnRelease = OnRelease,
 		LayoutFinished = LayoutFinished,
 		SetAssignmentType = SetAssignmentType,
-		SetAssignmentID = SetAssignmentID,
-		GetAssignmentID = GetAssignmentID,
+		SetAssignment = SetAssignment,
+		GetAssignment = GetAssignment,
 		PopulateFields = PopulateFields,
 		HandleRosterChanged = HandleRosterChanged,
 		RepopulateSpellDropdown = RepopulateSpellDropdown,

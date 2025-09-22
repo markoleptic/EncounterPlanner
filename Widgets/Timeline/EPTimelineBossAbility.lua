@@ -52,7 +52,7 @@ local function HandleBossAbilityFrameEnter(frame)
 		if getmetatable(assignment) == CombatLogEventAssignment then
 			---@cast assignment CombatLogEventAssignment
 			if assignment.combatLogEventSpellID == spellID and assignment.spellCount == spellCount then
-				tinsert(s.SelectedAssignmentIDsFromBossAbilityFrameEnter, assignment.uniqueID)
+				tinsert(s.SelectedAssignmentIDsFromBossAbilityFrameEnter, assignment.ID)
 			end
 		end
 	end

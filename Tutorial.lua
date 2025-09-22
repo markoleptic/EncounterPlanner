@@ -179,7 +179,7 @@ local function CreateGenericAssignmentIfNoAssignmentsAndUpdateInterfaceFromAssig
 		end
 		local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
 		if plan then
-			local assignment = TimedAssignment:New(nil, plan.ID)
+			local assignment = TimedAssignment:New()
 			assignment.assignee = name
 			utilities.AddAssignmentToPlan(plan, assignment)
 			interfaceUpdater.UpdateFromAssignment(
@@ -202,9 +202,9 @@ end
 local function FindCurrentAssignmentOrder(self)
 	if self.mainFrame and self.mainFrame.timeline then
 		if self.assignmentEditor then
-			local assignmentID = self.assignmentEditor:GetAssignmentID()
-			if assignmentID then
-				return self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignmentID)
+			local assignment = self.assignmentEditor:GetAssignment()
+			if assignment then
+				return self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.ID)
 			end
 		end
 	end
@@ -226,9 +226,9 @@ local function EnsureAssigneeIsExpanded(self, scrollIntoView)
 	local timeline = self.mainFrame.timeline
 	if timeline then
 		if self.assignmentEditor and scrollIntoView then
-			local assignmentID = self.assignmentEditor:GetAssignmentID()
-			if assignmentID then
-				timeline:ScrollAssignmentIntoView(assignmentID)
+			local assignment = self.assignmentEditor:GetAssignment()
+			if assignment then
+				timeline:ScrollAssignmentIntoView(assignment.ID)
 			end
 		end
 	end
@@ -250,12 +250,9 @@ end
 ---@param self Private
 local function IsTimeCorrect(self, time)
 	if self.assignmentEditor then
-		local assignmentID = self.assignmentEditor:GetAssignmentID()
-		if assignmentID then
-			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-			if assignment then
-				return abs(assignment.time - time) < 0.01
-			end
+		local assignment = self.assignmentEditor:GetAssignment()
+		if assignment then
+			return abs(assignment.time - time) < 0.01
 		end
 	end
 	return false
@@ -266,18 +263,15 @@ end
 ---@param spellID integer
 local function IsCombatLogEventCorrect(self, combatLogEventType, spellID)
 	if self.assignmentEditor then
-		local assignmentID = self.assignmentEditor:GetAssignmentID()
-		if assignmentID then
-			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-			if assignment then
-				if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
-					---@cast assignment CombatLogEventAssignment
-					if
-						assignment.combatLogEventType == combatLogEventType
-						and assignment.combatLogEventSpellID == spellID
-					then
-						return true
-					end
+		local assignment = self.assignmentEditor:GetAssignment()
+		if assignment then
+			if getmetatable(assignment) == Private.classes.CombatLogEventAssignment then
+				---@cast assignment CombatLogEventAssignment
+				if
+					assignment.combatLogEventType == combatLogEventType
+					and assignment.combatLogEventSpellID == spellID
+				then
+					return true
 				end
 			end
 		end
@@ -316,13 +310,10 @@ end
 ---@return boolean
 local function IsTextChanged(self)
 	if self.assignmentEditor then
-		local assignmentID = self.assignmentEditor:GetAssignmentID()
-		if assignmentID then
-			local assignment = utilities.FindAssignmentByUniqueID(GetCurrentAssignments(), assignmentID)
-			if assignment then
-				if assignment.text:lower() == L["Use {6262} at {circle}"]:lower() then
-					return true
-				end
+		local assignment = self.assignmentEditor:GetAssignment()
+		if assignment then
+			if assignment.text:lower() == L["Use {6262} at {circle}"]:lower() then
+				return true
 			end
 		end
 	end
@@ -407,7 +398,7 @@ local function FindOrCreatePhaseOneAssignment(assignmentNumber, setSpellID, setT
 	else
 		local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
 		if plan then
-			assignment = TimedAssignment:New(nil, plan.ID)
+			assignment = TimedAssignment:New()
 		else
 			error("Couldn't find a tutorial plan.")
 		end
@@ -573,7 +564,7 @@ local function FindOrCreateIntermissionAssignment(
 	local assignment
 	local plan = FindTutorialPlan(k.BrewmasterAldryrEncounterID)
 	if plan then
-		assignment = CombatLogEventAssignment:New(nil, plan.ID)
+		assignment = CombatLogEventAssignment:New()
 	else
 		error("Couldn't find a tutorial plan.")
 	end
@@ -697,8 +688,7 @@ local function PhaseOneOkay(self, assignmentNumber, setSpellID, setTime, openAss
 			self.mainFrame.timeline.ClearSelectedBossAbilities()
 			self.mainFrame.timeline.ClearSelectedAssignments()
 		end
-		local assignmentRowIndex =
-			self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.uniqueID)
+		local assignmentRowIndex = self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.ID)
 		if assignmentRowIndex then
 			return assignmentRowIndex - 1
 		end
@@ -772,8 +762,7 @@ local function IntermissionOkay(
 			self.mainFrame.timeline:ClearSelectedBossAbilities()
 			self.mainFrame.timeline:ClearSelectedAssignments()
 		end
-		local assignmentRowIndex =
-			self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.uniqueID)
+		local assignmentRowIndex = self.mainFrame.timeline.ComputeAssignmentRowIndexFromAssignmentID(assignment.ID)
 		if assignmentRowIndex then
 			return assignmentRowIndex - 1
 		end
