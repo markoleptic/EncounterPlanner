@@ -387,6 +387,7 @@ local function OnAcquire(self)
 	timeContainer:SetLayout("EPVerticalLayout")
 	timeContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 	timeContainer:SetFullWidth(true)
+	self.timeContainer = timeContainer
 	do
 		local timeLabel = AceGUI:Create("EPLabel")
 		timeLabel:SetText(L["Time:"], 0)
@@ -447,6 +448,7 @@ local function OnAcquire(self)
 	spellAssignmentContainer:SetLayout("EPVerticalLayout")
 	spellAssignmentContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 	spellAssignmentContainer:SetFullWidth(true)
+	self.spellAssignmentContainer = spellAssignmentContainer
 	do
 		local enableSpellAssignmentCheckBox = AceGUI:Create("EPCheckBox")
 		enableSpellAssignmentCheckBox:SetText(L["Spell"] .. ":")
@@ -492,7 +494,7 @@ local function OnAcquire(self)
 	targetContainer:SetLayout("EPVerticalLayout")
 	targetContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 	targetContainer:SetFullWidth(true)
-
+	self.targetContainer = targetContainer
 	do
 		local enableTargetCheckBox = AceGUI:Create("EPCheckBox")
 		enableTargetCheckBox:SetText(L["Target"] .. ":")
@@ -537,11 +539,13 @@ local function OnAcquire(self)
 
 		optionalTextContainer:AddChildren(optionalTextLabel, optionalTextLineEdit)
 	end
+	self.optionalTextContainer = optionalTextContainer
 
 	local previewContainer = AceGUI:Create("EPContainer")
 	previewContainer:SetLayout("EPVerticalLayout")
 	previewContainer:SetSpacing(unpack(k.LabelWidgetSpacing))
 	previewContainer:SetFullWidth(true)
+	self.previewContainer = previewContainer
 	do
 		local previewLabelLabel = AceGUI:Create("EPLabel")
 		previewLabelLabel:SetText(L["Preview:"], 0)
@@ -772,13 +776,18 @@ local function OnRelease(self)
 	self.holdDurationLineEdit = nil
 	self.lastClassDropdownValue = nil
 	self.lastRoleDropdownValue = nil
+	self.optionalTextContainer = nil
 	self.optionalTextLineEdit = nil
+	self.previewContainer = nil
 	self.previewLabel = nil
 	self.reminderOverridesContainer = nil
 	self.reminderOverridesLabel = nil
 	self.reminderPreferences = nil
+	self.spellAssignmentContainer = nil
 	self.spellAssignmentDropdown = nil
+	self.targetContainer = nil
 	self.targetDropdown = nil
+	self.timeContainer = nil
 	self.timeMinuteLineEdit = nil
 	self.timeSecondLineEdit = nil
 	self.triggerContainer = nil
@@ -976,13 +985,18 @@ local function Constructor()
 	---@field holdDurationLineEdit EPLineEdit
 	---@field lastClassDropdownValue string|nil
 	---@field lastRoleDropdownValue string|nil
+	---@field optionalTextContainer EPContainer
 	---@field optionalTextLineEdit EPLineEdit
+	---@field previewContainer EPContainer
 	---@field previewLabel EPLabel
 	---@field reminderOverridesContainer EPContainer
 	---@field reminderOverridesLabel EPExpanderHeader
 	---@field reminderPreferences ReminderPreferences
+	---@field spellAssignmentContainer EPContainer
 	---@field spellAssignmentDropdown EPDropdown
+	---@field targetContainer EPContainer
 	---@field targetDropdown EPDropdown
+	---@field timeContainer EPContainer
 	---@field timeMinuteLineEdit EPLineEdit
 	---@field timeSecondLineEdit EPLineEdit
 	---@field triggerContainer EPContainer
