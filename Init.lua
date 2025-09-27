@@ -144,6 +144,7 @@ Private.classes.PlanDiffType = {
 	Insert = 2,
 	Delete = 3,
 	Change = 4,
+	Conflict = 5,
 }
 
 ---@enum TextImportType

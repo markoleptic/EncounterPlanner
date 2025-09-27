@@ -181,9 +181,13 @@
 ---@field classColoredName string
 ---@field role RaidGroupRole
 
+---@class AssignmentChangeEntry
+---@field field string
+---@field oldValue string|number|integer|boolean|CombatLogEventType|nil
+---@field newValue string|number|integer|boolean|CombatLogEventType|nil
+
 ---@class Plan A plan for a boss encounter.
 ---@field ID string Uniquely generated ID used when updating assignments received from other characters.
----@field isPrimaryPlan boolean Whether the plan has priority over other plans for the same boss.
 ---@field name string Name of the plan.
 ---@field dungeonEncounterID integer Dungeon encounter ID for the boss the plan is associated with.
 ---@field instanceID integer Instance ID for the boss the plan is associated with.
@@ -192,10 +196,12 @@
 ---@field assignments table<integer, Assignment> Assignments for the plan.
 ---@field roster table<string, RosterEntry> Roster for the plan.
 ---@field assigneeSpellSets table<integer, AssigneeSpellSet> Assignees and spells (templates)
+---@field isPrimaryPlan boolean Whether the plan has priority over other plans for the same boss.
 ---@field collapsed table<string, boolean> Which assignees are collapsed in the assignment timeline.
+---@field remindersEnabled boolean Whether reminders are enabled for the plan.
 ---@field customPhaseDurations table<integer, number> Overridden boss phase durations.
 ---@field customPhaseCounts table<integer, number> Overridden boss phase counts.
----@field remindersEnabled boolean Whether reminders are enabled for the plan.
+---@field lastSyncedSnapShot SerializedPlan|nil
 
 ---@class SerializedPlan
 ---@field [1] string ID
@@ -467,6 +473,44 @@
 
 ---@class PlanDiffEntry<T>: { type: PlanDiffType, index?: integer, aIndex?: integer, bIndex?: integer, value?: `T`, oldValue?: `T`, newValue?: `T`, result: boolean }
 
+---@class AssignmentConflict
+---@field field string Field of the conflict in assignment
+---@field baseValue string|number|integer|CombatLogEventType|nil
+---@field localValue string|number|integer|CombatLogEventType|nil
+---@field remoteValue string|number|integer|CombatLogEventType|nil
+
+---@class AssignmentPlanDiffEntry
+---@field type PlanDiffType
+---@field ID string
+---@field result boolean
+
+---@class AssignmentEqualDiffEntry : AssignmentPlanDiffEntry
+---@field aIndex integer
+---@field bIndex integer
+---@field value TimedAssignment|CombatLogEventAssignment
+
+---@class AssignmentInsertDiffEntry : AssignmentPlanDiffEntry
+---@field index integer Index from b
+---@field value TimedAssignment|CombatLogEventAssignment Value from b
+
+---@class AssignmentDeleteDiffEntry : AssignmentPlanDiffEntry
+---@field index integer Index from a
+---@field value TimedAssignment|CombatLogEventAssignment Value from a
+
+---@class AssignmentChangeDiffEntry : AssignmentPlanDiffEntry
+---@field aIndex? integer
+---@field bIndex? integer
+---@field oldValue TimedAssignment|CombatLogEventAssignment Value from a
+---@field newValue TimedAssignment|CombatLogEventAssignment Value from b
+
+---@class AssignmentConflictDiffEntry : AssignmentPlanDiffEntry
+---@field localType PlanDiffType
+---@field remoteType PlanDiffType
+---@field chooseLocal boolean
+---@field conflicts table<integer, AssignmentConflict>
+---@field localValue TimedAssignment|CombatLogEventAssignment
+---@field remoteValue TimedAssignment|CombatLogEventAssignment
+
 ---@class PlanRosterDiff
 ---@field assignee string
 ---@field type PlanDiffType
@@ -480,12 +524,13 @@
 ---@field instanceID? {oldValue: integer, newValue: integer, result: boolean}
 
 ---@class PlanDiff
----@field assignments table<integer, PlanDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>>
+---@field assignments table<integer, AssignmentPlanDiffEntry>
 ---@field content table<integer, PlanDiffEntry<string>>
 ---@field roster table<integer, PlanRosterDiff>
 ---@field assigneeSpellSets table<integer, PlanDiffEntry<FlatAssigneeSpellSet>>
 ---@field metaData PlanMetaDataDiff
 ---@field empty boolean
+---@field canUseNewAssignmentMerge boolean
 
 ---@class SortedDungeonInstanceEntryBossEntry
 ---@field dungeonEncounterID integer

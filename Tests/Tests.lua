@@ -1612,6 +1612,450 @@ do
 			return "MergePlan"
 		end
 
+		function test.MergePlanNew()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local oldPlan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
+
+			local maxPlayerIndex = 30
+			for i = 11, maxPlayerIndex do
+				local assignee = "Player" .. i
+				oldPlan.roster[assignee] = RosterEntry:New()
+				if i % 2 == 0 then
+					oldPlan.roster[assignee].role = "role:damager"
+				end
+				tinsert(oldPlan.assigneeSpellSets, { assignee = assignee, spells = {} })
+				for spellID = 1, random(5, 10) do
+					tinsert(oldPlan.assigneeSpellSets[#oldPlan.assigneeSpellSets].spells, spellID)
+				end
+			end
+
+			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			do
+				local diff = DiffPlans(oldPlan, newPlan)
+				TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+			end
+
+			for i, assignment in ipairs(newPlan.assignments) do
+				assignment.ID = oldPlan.assignments[i].ID
+			end
+
+			oldPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(oldPlan)
+			newPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(newPlan)
+			newPlan.roster["Player13"] = nil
+			newPlan.roster["Player8"].role = "role:healer"
+			newPlan.roster["Player22"] = {
+				class = "class:DemonHunter",
+				classColoredName = GetClassColor("DEMONHUNTER"):WrapTextInColorCode("Player22"),
+				role = "role:tank",
+			}
+
+			newPlan.content = RemoveTabs(SplitStringIntoTable(textTwo))
+
+			local function AddRosterMember()
+				maxPlayerIndex = maxPlayerIndex + 1
+				local assignee = "Player" .. maxPlayerIndex
+				newPlan.roster[assignee] = RosterEntry:New()
+				if maxPlayerIndex % 2 == 0 then
+					newPlan.roster[assignee].role = "role:damager"
+				end
+				return assignee
+			end
+
+			for _ = 1, floor(#newPlan.assigneeSpellSets * 0.5) do
+				local choice = random() -- [0,1)
+				local count = #newPlan.assigneeSpellSets
+				if choice < 0.3 and count > 0 then -- delete
+					local idx = random(1, count)
+					tremove(newPlan.assigneeSpellSets, idx)
+				elseif choice < 0.6 then -- insert
+					local newAssignee = AddRosterMember()
+					local idx = random(1, count + 1)
+					tinsert(newPlan.assigneeSpellSets, idx, { assignee = newAssignee, spells = {} })
+					local spells = newPlan.assigneeSpellSets[idx].spells
+					for spellID = 1, random(5, 10) do
+						tinsert(spells, spellID)
+					end
+				elseif count > 0 then -- change
+					local idx = random(1, count)
+					local spells = newPlan.assigneeSpellSets[idx].spells
+					if #spells > 1 then
+						if random() < 0.5 then
+							for spellIndex = 1, random(1, #spells - 1) do
+								tremove(spells, spellIndex)
+							end
+						else
+							for spellID = 6, random(11, 16) do
+								tinsert(spells, spellID)
+							end
+						end
+					end
+				end
+			end
+
+			local rosterCount = 0
+			for _ in pairs(newPlan.roster) do
+				rosterCount = rosterCount + 1
+			end
+
+			local assignees = {}
+			local seen = {}
+			for _, assignment in ipairs(newPlan.assignments) do
+				if not seen[assignment.assignee] then
+					tinsert(assignees, assignment.assignee)
+					seen[assignment.assignee] = true
+				end
+			end
+
+			for _ = 1, random(20, 60) do
+				local choice = random() -- [0,1)
+				local len = #newPlan.assignments
+				if choice < 0.3 and len > 0 then -- delete
+					local idx = random(1, len)
+					tremove(newPlan.assignments, idx)
+				elseif choice < 0.6 then -- insert
+					local idx = random(1, len + 1)
+					tinsert(newPlan.assignments, idx, testUtilities.CreateRandomAssignment(newPlan, boss, assignees))
+				elseif len > 0 then -- change
+					local idx = random(1, len)
+					newPlan.assignments[idx].assignee = testUtilities.GetRandomAssignee(newPlan.roster, rosterCount)
+				end
+			end
+
+			local diff = DiffPlans(oldPlan, newPlan)
+			MergePlan(plans, oldPlan, diff, true)
+			TestEqual(
+				oldPlan.dungeonEncounterID,
+				newPlan.dungeonEncounterID,
+				"New plan dungeonEncounterID applied correctly"
+			)
+			TestEqual(oldPlan.instanceID, newPlan.instanceID, "New plan instanceID applied correctly")
+			TestEqual(oldPlan.difficulty, newPlan.difficulty, "New plan difficulty applied correctly")
+			TestEqual(oldPlan.roster, newPlan.roster, "New plan roster applied correctly")
+			TestEqual(#oldPlan.assignments, #newPlan.assignments, "New plan assignments sized correctly")
+			local function findAssignmentIndex(id)
+				for i = 1, #newPlan.assignments do
+					if newPlan.assignments[i].ID == id then
+						return i
+					end
+				end
+			end
+			for i = 1, #oldPlan.assignments do
+				TestEqual(
+					oldPlan.assignments[i],
+					newPlan.assignments[findAssignmentIndex(oldPlan.assignments[i].ID)],
+					"New plan assignments applied correctly"
+				)
+			end
+			TestEqual(oldPlan.content, newPlan.content, "New plan content applied correctly")
+			TestEqual(
+				oldPlan.assigneeSpellSets,
+				newPlan.assigneeSpellSets,
+				"New plan assigneeSpellSets applied correctly"
+			)
+
+			return "MergePlanNew"
+		end
+
+		function test.ApplyAssignmentDiff()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local base = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			base.content = RemoveTabs(SplitStringIntoTable(textOne))
+			base.assignments = {}
+			local assignees = {}
+			local rosterCount = 0
+			for _ in pairs(base.roster) do
+				rosterCount = rosterCount + 1
+				tinsert(assignees, _)
+			end
+			for _ = 1, 5 do
+				tinsert(base.assignments, testUtilities.CreateRandomAssignment(base, boss, assignees))
+			end
+
+			local localChange = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			for i = 1, 5 do
+				localChange.assignments[i].ID = base.assignments[i].ID
+			end
+			localChange.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(base)
+			local incoming = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			for i = 1, 5 do
+				incoming.assignments[i].ID = base.assignments[i].ID
+			end
+			incoming.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(base)
+
+			local planDiff = DiffPlans(localChange, incoming)
+			TestEqual(planDiff.empty, true, "Empty plan diff")
+
+			tremove(localChange.assignments, 3)
+			local randomAssignmentOne = testUtilities.CreateRandomAssignment(localChange, boss, assignees)
+			tinsert(localChange.assignments, 1, randomAssignmentOne)
+			tremove(localChange.assignments, 2)
+
+			tremove(incoming.assignments, 3)
+			incoming.assignments[4].text = "L"
+			local randomAssignmentTwo = testUtilities.CreateRandomAssignment(incoming, boss, assignees)
+			tinsert(incoming.assignments, randomAssignmentTwo)
+
+			local diff = DiffPlans(localChange, incoming)
+			utilities.ApplyAssignmentDiff(localChange.assignments, diff.assignments)
+			TestEqual(#localChange.assignments, 5, "Unexpected assignment count")
+
+			TestEqual(localChange.assignments[1].ID, randomAssignmentOne.ID, "First element should be local insert")
+			TestEqual(
+				localChange.assignments[#localChange.assignments].ID,
+				randomAssignmentTwo.ID,
+				"Last element should be remote insert"
+			)
+			TestEqual(localChange.assignments[4].text, "L", "Remote text change not applied")
+
+			return "ApplyAssignmentDiff"
+		end
+
+		local AreAssignmentsIdentical = Private.assignmentUtilities.AreAssignmentsIdentical
+		local GetAssignmentConflicts = Private.assignmentUtilities.GetAssignmentConflicts
+
+		function test.AssignmentConflictDetection()
+			local base = TimedAssignment:New()
+			base.assignee = "Markoleptic"
+			base.cancelIfAlreadyCasted = true
+			base.countdownLength = 4.0
+			base.holdDuration = 5.0
+			base.spellID = 11342
+			base.targetName = "Guh"
+			base.text = "buh"
+			base.time = 1
+
+			local localVersion = Private.DuplicateAssignment(base)
+			---@cast localVersion TimedAssignment
+			localVersion.ID = base.ID
+
+			local incomingVersion = Private.DuplicateAssignment(base)
+			---@cast incomingVersion TimedAssignment
+			incomingVersion.ID = base.ID
+
+			TestEqual(AreAssignmentsIdentical(base, localVersion), true, "Base = local")
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), true, "Local = Incoming")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
+
+			incomingVersion.time = 5
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
+			incomingVersion.time = 1
+
+			localVersion.time = 5
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
+
+			localVersion.time = 5
+			incomingVersion.time = 6
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 1, "1 conflict")
+			localVersion.time = 1
+			incomingVersion.time = 1
+
+			localVersion.cancelIfAlreadyCasted = nil
+			localVersion.countdownLength = nil
+			localVersion.holdDuration = nil
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), true, "Base == local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "0 conflicts")
+
+			incomingVersion.assignee = "Me"
+			incomingVersion.spellID = 1
+			incomingVersion.targetName = "Buh"
+			incomingVersion.text = "guh"
+			incomingVersion.time = 4
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "0 conflicts")
+
+			localVersion.assignee = "You"
+			localVersion.spellID = 25
+			localVersion.targetName = "Buh2"
+			localVersion.text = "guh"
+			localVersion.time = 5
+			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 4, "4 conflicts")
+
+			return "AssignmentConflictDetection"
+		end
+
+		function test.AssignmentConflicts()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local basePlan = CreateTestPlan(plans, "Base", boss, DifficultyType.Mythic, CreateTestRoster())
+
+			local base = TimedAssignment:New()
+			base.assignee = "Markoleptic"
+			base.cancelIfAlreadyCasted = true
+			base.countdownLength = 4.0
+			base.holdDuration = 5.0
+			base.spellID = 11342
+			base.targetName = "Guh"
+			base.text = "buh"
+			base.time = 1
+			basePlan.assignments = { base }
+			basePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(basePlan)
+
+			local localPlan = DuplicatePlan(plans, "Base", "LocalPlan")
+			local remotePlan = DuplicatePlan(plans, "Base", "RemotePlan")
+
+			do
+				local localVersion = localPlan.assignments[1]
+				---@cast localVersion TimedAssignment
+				localVersion.ID = base.ID
+
+				local remoteVersion = remotePlan.assignments[1]
+				---@cast remoteVersion TimedAssignment
+				remoteVersion.ID = base.ID
+
+				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+
+				localVersion.time = 4.0
+				remoteVersion.time = 6.0
+
+				local diff = DiffPlans(localPlan, remotePlan)
+				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localVersion, remoteVersion, "Correctly merged 1")
+			end
+
+			do
+				localPlan.assignments[1] = DuplicateAssignment(base)
+				local localVersion = localPlan.assignments[1]
+				---@cast localVersion TimedAssignment
+				localVersion.ID = base.ID
+
+				remotePlan.assignments[1] = DuplicateAssignment(base)
+				local remoteVersion = remotePlan.assignments[1]
+				---@cast remoteVersion TimedAssignment
+				remoteVersion.ID = base.ID
+
+				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+
+				localVersion.time = 4.0
+				local localCopy = Private.DeepCopy(localVersion)
+				setmetatable(localCopy, getmetatable(localVersion))
+
+				local newRemote = CombatLogEventAssignment:New(remoteVersion)
+				newRemote.combatLogEventSpellID = 1241303
+				newRemote.bossPhaseOrderIndex = 2
+				newRemote.combatLogEventType = "SAA"
+				newRemote.spellCount = 2
+				newRemote.time = 17.2
+				remotePlan.assignments[1] = newRemote
+
+				local remoteCopy = Private.DeepCopy(newRemote)
+				setmetatable(remoteCopy, getmetatable(newRemote))
+
+				local diff = DiffPlans(localPlan, remotePlan)
+				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
+				local firstDiff = diff.assignments[1]
+				---@cast firstDiff AssignmentConflictDiffEntry
+
+				firstDiff.chooseLocal = true
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 2.1")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.2")
+
+				firstDiff.chooseLocal = false
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.3")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.4")
+			end
+
+			do
+				localPlan.assignments[1] = DuplicateAssignment(base)
+				local localVersion = localPlan.assignments[1]
+				---@cast localVersion TimedAssignment
+				localVersion.ID = base.ID
+
+				remotePlan.assignments[1] = DuplicateAssignment(base)
+				local remoteVersion = remotePlan.assignments[1]
+				---@cast remoteVersion TimedAssignment
+				remoteVersion.ID = base.ID
+
+				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+
+				local newLocal = CombatLogEventAssignment:New(localVersion)
+				newLocal.combatLogEventSpellID = 1241303
+				newLocal.bossPhaseOrderIndex = 2
+				newLocal.combatLogEventType = "SAA"
+				newLocal.spellCount = 2
+				newLocal.time = 17.2
+				localPlan.assignments[1] = newLocal
+
+				local localCopy = Private.DeepCopy(localVersion)
+				setmetatable(localCopy, getmetatable(localVersion))
+
+				remoteVersion.time = 4.0
+				local remoteCopy = Private.DeepCopy(remoteVersion)
+				setmetatable(remoteCopy, getmetatable(remoteVersion))
+
+				local diff = DiffPlans(localPlan, remotePlan)
+				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 3")
+				local firstDiff = diff.assignments[1]
+				---@cast firstDiff AssignmentConflictDiffEntry
+
+				firstDiff.chooseLocal = true
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 3.1")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.2")
+
+				firstDiff.chooseLocal = false
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.3")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.4")
+			end
+
+			do
+				localPlan.assignments[1] = DuplicateAssignment(base)
+				local localVersion = localPlan.assignments[1]
+				---@cast localVersion TimedAssignment
+				localVersion.ID = base.ID
+
+				remotePlan.assignments[1] = DuplicateAssignment(base)
+				local remoteVersion = remotePlan.assignments[1]
+				---@cast remoteVersion TimedAssignment
+				remoteVersion.ID = base.ID
+
+				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+
+				localVersion.time = 3.2
+				local localCopy = Private.DeepCopy(localVersion)
+				setmetatable(localCopy, getmetatable(localVersion))
+
+				tremove(remotePlan.assignments, 1)
+
+				local diff = DiffPlans(localPlan, remotePlan)
+				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 4")
+				local firstDiff = diff.assignments[1]
+				---@cast firstDiff AssignmentConflictDiffEntry
+
+				firstDiff.chooseLocal = true
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 4.1")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.2")
+
+				firstDiff.chooseLocal = false
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.3")
+				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.4")
+			end
+
+			return "AssignmentConflicts"
+		end
+
 		function test.CreatePlanTemplate()
 			local plans = {}
 			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)

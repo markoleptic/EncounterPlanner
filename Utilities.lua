@@ -20,6 +20,8 @@ local DeepCopy = Private.DeepCopy
 ---@class Constants
 local constants = Private.constants
 local kTextAssignmentSpellID = constants.kTextAssignmentSpellID
+local kFormatStringGenericInlineIconWithText = constants.kFormatStringGenericInlineIconWithText
+local kFormatStringGenericInlineIconWithZoom = constants.kFormatStringGenericInlineIconWithZoom
 
 ---@class AssignmentUtilities
 local assignmentUtilities = Private.assignmentUtilities
@@ -168,7 +170,7 @@ do
 		local _, name, _, icon, role = GetSpecializationInfoForSpecID(specID)
 		local classID = GetClassIDFromSpecID(specID)
 		local classFile = select(2, GetClassInfo(classID))
-		local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
+		local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
 		sSpecIDToClassAndRole[specID] = {
@@ -614,7 +616,6 @@ do
 		end
 	end
 
-	local kFormatStringGenericInlineIconWithZoom = constants.kFormatStringGenericInlineIconWithZoom
 	local GetFormattedDataClassName = Utilities.GetFormattedDataClassName
 
 	---@param classFileName string
@@ -923,8 +924,6 @@ do
 		return a.text:match(kRegexIconText) < b.text:match(kRegexIconText)
 	end
 
-	local kFormatStringGenericInlineIconWithText = constants.kFormatStringGenericInlineIconWithText
-
 	do
 		local instanceAndBossDropdownItems = nil
 
@@ -980,7 +979,7 @@ do
 		local kHeroicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
 		l, r, t, b = Utilities.GetTextCoordsFromDifficulty(DifficultyType.Mythic, false, difficultyTextCoordPadding)
 		local kMythicIcon = format(kFormatStringDifficultyIcon, kEncounterJournalIcons, kOffsetX, l, r, t, b)
-		local kFormatStringPlanName = constants.kFormatStringGenericInlineIconWithZoom .. "%s%s"
+		local kFormatStringPlanName = kFormatStringGenericInlineIconWithZoom .. "%s%s"
 
 		---@param planName string
 		---@param bossIcon string|integer
@@ -1207,7 +1206,7 @@ end
 ---@param text string
 ---@return DropdownItemData
 function Utilities.CreateAbilityDropdownItemData(abilityID, icon, text)
-	local inlineIcon = format(constants.kFormatStringGenericInlineIconWithZoom, icon)
+	local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 	local iconText = format("%s %s", inlineIcon, text)
 	return { itemValue = abilityID, text = iconText }
 end
@@ -2713,115 +2712,134 @@ function Utilities.AddAssignmentToPlan(plan, assignment)
 	end
 end
 
+---@param plan Plan
+function Utilities.RemoveStaleCollapsedEntries(plan)
+	local seen = {}
+	for _, assignment in ipairs(plan.assignments) do
+		seen[assignment.assignee] = true
+	end
+	for _, assigneeSpellSet in ipairs(plan.assigneeSpellSets) do
+		seen[assigneeSpellSet.assignee] = true
+	end
+	for assignee, _ in pairs(plan.collapsed) do
+		if not seen[assignee] then
+			plan.collapsed[assignee] = nil
+		end
+	end
+end
+
+-- Removes the assignment from the plan with matching ID. If the assignee has no other assignments or templates, they
+-- are removed from collapsed table of the plan.
 ---@param plan Plan Plan to remove assignments and template entries from.
----@param assignee string? Find all using assignee
----@param assignmentID string? Find assignment with the matching ID. Only used if assignee is nil.
----@param spellID integer? If using an assignee, the spellID to further filter assignments to remove.
+---@param assignmentID string Find assignment with the matching ID.
 ---@return integer removedAssignmentCount
 ---@return integer removedTemplateCount
-function Utilities.RemoveAssignmentFromPlan(plan, assignee, assignmentID, spellID)
+function Utilities.RemoveAssignmentByID(plan, assignmentID)
 	local removedAssignmentCount, removedTemplateCount = 0, 0
 	local assignments = plan.assignments
 	local assigneeSpellSets = plan.assigneeSpellSets
+	local assignmentToRemove = Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
 
-	if assignee then
-		-- Remove assignments
-		local assigneeHasOtherSpellIDs = false
-		if spellID then
-			for i = #assignments, 1, -1 do
-				local currentAssignee, currentSpellID = assignments[i].assignee, assignments[i].spellID
-				if currentAssignee == assignee then
-					if currentSpellID == spellID then
-						tremove(assignments, i)
-						removedAssignmentCount = removedAssignmentCount + 1
-					else
-						assigneeHasOtherSpellIDs = true
-					end
-				end
-			end
-		else
-			for i = #assignments, 1, -1 do
-				if assignments[i].assignee == assignee then
-					tremove(assignments, i)
-					removedAssignmentCount = removedAssignmentCount + 1
+	if assignmentToRemove then -- Remove assignments
+		local matchingAssignee = assignmentToRemove.assignee
+		local containsAssignmentWithAssignee = false
+		local containsTemplateWithAssignee = false
+		for i = #assignments, 1, -1 do
+			local currentAssignment = assignments[i]
+			if currentAssignment.ID == assignmentID then
+				tremove(assignments, i)
+				removedAssignmentCount = removedAssignmentCount + 1
+			else
+				if currentAssignment.assignee == matchingAssignee then
+					containsAssignmentWithAssignee = true
 				end
 			end
 		end
 
-		-- Remove templates
 		for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
-			if assigneeSpellSet.assignee == assignee then
+			if assigneeSpellSet.assignee == matchingAssignee then
 				local spells = assigneeSpellSet.spells
-				if spellID then
-					for spellIDIndex, currentSpellID in ipairs(spells) do
-						if currentSpellID == spellID then
-							tremove(spells, spellIDIndex)
-							removedTemplateCount = removedTemplateCount + 1
-							break
-						end
-					end
-				else
-					removedTemplateCount = removedTemplateCount + #spells
-					wipe(spells)
-				end
-
 				if not next(spells) then
 					tremove(assigneeSpellSets, index)
+				else
+					containsTemplateWithAssignee = true
 				end
 				break
 			end
 		end
 
 		-- Remove from collapsed
-		if not assigneeHasOtherSpellIDs then
-			plan.collapsed[assignee] = nil
+		if not containsAssignmentWithAssignee and not containsTemplateWithAssignee then
+			plan.collapsed[matchingAssignee] = nil
 		end
-	elseif assignmentID then
-		local assignmentToRemove = Utilities.FindAssignmentByUniqueID(assignments, assignmentID)
-		if assignmentToRemove then -- Remove assignments
-			local matchingAssignee, matchingSpellID = assignmentToRemove.assignee, assignmentToRemove.spellID
-			local foundMatchingAssigneeAndSpellID = false
-			local assigneeHasOtherAssignments = false
-			for i = #assignments, 1, -1 do
-				local currentAssignment = assignments[i]
-				if currentAssignment.ID == assignmentID then
+	end
+
+	return removedAssignmentCount, removedTemplateCount
+end
+
+-- Removes the assignments and templates from the plan with the matching assignee and optionally by assignee + spell.
+-- If the assignee has no other assignments or templates, they are removed from collapsed table of the plan.
+---@param plan Plan Plan to remove assignments and template entries from.
+---@param assignee string Find all using assignee.
+---@param spellID integer? If using an assignee, the spellID to further filter assignments to remove.
+---@return integer removedAssignmentCount
+---@return integer removedTemplateCount
+function Utilities.RemoveAssignmentByAssignee(plan, assignee, spellID)
+	local removedAssignmentCount, removedTemplateCount = 0, 0
+	local assignments = plan.assignments
+	local assigneeSpellSets = plan.assigneeSpellSets
+	local containsAssignmentWithAssignee = false
+	local containsTemplateWithAssignee = false
+
+	if spellID then
+		for i = #assignments, 1, -1 do
+			local currentAssignee, currentSpellID = assignments[i].assignee, assignments[i].spellID
+			if currentAssignee == assignee then
+				if currentSpellID == spellID then
 					tremove(assignments, i)
 					removedAssignmentCount = removedAssignmentCount + 1
 				else
-					local currentAssignee, currentSpellID = currentAssignment.assignee, currentAssignment.spellID
-					if currentAssignee == matchingAssignee then
-						if currentSpellID == matchingSpellID then
-							foundMatchingAssigneeAndSpellID = true
-						end
-						assigneeHasOtherAssignments = true
-					end
+					containsAssignmentWithAssignee = true
 				end
-			end
-			if foundMatchingAssigneeAndSpellID == false then -- Remove templates
-				for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
-					if assigneeSpellSet.assignee == matchingAssignee then
-						local spells = assigneeSpellSet.spells
-
-						for spellIDIndex, currentSpellID in ipairs(spells) do
-							if currentSpellID == matchingSpellID then
-								tremove(spells, spellIDIndex)
-								removedTemplateCount = removedTemplateCount + 1
-								break
-							end
-						end
-
-						if not next(spells) then
-							tremove(assigneeSpellSets, index)
-						end
-						break
-					end
-				end
-			end
-
-			if not assigneeHasOtherAssignments then -- Remove from collapsed
-				plan.collapsed[matchingAssignee] = nil
 			end
 		end
+	else
+		for i = #assignments, 1, -1 do
+			if assignments[i].assignee == assignee then
+				tremove(assignments, i)
+				removedAssignmentCount = removedAssignmentCount + 1
+			end
+		end
+	end
+
+	-- Remove templates
+	for index, assigneeSpellSet in ipairs(assigneeSpellSets) do
+		if assigneeSpellSet.assignee == assignee then
+			local spells = assigneeSpellSet.spells
+			if spellID then
+				for spellIDIndex, currentSpellID in ipairs(spells) do
+					if currentSpellID == spellID then
+						tremove(spells, spellIDIndex)
+						removedTemplateCount = removedTemplateCount + 1
+					end
+				end
+			else
+				removedTemplateCount = removedTemplateCount + #spells
+				wipe(spells)
+			end
+
+			if not next(spells) then
+				tremove(assigneeSpellSets, index)
+			else
+				containsTemplateWithAssignee = true
+			end
+			break
+		end
+	end
+
+	-- Remove from collapsed
+	if not containsAssignmentWithAssignee and not containsTemplateWithAssignee then
+		plan.collapsed[assignee] = nil
 	end
 
 	return removedAssignmentCount, removedTemplateCount
@@ -3049,6 +3067,91 @@ do
 	end
 
 	local PlanDiffType = Private.classes.PlanDiffType
+	local AssignmentsEqual = assignmentUtilities.AssignmentsEqual
+	local AreAssignmentsIdentical = assignmentUtilities.AreAssignmentsIdentical
+	local MergeAssignments = assignmentUtilities.MergeAssignments
+
+	---@param a table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param b table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@return table<integer, AssignmentPlanDiffEntry>
+	function Utilities.MyersDiffAssignments(a, b)
+		local front = { [1] = { 0, {} } } -- k = 1 represents diagonal 0
+
+		local aCount, bCount = #a, #b
+		for d = 0, aCount + bCount do
+			for k = -d, d, 2 do
+				local goDown
+				if k == -d or k ~= d and front[k - 1][1] < front[k + 1][1] then
+					goDown = true
+				elseif k == d then
+					goDown = false
+				else
+					local left = front[k - 1] and front[k - 1][1] or -math.huge
+					local right = front[k + 1] and front[k + 1][1] or -math.huge
+					goDown = right > left
+				end
+
+				local previousX, x, history
+				if goDown then
+					previousX = front[k + 1][1]
+					history = front[k + 1][2]
+					x = previousX
+				else
+					previousX = front[k - 1][1]
+					history = front[k - 1][2]
+					x = previousX + 1
+				end
+				local y = x - k
+
+				history = ShallowCopy(history)
+
+				if 1 <= y and y <= bCount and goDown then
+					tinsert(
+						history,
+						{ type = PlanDiffType.Insert, index = y, value = b[y], ID = b[y].ID, result = true }
+					)
+				elseif 1 <= x and x <= aCount and not goDown then
+					tinsert(
+						history,
+						{ type = PlanDiffType.Delete, index = x, value = a[x], ID = a[x].ID, result = true }
+					)
+				end
+
+				while x < aCount and y < bCount and AssignmentsEqual(a[x + 1], b[y + 1]) == true do
+					if a[x + 1].ID == b[y + 1].ID and not AreAssignmentsIdentical(a[x + 1], b[y + 1]) then
+						tinsert(history, {
+							type = PlanDiffType.Change,
+							ID = a[x + 1].ID,
+							aIndex = x + 1,
+							bIndex = y + 1,
+							oldValue = a[x + 1],
+							newValue = b[y + 1],
+							result = true,
+						})
+					else
+						tinsert(history, {
+							type = PlanDiffType.Equal,
+							ID = b[y + 1].ID,
+							aIndex = x + 1,
+							bIndex = y + 1,
+							result = false,
+							value = b[y + 1],
+						})
+					end
+					x = x + 1
+					y = y + 1
+				end
+
+				if x >= aCount and y >= bCount then
+					return history
+				end
+
+				front[k] = { x, history }
+			end
+		end
+
+		return {}
+	end
 
 	---@generic T
 	---@param a table<integer, T>
@@ -3192,6 +3295,149 @@ do
 		return flattened
 	end
 
+	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@return table<integer, string>
+	local function CreateOrderedIDs(baseAssignments, localAssignments, remoteAssignments)
+		local orderedIDs = {}
+		local seen = {}
+
+		for _, a in ipairs(remoteAssignments) do
+			if not seen[a.ID] then
+				tinsert(orderedIDs, a.ID)
+				seen[a.ID] = true
+			end
+		end
+		for _, a in ipairs(baseAssignments) do
+			if not seen[a.ID] then
+				tinsert(orderedIDs, a.ID)
+				seen[a.ID] = true
+			end
+		end
+		for _, a in ipairs(localAssignments) do
+			if not seen[a.ID] then
+				tinsert(orderedIDs, a.ID)
+				seen[a.ID] = true
+			end
+		end
+		return orderedIDs
+	end
+
+	local CoalesceChanges = Utilities.CoalesceChanges
+	local MyersDiff = Utilities.MyersDiff
+	local MyersDiffAssignments = Utilities.MyersDiffAssignments
+
+	---@param base Assignment|CombatLogEventAssignment|TimedAssignment
+	---@param localChange AssignmentPlanDiffEntry
+	---@param remoteChange AssignmentPlanDiffEntry
+	---@return AssignmentPlanDiffEntry
+	local function ResolveChangeOrConflict(base, localChange, remoteChange)
+		local localType, remoteType = localChange.type, remoteChange.type
+		local localValue, remoteValue = nil, nil
+		local forceConflict = false
+
+		if localType == PlanDiffType.Change and remoteType == PlanDiffType.Change then
+			---@cast localChange AssignmentChangeDiffEntry
+			---@cast remoteChange AssignmentChangeDiffEntry
+			localValue = localChange.newValue
+			remoteValue = remoteChange.newValue
+		elseif localType == PlanDiffType.Change and remoteType == PlanDiffType.Delete then
+			---@cast localChange AssignmentChangeDiffEntry
+			---@cast remoteChange AssignmentDeleteDiffEntry
+			localValue = localChange.newValue
+			remoteValue = remoteChange.value
+			forceConflict = true
+		elseif localType == PlanDiffType.Delete and remoteType == PlanDiffType.Change then
+			---@cast localChange AssignmentDeleteDiffEntry
+			---@cast remoteChange AssignmentChangeDiffEntry
+			localValue = localChange.value
+			remoteValue = remoteChange.newValue
+			forceConflict = true
+		elseif localType == PlanDiffType.Equal then
+			return remoteChange
+		elseif remoteType == PlanDiffType.Equal then
+			return localChange
+		elseif localType == remoteType then
+			return localChange
+		end
+
+		if localType == PlanDiffType.Equal then
+			print("Equal")
+		elseif localType == PlanDiffType.Insert then
+			print("Insert")
+		elseif localType == PlanDiffType.Delete then
+			print("Delete")
+		elseif localType == PlanDiffType.Change then
+			print("Change")
+		elseif localType == PlanDiffType.Conflict then
+			print("Conflict")
+		end
+
+		if remoteType == PlanDiffType.Equal then
+			print("Equal")
+		elseif remoteType == PlanDiffType.Insert then
+			print("Insert")
+		elseif remoteType == PlanDiffType.Delete then
+			print("Delete")
+		elseif remoteType == PlanDiffType.Change then
+			print("Change")
+		elseif remoteType == PlanDiffType.Conflict then
+			print("Conflict")
+		end
+
+		assert(localValue)
+		assert(remoteValue)
+
+		if forceConflict then
+			---@type AssignmentConflictDiffEntry
+			local entry = {
+				type = PlanDiffType.Conflict,
+				ID = base.ID,
+				localType = localType,
+				remoteType = remoteType,
+				conflicts = {},
+				result = true,
+				chooseLocal = true,
+				localValue = localValue,
+				remoteValue = remoteValue,
+			}
+			return entry
+		else
+			local conflicts = assignmentUtilities.GetAssignmentConflicts(base, localValue, remoteValue)
+			assert(conflicts ~= nil)
+			if #conflicts > 0 then
+				---@type AssignmentConflictDiffEntry
+				local entry = {
+					type = PlanDiffType.Conflict,
+					ID = base.ID,
+					localType = localType,
+					remoteType = remoteType,
+					conflicts = conflicts,
+					result = true,
+					chooseLocal = true,
+					localValue = localValue,
+					remoteValue = remoteValue,
+				}
+				return entry
+			else
+				local localCopy = DeepCopy(localValue)
+				setmetatable(localCopy, getmetatable(localValue))
+				MergeAssignments(localCopy, remoteValue)
+				---@type AssignmentChangeDiffEntry
+				local entry = {
+					type = PlanDiffType.Change,
+					ID = base.ID,
+					result = true,
+					oldValue = localValue,
+					newValue = localCopy,
+				}
+
+				return entry
+			end
+		end
+	end
+
 	-- Creates a diff between two plans.
 	---@param oldPlan Plan Existing plan.
 	---@param newPlan Plan New plan.
@@ -3199,17 +3445,64 @@ do
 	function Utilities.DiffPlans(oldPlan, newPlan)
 		---@type PlanDiff
 		local diff = {
-			assignments = Utilities.CoalesceChanges(
-				Utilities.MyersDiff(oldPlan.assignments, newPlan.assignments, assignmentUtilities.AssignmentsEqual)
-			),
+			assignments = {},
 			roster = {},
-			content = Utilities.CoalesceChanges(Utilities.MyersDiff(oldPlan.content, newPlan.content, function(a, b)
+			content = CoalesceChanges(MyersDiff(oldPlan.content, newPlan.content, function(a, b)
 				return a == b
 			end)),
 			metaData = {},
 			assigneeSpellSets = {},
 			empty = true,
+			canUseNewAssignmentMerge = not assignmentUtilities.HasAnyOutdatedAssignmentIDs(oldPlan.assignments)
+				and not assignmentUtilities.HasAnyOutdatedAssignmentIDs(newPlan.assignments)
+				and oldPlan.lastSyncedSnapShot ~= nil,
 		}
+
+		if diff.canUseNewAssignmentMerge then
+			local deserializedPlan = Private.PlanSerializer.DeserializePlan(oldPlan.lastSyncedSnapShot)
+			---@type table<string, Assignment|CombatLogEventAssignment|TimedAssignment>
+			local baseAssignmentsByID = {}
+			for _, v in ipairs(deserializedPlan.assignments) do
+				baseAssignmentsByID[v.ID] = v
+			end
+			---@type table<string, AssignmentPlanDiffEntry>
+			local localVersionByID = {}
+			for _, v in ipairs(MyersDiffAssignments(deserializedPlan.assignments, oldPlan.assignments)) do
+				localVersionByID[v.ID] = v
+			end
+			---@type table<string, AssignmentPlanDiffEntry>
+			local incomingVersionByID = {}
+			for _, v in ipairs(MyersDiffAssignments(deserializedPlan.assignments, newPlan.assignments)) do
+				incomingVersionByID[v.ID] = v
+			end
+
+			---@type table<integer, AssignmentPlanDiffEntry>
+			local merged = {}
+			local orderedIDs = CreateOrderedIDs(deserializedPlan.assignments, oldPlan.assignments, newPlan.assignments)
+
+			for _, id in ipairs(orderedIDs) do
+				local localChange = localVersionByID[id]
+				local remoteChange = incomingVersionByID[id]
+				local base = baseAssignmentsByID[id]
+
+				if localChange and remoteChange then
+					local conflictOrMerge = ResolveChangeOrConflict(base, localChange, remoteChange)
+					tinsert(merged, conflictOrMerge)
+					localVersionByID[id] = nil
+					incomingVersionByID[id] = nil
+				elseif localChange then
+					tinsert(merged, localChange)
+					localVersionByID[id] = nil
+				elseif remoteChange then
+					tinsert(merged, remoteChange)
+					incomingVersionByID[id] = nil
+				end
+			end
+
+			diff.assignments = merged
+		else
+			diff.assignments = CoalesceChanges(MyersDiffAssignments(oldPlan.assignments, newPlan.assignments))
+		end
 
 		-- Metadata
 		if oldPlan.difficulty ~= newPlan.difficulty then
@@ -3279,10 +3572,9 @@ do
 		Utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
 		local oldAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
 		local newAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
-		diff.assigneeSpellSets =
-			Utilities.CoalesceChanges(Utilities.MyersDiff(oldAssigneeSpellSets, newAssigneeSpellSets, function(a, b)
-				return a.assignee == b.assignee and a.spellID == b.spellID
-			end))
+		diff.assigneeSpellSets = CoalesceChanges(MyersDiff(oldAssigneeSpellSets, newAssigneeSpellSets, function(a, b)
+			return a.assignee == b.assignee and a.spellID == b.spellID
+		end))
 
 		---@generic T
 		---@param tbl table<integer, PlanDiffEntry<T>>
@@ -3353,6 +3645,85 @@ do
 		return addedCount, removedCount, changedCount
 	end
 
+	---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
+	---@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
+	---@param forceMergeFromRemote boolean|nil
+	function Utilities.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMergeFromRemote)
+		local addedCount, removedCount, changedCount, conflictCount = 0, 0, 0, 0
+
+		-- print("start", #existingAssignments)
+		local function findAssignmentIndex(id)
+			for i = 1, #existingAssignments do
+				if existingAssignments[i].ID == id then
+					return i
+				end
+			end
+		end
+
+		for i = #assignmentDiff, 1, -1 do
+			local diff = assignmentDiff[i]
+			if diff.result and diff.type == PlanDiffType.Delete then
+				local index = findAssignmentIndex(diff.ID)
+				if index then
+					tremove(existingAssignments, index)
+					removedCount = removedCount + 1
+					-- 	print("remove")
+					-- else
+					-- 	print("failed to find index for remove")
+				end
+			end
+		end
+
+		for i = 1, #assignmentDiff do
+			local diff = assignmentDiff[i]
+			if diff.result then
+				if diff.type == PlanDiffType.Insert then
+					---@cast diff AssignmentInsertDiffEntry
+					if not findAssignmentIndex(diff.ID) then
+						tinsert(existingAssignments, diff.value)
+						addedCount = addedCount + 1
+						-- else
+						-- 	print("failed to find index for Insert")
+					end
+				elseif diff.type == PlanDiffType.Change then
+					---@cast diff AssignmentChangeDiffEntry
+					local index = findAssignmentIndex(diff.ID)
+					if index then
+						-- print("change", #existingAssignments)
+						MergeAssignments(existingAssignments[index], diff.newValue)
+						changedCount = changedCount + 1
+						-- print(#existingAssignments)
+					end
+				elseif diff.type == PlanDiffType.Conflict then
+					---@cast diff AssignmentConflictDiffEntry
+					local index = findAssignmentIndex(diff.ID)
+					if index then
+						-- print("Conflict")
+						if diff.chooseLocal == false or forceMergeFromRemote then
+							if diff.remoteType == PlanDiffType.Delete then
+								tremove(existingAssignments, index)
+							elseif diff.remoteType == PlanDiffType.Change then
+								MergeAssignments(existingAssignments[index], diff.remoteValue)
+							end
+						else
+							if diff.localType == PlanDiffType.Delete then
+								tremove(existingAssignments, index)
+							elseif diff.localType == PlanDiffType.Change then
+								local temp = DeepCopy(diff.localValue)
+								setmetatable(temp, getmetatable(diff.localValue))
+								MergeAssignments(existingAssignments[index], diff.remoteValue)
+								-- Apply local changes on top any remote changes
+								MergeAssignments(existingAssignments[index], temp)
+							end
+						end
+					end
+				end
+			end
+		end
+
+		return addedCount, removedCount, changedCount, conflictCount
+	end
+
 	---@param existingPlan Plan Existing plan to apply the diff to.
 	---@param tableDiff table<integer, PlanDiffEntry<FlatAssigneeSpellSet>> Diff between existing and new table.
 	---@return integer addedCount
@@ -3411,13 +3782,26 @@ do
 	---@param plans table<string, Plan> All plans.
 	---@param existingPlan Plan Existing plan to apply diff to.
 	---@param planDiff PlanDiff Diff between existing and new plan.
+	---@param forceMergeFromRemote boolean|nil
 	---@return table<integer, string> messages
-	function Utilities.MergePlan(plans, existingPlan, planDiff)
+	function Utilities.MergePlan(plans, existingPlan, planDiff, forceMergeFromRemote)
 		local messages = {}
 		local existingAssignments = existingPlan.assignments
-		local existingPlanID = existingPlan.ID
-		local added, removed, changed =
-			Utilities.ApplyDiff(existingAssignments, planDiff.assignments, DuplicateAssignment, existingPlanID)
+		local added, removed, changed = 0, 0, 0
+		if planDiff.canUseNewAssignmentMerge then
+			added, removed, changed =
+				Utilities.ApplyAssignmentDiff(existingAssignments, planDiff.assignments, forceMergeFromRemote)
+		else
+			added, removed, changed = Utilities.ApplyDiff(
+				existingAssignments,
+				planDiff.assignments,
+				function(assignment)
+					local newAssignment = DuplicateAssignment(assignment)
+					newAssignment.ID = assignment.ID
+					return newAssignment
+				end
+			)
+		end
 
 		if added > 0 or removed > 0 or changed > 0 then
 			tinsert(

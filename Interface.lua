@@ -513,8 +513,7 @@ do -- Assignment Editor
 			end
 			Private.assignmentEditor:Release()
 			local plan = GetCurrentPlan()
-			local removedAssignmentCount, removedTemplateCount =
-				utilities.RemoveAssignmentFromPlan(plan, nil, assignment.ID)
+			local removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentByID(plan, assignment.ID)
 
 			local lowerAssignment, lowerTemplate
 			if removedAssignmentCount == 1 then

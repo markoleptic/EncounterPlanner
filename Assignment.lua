@@ -14,7 +14,6 @@ local utilities = Private.utilities
 
 local CreateNewInstance = Private.CreateNewInstance
 local GenerateUniqueID = Private.GenerateUniqueID
-local GenerateTransitionalID = Private.GenerateTransitionalID
 
 local assert = assert
 local getmetatable, setmetatable = getmetatable, setmetatable
@@ -283,10 +282,101 @@ do
 	end
 end
 
+do
+	local noCompareFields = {
+		["ID"] = true,
+		["phase"] = true,
+		["cancelIfAlreadyCasted"] = true,
+		["holdDuration"] = true,
+		["countdownLength"] = true,
+	}
+
+	---@param a TimedAssignment|CombatLogEventAssignment
+	---@param b TimedAssignment|CombatLogEventAssignment
+	---@return boolean
+	function AssignmentUtilities.AreAssignmentsIdentical(a, b)
+		local seen = {}
+		if a.ID ~= b.ID then
+			return false
+		end
+		for field, value in pairs(a) do
+			if not noCompareFields[field] and value ~= b[field] then
+				return false
+			end
+			seen[field] = true
+		end
+		for field, value in pairs(b) do
+			if not noCompareFields[field] and not seen[field] and value ~= a[field] then
+				return false
+			end
+			seen[field] = true
+		end
+		return true
+	end
+
+	---@param baseVersion TimedAssignment|CombatLogEventAssignment
+	---@param localVersion TimedAssignment|CombatLogEventAssignment
+	---@param remoteVersion TimedAssignment|CombatLogEventAssignment
+	---@return table<integer, AssignmentConflict>|nil
+	function AssignmentUtilities.GetAssignmentConflicts(baseVersion, localVersion, remoteVersion)
+		if baseVersion.ID ~= localVersion.ID or localVersion.ID ~= remoteVersion.ID then
+			return nil
+		end
+
+		local localChanges, remoteChanges = {}, {}
+
+		for field, baseValue in pairs(baseVersion) do
+			if not noCompareFields[field] then
+				local localValue = localVersion[field]
+				local remoteValue = remoteVersion[field]
+				if localValue ~= baseValue then
+					localChanges[field] = localValue
+				end
+				if remoteValue ~= baseValue then
+					remoteChanges[field] = remoteValue
+				end
+			end
+		end
+
+		local conflicts = {}
+
+		for field, localValue in pairs(localChanges) do
+			local remoteValue = remoteChanges[field]
+			if remoteValue and remoteValue ~= localValue then
+				tinsert(conflicts, {
+					field = field,
+					baseValue = baseVersion[field],
+					localValue = localValue,
+					remoteValue = remoteValue,
+				})
+			end
+		end
+
+		return conflicts
+	end
+
+	-- Merges remote into local.
+	---@param localVersion TimedAssignment|CombatLogEventAssignment
+	---@param remoteVersion TimedAssignment|CombatLogEventAssignment
+	function AssignmentUtilities.MergeAssignments(localVersion, remoteVersion)
+		for field, remoteValue in pairs(remoteVersion) do
+			if not noCompareFields[field] then
+				localVersion[field] = remoteValue
+			end
+		end
+		local metaTable = getmetatable(remoteVersion)
+		setmetatable(localVersion, metaTable)
+		RemoveInvalidFields(metaTable, localVersion, { "countdownLength", "holdDuration", "cancelIfAlreadyCasted" })
+	end
+end
+
 ---@param a TimedAssignment|CombatLogEventAssignment
 ---@param b TimedAssignment|CombatLogEventAssignment
 ---@return boolean
 function AssignmentUtilities.AssignmentsEqual(a, b)
+	if a.ID == b.ID then
+		return true
+	end
 	local metatableA, metatableB = getmetatable(a), getmetatable(b)
 	if metatableA ~= metatableB then
 		return false
@@ -307,7 +397,26 @@ function AssignmentUtilities.AssignmentsEqual(a, b)
 			and a.targetName == b.targetName
 			and a.text == b.text
 	end
-	return true
+	return false
+end
+
+---@param assignments table<integer, Assignment>
+function AssignmentUtilities.HasAnyOutdatedAssignmentIDs(assignments)
+	for _, assignment in ipairs(assignments) do
+		if tonumber(assignment.ID) then
+			return true
+		end
+	end
+	return false
+end
+
+---@param assignments table<integer, Assignment>
+function AssignmentUtilities.MaybeUpgradeAssignmentIDsOnSend(assignments)
+	if AssignmentUtilities.HasAnyOutdatedAssignmentIDs(assignments) then
+		for _, assignment in ipairs(assignments) do
+			assignment.ID = Private.GenerateUniqueID()
+		end
+	end
 end
 
 ---@param assignment CombatLogEventAssignment
@@ -560,45 +669,24 @@ function AssignmentUtilities.RegenerateIDsAndSetMetaTables(assignments)
 		end
 	end
 end
-do
-	---@param assignment any
-	---@return string
-	local function GetStructuralIDRaw(assignment)
-		if assignment.combatLogEventSpellID and assignment.combatLogEventType and assignment.spellCount then
-			return table.concat({
-				assignment.assignee,
-				assignment.spellID,
-				assignment.time,
-				assignment.targetName,
-				assignment.text,
-				assignment.combatLogEventSpellID,
-				assignment.combatLogEventType,
-				assignment.spellCount,
-			}, ",")
-		else
-			return table.concat(
-				{ assignment.assignee, assignment.spellID, assignment.time, assignment.targetName, assignment.text },
-				","
-			)
-		end
-	end
-	---@param assignments table<integer, Assignment>
-	function AssignmentUtilities.LoadAssignments(assignments)
-		for _, assignment in pairs(assignments) do
-			if assignment.ID == nil then
-				assignment.ID = GenerateTransitionalID(GetStructuralIDRaw(assignment))
-			end
-			if
-				---@diagnostic disable-next-line: undefined-field
-				assignment.combatLogEventType
-				---@diagnostic disable-next-line: undefined-field
-				and assignment.combatLogEventSpellID
-			then
-				assignment = CombatLogEventAssignment:New(assignment, true)
+
+---@param assignments table<integer, Assignment>
+function AssignmentUtilities.LoadAssignments(assignments)
+	for index, assignment in pairs(assignments) do
+		local nilID = assignment.ID == nil
+		if
 			---@diagnostic disable-next-line: undefined-field
-			else
-				assignment = TimedAssignment:New(assignment, true)
-			end
+			assignment.combatLogEventType
+			---@diagnostic disable-next-line: undefined-field
+			and assignment.combatLogEventSpellID
+		then
+			assignment = CombatLogEventAssignment:New(assignment, true)
+			---@diagnostic disable-next-line: undefined-field
+		else
+			assignment = TimedAssignment:New(assignment, true)
+		end
+		if nilID then
+			assignment.ID = tostring(index)
 		end
 	end
 end

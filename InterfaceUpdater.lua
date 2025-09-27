@@ -246,12 +246,12 @@ do
 
 			local removedAssignmentCount, removedTemplateCount = 0, 0
 			if type(key) == "string" then -- Key is assignee
-				removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentFromPlan(plan, key)
+				removedAssignmentCount, removedTemplateCount = utilities.RemoveAssignmentByAssignee(plan, key)
 			elseif type(key) == "table" then
 				local assignee = key.assignee
 				local spellID = key.spellID
 				removedAssignmentCount, removedTemplateCount =
-					utilities.RemoveAssignmentFromPlan(plan, assignee, nil, spellID)
+					utilities.RemoveAssignmentByAssignee(plan, assignee, spellID)
 			end
 			local lowerAssignment, lowerTemplate
 			if removedAssignmentCount == 1 then

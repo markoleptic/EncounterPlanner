@@ -188,6 +188,7 @@ do
 		return plan
 	end
 end
+Private.PlanSerializer = PlanSerializer
 
 ---@param inString string
 ---@param forChat boolean
@@ -260,52 +261,75 @@ local function StringToTable(inString, fromChat)
 	return deserialized
 end
 
----@param plan Plan
+---@param newPlan Plan
 ---@param fullName string
-local function ImportPlan(plan, fullName)
+local function ImportPlan(newPlan, fullName)
 	local plans = AddOn.db.profile.plans
-	local existingPlanName, existingPlan = FindMatchingPlan(plan.ID)
+	local existingPlanName, existingPlan = FindMatchingPlan(newPlan.ID)
 
-	local importInfo
-	if existingPlanName and existingPlan then -- Replace matching plan with imported plan
-		plans[plan.name] = plan
-		if existingPlanName ~= plan.name then
+	local importInfo = ""
+	local newPlanName = newPlan.name
+	if existingPlanName and existingPlan then
+		if existingPlan.lastSyncedSnapShot then
+			local planDiff = utilities.DiffPlans(existingPlan, newPlan)
+			local messages = utilities.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff, true)
+			for _, message in ipairs(messages) do
+				LogMessage(message)
+			end
+		else
+			existingPlan.name = newPlanName
+			existingPlan.dungeonEncounterID = newPlan.dungeonEncounterID
+			existingPlan.instanceID = newPlan.instanceID
+			existingPlan.difficulty = newPlan.difficulty
+			existingPlan.content = newPlan.content
+			existingPlan.assignments = newPlan.assignments
+			existingPlan.roster = newPlan.roster
+			existingPlan.assigneeSpellSets = newPlan.assigneeSpellSets
+		end
+
+		utilities.RemoveStaleCollapsedEntries(existingPlan)
+		existingPlan.lastSyncedSnapShot = PlanSerializer.SerializePlan(existingPlan)
+		plans[newPlanName] = existingPlan
+
+		if existingPlanName ~= newPlanName then
 			plans[existingPlanName] = nil
 		end
 		if AddOn.db.profile.lastOpenPlan == existingPlanName then -- Replace last open if it was removed
-			AddOn.db.profile.lastOpenPlan = plan.name
+			AddOn.db.profile.lastOpenPlan = newPlanName
 		end
+
 		importInfo = format("%s '%s'.", L["Updated matching plan"], existingPlanName)
 	else -- Create a unique plan name if necessary
-		if plans[plan.name] then
-			plan.name = CreateUniquePlanName(plans, plan.name)
+		if plans[newPlanName] then
+			newPlan.name = CreateUniquePlanName(plans, newPlanName)
 		end
-		plans[plan.name] = plan
-		importInfo = format("%s '%s'.", L["Imported plan as"], plan.name)
+		plans[newPlanName] = newPlan
+		existingPlan = plans[newPlanName]
+		importInfo = format("%s '%s'.", L["Imported plan as"], existingPlan.name)
 	end
 
-	LogMessage(format("%s '%s' %s %s.", L["Received plan"], plan.name, L["from"], fullName))
+	LogMessage(format("%s '%s' %s %s.", L["Received plan"], newPlanName, L["from"], fullName))
 	LogMessage(importInfo)
 
 	if IsInRaid() then
-		local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
+		local changedPrimaryPlan = SetDesignatedExternalPlan(plans, existingPlan)
 		if changedPrimaryPlan then
-			LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], plan.name))
+			LogMessage(format("%s '%s'.", L["Changed the Designated External Plan to"], existingPlan.name))
 		end
 	end
 
 	if Private.mainFrame then
-		if existingPlanName and existingPlanName ~= plan.name then -- Remove existing plan name from dropdown
+		if existingPlanName and existingPlanName ~= newPlanName then -- Remove existing plan name from dropdown
 			RemovePlanFromDropdown(existingPlanName)
 		end
 
 		local currentPlanName = Private.mainFrame.planDropdown:GetValue()
-		if currentPlanName == existingPlanName or currentPlanName == plan.name then
-			AddOn.db.profile.lastOpenPlan = plan.name
-			AddPlanToDropdown(plan, true)
-			UpdateFromPlan(plan, true) -- Only update if current plan is the imported plan
+		if currentPlanName == existingPlanName or currentPlanName == newPlanName then
+			AddOn.db.profile.lastOpenPlan = existingPlan.name
+			AddPlanToDropdown(existingPlan, true)
+			UpdateFromPlan(existingPlan, true) -- Only update if current plan is the imported plan
 		else
-			AddPlanToDropdown(plan, false)
+			AddPlanToDropdown(existingPlan, false)
 		end
 	end
 end
@@ -748,11 +772,16 @@ do
 			end
 		end
 
+		local MaybeUpgradeAssignmentIDsOnSend = Private.assignmentUtilities.MaybeUpgradeAssignmentIDsOnSend
+
 		function Private.SendPlanToGroup()
 			local plans = AddOn.db.profile.plans
 			local plan = plans[AddOn.db.profile.lastOpenPlan]
 			local groupType = GetGroupType()
 			if groupType then
+				MaybeUpgradeAssignmentIDsOnSend(plan.assignments)
+				local serializedPlan = PlanSerializer.SerializePlan(plan)
+				plan.lastSyncedSnapShot = serializedPlan
 				if groupType == "RAID" then
 					local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
 					interfaceUpdater.UpdatePlanCheckBoxes(plan)
@@ -765,7 +794,7 @@ do
 					activePlanIDsBeingSent[plan.ID].timer = nil
 				end
 				activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
-				local exportString = TableToString(PlanSerializer.SerializePlan(plan), false)
+				local exportString = TableToString(serializedPlan, false)
 				LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
 				AddOn:SendCommMessage(k.DistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
 			end
