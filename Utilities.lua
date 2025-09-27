@@ -1154,6 +1154,11 @@ do
 		if not instanceDropdownItems then
 			instanceDropdownItems = CreateInstanceDropdownData()
 		end
+		for _, dropdownData in pairs(instanceDropdownItems) do
+			if dropdownData.dropdownItemMenuData then
+				dropdownData.dropdownItemMenuData = {}
+			end
+		end
 		return instanceDropdownItems
 	end
 end
@@ -3925,13 +3930,13 @@ do
 		if changedMetaData then
 			Utilities.ChangePlanBoss(plans, existingPlan.name, existingPlan.dungeonEncounterID, existingPlan.difficulty)
 			if #metaDataMessages == 1 then
-				tinsert(messages, format("%s %s %s.", L["Changed"]:lower(), L["The"]:lower(), metaDataMessages[1]))
+				tinsert(messages, format("%s %s %s.", L["Changed"], L["The"]:lower(), metaDataMessages[1]))
 			elseif #metaDataMessages == 2 then
 				tinsert(
 					messages,
 					format(
 						"%s %s %s %s %s.",
-						L["Changed"]:lower(),
+						L["Changed"],
 						L["The"]:lower(),
 						metaDataMessages[1],
 						L["and"],
@@ -3943,7 +3948,7 @@ do
 					messages,
 					format(
 						"%s %s %s, %s, %s %s.",
-						L["Changed"]:lower(),
+						L["Changed"],
 						L["The"]:lower(),
 						metaDataMessages[1],
 						metaDataMessages[2],
