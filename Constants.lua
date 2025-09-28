@@ -119,7 +119,6 @@ Private.constants = {
 		["role:damager"] = 3,
 		[""] = 4,
 	},
-	kMaxNumberOfDeletedAssignments = 25,
 }
 
 local isElevenDotTwo = select(4, GetBuildInfo()) >= 110200 -- Remove when 11.2 is live

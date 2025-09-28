@@ -483,6 +483,7 @@
 ---@field type PlanDiffType
 ---@field ID string
 ---@field result boolean
+---@field localOnlyChange? boolean
 
 ---@class AssignmentEqualDiffEntry : AssignmentPlanDiffEntry
 ---@field aIndex integer

@@ -15,8 +15,8 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local format = string.format
+local ipairs = ipairs
 local max = math.max
-local tinsert = table.insert
 local unpack = unpack
 
 local PlanDiffType = Private.classes.PlanDiffType
@@ -55,17 +55,42 @@ local function SetButtonWidths(container)
 	end
 end
 
+---@param container EPContainer
+---@param func fun(entry: EPDiffViewerEntry)
+local function IterateContainer(container, func)
+	for _, containerChild in ipairs(container.children) do
+		if containerChild.type == "EPDiffViewerEntry" then
+			func(containerChild)
+		elseif containerChild.type == "EPContainer" then
+			IterateContainer(containerChild, func)
+		end
+	end
+end
+
 ---@param self EPDiffViewer
 ---@param text string
 ---@param dividerLineIndex integer
-local function AddSectionLabel(self, text, dividerLineIndex)
-	local sectionLabel = AceGUI:Create("EPMultiLineText")
-	sectionLabel:SetFullWidth(true)
-	sectionLabel:SetText(text)
-	sectionLabel:SetFontSize(16)
-	sectionLabel:SetTextColor(1, 0.82, 0, 1)
-	sectionLabel.frame:SetHeight(28)
-	self.mainContainer:AddChild(sectionLabel)
+---@return integer dividerLineIndex
+---@return EPContainer container
+local function AddSection(self, text, dividerLineIndex)
+	local expanderHeader = AceGUI:Create("EPExpanderHeader")
+	expanderHeader:SetText(text, false, 16)
+	expanderHeader.frame:SetHeight(28)
+	expanderHeader.frame:SetWidth(expanderHeader.label.frame:GetWidth() + expanderHeader.button:GetWidth())
+
+	local horizontalContainer = AceGUI:Create("EPContainer")
+	horizontalContainer:SetLayout("EPHorizontalLayout")
+	horizontalContainer:SetSpacing(0, 0)
+	horizontalContainer:AddChild(expanderHeader)
+
+	local verticalContainerWrapper = AceGUI:Create("EPContainer")
+	verticalContainerWrapper:SetLayout("EPVerticalLayout")
+	verticalContainerWrapper:SetFullWidth(true)
+	verticalContainerWrapper:SetSpacing(0, 0)
+	verticalContainerWrapper:SetAlignment("center")
+	verticalContainerWrapper:AddChild(horizontalContainer)
+	self.mainContainer:AddChild(verticalContainerWrapper)
+
 	if not self.dividerLines[dividerLineIndex] then
 		local dividerLine = self.frame:CreateTexture(nil, "OVERLAY")
 		dividerLine:SetColorTexture(unpack(k.LineColor))
@@ -75,9 +100,30 @@ local function AddSectionLabel(self, text, dividerLineIndex)
 	self.dividerLines[dividerLineIndex]:SetParent(self.mainContainer.frame)
 	self.dividerLines[dividerLineIndex]:SetPoint("LEFT", self.mainContainer.frame, "LEFT")
 	self.dividerLines[dividerLineIndex]:SetPoint("RIGHT", self.mainContainer.frame, "RIGHT")
-	self.dividerLines[dividerLineIndex]:SetPoint("TOP", sectionLabel.frame, "BOTTOM")
+	self.dividerLines[dividerLineIndex]:SetPoint("TOP", verticalContainerWrapper.frame, "BOTTOM")
 	self.dividerLines[dividerLineIndex]:Show()
-	return dividerLineIndex + 1
+
+	local containerWrapper = AceGUI:Create("EPContainer")
+	containerWrapper:SetLayout("EPVerticalLayout")
+	containerWrapper:SetSpacing(0, 0)
+	containerWrapper:SetFullWidth(true)
+
+	local container = AceGUI:Create("EPContainer")
+	container:SetLayout("EPVerticalLayout")
+	container:SetSpacing(0, 0)
+	container:SetFullWidth(true)
+	container:SetIgnoreFromLayout(true)
+	local emptyWidget = AceGUI:Create("EPSpacer")
+	emptyWidget.frame:SetHeight(1)
+	containerWrapper:AddChildren(container, emptyWidget)
+	self.mainContainer:AddChild(containerWrapper)
+
+	expanderHeader:SetCallback("Clicked", function(_, _, open)
+		container:SetIgnoreFromLayout(not open)
+		self.mainContainer:DoLayout()
+	end)
+
+	return dividerLineIndex + 1, container
 end
 
 ---@param self EPDiffViewer
@@ -225,15 +271,18 @@ end
 ---@param newPlan Plan
 local function AddDiffs(self, diffs, oldPlan, newPlan)
 	self.planDiff = diffs
+	local metaDataContainer, assignmentContainer, rosterContainer = nil, nil, nil
 	local addedMetaDataSection, addedAssignmentSection, addedRosterSection = nil, nil, nil
+	local assigneeSpellSetsContainer, contentContainer = nil, nil
 	local addedAssigneeSpellSetsSection, addedContentSection = nil, nil
 	local dividerLineIndex = 1
 
 	if diffs.metaData.instanceID then
 		if not addedMetaDataSection then
-			dividerLineIndex = AddSectionLabel(self, L["Metadata"], dividerLineIndex)
+			dividerLineIndex, metaDataContainer = AddSection(self, L["Metadata"], dividerLineIndex)
 			addedMetaDataSection = true
 		end
+		---@cast metaDataContainer EPContainer
 		local oldDungeonInstance = bossUtilities.FindDungeonInstance(diffs.metaData.instanceID.oldValue)
 		local newDungeonInstance = bossUtilities.FindDungeonInstance(diffs.metaData.instanceID.newValue)
 		if oldDungeonInstance and newDungeonInstance then
@@ -245,22 +294,15 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
 				self.planDiff.metaData.instanceID.result = checked
 			end)
-			self.mainContainer:AddChild(entry)
-
-			if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-			elseif entry.valueLabelTwo then
-				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-				end
-			end
+			metaDataContainer:AddChild(entry)
 		end
 	end
 	if diffs.metaData.dungeonEncounterID then
 		if not addedMetaDataSection then
-			dividerLineIndex = AddSectionLabel(self, L["Metadata"], dividerLineIndex)
+			dividerLineIndex, metaDataContainer = AddSection(self, L["Metadata"], dividerLineIndex)
 			addedMetaDataSection = true
 		end
+		---@cast metaDataContainer EPContainer
 		local oldBoss = bossUtilities.GetBoss(diffs.metaData.dungeonEncounterID.oldValue)
 		local newBoss = bossUtilities.GetBoss(diffs.metaData.dungeonEncounterID.newValue)
 		local oldText = format("%s: %s", L["Boss"], oldBoss.name)
@@ -271,21 +313,14 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 		entry:SetCallback("OnValueChanged", function(_, _, checked)
 			self.planDiff.metaData.dungeonEncounterID.result = checked
 		end)
-		self.mainContainer:AddChild(entry)
-
-		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-		elseif entry.valueLabelTwo then
-			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-			end
-		end
+		metaDataContainer:AddChild(entry)
 	end
 	if diffs.metaData.difficulty then
 		if not addedMetaDataSection then
-			dividerLineIndex = AddSectionLabel(self, L["Metadata"], dividerLineIndex)
+			dividerLineIndex, metaDataContainer = AddSection(self, L["Metadata"], dividerLineIndex)
 			addedMetaDataSection = true
 		end
+		---@cast metaDataContainer EPContainer
 		local oldText = format(
 			"%s: %s",
 			L["Difficulty"],
@@ -302,58 +337,58 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 		entry:SetCallback("OnValueChanged", function(_, _, checked)
 			self.planDiff.metaData.difficulty.result = checked
 		end)
-		self.mainContainer:AddChild(entry)
-
-		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-		elseif entry.valueLabelTwo then
-			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-			end
-		end
+		metaDataContainer:AddChild(entry)
 	end
 
 	for index, diff in ipairs(diffs.assignments) do
-		if diff.type ~= PlanDiffType.Equal then
+		if diff.type ~= PlanDiffType.Equal and not diff.localOnlyChange then
 			if not addedAssignmentSection then
-				dividerLineIndex = AddSectionLabel(self, L["Assignments"], dividerLineIndex)
+				dividerLineIndex, assignmentContainer = AddSection(self, L["Assignments"], dividerLineIndex)
 				addedAssignmentSection = true
 			end
+			---@cast assignmentContainer EPContainer
 
 			local oldValue, newValue
 			if diff.type == PlanDiffType.Insert then
+				---@cast diff AssignmentInsertDiffEntry
 				oldValue = diff.value
 			elseif diff.type == PlanDiffType.Delete then
+				---@cast diff AssignmentDeleteDiffEntry
 				oldValue = diff.value
 			elseif diff.type == PlanDiffType.Change then
+				---@cast diff AssignmentChangeDiffEntry
 				oldValue = diff.oldValue
 				newValue = diff.newValue
+			elseif diff.type == PlanDiffType.Conflict then
+				---@cast diff AssignmentConflictDiffEntry
+				oldValue = diff.localValue
+				newValue = diff.remoteValue
 			end
+
 			local entry = AceGUI:Create("EPDiffViewerEntry")
 			entry:SetFullWidth(true)
-			entry:SetAssignmentEntryData(oldValue, newValue, oldPlan.roster, newPlan.roster, diff.type)
+			entry:SetAssignmentEntryData(oldValue, newValue, oldPlan.roster, newPlan.roster, diff)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
-				self.planDiff.assignments[index].result = checked
+				if self.planDiff.assignments[index].type == PlanDiffType.Conflict then
+					local conflictEntry = self.planDiff.assignments[index]
+					---@cast conflictEntry AssignmentConflictDiffEntry
+					conflictEntry.chooseLocal = not checked
+				else
+					self.planDiff.assignments[index].result = checked
+				end
 			end)
 
-			self.mainContainer:AddChild(entry)
-
-			if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-			elseif entry.valueLabelTwo then
-				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-				end
-			end
+			assignmentContainer:AddChild(entry)
 		end
 	end
 
 	for index, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
 		if planTemplateDiff.type ~= PlanDiffType.Equal then
 			if not addedAssigneeSpellSetsSection then
-				dividerLineIndex = AddSectionLabel(self, L["Templates"], dividerLineIndex)
+				dividerLineIndex, assigneeSpellSetsContainer = AddSection(self, L["Templates"], dividerLineIndex)
 				addedAssigneeSpellSetsSection = true
 			end
+			---@cast assigneeSpellSetsContainer EPContainer
 
 			local oldValue, newValue
 			if planTemplateDiff.type == PlanDiffType.Insert then
@@ -377,46 +412,33 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 				self.planDiff.assigneeSpellSets[index].result = checked
 			end)
 
-			self.mainContainer:AddChild(entry)
-
-			if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-			elseif entry.valueLabelTwo then
-				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-				end
-			end
+			assigneeSpellSetsContainer:AddChild(entry)
 		end
 	end
 
 	for index, planRosterDiff in ipairs(diffs.roster) do
 		if not addedRosterSection then
-			dividerLineIndex = AddSectionLabel(self, L["Roster"], dividerLineIndex)
+			dividerLineIndex, rosterContainer = AddSection(self, L["Roster"], dividerLineIndex)
 			addedRosterSection = true
 		end
+		---@cast rosterContainer EPContainer
+
 		local entry = AceGUI:Create("EPDiffViewerEntry")
 		entry:SetFullWidth(true)
 		entry:SetRosterEntryData(planRosterDiff, oldPlan.roster, newPlan.roster)
 		entry:SetCallback("OnValueChanged", function(_, _, checked)
 			self.planDiff.roster[index].result = checked
 		end)
-		self.mainContainer:AddChild(entry)
-
-		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-		elseif entry.valueLabelTwo then
-			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-			end
-		end
+		rosterContainer:AddChild(entry)
 	end
 
 	for index, contentDiffEntry in ipairs(diffs.content) do
 		if contentDiffEntry.type ~= PlanDiffType.Equal then
 			if not addedContentSection then
-				dividerLineIndex = AddSectionLabel(self, L["External Text"], dividerLineIndex)
+				dividerLineIndex, contentContainer = AddSection(self, L["External Text"], dividerLineIndex)
 				addedContentSection = true
 			end
+			---@cast contentContainer EPContainer
 
 			local entry = AceGUI:Create("EPDiffViewerEntry")
 			entry:SetFullWidth(true)
@@ -430,36 +452,29 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
 				self.planDiff.content[index].result = checked
 			end)
-			self.mainContainer:AddChild(entry)
-
-			if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
-				entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
-			elseif entry.valueLabelTwo then
-				if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
-					entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
-				end
-			end
+			contentContainer:AddChild(entry)
 		end
 	end
+
+	local maxTypeLabelWidth = 0
+	IterateContainer(self.mainContainer, function(entry)
+		maxTypeLabelWidth = max(maxTypeLabelWidth, entry.typeLabel.frame:GetWidth())
+		if entry.valueLabel.text:GetStringHeight() > entry.valueLabel.frame:GetHeight() then
+			entry.frame:SetHeight(entry.valueLabel.text:GetStringHeight() + 10)
+		elseif entry.valueLabelTwo then
+			if entry.valueLabelTwo.text:GetStringHeight() > entry.valueLabelTwo.frame:GetHeight() then
+				entry.frame:SetHeight(entry.valueLabelTwo.text:GetStringHeight() + 10)
+			end
+		end
+	end)
+	IterateContainer(self.mainContainer, function(entry)
+		entry.typeLabel.frame:SetWidth(maxTypeLabelWidth)
+	end)
 
 	self.mainContainer:DoLayout()
 	self.buttonContainer:DoLayout()
 	self.scrollFrame:UpdateVerticalScroll()
 	self.scrollFrame:UpdateThumbPositionAndSize()
-
-	local maxTypeWidth = 0
-	for _, child in ipairs(self.mainContainer.children) do
-		if child.type == "EPDiffViewerEntry" then
-			---@cast child EPDiffViewerEntry
-			maxTypeWidth = max(maxTypeWidth, child.typeLabel.frame:GetWidth())
-		end
-	end
-	for _, child in ipairs(self.mainContainer.children) do
-		if child.type == "EPDiffViewerEntry" then
-			---@cast child EPDiffViewerEntry
-			child.typeLabel.frame:SetWidth(maxTypeWidth)
-		end
-	end
 
 	while self.dividerLines[dividerLineIndex] do
 		self.dividerLines[dividerLineIndex]:ClearAllPoints()

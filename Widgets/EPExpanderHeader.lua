@@ -6,14 +6,12 @@ local Private = Namespace
 local Type = "EPExpanderHeader"
 local Version = 1
 
-local LSM = LibStub("LibSharedMedia-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local unpack = unpack
 
 local k = {
-	DefaultFontHeight = 14,
 	DefaultFrameHeight = 24,
 	DefaultFrameWidth = 200,
 	DisabledTextColor = { 0.33, 0.33, 0.33, 1 },
@@ -25,42 +23,76 @@ local k = {
 local function OnAcquire(self)
 	self.frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 	self.frame:Show()
-	self.labelAndCheckBox = AceGUI:Create("EPCheckBox")
-	self.labelAndCheckBox.frame:SetParent(self.frame)
-	self.labelAndCheckBox:SetChecked(false)
-	self.labelAndCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
-		self:Fire("OnValueChanged", checked)
-	end)
 end
 
 ---@param self EPExpanderHeader
 local function OnRelease(self)
-	self.labelAndCheckBox:Release()
+	self.frame:ClearBackdrop()
+	if self.labelAndCheckBox then
+		self.labelAndCheckBox:Release()
+	end
+	if self.label then
+		self.label:Release()
+	end
 	self.labelAndCheckBox = nil
-	self.text:SetText("")
-	self.text:ClearAllPoints()
+	self.label = nil
 	self.button:ClearAllPoints()
 	self:SetExpanded(false)
 end
 
 ---@param self EPExpanderHeader
 ---@param text string
-local function SetText(self, text)
-	self.labelAndCheckBox:SetText(text)
-	self.labelAndCheckBox:SetFullWidth(true)
-	self.labelAndCheckBox:SetFrameHeightFromText()
-	self.labelAndCheckBox:SetFrameWidthFromText()
-	local height = self.labelAndCheckBox.frame:GetHeight()
-	self.frame:SetHeight(height)
-	self.labelAndCheckBox.frame:SetPoint("LEFT", self.frame, "LEFT")
-	self.button:SetSize(height, height)
-	self.button:SetPoint("LEFT", self.labelAndCheckBox.frame, "RIGHT")
+---@param showCheckBox boolean
+---@param fontSize? integer
+local function SetText(self, text, showCheckBox, fontSize)
+	if showCheckBox then
+		local labelAndCheckBox = AceGUI:Create("EPCheckBox")
+		labelAndCheckBox.frame:SetParent(self.frame)
+		labelAndCheckBox:SetChecked(false)
+		labelAndCheckBox:SetCallback("OnValueChanged", function(_, _, checked)
+			self:Fire("OnValueChanged", checked)
+		end)
+		if fontSize then
+			labelAndCheckBox.label:SetFontSize(fontSize)
+		end
+		labelAndCheckBox:SetText(text)
+		labelAndCheckBox:SetFullWidth(true)
+		labelAndCheckBox:SetFrameHeightFromText()
+		labelAndCheckBox:SetFrameWidthFromText()
+		local height = labelAndCheckBox.frame:GetHeight()
+		self.frame:SetHeight(height)
+		labelAndCheckBox.frame:SetPoint("LEFT", self.frame, "LEFT")
+		self.button:SetSize(height, height)
+		self.button:SetPoint("LEFT", labelAndCheckBox.frame, "RIGHT")
+		self.labelAndCheckBox = labelAndCheckBox
+	else
+		local label = AceGUI:Create("EPLabel")
+		label.frame:SetParent(self.frame)
+		label:SetCallback("OnValueChanged", function(_, _, checked)
+			self:Fire("OnValueChanged", checked)
+		end)
+		if fontSize then
+			label:SetFontSize(fontSize)
+		end
+		label:SetText(text)
+		label:SetFullWidth(true)
+		label:SetFrameHeightFromText()
+		label:SetFrameWidthFromText()
+		local height = label.frame:GetHeight()
+		self.frame:SetHeight(height)
+		label.frame:SetPoint("LEFT", self.frame, "LEFT")
+		self.button:SetSize(height, height)
+		self.button:SetPoint("LEFT", label.frame, "RIGHT")
+		self.label = label
+	end
 end
 
 ---@param self EPExpanderHeader
 ---@param checked boolean
 local function SetChecked(self, checked)
-	self.labelAndCheckBox:SetChecked(checked)
+	if self.labelAndCheckBox.type == "EPCheckBox" then
+		self.labelAndCheckBox:SetChecked(checked)
+	end
 end
 
 ---@param self EPExpanderHeader
@@ -81,7 +113,7 @@ end
 local function Constructor()
 	local count = AceGUI:GetNextWidgetNum(Type)
 
-	local frame = CreateFrame("Frame", Type .. count, UIParent)
+	local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
 	frame:SetSize(k.DefaultFrameWidth, k.DefaultFrameHeight)
 
 	local button = CreateFrame("Button", Type .. "Button" .. count, frame)
@@ -103,15 +135,9 @@ local function Constructor()
 	buttonCover:SetPoint("BOTTOMRIGHT")
 	buttonCover:SetFrameLevel(button:GetFrameLevel() + 1)
 
-	local text = frame:CreateFontString(Type .. "Text" .. count, "OVERLAY")
-	local fPath = LSM:Fetch("font", "PT Sans Narrow")
-	if fPath then
-		text:SetFont(fPath, k.DefaultFontHeight)
-	end
-	text:SetWordWrap(false)
-
 	---@class EPExpanderHeader : AceGUIWidget
 	---@field labelAndCheckBox EPCheckBox
+	---@field label EPLabel
 	local widget = {
 		OnAcquire = OnAcquire,
 		OnRelease = OnRelease,
@@ -121,7 +147,6 @@ local function Constructor()
 		frame = frame,
 		type = Type,
 		count = count,
-		text = text,
 		button = button,
 		open = false,
 	}

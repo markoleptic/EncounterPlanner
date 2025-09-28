@@ -43,7 +43,9 @@ AceGUI:RegisterLayout(Type, function(content, children)
 			frame:ClearAllPoints()
 			frame:Show()
 
-			if child.type == "EPSpacer" and child.fillSpace then
+			if child.content and child.content.ignoreFromLayout == true then
+				frame:Hide()
+			elseif child.type == "EPSpacer" and child.fillSpace then
 				tinsert(spacers, i)
 			else
 				if i > 1 then

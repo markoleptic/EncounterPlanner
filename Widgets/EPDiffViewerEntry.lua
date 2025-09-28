@@ -48,10 +48,19 @@ end
 
 ---@param value Assignment|CombatLogEventAssignment|TimedAssignment
 ---@param roster table<string, RosterEntry>
+---@param diffType? PlanDiffType
 ---@return string
-local function CreateAssignmentDiffText(value, roster)
+local function CreateAssignmentDiffText(value, roster, diffType)
+	local text = ""
+	if diffType then
+		if diffType == PlanDiffType.Delete then
+			return L["Removed"]
+		elseif diffType == PlanDiffType.Change then
+			text = L["Changed"] .. "\n"
+		end
+	end
 	local assignee = utilities.ConvertAssigneeToLegibleString(value.assignee, roster)
-	local text = format("%s: %s", L["Assignee"], assignee)
+	text = text .. format("%s: %s", L["Assignee"], assignee)
 	if value.spellID > Private.constants.kTextAssignmentSpellID then
 		local spellName = GetSpellName(value.spellID)
 		if spellName then
@@ -136,7 +145,8 @@ local function OnAcquire(self)
 	checkBox:SetFrameWidthFromText()
 	checkBox.frame:SetParent(self.frame)
 	checkBox.frame:SetPoint("RIGHT", 0, -1)
-	checkBox:SetCallback("OnValueChanged", function(checked)
+	checkBox:SetChecked(true)
+	checkBox:SetCallback("OnValueChanged", function(_, _, checked)
 		self:Fire("OnValueChanged", checked)
 	end)
 
@@ -175,12 +185,13 @@ end
 ---@param newValue? Assignment|CombatLogEventAssignment|TimedAssignment
 ---@param oldRoster table<string, RosterEntry>
 ---@param newRoster table<string, RosterEntry>
----@param diffType PlanDiffType
-local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRoster, diffType)
+---@param diff AssignmentPlanDiffEntry
+local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRoster, diff)
 	if not oldValue then
 		return
 	end
 
+	local diffType = diff.type
 	local typeText = ""
 	if diffType == PlanDiffType.Insert then
 		typeText = L["Added"]
@@ -188,6 +199,9 @@ local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRo
 		typeText = L["Removed"]
 	elseif diffType == PlanDiffType.Change then
 		typeText = L["Changed"]
+	elseif diffType == PlanDiffType.Conflict then
+		---@cast diff AssignmentConflictDiffEntry
+		typeText = L["Conflict"]
 	end
 	self.typeLabel:SetText(typeText)
 
@@ -195,7 +209,7 @@ local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRo
 	oldValueLabel.frame:SetParent(self.frame)
 	oldValueLabel.frame:SetPoint("LEFT", self.typeDividerLine, "RIGHT", 0, -1)
 	oldValueLabel:SetFullHeight(true)
-	oldValueLabel:SetText(CreateAssignmentDiffText(oldValue, oldRoster))
+	oldValueLabel:SetText(CreateAssignmentDiffText(oldValue, oldRoster, diff.localType))
 	self.valueLabel = oldValueLabel
 
 	local maxLabelHeight = max(oldValueLabel.frame:GetHeight(), self.checkBox.frame:GetHeight() + 12)
@@ -212,7 +226,7 @@ local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRo
 		newValueLabel.frame:SetPoint("LEFT", self.diffDividerLine, "RIGHT", 0, -1)
 		newValueLabel.frame:SetPoint("RIGHT", self.checkBoxDividerLine, "LEFT", 0, -1)
 		newValueLabel:SetFullHeight(true)
-		newValueLabel:SetText(CreateAssignmentDiffText(newValue, newRoster))
+		newValueLabel:SetText(CreateAssignmentDiffText(newValue, newRoster, diff.remoteType))
 		self.valueLabelTwo = newValueLabel
 
 		maxLabelHeight = max(maxLabelHeight, newValueLabel.frame:GetHeight())

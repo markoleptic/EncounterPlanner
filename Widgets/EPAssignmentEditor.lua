@@ -569,7 +569,7 @@ local function OnAcquire(self)
 	self.reminderOverridesContainer = reminderOverridesContainer
 
 	local reminderOverridesLabel = AceGUI:Create("EPExpanderHeader")
-	reminderOverridesLabel:SetText(L["Reminder Overrides"])
+	reminderOverridesLabel:SetText(L["Reminder Overrides"], true)
 	reminderOverridesLabel:SetFullWidth(true)
 	reminderOverridesLabel:SetCallback("OnValueChanged", function(_, _, checked)
 		self:Fire("DataChanged", AssignmentEditorDataType.CancelIfAlreadyCasted, checked)

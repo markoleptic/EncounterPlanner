@@ -3367,33 +3367,6 @@ do
 			return localChange
 		end
 
-		if localType == PlanDiffType.Equal then
-			print("Equal")
-		elseif localType == PlanDiffType.Insert then
-			print("Insert")
-		elseif localType == PlanDiffType.Delete then
-			print("Delete")
-		elseif localType == PlanDiffType.Change then
-			print("Change")
-		elseif localType == PlanDiffType.Conflict then
-			print("Conflict")
-		end
-
-		if remoteType == PlanDiffType.Equal then
-			print("Equal")
-		elseif remoteType == PlanDiffType.Insert then
-			print("Insert")
-		elseif remoteType == PlanDiffType.Delete then
-			print("Delete")
-		elseif remoteType == PlanDiffType.Change then
-			print("Change")
-		elseif remoteType == PlanDiffType.Conflict then
-			print("Conflict")
-		end
-
-		assert(localValue)
-		assert(remoteValue)
-
 		if forceConflict then
 			---@type AssignmentConflictDiffEntry
 			local entry = {
@@ -3403,14 +3376,13 @@ do
 				remoteType = remoteType,
 				conflicts = {},
 				result = true,
-				chooseLocal = true,
+				chooseLocal = false,
 				localValue = localValue,
 				remoteValue = remoteValue,
 			}
 			return entry
 		else
 			local conflicts = assignmentUtilities.GetAssignmentConflicts(base, localValue, remoteValue)
-			assert(conflicts ~= nil)
 			if #conflicts > 0 then
 				---@type AssignmentConflictDiffEntry
 				local entry = {
@@ -3420,7 +3392,7 @@ do
 					remoteType = remoteType,
 					conflicts = conflicts,
 					result = true,
-					chooseLocal = true,
+					chooseLocal = false,
 					localValue = localValue,
 					remoteValue = remoteValue,
 				}
@@ -3496,6 +3468,7 @@ do
 					localVersionByID[id] = nil
 					incomingVersionByID[id] = nil
 				elseif localChange then
+					localChange.localOnlyChange = true
 					tinsert(merged, localChange)
 					localVersionByID[id] = nil
 				elseif remoteChange then
@@ -3654,9 +3627,8 @@ do
 	---@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
 	---@param forceMergeFromRemote boolean|nil
 	function Utilities.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMergeFromRemote)
-		local addedCount, removedCount, changedCount, conflictCount = 0, 0, 0, 0
+		local addedCount, removedCount, changedCount = 0, 0, 0
 
-		-- print("start", #existingAssignments)
 		local function findAssignmentIndex(id)
 			for i = 1, #existingAssignments do
 				if existingAssignments[i].ID == id then
@@ -3667,43 +3639,35 @@ do
 
 		for i = #assignmentDiff, 1, -1 do
 			local diff = assignmentDiff[i]
-			if diff.result and diff.type == PlanDiffType.Delete then
+			if diff.result and not diff.localOnlyChange and diff.type == PlanDiffType.Delete then
 				local index = findAssignmentIndex(diff.ID)
 				if index then
 					tremove(existingAssignments, index)
 					removedCount = removedCount + 1
-					-- 	print("remove")
-					-- else
-					-- 	print("failed to find index for remove")
 				end
 			end
 		end
 
 		for i = 1, #assignmentDiff do
 			local diff = assignmentDiff[i]
-			if diff.result then
+			if diff.result and not diff.localOnlyChange then
 				if diff.type == PlanDiffType.Insert then
 					---@cast diff AssignmentInsertDiffEntry
 					if not findAssignmentIndex(diff.ID) then
 						tinsert(existingAssignments, diff.value)
 						addedCount = addedCount + 1
-						-- else
-						-- 	print("failed to find index for Insert")
 					end
 				elseif diff.type == PlanDiffType.Change then
 					---@cast diff AssignmentChangeDiffEntry
 					local index = findAssignmentIndex(diff.ID)
 					if index then
-						-- print("change", #existingAssignments)
 						MergeAssignments(existingAssignments[index], diff.newValue)
 						changedCount = changedCount + 1
-						-- print(#existingAssignments)
 					end
 				elseif diff.type == PlanDiffType.Conflict then
 					---@cast diff AssignmentConflictDiffEntry
 					local index = findAssignmentIndex(diff.ID)
 					if index then
-						-- print("Conflict")
 						if diff.chooseLocal == false or forceMergeFromRemote then
 							if diff.remoteType == PlanDiffType.Delete then
 								tremove(existingAssignments, index)
@@ -3717,16 +3681,16 @@ do
 								local temp = DeepCopy(diff.localValue)
 								setmetatable(temp, getmetatable(diff.localValue))
 								MergeAssignments(existingAssignments[index], diff.remoteValue)
-								-- Apply local changes on top any remote changes
 								MergeAssignments(existingAssignments[index], temp)
 							end
 						end
+						changedCount = changedCount + 1
 					end
 				end
 			end
 		end
 
-		return addedCount, removedCount, changedCount, conflictCount
+		return addedCount, removedCount, changedCount
 	end
 
 	---@param existingPlan Plan Existing plan to apply the diff to.
