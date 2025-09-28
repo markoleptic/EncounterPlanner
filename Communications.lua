@@ -293,8 +293,12 @@ local function ImportPlan(newPlan, fullName)
 			existingPlan.roster = newPlan.roster
 			existingPlan.assigneeSpellSets = newPlan.assigneeSpellSets
 		end
+		if newPlan.revision then
+			existingPlan.revision = newPlan.revision
+		end
 
 		utilities.RemoveStaleCollapsedEntries(existingPlan)
+
 		existingPlan.lastSyncedSnapShot = PlanSerializer.SerializePlan(existingPlan)
 		plans[newPlanName] = existingPlan
 
