@@ -742,8 +742,7 @@ Private.spellDB = {
 				["spellID"] = 392983,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:tank"] = true },
+				["type"] = L["Personal Defensive"],
 				["name"] = "Fortifying Brew",
 				["spellID"] = 115203,
 			},
