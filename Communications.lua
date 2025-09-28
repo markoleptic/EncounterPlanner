@@ -345,10 +345,21 @@ local function ImportPlan(newPlan, fullName)
 	end
 end
 
+---@param plan Plan
+local function SnapshotPlanAndIncrementRevision(plan)
+	if type(plan.revision) == "nil" then
+		plan.revision = 1
+	elseif type(plan.revision) == "number" then
+		plan.revision = plan.revision + 1
+	end
+	plan.lastSyncedSnapShot = PlanSerializer.SerializePlan(plan)
+end
+
 ---@param existingPlan Plan
 ---@param planDiff PlanDiff
 local function UpdatePlan(existingPlan, planDiff)
 	local messages = utilities.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff)
+	SnapshotPlanAndIncrementRevision(existingPlan)
 
 	for _, message in ipairs(messages) do
 		LogMessage(message)
@@ -555,7 +566,7 @@ do
 				existingPlan.name,
 				L["Select the changes, if any, you wish to update the plan with"]
 			),
-			acceptButtonText = L["Accept"],
+			acceptButtonText = L["Accept and Send Plan to Group"],
 			acceptButtonCallback = function()
 				UpdatePlan(existingPlan, planDiff)
 				local groupType = GetGroupType()
@@ -563,7 +574,8 @@ do
 					local receiptString = CreateUpdateReceiptString(newPlan.ID, senderFullName, L["was accepted"])
 					AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
 				end
-				RemoveFromActivePlanUpdateMessageBoxDataIDs(uniqueID)
+				RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
+				Private.SendPlanToGroup(true) -- Don't snapshot and increment since was just done
 			end,
 			rejectButtonText = L["Reject"],
 			rejectButtonCallback = function()
@@ -574,23 +586,7 @@ do
 				end
 				RemoveFromActivePlanUpdateMessageBoxDataIDs(uniqueID)
 			end,
-			buttonsToAdd = {
-				{
-					beforeButtonIndex = 2,
-					buttonText = L["Accept and Send Plan to Group"],
-					callback = function()
-						UpdatePlan(existingPlan, planDiff)
-						local groupType = GetGroupType()
-						if groupType then
-							local receiptString =
-								CreateUpdateReceiptString(newPlan.ID, senderFullName, L["was accepted"])
-							AddOn:SendCommMessage(k.RequestPlanUpdateResponse, receiptString, groupType, nil, "NORMAL")
-						end
-						RemoveFromActivePlanReceiveMessageBoxDataIDs(uniqueID)
-						Private.SendPlanToGroup()
-					end,
-				},
-			},
+			buttonsToAdd = {},
 			planDiff = planDiff,
 			oldPlan = existingPlan,
 			newPlan = newPlan,
@@ -785,19 +781,17 @@ do
 
 		local MaybeUpgradeAssignmentIDsOnSend = Private.assignmentUtilities.MaybeUpgradeAssignmentIDsOnSend
 
-		function Private.SendPlanToGroup()
+		---@param skipSerialization boolean|nil
+		function Private.SendPlanToGroup(skipSerialization)
 			local plans = AddOn.db.profile.plans
 			local plan = plans[AddOn.db.profile.lastOpenPlan]
 			local groupType = GetGroupType()
 			if groupType then
 				MaybeUpgradeAssignmentIDsOnSend(plan.assignments)
-				if type(plan.revision) == "nil" then
-					plan.revision = 1
-				elseif type(plan.revision) == "number" then
-					plan.revision = plan.revision + 1
+				if not skipSerialization then
+					SnapshotPlanAndIncrementRevision(plan)
 				end
-				local serializedPlan = PlanSerializer.SerializePlan(plan)
-				plan.lastSyncedSnapShot = serializedPlan
+
 				if groupType == "RAID" then
 					local changedPrimaryPlan = SetDesignatedExternalPlan(plans, plan)
 					interfaceUpdater.UpdatePlanCheckBoxes(plan)
@@ -810,7 +804,7 @@ do
 					activePlanIDsBeingSent[plan.ID].timer = nil
 				end
 				activePlanIDsBeingSent[plan.ID] = { timer = nil, totalReceivedConfirmations = 0 }
-				local exportString = TableToString(serializedPlan, false)
+				local exportString = TableToString(plan.lastSyncedSnapShot, false)
 				LogMessage(format("%s '%s'...", L["Sending plan"], plan.name))
 				AddOn:SendCommMessage(k.DistributePlan, exportString, groupType, nil, "BULK", CallbackProgress, plan.ID)
 			end
