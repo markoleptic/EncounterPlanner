@@ -161,6 +161,7 @@ do
 			assigneeSpellSets[#assigneeSpellSets + 1] =
 				{ [1] = assigneeSpellSet.assignee, [2] = assigneeSpellSet.spells }
 		end
+		serializedPlan[10] = plan.revision
 		return serializedPlan
 	end
 
@@ -184,6 +185,12 @@ do
 		plan.content = serializedPlan[8]
 		for _, assigneeSpellSet in ipairs(serializedPlan[9]) do
 			tinsert(plan.assigneeSpellSets, { assignee = assigneeSpellSet[1], spells = assigneeSpellSet[2] })
+		end
+		if serializedPlan[10] then
+			local revision = tonumber(serializedPlan[10])
+			if revision then
+				plan.revision = revision
+			end
 		end
 		return plan
 	end
@@ -780,6 +787,11 @@ do
 			local groupType = GetGroupType()
 			if groupType then
 				MaybeUpgradeAssignmentIDsOnSend(plan.assignments)
+				if type(plan.revision) == "nil" then
+					plan.revision = 1
+				elseif type(plan.revision) == "number" then
+					plan.revision = plan.revision + 1
+				end
 				local serializedPlan = PlanSerializer.SerializePlan(plan)
 				plan.lastSyncedSnapShot = serializedPlan
 				if groupType == "RAID" then

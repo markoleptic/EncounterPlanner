@@ -202,6 +202,7 @@
 ---@field customPhaseDurations table<integer, number> Overridden boss phase durations.
 ---@field customPhaseCounts table<integer, number> Overridden boss phase counts.
 ---@field lastSyncedSnapShot SerializedPlan|nil
+---@field revision integer|nil
 
 ---@class SerializedPlan
 ---@field [1] string ID
@@ -213,6 +214,7 @@
 ---@field [7] table<string, SerializedRosterEntry> roster
 ---@field [8] table<integer, string> content
 ---@field [9] table<integer, SerializedAssigneeSpellSet> Assignees and spells (templates)
+---@field [10] integer revision
 
 ---@class SerializedAssignment
 ---@field [1] string ID
