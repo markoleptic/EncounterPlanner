@@ -477,12 +477,16 @@ local function OnAcquire(self)
 		end)
 		spellAssignmentDropdown:AddItem(
 			{ itemValue = "Favorite", text = L["Favorite"], notSelectable = true },
-			"EPDropdownItemMenu"
+			"EPDropdownItemMenu",
+			nil,
+			true
 		)
 		spellAssignmentDropdown:SetItemEnabled("Favorite", false)
 		spellAssignmentDropdown:AddItem(
 			{ itemValue = "Recent", text = L["Recent"], notSelectable = true },
-			"EPDropdownItemMenu"
+			"EPDropdownItemMenu",
+			nil,
+			true
 		)
 		spellAssignmentDropdown:SetItemEnabled("Recent", false)
 		self.spellAssignmentDropdown = spellAssignmentDropdown
