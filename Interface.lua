@@ -740,7 +740,6 @@ do -- Assignment Editor
 
 		local updatedDropdownItems, enableIndividualItem =
 			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
-		DevTool:AddData(updatedDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
