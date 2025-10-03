@@ -49,6 +49,7 @@ globals = {
 	"WeakAurasProfilingMixin",
 	"WeakAurasProfilingReportMixin",
 	"WeakAurasProfilingLineMixin",
+
 	-- Third Party Addons/Libs
 	"APIDocumentation",
 	"APIDocumentation_LoadUI",
@@ -66,7 +67,6 @@ globals = {
 	"Plater",
 	"GAME_LOCALE",
 	"VMRT",
-	"DevTool",
 
 	-- FrameXML misc
 	"BackdropTemplateMixin",
