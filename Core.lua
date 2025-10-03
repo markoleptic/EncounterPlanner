@@ -637,9 +637,12 @@ end
 function AddOn:SlashCommand(input)
 	if not input or input:trim() == "" then
 		--@debug@
+		-- luacheck: push ignore 113
 		if DevTool then
+			-- luacheck: ignore 113
 			DevTool:AddData(Private)
 		end
+		-- luacheck: pop
 		--@end-debug@
 		if not Private.mainFrame then
 			Private:CreateInterface()
