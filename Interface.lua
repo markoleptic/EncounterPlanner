@@ -70,6 +70,7 @@ local unpack = unpack
 local wipe = table.wipe
 
 local s = {
+	Tooltip = Private.tooltip,
 	Creator = {},
 	Handler = {},
 	SimulationCompletedObject = {
@@ -1917,8 +1918,7 @@ end
 local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
 	local preferences = AddOn.db.profile.preferences
 	if preferences.reminder.enabled == false then
-		local tooltip = Private.tooltip
-		tooltip:SetOwner(checkBoxOrButton.frame, "ANCHOR_TOP")
+		s.Tooltip:SetOwner(checkBoxOrButton.frame, "ANCHOR_TOP")
 		local isCheckBox = checkBoxOrButton.type == "EPCheckBox"
 		local title, text
 
@@ -1930,15 +1930,15 @@ local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
 			title = L["Simulate Reminders"]
 			text = L["Reminders are currently disabled globally. Enable them in Preferences to simulate them."]
 		end
-		tooltip:SetText(title, 1, 0.82, 0, true)
-		tooltip:AddLine(text, 1, 1, 1, true)
-		tooltip:Show()
+		s.Tooltip:SetText(title, 1, 0.82, 0, true)
+		s.Tooltip:AddLine(text, 1, 1, 1, true)
+		s.Tooltip:Show()
 	end
 end
 
 local function HandlePlanReminderEnableCheckBoxOrButtonLeave()
-	Private.tooltip:ClearLines()
-	Private.tooltip:Hide()
+	s.Tooltip:ClearLines()
+	s.Tooltip:Hide()
 end
 
 local function HandlePrimaryPlanCheckBoxValueChanged()
@@ -1951,19 +1951,18 @@ end
 
 ---@param checkBox EPCheckBox
 local function HandlePrimaryPlanCheckBoxEnter(checkBox)
-	local tooltip = Private.tooltip
-	tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
+	s.Tooltip:SetOwner(checkBox.frame, "ANCHOR_TOP")
 	local title = L["Designated External Plan"]
 	local text =
 		L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."]
-	tooltip:SetText(title, 1, 0.82, 0, true)
-	tooltip:AddLine(text, 1, 1, 1, true)
-	tooltip:Show()
+	s.Tooltip:SetText(title, 1, 0.82, 0, true)
+	s.Tooltip:AddLine(text, 1, 1, 1, true)
+	s.Tooltip:Show()
 end
 
 local function HandlePrimaryPlanCheckBoxLeave()
-	Private.tooltip:ClearLines()
-	Private.tooltip:Hide()
+	s.Tooltip:ClearLines()
+	s.Tooltip:Hide()
 end
 
 ---@param timelineAssignment TimelineAssignment

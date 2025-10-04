@@ -10,7 +10,6 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
-local tooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
 local geterrorhandler = geterrorhandler
@@ -91,6 +90,7 @@ k.LineBackdrop.insets.bottom = k.SpacingBetweenOptions / 2
 local s = {
 	IsChoosingFrame = false,
 	MessageBox = nil, ---@type EPMessageBox|nil
+	Tooltip = Private.tooltip,
 }
 
 local function GetName(frame)
@@ -180,12 +180,12 @@ end
 ---@param label string
 ---@param description string
 local function ShowTooltip(frame, label, description)
-	tooltip:SetOwner(frame, "ANCHOR_TOP")
-	tooltip:SetText(label, 1, 0.82, 0, true)
+	s.Tooltip:SetOwner(frame, "ANCHOR_TOP")
+	s.Tooltip:SetText(label, 1, 0.82, 0, true)
 	if type(description) == "string" then
-		tooltip:AddLine(description, 1, 1, 1, true)
+		s.Tooltip:AddLine(description, 1, 1, 1, true)
 	end
-	tooltip:Show()
+	s.Tooltip:Show()
 end
 
 ---@class CooldownOverrideObject
@@ -404,10 +404,10 @@ do
 			)
 		end)
 		minuteLineEdit:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 		secondLineEdit:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 
 		local chargeLineEdit = AceGUI:Create("EPLineEdit")
@@ -426,7 +426,7 @@ do
 			)
 		end)
 		chargeLineEdit:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 
 		local deleteButton = AceGUI:Create("EPButton")
@@ -773,7 +773,7 @@ local function CreateFrameChooser(self, option, optionGroupKey, optionIndex, lab
 		ShowTooltip(button.frame, option.label, option.description)
 	end)
 	button:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 
 	if option.enabled then
@@ -844,7 +844,7 @@ local function CreateRadioButtonGroup(self, option, optionGroupKey, optionIndex,
 			ShowTooltip(widget.frame, GetLabels(option.labels)[i], GetDescriptions(option.descriptions)[i])
 		end)
 		child:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 	end
 	return radioButtonGroup
@@ -927,10 +927,10 @@ local function CreateDoubleLineEdit(self, option, optionGroupKey, optionIndex, l
 		ShowTooltip(lineEditY.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	lineEditX:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	lineEditY:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	doubleLineEditContainer:AddChildren(labelX, lineEditX, labelY, lineEditY)
 	return doubleLineEditContainer
@@ -1000,10 +1000,10 @@ local function CreateDoubleColorPicker(self, option, optionGroupKey, optionIndex
 		ShowTooltip(colorPickerTwo.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	colorPickerOne:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	colorPickerTwo:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	doubleColorPickerContainer:AddChildren(colorPickerOne, colorPickerTwo)
 	return doubleColorPickerContainer
@@ -1074,10 +1074,10 @@ local function CreateDoubleCheckBox(self, option, optionGroupKey, optionIndex, l
 		ShowTooltip(checkBoxTwo.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	checkBoxOne:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	checkBoxTwo:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	doubleCheckBoxContainer:AddChildren(checkBoxOne, checkBoxTwo)
 	return doubleCheckBoxContainer
@@ -1147,10 +1147,10 @@ local function CreateCheckBoxWithDropdown(self, option, optionGroupKey, optionIn
 		ShowTooltip(dropdown.frame, GetLabels(option.labels)[2], GetDescriptions(option.descriptions)[2])
 	end)
 	checkBox:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	dropdown:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 	checkBoxWithDropdownContainer:AddChildren(checkBox, dropdown)
 	return checkBoxWithDropdownContainer
@@ -1210,7 +1210,7 @@ local function CreateCenteredButton(self, option)
 		ShowTooltip(button.frame, option.label, option.description)
 	end)
 	button:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 
 	container:AddChild(button)
@@ -1312,7 +1312,7 @@ local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIn
 		ShowTooltip(dropdown.frame, option.label, option.description)
 	end)
 	dropdown:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		s.Tooltip:Hide()
 	end)
 
 	if option.buttonDescription then
@@ -1320,7 +1320,7 @@ local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIn
 			ShowTooltip(button.frame, option.buttonText, option.buttonDescription)
 		end)
 		button:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 	end
 
@@ -1450,7 +1450,7 @@ local function SetCallbacks(self, widget, option, optionGroupKey, optionIndex, c
 			ShowTooltip(widget.frame, option.label, option.description)
 		end)
 		widget:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			s.Tooltip:Hide()
 		end)
 	end
 end

@@ -11,7 +11,7 @@ local Type = "EPAssignmentEditor"
 local Version = 1
 
 local AssignmentEditorDataType = Private.classes.AssignmentEditorDataType
-local tooltip = Private.tooltip
+local sTooltip = Private.tooltip
 
 local AceGUI = LibStub("AceGUI-3.0")
 local UIParent = UIParent
@@ -83,10 +83,10 @@ k.LineBackdrop = {
 ---@param label string
 ---@param description string
 local function ShowTooltip(frame, label, description)
-	tooltip:SetOwner(frame, "ANCHOR_TOP")
-	tooltip:SetText(label, 1, 0.82, 0, true)
-	tooltip:AddLine(description, 1, 1, 1, true)
-	tooltip:Show()
+	sTooltip:SetOwner(frame, "ANCHOR_TOP")
+	sTooltip:SetText(label, 1, 0.82, 0, true)
+	sTooltip:AddLine(description, 1, 1, 1, true)
+	sTooltip:Show()
 end
 
 ---@param children any
@@ -586,7 +586,7 @@ local function OnAcquire(self)
 		)
 	end)
 	reminderOverridesLabel.labelAndCheckBox:SetCallback("OnLeave", function()
-		tooltip:Hide()
+		sTooltip:Hide()
 	end)
 	reminderOverridesLabel:SetCallback("Clicked", function(_, _, open)
 		reminderOverridesContainer:SetIgnoreFromLayout(not open)
@@ -633,7 +633,7 @@ local function OnAcquire(self)
 			)
 		end)
 		self.cancelIfAlreadyCastedCheckBox:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			sTooltip:Hide()
 		end)
 
 		local countdownLengthLabel = AceGUI:Create("EPLabel")
@@ -654,7 +654,7 @@ local function OnAcquire(self)
 			)
 		end)
 		self.countdownLengthLineEdit:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			sTooltip:Hide()
 		end)
 
 		countdownLengthContainer:AddChildren(countdownLengthLabel, self.countdownLengthLineEdit)
@@ -684,7 +684,7 @@ local function OnAcquire(self)
 			)
 		end)
 		self.holdDurationLineEdit:SetCallback("OnLeave", function()
-			tooltip:Hide()
+			sTooltip:Hide()
 		end)
 
 		holdDurationContainer:AddChildren(holdDurationLabel, self.holdDurationLineEdit)

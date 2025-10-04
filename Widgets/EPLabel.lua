@@ -10,7 +10,7 @@ local Version = 1
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
-local tooltip = Private.tooltip
+local sTooltip = Private.tooltip
 
 local CreateFrame = CreateFrame
 local unpack = unpack
@@ -28,18 +28,18 @@ local k = {
 ---@param epLabel EPLabel
 local function HandleIconEnter(epLabel)
 	if epLabel.spellID then
-		tooltip:ClearLines()
-		tooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
-		tooltip:SetSpellByID(epLabel.spellID)
-		tooltip:RefreshData()
-		tooltip:AddLine("|r|cFFFFFFFF" .. L["Spell ID"] .. ":|r " .. "|cFFFFD200" .. epLabel.spellID .. "|r")
-		tooltip:Show()
+		sTooltip:ClearLines()
+		sTooltip:SetOwner(epLabel.frame, "ANCHOR_BOTTOMLEFT", 0, epLabel.frame:GetHeight())
+		sTooltip:SetSpellByID(epLabel.spellID)
+		sTooltip:RefreshData()
+		sTooltip:AddLine("|r|cFFFFFFFF" .. L["Spell ID"] .. ":|r " .. "|cFFFFD200" .. epLabel.spellID .. "|r")
+		sTooltip:Show()
 	end
 end
 
 local function HandleIconLeave(_)
-	tooltip:SetScript("OnUpdate", nil)
-	tooltip:Hide()
+	sTooltip:SetScript("OnUpdate", nil)
+	sTooltip:Hide()
 end
 
 ---@param self EPLabel
