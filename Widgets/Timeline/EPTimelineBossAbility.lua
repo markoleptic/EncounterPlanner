@@ -2,6 +2,7 @@ local _, Namespace = ...
 
 ---@class Private
 local Private = Namespace
+local L = Private.L
 ---@class EPTimelineConstants
 local k = Private.timeline.constants
 ---@class EPTimelineState
@@ -21,7 +22,9 @@ local SelectAssignment = Private.timeline.utilities.SelectAssignment
 local SelectBossAbility = Private.timeline.utilities.SelectBossAbility
 
 local CreateFrame = CreateFrame
+local format = string.format
 local getmetatable = getmetatable
+local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
 local max = math.max
 local pairs = pairs
@@ -30,6 +33,45 @@ local tinsert = table.insert
 local unpack = unpack
 local wipe = wipe
 
+local sTooltip = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+sTooltip:SetSize(200, 100)
+sTooltip:SetBackdrop({
+	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true,
+	tileSize = 16,
+	edgeSize = 16,
+	insets = { left = 4, right = 4, top = 4, bottom = 4 },
+})
+sTooltip:SetFrameStrata("TOOLTIP")
+sTooltip:Hide()
+
+local sTooltipTitle = sTooltip:CreateFontString(nil, "OVERLAY", "GameTooltipHeaderText")
+sTooltipTitle:SetPoint("TOPLEFT", 10, -10)
+sTooltipTitle:SetPoint("TOPRIGHT", -10, -10)
+sTooltipTitle:SetText("")
+sTooltipTitle:SetTextColor(1, 0.82, 0)
+sTooltipTitle:SetJustifyH("CENTER")
+
+local sTooltipTexts = {} ---@type table<integer, table<integer, FontString>>
+
+---@param row integer
+---@param col integer
+---@param text string
+local function CreateTooltipFontString(row, col, text)
+	if not sTooltipTexts[row] then
+		sTooltipTexts[row] = {}
+	end
+	local fontString = sTooltipTexts[row][col]
+	if not fontString then
+		fontString = sTooltip:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+		fontString:SetJustifyH("CENTER")
+		sTooltipTexts[row][col] = fontString
+	end
+	fontString:SetText(text)
+	fontString:Show()
+end
+
 local function ClearSelectedAssignmentsFromBossAbilityFrameEnter()
 	for _, assignmentID in ipairs(s.SelectedAssignmentIDsFromBossAbilityFrameEnter) do
 		ClearSelectedAssignment(assignmentID, true)
@@ -37,13 +79,126 @@ local function ClearSelectedAssignmentsFromBossAbilityFrameEnter()
 	wipe(s.SelectedAssignmentIDsFromBossAbilityFrameEnter)
 end
 
+---@param fontString FontString
+---@param availableWidth number
+local function FormatDuration(fontString, availableWidth)
+	local currentW = fontString:GetWidth()
+	local lastText = fontString:GetText()
+	while currentW < availableWidth do
+		local newText = format("-%s-", lastText)
+		fontString:SetText(newText)
+		currentW = fontString:GetWidth()
+		if currentW > availableWidth then
+			fontString:SetText(format("<%s>", lastText:sub(2, lastText:len() - 1)))
+		end
+		lastText = newText
+	end
+end
+
+---@param frame Frame
+---@param labelText string
+---@param textTable table<integer, table<integer, string>>
+local function ShowTooltip(frame, labelText, textTable)
+	sTooltipTitle:SetText(labelText)
+	local height = sTooltipTitle:GetHeight() + 20
+	local maxColumnWidth = 0
+	local maxColumnCount = 0
+	for row, textColumns in ipairs(textTable) do
+		maxColumnCount = max(maxColumnCount, #textColumns)
+		for col, text in ipairs(textColumns) do
+			CreateTooltipFontString(row, col, text)
+			if sTooltipTexts[row][col] then
+				maxColumnWidth = max(maxColumnWidth, sTooltipTexts[row][col]:GetWidth())
+			end
+		end
+		height = height + 2 + sTooltipTexts[row][1]:GetHeight()
+	end
+	maxColumnWidth = maxColumnWidth + 2
+	local width = max(maxColumnWidth * maxColumnCount, sTooltipTitle:GetUnboundedStringWidth())
+	maxColumnWidth = width / maxColumnCount
+
+	if textTable[1] then
+		for col = 1, #textTable[1] do
+			local fontString = sTooltipTexts[1][col]
+			if fontString then
+				fontString:SetWidth(maxColumnWidth)
+				if col == 1 then
+					fontString:SetPoint("TOPLEFT", sTooltipTitle, "BOTTOMLEFT", 0, -2)
+				else
+					local textToLeft = sTooltipTexts[1][col - 1]
+					fontString:SetPoint("LEFT", textToLeft, "RIGHT")
+				end
+			end
+		end
+	end
+	if textTable[2] then
+		for col = 1, #textTable[2] do
+			local fontString = sTooltipTexts[2][col]
+			if fontString then
+				fontString:SetWidth(maxColumnWidth)
+				fontString:SetPoint("TOPLEFT", sTooltipTexts[1][col], "BOTTOMLEFT")
+			end
+		end
+	end
+	if textTable[3] then
+		local fsCastDuration = sTooltipTexts[3][1]
+		local leftTextPreviousRow = sTooltipTexts[2][1]
+		local middleTextPreviousRow = sTooltipTexts[2][2]
+		if textTable[3][1] and fsCastDuration and leftTextPreviousRow and middleTextPreviousRow then
+			local availableWidth = (leftTextPreviousRow:GetWidth() + middleTextPreviousRow:GetWidth()) * 0.5
+			FormatDuration(fsCastDuration, availableWidth)
+			fsCastDuration:SetPoint("TOPLEFT", leftTextPreviousRow, "BOTTOMLEFT")
+			fsCastDuration:SetPoint("TOPRIGHT", middleTextPreviousRow, "BOTTOMRIGHT")
+		end
+		local fsEffectDuration = sTooltipTexts[3][2]
+		local rightTextPreviousRow = sTooltipTexts[2][3]
+		if textTable[3][2] and fsEffectDuration and middleTextPreviousRow and rightTextPreviousRow then
+			local availableWidth = (middleTextPreviousRow:GetWidth() + rightTextPreviousRow:GetWidth()) * 0.5
+			FormatDuration(fsEffectDuration, availableWidth)
+			fsEffectDuration:SetPoint("TOPLEFT", middleTextPreviousRow, "BOTTOMLEFT")
+			fsEffectDuration:SetPoint("TOPRIGHT", rightTextPreviousRow, "BOTTOMRIGHT")
+		end
+	end
+
+	sTooltip:SetSize(width + 20, height)
+	sTooltip:SetPoint("BOTTOM", frame, "TOP")
+	sTooltip:Show()
+end
+
+local function HideTooltip()
+	for _, textRow in ipairs(sTooltipTexts) do
+		for _, text in ipairs(textRow) do
+			text:ClearAllPoints()
+			text:SetText("")
+			text:SetWidth(0)
+			text:Hide()
+		end
+	end
+	sTooltip:ClearAllPoints()
+	sTooltip:Hide()
+end
+
+---@param duration number
+---@return string
+local function CreateCastOrEffectDurationString(duration)
+	local minutes, seconds = Private.utilities.FormatTime(duration)
+	local durationString
+	if duration < 60.0 then
+		durationString = format("%s", seconds)
+	else
+		durationString = format("%s:%s", minutes, seconds)
+	end
+	return durationString
+end
+
 ---@param frame BossAbilityFrame
 local function HandleBossAbilityFrameEnter(frame)
-	if not frame.abilityInstance then
+	local abilityInstance = frame.abilityInstance
+	if not abilityInstance then
 		return
 	end
-	local spellID = frame.abilityInstance.bossAbilitySpellID
-	local spellCount = frame.abilityInstance.spellCount
+	local spellID = abilityInstance.bossAbilitySpellID
+	local spellCount = abilityInstance.spellCount
 	if #s.SelectedAssignmentIDsFromBossAbilityFrameEnter > 0 then
 		ClearSelectedAssignmentsFromBossAbilityFrameEnter()
 	end
@@ -60,6 +215,51 @@ local function HandleBossAbilityFrameEnter(frame)
 	for _, assignmentID in ipairs(s.SelectedAssignmentIDsFromBossAbilityFrameEnter) do
 		SelectAssignment(assignmentID, AssignmentSelectionType.kBossAbilityHover)
 	end
+	local textTable = {}
+	local castStart, castEnd, effectEnd = abilityInstance.castStart, abilityInstance.castEnd, abilityInstance.effectEnd
+	local castDuration = castEnd - castStart
+	local effectDuration = effectEnd - castEnd
+	local totalDuration = castDuration + effectDuration
+
+	local FormatTime = Private.utilities.FormatTime
+
+	if totalDuration > 0 then
+		if castDuration > 0 and effectDuration > 0 then
+			tinsert(textTable, { L["Cast Start"], L["Cast End"], L["Effect End"] })
+			tinsert(textTable, {
+				format("%s:%s", FormatTime(castStart)),
+				format("%s:%s", FormatTime(castEnd)),
+				format("%s:%s", FormatTime(effectEnd)),
+			})
+
+			local castDurationString = CreateCastOrEffectDurationString(castDuration)
+			local effectDurationString = CreateCastOrEffectDurationString(effectDuration)
+			tinsert(textTable, { castDurationString, effectDurationString })
+		elseif castDuration > 0 then
+			tinsert(textTable, { L["Cast Start"], L["Cast End"] })
+			tinsert(textTable, {
+				format("%s:%s", FormatTime(castStart)),
+				format("%s:%s", FormatTime(castEnd)),
+			})
+			local castDurationString = CreateCastOrEffectDurationString(castDuration)
+			tinsert(textTable, { castDurationString })
+		else
+			tinsert(textTable, { L["Cast Start/End"], L["Effect End"] })
+			tinsert(textTable, {
+				format("%s:%s", FormatTime(castEnd)),
+				format("%s:%s", FormatTime(effectEnd)),
+			})
+			local effectDurationString = CreateCastOrEffectDurationString(effectDuration)
+			tinsert(textTable, { effectDurationString })
+		end
+	else
+		tinsert(textTable, { L["Cast Start/End"] })
+		tinsert(textTable, {
+			format("%s:%s", FormatTime(castStart)),
+		})
+	end
+	local labelText = format("%s %d", GetSpellName(abilityInstance.bossAbilitySpellID), abilityInstance.spellCount)
+	ShowTooltip(frame, labelText, textTable)
 end
 
 ---@param frame BossAbilityFrame
@@ -68,6 +268,7 @@ local function HandleBossAbilityFrameLeave(frame)
 		ClearSelectedBossAbility(frame.abilityInstance.bossAbilitySpellID, frame.abilityInstance.spellCount, true)
 	end
 	ClearSelectedAssignmentsFromBossAbilityFrameEnter()
+	HideTooltip()
 end
 
 ---@param phaseNameFrame Frame
