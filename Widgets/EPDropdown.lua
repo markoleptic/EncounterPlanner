@@ -916,8 +916,7 @@ do
 	---@param itemData DropdownItemData
 	---@param itemType "EPDropdownItemMenu"|"EPDropdownItemToggle" type of item to create
 	---@param index? integer
-	---@param notSelectable boolean? If true, items will not be selectable. If unspecified, uses value provided for each item.
-	local function AddItem(self, itemData, itemType, index, notSelectable)
+	local function AddItem(self, itemData, itemType, index)
 		local exists = AceGUI:GetWidgetVersion(itemType)
 		if not exists then
 			error(("The given item type, %q, does not"):format(tostring(itemType)), 2)
@@ -943,7 +942,7 @@ do
 				HandleMenuItemValueChanged(self, widget, selected, value, owningDropdownMenuItem)
 			end)
 			dropdownMenuItem:SetClickable(itemData.itemMenuClickable)
-			dropdownMenuItem:SetNeverShowItemsAsSelected(notSelectable)
+			dropdownMenuItem:SetNeverShowItemsAsSelected(itemData.notSelectable == true)
 			self.pullout:InsertItem(dropdownMenuItem, index)
 			if itemData.dropdownItemMenuData then
 				dropdownMenuItem:SetMenuItems(itemData.dropdownItemMenuData, self)
@@ -966,7 +965,7 @@ do
 					itemData.customTexture,
 					itemData.customTextureVertexColor,
 					itemData.customTextureSelectable,
-					notSelectable == true
+					itemData.notSelectable == true
 				)
 			end
 			if itemData.customTextureSelectable then
@@ -980,7 +979,7 @@ do
 					HandleItemValueChanged(self, widget, selected)
 				end)
 			end
-			if notSelectable == true then
+			if itemData.notSelectable == true then
 				dropdownItemToggle:SetNeverShowItemsAsSelected(true)
 			end
 			self.pullout:InsertItem(dropdownItemToggle, index)

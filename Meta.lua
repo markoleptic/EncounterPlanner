@@ -137,6 +137,7 @@
 ---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil
 ---@field castTime number|nil Phase specific cast time override
 ---@field duration number|nil Phase specific duration override
+---@field durationExtendsIntoNextPhase boolean If true, the cast time and duration are not clamped to phase end time.
 
 -- Defines a boss ability that triggers another boss ability. May also repeat.
 ---@class EventTrigger

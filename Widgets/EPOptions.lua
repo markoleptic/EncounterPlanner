@@ -661,7 +661,7 @@ end
 ---@param option EPSettingOption
 local function AddDropdownValues(dropdown, values, option)
 	if type(values) == "table" then
-		dropdown:AddItems(values, "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+		dropdown:AddItems(values, "EPDropdownItemToggle", option.notSelectable)
 		if option.itemsAreFonts then
 			for _, value in pairs(values) do
 				local item, _ = dropdown:FindItemAndText(value.itemValue)
@@ -676,7 +676,7 @@ local function AddDropdownValues(dropdown, values, option)
 			end
 		end
 	elseif type(values) == "function" then
-		dropdown:AddItems(values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+		dropdown:AddItems(values(), "EPDropdownItemToggle", option.notSelectable)
 	end
 end
 
@@ -1236,7 +1236,7 @@ local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIn
 	elseif type(option.values) == "function" then
 		values = option.values()
 	end
-	dropdown:AddItems(values, "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+	dropdown:AddItems(values, "EPDropdownItemToggle", option.notSelectable)
 	dropdown:SetValue(option.get())
 
 	local button = AceGUI:Create("EPButton")
@@ -1248,7 +1248,7 @@ local function CreateDropdownBesideButton(self, option, optionGroupKey, optionIn
 		if type(option.values) == "function" then
 			UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 				dropdown:Clear()
-				dropdown:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+				dropdown:AddItems(option.values(), "EPDropdownItemToggle", option.notSelectable)
 				dropdown:SetValue(option.get())
 			end)
 		else
@@ -1353,7 +1353,7 @@ local function SetCallbacks(self, widget, option, optionGroupKey, optionIndex, c
 				if option.type == "dropdown" and type(option.values) == "function" then
 					UpdateUpdateIndices(self.updateIndices, option, optionGroupKey, optionIndex, function()
 						widget:Clear()
-						widget:AddItems(option.values(), "EPDropdownItemToggle", option.neverShowItemsAsSelected)
+						widget:AddItems(option.values(), "EPDropdownItemToggle", option.notSelectable)
 						setWidgetValue(widget, option.get())
 					end)
 				else
@@ -1409,7 +1409,7 @@ local function SetCallbacks(self, widget, option, optionGroupKey, optionIndex, c
 						s.MessageBox:SetCallback("Rejected", function()
 							AceGUI:Release(s.MessageBox)
 							s.MessageBox = nil
-							if widget and widget.pullout and option and option.neverShowItemsAsSelected then
+							if widget and widget.pullout and option and option.notSelectable then
 								setWidgetValue(widget, nil)
 							end
 						end)

@@ -3248,7 +3248,7 @@ do
 			{
 				label = L["Copy From"],
 				type = "dropdown",
-				neverShowItemsAsSelected = true,
+				notSelectable = true,
 				description = L["Copies the settings from an existing profile into the Current Profile."],
 				values = function()
 					return GetProfiles(true)
@@ -3269,7 +3269,7 @@ do
 			{
 				label = L["Delete a Profile"],
 				type = "dropdown",
-				neverShowItemsAsSelected = true,
+				notSelectable = true,
 				description = L["Displays a confirmation dialog, and if confirmed, deletes the selected profile from the database."],
 				values = function()
 					return GetProfiles(true)

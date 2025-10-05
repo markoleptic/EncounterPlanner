@@ -177,7 +177,7 @@ function AceGUIContainer:SetLayout(layout) end
 ---@field uncategorizedBottom? boolean
 ---@field confirm? boolean
 ---@field confirmText? string|fun(arg: string|boolean|number):string
----@field neverShowItemsAsSelected? boolean
+---@field notSelectable? boolean
 ---@field itemsAreFonts? boolean
 
 ---@class RosterWidgetMapping
