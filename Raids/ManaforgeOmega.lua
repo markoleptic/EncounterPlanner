@@ -1193,28 +1193,28 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			instanceID = 2810,
 			preferredCombatLogEventAbilities = {
 				[1] = nil,
-				[2] = { combatLogEventSpellID = 1233093, combatLogEventType = "SAA" },
+				[2] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAA" },
 				[3] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAR" },
-				[4] = { combatLogEventSpellID = 1233863, combatLogEventType = "SAA" },
+				[4] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAA" },
 				[5] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAR" },
-				[6] = { combatLogEventSpellID = 1233672, combatLogEventType = "SCC" },
+				[6] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAA" },
 				[7] = { combatLogEventSpellID = 1245978, combatLogEventType = "SAR" },
 			},
 			abilities = {
 				[1241833] = BossAbility:New({ -- Fracture
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 15.16, 32.04, 31.73 },
+							castTimes = { 15.1, 34.1, 34.1 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 3.53, 31.89, 31.92 },
+							castTimes = { 3.5, 34.1, 34.1 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 3.52, 31.90, 31.91 },
+							castTimes = { 3.5, 34.1, 34.1 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 3.52 },
-							repeatInterval = { 31.90 },
+							castTimes = { 4.7 },
+							repeatInterval = { 34.1 },
 						}),
 					},
 					duration = 0.0,
@@ -1225,17 +1225,17 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1218103] = BossAbility:New({ -- Eye Beam
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 19.36, 31.91, 31.94 },
+							castTimes = { 19.6, 34.1, 34.1 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 7.76, 31.91, 31.92 },
+							castTimes = { 8.1, 34.1, 34.1 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 7.76, 31.91, 31.92 },
+							castTimes = { 8.1, 34.1, 34.1 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 7.76 },
-							repeatInterval = { 31.90 },
+							castTimes = { 8.1 },
+							repeatInterval = { 34.1 },
 						}),
 					},
 					duration = 4.0,
@@ -1246,17 +1246,17 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1225130] = BossAbility:New({ -- Felblade
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 25.80, 32.27, 31.72 },
+							castTimes = { 26.0, 34.1, 34.1 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 14.48, 32.04, 31.53 },
+							castTimes = { 14.4, 34.1, 34.1 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 14.16, 31.89, 31.96 },
+							castTimes = { 14.4, 34.1, 34.1 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 14.16 },
-							repeatInterval = { 31.90 },
+							castTimes = { 14.4 },
+							repeatInterval = { 34.1 },
 						}),
 					},
 					duration = 25.0,
@@ -1266,13 +1266,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1227355] = BossAbility:New({ -- Voidstep
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 25.84, 31.56 },
+							castTimes = { 26.5, 33.7 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 15.0, 33.7 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 14.24, 31.58 },
+							castTimes = { 15.0, 33.7 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 10.58 },
+							castTimes = { 10.6 },
 						}),
 					},
 					duration = 0.0,
@@ -1282,17 +1285,17 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1242259] = BossAbility:New({ -- Spirit Bomb
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 31.01, 31.91, 31.95 },
+							castTimes = { 32.1, 34.1, 34.1 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 19.46, 31.91, 31.91 },
+							castTimes = { 20.6, 34.1, 34.1 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 19.46, 31.91, 31.91 },
+							castTimes = { 20.6, 34.1, 34.1 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 19.46 },
-							repeatInterval = { 31.90 },
+							castTimes = { 14.9 },
+							repeatInterval = { 34.1 },
 						}),
 					},
 					duration = 0.0,
@@ -1302,16 +1305,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1240891] = BossAbility:New({ -- Sigil of Chains
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 37.94, 31.94 },
+							castTimes = { 39.5, 34.1 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 26.38, 31.92 },
+							castTimes = { 27.9, 34.1 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 26.37, 31.92 },
+							castTimes = { 27.9, 34.1 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 26.37, 31.92 },
+							castTimes = { 27.9, 34.1 },
 						}),
 					},
 					duration = 6.0,
@@ -1321,13 +1324,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1227809] = BossAbility:New({ -- The Hunt (Targeting)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 40.27, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 41.9, 4.0, 4.0, 26.1, 4.0, 4.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 28.74, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 30.3, 4.0, 4.0, 26.1, 4.0, 4.0 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 28.75, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 30.4, 4.0, 4.0, 26.1, 4.0, 4.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 8.0, 4.0, 4.0, 26.1, 4.0, 4.0 },
 						}),
 					},
 					halfHeight = true,
@@ -1340,13 +1346,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1227823] = BossAbility:New({ -- The Hunt (Casts)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 46.27, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 48.2, 4.0, 4.0, 26.1, 4.0, 4.0 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 34.74, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 36.6, 4.0, 4.0, 25.9, 4.0, 4.0 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 34.75, 3.0, 3.0, 26.0, 3.0, 3.0 },
+							castTimes = { 36.6, 4.0, 4.0, 26.0, 4.0, 4.0 },
+						}),
+						[7] = BossAbilityPhase:New({
+							castTimes = { 14.2, 4.0, 4.0, 26.1, 4.0, 4.0 },
 						}),
 					},
 					halfHeight = true,
@@ -1358,13 +1367,13 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1245743] = BossAbility:New({ -- Eradicate (Targeting)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 46.13, 34.33 },
+							castTimes = { 48.2, 36.6 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 34.58, 34.27 },
+							castTimes = { 36.7, 36.6 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 34.58, 34.25 },
+							castTimes = { 36.7, 36.6 },
 						}),
 					},
 					duration = 0.0,
@@ -1375,13 +1384,13 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1245726] = BossAbility:New({ -- Eradicate (Casts)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 51.26, 5.2, 5.2, 5.2, 18.67, 5.2, 5.2, 5.2 },
+							castTimes = { 53.4, 5.2, 5.2, 5.2, 21.2, 5.2, 5.2, 5.2 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 39.61, 5.2, 5.2, 5.2, 18.78, 5.2, 5.2, 5.2 },
+							castTimes = { 42.0, 5.2, 5.2, 5.2, 21.1, 5.2, 5.2, 5.2 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 39.72, 5.2, 5.2, 5.2, 18.80, 5.2, 5.2, 5.2 },
+							castTimes = { 42.0, 5.2, 5.2, 5.2, 21.0, 5.2, 5.2, 5.2 },
 						}),
 					},
 					duration = 0.0,
@@ -1392,16 +1401,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1232569] = BossAbility:New({ -- Meta (Adarus)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 102.16 },
+							castTimes = { 108.2 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 91.78 },
+							castTimes = { 97.7 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 91.45 },
+							castTimes = { 97.4 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 20.40 },
+							castTimes = { 22.4 },
 						}),
 					},
 					duration = 0.0,
@@ -1412,16 +1421,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1231501] = BossAbility:New({ -- Meta (Velaryn)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 102.80 },
+							castTimes = { 108.9 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 90.84 },
+							castTimes = { 96.7 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 91.75 },
+							castTimes = { 97.7 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 21.04 },
+							castTimes = { 23.3 },
 						}),
 					},
 					duration = 0.0,
@@ -1432,16 +1441,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1232568] = BossAbility:New({ -- Meta (Ilyssa)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 103.10 },
+							castTimes = { 109.2 },
 						}),
 						[3] = BossAbilityPhase:New({
-							castTimes = { 91.48 },
+							castTimes = { 97.4 },
 						}),
 						[5] = BossAbilityPhase:New({
-							castTimes = { 90.81 },
+							castTimes = { 96.8 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 21.34 },
+							castTimes = { 23.3 },
 						}),
 					},
 					duration = 0.0,
@@ -1451,30 +1460,34 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 				[1233093] = BossAbility:New({ -- Collapsing Star
 					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
+						[1] = BossAbilityPhase:New({
+							castTimes = { 115.0 },
+							duration = 25.0,
+							durationExtendsIntoNextPhase = true,
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 26.1 },
+							castTimes = { 28.2 },
 						}),
 					},
 					duration = 25.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SCC", "SAA" },
+					allowedCombatLogEventTypes = { "SCC", "SAA", "SAR" },
 				}),
 				[1245978] = BossAbility:New({ -- Soul Tether
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 1.19, 0.0 },
+							castTimes = { 0.0, 0.0 },
+							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
 						[4] = BossAbilityPhase:New({
-							castTimes = { 0.73, 0.0 },
+							castTimes = { 0.0, 0.0 },
+							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
 						[6] = BossAbilityPhase:New({
-							castTimes = { 0.73, 0.0 },
+							castTimes = { 0.0, 0.0 },
+							signifiesPhaseStart = true,
 							signifiesPhaseEnd = true,
 						}),
 					},
@@ -1484,26 +1497,27 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 				[1233863] = BossAbility:New({ -- Fel Rush
 					phases = {
-						[4] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
+						[3] = BossAbilityPhase:New({
+							castTimes = { 104.0 },
+							duration = 24.0,
+							durationExtendsIntoNextPhase = true,
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 28.6 },
+							castTimes = { 30.7 },
 						}),
 					},
 					duration = 24.0,
 					castTime = 0.0,
-					allowedCombatLogEventTypes = { "SAA" },
+					allowedCombatLogEventTypes = { "SAA", "SAR" },
 				}),
 				[1227117] = BossAbility:New({ -- Fel Devastation
 					phases = {
 						[6] = BossAbilityPhase:New({
-							castTimes = { 2.31, 9.0, 9.0 },
+							castTimes = { 1.3, 9.0, 9.0 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 30.71 },
-							repeatInterval = { 9.0, 9.0, 30.7 },
+							castTimes = { 32.7 },
+							repeatInterval = { 9.0, 9.0, 32.7 },
 						}),
 					},
 					duration = 4.5,
@@ -1512,13 +1526,15 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				}),
 				[1233672] = BossAbility:New({ -- Infernal Strike
 					phases = {
+						[5] = BossAbilityPhase:New({
+							castTimes = { 103.7 },
+						}),
 						[6] = BossAbilityPhase:New({
-							castTimes = { 0.0, 9.0, 9.0 },
-							signifiesPhaseStart = true,
+							castTimes = { 8.0, 9.0 },
 						}),
 						[7] = BossAbilityPhase:New({
-							castTimes = { 28.4 },
-							repeatInterval = { 9.0, 9.0, 28.4 },
+							castTimes = { 30.4 },
+							repeatInterval = { 9.0, 9.0, 30.4 },
 						}),
 					},
 					duration = 0.0,
@@ -1528,54 +1544,54 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 115.0,
-					defaultDuration = 115.0,
+					duration = 116.2,
+					defaultDuration = 116.2,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
 				[2] = BossPhase:New({
-					duration = 25.2,
-					defaultDuration = 25.2,
+					duration = 24.0,
+					defaultDuration = 24.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int1",
 					fixedDuration = true,
 				}),
-				[3] = BossPhase:New({ -- 134.3
-					duration = 98.0,
-					defaultDuration = 98.0,
+				[3] = BossPhase:New({
+					duration = 104.7,
+					defaultDuration = 104.7,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
 				[4] = BossPhase:New({
-					duration = 24.8,
-					defaultDuration = 24.8,
+					duration = 24.0,
+					defaultDuration = 24.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int2",
 					fixedDuration = true,
 				}),
-				[5] = BossPhase:New({ -- 257.1
-					duration = 97.8,
-					defaultDuration = 97.8,
+				[5] = BossPhase:New({
+					duration = 104.7,
+					defaultDuration = 104.7,
 					count = 1,
 					defaultCount = 1,
 					name = "P1",
 					fixedDuration = true,
 				}),
-				[6] = BossPhase:New({ --  354.9
-					duration = 25.8,
-					defaultDuration = 25.8,
+				[6] = BossPhase:New({
+					duration = 24.0,
+					defaultDuration = 24.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int3",
 					fixedDuration = true,
 				}),
-				[7] = BossPhase:New({ -- 380.70
+				[7] = BossPhase:New({
 					duration = 60.0,
 					defaultDuration = 60.0,
 					count = 1,
