@@ -1549,7 +1549,9 @@ do
 					end
 				end
 
-				castEnd = min(castEnd, endTime)
+				if not abilityPhase.durationExtendsIntoNextPhase then
+					castEnd = min(castEnd, endTime)
+				end
 				if ability.durationLastsUntilEndOfNextPhase then
 					local nextPhaseEndTime = select(3, GetCurrentPhaseCountAndIndex(endTime + 1))
 					if nextPhaseEndTime > 0.0 then
@@ -1558,7 +1560,9 @@ do
 						effectEnd = endTime
 					end
 				else
-					effectEnd = min(effectEnd, endTime)
+					if not abilityPhase.durationExtendsIntoNextPhase then
+						effectEnd = min(effectEnd, endTime)
+					end
 				end
 
 				castCallback(spellID, castStart, castEnd, effectEnd)
