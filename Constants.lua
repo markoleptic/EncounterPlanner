@@ -127,5 +127,7 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Removed debug code causing the assignment editor to break.
+-   Updated Soul Hunters cast times and phase durations for both heroic and mythic.
+-   When hovering over a boss ability in the timeline, a tooltip is now displayed showing detailed cast times and effect durations.
+-   Fixed a visual bug where the Edit Phase Timings button could be checked.
 ]]
