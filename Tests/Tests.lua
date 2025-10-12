@@ -1461,9 +1461,11 @@ do
 			TestEqual(diff.metaData.difficulty.newValue, DifficultyType.Heroic, "Changed difficulty")
 
 			TestEqual(diff.roster[1].type, PlanDiffType.Insert, "Deleted roster member")
-			TestEqual(diff.roster[2].type, PlanDiffType.Change, "Changed roster member")
-			TestEqual(diff.roster[2].oldValue.role, "role:damager", "Changed roster member")
-			TestEqual(diff.roster[2].newValue.role, "role:healer", "Changed roster member")
+			local secondRosterEntry = diff.roster[2]
+			---@cast secondRosterEntry ChangeDiffEntry<RosterEntry>
+			TestEqual(secondRosterEntry.type, PlanDiffType.Change, "Changed roster member")
+			TestEqual(secondRosterEntry.oldValue.role, "role:damager", "Changed roster member")
+			TestEqual(secondRosterEntry.newValue.role, "role:healer", "Changed roster member")
 			TestEqual(diff.roster[3].type, PlanDiffType.Delete, "Inserted roster member")
 
 			TestEqual(diff.assignments[1].type, PlanDiffType.Delete, "Deleted assignment")
@@ -1500,8 +1502,14 @@ do
 					oldPlan.roster[assignee].role = "role:damager"
 				end
 				tinsert(oldPlan.assigneeSpellSets, { assignee = assignee, spells = {} })
-				for spellID = 1, random(5, 10) do
-					tinsert(oldPlan.assigneeSpellSets[#oldPlan.assigneeSpellSets].spells, spellID)
+				local spells = oldPlan.assigneeSpellSets[#oldPlan.assigneeSpellSets].spells
+				local existing = {}
+				for _ = 1, random(5, 10) do
+					local spellID = random(1, 10000)
+					if not existing[spellID] then
+						tinsert(spells, spellID)
+						existing[spellID] = true
+					end
 				end
 			end
 
@@ -1542,8 +1550,16 @@ do
 					local idx = random(1, count + 1)
 					tinsert(newPlan.assigneeSpellSets, idx, { assignee = newAssignee, spells = {} })
 					local spells = newPlan.assigneeSpellSets[idx].spells
-					for spellID = 1, random(5, 10) do
-						tinsert(spells, spellID)
+					local existing = {}
+					for _, spell in ipairs(spells) do
+						existing[spell] = true
+					end
+					for _ = 1, random(5, 10) do
+						local spellID = random(1, 10000)
+						if not existing[spellID] then
+							tinsert(spells, spellID)
+							existing[spellID] = true
+						end
 					end
 				elseif count > 0 then -- change
 					local idx = random(1, count)
@@ -1554,8 +1570,16 @@ do
 								tremove(spells, spellIndex)
 							end
 						else
-							for spellID = 6, random(11, 16) do
-								tinsert(spells, spellID)
+							local existing = {}
+							for _, spell in ipairs(spells) do
+								existing[spell] = true
+							end
+							for _ = 1, random(5, 10) do
+								local spellID = random(1, 10000)
+								if not existing[spellID] then
+									tinsert(spells, spellID)
+									existing[spellID] = true
+								end
 							end
 						end
 					end
@@ -1626,8 +1650,14 @@ do
 					oldPlan.roster[assignee].role = "role:damager"
 				end
 				tinsert(oldPlan.assigneeSpellSets, { assignee = assignee, spells = {} })
-				for spellID = 1, random(5, 10) do
-					tinsert(oldPlan.assigneeSpellSets[#oldPlan.assigneeSpellSets].spells, spellID)
+				local spells = oldPlan.assigneeSpellSets[#oldPlan.assigneeSpellSets].spells
+				local existing = {}
+				for _ = 1, random(5, 10) do
+					local spellID = random(1, 10000)
+					if not existing[spellID] then
+						tinsert(spells, spellID)
+						existing[spellID] = true
+					end
 				end
 			end
 
@@ -1674,8 +1704,13 @@ do
 					local idx = random(1, count + 1)
 					tinsert(newPlan.assigneeSpellSets, idx, { assignee = newAssignee, spells = {} })
 					local spells = newPlan.assigneeSpellSets[idx].spells
-					for spellID = 1, random(5, 10) do
-						tinsert(spells, spellID)
+					local existing = {}
+					for _ = 1, random(5, 10) do
+						local spellID = random(1, 10000)
+						if not existing[spellID] then
+							tinsert(spells, spellID)
+							existing[spellID] = true
+						end
 					end
 				elseif count > 0 then -- change
 					local idx = random(1, count)
@@ -1686,8 +1721,16 @@ do
 								tremove(spells, spellIndex)
 							end
 						else
-							for spellID = 6, random(11, 16) do
-								tinsert(spells, spellID)
+							local existing = {}
+							for _, spell in ipairs(spells) do
+								existing[spell] = true
+							end
+							for _ = 1, random(5, 10) do
+								local spellID = random(1, 10000)
+								if not existing[spellID] then
+									tinsert(spells, spellID)
+									existing[spellID] = true
+								end
 							end
 						end
 					end

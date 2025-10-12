@@ -3160,8 +3160,8 @@ do
 	end
 
 	---@generic T
-	---@param a table<integer, T>
-	---@param b table<integer, T>
+	---@param a table<integer, T>|table<integer, T|{ID: string}>
+	---@param b table<integer, T>|table<integer, T|{ID: string}>
 	---@param comparator fun(a: T, b: T): boolean
 	---@return table<integer, PlanDiffEntry<T>>
 	function Utilities.MyersDiff(a, b, comparator)
@@ -3196,13 +3196,22 @@ do
 				history = ShallowCopy(history)
 
 				if 1 <= y and y <= bCount and goDown then
-					tinsert(history, { type = PlanDiffType.Insert, index = y, value = b[y], result = true })
+					tinsert(
+						history,
+						{ type = PlanDiffType.Insert, ID = b[y].ID, index = y, value = b[y], result = true }
+					)
 				elseif 1 <= x and x <= aCount and not goDown then
-					tinsert(history, { type = PlanDiffType.Delete, index = x, value = a[x], result = true })
+					tinsert(
+						history,
+						{ type = PlanDiffType.Delete, ID = a[x].ID, index = x, value = a[x], result = true }
+					)
 				end
 
 				while x < aCount and y < bCount and comparator(a[x + 1], b[y + 1]) == true do
-					tinsert(history, { type = PlanDiffType.Equal, aIndex = x + 1, bIndex = y + 1, result = false })
+					tinsert(
+						history,
+						{ type = PlanDiffType.Equal, ID = b[y + 1].ID, aIndex = x + 1, bIndex = y + 1, result = false }
+					)
 					x = x + 1
 					y = y + 1
 				end
@@ -3294,11 +3303,33 @@ do
 		local flattened = {}
 		for _, assigneeSpellSet in ipairs(assigneeSpellSets) do
 			for _, spellID in ipairs(assigneeSpellSet.spells) do
-				tinsert(flattened, { assignee = assigneeSpellSet.assignee, spellID = spellID })
+				tinsert(flattened, {
+					assignee = assigneeSpellSet.assignee,
+					spellID = spellID,
+					ID = assigneeSpellSet.assignee .. "," .. tostring(spellID),
+				})
 			end
 		end
 		sort(flattened, SortFlattenedAssigneeSpellSets)
 		return flattened
+	end
+
+	---@param flattenedAssigneeSpellSets table<integer, FlatAssigneeSpellSet>
+	---@return table<integer, AssigneeSpellSet>
+	local function UnFlattenAssigneeSpellSets(flattenedAssigneeSpellSets)
+		local newAssigneeSpellSets = {} ---@type table<integer, AssigneeSpellSet>
+		local indexMap = {}
+		for _, flatAssigneeSpellSet in ipairs(flattenedAssigneeSpellSets) do
+			local assignee = flatAssigneeSpellSet.assignee
+			if not indexMap[assignee] then
+				tinsert(newAssigneeSpellSets, { assignee = assignee, spells = {} })
+				indexMap[assignee] = #newAssigneeSpellSets
+			end
+			local index = indexMap[assignee]
+			tinsert(newAssigneeSpellSets[index].spells, flatAssigneeSpellSet.spellID)
+		end
+		Utilities.SortAssigneeSpellSets(newAssigneeSpellSets)
+		return newAssigneeSpellSets
 	end
 
 	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
@@ -3416,6 +3447,313 @@ do
 		end
 	end
 
+	---@param a FlatAssigneeSpellSet
+	---@param b FlatAssigneeSpellSet
+	---@return boolean --True if equal
+	local function AreFlatAssigneeSpellSetsEqual(a, b)
+		return a.ID == b.ID
+	end
+
+	---@param a RosterEntry
+	---@param b RosterEntry
+	---@return boolean --True if equal
+	local function AreRosterEntriesEqual(a, b)
+		return a.class == b.class and a.role == b.role
+	end
+
+	local kNoCompareRosterFields = {
+		["__index"] = true,
+		["New"] = true,
+		["classColoredName"] = true,
+	}
+
+	---@param baseVersion RosterEntry
+	---@param localVersion RosterEntry
+	---@param remoteVersion RosterEntry
+	---@return table<integer, RosterConflict>|nil
+	local function GetRosterConflicts(baseVersion, localVersion, remoteVersion)
+		local localChanges, remoteChanges = {}, {}
+
+		for field, baseValue in pairs(baseVersion) do
+			if not kNoCompareRosterFields[field] then
+				local localValue = localVersion[field]
+				local remoteValue = remoteVersion[field]
+				if localValue ~= baseValue then
+					localChanges[field] = localValue
+				end
+				if remoteValue ~= baseValue then
+					remoteChanges[field] = remoteValue
+				end
+			end
+		end
+
+		local conflicts = {}
+
+		for field, localValue in pairs(localChanges) do
+			local remoteValue = remoteChanges[field]
+			if remoteValue and remoteValue ~= localValue then
+				tinsert(conflicts, {
+					field = field,
+					baseValue = baseVersion[field],
+					localValue = localValue,
+					remoteValue = remoteValue,
+				})
+			end
+		end
+
+		return conflicts
+	end
+
+	-- Merges remote into local.
+	---@param localVersion RosterEntry
+	---@param remoteVersion RosterEntry
+	local function MergeRosterEntries(localVersion, remoteVersion)
+		for field, remoteValue in pairs(remoteVersion) do
+			localVersion[field] = remoteValue
+		end
+		local metaTable = getmetatable(remoteVersion)
+		setmetatable(localVersion, metaTable)
+	end
+
+	-- Merges remote into local.
+	---@param localVersion FlatAssigneeSpellSet
+	---@param remoteVersion FlatAssigneeSpellSet
+	local function MergeFlatAssigneeSpellSets(localVersion, remoteVersion)
+		localVersion.assignee = remoteVersion.assignee
+		localVersion.spellID = remoteVersion.spellID
+	end
+
+	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@return table<integer, AssignmentPlanDiffEntry>
+	local function PerformAssignmentDiff(baseAssignments, localAssignments, remoteAssignments)
+		---@type table<integer, AssignmentPlanDiffEntry>
+		local merged = {}
+
+		---@type table<string, Assignment|CombatLogEventAssignment|TimedAssignment>
+		local baseAssignmentsByID = {}
+		for _, v in ipairs(baseAssignments) do
+			baseAssignmentsByID[v.ID] = v
+		end
+
+		---@type table<string, AssignmentPlanDiffEntry>
+		local localVersionByID = {}
+		for _, v in ipairs(MyersDiffAssignments(baseAssignments, localAssignments)) do
+			localVersionByID[v.ID] = v
+		end
+
+		---@type table<string, AssignmentPlanDiffEntry>
+		local incomingVersionByID = {}
+		for _, v in ipairs(MyersDiffAssignments(baseAssignments, remoteAssignments)) do
+			incomingVersionByID[v.ID] = v
+		end
+
+		for _, id in ipairs(CreateOrderedIDs(baseAssignments, localAssignments, remoteAssignments)) do
+			local localChange = localVersionByID[id]
+			local remoteChange = incomingVersionByID[id]
+			local base = baseAssignmentsByID[id]
+
+			if localChange and remoteChange then
+				local conflictOrMerge = ResolveChangeOrConflict(base, localChange, remoteChange)
+				tinsert(merged, conflictOrMerge)
+				localVersionByID[id] = nil
+				incomingVersionByID[id] = nil
+			elseif localChange then
+				localChange.localOnlyChange = true
+				tinsert(merged, localChange)
+				localVersionByID[id] = nil
+			elseif remoteChange then
+				tinsert(merged, remoteChange)
+				incomingVersionByID[id] = nil
+			end
+		end
+
+		return merged
+	end
+
+	---@generic T
+	---@param byID table<string, T>
+	---@param orderedIDs table<integer, string>
+	---@param visited table<string, boolean>
+	local function MergeIDs(byID, orderedIDs, visited)
+		for id, _ in pairs(byID) do
+			if not visited[id] then
+				tinsert(orderedIDs, id)
+				visited[id] = true
+			end
+		end
+	end
+
+	---@generic T
+	---@param baseVersion table<string, T>
+	---@param localVersion table<string, T>
+	---@param remoteVersion table<string, T>
+	---@param IsEqual fun(a: T, b: T): boolean
+	---@param GetConflicts fun(a: T, b: T, c: T): table
+	---@param Merge fun(a: T, b: T)
+	---@return table<integer, GenericDiffEntry>
+	local function PerformDiffGeneric(baseVersion, localVersion, remoteVersion, IsEqual, GetConflicts, Merge)
+		local visited = {}
+		local orderedIDs = {}
+		MergeIDs(baseVersion, orderedIDs, visited)
+		MergeIDs(localVersion, orderedIDs, visited)
+		MergeIDs(remoteVersion, orderedIDs, visited)
+		sort(orderedIDs)
+
+		---@type table<integer, GenericDiffEntry>
+		local merged = {}
+		for _, id in ipairs(orderedIDs) do
+			local localEntry = localVersion[id]
+			local remoteEntry = remoteVersion[id]
+			local base = baseVersion[id]
+
+			---@type GenericDiffEntry|nil
+			local result = nil
+			if base then
+				if localEntry and remoteEntry then
+					local localSame = IsEqual(base, localEntry)
+					local remoteSame = IsEqual(base, remoteEntry)
+					if localSame and remoteSame then
+						result = {
+							type = PlanDiffType.Equal,
+							ID = id,
+							result = false,
+						}
+					elseif remoteSame then
+						result = {
+							type = PlanDiffType.Change,
+							ID = id,
+							result = true,
+							oldValue = base,
+							newValue = localEntry,
+							localOnlyChange = true,
+						}
+					else
+						local conflicts = GetConflicts(base, localEntry, remoteEntry)
+						if #conflicts > 0 then
+							result = {
+								type = PlanDiffType.Conflict,
+								ID = id,
+								localType = PlanDiffType.Change,
+								remoteType = PlanDiffType.Change,
+								conflicts = conflicts,
+								result = true,
+								chooseLocal = false,
+								localValue = localEntry,
+								remoteValue = remoteEntry,
+							}
+						else
+							local mergedLocal = DeepCopy(localEntry)
+							Merge(mergedLocal, remoteEntry)
+							result = {
+								type = PlanDiffType.Change,
+								ID = id,
+								result = true,
+								oldValue = localEntry,
+								newValue = mergedLocal,
+							}
+						end
+					end
+				elseif localEntry then
+					if IsEqual(base, localEntry) then -- Remote delete with no local edits
+						result = {
+							type = PlanDiffType.Delete,
+							ID = id,
+							oldValue = localEntry,
+							result = true,
+						}
+					else -- Remote delete with local edits - conflict
+						---@cast result ConflictDiffEntry<`T`>
+						result = {
+							type = PlanDiffType.Conflict,
+							ID = id,
+							localType = PlanDiffType.Change,
+							remoteType = PlanDiffType.Delete,
+							result = true,
+							chooseLocal = false,
+							localValue = localEntry,
+							remoteValue = base,
+						}
+					end
+				elseif remoteEntry then
+					if IsEqual(base, remoteEntry) then -- Local delete with no remote edits
+						result = {
+							type = PlanDiffType.Delete,
+							ID = id,
+							oldValue = remoteEntry,
+							result = true,
+						}
+					else -- Local delete with remote edits - conflict
+						result = {
+							type = PlanDiffType.Conflict,
+							ID = id,
+							localType = PlanDiffType.Delete,
+							remoteType = PlanDiffType.Change,
+							result = true,
+							chooseLocal = false,
+							localValue = base,
+							remoteValue = remoteEntry,
+						}
+					end
+				end
+			else
+				if localEntry and remoteEntry then
+					if IsEqual(localEntry, remoteEntry) then
+						result = {
+							type = PlanDiffType.Insert,
+							ID = id,
+							result = false,
+							newValue = localEntry,
+						}
+					else
+						local conflicts = GetConflicts(base, localEntry, remoteEntry)
+						if #conflicts > 0 then
+							result = {
+								type = PlanDiffType.Conflict,
+								ID = id,
+								localType = PlanDiffType.Insert,
+								remoteType = PlanDiffType.Insert,
+								conflicts = conflicts,
+								result = true,
+								chooseLocal = false,
+								localValue = localEntry,
+								remoteValue = remoteEntry,
+							}
+						else
+							local mergedLocal = DeepCopy(localEntry)
+							Merge(mergedLocal, remoteEntry)
+							result = {
+								type = PlanDiffType.Insert,
+								ID = id,
+								result = true,
+								newValue = mergedLocal,
+							}
+						end
+					end
+				elseif localEntry then
+					result = {
+						type = PlanDiffType.Insert,
+						ID = id,
+						localOnlyChange = true,
+						result = true,
+						newValue = localEntry,
+					}
+				elseif remoteEntry then
+					result = {
+						type = PlanDiffType.Insert,
+						ID = id,
+						result = true,
+						newValue = remoteEntry,
+					}
+				end
+			end
+			tinsert(merged, result)
+		end
+
+		return merged
+	end
+
 	-- Creates a diff between two plans.
 	---@param oldPlan Plan Existing plan.
 	---@param newPlan Plan New plan.
@@ -3436,49 +3774,16 @@ do
 				and oldPlan.lastSyncedSnapShot ~= nil,
 		}
 
+		---@type Plan|nil
+		local deserializedPlan = nil
 		if diff.canUseNewAssignmentMerge then
-			local deserializedPlan = Private.PlanSerializer.DeserializePlan(oldPlan.lastSyncedSnapShot)
-			---@type table<string, Assignment|CombatLogEventAssignment|TimedAssignment>
-			local baseAssignmentsByID = {}
-			for _, v in ipairs(deserializedPlan.assignments) do
-				baseAssignmentsByID[v.ID] = v
-			end
-			---@type table<string, AssignmentPlanDiffEntry>
-			local localVersionByID = {}
-			for _, v in ipairs(MyersDiffAssignments(deserializedPlan.assignments, oldPlan.assignments)) do
-				localVersionByID[v.ID] = v
-			end
-			---@type table<string, AssignmentPlanDiffEntry>
-			local incomingVersionByID = {}
-			for _, v in ipairs(MyersDiffAssignments(deserializedPlan.assignments, newPlan.assignments)) do
-				incomingVersionByID[v.ID] = v
-			end
+			deserializedPlan = Private.PlanSerializer.DeserializePlan(oldPlan.lastSyncedSnapShot)
+		end
 
-			---@type table<integer, AssignmentPlanDiffEntry>
-			local merged = {}
-			local orderedIDs = CreateOrderedIDs(deserializedPlan.assignments, oldPlan.assignments, newPlan.assignments)
-
-			for _, id in ipairs(orderedIDs) do
-				local localChange = localVersionByID[id]
-				local remoteChange = incomingVersionByID[id]
-				local base = baseAssignmentsByID[id]
-
-				if localChange and remoteChange then
-					local conflictOrMerge = ResolveChangeOrConflict(base, localChange, remoteChange)
-					tinsert(merged, conflictOrMerge)
-					localVersionByID[id] = nil
-					incomingVersionByID[id] = nil
-				elseif localChange then
-					localChange.localOnlyChange = true
-					tinsert(merged, localChange)
-					localVersionByID[id] = nil
-				elseif remoteChange then
-					tinsert(merged, remoteChange)
-					incomingVersionByID[id] = nil
-				end
-			end
-
-			diff.assignments = merged
+		-- Assignments
+		if deserializedPlan then
+			diff.assignments =
+				PerformAssignmentDiff(deserializedPlan.assignments, oldPlan.assignments, newPlan.assignments)
 		else
 			diff.assignments = CoalesceChanges(MyersDiffAssignments(oldPlan.assignments, newPlan.assignments))
 		end
@@ -3507,53 +3812,101 @@ do
 		end
 
 		-- Roster
-		local oldRoster = oldPlan.roster
-		local newRoster = newPlan.roster
-		local seen = {}
-		for newRosterName, newRosterEntry in pairs(newRoster) do
-			local oldRosterEntry = oldRoster[newRosterName]
-			if not oldRosterEntry then
-				local planRosterDiff = {
-					assignee = newRosterName,
-					type = PlanDiffType.Insert,
-					newValue = DeepCopy(newRosterEntry),
-					result = true,
-				} ---@type PlanRosterDiff
-				tinsert(diff.roster, planRosterDiff)
-			else
-				if oldRosterEntry.class ~= newRosterEntry.class or oldRosterEntry.role ~= newRosterEntry.role then
+		if deserializedPlan then
+			diff.roster = PerformDiffGeneric(
+				deserializedPlan.roster,
+				oldPlan.roster,
+				newPlan.roster,
+				AreRosterEntriesEqual,
+				GetRosterConflicts,
+				MergeRosterEntries
+			)
+		else
+			local oldRoster = oldPlan.roster
+			local newRoster = newPlan.roster
+			local seen = {}
+			for newRosterName, newRosterEntry in pairs(newRoster) do
+				local oldRosterEntry = oldRoster[newRosterName]
+				if not oldRosterEntry then
 					local planRosterDiff = {
-						assignee = newRosterName,
-						type = PlanDiffType.Change,
-						oldValue = DeepCopy(oldRosterEntry),
+						ID = newRosterName,
+						type = PlanDiffType.Insert,
 						newValue = DeepCopy(newRosterEntry),
 						result = true,
-					} ---@type PlanRosterDiff
+					} ---@type InsertDiffEntry<RosterEntry>
+					tinsert(diff.roster, planRosterDiff)
+				else
+					if oldRosterEntry.class ~= newRosterEntry.class or oldRosterEntry.role ~= newRosterEntry.role then
+						local planRosterDiff = {
+							ID = newRosterName,
+							type = PlanDiffType.Change,
+							oldValue = DeepCopy(oldRosterEntry),
+							newValue = DeepCopy(newRosterEntry),
+							result = true,
+						} ---@type ChangeDiffEntry<RosterEntry>
+						tinsert(diff.roster, planRosterDiff)
+					end
+					seen[newRosterName] = true
+				end
+			end
+			for oldRosterName, oldRosterEntry in pairs(oldRoster) do
+				if not seen[oldRosterName] then
+					local planRosterDiff = {
+						ID = oldRosterName,
+						type = PlanDiffType.Delete,
+						oldValue = DeepCopy(oldRosterEntry),
+						result = true,
+					} ---@as DeleteDiffEntry<RosterEntry>
 					tinsert(diff.roster, planRosterDiff)
 				end
-				seen[newRosterName] = true
-			end
-		end
-		for oldRosterName, oldRosterEntry in pairs(oldRoster) do
-			if not seen[oldRosterName] then
-				local planRosterDiff = {
-					assignee = oldRosterName,
-					type = PlanDiffType.Delete,
-					oldValue = DeepCopy(oldRosterEntry),
-					result = true,
-				} ---@type PlanRosterDiff
-				tinsert(diff.roster, planRosterDiff)
 			end
 		end
 
 		-- Assignee spell sets
-		Utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
-		Utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
-		local oldAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
-		local newAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
-		diff.assigneeSpellSets = CoalesceChanges(MyersDiff(oldAssigneeSpellSets, newAssigneeSpellSets, function(a, b)
-			return a.assignee == b.assignee and a.spellID == b.spellID
-		end))
+		if deserializedPlan then
+			Utilities.SortAssigneeSpellSets(deserializedPlan.assigneeSpellSets)
+			Utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			Utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
+			local baseAssigneeSpellSets = FlattenAssigneeSpellSets(deserializedPlan.assigneeSpellSets)
+			---@type table<string, FlatAssigneeSpellSet>
+			local baseByID = {}
+			for _, v in ipairs(baseAssigneeSpellSets) do
+				baseByID[v.ID] = v
+			end
+
+			local localAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			---@type table<string, FlatAssigneeSpellSet>
+			local localByID = {}
+			for _, v in ipairs(localAssigneeSpellSets) do
+				localByID[v.ID] = v
+			end
+
+			local remoteAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
+			---@type table<string, FlatAssigneeSpellSet>
+			local remoteByID = {}
+			for _, v in ipairs(remoteAssigneeSpellSets) do
+				remoteByID[v.ID] = v
+			end
+			diff.assigneeSpellSets = PerformDiffGeneric(
+				baseByID,
+				localByID,
+				remoteByID,
+				AreFlatAssigneeSpellSetsEqual,
+				function()
+					return {}
+				end,
+				MergeFlatAssigneeSpellSets
+			)
+		else
+			Utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			Utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
+			local oldAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			local newAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
+			diff.assigneeSpellSets =
+				CoalesceChanges(MyersDiff(oldAssigneeSpellSets, newAssigneeSpellSets, function(a, b)
+					return a.assignee == b.assignee and a.spellID == b.spellID
+				end))
+		end
 
 		---@generic T
 		---@param tbl table<integer, PlanDiffEntry<T>>
@@ -3626,7 +3979,26 @@ do
 
 	---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
 	---@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyAssignmentDiffOld(existingAssignments, assignmentDiff)
+		local DuplicateAssignment = Private.DuplicateAssignment
+		---@param assignment Assignment|TimedAssignment|CombatLogEventAssignment
+		local function SetFunction(assignment)
+			local newAssignment = DuplicateAssignment(assignment)
+			newAssignment.ID = assignment.ID
+			return newAssignment
+		end
+		return Utilities.ApplyDiff(existingAssignments, assignmentDiff, SetFunction)
+	end
+
+	---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
+	---@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
 	---@param forceMergeFromRemote boolean|nil
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
 	function Utilities.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMergeFromRemote)
 		local addedCount, removedCount, changedCount = 0, 0, 0
 
@@ -3672,21 +4044,193 @@ do
 						if diff.chooseLocal == false or forceMergeFromRemote then
 							if diff.remoteType == PlanDiffType.Delete then
 								tremove(existingAssignments, index)
+								removedCount = removedCount + 1
 							elseif diff.remoteType == PlanDiffType.Change then
 								MergeAssignments(existingAssignments[index], diff.remoteValue)
+								changedCount = changedCount + 1
 							end
 						else
 							if diff.localType == PlanDiffType.Delete then
 								tremove(existingAssignments, index)
+								removedCount = removedCount + 1
 							elseif diff.localType == PlanDiffType.Change then
 								local temp = DeepCopy(diff.localValue)
 								setmetatable(temp, getmetatable(diff.localValue))
 								MergeAssignments(existingAssignments[index], diff.remoteValue)
 								MergeAssignments(existingAssignments[index], temp)
+								changedCount = changedCount + 1
 							end
 						end
+					end
+				end
+			end
+		end
+
+		return addedCount, removedCount, changedCount
+	end
+
+	---@generic K, V
+	---@param existing table<K, V>
+	---@param genericDiff table<integer, GenericDiffEntry>
+	---@param forceMergeFromRemote boolean|nil
+	---@param FindIndex fun(ID: string):`K`|nil
+	---@param keyType "number"|"string"
+	---@param Merge fun(a: V, b: V)
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, FindIndex, Merge, keyType)
+		local addedCount, removedCount, changedCount = 0, 0, 0
+
+		for i = #genericDiff, 1, -1 do
+			local diff = genericDiff[i]
+			if diff.result and not diff.localOnlyChange and diff.type == PlanDiffType.Delete then
+				local index = FindIndex(diff.ID)
+				if index and existing[index] then
+					if keyType == "number" then
+						tremove(existing, index)
+					else
+						existing[index] = nil
+					end
+					removedCount = removedCount + 1
+				end
+			end
+		end
+
+		for i = 1, #genericDiff do
+			local diff = genericDiff[i]
+			if diff.result and not diff.localOnlyChange then
+				local index = FindIndex(diff.ID)
+				if diff.type == PlanDiffType.Insert then
+					---@cast diff InsertDiffEntry<`K`>
+					if not index then
+						if keyType == "number" then
+							tinsert(existing, diff.newValue)
+						else
+							existing[diff.ID] = diff.newValue
+						end
+						addedCount = addedCount + 1
+					end
+				elseif diff.type == PlanDiffType.Change then
+					---@cast diff ChangeDiffEntry<`K`>
+					if index and existing[index] then
+						Merge(existing[index], diff.newValue)
 						changedCount = changedCount + 1
 					end
+				elseif diff.type == PlanDiffType.Conflict then
+					---@cast diff ConflictDiffEntry<`K`>
+					if diff.chooseLocal == false or forceMergeFromRemote then
+						if diff.remoteType == PlanDiffType.Delete then
+							if index and existing[index] then
+								if keyType == "number" then
+									tremove(existing, index)
+								else
+									existing[index] = nil
+								end
+								removedCount = removedCount + 1
+							end
+						elseif diff.remoteType == PlanDiffType.Change or diff.localType == PlanDiffType.Insert then
+							-- Change and insert are the same, merge remote on top of local
+							if index and existing[index] then
+								Merge(existing[index], diff.remoteValue)
+							elseif index then
+								existing[index] = diff.remoteValue
+							end
+							changedCount = changedCount + 1
+						end
+					else
+						if diff.localType == PlanDiffType.Delete then
+							if index and existing[index] then
+								if keyType == "number" then
+									tremove(existing, index)
+								else
+									existing[index] = nil
+								end
+								removedCount = removedCount + 1
+							end
+						elseif diff.localType == PlanDiffType.Change or diff.localType == PlanDiffType.Insert then
+							if index and existing[index] then
+								-- Change and insert are the same, merge local on top of remote
+								local temp = DeepCopy(diff.localValue)
+								setmetatable(temp, getmetatable(diff.localValue))
+								Merge(existing[diff.ID], diff.remoteValue)
+								Merge(existing[diff.ID], temp)
+							elseif index then
+								existing[index] = diff.localValue
+							end
+							changedCount = changedCount + 1
+						end
+					end
+				end
+			end
+		end
+
+		return addedCount, removedCount, changedCount
+	end
+
+	---@param existingPlan Plan
+	---@param templateDiff table<integer, GenericDiffEntry>
+	---@param forceMergeFromRemote boolean|nil
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyTemplateDiff(existingPlan, templateDiff, forceMergeFromRemote)
+		local addedCount, removedCount, changedCount = 0, 0, 0
+
+		local existingFlattened = FlattenAssigneeSpellSets(existingPlan.assigneeSpellSets)
+
+		---@param ID string
+		---@return integer?
+		local function FindIndex(ID)
+			for i = 1, #existingFlattened do
+				if existingFlattened[i].ID == ID then
+					return i
+				end
+			end
+		end
+
+		Utilities.ApplyGenericDiff(
+			existingFlattened,
+			templateDiff,
+			forceMergeFromRemote,
+			FindIndex,
+			MergeFlatAssigneeSpellSets,
+			"number"
+		)
+
+		existingPlan.assigneeSpellSets = UnFlattenAssigneeSpellSets(existingFlattened)
+
+		return addedCount, removedCount, changedCount
+	end
+
+	---@param existingRoster table<string, RosterEntry>
+	---@param rosterDiff table<integer, GenericDiffEntry>
+	---@return integer addedCount
+	---@return integer removedCount
+	---@return integer changedCount
+	function Utilities.ApplyRosterDiffOld(existingRoster, rosterDiff)
+		local addedCount, removedCount, changedCount = 0, 0, 0
+
+		for i = #rosterDiff, 1, -1 do
+			local diff = rosterDiff[i]
+			if diff.result == true then
+				if diff.type == PlanDiffType.Delete then
+					existingRoster[diff.ID] = nil
+					removedCount = removedCount + 1
+				elseif diff.type == PlanDiffType.Insert then
+					---@cast diff InsertDiffEntry<RosterEntry>
+					local rosterEntry = RosterEntry:New()
+					rosterEntry.class = diff.newValue.class
+					rosterEntry.classColoredName = diff.newValue.classColoredName
+					rosterEntry.role = diff.newValue.role
+					existingRoster[diff.ID] = rosterEntry
+					addedCount = addedCount + 1
+				elseif diff.type == PlanDiffType.Change then
+					---@cast diff ChangeDiffEntry<RosterEntry>
+					existingRoster[diff.ID].class = diff.newValue.class
+					existingRoster[diff.ID].classColoredName = diff.newValue.classColoredName
+					existingRoster[diff.ID].role = diff.newValue.role
+					changedCount = changedCount + 1
 				end
 			end
 		end
@@ -3699,7 +4243,7 @@ do
 	---@return integer addedCount
 	---@return integer removedCount
 	---@return integer changedCount
-	function Utilities.ApplyDiffToAssigneeSpellSets(existingPlan, tableDiff)
+	function Utilities.ApplyTemplateDiffOld(existingPlan, tableDiff)
 		local addedCount, removedCount, changedCount = 0, 0, 0
 
 		local existingAssigneeSpellSets = existingPlan.assigneeSpellSets
@@ -3729,24 +4273,25 @@ do
 			end
 		end
 
-		local newAssigneeSpellSets = {} ---@type table<integer, AssigneeSpellSet>
-		local indexMap = {}
-		for _, flatAssigneeSpellSet in ipairs(flattenedAssigneeSpellSets) do
-			local assignee = flatAssigneeSpellSet.assignee
-			if not indexMap[assignee] then
-				tinsert(newAssigneeSpellSets, { assignee = assignee, spells = {} })
-				indexMap[assignee] = #newAssigneeSpellSets
-			end
-			local index = indexMap[assignee]
-			tinsert(newAssigneeSpellSets[index].spells, flatAssigneeSpellSet.spellID)
-		end
-		Utilities.SortAssigneeSpellSets(newAssigneeSpellSets)
-		existingPlan.assigneeSpellSets = newAssigneeSpellSets
+		existingPlan.assigneeSpellSets = UnFlattenAssigneeSpellSets(flattenedAssigneeSpellSets)
 
 		return addedCount, removedCount, changedCount
 	end
 
-	local DuplicateAssignment = Private.DuplicateAssignment
+	---@param messages table<integer, string>
+	---@param added integer
+	---@param removed integer
+	---@param changed integer
+	---@param typeString string
+	local function MaybeAddUpdateString(messages, added, removed, changed, typeString)
+		if added > 0 or removed > 0 or changed > 0 then
+			local a, r, c = L["Added"], L["Removed"]:lower(), L["Changed"]:lower()
+			tinsert(
+				messages,
+				format("%s %d, %s %d, %s %s %d %s.", a, added, r, removed, L["and"], c, changed, typeString)
+			)
+		end
+	end
 
 	-- Merges an existing plan using a plan diff.
 	---@param plans table<string, Plan> All plans.
@@ -3756,123 +4301,50 @@ do
 	---@return table<integer, string> messages
 	function Utilities.MergePlan(plans, existingPlan, planDiff, forceMergeFromRemote)
 		local messages = {}
-		local existingAssignments = existingPlan.assignments
+
 		local added, removed, changed = 0, 0, 0
+
+		local existingAssignments = existingPlan.assignments
 		if planDiff.canUseNewAssignmentMerge then
 			added, removed, changed =
 				Utilities.ApplyAssignmentDiff(existingAssignments, planDiff.assignments, forceMergeFromRemote)
 		else
-			added, removed, changed = Utilities.ApplyDiff(
-				existingAssignments,
-				planDiff.assignments,
-				function(assignment)
-					local newAssignment = DuplicateAssignment(assignment)
-					newAssignment.ID = assignment.ID
-					return newAssignment
-				end
-			)
+			added, removed, changed = Utilities.ApplyAssignmentDiffOld(existingAssignments, planDiff.assignments)
 		end
-
-		if added > 0 or removed > 0 or changed > 0 then
-			tinsert(
-				messages,
-				format(
-					"%s %d, %s %d, %s %s %d %s.",
-					L["Added"],
-					added,
-					L["Removed"]:lower(),
-					removed,
-					L["and"],
-					L["Changed"]:lower(),
-					changed,
-					L["assignments"]
-				)
-			)
-			added, removed, changed = 0, 0, 0
-		end
+		MaybeAddUpdateString(messages, added, removed, changed, L["assignments"])
 
 		local existingRoster = existingPlan.roster
-		for i = #planDiff.roster, 1, -1 do
-			local diff = planDiff.roster[i]
-			if diff.result == true then
-				if diff.type == PlanDiffType.Delete then
-					existingRoster[diff.assignee] = nil
-					removed = removed + 1
-				elseif diff.type == PlanDiffType.Insert then
-					local rosterEntry = RosterEntry:New()
-					rosterEntry.class = diff.newValue.class
-					rosterEntry.classColoredName = diff.newValue.classColoredName
-					rosterEntry.role = diff.newValue.role
-					existingRoster[diff.assignee] = rosterEntry
-					added = added + 1
-				elseif diff.type == PlanDiffType.Change then
-					existingRoster[diff.assignee].class = diff.newValue.class
-					existingRoster[diff.assignee].classColoredName = diff.newValue.classColoredName
-					existingRoster[diff.assignee].role = diff.newValue.role
-					changed = changed + 1
-				end
-			end
-		end
-
-		if added > 0 or removed > 0 or changed > 0 then
-			tinsert(
-				messages,
-				format(
-					"%s %d, %s %d, %s %s %d %s.",
-					L["Added"],
-					added,
-					L["Removed"]:lower(),
-					removed,
-					L["and"],
-					L["Changed"]:lower(),
-					changed,
-					L["roster members"]
-				)
+		if planDiff.canUseNewAssignmentMerge then
+			added, removed, changed = Utilities.ApplyGenericDiff(
+				existingRoster,
+				planDiff.roster,
+				forceMergeFromRemote,
+				function(ID)
+					if existingRoster[ID] then
+						return ID
+					end
+				end,
+				MergeRosterEntries,
+				"string"
 			)
-			added, removed, changed = 0, 0, 0
+		else
+			added, removed, changed = Utilities.ApplyRosterDiffOld(existingRoster, planDiff.roster)
 		end
+		MaybeAddUpdateString(messages, added, removed, changed, L["roster members"])
 
-		added, removed, changed = Utilities.ApplyDiffToAssigneeSpellSets(existingPlan, planDiff.assigneeSpellSets)
-		if added > 0 or removed > 0 or changed > 0 then
-			tinsert(
-				messages,
-				format(
-					"%s %d, %s %d, %s %s %d %s.",
-					L["Added"],
-					added,
-					L["Removed"]:lower(),
-					removed,
-					L["and"],
-					L["Changed"]:lower(),
-					changed,
-					L["Templates"]:lower()
-				)
-			)
-			added, removed, changed = 0, 0, 0
+		if planDiff.canUseNewAssignmentMerge then
+			added, removed, changed =
+				Utilities.ApplyTemplateDiff(existingPlan, planDiff.assigneeSpellSets, forceMergeFromRemote)
+		else
+			added, removed, changed = Utilities.ApplyTemplateDiffOld(existingPlan, planDiff.assigneeSpellSets)
 		end
+		MaybeAddUpdateString(messages, added, removed, changed, L["Templates"]:lower())
 
 		local existingContent = existingPlan.content
 		added, removed, changed = Utilities.ApplyDiff(existingContent, planDiff.content, function(v)
 			return v
 		end)
-
-		if added > 0 or removed > 0 or changed > 0 then
-			tinsert(
-				messages,
-				format(
-					"%s %d, %s %d, %s %s %d %s.",
-					L["Added"],
-					added,
-					L["Removed"]:lower(),
-					removed,
-					L["and"],
-					L["Changed"]:lower(),
-					changed,
-					L["lines of External Text"]
-				)
-			)
-			added, removed, changed = 0, 0, 0
-		end
+		MaybeAddUpdateString(messages, added, removed, changed, L["lines of External Text"])
 
 		local changedMetaData = false
 		local metaDataMessages = {}
@@ -3897,30 +4369,11 @@ do
 			if #metaDataMessages == 1 then
 				tinsert(messages, format("%s %s %s.", L["Changed"], L["The"]:lower(), metaDataMessages[1]))
 			elseif #metaDataMessages == 2 then
-				tinsert(
-					messages,
-					format(
-						"%s %s %s %s %s.",
-						L["Changed"],
-						L["The"]:lower(),
-						metaDataMessages[1],
-						L["and"],
-						metaDataMessages[2]
-					)
-				)
+				local m1, m2 = metaDataMessages[1], metaDataMessages[2]
+				tinsert(messages, format("%s %s %s %s %s.", L["Changed"], L["The"]:lower(), m1, L["and"], m2))
 			elseif #metaDataMessages == 3 then
-				tinsert(
-					messages,
-					format(
-						"%s %s %s, %s, %s %s.",
-						L["Changed"],
-						L["The"]:lower(),
-						metaDataMessages[1],
-						metaDataMessages[2],
-						L["and"],
-						metaDataMessages[3]
-					)
-				)
+				local m1, m2, m3 = metaDataMessages[1], metaDataMessages[2], metaDataMessages[3]
+				tinsert(messages, format("%s %s %s, %s, %s %s.", L["Changed"], L["The"]:lower(), m1, m2, L["and"], m3))
 			end
 		end
 

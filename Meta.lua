@@ -444,6 +444,7 @@
 ---@class FlatAssigneeSpellSet
 ---@field assignee string
 ---@field spellID integer
+---@field ID string
 
 ---@class PlanTemplate
 ---@field name string Name of the template
@@ -476,11 +477,31 @@
 
 ---@class PlanDiffEntry<T>: { type: PlanDiffType, index?: integer, aIndex?: integer, bIndex?: integer, value?: `T`, oldValue?: `T`, newValue?: `T`, result: boolean }
 
+---@class GenericDiffEntry
+---@field ID string
+---@field type PlanDiffType
+---@field localOnlyChange? boolean
+---@field result boolean
+
+---@class ConflictDiffEntry<T> : GenericDiffEntry, {localType: PlanDiffType, remoteType: PlanDiffType, chooseLocal: boolean, localValue: `T`, remoteValue: `T`}
+
+---@class InsertDiffEntry<T> : GenericDiffEntry, {newValue: `T`}
+
+---@class DeleteDiffEntry<T> : GenericDiffEntry, {oldValue: `T`}
+
+---@class ChangeDiffEntry<T> : GenericDiffEntry, {oldValue: `T`, newValue: `T`}
+
 ---@class AssignmentConflict
 ---@field field string Field of the conflict in assignment
 ---@field baseValue string|number|integer|CombatLogEventType|nil
 ---@field localValue string|number|integer|CombatLogEventType|nil
 ---@field remoteValue string|number|integer|CombatLogEventType|nil
+
+---@class RosterConflict
+---@field field string Field of the conflict
+---@field baseValue string|nil
+---@field localValue string|nil
+---@field remoteValue string|nil
 
 ---@class AssignmentPlanDiffEntry
 ---@field type PlanDiffType
@@ -515,13 +536,6 @@
 ---@field localValue TimedAssignment|CombatLogEventAssignment
 ---@field remoteValue TimedAssignment|CombatLogEventAssignment
 
----@class PlanRosterDiff
----@field assignee string
----@field type PlanDiffType
----@field oldValue? RosterEntry Nil if type is `PlanDiffType.Insert`.
----@field newValue? RosterEntry Nil if type is `PlanDiffType.Delete`.
----@field result boolean
-
 ---@class PlanMetaDataDiff
 ---@field difficulty? {oldValue: DifficultyType, newValue: DifficultyType, result: boolean}
 ---@field dungeonEncounterID? {oldValue: integer, newValue: integer, result: boolean}
@@ -530,8 +544,8 @@
 ---@class PlanDiff
 ---@field assignments table<integer, AssignmentPlanDiffEntry>
 ---@field content table<integer, PlanDiffEntry<string>>
----@field roster table<integer, PlanRosterDiff>
----@field assigneeSpellSets table<integer, PlanDiffEntry<FlatAssigneeSpellSet>>
+---@field roster table<integer, GenericDiffEntry>
+---@field assigneeSpellSets table<integer, GenericDiffEntry>
 ---@field metaData PlanMetaDataDiff
 ---@field empty boolean
 ---@field canUseNewAssignmentMerge boolean
