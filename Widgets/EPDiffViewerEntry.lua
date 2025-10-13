@@ -256,6 +256,8 @@ local function SetAssigneeSpellSetEntryData(self, oldValue, newValue, oldRoster,
 		typeText = L["Removed"]
 	elseif diffType == PlanDiffType.Change then
 		typeText = L["Changed"]
+	elseif diffType == PlanDiffType.Conflict then
+		typeText = L["Conflict"]
 	end
 	self.typeLabel:SetText(typeText)
 
@@ -293,40 +295,58 @@ local function SetAssigneeSpellSetEntryData(self, oldValue, newValue, oldRoster,
 end
 
 ---@param self EPDiffViewerEntry
----@param planRosterDiff PlanRosterDiff
+---@param planRosterDiff GenericDiffEntry
 ---@param oldRoster table<string, RosterEntry>
 ---@param newRoster table<string, RosterEntry>
 local function SetRosterEntryData(self, planRosterDiff, oldRoster, newRoster)
 	local typeText = ""
 	local labelText, labelTwoText
 	if planRosterDiff.type == PlanDiffType.Insert then
+		---@cast planRosterDiff InsertDiffEntry<RosterEntry>
 		typeText = L["Added"]
 		labelText = CreateRosterDiffText(
-			planRosterDiff.assignee,
+			planRosterDiff.ID,
 			planRosterDiff.newValue.class,
 			planRosterDiff.newValue.role,
 			newRoster
 		)
 	elseif planRosterDiff.type == PlanDiffType.Delete then
+		---@cast planRosterDiff DeleteDiffEntry<RosterEntry>
 		typeText = L["Removed"]
 		labelText = CreateRosterDiffText(
-			planRosterDiff.assignee,
+			planRosterDiff.ID,
 			planRosterDiff.oldValue.class,
 			planRosterDiff.oldValue.role,
 			oldRoster
 		)
 	elseif planRosterDiff.type == PlanDiffType.Change then
+		---@cast planRosterDiff ChangeDiffEntry<RosterEntry>
 		typeText = L["Changed"]
 		labelText = CreateRosterDiffText(
-			planRosterDiff.assignee,
+			planRosterDiff.ID,
 			planRosterDiff.oldValue.class,
 			planRosterDiff.oldValue.role,
 			oldRoster
 		)
 		labelTwoText = CreateRosterDiffText(
-			planRosterDiff.assignee,
+			planRosterDiff.ID,
 			planRosterDiff.newValue.class,
 			planRosterDiff.newValue.role,
+			newRoster
+		)
+	elseif planRosterDiff.type == PlanDiffType.Conflict then
+		---@cast planRosterDiff ConflictDiffEntry<RosterEntry>
+		typeText = L["Conflict"]
+		labelText = CreateRosterDiffText(
+			planRosterDiff.ID,
+			planRosterDiff.localValue.class,
+			planRosterDiff.localValue.role,
+			oldRoster
+		)
+		labelTwoText = CreateRosterDiffText(
+			planRosterDiff.ID,
+			planRosterDiff.remoteValue.class,
+			planRosterDiff.remoteValue.role,
 			newRoster
 		)
 	end

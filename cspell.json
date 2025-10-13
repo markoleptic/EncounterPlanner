@@ -127,6 +127,7 @@
 		"Lockdown",
 		"Lockenstock",
 		"Loom'ithar",
+		"luacheck",
 		"magharorc",
 		"Mailroom",
 		"Maldraxxus",
@@ -271,5 +272,8 @@
 		".pkgmeta",
 		"Locales/ruRU.lua"
 	],
-	"enableFiletypes": ["lua", "toc"]
+	"enableFiletypes": [
+		"lua",
+		"toc"
+	]
 }

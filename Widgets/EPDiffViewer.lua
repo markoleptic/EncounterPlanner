@@ -392,12 +392,19 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 
 			local oldValue, newValue
 			if planTemplateDiff.type == PlanDiffType.Insert then
-				oldValue = planTemplateDiff.value
+				---@cast planTemplateDiff InsertDiffEntry<AssigneeSpellSet>
+				oldValue = planTemplateDiff.newValue
 			elseif planTemplateDiff.type == PlanDiffType.Delete then
-				oldValue = planTemplateDiff.value
+				---@cast planTemplateDiff DeleteDiffEntry<AssigneeSpellSet>
+				oldValue = planTemplateDiff.oldValue
 			elseif planTemplateDiff.type == PlanDiffType.Change then
+				---@cast planTemplateDiff ChangeDiffEntry<AssigneeSpellSet>
 				oldValue = planTemplateDiff.oldValue
 				newValue = planTemplateDiff.newValue
+			elseif planTemplateDiff.type == PlanDiffType.Conflict then
+				---@cast planTemplateDiff ConflictDiffEntry<AssigneeSpellSet>
+				oldValue = planTemplateDiff.localValue
+				newValue = planTemplateDiff.remoteValue
 			end
 			local entry = AceGUI:Create("EPDiffViewerEntry")
 			entry:SetFullWidth(true)
@@ -409,7 +416,13 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 				planTemplateDiff.type
 			)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
-				self.planDiff.assigneeSpellSets[index].result = checked
+				if self.planDiff.assigneeSpellSets[index].type == PlanDiffType.Conflict then
+					local conflictEntry = self.planDiff.assigneeSpellSets[index]
+					---@cast conflictEntry ConflictDiffEntry<AssigneeSpellSet>
+					conflictEntry.chooseLocal = not checked
+				else
+					self.planDiff.assigneeSpellSets[index].result = checked
+				end
 			end)
 
 			assigneeSpellSetsContainer:AddChild(entry)
@@ -427,7 +440,13 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 		entry:SetFullWidth(true)
 		entry:SetRosterEntryData(planRosterDiff, oldPlan.roster, newPlan.roster)
 		entry:SetCallback("OnValueChanged", function(_, _, checked)
-			self.planDiff.roster[index].result = checked
+			if self.planDiff.roster[index].type == PlanDiffType.Conflict then
+				local conflictEntry = self.planDiff.roster[index]
+				---@cast conflictEntry ConflictDiffEntry<RosterEntry>
+				conflictEntry.chooseLocal = not checked
+			else
+				self.planDiff.roster[index].result = checked
+			end
 		end)
 		rosterContainer:AddChild(entry)
 	end

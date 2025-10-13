@@ -1,5 +1,8 @@
 {
 	"diagnostics.libraryFiles": "Disable",
+	"diagnostics.severity": {
+		"redefined-local": "Warning"
+	},
 	"diagnostics.globals": [
 		"AbbreviateLargeNumbers",
 		"ACCEPT",

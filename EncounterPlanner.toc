@@ -41,6 +41,7 @@ TheWarWithinSeasonThree\Modules.xml
 
 BossUtilities.lua
 Utilities.lua
+Diff.lua
 Note.lua
 Reminder.lua
 InterfaceUpdater.lua

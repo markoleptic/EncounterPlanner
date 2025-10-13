@@ -42,6 +42,9 @@ local LogMessage = interfaceUpdater.LogMessage
 local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 local UpdateFromPlan = interfaceUpdater.UpdateFromPlan
 
+---@class Diff
+local diff = Private.diff
+
 local LibDeflate = LibStub("LibDeflate")
 local format = string.format
 local ipairs = ipairs
@@ -278,8 +281,8 @@ local function ImportPlan(newPlan, fullName)
 	local newPlanName = newPlan.name
 	if existingPlanName and existingPlan then
 		if existingPlan.lastSyncedSnapShot then
-			local planDiff = utilities.DiffPlans(existingPlan, newPlan)
-			local messages = utilities.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff, true)
+			local planDiff = diff.DiffPlans(existingPlan, newPlan)
+			local messages = diff.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff, true)
 			for _, message in ipairs(messages) do
 				LogMessage(message)
 			end
@@ -358,7 +361,7 @@ end
 ---@param existingPlan Plan
 ---@param planDiff PlanDiff
 local function UpdatePlan(existingPlan, planDiff)
-	local messages = utilities.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff)
+	local messages = diff.MergePlan(AddOn.db.profile.plans, existingPlan, planDiff)
 	SnapshotPlanAndIncrementRevision(existingPlan)
 
 	for _, message in ipairs(messages) do
@@ -658,7 +661,7 @@ do
 					local newPlan = PlanSerializer.DeserializePlan(package --[[@as table]])
 					local existingPlanName, existingPlan = FindMatchingPlan(newPlan.ID)
 					if existingPlanName and existingPlan then
-						local planDiff = utilities.DiffPlans(existingPlan, newPlan)
+						local planDiff = diff.DiffPlans(existingPlan, newPlan)
 						if planDiff.empty == true then
 							local receiptString = CreateUpdateReceiptString(
 								newPlan.ID,

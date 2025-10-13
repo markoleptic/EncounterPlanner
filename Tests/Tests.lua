@@ -23,10 +23,15 @@ local TestNotEqual = testUtilities.TestNotEqual
 local utilities = Private.utilities
 local SplitStringIntoTable = utilities.SplitStringIntoTable
 
+---@class Diff
+local diff = Private.diff
+
 local DifficultyType = Private.classes.DifficultyType
 
 local ipairs = ipairs
 local pairs = pairs
+
+local kDefaultBossDungeonEncounterID = Private.constants.kDefaultBossDungeonEncounterID
 
 do
 	local SplitStringTableByWhiteSpace = utilities.SplitStringTableByWhiteSpace
@@ -1367,7 +1372,7 @@ do
 		local plan = CreateTestPlan(
 			plans,
 			"Test",
-			bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID),
+			bossUtilities.GetBoss(kDefaultBossDungeonEncounterID),
 			DifficultyType.Mythic,
 			CreateTestRoster()
 		)
@@ -1382,8 +1387,8 @@ do
 	end
 
 	do
-		local ApplyDiff = utilities.ApplyDiff
-		local DiffPlans = utilities.DiffPlans
+		local ApplyDiff = diff.ApplyDiff
+		local DiffPlans = diff.DiffPlans
 		local DuplicateAssignment = Private.DuplicateAssignment
 		local GetClassColor = C_ClassColor.GetClassColor
 		local PlanDiffType = Private.classes.PlanDiffType
@@ -1418,8 +1423,7 @@ do
 
 		function test.PlanDiff()
 			local plans = {}
-			local oldPlan =
-				CreatePlan(plans, "Test", Private.constants.kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
+			local oldPlan = CreatePlan(plans, "Test", kDefaultBossDungeonEncounterID, DifficultyType.Mythic)
 			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
 
 			for i = 1, 10 do
@@ -1435,8 +1439,8 @@ do
 
 			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 
-			local diff = DiffPlans(oldPlan, newPlan)
-			TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+			local planDiff = DiffPlans(oldPlan, newPlan)
+			TestEqual(planDiff.empty, true, "Diff Empty with exact duplicate")
 
 			newPlan.content = RemoveTabs(SplitStringIntoTable(textTwo))
 
@@ -1455,42 +1459,42 @@ do
 			tremove(newPlan.assignments, 5)
 			newPlan.assignments[6].assignee = "{everyone}"
 
-			diff = DiffPlans(oldPlan, newPlan)
+			planDiff = DiffPlans(oldPlan, newPlan)
 
-			TestEqual(diff.metaData.difficulty.oldValue, DifficultyType.Mythic, "Changed difficulty")
-			TestEqual(diff.metaData.difficulty.newValue, DifficultyType.Heroic, "Changed difficulty")
+			TestEqual(planDiff.metaData.difficulty.oldValue, DifficultyType.Mythic, "Changed difficulty")
+			TestEqual(planDiff.metaData.difficulty.newValue, DifficultyType.Heroic, "Changed difficulty")
 
-			TestEqual(diff.roster[1].type, PlanDiffType.Insert, "Deleted roster member")
-			local secondRosterEntry = diff.roster[2]
+			TestEqual(planDiff.roster[1].type, PlanDiffType.Insert, "Deleted roster member")
+			local secondRosterEntry = planDiff.roster[2]
 			---@cast secondRosterEntry ChangeDiffEntry<RosterEntry>
 			TestEqual(secondRosterEntry.type, PlanDiffType.Change, "Changed roster member")
 			TestEqual(secondRosterEntry.oldValue.role, "role:damager", "Changed roster member")
 			TestEqual(secondRosterEntry.newValue.role, "role:healer", "Changed roster member")
-			TestEqual(diff.roster[3].type, PlanDiffType.Delete, "Inserted roster member")
+			TestEqual(planDiff.roster[3].type, PlanDiffType.Delete, "Inserted roster member")
 
-			TestEqual(diff.assignments[1].type, PlanDiffType.Delete, "Deleted assignment")
-			TestEqual(diff.assignments[2].type, PlanDiffType.Equal, "Equal assignment")
-			TestEqual(diff.assignments[3].type, PlanDiffType.Delete, "Deleted assignment")
-			TestEqual(diff.assignments[4].type, PlanDiffType.Equal, "Equal assignment")
-			TestEqual(diff.assignments[5].type, PlanDiffType.Equal, "Equal assignment")
-			TestEqual(diff.assignments[6].type, PlanDiffType.Equal, "Equal assignment")
-			TestEqual(diff.assignments[7].type, PlanDiffType.Delete, "Deleted assignment")
-			TestEqual(diff.assignments[8].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(planDiff.assignments[1].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(planDiff.assignments[2].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(planDiff.assignments[3].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(planDiff.assignments[4].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(planDiff.assignments[5].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(planDiff.assignments[6].type, PlanDiffType.Equal, "Equal assignment")
+			TestEqual(planDiff.assignments[7].type, PlanDiffType.Delete, "Deleted assignment")
+			TestEqual(planDiff.assignments[8].type, PlanDiffType.Equal, "Equal assignment")
 			-- TestEqual(diff.assignments[9].type, PlanDiffType.Change, "Changed assignment")
 			-- TestEqual(diff.assignments[9].newValue.assignee, "{everyone}", "Changed assignment")
 			-- TestEqual(diff.assignments[10].type, PlanDiffType.Equal, "Equal assignment")
 
-			ApplyDiff(oldPlan.assignments, diff.assignments, DuplicateAssignment)
+			ApplyDiff(oldPlan.assignments, planDiff.assignments, DuplicateAssignment)
 			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
 
 			return "PlanDiff"
 		end
 
-		local MergePlan = utilities.MergePlan
+		local MergePlan = diff.MergePlan
 
 		function test.MergePlan()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local oldPlan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
 
@@ -1515,8 +1519,8 @@ do
 
 			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 			do
-				local diff = DiffPlans(oldPlan, newPlan)
-				TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+				local planDiff = DiffPlans(oldPlan, newPlan)
+				TestEqual(planDiff.empty, true, "Diff Empty with exact duplicate")
 			end
 
 			newPlan.roster["Player13"] = nil
@@ -1615,8 +1619,8 @@ do
 				end
 			end
 
-			local diff = DiffPlans(oldPlan, newPlan)
-			MergePlan(plans, oldPlan, diff)
+			local planDiff = DiffPlans(oldPlan, newPlan)
+			MergePlan(plans, oldPlan, planDiff)
 			TestEqual(
 				oldPlan.dungeonEncounterID,
 				newPlan.dungeonEncounterID,
@@ -1636,9 +1640,11 @@ do
 			return "MergePlan"
 		end
 
+		local SerializePlan = Private.PlanSerializer.SerializePlan
+
 		function test.MergePlanNew()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local oldPlan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			oldPlan.content = RemoveTabs(SplitStringIntoTable(textOne))
 
@@ -1663,16 +1669,16 @@ do
 
 			local newPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
 			do
-				local diff = DiffPlans(oldPlan, newPlan)
-				TestEqual(diff.empty, true, "Diff Empty with exact duplicate")
+				local planDiff = DiffPlans(oldPlan, newPlan)
+				TestEqual(planDiff.empty, true, "Diff Empty with exact duplicate")
 			end
 
 			for i, assignment in ipairs(newPlan.assignments) do
 				assignment.ID = oldPlan.assignments[i].ID
 			end
 
-			oldPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(oldPlan)
-			newPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(newPlan)
+			oldPlan.lastSyncedSnapShot = SerializePlan(oldPlan)
+			newPlan.lastSyncedSnapShot = SerializePlan(newPlan)
 			newPlan.roster["Player13"] = nil
 			newPlan.roster["Player8"].role = "role:healer"
 			newPlan.roster["Player22"] = {
@@ -1766,8 +1772,8 @@ do
 				end
 			end
 
-			local diff = DiffPlans(oldPlan, newPlan)
-			MergePlan(plans, oldPlan, diff, true)
+			local planDiff = DiffPlans(oldPlan, newPlan)
+			MergePlan(plans, oldPlan, planDiff, true)
 			TestEqual(
 				oldPlan.dungeonEncounterID,
 				newPlan.dungeonEncounterID,
@@ -1801,9 +1807,11 @@ do
 			return "MergePlanNew"
 		end
 
+		local ApplyAssignmentDiff = diff.ApplyAssignmentDiff
+
 		function test.ApplyAssignmentDiff()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local base = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			base.content = RemoveTabs(SplitStringIntoTable(textOne))
 			base.assignments = {}
@@ -1821,12 +1829,12 @@ do
 			for i = 1, 5 do
 				localChange.assignments[i].ID = base.assignments[i].ID
 			end
-			localChange.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(base)
+			localChange.lastSyncedSnapShot = SerializePlan(base)
 			local incoming = DuplicatePlan(plans, "Test", "DuplicatedTest")
 			for i = 1, 5 do
 				incoming.assignments[i].ID = base.assignments[i].ID
 			end
-			incoming.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(base)
+			incoming.lastSyncedSnapShot = SerializePlan(base)
 
 			local planDiff = DiffPlans(localChange, incoming)
 			TestEqual(planDiff.empty, true, "Empty plan diff")
@@ -1841,8 +1849,8 @@ do
 			local randomAssignmentTwo = testUtilities.CreateRandomAssignment(incoming, boss, assignees)
 			tinsert(incoming.assignments, randomAssignmentTwo)
 
-			local diff = DiffPlans(localChange, incoming)
-			utilities.ApplyAssignmentDiff(localChange.assignments, diff.assignments)
+			planDiff = DiffPlans(localChange, incoming)
+			ApplyAssignmentDiff(localChange.assignments, planDiff.assignments)
 			TestEqual(#localChange.assignments, 5, "Unexpected assignment count")
 
 			TestEqual(localChange.assignments[1].ID, randomAssignmentOne.ID, "First element should be local insert")
@@ -1925,7 +1933,7 @@ do
 
 		function test.AssignmentConflicts()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local basePlan = CreateTestPlan(plans, "Base", boss, DifficultyType.Mythic, CreateTestRoster())
 
 			local base = TimedAssignment:New()
@@ -1938,7 +1946,7 @@ do
 			base.text = "buh"
 			base.time = 1
 			basePlan.assignments = { base }
-			basePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(basePlan)
+			basePlan.lastSyncedSnapShot = SerializePlan(basePlan)
 
 			local localPlan = DuplicatePlan(plans, "Base", "LocalPlan")
 			local remotePlan = DuplicatePlan(plans, "Base", "RemotePlan")
@@ -1952,15 +1960,15 @@ do
 				---@cast remoteVersion TimedAssignment
 				remoteVersion.ID = base.ID
 
-				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
-				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+				localPlan.lastSyncedSnapShot = SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = SerializePlan(remotePlan)
 
 				localVersion.time = 4.0
 				remoteVersion.time = 6.0
 
-				local diff = DiffPlans(localPlan, remotePlan)
-				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				local planDiff = DiffPlans(localPlan, remotePlan)
+				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localVersion, remoteVersion, "Correctly merged 1")
 			end
 
@@ -1975,8 +1983,8 @@ do
 				---@cast remoteVersion TimedAssignment
 				remoteVersion.ID = base.ID
 
-				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
-				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+				localPlan.lastSyncedSnapShot = SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = SerializePlan(remotePlan)
 
 				localVersion.time = 4.0
 				local localCopy = Private.DeepCopy(localVersion)
@@ -1993,21 +2001,21 @@ do
 				local remoteCopy = Private.DeepCopy(newRemote)
 				setmetatable(remoteCopy, getmetatable(newRemote))
 
-				local diff = DiffPlans(localPlan, remotePlan)
-				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
-				local firstDiff = diff.assignments[1]
+				local planDiff = DiffPlans(localPlan, remotePlan)
+				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
+				local firstDiff = planDiff.assignments[1]
 				---@cast firstDiff AssignmentConflictDiffEntry
 
 				firstDiff.chooseLocal = true
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 2.1")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.2")
 
 				firstDiff.chooseLocal = false
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.3")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 2.4")
 			end
 
@@ -2022,8 +2030,8 @@ do
 				---@cast remoteVersion TimedAssignment
 				remoteVersion.ID = base.ID
 
-				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
-				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+				localPlan.lastSyncedSnapShot = SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = SerializePlan(remotePlan)
 
 				local newLocal = CombatLogEventAssignment:New(localVersion)
 				newLocal.combatLogEventSpellID = 1241303
@@ -2040,21 +2048,21 @@ do
 				local remoteCopy = Private.DeepCopy(remoteVersion)
 				setmetatable(remoteCopy, getmetatable(remoteVersion))
 
-				local diff = DiffPlans(localPlan, remotePlan)
-				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 3")
-				local firstDiff = diff.assignments[1]
+				local planDiff = DiffPlans(localPlan, remotePlan)
+				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 3")
+				local firstDiff = planDiff.assignments[1]
 				---@cast firstDiff AssignmentConflictDiffEntry
 
 				firstDiff.chooseLocal = true
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 3.1")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.2")
 
 				firstDiff.chooseLocal = false
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.3")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], remoteCopy, "Correctly merged 3.4")
 			end
 
@@ -2069,8 +2077,8 @@ do
 				---@cast remoteVersion TimedAssignment
 				remoteVersion.ID = base.ID
 
-				localPlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(localPlan)
-				remotePlan.lastSyncedSnapShot = Private.PlanSerializer.SerializePlan(remotePlan)
+				localPlan.lastSyncedSnapShot = SerializePlan(localPlan)
+				remotePlan.lastSyncedSnapShot = SerializePlan(remotePlan)
 
 				localVersion.time = 3.2
 				local localCopy = Private.DeepCopy(localVersion)
@@ -2078,21 +2086,21 @@ do
 
 				tremove(remotePlan.assignments, 1)
 
-				local diff = DiffPlans(localPlan, remotePlan)
-				TestEqual(diff.assignments[1].type, PlanDiffType.Conflict, "Correct type 4")
-				local firstDiff = diff.assignments[1]
+				local planDiff = DiffPlans(localPlan, remotePlan)
+				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 4")
+				local firstDiff = planDiff.assignments[1]
 				---@cast firstDiff AssignmentConflictDiffEntry
 
 				firstDiff.chooseLocal = true
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], localCopy, "Correctly merged 4.1")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.2")
 
 				firstDiff.chooseLocal = false
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
 				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.3")
-				utilities.ApplyAssignmentDiff(localPlan.assignments, diff.assignments, true)
+				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments, true)
 				TestEqual(localPlan.assignments[1], nil, "Correctly merged 4.4")
 			end
 
@@ -2101,7 +2109,7 @@ do
 
 		function test.CreatePlanTemplate()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			local assigneeSpellSets =
 				utilities.CreateAssigneeSpellSetsFromPlan(plan, "Role > First Appearance", {}, false)
@@ -2154,7 +2162,7 @@ do
 
 		function test.ApplyPlanTemplate()
 			local plans = {}
-			local boss = bossUtilities.GetBoss(Private.constants.kDefaultBossDungeonEncounterID)
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
 			local plan = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
 			plan.roster["Buh"] = Private.classes.RosterEntry:New()
 			plan.roster["Guh"] = Private.classes.RosterEntry:New()
@@ -2212,8 +2220,8 @@ do
 end
 
 do
-	local CoalesceChanges = utilities.CoalesceChanges
-	local MyersDiff = utilities.MyersDiff
+	local CoalesceChanges = diff.CoalesceChanges
+	local MyersDiff = diff.MyersDiff
 	local PlanDiffType = Private.classes.PlanDiffType
 
 	function test.MyersDiff()
@@ -2234,215 +2242,215 @@ do
 			end
 
 			local aStringTable, bStringTable = {}, {}
-			local diff = func(aStringTable, bStringTable, comparator)
-			TestEqual(#diff, 0, "Empty")
+			local stringDiff = func(aStringTable, bStringTable, comparator)
+			TestEqual(#stringDiff, 0, "Empty")
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = { "a", "b", "c" }
-			diff = func(aStringTable, bStringTable, comparator)
-			for _, diffEntry in ipairs(diff) do
+			stringDiff = func(aStringTable, bStringTable, comparator)
+			for _, diffEntry in ipairs(stringDiff) do
 				TestEqual(diffEntry.type, PlanDiffType.Equal, "Equal for all elements")
 			end
 
 			aStringTable = { "a", "b" }
 			bStringTable = { "a", "b", "c", "d" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			local context = "Insert Only"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Insert, context)
-			TestEqual(diff[4].type, PlanDiffType.Insert, context)
-			TestEqual(diff[3].value, "c", context)
-			TestEqual(diff[4].value, "d", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[3].value, "c", context)
+			TestEqual(stringDiff[4].value, "d", context)
 
 			aStringTable = { "a", "b", "c", "d" }
 			bStringTable = { "a", "b" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Delete Only"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Delete, context)
-			TestEqual(diff[4].type, PlanDiffType.Delete, context)
-			TestEqual(diff[3].value, "c", context)
-			TestEqual(diff[4].value, "d", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[4].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[3].value, "c", context)
+			TestEqual(stringDiff[4].value, "d", context)
 
 			aStringTable = { "a", "b", "x", "d" }
 			bStringTable = { "a", "b", "y", "d" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Coalesced insert and delete"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
 			if i == 1 then
-				TestEqual(diff[3].type, PlanDiffType.Delete, context)
-				TestEqual(diff[4].type, PlanDiffType.Insert, context)
-				TestEqual(diff[5].type, PlanDiffType.Equal, context)
-				TestEqual(diff[3].value, "x", context)
-				TestEqual(diff[4].value, "y", context)
+				TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[5].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[3].value, "x", context)
+				TestEqual(stringDiff[4].value, "y", context)
 			else
-				TestEqual(diff[3].type, PlanDiffType.Change, context)
-				TestEqual(diff[4].type, PlanDiffType.Equal, context)
-				TestEqual(diff[3].oldValue, "x", context)
-				TestEqual(diff[3].newValue, "y", context)
+				TestEqual(stringDiff[3].type, PlanDiffType.Change, context)
+				TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[3].oldValue, "x", context)
+				TestEqual(stringDiff[3].newValue, "y", context)
 			end
 
 			aStringTable = { "b", "c" }
 			bStringTable = { "a", "b", "c" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Leading insertion"
-			TestEqual(diff[1].type, PlanDiffType.Insert, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Equal, context)
-			TestEqual(diff[1].value, "a", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[1].value, "a", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = { "b", "c" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Leading deletion"
-			TestEqual(diff[1].type, PlanDiffType.Delete, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Equal, context)
-			TestEqual(diff[1].value, "a", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[1].value, "a", context)
 
 			aStringTable = { "a", "b" }
 			bStringTable = { "a", "b", "c" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Trailing insertion"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Insert, context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[3].value, "c", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = { "a", "b" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Trailing deletion"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Delete, context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[3].value, "c", context)
 
 			aStringTable = { "a", "b", "c", "d", "e" }
 			bStringTable = { "a", "x", "c", "y", "e" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Multiple inserts and deletes"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
 			if i == 1 then
-				TestEqual(diff[2].type, PlanDiffType.Delete, context)
-				TestEqual(diff[3].type, PlanDiffType.Insert, context)
-				TestEqual(diff[4].type, PlanDiffType.Equal, context)
-				TestEqual(diff[5].type, PlanDiffType.Delete, context)
-				TestEqual(diff[6].type, PlanDiffType.Insert, context)
-				TestEqual(diff[7].type, PlanDiffType.Equal, context)
-				TestEqual(diff[2].value, "b", context)
-				TestEqual(diff[3].value, "x", context)
-				TestEqual(diff[5].value, "d", context)
-				TestEqual(diff[6].value, "y", context)
+				TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[5].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[6].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[7].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[2].value, "b", context)
+				TestEqual(stringDiff[3].value, "x", context)
+				TestEqual(stringDiff[5].value, "d", context)
+				TestEqual(stringDiff[6].value, "y", context)
 			else
-				TestEqual(diff[2].type, PlanDiffType.Change, context)
-				TestEqual(diff[3].type, PlanDiffType.Equal, context)
-				TestEqual(diff[4].type, PlanDiffType.Change, context)
-				TestEqual(diff[5].type, PlanDiffType.Equal, context)
-				TestEqual(diff[2].oldValue, "b", context)
-				TestEqual(diff[2].newValue, "x", context)
-				TestEqual(diff[4].oldValue, "d", context)
-				TestEqual(diff[4].newValue, "y", context)
+				TestEqual(stringDiff[2].type, PlanDiffType.Change, context)
+				TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[4].type, PlanDiffType.Change, context)
+				TestEqual(stringDiff[5].type, PlanDiffType.Equal, context)
+				TestEqual(stringDiff[2].oldValue, "b", context)
+				TestEqual(stringDiff[2].newValue, "x", context)
+				TestEqual(stringDiff[4].oldValue, "d", context)
+				TestEqual(stringDiff[4].newValue, "y", context)
 			end
 
 			if i == 1 then
 				aStringTable = { "a", "b", "c" }
 				bStringTable = { "x", "y", "z" }
-				diff = func(aStringTable, bStringTable, comparator)
+				stringDiff = func(aStringTable, bStringTable, comparator)
 
 				context = "Completely different sequences"
-				TestEqual(diff[1].type, PlanDiffType.Delete, context)
-				TestEqual(diff[2].type, PlanDiffType.Delete, context)
-				TestEqual(diff[3].type, PlanDiffType.Delete, context)
-				TestEqual(diff[4].type, PlanDiffType.Insert, context)
-				TestEqual(diff[5].type, PlanDiffType.Insert, context)
-				TestEqual(diff[6].type, PlanDiffType.Insert, context)
-				TestEqual(diff[1].value, "a", context)
-				TestEqual(diff[2].value, "b", context)
-				TestEqual(diff[3].value, "c", context)
-				TestEqual(diff[4].value, "x", context)
-				TestEqual(diff[5].value, "y", context)
-				TestEqual(diff[6].value, "z", context)
+				TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+				TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[5].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[6].type, PlanDiffType.Insert, context)
+				TestEqual(stringDiff[1].value, "a", context)
+				TestEqual(stringDiff[2].value, "b", context)
+				TestEqual(stringDiff[3].value, "c", context)
+				TestEqual(stringDiff[4].value, "x", context)
+				TestEqual(stringDiff[5].value, "y", context)
+				TestEqual(stringDiff[6].value, "z", context)
 			end
 
 			aStringTable = { "a", "b", "c", "d", "e" }
 			bStringTable = { "b", "c", "d" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Subsequence match"
-			TestEqual(diff[1].type, PlanDiffType.Delete, context)
-			TestEqual(diff[2].type, PlanDiffType.Equal, context)
-			TestEqual(diff[3].type, PlanDiffType.Equal, context)
-			TestEqual(diff[4].type, PlanDiffType.Equal, context)
-			TestEqual(diff[5].type, PlanDiffType.Delete, context)
-			TestEqual(diff[1].value, "a", context)
-			TestEqual(diff[5].value, "e", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[5].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[1].value, "a", context)
+			TestEqual(stringDiff[5].value, "e", context)
 
 			aStringTable = { "a", "d" }
 			bStringTable = { "a", "b", "c", "d" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Large insertion in middle"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Insert, context)
-			TestEqual(diff[3].type, PlanDiffType.Insert, context)
-			TestEqual(diff[4].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].value, "b", context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].value, "b", context)
+			TestEqual(stringDiff[3].value, "c", context)
 
 			aStringTable = { "a", "b", "c", "d" }
 			bStringTable = { "a", "d" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Large deletion in middle"
-			TestEqual(diff[1].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].type, PlanDiffType.Delete, context)
-			TestEqual(diff[3].type, PlanDiffType.Delete, context)
-			TestEqual(diff[4].type, PlanDiffType.Equal, context)
-			TestEqual(diff[2].value, "b", context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
+			TestEqual(stringDiff[2].value, "b", context)
+			TestEqual(stringDiff[3].value, "c", context)
 
 			aStringTable = {}
 			bStringTable = { "a", "b", "c" }
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Existing empty, new non-empty"
-			TestEqual(diff[1].type, PlanDiffType.Insert, context)
-			TestEqual(diff[2].type, PlanDiffType.Insert, context)
-			TestEqual(diff[3].type, PlanDiffType.Insert, context)
-			TestEqual(diff[1].value, "a", context)
-			TestEqual(diff[2].value, "b", context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
+			TestEqual(stringDiff[1].value, "a", context)
+			TestEqual(stringDiff[2].value, "b", context)
+			TestEqual(stringDiff[3].value, "c", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = {}
-			diff = func(aStringTable, bStringTable, comparator)
+			stringDiff = func(aStringTable, bStringTable, comparator)
 
 			context = "Existing non-empty, new empty"
-			TestEqual(diff[1].type, PlanDiffType.Delete, context)
-			TestEqual(diff[2].type, PlanDiffType.Delete, context)
-			TestEqual(diff[3].type, PlanDiffType.Delete, context)
-			TestEqual(diff[1].value, "a", context)
-			TestEqual(diff[2].value, "b", context)
-			TestEqual(diff[3].value, "c", context)
+			TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
+			TestEqual(stringDiff[1].value, "a", context)
+			TestEqual(stringDiff[2].value, "b", context)
+			TestEqual(stringDiff[3].value, "c", context)
 		end
 
 		return "MyersDiff"
 	end
 
 	do
-		local ApplyDiff = utilities.ApplyDiff
+		local ApplyDiff = diff.ApplyDiff
 
 		function test.ApplyMyersDiff()
 			local changeFunc = function(newValue)
