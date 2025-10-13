@@ -118,9 +118,8 @@ end
 
 -- Merges delete and inserts entries into change entries of a diff if they their index is equal, accounting for
 -- shifts due to deletes, inserts, and changes.
----@generic T
----@param diff table<integer, PlanDiffEntry<T>> Original diff with no Change entries.
----@return table<integer, PlanDiffEntry<T>> modifiedDiff
+---@param diff table<integer, GenericDiffEntry> Original diff with no Change entries.
+---@return table<integer, GenericDiffEntry> modifiedDiff
 function Diff.CoalesceChanges(diff)
 	local result = {}
 	local i = 1
@@ -130,22 +129,26 @@ function Diff.CoalesceChanges(diff)
 		local nextEntry = diff[i + 1]
 		local coalesced = false
 		if entry.type == PlanDiffType.Delete then
+			---@cast entry IndexedDeleteDiffEntry<any>
 			if nextEntry and nextEntry.type == PlanDiffType.Insert then
+				---@cast nextEntry IndexedInsertDiffEntry<any>
 				if nextEntry.index == entry.index then
 					tinsert(result, {
 						type = PlanDiffType.Change,
-						index = entry.index,
-						oldValue = entry.value,
-						newValue = nextEntry.value,
+						aIndex = entry.index,
+						bIndex = entry.index,
+						oldValue = entry.oldValue,
+						newValue = nextEntry.newValue,
 						result = true,
 					})
 					coalesced = true
 				elseif nextEntry.index == entry.index + shift then
 					tinsert(result, {
 						type = PlanDiffType.Change,
-						index = entry.index + shift,
-						oldValue = entry.value,
-						newValue = nextEntry.value,
+						aIndex = entry.index + shift,
+						bIndex = entry.index + shift,
+						oldValue = entry.oldValue,
+						newValue = nextEntry.newValue,
 						result = true,
 					})
 					coalesced = true
@@ -171,7 +174,7 @@ end
 ---@param a table<integer, T>|table<integer, T|{ID: string}>
 ---@param b table<integer, T>|table<integer, T|{ID: string}>
 ---@param comparator fun(a: T, b: T): boolean
----@return table<integer, PlanDiffEntry<T>>
+---@return table<integer, GenericDiffEntry>
 function Diff.MyersDiff(a, b, comparator)
 	local front = { [1] = { 0, {} } } -- k = 1 represents diagonal 0
 
@@ -204,9 +207,15 @@ function Diff.MyersDiff(a, b, comparator)
 			history = ShallowCopy(history)
 
 			if 1 <= y and y <= bCount and goDown then
-				tinsert(history, { type = PlanDiffType.Insert, ID = b[y].ID, index = y, value = b[y], result = true })
+				tinsert(
+					history,
+					{ type = PlanDiffType.Insert, ID = b[y].ID, index = y, newValue = b[y], result = true }
+				)
 			elseif 1 <= x and x <= aCount and not goDown then
-				tinsert(history, { type = PlanDiffType.Delete, ID = a[x].ID, index = x, value = a[x], result = true })
+				tinsert(
+					history,
+					{ type = PlanDiffType.Delete, ID = a[x].ID, index = x, oldValue = a[x], result = true }
+				)
 			end
 
 			while x < aCount and y < bCount and comparator(a[x + 1], b[y + 1]) == true do
@@ -235,7 +244,7 @@ do
 
 	---@param a table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@param b table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@return table<integer, AssignmentPlanDiffEntry>
+	---@return table<integer, GenericDiffEntry>
 	function Diff.MyersDiffAssignments(a, b)
 		local front = { [1] = { 0, {} } } -- k = 1 represents diagonal 0
 
@@ -270,12 +279,12 @@ do
 				if 1 <= y and y <= bCount and goDown then
 					tinsert(
 						history,
-						{ type = PlanDiffType.Insert, index = y, value = b[y], ID = b[y].ID, result = true }
+						{ type = PlanDiffType.Insert, index = y, newValue = b[y], ID = b[y].ID, result = true }
 					)
 				elseif 1 <= x and x <= aCount and not goDown then
 					tinsert(
 						history,
-						{ type = PlanDiffType.Delete, index = x, value = a[x], ID = a[x].ID, result = true }
+						{ type = PlanDiffType.Delete, index = x, oldValue = a[x], ID = a[x].ID, result = true }
 					)
 				end
 
@@ -297,7 +306,6 @@ do
 							aIndex = x + 1,
 							bIndex = y + 1,
 							result = false,
-							value = b[y + 1],
 						})
 					end
 					x = x + 1
@@ -349,29 +357,29 @@ do
 	local GetAssignmentConflicts = assignmentUtilities.GetAssignmentConflicts
 
 	---@param base Assignment|CombatLogEventAssignment|TimedAssignment
-	---@param localChange AssignmentPlanDiffEntry
-	---@param remoteChange AssignmentPlanDiffEntry
-	---@return AssignmentPlanDiffEntry
+	---@param localChange GenericDiffEntry
+	---@param remoteChange GenericDiffEntry
+	---@return GenericDiffEntry
 	local function ResolveAssignmentChangeOrConflict(base, localChange, remoteChange)
 		local localType, remoteType = localChange.type, remoteChange.type
 		local localValue, remoteValue = nil, nil
 		local forceConflict = false
 
 		if localType == PlanDiffType.Change and remoteType == PlanDiffType.Change then
-			---@cast localChange AssignmentChangeDiffEntry
-			---@cast remoteChange AssignmentChangeDiffEntry
+			---@cast localChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+			---@cast remoteChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 			localValue = localChange.newValue
 			remoteValue = remoteChange.newValue
 		elseif localType == PlanDiffType.Change and remoteType == PlanDiffType.Delete then
-			---@cast localChange AssignmentChangeDiffEntry
-			---@cast remoteChange AssignmentDeleteDiffEntry
+			---@cast localChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+			---@cast remoteChange DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 			localValue = localChange.newValue
-			remoteValue = remoteChange.value
+			remoteValue = remoteChange.oldValue
 			forceConflict = true
 		elseif localType == PlanDiffType.Delete and remoteType == PlanDiffType.Change then
-			---@cast localChange AssignmentDeleteDiffEntry
-			---@cast remoteChange AssignmentChangeDiffEntry
-			localValue = localChange.value
+			---@cast localChange DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+			---@cast remoteChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+			localValue = localChange.oldValue
 			remoteValue = remoteChange.newValue
 			forceConflict = true
 		elseif localType == PlanDiffType.Equal then
@@ -383,7 +391,7 @@ do
 		end
 
 		if forceConflict then
-			---@type AssignmentConflictDiffEntry
+			---@type ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 			local entry = {
 				type = PlanDiffType.Conflict,
 				ID = base.ID,
@@ -399,7 +407,7 @@ do
 		else
 			local conflicts = GetAssignmentConflicts(base, localValue, remoteValue)
 			if #conflicts > 0 then
-				---@type AssignmentConflictDiffEntry
+				---@type ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				local entry = {
 					type = PlanDiffType.Conflict,
 					ID = base.ID,
@@ -416,7 +424,7 @@ do
 				local localCopy = DeepCopy(localValue)
 				setmetatable(localCopy, getmetatable(localValue))
 				MergeAssignments(localCopy, remoteValue)
-				---@type AssignmentChangeDiffEntry
+				---@type ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				local entry = {
 					type = PlanDiffType.Change,
 					ID = base.ID,
@@ -436,9 +444,9 @@ do
 	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@return table<integer, AssignmentPlanDiffEntry>
+	---@return table<integer, GenericDiffEntry>
 	local function PerformAssignmentDiff(baseAssignments, localAssignments, remoteAssignments)
-		---@type table<integer, AssignmentPlanDiffEntry>
+		---@type table<integer, GenericDiffEntry>
 		local merged = {}
 
 		---@type table<string, Assignment|CombatLogEventAssignment|TimedAssignment>
@@ -447,13 +455,13 @@ do
 			baseAssignmentsByID[v.ID] = v
 		end
 
-		---@type table<string, AssignmentPlanDiffEntry>
+		---@type table<string, GenericDiffEntry>
 		local localVersionByID = {}
 		for _, v in ipairs(MyersDiffAssignments(baseAssignments, localAssignments)) do
 			localVersionByID[v.ID] = v
 		end
 
-		---@type table<string, AssignmentPlanDiffEntry>
+		---@type table<string, GenericDiffEntry>
 		local incomingVersionByID = {}
 		for _, v in ipairs(MyersDiffAssignments(baseAssignments, remoteAssignments)) do
 			incomingVersionByID[v.ID] = v
@@ -687,7 +695,7 @@ do
 	---@param baseVersion RosterEntry
 	---@param localVersion RosterEntry
 	---@param remoteVersion RosterEntry
-	---@return table<integer, RosterConflict>|nil
+	---@return table<integer, GenericConflict<RosterEntry>>|nil
 	local function GetRosterConflicts(baseVersion, localVersion, remoteVersion)
 		local localChanges, remoteChanges = {}, {}
 
@@ -878,8 +886,7 @@ do
 				end))
 		end
 
-		---@generic T
-		---@param tbl table<integer, PlanDiffEntry<T>>
+		---@param tbl table<integer, GenericDiffEntry>
 		local function CheckIfNotEmpty(tbl)
 			if diff.empty == true then
 				for _, entry in ipairs(tbl) do
@@ -913,7 +920,7 @@ end
 -- Applies the diff with proper index handling.
 ---@generic T
 ---@param existingTable table<integer, T> Existing table to apply the diff to.
----@param tableDiff table<integer, PlanDiffEntry<T>> Diff between existing and new table.
+---@param tableDiff table<integer, GenericDiffEntry> Diff between existing and new table.
 ---@param changeFunc fun(newValue:T, ...:any):T Function to set new values from the new table.
 ---@param ... any Args for changeFunc
 ---@return integer addedCount
@@ -926,6 +933,7 @@ function Diff.ApplyDiff(existingTable, tableDiff, changeFunc, ...)
 	for i = #tableDiff, 1, -1 do
 		local diff = tableDiff[i]
 		if diff.result and diff.type == PlanDiffType.Delete then
+			---@cast diff IndexedDeleteDiffEntry<`T`>
 			tremove(existingTable, diff.index)
 			removedCount = removedCount + 1
 		end
@@ -936,10 +944,12 @@ function Diff.ApplyDiff(existingTable, tableDiff, changeFunc, ...)
 		local diff = tableDiff[i]
 		if diff.result then
 			if diff.type == PlanDiffType.Insert then
-				tinsert(existingTable, diff.index, diff.value)
+				---@cast diff IndexedInsertDiffEntry<`T`>
+				tinsert(existingTable, diff.index, diff.newValue)
 				addedCount = addedCount + 1
 			elseif diff.type == PlanDiffType.Change then
-				existingTable[diff.index] = changeFunc(diff.newValue, ...)
+				---@cast diff IndexedChangeDiffEntry<`T`>
+				existingTable[diff.aIndex] = changeFunc(diff.newValue, ...)
 				changedCount = changedCount + 1
 			end
 		end
@@ -949,7 +959,7 @@ function Diff.ApplyDiff(existingTable, tableDiff, changeFunc, ...)
 end
 
 ---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
----@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
+---@param assignmentDiff table<integer, GenericDiffEntry> Indexed = old, Generic = new
 ---@return integer addedCount
 ---@return integer removedCount
 ---@return integer changedCount
@@ -965,7 +975,7 @@ function Diff.ApplyAssignmentDiffOld(existingAssignments, assignmentDiff)
 end
 
 ---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
----@param assignmentDiff table<integer, AssignmentPlanDiffEntry>
+---@param assignmentDiff table<integer, GenericDiffEntry>
 ---@param forceMergeFromRemote boolean|nil
 ---@return integer addedCount
 ---@return integer removedCount
@@ -996,20 +1006,20 @@ function Diff.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMerg
 		local diff = assignmentDiff[i]
 		if diff.result and not diff.localOnlyChange then
 			if diff.type == PlanDiffType.Insert then
-				---@cast diff AssignmentInsertDiffEntry
+				---@cast diff InsertDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				if not FindAssignmentIndex(diff.ID) then
-					tinsert(existingAssignments, diff.value)
+					tinsert(existingAssignments, diff.newValue)
 					addedCount = addedCount + 1
 				end
 			elseif diff.type == PlanDiffType.Change then
-				---@cast diff AssignmentChangeDiffEntry
+				---@cast diff ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				local index = FindAssignmentIndex(diff.ID)
 				if index then
 					MergeAssignments(existingAssignments[index], diff.newValue)
 					changedCount = changedCount + 1
 				end
 			elseif diff.type == PlanDiffType.Conflict then
-				---@cast diff AssignmentConflictDiffEntry
+				---@cast diff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				local index = FindAssignmentIndex(diff.ID)
 				if index then
 					if diff.chooseLocal == false or forceMergeFromRemote then
@@ -1175,7 +1185,7 @@ function Diff.ApplyTemplateDiff(existingPlan, templateDiff, forceMergeFromRemote
 end
 
 ---@param existingPlan Plan Existing plan to apply the diff to.
----@param tableDiff table<integer, PlanDiffEntry<FlatAssigneeSpellSet>> Diff between existing and new table.
+---@param tableDiff table<integer, GenericDiffEntry> Diff between existing and new table.
 ---@return integer addedCount
 ---@return integer removedCount
 ---@return integer changedCount
@@ -1189,6 +1199,7 @@ function Diff.ApplyTemplateDiffOld(existingPlan, tableDiff)
 	for i = #tableDiff, 1, -1 do
 		local diff = tableDiff[i]
 		if diff.result and diff.type == PlanDiffType.Delete then
+			---@cast diff IndexedDeleteDiffEntry<FlatAssigneeSpellSet>
 			tremove(flattenedAssigneeSpellSets, diff.index)
 			removedCount = removedCount + 1
 		end
@@ -1199,11 +1210,13 @@ function Diff.ApplyTemplateDiffOld(existingPlan, tableDiff)
 		local diff = tableDiff[i]
 		if diff.result then
 			if diff.type == PlanDiffType.Insert then
-				tinsert(flattenedAssigneeSpellSets, diff.index, diff.value)
+				---@cast diff IndexedInsertDiffEntry<FlatAssigneeSpellSet>
+				tinsert(flattenedAssigneeSpellSets, diff.index, diff.newValue)
 				addedCount = addedCount + 1
 			elseif diff.type == PlanDiffType.Change then
-				flattenedAssigneeSpellSets[diff.index].assignee = diff.newValue.assignee
-				flattenedAssigneeSpellSets[diff.index].spellID = diff.newValue.spellID
+				---@cast diff IndexedChangeDiffEntry<FlatAssigneeSpellSet>
+				flattenedAssigneeSpellSets[diff.aIndex].assignee = diff.newValue.assignee
+				flattenedAssigneeSpellSets[diff.aIndex].spellID = diff.newValue.spellID
 				changedCount = changedCount + 1
 			end
 		end

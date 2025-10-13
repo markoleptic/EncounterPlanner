@@ -475,75 +475,48 @@
 ---@field castStart number
 ---@field bossPhaseOrderIndex integer
 
----@class PlanDiffEntry<T>: { type: PlanDiffType, index?: integer, aIndex?: integer, bIndex?: integer, value?: `T`, oldValue?: `T`, newValue?: `T`, result: boolean }
+-- Generic class to store conflicts between local and remote for a single field.
+---@generic T
+---@class GenericConflict<T> : {field: string, baseValue: `T`|nil, localValue: `T`|nil, remoteValue: `T`|nil}
 
+-- Generic class to store a diff between local and remote.
 ---@class GenericDiffEntry
 ---@field ID string
 ---@field type PlanDiffType
 ---@field localOnlyChange? boolean
 ---@field result boolean
 
----@class ConflictDiffEntry<T> : GenericDiffEntry, {localType: PlanDiffType, remoteType: PlanDiffType, chooseLocal: boolean, localValue: `T`, remoteValue: `T`}
+-- Generic class to store a conflict diff between local and remote.
+---@class ConflictDiffEntry<T> : GenericDiffEntry, {localType: PlanDiffType, remoteType: PlanDiffType, chooseLocal: boolean, localValue: `T`, remoteValue: `T`, conflicts: table<integer, GenericConflict<`T`>>}
 
+-- Generic class to store an insert from the base.
 ---@class InsertDiffEntry<T> : GenericDiffEntry, {newValue: `T`}
 
+-- Generic class to store a delete from the base.
 ---@class DeleteDiffEntry<T> : GenericDiffEntry, {oldValue: `T`}
 
+-- Generic class to store a change from the base.
 ---@class ChangeDiffEntry<T> : GenericDiffEntry, {oldValue: `T`, newValue: `T`}
 
----@class AssignmentConflict
----@field field string Field of the conflict in assignment
----@field baseValue string|number|integer|CombatLogEventType|nil
----@field localValue string|number|integer|CombatLogEventType|nil
----@field remoteValue string|number|integer|CombatLogEventType|nil
+-- Generic class to store an insert from the base that also includes the index.
+---@class IndexedInsertDiffEntry<T> : GenericDiffEntry, {index: integer, newValue: `T`}
 
----@class RosterConflict
----@field field string Field of the conflict
----@field baseValue string|nil
----@field localValue string|nil
----@field remoteValue string|nil
+-- Generic class to store a delete from the base that also includes the index.
+---@class IndexedDeleteDiffEntry<T> : GenericDiffEntry, {index: integer, oldValue: `T`}
 
----@class AssignmentPlanDiffEntry
----@field type PlanDiffType
----@field ID string
----@field result boolean
----@field localOnlyChange? boolean
+-- Generic class to store a change from the base and includes both table indices and values. aIndex and bIndex will be
+-- the same if created by coalescing.
+---@class IndexedChangeDiffEntry<T> : GenericDiffEntry, {aIndex: integer, bIndex: integer, oldValue: `T`, newValue: `T`}
 
----@class AssignmentEqualDiffEntry : AssignmentPlanDiffEntry
----@field aIndex integer
----@field bIndex integer
----@field value TimedAssignment|CombatLogEventAssignment
-
----@class AssignmentInsertDiffEntry : AssignmentPlanDiffEntry
----@field index integer Index from b
----@field value TimedAssignment|CombatLogEventAssignment Value from b
-
----@class AssignmentDeleteDiffEntry : AssignmentPlanDiffEntry
----@field index integer Index from a
----@field value TimedAssignment|CombatLogEventAssignment Value from a
-
----@class AssignmentChangeDiffEntry : AssignmentPlanDiffEntry
----@field aIndex? integer
----@field bIndex? integer
----@field oldValue TimedAssignment|CombatLogEventAssignment Value from a
----@field newValue TimedAssignment|CombatLogEventAssignment Value from b
-
----@class AssignmentConflictDiffEntry : AssignmentPlanDiffEntry
----@field localType PlanDiffType
----@field remoteType PlanDiffType
----@field chooseLocal boolean
----@field conflicts table<integer, AssignmentConflict>
----@field localValue TimedAssignment|CombatLogEventAssignment
----@field remoteValue TimedAssignment|CombatLogEventAssignment
-
+-- Diff between core fields that define a plan.
 ---@class PlanMetaDataDiff
 ---@field difficulty? {oldValue: DifficultyType, newValue: DifficultyType, result: boolean}
 ---@field dungeonEncounterID? {oldValue: integer, newValue: integer, result: boolean}
 ---@field instanceID? {oldValue: integer, newValue: integer, result: boolean}
 
 ---@class PlanDiff
----@field assignments table<integer, AssignmentPlanDiffEntry>
----@field content table<integer, PlanDiffEntry<string>>
+---@field assignments table<integer, GenericDiffEntry>
+---@field content table<integer, GenericDiffEntry>
 ---@field roster table<integer, GenericDiffEntry>
 ---@field assigneeSpellSets table<integer, GenericDiffEntry>
 ---@field metaData PlanMetaDataDiff

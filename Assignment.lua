@@ -317,7 +317,7 @@ do
 	---@param baseVersion TimedAssignment|CombatLogEventAssignment
 	---@param localVersion TimedAssignment|CombatLogEventAssignment
 	---@param remoteVersion TimedAssignment|CombatLogEventAssignment
-	---@return table<integer, AssignmentConflict>|nil
+	---@return table<integer, GenericConflict<TimedAssignment|CombatLogEventAssignment>>|nil
 	function AssignmentUtilities.GetAssignmentConflicts(baseVersion, localVersion, remoteVersion)
 		if baseVersion.ID ~= localVersion.ID or localVersion.ID ~= remoteVersion.ID then
 			return nil

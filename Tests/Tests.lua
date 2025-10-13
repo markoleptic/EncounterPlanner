@@ -2004,7 +2004,7 @@ do
 				local planDiff = DiffPlans(localPlan, remotePlan)
 				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 1")
 				local firstDiff = planDiff.assignments[1]
-				---@cast firstDiff AssignmentConflictDiffEntry
+				---@cast firstDiff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 
 				firstDiff.chooseLocal = true
 				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
@@ -2051,7 +2051,7 @@ do
 				local planDiff = DiffPlans(localPlan, remotePlan)
 				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 3")
 				local firstDiff = planDiff.assignments[1]
-				---@cast firstDiff AssignmentConflictDiffEntry
+				---@cast firstDiff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 
 				firstDiff.chooseLocal = true
 				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
@@ -2089,7 +2089,7 @@ do
 				local planDiff = DiffPlans(localPlan, remotePlan)
 				TestEqual(planDiff.assignments[1].type, PlanDiffType.Conflict, "Correct type 4")
 				local firstDiff = planDiff.assignments[1]
-				---@cast firstDiff AssignmentConflictDiffEntry
+				---@cast firstDiff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 
 				firstDiff.chooseLocal = true
 				ApplyAssignmentDiff(localPlan.assignments, planDiff.assignments)
@@ -2259,10 +2259,14 @@ do
 			local context = "Insert Only"
 			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
+			local stringDiffThree = stringDiff[3]
+			---@cast stringDiffThree IndexedInsertDiffEntry<string>
 			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
-			TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
-			TestEqual(stringDiff[3].value, "c", context)
-			TestEqual(stringDiff[4].value, "d", context)
+			TestEqual(stringDiffThree.newValue, "c", context)
+			local stringDiffFour = stringDiff[4]
+			---@cast stringDiffFour IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffFour.type, PlanDiffType.Insert, context)
+			TestEqual(stringDiffFour.newValue, "d", context)
 
 			aStringTable = { "a", "b", "c", "d" }
 			bStringTable = { "a", "b" }
@@ -2271,10 +2275,14 @@ do
 			context = "Delete Only"
 			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
-			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
-			TestEqual(stringDiff[4].type, PlanDiffType.Delete, context)
-			TestEqual(stringDiff[3].value, "c", context)
-			TestEqual(stringDiff[4].value, "d", context)
+			stringDiffThree = stringDiff[3]
+			---@cast stringDiffThree IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffThree.type, PlanDiffType.Delete, context)
+			TestEqual(stringDiffThree.oldValue, "c", context)
+			stringDiffFour = stringDiff[4]
+			---@cast stringDiffFour IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffFour.type, PlanDiffType.Delete, context)
+			TestEqual(stringDiffFour.oldValue, "d", context)
 
 			aStringTable = { "a", "b", "x", "d" }
 			bStringTable = { "a", "b", "y", "d" }
@@ -2287,13 +2295,19 @@ do
 				TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
 				TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
 				TestEqual(stringDiff[5].type, PlanDiffType.Equal, context)
-				TestEqual(stringDiff[3].value, "x", context)
-				TestEqual(stringDiff[4].value, "y", context)
+				stringDiffThree = stringDiff[3]
+				---@cast stringDiffThree IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffThree.oldValue, "x", context)
+				stringDiffFour = stringDiff[4]
+				---@cast stringDiffFour IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffFour.newValue, "y", context)
 			else
 				TestEqual(stringDiff[3].type, PlanDiffType.Change, context)
 				TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
-				TestEqual(stringDiff[3].oldValue, "x", context)
-				TestEqual(stringDiff[3].newValue, "y", context)
+				stringDiffThree = stringDiff[3]
+				---@cast stringDiffThree IndexedChangeDiffEntry<string>
+				TestEqual(stringDiffThree.oldValue, "x", context)
+				TestEqual(stringDiffThree.newValue, "y", context)
 			end
 
 			aStringTable = { "b", "c" }
@@ -2304,7 +2318,9 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Insert, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
-			TestEqual(stringDiff[1].value, "a", context)
+			local stringDiffOne = stringDiff[1]
+			---@cast stringDiffOne IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffOne.newValue, "a", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = { "b", "c" }
@@ -2314,7 +2330,9 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
-			TestEqual(stringDiff[1].value, "a", context)
+			stringDiffOne = stringDiff[1]
+			---@cast stringDiffOne IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffOne.oldValue, "a", context)
 
 			aStringTable = { "a", "b" }
 			bStringTable = { "a", "b", "c" }
@@ -2324,7 +2342,9 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffThree = stringDiff[3]
+			---@cast stringDiffThree IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffThree.newValue, "c", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = { "a", "b" }
@@ -2334,7 +2354,9 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffThree = stringDiff[3]
+			---@cast stringDiffThree IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffThree.oldValue, "c", context)
 
 			aStringTable = { "a", "b", "c", "d", "e" }
 			bStringTable = { "a", "x", "c", "y", "e" }
@@ -2349,19 +2371,31 @@ do
 				TestEqual(stringDiff[5].type, PlanDiffType.Delete, context)
 				TestEqual(stringDiff[6].type, PlanDiffType.Insert, context)
 				TestEqual(stringDiff[7].type, PlanDiffType.Equal, context)
-				TestEqual(stringDiff[2].value, "b", context)
-				TestEqual(stringDiff[3].value, "x", context)
-				TestEqual(stringDiff[5].value, "d", context)
-				TestEqual(stringDiff[6].value, "y", context)
+				local stringDiffEntry = stringDiff[2]
+				---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "b", context)
+				stringDiffEntry = stringDiff[3]
+				---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffEntry.newValue, "x", context)
+				stringDiffEntry = stringDiff[5]
+				---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "d", context)
+				stringDiffEntry = stringDiff[6]
+				---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffEntry.newValue, "y", context)
 			else
 				TestEqual(stringDiff[2].type, PlanDiffType.Change, context)
 				TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
 				TestEqual(stringDiff[4].type, PlanDiffType.Change, context)
 				TestEqual(stringDiff[5].type, PlanDiffType.Equal, context)
-				TestEqual(stringDiff[2].oldValue, "b", context)
-				TestEqual(stringDiff[2].newValue, "x", context)
-				TestEqual(stringDiff[4].oldValue, "d", context)
-				TestEqual(stringDiff[4].newValue, "y", context)
+				local stringDiffEntry = stringDiff[2]
+				---@cast stringDiffEntry IndexedChangeDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "b", context)
+				TestEqual(stringDiffEntry.newValue, "x", context)
+				stringDiffEntry = stringDiff[4]
+				---@cast stringDiffEntry IndexedChangeDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "d", context)
+				TestEqual(stringDiffEntry.newValue, "y", context)
 			end
 
 			if i == 1 then
@@ -2376,12 +2410,24 @@ do
 				TestEqual(stringDiff[4].type, PlanDiffType.Insert, context)
 				TestEqual(stringDiff[5].type, PlanDiffType.Insert, context)
 				TestEqual(stringDiff[6].type, PlanDiffType.Insert, context)
-				TestEqual(stringDiff[1].value, "a", context)
-				TestEqual(stringDiff[2].value, "b", context)
-				TestEqual(stringDiff[3].value, "c", context)
-				TestEqual(stringDiff[4].value, "x", context)
-				TestEqual(stringDiff[5].value, "y", context)
-				TestEqual(stringDiff[6].value, "z", context)
+				local stringDiffEntry = stringDiff[1]
+				---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "a", context)
+				stringDiffEntry = stringDiff[2]
+				---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "b", context)
+				stringDiffEntry = stringDiff[3]
+				---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+				TestEqual(stringDiffEntry.oldValue, "c", context)
+				stringDiffEntry = stringDiff[4]
+				---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffEntry.newValue, "x", context)
+				stringDiffEntry = stringDiff[5]
+				---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffEntry.newValue, "y", context)
+				stringDiffEntry = stringDiff[6]
+				---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+				TestEqual(stringDiffEntry.newValue, "z", context)
 			end
 
 			aStringTable = { "a", "b", "c", "d", "e" }
@@ -2394,8 +2440,12 @@ do
 			TestEqual(stringDiff[3].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
 			TestEqual(stringDiff[5].type, PlanDiffType.Delete, context)
-			TestEqual(stringDiff[1].value, "a", context)
-			TestEqual(stringDiff[5].value, "e", context)
+			local stringDiffEntry = stringDiff[1]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "a", context)
+			stringDiffEntry = stringDiff[5]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "e", context)
 
 			aStringTable = { "a", "d" }
 			bStringTable = { "a", "b", "c", "d" }
@@ -2406,8 +2456,12 @@ do
 			TestEqual(stringDiff[2].type, PlanDiffType.Insert, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
 			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
-			TestEqual(stringDiff[2].value, "b", context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffEntry = stringDiff[2]
+			---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffEntry.newValue, "b", context)
+			stringDiffEntry = stringDiff[3]
+			---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffEntry.newValue, "c", context)
 
 			aStringTable = { "a", "b", "c", "d" }
 			bStringTable = { "a", "d" }
@@ -2418,8 +2472,12 @@ do
 			TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
 			TestEqual(stringDiff[4].type, PlanDiffType.Equal, context)
-			TestEqual(stringDiff[2].value, "b", context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffEntry = stringDiff[2]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "b", context)
+			stringDiffEntry = stringDiff[3]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "c", context)
 
 			aStringTable = {}
 			bStringTable = { "a", "b", "c" }
@@ -2429,9 +2487,15 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Insert, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Insert, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Insert, context)
-			TestEqual(stringDiff[1].value, "a", context)
-			TestEqual(stringDiff[2].value, "b", context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffEntry = stringDiff[1]
+			---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffEntry.newValue, "a", context)
+			stringDiffEntry = stringDiff[2]
+			---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffEntry.newValue, "b", context)
+			stringDiffEntry = stringDiff[3]
+			---@cast stringDiffEntry IndexedInsertDiffEntry<string>
+			TestEqual(stringDiffEntry.newValue, "c", context)
 
 			aStringTable = { "a", "b", "c" }
 			bStringTable = {}
@@ -2441,9 +2505,15 @@ do
 			TestEqual(stringDiff[1].type, PlanDiffType.Delete, context)
 			TestEqual(stringDiff[2].type, PlanDiffType.Delete, context)
 			TestEqual(stringDiff[3].type, PlanDiffType.Delete, context)
-			TestEqual(stringDiff[1].value, "a", context)
-			TestEqual(stringDiff[2].value, "b", context)
-			TestEqual(stringDiff[3].value, "c", context)
+			stringDiffEntry = stringDiff[1]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "a", context)
+			stringDiffEntry = stringDiff[2]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "b", context)
+			stringDiffEntry = stringDiff[3]
+			---@cast stringDiffEntry IndexedDeleteDiffEntry<string>
+			TestEqual(stringDiffEntry.oldValue, "c", context)
 		end
 
 		return "MyersDiff"

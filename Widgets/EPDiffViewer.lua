@@ -350,17 +350,17 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 
 			local oldValue, newValue
 			if diff.type == PlanDiffType.Insert then
-				---@cast diff AssignmentInsertDiffEntry
-				oldValue = diff.value
+				---@cast diff InsertDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+				oldValue = diff.newValue
 			elseif diff.type == PlanDiffType.Delete then
-				---@cast diff AssignmentDeleteDiffEntry
-				oldValue = diff.value
+				---@cast diff DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+				oldValue = diff.oldValue
 			elseif diff.type == PlanDiffType.Change then
-				---@cast diff AssignmentChangeDiffEntry
+				---@cast diff ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				oldValue = diff.oldValue
 				newValue = diff.newValue
 			elseif diff.type == PlanDiffType.Conflict then
-				---@cast diff AssignmentConflictDiffEntry
+				---@cast diff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 				oldValue = diff.localValue
 				newValue = diff.remoteValue
 			end
@@ -371,7 +371,7 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			entry:SetCallback("OnValueChanged", function(_, _, checked)
 				if self.planDiff.assignments[index].type == PlanDiffType.Conflict then
 					local conflictEntry = self.planDiff.assignments[index]
-					---@cast conflictEntry AssignmentConflictDiffEntry
+					---@cast conflictEntry ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 					conflictEntry.chooseLocal = not checked
 				else
 					self.planDiff.assignments[index].result = checked
@@ -462,10 +462,13 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			local entry = AceGUI:Create("EPDiffViewerEntry")
 			entry:SetFullWidth(true)
 			if contentDiffEntry.type == PlanDiffType.Insert then
-				entry:SetContentEntryData(PlanDiffType.Insert, contentDiffEntry.value)
+				---@cast contentDiffEntry IndexedInsertDiffEntry<string>
+				entry:SetContentEntryData(PlanDiffType.Insert, contentDiffEntry.newValue)
 			elseif contentDiffEntry.type == PlanDiffType.Delete then
-				entry:SetContentEntryData(PlanDiffType.Delete, contentDiffEntry.value)
+				---@cast contentDiffEntry IndexedDeleteDiffEntry<string>
+				entry:SetContentEntryData(PlanDiffType.Delete, contentDiffEntry.oldValue)
 			elseif contentDiffEntry.type == PlanDiffType.Change then
+				---@cast contentDiffEntry IndexedChangeDiffEntry<string>
 				entry:SetContentEntryData(PlanDiffType.Change, contentDiffEntry.oldValue, contentDiffEntry.newValue)
 			end
 			entry:SetCallback("OnValueChanged", function(_, _, checked)

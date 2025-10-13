@@ -185,7 +185,7 @@ end
 ---@param newValue? Assignment|CombatLogEventAssignment|TimedAssignment
 ---@param oldRoster table<string, RosterEntry>
 ---@param newRoster table<string, RosterEntry>
----@param diff AssignmentPlanDiffEntry
+---@param diff GenericDiffEntry
 local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRoster, diff)
 	if not oldValue then
 		return
@@ -200,7 +200,7 @@ local function SetAssignmentEntryData(self, oldValue, newValue, oldRoster, newRo
 	elseif diffType == PlanDiffType.Change then
 		typeText = L["Changed"]
 	elseif diffType == PlanDiffType.Conflict then
-		---@cast diff AssignmentConflictDiffEntry
+		---@cast diff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
 		typeText = L["Conflict"]
 	end
 	self.typeLabel:SetText(typeText)
