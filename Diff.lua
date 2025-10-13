@@ -13,6 +13,7 @@ local constants = Private.constants
 ---@class AssignmentUtilities
 local assignmentUtilities = Private.assignmentUtilities
 local MergeAssignments = assignmentUtilities.MergeAssignments
+local AreAssignmentsEqual = assignmentUtilities.AreAssignmentsEqual
 
 ---@class Utilities
 local utilities = Private.utilities
@@ -239,9 +240,6 @@ function Diff.MyersDiff(a, b, comparator)
 end
 
 do
-	local AssignmentsEqual = assignmentUtilities.AssignmentsEqual
-	local AreAssignmentsIdentical = assignmentUtilities.AreAssignmentsIdentical
-
 	---@param a table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@param b table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@return table<integer, GenericDiffEntry>
@@ -288,26 +286,30 @@ do
 					)
 				end
 
-				while x < aCount and y < bCount and AssignmentsEqual(a[x + 1], b[y + 1]) == true do
-					if a[x + 1].ID == b[y + 1].ID and not AreAssignmentsIdentical(a[x + 1], b[y + 1]) then
-						tinsert(history, {
-							type = PlanDiffType.Change,
-							ID = a[x + 1].ID,
-							aIndex = x + 1,
-							bIndex = y + 1,
-							oldValue = a[x + 1],
-							newValue = b[y + 1],
-							result = true,
-						})
-					else
+				while x < aCount and y < bCount do
+					local aCurrent, bCurrent = a[x + 1], b[y + 1]
+					if AreAssignmentsEqual(aCurrent, bCurrent) then
 						tinsert(history, {
 							type = PlanDiffType.Equal,
-							ID = b[y + 1].ID,
+							ID = bCurrent.ID,
 							aIndex = x + 1,
 							bIndex = y + 1,
 							result = false,
 						})
+					elseif aCurrent.ID == bCurrent.ID then
+						tinsert(history, {
+							type = PlanDiffType.Change,
+							ID = aCurrent.ID,
+							aIndex = x + 1,
+							bIndex = y + 1,
+							oldValue = aCurrent,
+							newValue = bCurrent,
+							result = true,
+						})
+					else
+						break
 					end
+
 					x = x + 1
 					y = y + 1
 				end
@@ -325,170 +327,9 @@ do
 end
 
 do
-	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@return table<integer, string>
-	local function CreateOrderedAssignmentIDs(baseAssignments, localAssignments, remoteAssignments)
-		local orderedIDs = {}
-		local seen = {}
-
-		for _, a in ipairs(remoteAssignments) do
-			if not seen[a.ID] then
-				tinsert(orderedIDs, a.ID)
-				seen[a.ID] = true
-			end
-		end
-		for _, a in ipairs(baseAssignments) do
-			if not seen[a.ID] then
-				tinsert(orderedIDs, a.ID)
-				seen[a.ID] = true
-			end
-		end
-		for _, a in ipairs(localAssignments) do
-			if not seen[a.ID] then
-				tinsert(orderedIDs, a.ID)
-				seen[a.ID] = true
-			end
-		end
-		return orderedIDs
-	end
-
 	local GetAssignmentConflicts = assignmentUtilities.GetAssignmentConflicts
-
-	---@param base Assignment|CombatLogEventAssignment|TimedAssignment
-	---@param localChange GenericDiffEntry
-	---@param remoteChange GenericDiffEntry
-	---@return GenericDiffEntry
-	local function ResolveAssignmentChangeOrConflict(base, localChange, remoteChange)
-		local localType, remoteType = localChange.type, remoteChange.type
-		local localValue, remoteValue = nil, nil
-		local forceConflict = false
-
-		if localType == PlanDiffType.Change and remoteType == PlanDiffType.Change then
-			---@cast localChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			---@cast remoteChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			localValue = localChange.newValue
-			remoteValue = remoteChange.newValue
-		elseif localType == PlanDiffType.Change and remoteType == PlanDiffType.Delete then
-			---@cast localChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			---@cast remoteChange DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			localValue = localChange.newValue
-			remoteValue = remoteChange.oldValue
-			forceConflict = true
-		elseif localType == PlanDiffType.Delete and remoteType == PlanDiffType.Change then
-			---@cast localChange DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			---@cast remoteChange ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			localValue = localChange.oldValue
-			remoteValue = remoteChange.newValue
-			forceConflict = true
-		elseif localType == PlanDiffType.Equal then
-			return remoteChange
-		elseif remoteType == PlanDiffType.Equal then
-			return localChange
-		elseif localType == remoteType then
-			return localChange
-		end
-
-		if forceConflict then
-			---@type ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-			local entry = {
-				type = PlanDiffType.Conflict,
-				ID = base.ID,
-				localType = localType,
-				remoteType = remoteType,
-				conflicts = {},
-				result = true,
-				chooseLocal = false,
-				localValue = localValue,
-				remoteValue = remoteValue,
-			}
-			return entry
-		else
-			local conflicts = GetAssignmentConflicts(base, localValue, remoteValue)
-			if #conflicts > 0 then
-				---@type ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				local entry = {
-					type = PlanDiffType.Conflict,
-					ID = base.ID,
-					localType = localType,
-					remoteType = remoteType,
-					conflicts = conflicts,
-					result = true,
-					chooseLocal = false,
-					localValue = localValue,
-					remoteValue = remoteValue,
-				}
-				return entry
-			else
-				local localCopy = DeepCopy(localValue)
-				setmetatable(localCopy, getmetatable(localValue))
-				MergeAssignments(localCopy, remoteValue)
-				---@type ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				local entry = {
-					type = PlanDiffType.Change,
-					ID = base.ID,
-					result = true,
-					oldValue = localValue,
-					newValue = localCopy,
-				}
-
-				return entry
-			end
-		end
-	end
-
 	local MyersDiff = Diff.MyersDiff
 	local MyersDiffAssignments = Diff.MyersDiffAssignments
-
-	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
-	---@return table<integer, GenericDiffEntry>
-	local function PerformAssignmentDiff(baseAssignments, localAssignments, remoteAssignments)
-		---@type table<integer, GenericDiffEntry>
-		local merged = {}
-
-		---@type table<string, Assignment|CombatLogEventAssignment|TimedAssignment>
-		local baseAssignmentsByID = {}
-		for _, v in ipairs(baseAssignments) do
-			baseAssignmentsByID[v.ID] = v
-		end
-
-		---@type table<string, GenericDiffEntry>
-		local localVersionByID = {}
-		for _, v in ipairs(MyersDiffAssignments(baseAssignments, localAssignments)) do
-			localVersionByID[v.ID] = v
-		end
-
-		---@type table<string, GenericDiffEntry>
-		local incomingVersionByID = {}
-		for _, v in ipairs(MyersDiffAssignments(baseAssignments, remoteAssignments)) do
-			incomingVersionByID[v.ID] = v
-		end
-
-		for _, id in ipairs(CreateOrderedAssignmentIDs(baseAssignments, localAssignments, remoteAssignments)) do
-			local localChange = localVersionByID[id]
-			local remoteChange = incomingVersionByID[id]
-			local base = baseAssignmentsByID[id]
-
-			if localChange and remoteChange then
-				local conflictOrMerge = ResolveAssignmentChangeOrConflict(base, localChange, remoteChange)
-				tinsert(merged, conflictOrMerge)
-				localVersionByID[id] = nil
-				incomingVersionByID[id] = nil
-			elseif localChange then
-				localChange.localOnlyChange = true
-				tinsert(merged, localChange)
-				localVersionByID[id] = nil
-			elseif remoteChange then
-				tinsert(merged, remoteChange)
-				incomingVersionByID[id] = nil
-			end
-		end
-
-		return merged
-	end
 
 	---@generic T
 	---@param byID table<string, T>
@@ -672,11 +513,37 @@ do
 		return merged
 	end
 
+	---@param baseAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param localAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
+	---@return table<integer, GenericDiffEntry>
+	local function PerformAssignmentDiff(baseAssignments, localAssignments, remoteAssignments)
+		local baseAssignmentsByID, localVersionByID, incomingVersionByID = {}, {}, {}
+		for _, v in ipairs(baseAssignments) do
+			baseAssignmentsByID[v.ID] = v
+		end
+		for _, v in ipairs(localAssignments) do
+			localVersionByID[v.ID] = v
+		end
+		for _, v in ipairs(remoteAssignments) do
+			incomingVersionByID[v.ID] = v
+		end
+
+		return PerformDiffGeneric(
+			baseAssignmentsByID,
+			localVersionByID,
+			incomingVersionByID,
+			AreAssignmentsEqual,
+			GetAssignmentConflicts,
+			MergeAssignments
+		)
+	end
+
 	---@param a FlatAssigneeSpellSet
 	---@param b FlatAssigneeSpellSet
 	---@return boolean --True if equal
 	local function AreFlatAssigneeSpellSetsEqual(a, b)
-		return a.ID == b.ID
+		return a.assignee == b.assignee and a.spellID == b.spellID
 	end
 
 	---@param a RosterEntry
@@ -958,98 +825,6 @@ function Diff.ApplyDiff(existingTable, tableDiff, changeFunc, ...)
 	return addedCount, removedCount, changedCount
 end
 
----@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
----@param assignmentDiff table<integer, GenericDiffEntry> Indexed = old, Generic = new
----@return integer addedCount
----@return integer removedCount
----@return integer changedCount
-function Diff.ApplyAssignmentDiffOld(existingAssignments, assignmentDiff)
-	local DuplicateAssignment = Private.DuplicateAssignment
-	---@param assignment Assignment|TimedAssignment|CombatLogEventAssignment
-	local function SetFunction(assignment)
-		local newAssignment = DuplicateAssignment(assignment)
-		newAssignment.ID = assignment.ID
-		return newAssignment
-	end
-	return Diff.ApplyDiff(existingAssignments, assignmentDiff, SetFunction)
-end
-
----@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
----@param assignmentDiff table<integer, GenericDiffEntry>
----@param forceMergeFromRemote boolean|nil
----@return integer addedCount
----@return integer removedCount
----@return integer changedCount
-function Diff.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMergeFromRemote)
-	local addedCount, removedCount, changedCount = 0, 0, 0
-
-	local function FindAssignmentIndex(id)
-		for i = 1, #existingAssignments do
-			if existingAssignments[i].ID == id then
-				return i
-			end
-		end
-	end
-
-	for i = #assignmentDiff, 1, -1 do
-		local diff = assignmentDiff[i]
-		if diff.result and not diff.localOnlyChange and diff.type == PlanDiffType.Delete then
-			local index = FindAssignmentIndex(diff.ID)
-			if index then
-				tremove(existingAssignments, index)
-				removedCount = removedCount + 1
-			end
-		end
-	end
-
-	for i = 1, #assignmentDiff do
-		local diff = assignmentDiff[i]
-		if diff.result and not diff.localOnlyChange then
-			if diff.type == PlanDiffType.Insert then
-				---@cast diff InsertDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				if not FindAssignmentIndex(diff.ID) then
-					tinsert(existingAssignments, diff.newValue)
-					addedCount = addedCount + 1
-				end
-			elseif diff.type == PlanDiffType.Change then
-				---@cast diff ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				local index = FindAssignmentIndex(diff.ID)
-				if index then
-					MergeAssignments(existingAssignments[index], diff.newValue)
-					changedCount = changedCount + 1
-				end
-			elseif diff.type == PlanDiffType.Conflict then
-				---@cast diff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				local index = FindAssignmentIndex(diff.ID)
-				if index then
-					if diff.chooseLocal == false or forceMergeFromRemote then
-						if diff.remoteType == PlanDiffType.Delete then
-							tremove(existingAssignments, index)
-							removedCount = removedCount + 1
-						elseif diff.remoteType == PlanDiffType.Change then
-							MergeAssignments(existingAssignments[index], diff.remoteValue)
-							changedCount = changedCount + 1
-						end
-					else
-						if diff.localType == PlanDiffType.Delete then
-							tremove(existingAssignments, index)
-							removedCount = removedCount + 1
-						elseif diff.localType == PlanDiffType.Change then
-							local temp = DeepCopy(diff.localValue)
-							setmetatable(temp, getmetatable(diff.localValue))
-							MergeAssignments(existingAssignments[index], diff.remoteValue)
-							MergeAssignments(existingAssignments[index], temp)
-							changedCount = changedCount + 1
-						end
-					end
-				end
-			end
-		end
-	end
-
-	return addedCount, removedCount, changedCount
-end
-
 ---@generic K, V
 ---@param existing table<K, V>
 ---@param genericDiff table<integer, GenericDiffEntry>
@@ -1110,16 +885,22 @@ function Diff.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, Find
 							end
 							removedCount = removedCount + 1
 						end
-					elseif diff.remoteType == PlanDiffType.Change or diff.localType == PlanDiffType.Insert then
+					elseif diff.remoteType == PlanDiffType.Change or diff.remoteType == PlanDiffType.Insert then
 						-- Change and insert are the same, merge remote on top of local
 						if index and existing[index] then
 							Merge(existing[index], diff.remoteValue)
 						elseif index then
 							existing[index] = diff.remoteValue
+						else
+							if keyType == "number" then
+								tinsert(existing, diff.remoteValue)
+							else
+								existing[diff.ID] = diff.remoteValue
+							end
 						end
 						changedCount = changedCount + 1
 					end
-				else
+				else -- No op?
 					if diff.localType == PlanDiffType.Delete then
 						if index and existing[index] then
 							if keyType == "number" then
@@ -1134,10 +915,16 @@ function Diff.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, Find
 							-- Change and insert are the same, merge local on top of remote
 							local temp = DeepCopy(diff.localValue)
 							setmetatable(temp, getmetatable(diff.localValue))
-							Merge(existing[diff.ID], diff.remoteValue)
-							Merge(existing[diff.ID], temp)
+							Merge(existing[index], diff.remoteValue)
+							Merge(existing[index], temp)
 						elseif index then
 							existing[index] = diff.localValue
+						else
+							if keyType == "number" then
+								tinsert(existing, diff.localValue)
+							else
+								existing[diff.ID] = diff.localValue
+							end
 						end
 						changedCount = changedCount + 1
 					end
@@ -1147,6 +934,47 @@ function Diff.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, Find
 	end
 
 	return addedCount, removedCount, changedCount
+end
+
+---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
+---@param assignmentDiff table<integer, GenericDiffEntry> Indexed = old, Generic = new
+---@return integer addedCount
+---@return integer removedCount
+---@return integer changedCount
+function Diff.ApplyAssignmentDiffOld(existingAssignments, assignmentDiff)
+	local DuplicateAssignment = Private.DuplicateAssignment
+	---@param assignment Assignment|TimedAssignment|CombatLogEventAssignment
+	local function SetFunction(assignment)
+		local newAssignment = DuplicateAssignment(assignment)
+		newAssignment.ID = assignment.ID
+		return newAssignment
+	end
+	return Diff.ApplyDiff(existingAssignments, assignmentDiff, SetFunction)
+end
+
+---@param existingAssignments table<integer, Assignment|TimedAssignment|CombatLogEventAssignment>
+---@param assignmentDiff table<integer, GenericDiffEntry>
+---@param forceMergeFromRemote boolean|nil
+---@return integer addedCount
+---@return integer removedCount
+---@return integer changedCount
+function Diff.ApplyAssignmentDiff(existingAssignments, assignmentDiff, forceMergeFromRemote)
+	local function FindIndex(id)
+		for i = 1, #existingAssignments do
+			if existingAssignments[i].ID == id then
+				return i
+			end
+		end
+	end
+
+	return Diff.ApplyGenericDiff(
+		existingAssignments,
+		assignmentDiff,
+		forceMergeFromRemote,
+		FindIndex,
+		MergeAssignments,
+		"number"
+	)
 end
 
 ---@param existingPlan Plan

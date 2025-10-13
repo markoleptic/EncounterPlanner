@@ -286,19 +286,14 @@ do
 	local noCompareFields = {
 		["ID"] = true,
 		["phase"] = true,
+		-- ["bossPhaseOrderIndex"] = true,
 		["cancelIfAlreadyCasted"] = true,
 		["holdDuration"] = true,
 		["countdownLength"] = true,
 	}
 
-	---@param a TimedAssignment|CombatLogEventAssignment
-	---@param b TimedAssignment|CombatLogEventAssignment
-	---@return boolean
-	function AssignmentUtilities.AreAssignmentsIdentical(a, b)
+	local function CompareFields(a, b)
 		local seen = {}
-		if a.ID ~= b.ID then
-			return false
-		end
 		for field, value in pairs(a) do
 			if not noCompareFields[field] and value ~= b[field] then
 				return false
@@ -312,6 +307,18 @@ do
 			seen[field] = true
 		end
 		return true
+	end
+
+	-- Will return true only if all non-ignored fields are equal. Doesn't check ID field.
+	---@param a TimedAssignment|CombatLogEventAssignment
+	---@param b TimedAssignment|CombatLogEventAssignment
+	---@return boolean
+	function AssignmentUtilities.AreAssignmentsEqual(a, b)
+		local metatableA, metatableB = getmetatable(a), getmetatable(b)
+		if metatableA ~= metatableB then
+			return false
+		end
+		return CompareFields(a, b)
 	end
 
 	---@param baseVersion TimedAssignment|CombatLogEventAssignment
@@ -368,36 +375,6 @@ do
 		setmetatable(localVersion, metaTable)
 		RemoveInvalidFields(metaTable, localVersion, { "countdownLength", "holdDuration", "cancelIfAlreadyCasted" })
 	end
-end
-
----@param a TimedAssignment|CombatLogEventAssignment
----@param b TimedAssignment|CombatLogEventAssignment
----@return boolean
-function AssignmentUtilities.AssignmentsEqual(a, b)
-	if a.ID == b.ID then
-		return true
-	end
-	local metatableA, metatableB = getmetatable(a), getmetatable(b)
-	if metatableA ~= metatableB then
-		return false
-	end
-	if metatableA == TimedAssignment then
-		return a.assignee == b.assignee
-			and a.spellID == b.spellID
-			and a.time == b.time
-			and a.targetName == b.targetName
-			and a.text == b.text
-	elseif metatableA == CombatLogEventAssignment then
-		return a.assignee == b.assignee
-			and a.spellID == b.spellID
-			and a.time == b.time
-			and a.combatLogEventSpellID == b.combatLogEventSpellID
-			and a.combatLogEventType == b.combatLogEventType
-			and a.spellCount == b.spellCount
-			and a.targetName == b.targetName
-			and a.text == b.text
-	end
-	return false
 end
 
 ---@param assignments table<integer, Assignment>

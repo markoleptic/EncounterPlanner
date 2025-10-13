@@ -30,6 +30,8 @@ local DifficultyType = Private.classes.DifficultyType
 
 local ipairs = ipairs
 local pairs = pairs
+local tinsert = table.insert
+local tremove = table.remove
 
 local kDefaultBossDungeonEncounterID = Private.constants.kDefaultBossDungeonEncounterID
 
@@ -1864,7 +1866,7 @@ do
 			return "ApplyAssignmentDiff"
 		end
 
-		local AreAssignmentsIdentical = Private.assignmentUtilities.AreAssignmentsIdentical
+		local AreAssignmentsEqual = Private.assignmentUtilities.AreAssignmentsEqual
 		local GetAssignmentConflicts = Private.assignmentUtilities.GetAssignmentConflicts
 
 		function test.AssignmentConflictDetection()
@@ -1886,22 +1888,22 @@ do
 			---@cast incomingVersion TimedAssignment
 			incomingVersion.ID = base.ID
 
-			TestEqual(AreAssignmentsIdentical(base, localVersion), true, "Base = local")
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), true, "Local = Incoming")
+			TestEqual(AreAssignmentsEqual(base, localVersion), true, "Base = local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), true, "Local = Incoming")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
 
 			incomingVersion.time = 5
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), false, "Base != local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
 			incomingVersion.time = 1
 
 			localVersion.time = 5
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), false, "Base != local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "No conflicts")
 
 			localVersion.time = 5
 			incomingVersion.time = 6
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), false, "Base != local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 1, "1 conflict")
 			localVersion.time = 1
 			incomingVersion.time = 1
@@ -1909,7 +1911,7 @@ do
 			localVersion.cancelIfAlreadyCasted = nil
 			localVersion.countdownLength = nil
 			localVersion.holdDuration = nil
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), true, "Base == local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), true, "Base == local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "0 conflicts")
 
 			incomingVersion.assignee = "Me"
@@ -1917,7 +1919,7 @@ do
 			incomingVersion.targetName = "Buh"
 			incomingVersion.text = "guh"
 			incomingVersion.time = 4
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), false, "Base != local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 0, "0 conflicts")
 
 			localVersion.assignee = "You"
@@ -1925,7 +1927,7 @@ do
 			localVersion.targetName = "Buh2"
 			localVersion.text = "guh"
 			localVersion.time = 5
-			TestEqual(AreAssignmentsIdentical(localVersion, incomingVersion), false, "Base != local")
+			TestEqual(AreAssignmentsEqual(localVersion, incomingVersion), false, "Base != local")
 			TestEqual(#GetAssignmentConflicts(base, localVersion, incomingVersion), 4, "4 conflicts")
 
 			return "AssignmentConflictDetection"
@@ -2105,6 +2107,231 @@ do
 			end
 
 			return "AssignmentConflicts"
+		end
+
+		---@return Plan
+		---@return Plan
+		---@return Plan
+		local function CreateDiffPlans()
+			local plans = {}
+			local boss = bossUtilities.GetBoss(kDefaultBossDungeonEncounterID)
+			local base = CreateTestPlan(plans, "Test", boss, DifficultyType.Mythic, CreateTestRoster())
+			base.content = RemoveTabs(SplitStringIntoTable(textOne))
+			base.assignments = {}
+			local assignees = {}
+			local rosterCount = 0
+			for rosterMemberName in pairs(base.roster) do
+				rosterCount = rosterCount + 1
+				tinsert(assignees, rosterMemberName)
+				tinsert(base.assigneeSpellSets, { assignee = rosterMemberName, spells = {} })
+				local spells = base.assigneeSpellSets[#base.assigneeSpellSets].spells
+				local existing = {}
+				for _ = 1, random(5, 10) do
+					local spellID = random(1, 10000)
+					if not existing[spellID] then
+						tinsert(spells, spellID)
+						existing[spellID] = true
+					end
+				end
+			end
+			for _ = 1, 5 do
+				tinsert(base.assignments, testUtilities.CreateRandomAssignment(base, boss, assignees))
+			end
+
+			local localPlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			for i = 1, 5 do
+				localPlan.assignments[i].ID = base.assignments[i].ID
+			end
+			localPlan.lastSyncedSnapShot = SerializePlan(base)
+
+			local remotePlan = DuplicatePlan(plans, "Test", "DuplicatedTest")
+			for i = 1, 5 do
+				remotePlan.assignments[i].ID = base.assignments[i].ID
+			end
+			remotePlan.lastSyncedSnapShot = SerializePlan(base)
+			return base, localPlan, remotePlan
+		end
+
+		function test.ChangeLocalDeleteRemoteConflicts()
+			local base, localPlan, remotePlan = CreateDiffPlans()
+
+			local firstAssignment = localPlan.assignments[1]
+			---@cast firstAssignment TimedAssignment
+			firstAssignment.time = 41.8
+			tremove(remotePlan.assignments, 1)
+
+			local firstTemplate = localPlan.assigneeSpellSets[1]
+			firstTemplate.spells[1] = 10001
+			tremove(remotePlan.assigneeSpellSets, 1)
+
+			local firstRosterName = next(base.roster) ---@type string
+			if localPlan.roster[firstRosterName].role == "role:damager" then
+				localPlan.roster[firstRosterName].role = "role:healer"
+			elseif localPlan.roster[firstRosterName].role == "role:healer" then
+				localPlan.roster[firstRosterName].role = "role:damager"
+			elseif localPlan.roster[firstRosterName].role == "role:tank" then
+				localPlan.roster[firstRosterName].role = "role:damager"
+			end
+
+			remotePlan.roster[firstRosterName] = nil
+
+			local planDiff = DiffPlans(localPlan, remotePlan)
+
+			local assignmentConflictDiffEntry = nil
+			for _, assignmentDiffEntry in ipairs(planDiff.assignments) do
+				if assignmentDiffEntry.result == true and assignmentDiffEntry.type == PlanDiffType.Conflict then
+					assignmentConflictDiffEntry = assignmentDiffEntry
+					break
+				end
+			end
+			TestNotEqual(assignmentConflictDiffEntry, nil, "Assignment conflict exists")
+			---@cast assignmentConflictDiffEntry ConflictDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>
+			if assignmentConflictDiffEntry then
+				TestEqual(assignmentConflictDiffEntry.localOnlyChange, nil, "Assignment localOnlyChange")
+				TestEqual(assignmentConflictDiffEntry.localType, PlanDiffType.Change, "Assignment localType")
+				TestEqual(assignmentConflictDiffEntry.remoteType, PlanDiffType.Delete, "Assignment remoteType")
+				TestEqual(assignmentConflictDiffEntry.localValue, localPlan.assignments[1], "Assignment localValue")
+				TestEqual(assignmentConflictDiffEntry.remoteValue, base.assignments[1], "Assignment remoteValue")
+				TestEqual(assignmentConflictDiffEntry.chooseLocal, false, "Assignment chooseLocal")
+
+				local localAssignmentsCopy = Private.DeepCopy(localPlan.assignments)
+				diff.ApplyAssignmentDiff(localAssignmentsCopy, planDiff.assignments)
+				TestEqual(localAssignmentsCopy, remotePlan.assignments, "Remote assignment delete applied")
+
+				assignmentConflictDiffEntry.chooseLocal = true
+				localAssignmentsCopy = Private.DeepCopy(localPlan.assignments)
+				diff.ApplyAssignmentDiff(localAssignmentsCopy, planDiff.assignments)
+				TestEqual(localAssignmentsCopy, localPlan.assignments, "Local assignment change applied")
+			end
+
+			local rosterConflictDiffEntry = nil
+			for _, rosterDiffEntry in ipairs(planDiff.roster) do
+				if rosterDiffEntry.result == true and rosterDiffEntry.type == PlanDiffType.Conflict then
+					rosterConflictDiffEntry = rosterDiffEntry
+					break
+				end
+			end
+			TestNotEqual(rosterConflictDiffEntry, nil, "Roster conflicts exists")
+
+			---@cast rosterConflictDiffEntry ConflictDiffEntry<RosterEntry>
+			if rosterConflictDiffEntry then
+				TestEqual(rosterConflictDiffEntry.localOnlyChange, nil, "Roster localOnlyChange")
+				TestEqual(rosterConflictDiffEntry.localType, PlanDiffType.Change, "Roster localType")
+				TestEqual(rosterConflictDiffEntry.remoteType, PlanDiffType.Delete, "Roster remoteType")
+				local firstEntry = localPlan.roster[firstRosterName]
+				TestEqual(rosterConflictDiffEntry.localValue, firstEntry, "Roster localValue")
+				local firstEntryBase = base.roster[firstRosterName]
+				TestEqual(rosterConflictDiffEntry.remoteValue, firstEntryBase, "Roster remoteValue")
+				TestEqual(rosterConflictDiffEntry.chooseLocal, false, "Roster chooseLocal")
+
+				local localRosterCopy = Private.DeepCopy(localPlan.roster)
+				diff.ApplyRosterDiff(localRosterCopy, planDiff.roster)
+				TestEqual(localRosterCopy, remotePlan.roster, "Remote roster delete applied")
+
+				rosterConflictDiffEntry.chooseLocal = true
+				localRosterCopy = Private.DeepCopy(localPlan.roster)
+				diff.ApplyRosterDiff(localRosterCopy, planDiff.roster)
+				TestEqual(localRosterCopy, localPlan.roster, "Local roster change applied")
+			end
+
+			return "ChangeLocalDeleteRemoteConflicts"
+		end
+
+		function test.DeleteLocalChangeRemoteConflicts()
+			local base, localPlan, remotePlan = CreateDiffPlans()
+
+			local firstAssignment = remotePlan.assignments[1]
+			---@cast firstAssignment TimedAssignment
+			firstAssignment.time = 41.8
+			tremove(localPlan.assignments, 1)
+
+			local firstTemplate = remotePlan.assigneeSpellSets[1]
+			firstTemplate.spells[1] = 10001
+			tremove(localPlan.assigneeSpellSets, 1)
+
+			local firstRosterName = next(base.roster) ---@type string
+			if remotePlan.roster[firstRosterName].role == "role:damager" then
+				remotePlan.roster[firstRosterName].role = "role:healer"
+			elseif remotePlan.roster[firstRosterName].role == "role:healer" then
+				remotePlan.roster[firstRosterName].role = "role:damager"
+			elseif remotePlan.roster[firstRosterName].role == "role:tank" then
+				remotePlan.roster[firstRosterName].role = "role:damager"
+			end
+
+			localPlan.roster[firstRosterName] = nil
+
+			local planDiff = DiffPlans(localPlan, remotePlan)
+
+			local assignmentConflictDiffEntry = nil
+			for _, assignmentDiffEntry in ipairs(planDiff.assignments) do
+				if assignmentDiffEntry.result == true and assignmentDiffEntry.type == PlanDiffType.Conflict then
+					assignmentConflictDiffEntry = assignmentDiffEntry
+					break
+				end
+			end
+			TestNotEqual(assignmentConflictDiffEntry, nil, "Assignment conflict exists")
+			---@cast assignmentConflictDiffEntry ConflictDiffEntry<Assignment|TimedAssignment|CombatLogEventAssignment>
+			if assignmentConflictDiffEntry then
+				TestEqual(assignmentConflictDiffEntry.localOnlyChange, nil, "Assignment localOnlyChange")
+				TestEqual(assignmentConflictDiffEntry.localType, PlanDiffType.Delete, "Assignment localType")
+				TestEqual(assignmentConflictDiffEntry.remoteType, PlanDiffType.Change, "Assignment remoteType")
+				TestEqual(assignmentConflictDiffEntry.localValue, base.assignments[1], "Assignment localValue")
+				TestEqual(assignmentConflictDiffEntry.remoteValue, remotePlan.assignments[1], "Assignment remoteValue")
+				TestEqual(assignmentConflictDiffEntry.chooseLocal, false, "Assignment chooseLocal")
+
+				local localAssignmentsCopy = Private.DeepCopy(localPlan.assignments)
+				diff.ApplyAssignmentDiff(localAssignmentsCopy, planDiff.assignments)
+				sort(localAssignmentsCopy, function(a, b)
+					return a.ID < b.ID
+				end)
+				sort(remotePlan.assignments, function(a, b)
+					return a.ID < b.ID
+				end)
+				TestEqual(localAssignmentsCopy, remotePlan.assignments, "Remote assignment changes applied")
+
+				assignmentConflictDiffEntry.chooseLocal = true
+				localAssignmentsCopy = Private.DeepCopy(localPlan.assignments)
+				diff.ApplyAssignmentDiff(localAssignmentsCopy, planDiff.assignments)
+				sort(localAssignmentsCopy, function(a, b)
+					return a.ID < b.ID
+				end)
+				sort(localPlan.assignments, function(a, b)
+					return a.ID < b.ID
+				end)
+				TestEqual(localAssignmentsCopy, localPlan.assignments, "Local assignment delete applied")
+			end
+
+			local rosterConflictDiffEntry = nil
+			for _, rosterDiffEntry in ipairs(planDiff.roster) do
+				if rosterDiffEntry.result == true and rosterDiffEntry.type == PlanDiffType.Conflict then
+					rosterConflictDiffEntry = rosterDiffEntry
+					break
+				end
+			end
+			TestNotEqual(rosterConflictDiffEntry, nil, "Roster conflicts exists")
+
+			---@cast rosterConflictDiffEntry ConflictDiffEntry<RosterEntry>
+			if rosterConflictDiffEntry then
+				TestEqual(rosterConflictDiffEntry.localOnlyChange, nil, "Roster localOnlyChange")
+				TestEqual(rosterConflictDiffEntry.localType, PlanDiffType.Delete, "Roster localType")
+				TestEqual(rosterConflictDiffEntry.remoteType, PlanDiffType.Change, "Roster remoteType")
+				local firstEntryBase = base.roster[firstRosterName]
+				TestEqual(rosterConflictDiffEntry.localValue, firstEntryBase, "Roster localValue")
+				local firstEntry = remotePlan.roster[firstRosterName]
+				TestEqual(rosterConflictDiffEntry.remoteValue, firstEntry, "Roster remoteValue")
+				TestEqual(rosterConflictDiffEntry.chooseLocal, false, "Roster chooseLocal")
+
+				local localRosterCopy = Private.DeepCopy(localPlan.roster)
+				diff.ApplyRosterDiff(localRosterCopy, planDiff.roster)
+				TestEqual(localRosterCopy, remotePlan.roster, "Remote roster changes applied")
+
+				rosterConflictDiffEntry.chooseLocal = true
+				localRosterCopy = Private.DeepCopy(localPlan.roster)
+				diff.ApplyRosterDiff(localRosterCopy, planDiff.roster)
+				TestEqual(localRosterCopy, localPlan.roster, "Local roster delete applied")
+			end
+
+			return "DeleteLocalChangeRemoteConflicts"
 		end
 
 		function test.CreatePlanTemplate()
