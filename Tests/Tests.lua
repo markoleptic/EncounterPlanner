@@ -1633,6 +1633,8 @@ do
 			TestEqual(oldPlan.roster, newPlan.roster, "New plan roster applied correctly")
 			TestEqual(oldPlan.assignments, newPlan.assignments, "New plan assignments applied correctly")
 			TestEqual(oldPlan.content, newPlan.content, "New plan content applied correctly")
+			utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
 			TestEqual(
 				oldPlan.assigneeSpellSets,
 				newPlan.assigneeSpellSets,
@@ -1800,6 +1802,8 @@ do
 				)
 			end
 			TestEqual(oldPlan.content, newPlan.content, "New plan content applied correctly")
+			utilities.SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
+			utilities.SortAssigneeSpellSets(newPlan.assigneeSpellSets)
 			TestEqual(
 				oldPlan.assigneeSpellSets,
 				newPlan.assigneeSpellSets,

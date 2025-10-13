@@ -438,7 +438,7 @@
 
 ---@class AssigneeSpellSet
 ---@field assignee string
----@field assigneeRosterEntry? RosterEntry
+---@field assigneeRosterEntry? RosterEntry Only used for plan templates created in GUI.
 ---@field spells table<integer, integer> Table of spellIDs for this assignee.
 
 ---@class FlatAssigneeSpellSet

@@ -55,6 +55,12 @@ local function MergeRosterEntries(localVersion, remoteVersion)
 	setmetatable(localVersion, metaTable)
 end
 
+---@param a AssigneeSpellSet
+---@param b AssigneeSpellSet
+local function MergeAssigneeSpellSets(a, b)
+	a.spells = b.spells
+end
+
 ---@param a FlatAssigneeSpellSet
 ---@param b FlatAssigneeSpellSet
 ---@return boolean
@@ -518,32 +524,67 @@ do
 	---@param remoteAssignments table<integer, Assignment|CombatLogEventAssignment|TimedAssignment>
 	---@return table<integer, GenericDiffEntry>
 	local function PerformAssignmentDiff(baseAssignments, localAssignments, remoteAssignments)
-		local baseAssignmentsByID, localVersionByID, incomingVersionByID = {}, {}, {}
+		local baseByID, localByID, remoteByID = {}, {}, {}
 		for _, v in ipairs(baseAssignments) do
-			baseAssignmentsByID[v.ID] = v
+			baseByID[v.ID] = v
 		end
 		for _, v in ipairs(localAssignments) do
-			localVersionByID[v.ID] = v
+			localByID[v.ID] = v
 		end
 		for _, v in ipairs(remoteAssignments) do
-			incomingVersionByID[v.ID] = v
+			remoteByID[v.ID] = v
 		end
 
 		return PerformDiffGeneric(
-			baseAssignmentsByID,
-			localVersionByID,
-			incomingVersionByID,
+			baseByID,
+			localByID,
+			remoteByID,
 			AreAssignmentsEqual,
 			GetAssignmentConflicts,
 			MergeAssignments
 		)
 	end
 
-	---@param a FlatAssigneeSpellSet
-	---@param b FlatAssigneeSpellSet
-	---@return boolean --True if equal
-	local function AreFlatAssigneeSpellSetsEqual(a, b)
-		return a.assignee == b.assignee and a.spellID == b.spellID
+	---@param a AssigneeSpellSet
+	---@param b AssigneeSpellSet
+	local function AreAssigneeSpellSetsEqual(a, b)
+		if a.assignee ~= b.assignee then
+			return false
+		end
+		if #a.spells ~= #b.spells then
+			return false
+		end
+		local inA = {}
+		for _, value in ipairs(a.spells) do
+			inA[value] = true
+		end
+		for _, value in ipairs(b.spells) do
+			if not inA[value] then
+				return false
+			end
+		end
+		return true
+	end
+
+	---@param baseTemplates table<integer, AssigneeSpellSet>
+	---@param localTemplates table<integer, AssigneeSpellSet>
+	---@param remoteTemplates table<integer, AssigneeSpellSet>
+	---@return table<integer, GenericDiffEntry>
+	local function PerformTemplateDiff(baseTemplates, localTemplates, remoteTemplates)
+		local baseByID, localByID, remoteByID = {}, {}, {}
+		for _, v in ipairs(baseTemplates) do
+			baseByID[v.assignee] = v
+		end
+		for _, v in ipairs(localTemplates) do
+			localByID[v.assignee] = v
+		end
+		for _, v in ipairs(remoteTemplates) do
+			remoteByID[v.assignee] = v
+		end
+
+		return PerformDiffGeneric(baseByID, localByID, remoteByID, AreAssigneeSpellSetsEqual, function()
+			return {}
+		end, MergeAssigneeSpellSets)
 	end
 
 	---@param a RosterEntry
@@ -709,38 +750,10 @@ do
 
 		-- Assignee spell sets
 		if deserializedPlan then
-			SortAssigneeSpellSets(deserializedPlan.assigneeSpellSets)
-			SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
-			SortAssigneeSpellSets(newPlan.assigneeSpellSets)
-			local baseAssigneeSpellSets = FlattenAssigneeSpellSets(deserializedPlan.assigneeSpellSets)
-			---@type table<string, FlatAssigneeSpellSet>
-			local baseByID = {}
-			for _, v in ipairs(baseAssigneeSpellSets) do
-				baseByID[v.ID] = v
-			end
-
-			local localAssigneeSpellSets = FlattenAssigneeSpellSets(oldPlan.assigneeSpellSets)
-			---@type table<string, FlatAssigneeSpellSet>
-			local localByID = {}
-			for _, v in ipairs(localAssigneeSpellSets) do
-				localByID[v.ID] = v
-			end
-
-			local remoteAssigneeSpellSets = FlattenAssigneeSpellSets(newPlan.assigneeSpellSets)
-			---@type table<string, FlatAssigneeSpellSet>
-			local remoteByID = {}
-			for _, v in ipairs(remoteAssigneeSpellSets) do
-				remoteByID[v.ID] = v
-			end
-			diff.assigneeSpellSets = PerformDiffGeneric(
-				baseByID,
-				localByID,
-				remoteByID,
-				AreFlatAssigneeSpellSetsEqual,
-				function()
-					return {}
-				end,
-				MergeFlatAssigneeSpellSets
+			diff.assigneeSpellSets = PerformTemplateDiff(
+				deserializedPlan.assigneeSpellSets,
+				oldPlan.assigneeSpellSets,
+				newPlan.assigneeSpellSets
 			)
 		else
 			SortAssigneeSpellSets(oldPlan.assigneeSpellSets)
@@ -986,28 +999,28 @@ end
 function Diff.ApplyTemplateDiff(existingPlan, templateDiff, forceMergeFromRemote)
 	local addedCount, removedCount, changedCount = 0, 0, 0
 
-	local existingFlattened = FlattenAssigneeSpellSets(existingPlan.assigneeSpellSets)
+	local assigneeSpellSets = existingPlan.assigneeSpellSets
 
 	---@param ID string
 	---@return integer?
 	local function FindIndex(ID)
-		for i = 1, #existingFlattened do
-			if existingFlattened[i].ID == ID then
+		for i = 1, #assigneeSpellSets do
+			if assigneeSpellSets[i].assignee == ID then
 				return i
 			end
 		end
 	end
 
 	Diff.ApplyGenericDiff(
-		existingFlattened,
+		existingPlan.assigneeSpellSets,
 		templateDiff,
 		forceMergeFromRemote,
 		FindIndex,
-		MergeFlatAssigneeSpellSets,
+		MergeAssigneeSpellSets,
 		"number"
 	)
 
-	existingPlan.assigneeSpellSets = UnFlattenAssigneeSpellSets(existingFlattened)
+	SortAssigneeSpellSets(assigneeSpellSets)
 
 	return addedCount, removedCount, changedCount
 end
