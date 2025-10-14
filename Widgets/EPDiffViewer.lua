@@ -10,11 +10,16 @@ local Version = 1
 ---@class BossUtilities
 local bossUtilities = Private.bossUtilities
 
+---@class Utilities
+local utilities = Private.utilities
+
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local format = string.format
+local getmetatable = getmetatable
+local GetSpellName = C_Spell.GetSpellName
 local ipairs = ipairs
 local max = math.max
 local unpack = unpack
@@ -43,6 +48,155 @@ local k = {
 	OtherPadding = { x = 10, y = 10 },
 	Title = L["Plan Change Request"],
 }
+
+local CombatLogEventAssignment = Private.classes.CombatLogEventAssignment
+
+---@param eventType CombatLogEventType
+---@return string
+local function GetCombatLogEventString(eventType)
+	local returnString
+	if eventType == "SCC" then
+		returnString = L["Spell Cast Success"]
+	elseif eventType == "SCS" then
+		returnString = L["Spell Cast Start"]
+	elseif eventType == "SAA" then
+		returnString = L["Spell Aura Applied"]
+	elseif eventType == "SAR" then
+		returnString = L["Spell Aura Removed"]
+	elseif eventType == "UD" then
+		returnString = L["Unit Died"]
+	end
+	return returnString
+end
+
+---@param value Assignment|CombatLogEventAssignment|TimedAssignment
+---@param roster table<string, RosterEntry>
+---@param diffType? PlanDiffType
+---@return string
+local function CreateAssignmentDiffText(value, roster, diffType)
+	local text = ""
+	if diffType then
+		if diffType == PlanDiffType.Delete then
+			return L["Removed"]
+		elseif diffType == PlanDiffType.Change then
+			text = L["Changed"] .. "\n"
+		end
+	end
+	local assignee = utilities.ConvertAssigneeToLegibleString(value.assignee, roster)
+	text = text .. format("%s: %s", L["Assignee"], assignee)
+	if value.spellID > Private.constants.kTextAssignmentSpellID then
+		local spellName = GetSpellName(value.spellID)
+		if spellName then
+			text = text .. format("\n%s: %s", L["Spell"], spellName)
+		else
+			text = text .. format("\n%s: %s", L["Spell"], value.spellID)
+		end
+	end
+	text = text .. format("\n%s: %s", L["Time"], value.time)
+	text = text .. format("\n%s: %s", L["Text"], value.text)
+	if value.targetName ~= "" then
+		local targetName = utilities.ConvertAssigneeToLegibleString(value.targetName, roster)
+		text = text .. format("\n%s: %s", L["Target"], targetName)
+	end
+	if getmetatable(value) == CombatLogEventAssignment then
+		text = text .. format("\n%s: %s", L["Trigger"], GetCombatLogEventString(value.combatLogEventType))
+		text = text .. format("\n%s %s: %s", L["Trigger"], L["Spell"], GetSpellName(value.combatLogEventSpellID))
+		text = text .. format("\n%s %s: %s", L["Trigger"], L["Spell Count"], value.spellCount)
+	end
+	return text
+end
+
+---@param assignee string
+---@param value AssigneeSpellSet|FlatAssigneeSpellSet
+---@param roster table<string, RosterEntry>
+---@param diffType? PlanDiffType
+---@return string
+local function CreateAssigneeSpellSetDiffText(assignee, value, roster, diffType)
+	local text = ""
+	if diffType then
+		if diffType == PlanDiffType.Delete then
+			return L["Removed"]
+		elseif diffType == PlanDiffType.Change then
+			text = L["Changed"] .. "\n"
+		end
+	end
+	text = text .. format("%s: %s", L["Assignee"], utilities.ConvertAssigneeToLegibleString(value.assignee, roster))
+	local spells = {}
+	if value.spells then
+		spells = value.spells
+	else
+		tinsert(spells, value.spellID)
+	end
+	for _, spellID in ipairs(spells) do
+		local spellName = tostring(spellID)
+		if spellID == Private.constants.kInvalidAssignmentSpellID then
+			spellName = L["Unknown"]
+		elseif spellID == Private.constants.kTextAssignmentSpellID then
+			spellName = L["Text"]
+		else
+			local maybeSpellName = GetSpellName(spellID)
+			if maybeSpellName then
+				spellName = maybeSpellName
+			end
+		end
+		text = text .. format("\n%s: %s", L["Spell"], spellName)
+	end
+
+	return text
+end
+
+---@param assignee string
+---@param value RosterEntry
+---@param roster table<string, RosterEntry>
+---@param diffType? PlanDiffType
+---@return string
+local function CreateRosterDiffText(assignee, value, roster, diffType)
+	local text = ""
+	if diffType then
+		if diffType == PlanDiffType.Delete then
+			return L["Removed"]
+		elseif diffType == PlanDiffType.Change then
+			text = L["Changed"] .. "\n"
+		end
+	end
+
+	local class, role = value.class, value.role
+	text = text .. format("%s: %s", L["Assignee"], utilities.ConvertAssigneeToLegibleString(assignee, roster))
+	local className = class:match("class:%s*(%a+)")
+	if className then
+		className = utilities.GetLocalizedPrettyClassName(className)
+		text = text .. format("\n%s: %s", L["Class"], className)
+	end
+	local roleName = role:match("role:%s*(%a+)")
+	if roleName then
+		roleName = utilities.GetLocalizedRole(roleName)
+		text = text .. format("\n%s: %s", L["Role"], roleName)
+	end
+	return text
+end
+
+---@param genericDiffEntry GenericDiffEntry
+---@return any old
+---@return any? new
+local function GetOldAndNewValues(genericDiffEntry)
+	local oldValue, newValue
+	if genericDiffEntry.type == PlanDiffType.Insert then
+		---@cast genericDiffEntry InsertDiffEntry<any>
+		oldValue = genericDiffEntry.newValue
+	elseif genericDiffEntry.type == PlanDiffType.Delete then
+		---@cast genericDiffEntry DeleteDiffEntry<any>
+		oldValue = genericDiffEntry.oldValue
+	elseif genericDiffEntry.type == PlanDiffType.Change then
+		---@cast genericDiffEntry ChangeDiffEntry<any>
+		oldValue = genericDiffEntry.oldValue
+		newValue = genericDiffEntry.newValue
+	elseif genericDiffEntry.type == PlanDiffType.Conflict then
+		---@cast genericDiffEntry ConflictDiffEntry<any>
+		oldValue = genericDiffEntry.localValue
+		newValue = genericDiffEntry.remoteValue
+	end
+	return oldValue, newValue
+end
 
 ---@param container EPContainer
 local function SetButtonWidths(container)
@@ -340,106 +494,148 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 		metaDataContainer:AddChild(entry)
 	end
 
-	for index, diff in ipairs(diffs.assignments) do
-		if diff.type ~= PlanDiffType.Equal and not diff.localOnlyChange then
-			if not addedAssignmentSection then
-				dividerLineIndex, assignmentContainer = AddSection(self, L["Assignments"], dividerLineIndex)
-				addedAssignmentSection = true
-			end
-			---@cast assignmentContainer EPContainer
-
-			local oldValue, newValue
-			if diff.type == PlanDiffType.Insert then
-				---@cast diff InsertDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				oldValue = diff.newValue
-			elseif diff.type == PlanDiffType.Delete then
-				---@cast diff DeleteDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				oldValue = diff.oldValue
-			elseif diff.type == PlanDiffType.Change then
-				---@cast diff ChangeDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				oldValue = diff.oldValue
-				newValue = diff.newValue
-			elseif diff.type == PlanDiffType.Conflict then
-				---@cast diff ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-				oldValue = diff.localValue
-				newValue = diff.remoteValue
-			end
-
-			local entry = AceGUI:Create("EPDiffViewerEntry")
-			entry:SetFullWidth(true)
-			entry:SetAssignmentEntryData(oldValue, newValue, oldPlan.roster, newPlan.roster, diff)
-			entry:SetCallback("OnValueChanged", function(_, _, checked)
-				if self.planDiff.assignments[index].type == PlanDiffType.Conflict then
-					local conflictEntry = self.planDiff.assignments[index]
-					---@cast conflictEntry ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
-					conflictEntry.chooseLocal = not checked
-				else
-					self.planDiff.assignments[index].result = checked
+	do
+		---@param genericDiffEntry GenericDiffEntry
+		---@return string
+		---@return string?
+		local function TextFunc(genericDiffEntry)
+			local oldValue, newValue = GetOldAndNewValues(genericDiffEntry)
+			local leftText, rightText = nil, nil
+			if genericDiffEntry.type == PlanDiffType.Conflict then
+				---@cast genericDiffEntry ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+				leftText = CreateAssignmentDiffText(oldValue, oldPlan.roster, genericDiffEntry.localType)
+				if newValue then
+					rightText = CreateAssignmentDiffText(newValue, newPlan.roster, genericDiffEntry.remoteType)
 				end
-			end)
+			else
+				leftText = CreateAssignmentDiffText(oldValue, oldPlan.roster)
+				if newValue then
+					rightText = CreateAssignmentDiffText(newValue, newPlan.roster)
+				end
+			end
+			return leftText, rightText
+		end
 
-			assignmentContainer:AddChild(entry)
+		---@param index integer
+		---@param checked boolean
+		local function Callback(index, checked)
+			if self.planDiff.assignments[index].type == PlanDiffType.Conflict then
+				local conflictEntry = self.planDiff.assignments[index]
+				---@cast conflictEntry ConflictDiffEntry<Assignment|CombatLogEventAssignment|TimedAssignment>
+				conflictEntry.chooseLocal = not checked
+			else
+				self.planDiff.assignments[index].result = checked
+			end
+		end
+
+		for index, assignmentDiff in ipairs(diffs.assignments) do
+			if assignmentDiff.type ~= PlanDiffType.Equal and not assignmentDiff.localOnlyChange then
+				if not addedAssignmentSection then
+					dividerLineIndex, assignmentContainer = AddSection(self, L["Assignments"], dividerLineIndex)
+					addedAssignmentSection = true
+				end
+				---@cast assignmentContainer EPContainer
+
+				local entry = AceGUI:Create("EPDiffViewerEntry")
+				entry:SetFullWidth(true)
+				entry:SetGenericDiffEntryData(assignmentDiff, TextFunc)
+				entry:SetCallback("OnValueChanged", function(_, _, checked)
+					Callback(index, checked)
+				end)
+
+				assignmentContainer:AddChild(entry)
+			end
 		end
 	end
 
-	for index, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
-		if planTemplateDiff.type ~= PlanDiffType.Equal then
-			if not addedAssigneeSpellSetsSection then
-				dividerLineIndex, assigneeSpellSetsContainer = AddSection(self, L["Templates"], dividerLineIndex)
-				addedAssigneeSpellSetsSection = true
-			end
-			---@cast assigneeSpellSetsContainer EPContainer
-
-			local oldValue, newValue
-			if planTemplateDiff.type == PlanDiffType.Insert then
-				---@cast planTemplateDiff InsertDiffEntry<AssigneeSpellSet>
-				oldValue = planTemplateDiff.newValue
-			elseif planTemplateDiff.type == PlanDiffType.Delete then
-				---@cast planTemplateDiff DeleteDiffEntry<AssigneeSpellSet>
-				oldValue = planTemplateDiff.oldValue
-			elseif planTemplateDiff.type == PlanDiffType.Change then
-				---@cast planTemplateDiff ChangeDiffEntry<AssigneeSpellSet>
-				oldValue = planTemplateDiff.oldValue
-				newValue = planTemplateDiff.newValue
-			elseif planTemplateDiff.type == PlanDiffType.Conflict then
-				---@cast planTemplateDiff ConflictDiffEntry<AssigneeSpellSet>
-				oldValue = planTemplateDiff.localValue
-				newValue = planTemplateDiff.remoteValue
-			end
-			local entry = AceGUI:Create("EPDiffViewerEntry")
-			entry:SetFullWidth(true)
-			entry:SetAssigneeSpellSetEntryData(
-				oldValue,
-				newValue,
-				oldPlan.roster,
-				newPlan.roster,
-				planTemplateDiff.type
-			)
-			entry:SetCallback("OnValueChanged", function(_, _, checked)
-				if self.planDiff.assigneeSpellSets[index].type == PlanDiffType.Conflict then
-					local conflictEntry = self.planDiff.assigneeSpellSets[index]
-					---@cast conflictEntry ConflictDiffEntry<AssigneeSpellSet>
-					conflictEntry.chooseLocal = not checked
-				else
-					self.planDiff.assigneeSpellSets[index].result = checked
+	do
+		---@param genericDiffEntry GenericDiffEntry
+		---@return string
+		---@return string?
+		local function TextFunc(genericDiffEntry)
+			local oldValue, newValue = GetOldAndNewValues(genericDiffEntry)
+			---@cast oldValue AssigneeSpellSet|FlatAssigneeSpellSet
+			local assignee = genericDiffEntry.ID
+			local leftText, rightText = nil, nil
+			if genericDiffEntry.type == PlanDiffType.Conflict then
+				---@cast genericDiffEntry ConflictDiffEntry<AssigneeSpellSet|FlatAssigneeSpellSet>
+				leftText =
+					CreateAssigneeSpellSetDiffText(assignee, oldValue, oldPlan.roster, genericDiffEntry.localType)
+				if newValue then
+					rightText =
+						CreateAssigneeSpellSetDiffText(assignee, newValue, newPlan.roster, genericDiffEntry.remoteType)
 				end
-			end)
+			else
+				---@cast newValue AssigneeSpellSet|FlatAssigneeSpellSet
+				leftText = CreateAssigneeSpellSetDiffText(assignee, oldValue, oldPlan.roster)
+				if newValue then
+					rightText = CreateAssigneeSpellSetDiffText(assignee, newValue, newPlan.roster)
+				end
+			end
+			return leftText, rightText
+		end
 
-			assigneeSpellSetsContainer:AddChild(entry)
+		---@param index integer
+		---@param checked boolean
+		local function Callback(index, checked)
+			if self.planDiff.assigneeSpellSets[index].type == PlanDiffType.Conflict then
+				local conflictEntry = self.planDiff.assigneeSpellSets[index]
+				---@cast conflictEntry ConflictDiffEntry<AssigneeSpellSet>
+				conflictEntry.chooseLocal = not checked
+			else
+				self.planDiff.assigneeSpellSets[index].result = checked
+			end
+		end
+
+		for index, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
+			if planTemplateDiff.type ~= PlanDiffType.Equal and not planTemplateDiff.localOnlyChange then
+				if not addedAssigneeSpellSetsSection then
+					dividerLineIndex, assigneeSpellSetsContainer = AddSection(self, L["Templates"], dividerLineIndex)
+					addedAssigneeSpellSetsSection = true
+				end
+				---@cast assigneeSpellSetsContainer EPContainer
+
+				local entry = AceGUI:Create("EPDiffViewerEntry")
+				entry:SetFullWidth(true)
+				entry:SetGenericDiffEntryData(planTemplateDiff, TextFunc)
+				entry:SetCallback("OnValueChanged", function(_, _, checked)
+					Callback(index, checked)
+				end)
+
+				assigneeSpellSetsContainer:AddChild(entry)
+			end
 		end
 	end
 
-	for index, planRosterDiff in ipairs(diffs.roster) do
-		if not addedRosterSection then
-			dividerLineIndex, rosterContainer = AddSection(self, L["Roster"], dividerLineIndex)
-			addedRosterSection = true
+	do
+		---@param genericDiffEntry GenericDiffEntry
+		---@return string
+		---@return string?
+		local function TextFunc(genericDiffEntry)
+			local oldValue, newValue = GetOldAndNewValues(genericDiffEntry)
+			---@cast oldValue RosterEntry
+			local assignee = genericDiffEntry.ID
+			local leftText, rightText = nil, nil
+			if genericDiffEntry.type == PlanDiffType.Conflict then
+				---@cast genericDiffEntry ConflictDiffEntry<RosterEntry>
+				leftText = CreateRosterDiffText(assignee, oldValue, oldPlan.roster, genericDiffEntry.localType)
+				if newValue then
+					---@cast newValue RosterEntry
+					rightText = CreateRosterDiffText(assignee, newValue, newPlan.roster, genericDiffEntry.remoteType)
+				end
+			else
+				leftText = CreateRosterDiffText(assignee, oldValue, oldPlan.roster)
+				if newValue then
+					---@cast newValue RosterEntry
+					rightText = CreateRosterDiffText(assignee, newValue, newPlan.roster)
+				end
+			end
+			return leftText, rightText
 		end
-		---@cast rosterContainer EPContainer
 
-		local entry = AceGUI:Create("EPDiffViewerEntry")
-		entry:SetFullWidth(true)
-		entry:SetRosterEntryData(planRosterDiff, oldPlan.roster, newPlan.roster)
-		entry:SetCallback("OnValueChanged", function(_, _, checked)
+		---@param index integer
+		---@param checked boolean
+		local function Callback(index, checked)
 			if self.planDiff.roster[index].type == PlanDiffType.Conflict then
 				local conflictEntry = self.planDiff.roster[index]
 				---@cast conflictEntry ConflictDiffEntry<RosterEntry>
@@ -447,8 +643,25 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			else
 				self.planDiff.roster[index].result = checked
 			end
-		end)
-		rosterContainer:AddChild(entry)
+		end
+
+		for index, planRosterDiff in ipairs(diffs.roster) do
+			if planRosterDiff.type ~= PlanDiffType.Equal and not planRosterDiff.localOnlyChange then
+				if not addedRosterSection then
+					dividerLineIndex, rosterContainer = AddSection(self, L["Roster"], dividerLineIndex)
+					addedRosterSection = true
+				end
+				---@cast rosterContainer EPContainer
+
+				local entry = AceGUI:Create("EPDiffViewerEntry")
+				entry:SetFullWidth(true)
+				entry:SetGenericDiffEntryData(planRosterDiff, TextFunc)
+				entry:SetCallback("OnValueChanged", function(_, _, checked)
+					Callback(index, checked)
+				end)
+				rosterContainer:AddChild(entry)
+			end
+		end
 	end
 
 	for index, contentDiffEntry in ipairs(diffs.content) do

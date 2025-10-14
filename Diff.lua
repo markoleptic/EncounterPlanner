@@ -115,14 +115,6 @@ local function UnFlattenAssigneeSpellSets(flattenedAssigneeSpellSets)
 	return newAssigneeSpellSets
 end
 
--- Merges remote into local.
----@param localVersion FlatAssigneeSpellSet
----@param remoteVersion FlatAssigneeSpellSet
-local function MergeFlatAssigneeSpellSets(localVersion, remoteVersion)
-	localVersion.assignee = remoteVersion.assignee
-	localVersion.spellID = remoteVersion.spellID
-end
-
 -- Merges delete and inserts entries into change entries of a diff if they their index is equal, accounting for
 -- shifts due to deletes, inserts, and changes.
 ---@param diff table<integer, GenericDiffEntry> Original diff with no Change entries.
@@ -997,8 +989,6 @@ end
 ---@return integer removedCount
 ---@return integer changedCount
 function Diff.ApplyTemplateDiff(existingPlan, templateDiff, forceMergeFromRemote)
-	local addedCount, removedCount, changedCount = 0, 0, 0
-
 	local assigneeSpellSets = existingPlan.assigneeSpellSets
 
 	---@param ID string
@@ -1011,7 +1001,7 @@ function Diff.ApplyTemplateDiff(existingPlan, templateDiff, forceMergeFromRemote
 		end
 	end
 
-	Diff.ApplyGenericDiff(
+	local addedCount, removedCount, changedCount = Diff.ApplyGenericDiff(
 		existingPlan.assigneeSpellSets,
 		templateDiff,
 		forceMergeFromRemote,

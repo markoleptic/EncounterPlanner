@@ -2693,6 +2693,7 @@ function Utilities.DuplicatePlan(plans, planToCopyName, newPlanName)
 	newPlan.ID = newID
 	newPlan.isPrimaryPlan = false
 	newPlan.revision = nil
+	newPlan.lastSyncedSnapShot = nil
 
 	setmetatable(newPlan, getmetatable(planToCopy))
 	assignmentUtilities.RegenerateIDsAndSetMetaTables(newPlan.assignments)
