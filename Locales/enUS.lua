@@ -122,6 +122,7 @@ L["Combat Log Event"] = true
 L["Confirmation"] = true
 L["Conflict"] = true
 L["conflicts"] = true
+L["conflicting changes found"] = true
 L["Consider extending boss phase durations/counts in"] = true
 L["Consumable"] = true
 L["contains high level categories for managing plans, modifying bosses, editing rosters, and settings"] = true

@@ -33,7 +33,7 @@ local k = {
 	ContentFramePadding = { x = 15, y = 15 },
 	DefaultButtonHeight = 24,
 	DefaultFontSize = 14,
-	DefaultHeight = 400,
+	DefaultHeight = 500,
 	DefaultWidth = 600,
 	FrameBackdrop = {
 		bgFile = Private.constants.textures.kGenericWhite,
@@ -417,6 +417,10 @@ local function OnRelease(self)
 
 	self.text:ClearAllPoints()
 	self.text:SetText("")
+
+	self.conflictText:ClearAllPoints()
+	self.conflictText:SetText("")
+	self.conflictText:Hide()
 end
 
 ---@param self EPDiffViewer
@@ -430,6 +434,7 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 	local assigneeSpellSetsContainer, contentContainer = nil, nil
 	local addedAssigneeSpellSetsSection, addedContentSection = nil, nil
 	local dividerLineIndex = 1
+	local totalConflictCount = 0
 
 	if diffs.metaData.instanceID then
 		if not addedMetaDataSection then
@@ -528,10 +533,22 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			end
 		end
 
+		local conflictCount = 0
+		for _, assignmentDiff in ipairs(diffs.assignments) do
+			if assignmentDiff.type == PlanDiffType.Conflict and not assignmentDiff.localOnlyChange then
+				conflictCount = conflictCount + 1
+			end
+		end
+		totalConflictCount = totalConflictCount + conflictCount
+
 		for index, assignmentDiff in ipairs(diffs.assignments) do
 			if assignmentDiff.type ~= PlanDiffType.Equal and not assignmentDiff.localOnlyChange then
 				if not addedAssignmentSection then
-					dividerLineIndex, assignmentContainer = AddSection(self, L["Assignments"], dividerLineIndex)
+					local text = L["Assignments"]
+					if diffs.canUseNewAssignmentMerge and conflictCount > 0 then
+						text = format("%s - %d %s", text, conflictCount, L["conflicts"])
+					end
+					dividerLineIndex, assignmentContainer = AddSection(self, text, dividerLineIndex)
 					addedAssignmentSection = true
 				end
 				---@cast assignmentContainer EPContainer
@@ -587,10 +604,22 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			end
 		end
 
+		local conflictCount = 0
+		for _, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
+			if planTemplateDiff.type == PlanDiffType.Conflict and not planTemplateDiff.localOnlyChange then
+				conflictCount = conflictCount + 1
+			end
+		end
+		totalConflictCount = totalConflictCount + conflictCount
+
 		for index, planTemplateDiff in ipairs(diffs.assigneeSpellSets) do
 			if planTemplateDiff.type ~= PlanDiffType.Equal and not planTemplateDiff.localOnlyChange then
 				if not addedAssigneeSpellSetsSection then
-					dividerLineIndex, assigneeSpellSetsContainer = AddSection(self, L["Templates"], dividerLineIndex)
+					local text = L["Templates"]
+					if diffs.canUseNewAssignmentMerge and conflictCount > 0 then
+						text = format("%s - %d %s", text, conflictCount, L["conflicts"])
+					end
+					dividerLineIndex, assigneeSpellSetsContainer = AddSection(self, text, dividerLineIndex)
 					addedAssigneeSpellSetsSection = true
 				end
 				---@cast assigneeSpellSetsContainer EPContainer
@@ -645,10 +674,22 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 			end
 		end
 
+		local conflictCount = 0
+		for _, planRosterDiff in ipairs(diffs.roster) do
+			if planRosterDiff.type == PlanDiffType.Conflict and not planRosterDiff.localOnlyChange then
+				conflictCount = conflictCount + 1
+			end
+		end
+		totalConflictCount = totalConflictCount + conflictCount
+
 		for index, planRosterDiff in ipairs(diffs.roster) do
 			if planRosterDiff.type ~= PlanDiffType.Equal and not planRosterDiff.localOnlyChange then
 				if not addedRosterSection then
-					dividerLineIndex, rosterContainer = AddSection(self, L["Roster"], dividerLineIndex)
+					local text = L["Roster"]
+					if diffs.canUseNewAssignmentMerge and conflictCount > 0 then
+						text = format("%s - %d %s", text, conflictCount, L["conflicts"])
+					end
+					dividerLineIndex, rosterContainer = AddSection(self, text, dividerLineIndex)
 					addedRosterSection = true
 				end
 				---@cast rosterContainer EPContainer
@@ -705,6 +746,20 @@ local function AddDiffs(self, diffs, oldPlan, newPlan)
 	IterateContainer(self.mainContainer, function(entry)
 		entry.typeLabel.frame:SetWidth(maxTypeLabelWidth)
 	end)
+
+	if diffs.canUseNewAssignmentMerge then
+		self.conflictText:SetText(format("%d %s", totalConflictCount, L["conflicting changes found"]))
+		self.conflictText:Show()
+
+		self.scrollFrame.frame:ClearPoint("TOP")
+
+		self.conflictText:SetPoint("TOP", self.text, "BOTTOM", 0, -k.OtherPadding.y)
+		self.conflictText:SetPoint("LEFT", self.frame, "LEFT", k.ContentFramePadding.x, 0)
+		self.conflictText:SetPoint("RIGHT", self.frame, "RIGHT", -k.ContentFramePadding.x, 0)
+
+		self.scrollFrame.frame:SetPoint("TOP", self.conflictText, "BOTTOM", 0, -k.OtherPadding.y)
+		self.scrollFrame.frame:SetPoint("RIGHT", self.frame, "RIGHT", -k.ContentFramePadding.x, 0)
+	end
 
 	self.mainContainer:DoLayout()
 	self.buttonContainer:DoLayout()
@@ -772,6 +827,14 @@ local function Constructor()
 		text:SetFont(fPath, k.DefaultFontSize)
 	end
 
+	local conflictText = frame:CreateFontString(nil, "OVERLAY")
+	conflictText:SetWordWrap(true)
+	conflictText:SetJustifyH("CENTER")
+	if fPath then
+		conflictText:SetFont(fPath, k.DefaultFontSize)
+	end
+	conflictText:Hide()
+
 	---@class EPDiffViewer : AceGUIWidget
 	---@field mainContainer EPContainer
 	---@field scrollFrame EPScrollFrame
@@ -790,6 +853,7 @@ local function Constructor()
 		count = count,
 		dividerLines = {},
 		text = text,
+		conflictText = conflictText,
 		isCommunicationsMessage = true,
 	}
 
