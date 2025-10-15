@@ -127,5 +127,9 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Updated supported WoW versions.
+-   Improved plan collaboration
+    -   Non-conflicting changes made to roster entries are preserved when receiving a plan. Requires the plan be sent to the group once. If there are conflicts, the incoming changes are chosen.
+    -   Changes made to template entries are preserved when receiving a plan. Requires the plan be sent to the group once.
+    -   Added text to the Plan Change Request dialog to indicate the number of conflicts.
+    -   Added the number of conflicts to section titles of the Plan Change Request dialog if the section has conflicts.
 ]]
