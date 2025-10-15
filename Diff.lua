@@ -913,7 +913,6 @@ function Diff.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, Find
 							else
 								existing[index] = nil
 							end
-							removedCount = removedCount + 1
 						end
 					elseif diff.localType == PlanDiffType.Change or diff.localType == PlanDiffType.Insert then
 						if index and existing[index] then
@@ -931,7 +930,6 @@ function Diff.ApplyGenericDiff(existing, genericDiff, forceMergeFromRemote, Find
 								existing[diff.ID] = diff.localValue
 							end
 						end
-						changedCount = changedCount + 1
 					end
 				end
 			end
