@@ -2054,7 +2054,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1225016] = BossAbility:New({ -- Command: Besiege
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 9.17, 39.9 },
+							castTimes = { 9.1, 39.9 },
 							repeatInterval = { 39.9 },
 						}),
 					},
@@ -2087,7 +2087,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1227529] = BossAbility:New({ -- Banishment
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 32.94, 15.71, 23.17, 14.68 },
+							castTimes = { 30.2, 16.3, 23.9, 16.1 },
 						}),
 					},
 					duration = 8.0,
@@ -2097,7 +2097,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1225010] = BossAbility:New({ -- Command: Behead
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 34.52, 37.97 },
+							castTimes = { 34.9, 39.6 },
 						}),
 					},
 					duration = 0.0,
@@ -2139,7 +2139,10 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1237068] = BossAbility:New({ -- Dimensional Breath
 					phases = {
 						[2] = BossAbilityPhase:New({
-							castTimes = { 14.61, 5.69, 5.46 },
+							castTimes = { 14.61, 6.0, 6.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 78.0, 6.0, 6.0 },
 						}),
 					},
 					halfHeight = true,
@@ -2191,7 +2194,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 				[1228075] = BossAbility:New({ -- Nexus Beams
 					phases = {
 						[3] = BossAbilityPhase:New({
-							castTimes = { 16.0 },
+							castTimes = { 26.0 },
 						}),
 					},
 					duration = 7.0,
@@ -2208,7 +2211,7 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 					},
 					duration = 30.0,
-					castTime = 6.2,
+					castTime = 6.0,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[1228317] = BossAbility:New({ -- King's Hunger
@@ -2218,14 +2221,14 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 						}),
 					},
 					duration = 30.0,
-					castTime = 6.2,
+					castTime = 6.0,
 					defaultHidden = true,
 					allowedCombatLogEventTypes = { "SCS", "SCC", "SAA", "SAR" },
 				}),
 				[1225319] = BossAbility:New({ -- Galactic Smash
 					phases = {
 						[5] = BossAbilityPhase:New({
-							castTimes = { 7.3 },
+							castTimes = { 9.0 },
 							repeatInterval = { 55.0 },
 						}),
 					},
@@ -2287,16 +2290,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[3] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
+					duration = 97.5,
+					defaultDuration = 97.5,
 					count = 1,
 					defaultCount = 1,
 					name = "Int1",
 					fixedDuration = true,
 				}),
 				[4] = BossPhase:New({
-					duration = 30.0,
-					defaultDuration = 30.0,
+					duration = 36.0,
+					defaultDuration = 36.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int2",
@@ -2404,16 +2407,16 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					fixedDuration = true,
 				}),
 				[3] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
+					duration = 97.5,
+					defaultDuration = 97.5,
 					count = 1,
 					defaultCount = 1,
 					name = "Int1",
 					fixedDuration = true,
 				}),
 				[4] = BossPhase:New({
-					duration = 30.0,
-					defaultDuration = 30.0,
+					duration = 36.0,
+					defaultDuration = 36.0,
 					count = 1,
 					defaultCount = 1,
 					name = "Int2",
