@@ -1,5 +1,5 @@
-# [2.3.5](https://github.com/markoleptic/EncounterPlanner/tree/2.3.5) (2025-11-22)
+# [2.3.6](https://github.com/markoleptic/EncounterPlanner/tree/2.3.6) (2025-12-02)
 
-[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/2.3.4...2.3.5)
+[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/2.3.5...2.3.6)
 
--   Updated Nexus-King Salhadaar ability and phase timers.
+-   Update supported WoW versions.

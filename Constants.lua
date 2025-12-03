@@ -127,5 +127,5 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Updated Nexus-King Salhadaar ability and phase timers.
+-   Update supported WoW versions.
 ]]
