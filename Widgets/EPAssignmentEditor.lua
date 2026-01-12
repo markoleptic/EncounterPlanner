@@ -84,7 +84,7 @@ k.LineBackdrop = {
 ---@param description string
 local function ShowTooltip(frame, label, description)
 	sTooltip:SetOwner(frame, "ANCHOR_TOP")
-	sTooltip:SetText(label, 1, 0.82, 0, true)
+	sTooltip:SetText(label, 1, 0.82, 0, 1, true)
 	sTooltip:AddLine(description, 1, 1, 1, true)
 	sTooltip:Show()
 end

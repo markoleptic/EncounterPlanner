@@ -181,7 +181,7 @@ end
 ---@param description string
 local function ShowTooltip(frame, label, description)
 	s.Tooltip:SetOwner(frame, "ANCHOR_TOP")
-	s.Tooltip:SetText(label, 1, 0.82, 0, true)
+	s.Tooltip:SetText(label, 1, 0.82, 0, 1, true)
 	if type(description) == "string" then
 		s.Tooltip:AddLine(description, 1, 1, 1, true)
 	end

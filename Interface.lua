@@ -1930,7 +1930,7 @@ local function HandlePlanReminderCheckBoxOrButtonEnter(checkBoxOrButton)
 			title = L["Simulate Reminders"]
 			text = L["Reminders are currently disabled globally. Enable them in Preferences to simulate them."]
 		end
-		s.Tooltip:SetText(title, 1, 0.82, 0, true)
+		s.Tooltip:SetText(title, 1, 0.82, 0, 1, true)
 		s.Tooltip:AddLine(text, 1, 1, 1, true)
 		s.Tooltip:Show()
 	end
@@ -1955,7 +1955,7 @@ local function HandlePrimaryPlanCheckBoxEnter(checkBox)
 	local title = L["Designated External Plan"]
 	local text =
 		L["Whether External Text of this plan should be made available to other addons or WeakAuras. Only one plan per boss may have this designation."]
-	s.Tooltip:SetText(title, 1, 0.82, 0, true)
+	s.Tooltip:SetText(title, 1, 0.82, 0, 1, true)
 	s.Tooltip:AddLine(text, 1, 1, 1, true)
 	s.Tooltip:Show()
 end
