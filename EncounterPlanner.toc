@@ -6,7 +6,7 @@
 ## Author: Markoleptic
 ## DefaultState: Enabled
 ## SavedVariables: EncounterPlannerDB
-## OptionalDeps: Ace3, LibSharedMedia-3.0, MRT, WeakAuras
+## OptionalDeps: Ace3, LibSharedMedia-3.0, MRT
 ## IconTexture: Interface\AddOns\EncounterPlanner\Media\ep-logo.tga
 ## X-Flavor: Mainline
 ## X-Website: https://www.curseforge.com/wow/addons/encounter-planner

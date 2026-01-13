@@ -31,7 +31,6 @@ local TraitConfigType = Enum.TraitConfigType
 local GameTooltip = GameTooltip
 local ipairs = ipairs
 local NewTimer = C_Timer.NewTimer
-local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
 local pairs = pairs
@@ -556,10 +555,6 @@ do -- Profile updating and refreshing
 end
 
 function AddOn:OnInitialize()
-	local loadedOrLoading, loaded = IsAddOnLoaded("WeakAuras")
-	if not loadedOrLoading and not loaded then
-		self.defaults.profile.preferences.reminder.progressBars.texture = constants.textures.kGenericWhite
-	end
 	self.db = AceDB:New(AddOnName .. "DB", self.defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
 	self.db.RegisterCallback(self, "OnProfileCopied", "Refresh")

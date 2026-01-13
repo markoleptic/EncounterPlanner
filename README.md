@@ -96,4 +96,5 @@ How do I know which assignment type to use?
 
 ## Credits
 
-Icons provided by [Icons8](https://icons8.com)
+-   The "Clean" status bar texture is provided by glassleo on Github.
+-   Icons with their names prefixed with "icons8" are provided by [Icons8](https://icons8.com).
