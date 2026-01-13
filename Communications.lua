@@ -22,7 +22,7 @@ local k = {
 		[9] = { level = 9 },
 	},
 	DistributePlan = constants.communications.kDistributePlan,
-	DistributeText = constants.communications.kDistributeText,
+	DistributeText = constants.communications.kDistributeText, -- Unused since 12.0.0
 	DistributePlanReceived = constants.communications.kDistributePlanReceived,
 	RequestPlanUpdate = constants.communications.kRequestPlanUpdate,
 	RequestPlanUpdateResponse = constants.communications.kRequestPlanUpdateResponse,
@@ -885,6 +885,7 @@ do
 		end
 	end
 
+	-- Unused since 12.0.0
 	---@param bossDungeonEncounterID integer
 	---@param difficultyType DifficultyType
 	function Private.SendTextToGroup(bossDungeonEncounterID, difficultyType)

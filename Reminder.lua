@@ -85,9 +85,9 @@ local s = {
 	---@type table<string, FunctionContainer>
 	Timers = {}, -- Timers that will either call ExecuteReminderTimer or deferred functions created in ExecuteReminderTimer
 	---@type table<FullCombatLogEventType, table<integer, integer>> -- FullCombatLogEventType -> SpellID -> Count \
-	SpellCounts = {}, -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events.
+	SpellCounts = {}, -- Acts as filter for combat log events. Increments spell occurrences for registered combat log events. Unused since 12.0.0
 	---@type table<FullCombatLogEventType, table<integer, table<integer, table<integer, CombatLogEventAssignmentData>>>>
-	CombatLogEventReminders = {}, -- Table of active reminders for responding to combat log events
+	CombatLogEventReminders = {}, -- Table of active reminders for responding to combat log events, Unused since 12.0.0
 
 	---@type table<integer, table<string, FunctionContainer>> -- Spell ID -> Timer ID -> Timer
 	CancelTimerIfCasted = {},
@@ -102,11 +102,11 @@ local s = {
 	FrameGlowTimers = {},
 
 	---@type table<integer, number> -- Buffers to use to prevent successive combat log events from retriggering.
-	BufferDurations = {},
+	BufferDurations = {}, -- Unused since 12.0.0
 	---@type table<integer, table<FullCombatLogEventType, boolean>> -- Active buffers preventing successive combat log events from retriggering.
-	ActiveBuffers = {},
+	ActiveBuffers = {}, -- Unused since 12.0.0
 	---@type table<string, FunctionContainer> -- Active buffers preventing successive combat log events from retriggering.
-	BufferTimers = {},
+	BufferTimers = {}, -- Unused since 12.0.0
 
 	HideIfAlreadyCasted = false,
 	IsSimulating = false,
@@ -465,6 +465,7 @@ local function CreateTimer(assignment, roster, reminderPreferences, elapsed)
 	end
 end
 
+-- Unused since 12.0.0
 -- Creates an empty table entry so that a CombatLogEventAssignment can be inserted into it.
 ---@param combatLogEventType FullCombatLogEventType
 ---@param spellID integer
@@ -510,33 +511,37 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 		end
 		for _, assignment in ipairs(filteredAssignments or assignments) do
 			if getmetatable(assignment) == CombatLogEventAssignment then
+				-- Removed for 12.0.0
 				---@cast assignment CombatLogEventAssignment
-				local abbreviatedCombatLogEventType = assignment.combatLogEventType
-				local fullCombatLogEventType = k.CombatLogEventMap[abbreviatedCombatLogEventType]
-				local spellID = assignment.combatLogEventSpellID
-				local spellCount = assignment.spellCount
-				if abilities[spellID] and abilities[spellID].buffer then
-					s.BufferDurations[spellID] = abilities[spellID].buffer
-				end
-				CreateSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
+				-- local abbreviatedCombatLogEventType = assignment.combatLogEventType
+				-- local fullCombatLogEventType = k.CombatLogEventMap[abbreviatedCombatLogEventType]
+				-- local spellID = assignment.combatLogEventSpellID
+				-- local spellCount = assignment.spellCount
+				-- if abilities[spellID] and abilities[spellID].buffer then
+				-- 	s.BufferDurations[spellID] = abilities[spellID].buffer
+				-- end
+				-- CreateSpellCountEntry(fullCombatLogEventType, spellID, spellCount)
 
-				local currentSize = #s.CombatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
-				s.CombatLogEventReminders[fullCombatLogEventType][spellID][spellCount][currentSize + 1] = {
-					preferences = preferences,
-					assignment = assignment,
-					roster = roster,
-				}
+				-- local currentSize = #s.CombatLogEventReminders[fullCombatLogEventType][spellID][spellCount]
+				-- s.CombatLogEventReminders[fullCombatLogEventType][spellID][spellCount][currentSize + 1] = {
+				-- 	preferences = preferences,
+				-- 	assignment = assignment,
+				-- 	roster = roster,
+				-- }
 			elseif getmetatable(assignment) == TimedAssignment then
 				---@cast assignment TimedAssignment
 				CreateTimer(assignment, roster, preferences, GetTime() - startTime)
+				atLeastOneAssignmentActive = true
 			end
-			atLeastOneAssignmentActive = true
+			-- Moved for 12.0.0
+			-- atLeastOneAssignmentActive = true
 		end
 	end
 
 	return atLeastOneAssignmentActive
 end
 
+-- Unused since 12.0.0
 ---@param spellID integer
 ---@param combatLogEventType FullCombatLogEventType
 local function ApplyBuffer(spellID, combatLogEventType)
@@ -550,6 +555,7 @@ local function ApplyBuffer(spellID, combatLogEventType)
 	end, s.BufferTimers)
 end
 
+-- Unused since 12.0.0
 -- Cancels active timers and queues widgets associated with a spellID for release.
 ---@param spellID integer
 local function CancelRemindersDueToSpellAlreadyCast(spellID)
@@ -574,6 +580,7 @@ local function CancelRemindersDueToSpellAlreadyCast(spellID)
 	end
 end
 
+-- Unused since 12.0.0
 -- Callback for CombatLogEventUnfiltered events. Creates timers from previously created reminders for
 -- CombatLogEventAssignments.
 local function HandleCombatLogEventUnfiltered()
@@ -683,9 +690,11 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			else
 				difficultyType = DifficultyType.Mythic
 			end
-			if UnitIsGroupLeader("player") then
-				Private.SendTextToGroup(encounterID, difficultyType)
-			end
+
+			-- Removed for 12.0.0
+			-- if UnitIsGroupLeader("player") then
+			-- 	Private.SendTextToGroup(encounterID, difficultyType)
+			-- end
 
 			local startTime = GetTime()
 			local plans = AddOn.db.profile.plans
@@ -702,7 +711,8 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 				if
 					SetupReminders(activePlans, reminderPreferences, startTime, GetBossAbilities(boss, difficultyType))
 				then
-					Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+					-- Removed for 12.0.0
+					-- Private:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 				else
 					ResetLocalVariables()
 				end
@@ -720,7 +730,8 @@ end
 ---@param groupSize integer Group size for the encounter.
 ---@param success integer 1 if success, 0 for wipe.
 local function HandleEncounterEnd(_, encounterID, encounterName, difficultyID, groupSize, success)
-	Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	-- Removed for 12.0.0
+	-- Private:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	ResetLocalVariables()
 end
 
@@ -743,7 +754,8 @@ function Private:UnregisterReminderEvents()
 	ResetLocalVariables()
 	self:UnregisterEvent("ENCOUNTER_START")
 	self:UnregisterEvent("ENCOUNTER_END")
-	self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	-- Removed for 12.0.0
+	-- self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 	-- if type(BigWigsLoader) == "table" and BigWigsLoader.UnregisterMessage then
 	-- 	BigWigsLoader.UnregisterMessage(self, "BigWigs_SetStage")
@@ -805,17 +817,21 @@ function Private:SimulateBoss(bossDungeonEncounterID, timelineAssignments, roste
 				filtered = FilterSelf(timelineAssignments) --[[@as table<integer, TimelineAssignment>]]
 			end
 			for _, timelineAssignment in ipairs(filtered or timelineAssignments) do
-				CreateSimulationTimer(timelineAssignment, roster, preferences, 0.0)
+				if getmetatable(timelineAssignment.assignment) == TimedAssignment then -- Added for 12.0.0
+					CreateSimulationTimer(timelineAssignment, roster, preferences, 0.0)
+				end
 			end
 			s.SimulationTimer = NewTimer(totalDuration, HandleSimulationCompleted)
-			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
+			-- Removed for 12.0.0
+			-- self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", HandleCombatLogEventUnfiltered)
 		end
 	end
 end
 
 -- Clears all s.timers and reminder widgets.
 function Private:StopSimulatingBoss()
-	self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	-- Removed for 12.0.0
+	-- self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	ResetLocalVariables()
 end
 
