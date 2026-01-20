@@ -850,9 +850,17 @@ local function PopulateFields(
 	local combatLogEventItem, _ = self.assignmentTypeDropdown:FindItemAndText("Combat Log Event")
 	if combatLogEventItem then
 		combatLogEventItem:SetEnabled(enableCombatLogEvents)
+		combatLogEventItem:SetTextColor({ 1.0, 0.0, 0.0, 1.0 })
 	end
 
 	local types = { ["SCS"] = 0, ["SCC"] = 0, ["SAA"] = 0, ["SAR"] = 0, ["UD"] = 0 }
+	for combatLogEventType, _ in pairs(types) do
+		local item, _ = self.assignmentTypeDropdown:FindItemAndText(combatLogEventType)
+		if item then
+			item:SetTextColor({ 1.0, 0.0, 0.0, 1.0 })
+		end
+	end
+
 	for _, combatLogEventType in ipairs(availableCombatLogEventTypes) do
 		types[combatLogEventType] = 1
 	end
@@ -871,14 +879,15 @@ local function PopulateFields(
 		if item then
 			if count == 0 then -- Fully disabled
 				item:SetEnabled(false)
-				item:SetTextColor(k.DisabledTextColor)
+				item:SetTextColor({ 0.33, 0.0, 0.0, 1.0 })
 			elseif count == 1 then -- Indicate that the current spell isn't compatible
 				item:SetEnabled(true)
 				if not isTimedAssignment then
-					item:SetTextColor(k.HalfDisabledTextColor)
+					item:SetTextColor({ 0.66, 0.0, 0.0, 1.0 })
 				end
 			elseif count == 2 then -- Compatible with current spell
 				item:SetEnabled(true)
+				item:SetTextColor({ 1.0, 0.0, 0.0, 1.0 })
 			end
 		end
 	end
