@@ -1176,7 +1176,15 @@ do
 	---@param newBoss Boss New boss.
 	---@param oldDifficulty DifficultyType Old encounter difficulty.
 	---@param newDifficulty DifficultyType New encounter difficulty.
-	function BossUtilities.ConvertAssignmentsToNewBoss(plan, oldBoss, newBoss, oldDifficulty, newDifficulty)
+	---@param ignorePreferred boolean|nil If true, always converts assignments to timed assignments.
+	function BossUtilities.ConvertAssignmentsToNewBoss(
+		plan,
+		oldBoss,
+		newBoss,
+		oldDifficulty,
+		newDifficulty,
+		ignorePreferred
+	)
 		local oldEncounterID, newEncounterID = oldBoss.dungeonEncounterID, newBoss.dungeonEncounterID
 		local preferredAbilities = BossUtilities.GetBossPreferredCombatLogEventAbilities(newBoss, newDifficulty)
 		local phases = BossUtilities.GetBossPhases(newBoss, newDifficulty)
@@ -1198,7 +1206,7 @@ do
 					oldDifficulty
 				)
 			end
-			if preferredAbilities then
+			if preferredAbilities and not ignorePreferred then
 				local newSpellID, newSpellCount, newEventType, newTime =
 					BossUtilities.FindNearestPreferredCombatLogEvent(
 						absoluteTime,

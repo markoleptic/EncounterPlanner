@@ -106,6 +106,7 @@ local k = {
 			Delete = {},
 		},
 		DuplicatePlan = {},
+		DuplicatePlanAndConvertToTimed = {},
 		Import = {
 			FromMRT = {
 				Create = {},
@@ -159,6 +160,11 @@ do -- Plan Menu Items
 				{
 					itemValue = k.PlanMenuItemValues.DuplicatePlan,
 					text = AddIconBeforeText(constants.textures.kDuplicate, L["Duplicate Plan"]),
+					notSelectable = true,
+				},
+				{
+					itemValue = k.PlanMenuItemValues.DuplicatePlanAndConvertToTimed,
+					text = AddIconBeforeText(constants.textures.kDuplicate, L["Duplicate Plan and Convert to Timed"]),
 					notSelectable = true,
 				},
 				{
@@ -1391,6 +1397,21 @@ do -- Plan Menu Button s.Handlers
 		AddPlanToDropdown(newPlan, true)
 	end
 
+	local function HandleDuplicatePlanAndConvertToTimedButtonClicked()
+		ClosePlanDependentWidgets()
+		local plans = AddOn.db.profile.plans
+		local planToDuplicateName = AddOn.db.profile.lastOpenPlan
+
+		local newPlan = utilities.DuplicatePlan(plans, planToDuplicateName, planToDuplicateName)
+		AddOn.db.profile.lastOpenPlan = newPlan.name
+
+		local boss = GetBoss(newPlan.dungeonEncounterID)
+		ConvertAssignmentsToNewBoss(newPlan, boss, boss, newPlan.difficulty, newPlan.difficulty, true)
+
+		UpdateAllAssignments(true)
+		AddPlanToDropdown(newPlan, true)
+	end
+
 	local RemovePlanFromDropdown = interfaceUpdater.RemovePlanFromDropdown
 
 	local function HandleDeleteCurrentPlanButtonClicked()
@@ -1740,6 +1761,8 @@ do -- Plan Menu Button s.Handlers
 			HandleCreateTemplateButtonClicked()
 		elseif value == k.PlanMenuItemValues.DuplicatePlan then
 			HandleDuplicatePlanButtonClicked()
+		elseif value == k.PlanMenuItemValues.DuplicatePlanAndConvertToTimed then
+			HandleDuplicatePlanAndConvertToTimedButtonClicked()
 		elseif value == k.PlanMenuItemValues.ExportPlan then
 			HandleExportPlanButtonClicked()
 		elseif value == k.PlanMenuItemValues.DeletePlan then

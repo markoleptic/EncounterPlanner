@@ -193,6 +193,7 @@ L["dropdown"] = true
 L["Duplicate an assignment by control-clicking an icon and dragging."] = true
 L["Duplicate Assignment"] = true
 L["Duplicate Plan"] = true
+L["Duplicate Plan and Convert to Timed"] = true
 L["Duration Position"] = true
 L["Duration to the left of text."] = true
 L["Duration to the right of text."] = true
