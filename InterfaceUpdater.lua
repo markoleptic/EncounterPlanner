@@ -300,7 +300,7 @@ do
 	---@param abilityEntry EPAbilityEntry
 	local function HandleSwapButtonClicked(abilityEntry)
 		local roster = GetCurrentRoster()
-		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
+		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster, true)
 		abilityEntry:SetAssigneeDropdownItems(items)
 		abilityEntry.dropdown:SetItemEnabled("Individual", enableIndividualItem)
 	end
@@ -616,8 +616,8 @@ function InterfaceUpdater.UpdateAddAssigneeDropdown()
 		local text = AddIconBeforeText(constants.textures.kAdd, L["Add Assignee"])
 		addAssigneeDropdown:SetText(text)
 		local roster = GetCurrentRoster()
-		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster)
-		addAssigneeDropdown:AddItems(items, "EPDropdownItemToggle", true)
+		local items, enableIndividualItem = CreateAssignmentTypeWithRosterDropdownItems(roster, true)
+		addAssigneeDropdown:AddItems(items, "EPDropdownItemToggle")
 		addAssigneeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 	end
 end

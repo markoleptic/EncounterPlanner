@@ -305,7 +305,7 @@ end
 ---@param self EPAbilityEntry
 ---@param items DropdownItemData
 local function SetAssigneeDropdownItems(self, items)
-	self.dropdown:AddItems(items, "EPDropdownItemToggle", true)
+	self.dropdown:AddItems(items, "EPDropdownItemToggle")
 	self.dropdown.frame:Show()
 	self.dropdown:Open()
 end

@@ -130,62 +130,75 @@ do -- Plan Menu Items
 				{
 					itemValue = k.PlanMenuItemValues.NewPlan,
 					text = AddIconBeforeText(constants.textures.kAdd, L["New Plan"]),
+					notSelectable = true,
 				},
 				{
 					itemValue = k.PlanMenuItemValues.Templates,
 					text = AddIconBeforeText(constants.textures.kTemplate, L["Templates"]),
+					notSelectable = true,
 					dropdownItemMenuData = {
 						{
 							itemValue = k.PlanMenuItemValues.Templates.Create,
 							text = L["Create Template"],
+							notSelectable = true,
 						},
 						{
 							itemValue = k.PlanMenuItemValues.Templates.Apply,
 							text = L["Apply Template"],
 							dropdownItemMenuData = {},
+							notSelectable = true,
 						},
 						{
 							itemValue = k.PlanMenuItemValues.Templates.Delete,
 							text = L["Delete Template"],
 							dropdownItemMenuData = {},
+							notSelectable = true,
 						},
 					},
 				},
 				{
 					itemValue = k.PlanMenuItemValues.DuplicatePlan,
 					text = AddIconBeforeText(constants.textures.kDuplicate, L["Duplicate Plan"]),
+					notSelectable = true,
 				},
 				{
 					itemValue = k.PlanMenuItemValues.Import,
 					text = AddIconBeforeText(constants.textures.kImport, L["Import"]),
+					notSelectable = true,
 					dropdownItemMenuData = {
 						{
 							itemValue = k.PlanMenuItemValues.Import.FromMRT,
 							text = L["From"] .. " " .. "MRT",
+							notSelectable = true,
 							dropdownItemMenuData = {
 								{
 									itemValue = k.PlanMenuItemValues.Import.FromMRT.Create,
 									text = L["Import As New Plan"],
+									notSelectable = true,
 								},
 								{
 									itemValue = k.PlanMenuItemValues.Import.FromMRT.Overwrite,
 									text = L["Overwrite Current Plan"],
+									notSelectable = true,
 								},
 							},
 						},
 						{
 							itemValue = k.PlanMenuItemValues.Import.FromString,
 							text = L["From Text"],
+							notSelectable = true,
 						},
 					},
 				},
 				{
 					itemValue = k.PlanMenuItemValues.ExportPlan,
 					text = AddIconBeforeText(constants.textures.kExport, L["Export Current Plan"]),
+					notSelectable = true,
 				},
 				{
 					itemValue = k.PlanMenuItemValues.DeletePlan,
 					text = AddIconBeforeText(constants.textures.kClose, L["Delete Current Plan"]),
+					notSelectable = true,
 				},
 			}
 		end
@@ -363,7 +376,7 @@ do -- Roster Editor
 
 			local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
 			local updatedDropdownItems, enableIndividualItem =
-				CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
+				CreateAssignmentTypeWithRosterDropdownItems(roster, false, assigneeDropdownItems)
 
 			local previousValue = assigneeTypeDropdown:GetValue()
 			assigneeTypeDropdown:Clear()
@@ -740,7 +753,7 @@ do -- Assignment Editor
 		local assigneeDropdownItems = CreateAssigneeDropdownItems(roster)
 
 		local updatedDropdownItems, enableIndividualItem =
-			CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
+			CreateAssignmentTypeWithRosterDropdownItems(roster, false, assigneeDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:AddItems(updatedDropdownItems)
 		assignmentEditor.assigneeTypeDropdown:SetItemEnabled("Individual", enableIndividualItem)
 
@@ -2200,7 +2213,7 @@ function Private:CreateInterface()
 	local menuButtonHeight = mainFrame.windowBar.frame:GetHeight() - 2
 
 	local planMenuButton = s.Creator.DropdownMenuButton(L["Plan"], menuButtonHeight)
-	planMenuButton:AddItems(s.Creator.PlanMenuItems(), "EPDropdownItemToggle", true)
+	planMenuButton:AddItems(s.Creator.PlanMenuItems(), "EPDropdownItemToggle")
 	planMenuButton:SetCallback("OnValueChanged", s.Handler.PlanMenuButtonClicked)
 	local MRTLoadingOrLoaded, MRTLoaded = IsAddOnLoaded("MRT")
 	planMenuButton:SetItemEnabled(k.PlanMenuItemValues.Import.FromMRT, MRTLoadingOrLoaded or MRTLoaded)
@@ -2413,8 +2426,8 @@ function Private:CreateInterface()
 	local addAssigneeDropdown = timeline:GetAddAssigneeDropdown()
 	addAssigneeDropdown:SetCallback("OnValueChanged", HandleAddAssigneeRowDropdownValueChanged)
 	addAssigneeDropdown:SetText(k.AddAssigneeText)
-	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster())
-	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle", true)
+	local assigneeItems = CreateAssignmentTypeWithRosterDropdownItems(GetCurrentRoster(), true)
+	addAssigneeDropdown:AddItems(assigneeItems, "EPDropdownItemToggle")
 
 	mainFrame.bossLabel = bossLabel
 	mainFrame.bossMenuButton = bossMenuButton

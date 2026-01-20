@@ -1179,32 +1179,52 @@ function Utilities.CreateAssigneeDropdownItems(roster)
 	return dropdownItems
 end
 
--- Creates dropdown data with all assignments types including individual roster members.
----@param roster table<string, RosterEntry> Roster to character names from
----@param assigneeDropdownItems? table<integer, DropdownItemData>
----@return table<integer, DropdownItemData>
----@return boolean individualEmpty
-function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, assigneeDropdownItems)
-	local assignmentTypes = Utilities.GetOrCreateAssignmentTypeDropdownItems()
+do
+	---@param assignmentTypes table<integer, DropdownItemData>
+	---@param notSelectable boolean|nil The notSelectable field value for dropdown items.
+	local function SetNotSelectableField(assignmentTypes, notSelectable)
+		for _, item in pairs(assignmentTypes) do
+			item.notSelectable = notSelectable
+			if item.dropdownItemMenuData and #item.dropdownItemMenuData > 0 then
+				SetNotSelectableField(item.dropdownItemMenuData)
+			end
+		end
+	end
 
-	local individualIndex = nil
-	for index, assignmentType in ipairs(assignmentTypes) do
-		if assignmentType.itemValue == "Individual" then
-			individualIndex = index
-			break
+	-- Creates dropdown data with all assignments types including individual roster members.
+	---@param roster table<string, RosterEntry> Roster to character names from
+	---@param notSelectable boolean The notSelectable field value for dropdown items.
+	---@param assigneeDropdownItems? table<integer, DropdownItemData>
+	---@return table<integer, DropdownItemData>
+	---@return boolean individualEmpty
+	function Utilities.CreateAssignmentTypeWithRosterDropdownItems(roster, notSelectable, assigneeDropdownItems)
+		local assignmentTypes = Utilities.GetOrCreateAssignmentTypeDropdownItems()
+
+		local individualIndex = nil
+		for index, assignmentType in ipairs(assignmentTypes) do
+			if assignmentType.itemValue == "Individual" then
+				individualIndex = index
+				break
+			end
 		end
-	end
-	local individualEmpty = true
-	if individualIndex then
-		if assigneeDropdownItems then
-			assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
-		elseif roster then
-			assignmentTypes[individualIndex].dropdownItemMenuData = Utilities.CreateAssigneeDropdownItems(roster)
+		local individualEmpty = true
+		if individualIndex then
+			if assigneeDropdownItems then
+				assignmentTypes[individualIndex].dropdownItemMenuData = assigneeDropdownItems
+			elseif roster then
+				assignmentTypes[individualIndex].dropdownItemMenuData = Utilities.CreateAssigneeDropdownItems(roster)
+			end
+			Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
+			individualEmpty = #assignmentTypes[individualIndex].dropdownItemMenuData > 0
 		end
-		Utilities.SortDropdownDataByItemValue(assignmentTypes[individualIndex].dropdownItemMenuData)
-		individualEmpty = #assignmentTypes[individualIndex].dropdownItemMenuData > 0
+		if notSelectable == true then
+			SetNotSelectableField(assignmentTypes, true)
+		else
+			SetNotSelectableField(assignmentTypes, nil)
+		end
+
+		return assignmentTypes, individualEmpty
 	end
-	return assignmentTypes, individualEmpty
 end
 
 ---@param icon string|integer
