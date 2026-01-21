@@ -42,18 +42,6 @@ Private.spellDB = {
 				["spellID"] = 118038,
 			},
 			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Skullsplitter",
-				["spellID"] = 260643,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Warbreaker",
-				["spellID"] = 262161,
-			},
-			{
 				["type"] = L["Core"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Colossus Smash",
@@ -149,11 +137,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Core"],
-				["name"] = "Thunderous Roar",
-				["spellID"] = 384318,
-			},
-			{
-				["type"] = L["Core"],
 				["name"] = "Avatar",
 				["spellID"] = 107574,
 			},
@@ -181,12 +164,6 @@ Private.spellDB = {
 				["type"] = L["Core"],
 				["name"] = "Spell Reflection",
 				["spellID"] = 23920,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Ravager",
-				["spellID"] = 228920,
 			},
 			{
 				["type"] = L["Personal Defensive"],
@@ -256,12 +233,6 @@ Private.spellDB = {
 				["spellID"] = 1856,
 			},
 			{
-				["type"] = L["Core"],
-				["spec"] = 261,
-				["name"] = "Symbols of Death",
-				["spellID"] = 212283,
-			},
-			{
 				["type"] = L["Other"],
 				["name"] = "Sprint",
 				["spellID"] = 2983,
@@ -303,11 +274,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["name"] = "Ghostly Strike",
-				["spellID"] = 196937,
-			},
-			{
-				["type"] = L["Other"],
 				["name"] = "Grappling Hook",
 				["spellID"] = 195457,
 			},
@@ -343,11 +309,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Core"],
-				["name"] = "Flagellation",
-				["spellID"] = 384631,
-			},
-			{
-				["type"] = L["Core"],
 				["name"] = "Shadow Blades",
 				["spellID"] = 121471,
 			},
@@ -360,11 +321,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Gouge",
 				["spellID"] = 1776,
-			},
-			{
-				["type"] = L["Core"],
-				["name"] = "Cold Blood",
-				["spellID"] = 382245,
 			},
 			{
 				["type"] = L["Other"],
@@ -445,13 +401,8 @@ Private.spellDB = {
 				["spellID"] = 183752,
 			},
 			{
-				["type"] = L["Personal Defensive"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Netherwalk",
-				["spellID"] = 196555,
-			},
-			{
 				["type"] = L["Core"],
+				["role"] = { ["role:damager"] = true },
 				["name"] = "The Hunt",
 				["spellID"] = 370965,
 			},
@@ -494,13 +445,8 @@ Private.spellDB = {
 				["spellID"] = 263648,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Bulk Extraction",
-				["spellID"] = 320341,
-			},
-			{
 				["type"] = L["Other"],
+				["role"] = { ["role:tank"] = true },
 				["name"] = "Sigil of Spite",
 				["spellID"] = 390163,
 			},
@@ -543,22 +489,10 @@ Private.spellDB = {
 				["spellID"] = 217832,
 			},
 			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Fel Eruption",
-				["spellID"] = 211881,
-			},
-			{
 				["type"] = L["Core"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Eye Beam",
 				["spellID"] = 198013,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Fel Barrage",
-				["spellID"] = 258925,
 			},
 			{
 				["type"] = L["Other"],
@@ -614,7 +548,7 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true, ["role:damager"] = true },
+				["role"] = { ["role:damager"] = true },
 				["name"] = "Jadefire Stomp",
 				["spellID"] = 388193,
 			},
@@ -683,12 +617,6 @@ Private.spellDB = {
 				["spellID"] = 113656,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Storm, Earth, and Fire",
-				["spellID"] = 137639,
-			},
-			{
 				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Flying Serpent Kick",
@@ -753,6 +681,7 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
+				["role"] = { ["role:damager"] = true, ["role:tank"] = true },
 				["name"] = "Spear Hand Strike",
 				["spellID"] = 116705,
 			},
@@ -778,26 +707,9 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Summon White Tiger Statue",
-				["spellID"] = 388686,
-			},
-			{
-				["type"] = L["Core"],
 				["role"] = { ["role:tank"] = true },
-				["name"] = "Dampen Harm",
-				["spellID"] = 122278,
-			},
-			{
-				["type"] = L["Other"],
 				["name"] = "Chi Burst",
 				["spellID"] = 123986,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Weapons of Order",
-				["spellID"] = 387184,
 			},
 			{
 				["type"] = L["Other"],
@@ -846,12 +758,6 @@ Private.spellDB = {
 				["spellID"] = 56222,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Raise Abomination",
-				["spellID"] = 455395,
-			},
-			{
 				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Remorseless Winter",
@@ -887,11 +793,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Raise Dead",
 				["spellID"] = 46585,
-			},
-			{
-				["type"] = L["Personal Defensive"],
-				["name"] = "Sacrificial Pact",
-				["spellID"] = 327574,
 			},
 			{
 				["type"] = L["Personal Defensive"],
@@ -932,12 +833,6 @@ Private.spellDB = {
 				["spellID"] = 51271,
 			},
 			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Bonestorm",
-				["spellID"] = 194844,
-			},
-			{
 				["type"] = L["Group Utility"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Gorefiend's Grasp",
@@ -950,34 +845,10 @@ Private.spellDB = {
 				["spellID"] = 49028,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Tombstone",
-				["spellID"] = 219809,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Blood Tap",
-				["spellID"] = 221699,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Blooddrinker",
-				["spellID"] = 206931,
-			},
-			{
 				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Consumption",
 				["spellID"] = 274156,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Rune Tap",
-				["spellID"] = 194679,
 			},
 			{
 				["type"] = L["Core"],
@@ -996,12 +867,6 @@ Private.spellDB = {
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Summon Gargoyle",
 				["spellID"] = 49206,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Apocalypse",
-				["spellID"] = 275699,
 			},
 			{
 				["type"] = L["Core"],
@@ -1086,28 +951,8 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["name"] = "Flanking Strike",
-				["spellID"] = 269751,
-			},
-			{
-				["type"] = L["Other"],
 				["name"] = "Harpoon",
 				["spellID"] = 190925,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Fury of the Eagle",
-				["spellID"] = 203415,
-			},
-			{
-				["type"] = L["Core"],
-				["name"] = "Coordinated Assault",
-				["spellID"] = 360952,
-			},
-			{
-				["type"] = L["Core"],
-				["name"] = "Spearhead",
-				["spellID"] = 360966,
 			},
 			{
 				["type"] = L["Other"],
@@ -1252,12 +1097,6 @@ Private.spellDB = {
 			{
 				["type"] = L["Core"],
 				["role"] = { ["role:healer"] = true },
-				["name"] = "Emerald Communion",
-				["spellID"] = 370960,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
 				["name"] = "Dream Flight",
 				["spellID"] = 359816,
 			},
@@ -1281,32 +1120,14 @@ Private.spellDB = {
 			{
 				["type"] = L["Other"],
 				["role"] = { ["role:healer"] = true },
-				["name"] = "Spiritbloom",
-				["spellID"] = 367226,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
 				["name"] = "Dream Breath",
 				["spellID"] = 355936,
 			},
 			{
 				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
-				["name"] = "Shattering Star",
-				["spellID"] = 370452,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
 				["name"] = "Eternity Surge",
 				["spellID"] = 359073,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Firestorm",
-				["spellID"] = 368847,
 			},
 			{
 				["type"] = L["Core"],
@@ -1337,6 +1158,7 @@ Private.spellDB = {
 			{
 				["type"] = L["Other"],
 				["name"] = "Quell",
+				["role"] = { ["role:damager"] = true },
 				["spellID"] = 351338,
 			},
 			{
@@ -1409,11 +1231,6 @@ Private.spellDB = {
 				["name"] = "Ebon Might",
 				["spellID"] = 395152,
 			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Engulf",
-				["spellID"] = 443328,
-			},
 		},
 		["DRUID"] = {
 			{
@@ -1453,22 +1270,10 @@ Private.spellDB = {
 				["spellID"] = 132158,
 			},
 			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Cenarion Ward",
-				["spellID"] = 102351,
-			},
-			{
 				["type"] = L["Core"],
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Tranquility",
 				["spellID"] = 740,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Overgrowth",
-				["spellID"] = 203651,
 			},
 			{
 				["type"] = L["Core"],
@@ -1480,18 +1285,6 @@ Private.spellDB = {
 				["type"] = L["Core"],
 				["name"] = "Convoke the Spirits",
 				["spellID"] = 391528,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Adaptive Swarm",
-				["spellID"] = 391888,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Invigorate",
-				["spellID"] = 392160,
 			},
 			{
 				["type"] = L["Core"],
@@ -1604,11 +1397,6 @@ Private.spellDB = {
 				["spellID"] = 319454,
 			},
 			{
-				["type"] = L["Other"],
-				["name"] = "Renewal",
-				["spellID"] = 108238,
-			},
-			{
 				["type"] = L["Group Utility"],
 				["name"] = "Stampeding Roar",
 				["spellID"] = 77764,
@@ -1637,11 +1425,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Innervate",
 				["spellID"] = 29166,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Nature's Vigil",
-				["spellID"] = 124974,
 			},
 			{
 				["type"] = L["Other"],
@@ -1680,12 +1463,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Warrior of Elune",
-				["spellID"] = 202425,
-			},
-			{
-				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Lunar Beam",
 				["spellID"] = 204066,
@@ -1704,11 +1481,6 @@ Private.spellDB = {
 			},
 		},
 		["WARLOCK"] = {
-			{
-				["type"] = L["Other"],
-				["name"] = "Oblivion",
-				["spellID"] = 417537,
-			},
 			{
 				["type"] = L["Other"],
 				["name"] = "Call Observer",
@@ -1743,11 +1515,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Fel Domination",
 				["spellID"] = 333889,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Amplify Curse",
-				["spellID"] = 328774,
 			},
 			{
 				["type"] = L["Personal Defensive"],
@@ -1800,24 +1567,9 @@ Private.spellDB = {
 				["spellID"] = 264130,
 			},
 			{
-				["type"] = L["Core"],
-				["name"] = "Grimoire: Felguard",
-				["spellID"] = 111898,
-			},
-			{
 				["type"] = L["Other"],
 				["name"] = "Summon Vilefiend",
 				["spellID"] = 264119,
-			},
-			{
-				["type"] = L["Core"],
-				["name"] = "Demonic Strength",
-				["spellID"] = 267171,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Bilescourge Bombers",
-				["spellID"] = 267211,
 			},
 			{
 				["type"] = L["Other"],
@@ -1836,23 +1588,8 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["name"] = "Vile Taint",
-				["spellID"] = 278350,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Phantom Singularity",
-				["spellID"] = 205179,
-			},
-			{
-				["type"] = L["Other"],
 				["name"] = "Grimoire of Sacrifice",
 				["spellID"] = 108503,
-			},
-			{
-				["type"] = L["Core"],
-				["name"] = "Soul Rot",
-				["spellID"] = 386997,
 			},
 			{
 				["type"] = L["Other"],
@@ -1898,15 +1635,9 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Divine Word",
-				["spellID"] = 372760,
-			},
-			{
-				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
-				["name"] = "Shadow Crash",
-				["spellID"] = 205385,
+				["name"] = "Tentacle Slam",
+				["spellID"] = 1227280,
 			},
 			{
 				["type"] = L["Group Utility"],
@@ -1932,22 +1663,10 @@ Private.spellDB = {
 				["spellID"] = 33206,
 			},
 			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Lightwell",
-				["spellID"] = 372835,
-			},
-			{
 				["type"] = L["Core"],
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Apotheosis",
 				["spellID"] = 200183,
-			},
-			{
-				["type"] = L["Group Utility"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Symbol of Hope",
-				["spellID"] = 64901,
 			},
 			{
 				["type"] = L["Core"],
@@ -1992,20 +1711,9 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["name"] = "Psychic Horror",
-				["spellID"] = 64044,
-			},
-			{
-				["type"] = L["Other"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Void Torrent",
 				["spellID"] = 263165,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Dark Ascension",
-				["spellID"] = 391109,
 			},
 			{
 				["type"] = L["Core"],
@@ -2018,17 +1726,6 @@ Private.spellDB = {
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Dispersion",
 				["spellID"] = 47585,
-			},
-			{
-				["type"] = L["External Defensive"],
-				["name"] = "Void Shift",
-				["spellID"] = 108968,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Power Word: Life",
-				["spellID"] = 373481,
 			},
 			{
 				["type"] = L["Core"],
@@ -2088,12 +1785,6 @@ Private.spellDB = {
 			{
 				["type"] = L["Core"],
 				["role"] = { ["role:healer"] = true },
-				["name"] = "Luminous Barrier",
-				["spellID"] = 271466,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
 				["name"] = "Ultimate Penitence",
 				["spellID"] = 421453,
 			},
@@ -2101,12 +1792,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Mind Blast",
 				["spellID"] = 8092,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Premonition",
-				["spellID"] = 428924,
 			},
 			{
 				["type"] = L["Core"],
@@ -2158,12 +1843,6 @@ Private.spellDB = {
 			{
 				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
-				["name"] = "Bastion of Light",
-				["spellID"] = 378974,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:tank"] = true },
 				["name"] = "Guardian of Ancient Kings",
 				["spellID"] = 86659,
 			},
@@ -2173,22 +1852,10 @@ Private.spellDB = {
 				["spellID"] = 375576,
 			},
 			{
-				["type"] = L["Core"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Eye of Tyr",
-				["spellID"] = 387174,
-			},
-			{
 				["type"] = L["Other"],
 				["role"] = { ["role:tank"] = true },
 				["name"] = "Avenger's Shield",
 				["spellID"] = 31935,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:tank"] = true },
-				["name"] = "Moment of Glory",
-				["spellID"] = 327193,
 			},
 			{
 				["type"] = L["Other"],
@@ -2218,18 +1885,6 @@ Private.spellDB = {
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Shield of Vengeance",
 				["spellID"] = 184662,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Final Reckoning",
-				["spellID"] = 343721,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Barrier of Faith",
-				["spellID"] = 148039,
 			},
 			{
 				["type"] = L["Core"],
@@ -2284,6 +1939,7 @@ Private.spellDB = {
 			{
 				["type"] = L["Other"],
 				["name"] = "Rebuke",
+				["role"] = { ["role:damager"] = true, ["role:tank"] = true },
 				["spellID"] = 96231,
 			},
 			{
@@ -2362,26 +2018,8 @@ Private.spellDB = {
 			{
 				["type"] = L["Core"],
 				["role"] = { ["role:damager"] = true },
-				["name"] = "Primordial Wave",
-				["spellID"] = 375982,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
 				["name"] = "Feral Spirit",
 				["spellID"] = 51533,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Fire Elemental",
-				["spellID"] = 198067,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Storm Elemental",
-				["spellID"] = 192249,
 			},
 			{
 				["type"] = L["Core"],
@@ -2393,12 +2031,6 @@ Private.spellDB = {
 				["type"] = L["Core"],
 				["name"] = "Ascendance",
 				["spellID"] = 114049,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:damager"] = true },
-				["name"] = "Liquid Magma Totem",
-				["spellID"] = 192222,
 			},
 			{
 				["type"] = L["Core"],
@@ -2417,30 +2049,6 @@ Private.spellDB = {
 				["role"] = { ["role:healer"] = true },
 				["name"] = "Mana Tide Totem",
 				["spellID"] = 16191,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Earthen Wall Totem",
-				["spellID"] = 198838,
-			},
-			{
-				["type"] = L["Group Utility"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Ancestral Protection Totem",
-				["spellID"] = 207399,
-			},
-			{
-				["type"] = L["Core"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Cloudburst Totem",
-				["spellID"] = 157153,
-			},
-			{
-				["type"] = L["Other"],
-				["role"] = { ["role:healer"] = true },
-				["name"] = "Wellspring",
-				["spellID"] = 197995,
 			},
 			{
 				["type"] = L["Personal Defensive"],
@@ -2514,11 +2122,6 @@ Private.spellDB = {
 			},
 			{
 				["type"] = L["Other"],
-				["name"] = "Totemic Recall",
-				["spellID"] = 108285,
-			},
-			{
-				["type"] = L["Other"],
 				["name"] = "Poison Cleansing Totem",
 				["spellID"] = 383013,
 			},
@@ -2526,11 +2129,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Tranquil Air Totem",
 				["spellID"] = 383019,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Lightning Lasso",
-				["spellID"] = 305483,
 			},
 			{
 				["type"] = L["Other"],
@@ -2557,11 +2155,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Ancestral Swiftness",
 				["spellID"] = 443454,
-			},
-			{
-				["type"] = L["Personal Defensive"],
-				["name"] = "Stone Bulwark Totem",
-				["spellID"] = 108270,
 			},
 			{
 				["type"] = L["Other"],
@@ -2596,11 +2189,6 @@ Private.spellDB = {
 				["spellID"] = 66,
 			},
 			{
-				["type"] = L["Core"],
-				["name"] = "Shifting Power",
-				["spellID"] = 382440,
-			},
-			{
 				["type"] = L["Other"],
 				["name"] = "Ring of Frost",
 				["spellID"] = 113724,
@@ -2616,19 +2204,9 @@ Private.spellDB = {
 				["spellID"] = 31661,
 			},
 			{
-				["type"] = L["Other"],
-				["name"] = "Displacement",
-				["spellID"] = 389713,
-			},
-			{
 				["type"] = L["Personal Defensive"],
 				["name"] = "Greater Invisibility",
 				["spellID"] = 110959,
-			},
-			{
-				["type"] = L["Other"],
-				["name"] = "Blast Wave",
-				["spellID"] = 157981,
 			},
 			{
 				["type"] = L["Other"],
@@ -2701,11 +2279,6 @@ Private.spellDB = {
 				["spellID"] = 205021,
 			},
 			{
-				["type"] = L["Core"],
-				["name"] = "Icy Veins",
-				["spellID"] = 12472,
-			},
-			{
 				["type"] = L["Other"],
 				["name"] = "Summon Water Elemental",
 				["spellID"] = 31687,
@@ -2749,11 +2322,6 @@ Private.spellDB = {
 				["type"] = L["Other"],
 				["name"] = "Arcane Orb",
 				["spellID"] = 153626,
-			},
-			{
-				["type"] = L["Group Utility"],
-				["name"] = "Mass Barrier",
-				["spellID"] = 414660,
 			},
 			{
 				["type"] = L["Group Utility"],
