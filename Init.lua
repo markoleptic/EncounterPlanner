@@ -629,6 +629,7 @@ fontInitializer:SetFontObject(obj)
 fontInitializer:Hide()
 fontInitializer:SetParent(UIParent)
 LSM:Register("font", "PT Sans Narrow", fontPath, bit.bor(LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU))
+LSM:Register("statusbar", "Clean", Private.constants.textures.kStatusBarClean)
 
 --@debug@
 Private.testReferences = {}
