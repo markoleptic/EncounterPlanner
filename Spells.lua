@@ -166,6 +166,12 @@ Private.spellDB = {
 				["spellID"] = 23920,
 			},
 			{
+				["type"] = L["Core"],
+				["role"] = { ["role:damager"] = true },
+				["name"] = "Ravager",
+				["spellID"] = 228920,
+			},
+			{
 				["type"] = L["Personal Defensive"],
 				["role"] = { ["role:damager"] = true },
 				["name"] = "Enraged Regeneration",
@@ -1384,6 +1390,7 @@ Private.spellDB = {
 			{
 				["type"] = L["Other"],
 				["name"] = "Skull Bash",
+				["role"] = { ["role:damager"] = true, ["role:tank"] = true },
 				["spellID"] = 106839,
 			},
 			{
