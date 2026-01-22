@@ -156,6 +156,7 @@ do
 		-- Demon Hunter
 		[577] = "melee", -- Havoc
 		[581] = "melee", -- Vengeance
+		[1480] = "ranged", -- Devourer
 		-- Evoker
 		[1467] = "ranged", -- Devastation
 		[1468] = "ranged", -- Preservation
