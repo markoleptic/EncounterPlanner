@@ -510,6 +510,7 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 			filteredAssignments = FilterSelf(assignments) --[[@as table<integer, Assignment>]]
 		end
 		for _, assignment in ipairs(filteredAssignments or assignments) do
+			-- luacheck: push ignore 542
 			if getmetatable(assignment) == CombatLogEventAssignment then
 				-- Removed for 12.0.0
 				---@cast assignment CombatLogEventAssignment
@@ -533,6 +534,7 @@ local function SetupReminders(plans, preferences, startTime, abilities)
 				CreateTimer(assignment, roster, preferences, GetTime() - startTime)
 				atLeastOneAssignmentActive = true
 			end
+			-- luacheck: pop
 			-- Moved for 12.0.0
 			-- atLeastOneAssignmentActive = true
 		end
@@ -708,6 +710,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 			end
 			if #activePlans > 0 then
 				s.HideIfAlreadyCasted = reminderPreferences.cancelIfAlreadyCasted
+				-- luacheck: push ignore 542
 				if
 					SetupReminders(activePlans, reminderPreferences, startTime, GetBossAbilities(boss, difficultyType))
 				then
@@ -716,6 +719,7 @@ local function HandleEncounterStart(_, encounterID, encounterName, difficultyID,
 				else
 					ResetLocalVariables()
 				end
+				-- luacheck: pop
 			end
 		end
 		--[===[@non-debug@
