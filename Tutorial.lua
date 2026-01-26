@@ -1298,7 +1298,7 @@ local function CreateTutorialSteps(self, setCurrentStep)
 			name = "spellCooldownDurations",
 			text = FormatText(
 				L["Spell cooldown durations can be overridden in the"],
-				{ L["Cooldown Overrides"] },
+				{ L["Spells"] },
 				L["section of the"],
 				{ L["Preferences"] },
 				L["menu"] .. ".",
