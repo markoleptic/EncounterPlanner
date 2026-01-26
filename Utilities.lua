@@ -167,10 +167,17 @@ do
 	---@type table<integer, {class: string, role: RaidGroupRole}>
 	local sSpecIDToClassAndRole = {}
 
+	---@type table<ClassFile, table<RaidGroupRole, boolean>>
+	local sClassRoles = {}
+
 	for specID, _ in pairs(specIDToType) do
 		local _, name, _, icon, role = GetSpecializationInfoForSpecID(specID)
 		local classID = GetClassIDFromSpecID(specID)
 		local classFile = select(2, GetClassInfo(classID))
+		if not sClassRoles[classFile] then
+			sClassRoles[classFile] = {}
+		end
+		sClassRoles[classFile]["role:" .. role:lower()] = true
 		local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
 		specIDToIconAndName[specID] = format("%s %s", inlineIcon, name)
 		specIDToName[specID] = name
@@ -211,7 +218,7 @@ do
 		genericIcons[format("rt%d", i)] = icon
 	end
 
-	---@type table<integer, string>
+	---@type table<integer, ClassFile>
 	local sClassFileNames = {}
 
 	---@type table<integer, string>
@@ -248,7 +255,7 @@ do
 		genericIcons[format("%d", classID)] = classIcon
 	end
 
-	---@return table<integer, string>
+	---@return table<integer, ClassFile>
 	function Utilities.GetClassFileNames()
 		return sClassFileNames
 	end
@@ -384,6 +391,12 @@ do
 	---@return boolean
 	function Utilities.IsValidRole(role)
 		return localizedRoles[role] ~= nil
+	end
+
+	---@param classFileName ClassFile
+	---@return table<RaidGroupRole, boolean>
+	function Utilities.GetClassRoles(classFileName)
+		return sClassRoles[classFileName]
 	end
 end
 
@@ -808,6 +821,39 @@ do
 		end
 
 		return classDropdownData
+	end
+
+	local classFileDropdownData = nil
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateClassFileDropdownItemData()
+		if not classFileDropdownData then
+			local dropdownData = {}
+			for _, classFileName in ipairs(Utilities.GetClassFileNames()) do
+				local classData = {
+					itemValue = classFileName,
+					text = Utilities.GetLocalizedPrettyClassName(classFileName),
+				}
+				tinsert(dropdownData, classData)
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownData)
+			classFileDropdownData = dropdownData
+		end
+
+		return classFileDropdownData
+	end
+
+	local SpellCategory = Private.classes.SpellCategory
+	---@return table<integer, DropdownItemData>
+	function Utilities.GetOrCreateSpellCategoryDropdownItemData()
+		return {
+			{ itemValue = SpellCategory.Core, text = L["Core"] },
+			{ itemValue = SpellCategory.GroupUtility, text = L["Group Utility"] },
+			{ itemValue = SpellCategory.PersonalDefensive, text = L["Personal Defensive"] },
+			{ itemValue = SpellCategory.ExternalDefensive, text = L["External Defensive"] },
+			{ itemValue = SpellCategory.Other, text = L["Other"] },
+			{ itemValue = SpellCategory.Racial, text = L["Racial"] },
+			{ itemValue = SpellCategory.Consumable, text = L["Consumable"] },
+		}
 	end
 end
 

@@ -169,6 +169,17 @@ Private.classes.AssignmentEditorDataType = {
 	HoldDuration = 11,
 }
 
+---@enum SpellCategory
+Private.classes.SpellCategory = {
+	Core = 1,
+	GroupUtility = 2,
+	PersonalDefensive = 3,
+	ExternalDefensive = 4,
+	Other = 5,
+	Racial = 6,
+	Consumable = 7,
+}
+
 ---@class DungeonInstance
 Private.classes.DungeonInstance = {
 	name = "",
@@ -366,6 +377,7 @@ local defaults = {
 		favoritedSpellAssignments = {},
 		trustedCharacters = {},
 		cooldownAndChargeOverrides = {},
+		customSpells = {},
 		activeText = {},
 		createdDefaults = {},
 		preferences = {

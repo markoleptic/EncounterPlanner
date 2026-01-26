@@ -1279,6 +1279,12 @@ do
 		end
 	end
 
+	---@param self EPDropdown
+	---@return number
+	local function GetWidthFromText(self)
+		return self.text:GetUnboundedStringWidth() + (self.textHorizontalPadding * 2) + self.button:GetWidth()
+	end
+
 	local function Constructor()
 		local count = AceGUI:GetNextWidgetNum(Type)
 		local frame = CreateFrame("Frame", Type .. count, UIParent, "BackdropTemplate")
@@ -1400,6 +1406,7 @@ do
 			SetMaxVisibleItems = SetMaxVisibleItems,
 			SetShowPathText = SetShowPathText,
 			SetTextFromValue = SetTextFromValue,
+			GetWidthFromText = GetWidthFromText,
 			frame = frame,
 			type = Type,
 			count = count,

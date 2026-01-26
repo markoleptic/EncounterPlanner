@@ -364,6 +364,12 @@
 ---@field duration number Overridden cooldown duration.
 ---@field maxCharges integer|nil Optional overridden charge count.
 
+---@class CustomSpell User added spell.
+---@field classFileName ClassFile Class to associate with spell. Unused if spellType is Racial or Consumable
+---@field spellCategory SpellCategory Spell category.
+-- Roles that can use the spell. Unused if spellType is Racial or Consumable.
+---@field roles table<RaidGroupRole, boolean>
+
 ---@class DefaultProfile
 ---@field activeBossAbilities table<integer, table<integer, boolean>> Boss abilities to show on the timeline.
 ---@field activeBossAbilitiesHeroic table<integer, table<integer, boolean>> Heroic abilities to show on the timeline.
@@ -378,6 +384,7 @@
 ---@field minimizeFramePosition {x: number, y: number}|nil Position of the minimize frame.
 -- Cooldown duration and charge overrides for spells.
 ---@field cooldownAndChargeOverrides table<integer, CooldownAndChargeOverride>
+---@field customSpells table<integer, CustomSpell> User added spells.
 ---@field activeText table<integer, string> External text send by the group leader on encounter start.
 ---@field preferences Preferences Settings.
 ---@field createdDefaults table<integer, boolean> Encounter IDs for which default plans have already been created.
@@ -622,6 +629,7 @@
 ---| "centeredButton"
 ---| "dropdownBesideButton"
 ---| "cooldownOverrides"
+---| "customSpells"
 
 ---@alias OptionFailureReason
 ---|1 Invalid assignment type
@@ -633,10 +641,10 @@
 ---|7 Invalid boss
 
 ---@alias GetFunction
----| fun(): string|boolean|table<integer, number>|table<integer, CooldownAndChargeOverride>|number,number?,number?,number?
+---| fun(): string|boolean|table<integer, number>|table<integer, CooldownAndChargeOverride>|table<integer, CustomSpell>|number,number?,number?,number?
 
 ---@alias SetFunction
----| fun(value: string|boolean|number|table<integer, number>|table<integer, CooldownAndChargeOverride>, value2?: string|boolean|number, value3?:number, value4?:number)
+---| fun(value: string|boolean|number|table<integer, number>|table<integer, CooldownAndChargeOverride>|table<integer, CustomSpell>, value2?: string|boolean|number, value3?:number, value4?:number)
 
 ---@alias ValidateFunction
 ---| fun(value: string|number, value2?: string): boolean, string|number?,number?

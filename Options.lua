@@ -772,7 +772,7 @@ do
 	}
 
 	--[[@type table<integer, EPSettingOption>]]
-	local cooldownOverrideOptions = nil
+	local spellsOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
 	local controlOptions = nil
 	--[[@type table<integer, EPSettingOption>]]
@@ -3310,11 +3310,12 @@ do
 	end
 
 	---@return table<integer, EPSettingOption>
-	local function GetCooldownOverrideOptions()
+	local function GetSpellsOptions()
 		return {
 			{
 				label = L["Cooldown Overrides"],
 				type = "cooldownOverrides",
+				category = L["Spells"],
 				get = function()
 					return AddOn.db.profile.cooldownAndChargeOverrides
 				end,
@@ -3325,6 +3326,21 @@ do
 						if Private.mainFrame then
 							UpdateAllAssignments(false)
 						end
+					end
+				end,
+			} --[[@as EPSettingOption]],
+			{
+				label = L["Manually Added Spells"],
+				type = "customSpells",
+				category = L["Spells"],
+				get = function()
+					return AddOn.db.profile.customSpells
+				end,
+				set = function(value)
+					if type(value) == "table" then
+						---@cast value table<integer, CustomSpell>
+						AddOn.db.profile.customSpells = value
+						-- TODO: Repopulate spell dropdowns
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -3354,8 +3370,8 @@ do
 			sort(voices, sortFunc)
 		end
 
-		if not cooldownOverrideOptions then
-			cooldownOverrideOptions = GetCooldownOverrideOptions()
+		if not spellsOptions then
+			spellsOptions = GetSpellsOptions()
 		end
 		if not controlOptions then
 			controlOptions = CreateControlOptions()
@@ -3370,14 +3386,14 @@ do
 			profileOptions = CreateProfileOptions()
 		end
 
-		local cooldownOverrideTab = { L["Cooldown Overrides"], cooldownOverrideOptions }
+		local spellsTab = { L["Spells"], spellsOptions }
 		local controlsTab = { L["Controls"], controlOptions, { L["Assignment Timeline"], L["Timeline"] } }
 		local reminderTabs = { L["Messages"], L["Progress Bars"], L["Cooldown Icons"], L["Text to Speech"], L["Sound"] }
 		local reminderTab = { L["Reminder"], reminderOptions, reminderTabs }
 		local viewTab = { L["View"], viewOptions, { L["Assignment Timeline"], L["Boss Ability Timeline"] } }
 		local profileTab = { L["Profile"], profileOptions }
 
-		return cooldownOverrideTab, controlsTab, reminderTab, viewTab, profileTab
+		return spellsTab, controlsTab, reminderTab, viewTab, profileTab
 	end
 end
 
@@ -3433,6 +3449,8 @@ function Private:CreateOptionsMenu()
 	if not self.optionsMenu then
 		local optionsMenu = AceGUI:Create("EPOptions")
 		optionsMenu.spellDropdownItems = utilities.GetOrCreateClassSpellDropdownItems(false).dropdownItemMenuData
+		optionsMenu.classDropdownItems = utilities.GetOrCreateClassFileDropdownItemData()
+		optionsMenu.spellCategoryDropdownItems = utilities.GetOrCreateSpellCategoryDropdownItemData()
 		optionsMenu.FormatTime = utilities.FormatTime
 		optionsMenu.GetSpellCooldownAndCharges = utilities.GetSpellCooldownAndCharges
 		optionsMenu.frame:SetParent(UIParent)
@@ -3450,14 +3468,14 @@ function Private:CreateOptionsMenu()
 
 		CreateAnchors()
 
-		local cooldownOverrideTab, keyBindingsTab, reminderTab, viewTab, profileTab = OptionCreator.GetOrCreateOptions()
-		optionsMenu:AddOptionTab(cooldownOverrideTab[1], cooldownOverrideTab[2], cooldownOverrideTab[3])
+		local spellsTab, keyBindingsTab, reminderTab, viewTab, profileTab = OptionCreator.GetOrCreateOptions()
+		optionsMenu:AddOptionTab(spellsTab[1], spellsTab[2], spellsTab[3])
 		optionsMenu:AddOptionTab(keyBindingsTab[1], keyBindingsTab[2], keyBindingsTab[3])
 		optionsMenu:AddOptionTab(reminderTab[1], reminderTab[2], reminderTab[3])
 		optionsMenu:AddOptionTab(viewTab[1], viewTab[2], viewTab[3])
 		optionsMenu:AddOptionTab(profileTab[1], profileTab[2], profileTab[3])
 		optionsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab, L["Cooldown Overrides"])
+		optionsMenu:SetCurrentTab(GetPreferences().lastOpenTab, L["Spells"])
 		optionsMenu:SetPoint("TOP", UIParent, "TOP", 0, -optionsMenu.frame:GetBottom())
 
 		self.optionsMenu = optionsMenu

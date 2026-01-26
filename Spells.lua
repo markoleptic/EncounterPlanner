@@ -2557,6 +2557,21 @@ Private.spellDB = {
 	},
 }
 
+---@type table<integer, boolean>
+Private.spellDB.registeredSpells = {}
+local registeredSpells = Private.spellDB.registeredSpells
+
+for _, classSpells in pairs(Private.spellDB.classes) do
+	for _, spell in pairs(classSpells) do
+		registeredSpells[spell["spellID"]] = true
+	end
+end
+for _, racialAndConsumableSpells in pairs(Private.spellDB.other) do
+	for _, spell in pairs(racialAndConsumableSpells) do
+		registeredSpells[spell["spellID"]] = true
+	end
+end
+
 ---@return table<integer, integer>
 function Private.spellDB.GetSpellRemappings()
 	return {
