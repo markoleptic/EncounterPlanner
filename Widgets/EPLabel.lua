@@ -95,6 +95,7 @@ local function OnRelease(self)
 	self.iconPadding = nil
 	self.spellID = nil
 	self.value = nil
+	self.text:SetText("")
 end
 
 ---@param self EPLabel

@@ -193,7 +193,19 @@ end
 ---@param roster table<string, RosterEntry>
 ---@param spellID integer
 ---@param favoritedSpellDropdownItems table<integer, DropdownItemData>
-local function RepopulateSpellDropdown(self, assignee, roster, spellID, favoritedSpellDropdownItems)
+---@param forceUpdate boolean|nil
+---@param updateRacial boolean|nil
+---@param updateConsumable boolean|nil
+local function RepopulateSpellDropdown(
+	self,
+	assignee,
+	roster,
+	spellID,
+	favoritedSpellDropdownItems,
+	forceUpdate,
+	updateRacial,
+	updateConsumable
+)
 	local class, role = nil, nil
 	if roster then
 		if roster[assignee] then
@@ -215,7 +227,7 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 		end
 	end
 
-	if self.lastClassDropdownValue ~= class or self.lastRoleDropdownValue ~= role then
+	if self.lastClassDropdownValue ~= class or self.lastRoleDropdownValue ~= role or forceUpdate then
 		local favoritedItemsMap = {}
 		if favoritedSpellDropdownItems then
 			for _, v in ipairs(favoritedSpellDropdownItems) do
@@ -241,6 +253,22 @@ local function RepopulateSpellDropdown(self, assignee, roster, spellID, favorite
 
 			local dropdownItemData = Private.utilities.GetOrCreateClassSpellDropdownItems(true, favoritedItemsMap)
 			self.spellAssignmentDropdown:AddItems({ dropdownItemData }, "EPDropdownItemToggle", false, 3)
+		end
+		if updateRacial then
+			local dropdownItemData = Private.utilities.GetOrCreateRacialSpellDropdownItems(true, favoritedItemsMap)
+			self.spellAssignmentDropdown:ClearExistingDropdownItemMenu("Racial")
+			self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+				"Racial",
+				dropdownItemData.dropdownItemMenuData
+			)
+		end
+		if updateConsumable then
+			local dropdownItemData = Private.utilities.GetOrCreateConsumableSpellDropdownItems(true, favoritedItemsMap)
+			self.spellAssignmentDropdown:ClearExistingDropdownItemMenu("Consumable")
+			self.spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+				"Consumable",
+				dropdownItemData.dropdownItemMenuData
+			)
 		end
 	end
 

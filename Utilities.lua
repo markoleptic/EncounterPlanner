@@ -601,9 +601,216 @@ do
 end
 
 do
-	local cache = setmetatable({}, { __mode = "kv" })
+	local cache = {}
+	local sInsertedCustomSpells = {} ---@type table<integer, CustomSpell>
+	local sPendingCustomSpells = nil
 	local kFavoriteFilledTexture = constants.textures.kFavoriteFilled
 	local kFavoriteOutlineTexture = constants.textures.kFavoriteOutlined
+	local SpellCategory = Private.classes.SpellCategory
+
+	local GetFormattedDataClassName = Utilities.GetFormattedDataClassName
+
+	local kCategoryStrings = {
+		[SpellCategory.Core] = "Core",
+		[SpellCategory.GroupUtility] = "Group Utility",
+		[SpellCategory.PersonalDefensive] = "Personal Defensive",
+		[SpellCategory.ExternalDefensive] = "External Defensive",
+		[SpellCategory.Other] = "Other",
+		[SpellCategory.Racial] = "Racial",
+		[SpellCategory.Consumable] = "Consumable",
+	}
+
+	local kLocalizedCategoryStrings = {
+		[SpellCategory.Core] = L["Core"],
+		[SpellCategory.GroupUtility] = L["Group Utility"],
+		[SpellCategory.PersonalDefensive] = L["Personal Defensive"],
+		[SpellCategory.ExternalDefensive] = L["External Defensive"],
+		[SpellCategory.Other] = L["Other"],
+		[SpellCategory.Racial] = L["Racial"],
+		[SpellCategory.Consumable] = L["Consumable"],
+	}
+
+	---@param dropdownItemMenuData table<integer, DropdownItemData>
+	---@param spellID integer
+	local function InsertGenericSpellDropdownData(dropdownItemMenuData, spellID)
+		local name = GetSpellName(spellID)
+		local icon = GetSpellTexture(spellID)
+		if name and icon then
+			local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
+			local iconAndText = format("%s %s", inlineIcon, name)
+			tinsert(dropdownItemMenuData, {
+				itemValue = spellID,
+				text = iconAndText,
+			})
+			--@debug@
+		else
+			print(format("%s: %s spell not found.", AddOnName, spellID))
+			--@end-debug@
+		end
+	end
+
+	---@param dropdownItemMenuData table<integer, DropdownItemData>
+	---@param spellID integer
+	---@param customSpell CustomSpell
+	local function InsertCustomSpellDropdownData(dropdownItemMenuData, spellID, customSpell)
+		InsertGenericSpellDropdownData(dropdownItemMenuData, spellID)
+		Private.spellDB.RegisterSpell(spellID)
+		sInsertedCustomSpells[spellID] = DeepCopy(customSpell)
+	end
+
+	---@param customSpells table<integer, CustomSpell>
+	local function RemoveCustomSpells(customSpells)
+		for spellID, removedCustomSpell in pairs(customSpells) do
+			Private.spellDB.UnregisterSpell(spellID)
+			local category = removedCustomSpell.spellCategory
+			local categoryString = kCategoryStrings[category]
+			if category == SpellCategory.Racial then
+				local dropdownItemMenuData = cache["racial"].dropdownItemMenuData
+				for index = #dropdownItemMenuData, 1, -1 do
+					if dropdownItemMenuData[index].itemValue == spellID then
+						tremove(dropdownItemMenuData, index)
+					end
+				end
+			elseif category == SpellCategory.Consumable then
+				local dropdownItemMenuData = cache["consumable"].dropdownItemMenuData
+				for index = #dropdownItemMenuData, 1, -1 do
+					if dropdownItemMenuData[index].itemValue == spellID then
+						tremove(dropdownItemMenuData, index)
+					end
+				end
+			else
+				local formattedDataClassName = GetFormattedDataClassName(removedCustomSpell.classFileName)
+				for _, classDropdownData in ipairs(cache["class"].dropdownItemMenuData) do
+					if classDropdownData.itemValue == formattedDataClassName then
+						local categoryItemMenuData = classDropdownData.dropdownItemMenuData
+						---@cast categoryItemMenuData table<integer, DropdownItemData>
+						for categoryIndex = #categoryItemMenuData, 1, -1 do
+							if categoryItemMenuData[categoryIndex].itemValue == categoryString then
+								local spellItemMenuData = categoryItemMenuData[categoryIndex].dropdownItemMenuData
+								---@cast spellItemMenuData table<integer, DropdownItemData>
+								for spellIndex = #spellItemMenuData, 1, -1 do
+									if spellItemMenuData[spellIndex].itemValue == spellID then
+										tremove(spellItemMenuData, spellIndex)
+										break
+									end
+								end
+								if not next(spellItemMenuData) then
+									tremove(categoryItemMenuData, categoryIndex)
+								end
+								break
+							end
+						end
+						break
+					end
+				end
+			end
+			sInsertedCustomSpells[spellID] = nil
+		end
+	end
+
+	---@param customSpells table<integer, CustomSpell>
+	local function InsertCustomSpells(customSpells)
+		local racialNeedsSort, consumableNeedsSort = false, false
+		local classesNeedingSort = {}
+
+		for spellID, customSpell in pairs(customSpells) do
+			local found = false
+			local category = customSpell.spellCategory
+			local categoryString = kCategoryStrings[category]
+			if category == SpellCategory.Racial then
+				local dropdownItemMenuData = cache["racial"].dropdownItemMenuData
+				for index = 1, #dropdownItemMenuData do
+					if dropdownItemMenuData[index].itemValue == spellID then
+						found = true
+						break
+					end
+				end
+				if not found then
+					InsertCustomSpellDropdownData(dropdownItemMenuData, spellID, customSpell)
+					racialNeedsSort = true
+				end
+			elseif category == SpellCategory.Consumable then
+				local dropdownItemMenuData = cache["consumable"].dropdownItemMenuData
+				for index = 1, #dropdownItemMenuData do
+					if dropdownItemMenuData[index].itemValue == spellID then
+						found = true
+						break
+					end
+				end
+				if not found then
+					InsertCustomSpellDropdownData(dropdownItemMenuData, spellID, customSpell)
+					consumableNeedsSort = true
+				end
+			else
+				local formattedDataClassName = GetFormattedDataClassName(customSpell.classFileName)
+				local foundClassIndex = 1
+				local spellItemMenuData = nil
+				for classIndex, classDropdownData in ipairs(cache["class"].dropdownItemMenuData) do
+					if classDropdownData.itemValue == formattedDataClassName then
+						local categoryItemMenuData = classDropdownData.dropdownItemMenuData
+						---@cast categoryItemMenuData table<integer, DropdownItemData>
+						for categoryIndex = 1, #categoryItemMenuData do
+							if categoryItemMenuData[categoryIndex].itemValue == categoryString then
+								spellItemMenuData = categoryItemMenuData[categoryIndex].dropdownItemMenuData
+								---@cast spellItemMenuData table<integer, DropdownItemData>
+								for spellIndex = 1, #spellItemMenuData do
+									if spellItemMenuData[spellIndex].itemValue == spellID then
+										found = true
+										break
+									end
+								end
+								break
+							end
+						end
+						foundClassIndex = classIndex
+						break
+					end
+				end
+				if not found then
+					if not spellItemMenuData then
+						local newCategory = {
+							itemValue = categoryString,
+							text = kLocalizedCategoryStrings[category],
+							dropdownItemMenuData = {},
+						}
+						InsertCustomSpellDropdownData(newCategory.dropdownItemMenuData, spellID, customSpell)
+						tinsert(cache["class"].dropdownItemMenuData[foundClassIndex].dropdownItemMenuData, newCategory)
+					else
+						InsertCustomSpellDropdownData(spellItemMenuData, spellID, customSpell)
+					end
+					tinsert(classesNeedingSort, foundClassIndex)
+				end
+			end
+		end
+		if racialNeedsSort then
+			Utilities.SortDropdownDataByItemValue(cache["racial"].dropdownItemMenuData)
+		end
+		if consumableNeedsSort then
+			Utilities.SortDropdownDataByItemValue(cache["consumable"].dropdownItemMenuData)
+		end
+		for _, classIndex in ipairs(classesNeedingSort) do
+			Utilities.SortClassCategoryDropdownItemData(
+				cache["class"].dropdownItemMenuData[classIndex].dropdownItemMenuData
+			)
+		end
+	end
+
+	---@param customSpells table<integer, CustomSpell>
+	function Utilities.ClearAndRepopulateCustomSpells(customSpells)
+		if cache["class"] then
+			RemoveCustomSpells(sInsertedCustomSpells)
+			InsertCustomSpells(customSpells)
+		else
+			sPendingCustomSpells = customSpells
+		end
+	end
+
+	---@param customSpells table<integer, CustomSpell>
+	---@param removedCustomSpells table<integer, CustomSpell>
+	function Utilities.HandleCustomSpellsChanged(customSpells, removedCustomSpells)
+		RemoveCustomSpells(removedCustomSpells)
+		InsertCustomSpells(customSpells)
+	end
 
 	---@param dropdownItemMenuData table<integer, DropdownItemData>
 	---@param visible boolean
@@ -630,8 +837,6 @@ do
 		end
 	end
 
-	local GetFormattedDataClassName = Utilities.GetFormattedDataClassName
-
 	---@param classFileName string
 	---@param role? RaidGroupRole
 	---@param showFavoriteTexture? boolean
@@ -646,7 +851,7 @@ do
 		local formattedDataClassName = classFileName
 		local classMatch = formattedDataClassName:match("class:%s*(%a+)")
 		if classMatch then
-			classFileName = classMatch
+			classFileName = classMatch:upper()
 		else
 			formattedDataClassName = GetFormattedDataClassName(classFileName)
 		end
@@ -663,7 +868,7 @@ do
 		end
 
 		if dropdownItemData and #dropdownItemData == 0 then
-			local classSpells = Private.spellDB.classes[classFileName:upper()]
+			local classSpells = Private.spellDB.classes[classFileName]
 			local spellTypeIndex = 1
 			local spellTypeIndexMap = {}
 			for _, spell in pairs(classSpells) do
@@ -672,27 +877,39 @@ do
 					if not spellTypeIndexMap[spellType] then
 						dropdownItemData[spellTypeIndex] = {
 							itemValue = spellType,
-							text = spellType,
+							text = L[spellType],
 							dropdownItemMenuData = {},
 						}
 						spellTypeIndexMap[spellType] = spellTypeIndex
 						spellTypeIndex = spellTypeIndex + 1
 					end
+
 					local currentSpellTypeIndex = spellTypeIndexMap[spellType]
 					local spellID = spell["spellID"]
-					local name = GetSpellName(spellID)
-					local icon = GetSpellTexture(spellID)
-					if name and icon then
-						local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
-						local iconAndText = format("%s %s", inlineIcon, name)
-						tinsert(dropdownItemData[currentSpellTypeIndex].dropdownItemMenuData, {
-							itemValue = spellID,
-							text = iconAndText,
-						})
-					--@debug@
-					else
-						print(format("%s: %s spell not found.", AddOnName, spellID))
-						--@end-debug@
+					InsertGenericSpellDropdownData(
+						dropdownItemData[currentSpellTypeIndex].dropdownItemMenuData,
+						spellID
+					)
+				end
+			end
+			for spellID, customSpell in pairs(sInsertedCustomSpells) do
+				if customSpell.classFileName == classFileName then
+					if not role or customSpell.roles[role] == true then
+						local categoryString = kCategoryStrings[customSpell.spellCategory]
+						if not spellTypeIndexMap[categoryString] then
+							dropdownItemData[spellTypeIndex] = {
+								itemValue = categoryString,
+								text = L[categoryString],
+								dropdownItemMenuData = {},
+							}
+							spellTypeIndexMap[categoryString] = spellTypeIndex
+							spellTypeIndex = spellTypeIndex + 1
+						end
+						local currentSpellTypeIndex = spellTypeIndexMap[categoryString]
+						InsertGenericSpellDropdownData(
+							dropdownItemData[currentSpellTypeIndex].dropdownItemMenuData,
+							spellID
+						)
 					end
 				end
 			end
@@ -704,6 +921,41 @@ do
 
 		Utilities.SortClassCategoryDropdownItemData(dropdownItemData)
 		return dropdownItemData
+	end
+
+	---@param showFavoriteTexture boolean
+	---@param favoritedItemsMap table<integer, boolean>
+	---@return DropdownItemData
+	function Utilities.GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
+		if not cache["racial"] then
+			local dropdownItems = {}
+			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
+				local spellID = racialInfo["spellID"]
+				InsertGenericSpellDropdownData(dropdownItems, spellID)
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			cache["racial"] = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
+		end
+		SetFavoriteTextureVisibility(cache["racial"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
+		return cache["racial"]
+	end
+
+	---@param showFavoriteTexture boolean
+	---@param favoritedItemsMap table<integer, boolean>
+	---@return DropdownItemData
+	function Utilities.GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
+		if not cache["consumable"] then
+			local dropdownItems = {}
+			for _, consumableInfo in pairs(Private.spellDB.other["CONSUMABLE"]) do
+				local spellID = consumableInfo["spellID"]
+				InsertGenericSpellDropdownData(dropdownItems, spellID)
+			end
+			Utilities.SortDropdownDataByItemValue(dropdownItems)
+			cache["consumable"] =
+				{ itemValue = "Consumable", text = L["Consumable"], dropdownItemMenuData = dropdownItems }
+		end
+		SetFavoriteTextureVisibility(cache["consumable"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
+		return cache["consumable"]
 	end
 
 	---@param showFavoriteTexture boolean
@@ -724,6 +976,13 @@ do
 			cache["class"] = { itemValue = "Class", text = L["Class"], dropdownItemMenuData = dropdownItems }
 		end
 
+		if sPendingCustomSpells then
+			Utilities.GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
+			Utilities.GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
+			InsertCustomSpells(sPendingCustomSpells)
+			sPendingCustomSpells = nil
+		end
+
 		-- Remove class icons from text
 		for _, classDropdownData in ipairs(cache["class"].dropdownItemMenuData) do
 			for _, entry in ipairs(classDropdownData.dropdownItemMenuData) do
@@ -733,55 +992,6 @@ do
 
 		SetFavoriteTextureVisibility(cache["class"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
 		return cache["class"]
-	end
-
-	---@param showFavoriteTexture boolean
-	---@param favoritedItemsMap table<integer, boolean>
-	---@return DropdownItemData
-	local function GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
-		if not cache["racial"] then
-			cache["racial"] = {} --[[@as table<string, DropdownItemData>]]
-			local dropdownItems = cache["racial"]
-			for _, racialInfo in pairs(Private.spellDB.other["RACIAL"]) do
-				local name = GetSpellName(racialInfo["spellID"])
-				local icon = GetSpellTexture(racialInfo["spellID"])
-				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
-				local iconText = format("%s %s", inlineIcon, name)
-				tinsert(dropdownItems, {
-					itemValue = racialInfo["spellID"],
-					text = iconText,
-				})
-			end
-			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			cache["racial"] = { itemValue = "Racial", text = L["Racial"], dropdownItemMenuData = dropdownItems }
-		end
-		SetFavoriteTextureVisibility(cache["racial"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
-		return cache["racial"]
-	end
-
-	---@param showFavoriteTexture boolean
-	---@param favoritedItemsMap table<integer, boolean>
-	---@return DropdownItemData
-	local function GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap)
-		if not cache["consumable"] then
-			cache["consumable"] = {} --[[@as table<string, DropdownItemData>]]
-			local dropdownItems = cache["consumable"]
-			for _, consumableInfo in pairs(Private.spellDB.other["CONSUMABLE"]) do
-				local name = GetSpellName(consumableInfo["spellID"])
-				local icon = GetSpellTexture(consumableInfo["spellID"])
-				local inlineIcon = format(kFormatStringGenericInlineIconWithZoom, icon)
-				local iconText = format("%s %s", inlineIcon, name)
-				tinsert(dropdownItems, {
-					itemValue = consumableInfo["spellID"],
-					text = iconText,
-				})
-			end
-			Utilities.SortDropdownDataByItemValue(dropdownItems)
-			cache["consumable"] =
-				{ itemValue = "Consumable", text = L["Consumable"], dropdownItemMenuData = dropdownItems }
-		end
-		SetFavoriteTextureVisibility(cache["consumable"].dropdownItemMenuData, showFavoriteTexture, favoritedItemsMap)
-		return cache["consumable"]
 	end
 
 	---@param showFavoriteTexture boolean
@@ -796,8 +1006,8 @@ do
 		end
 		return {
 			Utilities.GetOrCreateClassSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
-			GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
-			GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			Utilities.GetOrCreateRacialSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
+			Utilities.GetOrCreateConsumableSpellDropdownItems(showFavoriteTexture, favoritedItemsMap),
 		}
 	end
 end

@@ -3311,6 +3311,31 @@ do
 
 	---@return table<integer, EPSettingOption>
 	local function GetSpellsOptions()
+		local HandleCustomSpellsChanged = Private.utilities.HandleCustomSpellsChanged
+		local IsSpellRegistered = Private.spellDB.IsSpellRegistered
+
+		---@param left CustomSpell
+		---@param right CustomSpell
+		local function AreCustomSpellsEqual(left, right)
+			if left.classFileName ~= right.classFileName then
+				return false
+			end
+			if left.spellCategory ~= right.spellCategory then
+				return false
+			end
+			for role in pairs(left.roles) do
+				if not right.roles[role] then
+					return false
+				end
+			end
+			for role in pairs(right.roles) do
+				if not left.roles[role] then
+					return false
+				end
+			end
+			return true
+		end
+
 		return {
 			{
 				label = L["Cooldown Overrides"],
@@ -3339,8 +3364,70 @@ do
 				set = function(value)
 					if type(value) == "table" then
 						---@cast value table<integer, CustomSpell>
+						local removedCustomSpells = {}
+						for spellID, customSpell in pairs(AddOn.db.profile.customSpells) do
+							if not value[spellID] then
+								removedCustomSpells[spellID] = customSpell
+							elseif not AreCustomSpellsEqual(customSpell, value[spellID]) then
+								removedCustomSpells[spellID] = customSpell
+							end
+						end
+
 						AddOn.db.profile.customSpells = value
-						-- TODO: Repopulate spell dropdowns
+						HandleCustomSpellsChanged(AddOn.db.profile.customSpells, removedCustomSpells)
+
+						local updatedFavorites, updatedRecent = false, false
+						local favoritedSpellAssignments = AddOn.db.profile.favoritedSpellAssignments
+						for index = #favoritedSpellAssignments, 1, -1 do
+							local favorite = favoritedSpellAssignments[index]
+							if not IsSpellRegistered(favorite.itemValue) then
+								updatedFavorites = true
+								tremove(favoritedSpellAssignments, index)
+							end
+						end
+						local recentSpellAssignments = AddOn.db.profile.recentSpellAssignments
+						for index = #recentSpellAssignments, 1, -1 do
+							local recent = recentSpellAssignments[index]
+							if not IsSpellRegistered(recent.itemValue) then
+								updatedRecent = true
+								tremove(recentSpellAssignments, index)
+							end
+						end
+
+						local assignmentEditor = Private.assignmentEditor
+						if assignmentEditor then
+							local assignment = assignmentEditor:GetAssignment()
+							if assignment then
+								local spellAssignmentDropdown = assignmentEditor.spellAssignmentDropdown
+								if updatedRecent then
+									spellAssignmentDropdown:ClearExistingDropdownItemMenu("Recent")
+									spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+										"Recent",
+										recentSpellAssignments
+									)
+									spellAssignmentDropdown:SetItemEnabled("Recent", #recentSpellAssignments > 0)
+								end
+
+								if updatedFavorites then
+									spellAssignmentDropdown:ClearExistingDropdownItemMenu("Favorite")
+									spellAssignmentDropdown:AddItemsToExistingDropdownItemMenu(
+										"Favorite",
+										favoritedSpellAssignments
+									)
+									spellAssignmentDropdown:SetItemEnabled("Favorite", #favoritedSpellAssignments > 0)
+								end
+
+								assignmentEditor:RepopulateSpellDropdown(
+									assignment.assignee,
+									utilities.GetCurrentRoster(),
+									assignment.spellID,
+									favoritedSpellAssignments,
+									true,
+									true,
+									true
+								)
+							end
+						end
 					end
 				end,
 			} --[[@as EPSettingOption]],
@@ -3448,7 +3535,6 @@ end
 function Private:CreateOptionsMenu()
 	if not self.optionsMenu then
 		local optionsMenu = AceGUI:Create("EPOptions")
-		optionsMenu.spellDropdownItems = utilities.GetOrCreateClassSpellDropdownItems(false).dropdownItemMenuData
 		optionsMenu.classDropdownItems = utilities.GetOrCreateClassFileDropdownItemData()
 		optionsMenu.spellCategoryDropdownItems = utilities.GetOrCreateSpellCategoryDropdownItemData()
 		optionsMenu.FormatTime = utilities.FormatTime

@@ -209,6 +209,7 @@ end
 ---@field realCustomSpellsClassDropdown EPDropdown
 ---@field realCustomSpellsCategoryDropdown EPDropdown
 ---@field realCustomSpellsRolesDropdown EPDropdown
+---@field cooldownOverrideEntryContainers table<integer, EPContainer>
 local spellsObject = {}
 
 ---@class CustomSpellEntry
@@ -226,6 +227,8 @@ do
 	local GetSpellInfo = C_Spell.GetSpellInfo
 	local GetSpecializationInfo = C_SpecializationInfo.GetSpecializationInfo
 	local GetSpecialization = C_SpecializationInfo.GetSpecialization
+	local next = next
+	local select = select
 	local sort = table.sort
 	local tonumber = tonumber
 	local tostring = tostring
@@ -255,6 +258,10 @@ do
 
 	local function CopyAndSetCustomSpells()
 		spellsObject.customSpellsOption.set(Private.DeepCopy(spellsObject.customSpells))
+		spellsObject.realCooldownOverrideDropdown:Clear()
+		spellsObject.realCooldownOverrideDropdown:AddItems(
+			Private.utilities.GetOrCreateClassSpellDropdownItems(false).dropdownItemMenuData
+		)
 	end
 
 	---@param spellID integer
@@ -264,6 +271,9 @@ do
 		local previousDuration = spellsObject.cooldownAndChargeOverrides[spellID].duration
 		local timeMinutes, timeSeconds = minLineEdit:GetText(), secLineEdit:GetText()
 		local maxDuration = spellsObject.GetSpellCooldownAndCharges(spellID) * 2.0
+		if maxDuration == 0.0 then
+			maxDuration = 5 * 60
+		end
 		local newDuration = Private.utilities.ParseTime(timeMinutes, timeSeconds, kMinDuration, maxDuration)
 		if not newDuration then
 			newDuration = previousDuration
@@ -382,6 +392,23 @@ do
 		local children = customSpellsHeader.children
 		SetRelativeWidths(children, kCustomSpellEntryRelativeWidths, totalAvailableWidth, fullNonSpacingWidth)
 		customSpellsHeader:DoLayout()
+	end
+
+	---@param container EPContainer
+	---@param width number
+	local function SetRelativeCustomSpellEntryWidth(container, width)
+		local fullNonSpacingWidth = width - 5 * spellsObject.customSpellsHeader.content.spacing.x
+		local totalAvailableWidth = fullNonSpacingWidth
+			- kCustomSpellEntryRelativeWidths[1].value
+			- kCustomSpellEntryRelativeWidths[3].value
+			- kCustomSpellEntryRelativeWidths[4].value
+			- kCustomSpellEntryRelativeWidths[5].value
+			- kCustomSpellEntryRelativeWidths[6].value
+		local children = container.children
+		if children and #children == 6 then
+			SetRelativeWidths(children, kCustomSpellEntryRelativeWidths, totalAvailableWidth, fullNonSpacingWidth)
+			container:DoLayout()
+		end
 	end
 
 	---@param container EPContainer
@@ -535,6 +562,7 @@ do
 		deleteButton:SetCallback("Clicked", function()
 			if currentSpellID then
 				cooldownAndChargeOverrides[currentSpellID] = nil
+				spellsObject.cooldownOverrideEntryContainers[currentSpellID] = nil
 				CopyAndSetCooldownAndChargeOverrides()
 			end
 			cooldownOverrideContainer:RemoveChild(container)
@@ -565,6 +593,7 @@ do
 								dropdown:SetEnabled(false)
 								currentSpellID = value
 								cooldownAndChargeOverrides[currentSpellID] = { duration = cooldown }
+								spellsObject.cooldownOverrideEntryContainers[currentSpellID] = container
 								CopyAndSetCooldownAndChargeOverrides()
 							else
 								cooldownOverrideContainer:RemoveChild(container)
@@ -589,6 +618,9 @@ do
 		currentContainer:AddChildren(minuteLineEdit, separatorLabel, secondLineEdit)
 		chargeContainer:AddChild(chargeLineEdit)
 		container:AddChildren(dropdownContainer, defaultContainer, currentContainer, chargeContainer, deleteButton)
+		if currentSpellID then
+			spellsObject.cooldownOverrideEntryContainers[currentSpellID] = container
+		end
 
 		return container
 	end
@@ -859,9 +891,19 @@ do
 		deleteButton:SetHeight(kDeleteButtonSize)
 
 		deleteButton:SetCallback("Clicked", function()
-			if customSpellEntry.spellID then
-				customSpells[customSpellEntry.spellID] = nil
+			local customSpellEntrySpellID = customSpellEntry.spellID
+			if customSpellEntrySpellID then
+				customSpells[customSpellEntrySpellID] = nil
 				CopyAndSetCustomSpells()
+				local cooldownAndChargeOverrides = spellsObject.cooldownAndChargeOverrides
+				if cooldownAndChargeOverrides[customSpellEntrySpellID] then
+					cooldownAndChargeOverrides[customSpellEntrySpellID] = nil
+					CopyAndSetCooldownAndChargeOverrides()
+					local cooldownOverrideEntryContainers = spellsObject.cooldownOverrideEntryContainers
+					local cooldownOverrideEntryContainer = cooldownOverrideEntryContainers[customSpellEntrySpellID]
+					spellsObject.cooldownOverrideContainer:RemoveChild(cooldownOverrideEntryContainer)
+					cooldownOverrideEntryContainers[customSpellEntrySpellID] = nil
+				end
 			end
 			customSpellsContainer:RemoveChild(container)
 			spellsObject.parentContainer:DoLayout()
@@ -886,7 +928,7 @@ do
 				if textToNumber then
 					local spellInfo = GetSpellInfo(textToNumber)
 					if spellInfo then
-						if not customSpells[textToNumber] and not Private.spellDB.registeredSpells[textToNumber] then
+						if not customSpells[textToNumber] and not Private.spellDB.IsSpellRegistered(textToNumber) then
 							customSpellEntry.spellID = textToNumber
 							local unitClass = select(2, UnitClass("player"))
 							local role = select(5, GetSpecializationInfo(GetSpecialization()))
@@ -895,9 +937,13 @@ do
 								spellCategory = k.SpellCategory.Core,
 								roles = { ["role:" .. role:lower()] = true },
 							}
+							CopyAndSetCustomSpells()
 							UpdateCustomSpellEntry(customSpellEntry)
 							SetCustomSpellEntryCallbacks(customSpellEntry)
-							CopyAndSetCustomSpells()
+							SetRelativeCustomSpellEntryWidth(
+								container,
+								spellsObject.customSpellsContainer.content:GetWidth()
+							)
 						else
 							spellIDLineEdit:SetText(L["Duplicate"])
 						end
@@ -1076,6 +1122,7 @@ do
 	end
 
 	function spellsObject:Init()
+		self.cooldownOverrideEntryContainers = {}
 		kCustomSpellEntryRelativeWidths[3].value = spellsObject.realCustomSpellsCategoryDropdown.frame:GetWidth()
 		kCustomSpellEntryRelativeWidths[4].value = spellsObject.realCustomSpellsClassDropdown.frame:GetWidth()
 		kCustomSpellEntryRelativeWidths[5].value = spellsObject.realCustomSpellsRolesDropdown.frame:GetWidth()
@@ -1112,6 +1159,7 @@ do
 		self.realCustomSpellsClassDropdown = nil
 		self.realCustomSpellsRolesDropdown = nil
 		self.realCustomSpellsCategoryDropdown = nil
+		self.cooldownOverrideEntryContainers = nil
 	end
 end
 
@@ -2142,7 +2190,9 @@ local function PopulateActiveTab(self, tab)
 
 			local realCooldownOverrideDropdown = AceGUI:Create("EPDropdown")
 			realCooldownOverrideDropdown = AceGUI:Create("EPDropdown")
-			realCooldownOverrideDropdown:AddItems(self.spellDropdownItems)
+			realCooldownOverrideDropdown:AddItems(
+				Private.utilities.GetOrCreateClassSpellDropdownItems(false).dropdownItemMenuData
+			)
 			realCooldownOverrideDropdown.frame:Hide()
 			spellsObject.realCooldownOverrideDropdown = realCooldownOverrideDropdown
 
@@ -2421,7 +2471,6 @@ local function OnRelease(self)
 	self.refreshMap = nil
 	self.FormatTime = nil
 	self.GetSpellCooldownAndCharges = nil
-	self.spellDropdownItems = nil
 	self.classDropdownItems = nil
 	self.spellCategoryDropdownItems = nil
 end
@@ -2543,7 +2592,6 @@ local function Constructor()
 	---@field updateIndices table<string, table<integer, table<integer, fun()>>>
 	---@field refreshMap table<integer, {widget: AceGUIWidget, enabled: fun(): boolean}>
 	---@field scrollFrame EPScrollFrame
-	---@field spellDropdownItems table<integer, DropdownItemData>
 	---@field classDropdownItems table<integer, DropdownItemData>
 	---@field spellCategoryDropdownItems table<integer, DropdownItemData>
 	---@field FormatTime fun(number): string,string

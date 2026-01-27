@@ -4,6 +4,8 @@ local _, Namespace = ...
 local Private = Namespace
 local L = Private.L
 
+local pairs = pairs
+
 -- Credit to Treebonker and OmniCD for this entire data structure
 Private.spellDB = {
 	classes = {
@@ -2557,18 +2559,38 @@ Private.spellDB = {
 	},
 }
 
----@type table<integer, boolean>
-Private.spellDB.registeredSpells = {}
-local registeredSpells = Private.spellDB.registeredSpells
+do
+	---@type table<integer, boolean> Keeps track of which spells are already registered in the spellDB.
+	local registeredSpells = {}
 
-for _, classSpells in pairs(Private.spellDB.classes) do
-	for _, spell in pairs(classSpells) do
-		registeredSpells[spell["spellID"]] = true
+	for _, classSpells in pairs(Private.spellDB.classes) do
+		for _, spell in pairs(classSpells) do
+			registeredSpells[spell["spellID"]] = true
+		end
 	end
-end
-for _, racialAndConsumableSpells in pairs(Private.spellDB.other) do
-	for _, spell in pairs(racialAndConsumableSpells) do
-		registeredSpells[spell["spellID"]] = true
+	for _, racialAndConsumableSpells in pairs(Private.spellDB.other) do
+		for _, spell in pairs(racialAndConsumableSpells) do
+			registeredSpells[spell["spellID"]] = true
+		end
+	end
+
+	-- Returns true if spell is registered. A spell may registered by default or when a user adds a custom spell.
+	---@param spellID integer
+	---@return boolean
+	function Private.spellDB.IsSpellRegistered(spellID)
+		return registeredSpells[spellID] == true
+	end
+
+	-- Adds a spell to be considered "registered".
+	---@param spellID integer
+	function Private.spellDB.RegisterSpell(spellID)
+		registeredSpells[spellID] = true
+	end
+
+	-- Remove a spell from being "registered".
+	---@param spellID integer
+	function Private.spellDB.UnregisterSpell(spellID)
+		registeredSpells[spellID] = nil
 	end
 end
 

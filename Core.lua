@@ -538,6 +538,7 @@ do -- Profile updating and refreshing
 		LDBIcon:Refresh(AddOnName, profile.preferences.minimap)
 		Private.callbacks:Fire("ProfileRefreshed")
 		interfaceUpdater.RemoveMessageBoxes(false)
+		utilities.ClearAndRepopulateCustomSpells(profile.customSpells)
 		if Private.mainFrame then
 			local plans = profile.plans
 			local timeline = Private.mainFrame.timeline
@@ -590,6 +591,7 @@ function AddOn:OnEnable()
 	--@end-debug@
 
 	self.UpdateProfile(self.db.profile)
+	utilities.ClearAndRepopulateCustomSpells(self.db.profile.customSpells)
 
 	--@debug@
 	Private.testUtilities.CreateTestPlans(self.db.profile)
