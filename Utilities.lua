@@ -601,7 +601,7 @@ do
 end
 
 do
-	local cache = {}
+	local cache = { __mode = "kv" }
 	local sInsertedCustomSpells = {} ---@type table<integer, CustomSpell>
 	local sPendingCustomSpells = nil
 	local kFavoriteFilledTexture = constants.textures.kFavoriteFilled
@@ -969,7 +969,12 @@ do
 				tinsert(dropdownItems, {
 					itemValue = GetFormattedDataClassName(classFileName),
 					text = Utilities.GetLocalizedPrettyClassName(classFileName),
-					dropdownItemMenuData = Utilities.GetOrCreateSingleClassSpellDropdownItems(classFileName),
+					dropdownItemMenuData = Utilities.GetOrCreateSingleClassSpellDropdownItems(
+						classFileName,
+						nil,
+						showFavoriteTexture,
+						favoritedItemsMap
+					),
 				})
 			end
 			Utilities.SortClassCategoryDropdownItemData(dropdownItems)
