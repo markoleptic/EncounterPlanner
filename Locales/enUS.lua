@@ -346,6 +346,7 @@ L["Metadata"] = true
 L["Middle Mouse Button"] = true
 L["Middle of timeline"] = true
 L["Middle-Click|r to hide this icon."] = true
+L["MN Season 1"] = true
 L["Minimize the main window to get a better view."] = true
 L["Monochrome"] = true
 L["Mouse Scroll"] = true

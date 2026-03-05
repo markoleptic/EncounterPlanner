@@ -38,6 +38,7 @@ Widgets\Widgets.xml
 Raids\Modules.xml
 TheWarWithinSeasonTwo\Modules.xml
 TheWarWithinSeasonThree\Modules.xml
+MidnightSeasonOne\Modules.xml
 
 BossUtilities.lua
 Utilities.lua
