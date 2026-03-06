@@ -31,7 +31,6 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LCG = LibStub("LibCustomGlow-1.0")
 local LGF = LibStub("LibGetFrame-1.0")
 
-local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
 local floor = math.floor
 local format = string.format
 local getmetatable = getmetatable
@@ -387,7 +386,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	if ttsPreferences.enableAtCountdownStart then
 		if reminderText:len() > 0 then
 			local textWithCountdown = format("%s %s %d", reminderText, L["in"], floor(duration))
-			SpeakText(ttsPreferences.voiceID, textWithCountdown, 1, 1.0, ttsPreferences.volume)
+			SpeakText(ttsPreferences.voiceID, textWithCountdown, 1, ttsPreferences.volume)
 		end
 	end
 	if soundPreferences.enableAtCountdownStart then
@@ -407,7 +406,7 @@ local function ExecuteReminderTimer(assignment, reminderPreferences, roster, dur
 	if ttsPreferences.enableAtCountdownEnd then
 		if reminderText:len() > 0 then
 			deferredFunctions[#deferredFunctions + 1] = function()
-				SpeakText(ttsPreferences.voiceID, reminderText, 1, 1.0, ttsPreferences.volume)
+				SpeakText(ttsPreferences.voiceID, reminderText, 1, ttsPreferences.volume)
 			end
 		end
 	end
@@ -852,7 +851,7 @@ Private.testReferences.CombatLogEventMap = k.CombatLogEventMap
 Private.testReferences.ResetLocalVariables = ResetLocalVariables
 Private.testReferences.SpellCounts = s.SpellCounts
 Private.testReferences.CombatLogEventReminders = s.CombatLogEventReminders
-Private.testReferences.CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+Private.testReferences.CombatLogGetCurrentEventInfo = nil
 Private.testReferences.SetCombatLogGetCurrentEventInfo = function(func)
 	CombatLogGetCurrentEventInfo = func
 end
