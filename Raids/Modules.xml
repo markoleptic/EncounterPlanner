@@ -6,4 +6,7 @@
     <!--@end-debug@-->
     <Script file="LiberationOfUndermine.lua" />
     <Script file="ManaforgeOmega.lua" />
+    <Script file="MarchOnQuelDanas.lua" />
+    <Script file="TheDreamrift.lua" />
+    <Script file="TheVoidspire.lua" />
 </Ui>
