@@ -308,10 +308,220 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			journalEncounterID = 2734,
 			dungeonEncounterID = 3177,
 			instanceID = 2912,
-			abilities = {},
-			phases = {},
-			abilitiesHeroic = {},
-			phasesHeroic = {},
+			abilities = {
+				-- [1258967] = BossAbility:New({ -- Focused Aggression UNCONFIRMED
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = { 361.0 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 10.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 720.0,
+					defaultDuration = 720.0,
+				}),
+			},
+			abilitiesHeroic = {
+				[1265018] = BossAbility:New({ -- Fixate
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 71.0 },
+							repeatInterval = { 123.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258967] = BossAbility:New({ -- Focused Aggression
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 361.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1257629] = BossAbility:New({ -- Void Breath
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 96.3 },
+							repeatInterval = 121.0,
+						}),
+					},
+					duration = 15.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1254199] = BossAbility:New({ -- Parasite Expulsion
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 57.3 },
+							repeatInterval = 123.1,
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244097] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 26.8 },
+							repeatInterval = { 109.7, 131.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241686] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.0 },
+							repeatInterval = { 129.2, 111.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241692] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.0 },
+							repeatInterval = { 9.7, 110.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241768] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 36.5, 41.5 },
+							repeatInterval = { 87.7, 25.6, 85.9, 47.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241769] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 46.2, 22.0 },
+							repeatInterval = { 87.7, 44.9, 86.1, 27.6 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241770] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 26.8 },
+							repeatInterval = { 109.7, 131.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241836] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.0 },
+							repeatInterval = { 240.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244012] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 17.0 },
+							repeatInterval = { 129.2, 111.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244100] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 36.5, 41.5 },
+							repeatInterval = { 87.7, 25.6, 85.9, 47.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244101] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 46.2, 22.0 },
+							repeatInterval = { 87.7, 44.9, 86.1, 27.6 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272329] = BossAbility:New({ -- Shadowclaw Slam
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 41.5, 9.7 },
+							repeatInterval = { 22.0, 9.7, 78.0, 9.7, 25.6, 9.5, 76.4, 9.7, 27.6, 9.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1241844] = BossAbility:New({ -- Smashed
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 22.1 },
+							repeatInterval = { 9.7, 110.0 },
+						}),
+					},
+					duration = 60.0,
+					castTime = 0.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1260052] = BossAbility:New({ -- Primordial Roar
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 6.2 },
+							repeatInterval = { 120.5 },
+						}),
+					},
+					duration = 60.0,
+					castTime = 0.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 720.0,
+					defaultDuration = 720.0,
+				}),
+			},
 		}),
 		Boss:New({ -- Vaelgor & Ezzorak
 			bossIDs = {
@@ -394,3 +604,28 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 	},
 	isRaid = true,
 })
+
+local dungeonInstance = Private.dungeonInstances[2912]
+local bosses = dungeonInstance.bosses ---@cast bosses table<integer, Boss>
+
+---@param bossIndex integer
+---@param abilityID integer
+local function copyHeroicAbilityToMythic(bossIndex, abilityID)
+	bosses[bossIndex].abilities[abilityID] = bosses[bossIndex].abilitiesHeroic[abilityID]
+end
+
+copyHeroicAbilityToMythic(2, 1257629)
+copyHeroicAbilityToMythic(2, 1244097)
+copyHeroicAbilityToMythic(2, 1241686)
+copyHeroicAbilityToMythic(2, 1241692)
+copyHeroicAbilityToMythic(2, 1254199)
+copyHeroicAbilityToMythic(2, 1241768)
+copyHeroicAbilityToMythic(2, 1241769)
+copyHeroicAbilityToMythic(2, 1241770)
+copyHeroicAbilityToMythic(2, 1241836)
+copyHeroicAbilityToMythic(2, 1244012)
+copyHeroicAbilityToMythic(2, 1244100)
+copyHeroicAbilityToMythic(2, 1244101)
+copyHeroicAbilityToMythic(2, 1241844)
+copyHeroicAbilityToMythic(2, 1260052)
+copyHeroicAbilityToMythic(2, 1265018)
