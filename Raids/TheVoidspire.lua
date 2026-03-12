@@ -537,8 +537,114 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			instanceID = 2912,
 			abilities = {},
 			phases = {},
-			abilitiesHeroic = {},
-			phasesHeroic = {},
+			abilitiesHeroic = {
+				[1244221] = BossAbility:New({ -- Dread Breath (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 13.3, 34.0, 35.0, 85.7, 45.0, 67.2, 57.6 },
+						}),
+					},
+					duration = 21.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245391] = BossAbility:New({ -- Gloom (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 50.5, 98.6, 45.2, 44.8, 78.7 },
+						}),
+					},
+					duration = 21.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1265152] = BossAbility:New({ -- Impale (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 142.2, 25.0, 25.2, 27.4, 62.2, 32.6, 33.9 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1249748] = BossAbility:New({ -- Midnight Flames (Both)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 115.4, 0.0, 132.3, 0.0 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258744] = BossAbility:New({ -- Midnight Manifestation (Xal'atath)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 7.3, 20.0, 20.0, 93.8, 20.0, 20.0, 92.2, 26.4, 25.9, 27.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245645] = BossAbility:New({ -- Rakfang
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 12.5, 25.1, 25.0, 25.0, 52.5, 25.0, 25.2, 27.4, 62.2, 33.0, 33.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1264467] = BossAbility:New({ -- Tail Lash
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 8.8, 25.1, 24.9, 31.5, 184.4, 32.7, 42.0, 27.1 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1265131] = BossAbility:New({ -- Vaelwing
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 6.3, 25.0, 25.0, 31.5, 58.6, 27.1, 23.4, 24.7, 50.7, 32.7, 42.1, 27.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244917] = BossAbility:New({ -- Void Howl
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 25.5, 45.0, 73.6, 34.0, 35.0, 84.2, 59.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				-- [1262623] = BossAbility:New({ -- Nullbeam (TOO MUCH VARIANCE)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			castTimes = { 18.8 , 41.5 , 91.5 , 90.1 , 70.7 , 55.5 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 690.0,
+					defaultDuration = 690.0,
+				}),
+			},
 		}),
 		Boss:New({ -- Fallen-King Salhadaar
 			bossIDs = {
