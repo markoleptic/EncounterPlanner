@@ -588,7 +588,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1245645] = BossAbility:New({ -- Rakfang
+				[1245645] = BossAbility:New({ -- Rakfang (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 12.5, 25.1, 25.0, 25.0, 52.5, 25.0, 25.2, 27.4, 62.2, 33.0, 33.5 },
@@ -596,9 +596,10 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					},
 					duration = 0.0,
 					castTime = 1.5,
+					tankAbility = true,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1264467] = BossAbility:New({ -- Tail Lash
+				[1264467] = BossAbility:New({ -- Tail Lash (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 8.8, 25.1, 24.9, 31.5, 184.4, 32.7, 42.0, 27.1 },
@@ -608,7 +609,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1265131] = BossAbility:New({ -- Vaelwing
+				[1265131] = BossAbility:New({ -- Vaelwing (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 6.3, 25.0, 25.0, 31.5, 58.6, 27.1, 23.4, 24.7, 50.7, 32.7, 42.1, 27.1 },
@@ -618,7 +619,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 1.5,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1244917] = BossAbility:New({ -- Void Howl
+				[1244917] = BossAbility:New({ -- Void Howl (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 25.5, 45.0, 73.6, 34.0, 35.0, 84.2, 59.7 },
@@ -628,7 +629,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 2.5,
 					allowedCombatLogEventTypes = {},
 				}),
-				-- [1262623] = BossAbility:New({ -- Nullbeam (TOO MUCH VARIANCE)
+				-- [1262623] = BossAbility:New({ -- Nullbeam (Vaelgor) (TOO MUCH VARIANCE)
 				-- 	phases = {
 				-- 		[1] = BossAbilityPhase:New({
 				-- 			castTimes = { 18.8 , 41.5 , 91.5 , 90.1 , 70.7 , 55.5 },
@@ -662,10 +663,164 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			journalEncounterID = 2736,
 			dungeonEncounterID = 3179,
 			instanceID = 2912,
-			abilities = {},
+			abilities = {
+				[1260823] = BossAbility:New({ -- Despotic Command
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 23.9, 46.5 },
+						}),
+					},
+					duration = 12.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1254081] = BossAbility:New({ -- Fractured Projection
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 26.7, 46.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1253032] = BossAbility:New({ -- Shattering Twilight
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 45.0, 46.0 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 45.0, 46.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
 			phases = {},
-			abilitiesHeroic = {},
-			phasesHeroic = {},
+			abilitiesHeroic = {
+				[1254092] = BossAbility:New({ -- Attuned to the Nether (Fractured Image)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.3, 45.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246175] = BossAbility:New({ -- Cosmic Unraveling
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 100.8 },
+							signifiesPhaseEnd = true,
+							durationExtendsIntoNextPhase = true,
+						}),
+					},
+					duration = 20.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1243453] = BossAbility:New({ -- Desperate Measures
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 11.9, 45.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1260823] = BossAbility:New({ -- Despotic Command
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 27.8, 46.5 },
+						}),
+					},
+					duration = 12.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1254081] = BossAbility:New({ -- Fractured Projection
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 18.4, 45.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1271577] = BossAbility:New({ -- Instability
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 20.0 },
+							signifiesPhaseEnd = true,
+							durationExtendsIntoNextPhase = true,
+						}),
+					},
+					duration = 15.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1253032] = BossAbility:New({ -- Shattering Twilight
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 42.6, 45.5 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 42.6, 45.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1250686] = BossAbility:New({ -- Twisting Obscurity
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 15.7, 45.4 },
+						}),
+						[3] = BossAbilityPhase:New({
+							castTimes = { 15.7, 45.4 },
+						}),
+					},
+					duration = 23.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1260030] = BossAbility:New({ -- Uncontainable Cosmos
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+						}),
+					},
+					duration = 20.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 100.8 + 1.5,
+					defaultDuration = 100.8 + 1.5,
+					count = 4,
+					defaultCount = 4,
+					name = "P1",
+					repeatAfter = 2,
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 20.0,
+					defaultDuration = 20.0,
+					count = 3,
+					defaultCount = 3,
+					name = "P2",
+					repeatAfter = 1,
+					fixedDuration = true,
+				}),
+			},
 		}),
 		Boss:New({ -- Lightblinded Vanguard
 			bossIDs = {
@@ -720,6 +875,12 @@ local function copyHeroicAbilityToMythic(bossIndex, abilityID)
 	bosses[bossIndex].abilities[abilityID] = bosses[bossIndex].abilitiesHeroic[abilityID]
 end
 
+---@param bossIndex integer
+local function copyHeroicPhasesToMythic(bossIndex)
+	bosses[bossIndex].phases = Private.DeepCopy(bosses[bossIndex].phasesHeroic)
+end
+
+assert(bosses[2].dungeonEncounterID == 3177)
 copyHeroicAbilityToMythic(2, 1257629)
 copyHeroicAbilityToMythic(2, 1244097)
 copyHeroicAbilityToMythic(2, 1241686)
@@ -735,3 +896,15 @@ copyHeroicAbilityToMythic(2, 1244101)
 copyHeroicAbilityToMythic(2, 1241844)
 copyHeroicAbilityToMythic(2, 1260052)
 copyHeroicAbilityToMythic(2, 1265018)
+
+assert(bosses[4].dungeonEncounterID == 3179)
+copyHeroicPhasesToMythic(4)
+copyHeroicAbilityToMythic(4, 1254092)
+copyHeroicAbilityToMythic(4, 1246175)
+copyHeroicAbilityToMythic(4, 1243453)
+copyHeroicAbilityToMythic(4, 1260823)
+copyHeroicAbilityToMythic(4, 1254081)
+copyHeroicAbilityToMythic(4, 1271577)
+copyHeroicAbilityToMythic(4, 1253032)
+copyHeroicAbilityToMythic(4, 1250686)
+copyHeroicAbilityToMythic(4, 1260030)
