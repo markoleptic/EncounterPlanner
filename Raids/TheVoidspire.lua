@@ -322,8 +322,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 720.0,
-					defaultDuration = 720.0,
+					duration = 360.0,
+					defaultDuration = 360.0,
 				}),
 			},
 			abilitiesHeroic = {
@@ -518,8 +518,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			},
 			phasesHeroic = {
 				[1] = BossPhase:New({
-					duration = 720.0,
-					defaultDuration = 720.0,
+					duration = 360.0,
+					defaultDuration = 360.0,
 				}),
 			},
 		}),
@@ -642,8 +642,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			},
 			phasesHeroic = {
 				[1] = BossPhase:New({
-					duration = 690.0,
-					defaultDuration = 690.0,
+					duration = 360.0,
+					defaultDuration = 360.0,
 				}),
 			},
 		}),
@@ -836,10 +836,725 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			journalEncounterID = 2737,
 			dungeonEncounterID = 3180,
 			instanceID = 2912,
-			abilities = {},
-			phases = {},
-			abilitiesHeroic = {},
-			phasesHeroic = {},
+			abilities = {
+				[1246162] = BossAbility:New({ -- Aura of Devotion (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 26.4 },
+							repeatInterval = 159.0,
+						}),
+					},
+					duration = 25.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248451] = BossAbility:New({ -- Aura of Peace (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 134.2 },
+							repeatInterval = 159.0,
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248449] = BossAbility:New({ -- Aura of Wrath (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 79.0 },
+							repeatInterval = 159.0,
+						}),
+					},
+					duration = 15.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246497] = BossAbility:New({ -- Avenger's Shield (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 14.9, 54.0, 36.0, 18.0, 36.0, 18.0, 54.0, 36.0, 18.0, 20.0, 16.0, 18.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258514] = BossAbility:New({ -- Blinding Light (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 40.2, 130.1, 43.9, 50.9, 60.8 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246765] = BossAbility:New({ -- Divine Storm (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								15.0,
+								18.0,
+								18.0,
+								18.0,
+								72.0,
+								18.0,
+								18.0,
+								18.0,
+								18.0,
+								18.0,
+								36.0,
+								36.0,
+								18.0,
+								18.0,
+								18.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272310] = BossAbility:New({ -- Divine Storm (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 123.0, 162.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248644] = BossAbility:New({ -- Divine Toll (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 29.4, 52.7, 106.0, 53.0, 106.1 },
+						}),
+					},
+					duration = 18.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251812] = BossAbility:New({ -- Final Verdict (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 29.3, 36.0, 54.0, 18.0, 18.0, 18.0, 53.9, 72.0, 18.0, 18.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251857] = BossAbility:New({ -- Judgment (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 22.1, 36.0, 54.0, 18.0, 18.0, 18.0, 54.0, 54.0, 18.0, 18.0, 18.0 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 3.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246736] = BossAbility:New({ -- Judgment (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 26.0, 36.0, 54.0, 18.0, 18.0, 18.0, 54.0, 72.0, 18.0, 18.0 },
+						}),
+					},
+					duration = 5.0,
+					castTime = 3.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258662] = BossAbility:New({ -- Light Infused (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 26.4, 52.7, 55.0, 50.9, 53.0, 106.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+					defaultHidden = true,
+				}),
+				[1248674] = BossAbility:New({ -- Sacred Shield (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 34.7, 129.5, 44.5, 52.2, 60.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246749] = BossAbility:New({ -- Sacred Toll (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								20.0,
+								18.0,
+								18.0,
+								18.0,
+								36.0,
+								18.0,
+								36.0,
+								18.0,
+								18.0,
+								18.0,
+								54.0,
+								18.0,
+								18.0,
+								18.0,
+								18.0,
+								18.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1255738] = BossAbility:New({ -- Searing Radiance (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 59.9, 52.3, 121.8 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1276639] = BossAbility:New({ -- Searing Radiance (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 10.1, 171.5, 159.5 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251859] = BossAbility:New({ -- Shield of the Righteous (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 25.3, 36.0, 54.0, 18.0, 18.0, 18.0, 54.0, 54.0, 18.0, 18.0, 18.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1249130] = BossAbility:New({ -- Trampling Charge (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 37.7, 129.5, 44.5, 52.2, 60.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272484] = BossAbility:New({ -- Tyr's Wrath (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 29.4, 158.7, 159.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248710] = BossAbility:New({ -- Tyr's Wrath (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 139.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272425] = BossAbility:New({ -- Zealous Spirit (Divine Storm) (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 112.6, 156.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272380] = BossAbility:New({ -- Zealous Spirit (Searing Radiance) (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 4.1, 160.2, 159.8 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272423] = BossAbility:New({ -- Zealous Spirit (Avenger's Shield) (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 57.0, 159.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 360.0,
+					defaultDuration = 360.0,
+				}),
+			},
+			abilitiesHeroic = {
+				[1246162] = BossAbility:New({ -- Aura of Devotion (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 235.0, 174.0, 172.0 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248451] = BossAbility:New({ -- Aura of Peace (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 133.2, 175.7, 264.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248449] = BossAbility:New({ -- Aura of Wrath (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 83.0, 175.0, 169.0 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246497] = BossAbility:New({ -- Avenger's Shield (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								12.8,
+								67.0,
+								43.0,
+								17.0,
+								20.0,
+								20.0,
+								23.0,
+								48.0,
+								41.0,
+								40.0,
+								20.0,
+								20.0,
+								41.0,
+								40.0,
+								67.0,
+								43.0,
+								17.0,
+								20.0,
+								20.0,
+								23.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258514] = BossAbility:New({ -- Blinding Light (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								22.7,
+								32.4,
+								67.6,
+								48.5,
+								29.2,
+								23.2,
+								52.5,
+								70.7,
+								31.8,
+								32.7,
+								51.1,
+								32.7,
+								67.8,
+								48.1,
+							},
+						}),
+					},
+					duration = 10.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248644] = BossAbility:New({ -- Divine Toll (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 38.1, 174.0, 172.0, 94.0 },
+						}),
+					},
+					duration = 18.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251812] = BossAbility:New({ -- Final Verdict (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								33.3,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								92.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								106.0,
+								42.0,
+								40.0,
+								20.1,
+								20.0,
+								20.0,
+								20.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251857] = BossAbility:New({ -- Judgment (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								29.2,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								52.1,
+								39.9,
+								20.0,
+								20.0,
+								40.0,
+								106.0,
+								42.0,
+								40.0,
+								19.9,
+								20.0,
+								20.1,
+								20.0,
+							},
+						}),
+					},
+					duration = 5.0,
+					castTime = 3.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246736] = BossAbility:New({ -- Judgment (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								30.0,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								92.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								106.0,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+							},
+						}),
+					},
+					duration = 5.0,
+					castTime = 3.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258662] = BossAbility:New({ -- Light Infused (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = { 35.0, 48.0, 50.2, 75.8, 49.0, 50.9, 72.1, 46.0, 146.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+					defaultHidden = true,
+				}),
+				[1248674] = BossAbility:New({ -- Sacred Shield (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								17.7,
+								32.6,
+								67.9,
+								47.5,
+								30.1,
+								22.6,
+								52.8,
+								70.2,
+								32.6,
+								32.6,
+								32.7,
+								18.3,
+								32.6,
+								67.9,
+								47.6,
+								30.2,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246749] = BossAbility:New({ -- Sacred Toll (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								23.0,
+								20.0,
+								20.0,
+								62.0,
+								20.0,
+								40.0,
+								20.0,
+								20.0,
+								28.0,
+								44.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								46.0,
+								20.0,
+								20.0,
+								62.0,
+								20.0,
+								40.0,
+								20.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1251859] = BossAbility:New({ -- Shield of the Righteous (Bellamy)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								29.3,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								52.0,
+								40.0,
+								20.0,
+								20.0,
+								40.0,
+								106.0,
+								42.0,
+								40.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.0,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1249130] = BossAbility:New({ -- Trampling Charge (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							-- Not all casts confirmed
+							castTimes = {
+								20.7,
+								32.6,
+								67.9,
+								47.5,
+								30.1,
+								22.6,
+								52.8,
+								70.2,
+								32.6,
+								32.6,
+								32.7,
+								18.3,
+								32.6,
+								67.9,
+								47.6,
+								30.2,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				-- [1255738] = BossAbility:New({ -- Searing Radiance (Senn)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = { 59.9, 52.3, 121.8 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 15.0,
+				-- 	castTime = 2.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+				-- [1276639] = BossAbility:New({ -- Searing Radiance (Senn)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = { 10.1, 171.5, 159.5 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 15.0,
+				-- 	castTime = 2.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+				-- [1272484] = BossAbility:New({ -- Tyr's Wrath (Senn)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = { 29.4, 158.7, 159.0 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 5.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+				-- [1248710] = BossAbility:New({ -- Tyr's Wrath (Senn)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = { 139.3 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 5.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+				-- [1246765] = BossAbility:New({ -- Divine Storm (Lightblood)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = {
+				-- 				15.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				72.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				36.0,
+				-- 				36.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 				18.0,
+				-- 			},
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+				-- [1272310] = BossAbility:New({ -- Divine Storm (Lightblood)
+				-- 	phases = {
+				-- 		[1] = BossAbilityPhase:New({
+				-- 			-- Not all casts confirmed
+				-- 			castTimes = { 123.0, 162.0 },
+				-- 		}),
+				-- 	},
+				-- 	duration = 0.0,
+				-- 	castTime = 0.0,
+				-- 	allowedCombatLogEventTypes = {},
+				-- }),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 360.0,
+					defaultDuration = 360.0,
+				}),
+			},
 		}),
 		Boss:New({ -- Crown of the Cosmos
 			bossIDs = {
