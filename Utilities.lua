@@ -1215,13 +1215,17 @@ do
 						}
 					end
 					for _, boss in ipairs(dungeonInstance.bosses) do
-						local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
-						tinsert(
-							instanceDropdownData.dropdownItemMenuData,
-							{ itemValue = boss.dungeonEncounterID, text = iconText }
-						)
+						if boss.phases or boss.phasesHeroic then
+							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
+							tinsert(
+								instanceDropdownData.dropdownItemMenuData,
+								{ itemValue = boss.dungeonEncounterID, text = iconText }
+							)
+						end
 					end
-					tinsert(instanceAndBossDropdownItems, instanceDropdownData)
+					if #instanceDropdownData.dropdownItemMenuData > 0 then
+						tinsert(instanceAndBossDropdownItems, instanceDropdownData)
+					end
 				end
 				sort(instanceAndBossDropdownItems, SortInstances)
 			end
@@ -1276,48 +1280,65 @@ do
 				for dungeonInstance in bossUtilities.IterateDungeonInstances() do
 					local instanceIconText =
 						format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
-					local instanceDropdownData
-					if dungeonInstance.mapChallengeModeID then
-						instanceDropdownData = {
-							itemValue = {
-								dungeonInstanceID = dungeonInstance.instanceID,
-								mapChallengeModeID = dungeonInstance.mapChallengeModeID,
-							},
-							text = instanceIconText,
-							dropdownItemMenuData = {},
-						}
-					else
-						instanceDropdownData = {
-							itemValue = dungeonInstance.instanceID,
-							text = instanceIconText,
-							dropdownItemMenuData = {},
-						}
-					end
+					local instanceDropdownData = nil
 
-					if dungeonInstance.hasHeroic then
-						instanceDropdownData.dropdownItemMenuData = {
-							{
-								itemValue = DifficultyType.Heroic,
-								text = kHeroicIconText,
-								dropdownItemMenuData = {},
-							},
-							{
-								itemValue = DifficultyType.Mythic,
-								text = kMythicIconText,
-								dropdownItemMenuData = {},
-							},
+					if dungeonInstance.isRaid then
+						local heroicDropdownMenuData = {
+							itemValue = DifficultyType.Heroic,
+							text = kHeroicIconText,
+							dropdownItemMenuData = {},
 						}
+						local mythicDropdownMenuData = {
+							itemValue = DifficultyType.Mythic,
+							text = kMythicIconText,
+							dropdownItemMenuData = {},
+						}
+
 						for _, boss in ipairs(dungeonInstance.bosses) do
 							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
 							local data = { itemValue = boss.dungeonEncounterID, text = iconText }
 							if boss.phasesHeroic then
-								tinsert(instanceDropdownData.dropdownItemMenuData[1].dropdownItemMenuData, data)
+								tinsert(heroicDropdownMenuData.dropdownItemMenuData, data)
 							end
 							if boss.phases then
-								tinsert(instanceDropdownData.dropdownItemMenuData[2].dropdownItemMenuData, data)
+								tinsert(mythicDropdownMenuData.dropdownItemMenuData, data)
+							end
+						end
+
+						local hasHeroicBosses = #heroicDropdownMenuData.dropdownItemMenuData > 0
+						local hasMythicBosses = #mythicDropdownMenuData.dropdownItemMenuData > 0
+						if hasHeroicBosses or hasMythicBosses then
+							instanceDropdownData = {
+								itemValue = dungeonInstance.instanceID,
+								text = instanceIconText,
+								dropdownItemMenuData = {},
+							}
+							if hasHeroicBosses and hasMythicBosses then
+								instanceDropdownData.dropdownItemMenuData =
+									{ heroicDropdownMenuData, mythicDropdownMenuData }
+							elseif hasHeroicBosses then
+								instanceDropdownData.dropdownItemMenuData = { heroicDropdownMenuData }
+							else
+								instanceDropdownData.dropdownItemMenuData = { mythicDropdownMenuData }
 							end
 						end
 					else
+						if dungeonInstance.mapChallengeModeID then
+							instanceDropdownData = {
+								itemValue = {
+									dungeonInstanceID = dungeonInstance.instanceID,
+									mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+								},
+								text = instanceIconText,
+								dropdownItemMenuData = {},
+							}
+						else -- Normal mythic/m+ dungeon not split by mapChallengeModeID
+							instanceDropdownData = {
+								itemValue = dungeonInstance.instanceID,
+								text = instanceIconText,
+								dropdownItemMenuData = {},
+							}
+						end
 						for _, boss in ipairs(dungeonInstance.bosses) do
 							local iconText = format(kFormatStringGenericInlineIconWithText, boss.icon, boss.name)
 							tinsert(
@@ -1326,7 +1347,9 @@ do
 							)
 						end
 					end
-					tinsert(instanceAndBossDropdownItemsWithDifficulty, instanceDropdownData)
+					if instanceDropdownData then
+						tinsert(instanceAndBossDropdownItemsWithDifficulty, instanceDropdownData)
+					end
 				end
 				sort(instanceAndBossDropdownItemsWithDifficulty, SortInstances)
 			end
@@ -1365,31 +1388,42 @@ do
 		local kCustomGroupIndent = 10
 		local instanceDropdownItems = {} ---@type table<integer, DropdownItemData>
 		for dungeonInstance in bossUtilities.IterateDungeonInstances() do
-			local instanceIconText =
-				format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
-			---@type DropdownItemData
-			local instanceDropdownData = {
-				text = instanceIconText,
-				dropdownItemMenuData = {},
-				itemMenuClickable = true,
-				itemValue = nil,
-			}
-			if dungeonInstance.mapChallengeModeID then
-				instanceDropdownData.itemValue = {
-					dungeonInstanceID = dungeonInstance.instanceID,
-					mapChallengeModeID = dungeonInstance.mapChallengeModeID,
-				}
-			else
-				instanceDropdownData.itemValue = dungeonInstance.instanceID
-			end
-			if dungeonInstance.customGroups then
-				instanceDropdownData.indent = kCustomGroupIndent
-				for _, customGroup in pairs(dungeonInstance.customGroups) do
-					local name = Private.customDungeonInstanceGroups[customGroup].instanceName
-					tinsert(customInstanceDropdownItemChildren[name], instanceDropdownData)
+			local validRaidOrDungeon = not dungeonInstance.isRaid -- Dungeon if not raid
+			if dungeonInstance.isRaid then
+				for _, boss in pairs(dungeonInstance.bosses) do
+					if boss.phases or boss.phasesHeroic then
+						validRaidOrDungeon = true
+						break
+					end
 				end
-			else
-				tinsert(instanceDropdownItems, instanceDropdownData)
+			end
+			if validRaidOrDungeon then
+				local instanceIconText =
+					format(kFormatStringGenericInlineIconWithText, dungeonInstance.icon, dungeonInstance.name)
+				---@type DropdownItemData
+				local instanceDropdownData = {
+					text = instanceIconText,
+					dropdownItemMenuData = {},
+					itemMenuClickable = true,
+					itemValue = nil,
+				}
+				if dungeonInstance.mapChallengeModeID then
+					instanceDropdownData.itemValue = {
+						dungeonInstanceID = dungeonInstance.instanceID,
+						mapChallengeModeID = dungeonInstance.mapChallengeModeID,
+					}
+				else
+					instanceDropdownData.itemValue = dungeonInstance.instanceID
+				end
+				if dungeonInstance.customGroups then
+					instanceDropdownData.indent = kCustomGroupIndent
+					for _, customGroup in pairs(dungeonInstance.customGroups) do
+						local name = Private.customDungeonInstanceGroups[customGroup].instanceName
+						tinsert(customInstanceDropdownItemChildren[name], instanceDropdownData)
+					end
+				else
+					tinsert(instanceDropdownItems, instanceDropdownData)
+				end
 			end
 		end
 

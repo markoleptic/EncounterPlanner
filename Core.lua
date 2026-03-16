@@ -391,7 +391,7 @@ do -- Profile updating and refreshing
 				LoadAssignments(plan.assignments) -- Convert tables from DB into classes
 
 				local boss = GetBoss(plan.dungeonEncounterID)
-				if not boss then
+				if not boss or not (boss.phases or boss.phasesHeroic) then
 					ChangePlanBoss(
 						profile.plans,
 						plan.name,

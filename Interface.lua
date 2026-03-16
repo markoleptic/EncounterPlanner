@@ -1514,6 +1514,7 @@ do -- Plan Menu Button s.Handlers
 				if boss then
 					local hasMythic = boss.phases ~= nil
 					local hasHeroic = boss.phasesHeroic ~= nil
+					assert(hasMythic or hasHeroic, "Boss has mythic or heroic phases")
 					widget.difficultyDropdown:SetEnabled(hasMythic and hasHeroic)
 					if not hasMythic then
 						if widget.difficultyDropdown:GetValue() ~= DifficultyType.Heroic then
