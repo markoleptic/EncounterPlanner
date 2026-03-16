@@ -94,7 +94,7 @@ Private.constants = {
 	kMainFrameSpacing = { 0, 22 },
 	kTopContainerHeight = 68,
 	kMinimumTimeBetweenAssignmentsBeforeWarning = 2.0,
-	kDefaultBossDungeonEncounterID = 3129, -- Plexus Sentinel
+	kDefaultBossDungeonEncounterID = 3176, -- Averzian
 	kDefaultFont = [[Interface\Addons\EncounterPlanner\Media\Fonts\PTSansNarrow-Bold.ttf]],
 	---@enum AssignmentSelectionType
 	AssignmentSelectionType = {
