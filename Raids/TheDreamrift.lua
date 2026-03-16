@@ -20,6 +20,8 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 	journalInstanceID = 1314,
 	instanceID = 2939,
 	customGroups = { "MidnightSeasonOne" },
+	isRaid = true,
+	hasHeroic = true,
 	bosses = {
 		Boss:New({ -- Chimaerus the Undreamt God
 			bossIDs = {
@@ -43,5 +45,4 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 			phasesHeroic = {},
 		}),
 	},
-	isRaid = true,
 })

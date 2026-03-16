@@ -20,6 +20,8 @@ Private.dungeonInstances[2913] = DungeonInstance:New({
 	journalInstanceID = 1308,
 	instanceID = 2913,
 	customGroups = { "MidnightSeasonOne" },
+	isRaid = true,
+	hasHeroic = true,
 	bosses = {
 		Boss:New({ -- Belo'ren, Child of Al'ar
 			bossIDs = {
@@ -62,5 +64,4 @@ Private.dungeonInstances[2913] = DungeonInstance:New({
 			phasesHeroic = {},
 		}),
 	},
-	isRaid = true,
 })
