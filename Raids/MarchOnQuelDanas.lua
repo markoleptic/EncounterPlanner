@@ -38,9 +38,9 @@ Private.dungeonInstances[2913] = DungeonInstance:New({
 			dungeonEncounterID = 3182,
 			instanceID = 2913,
 			abilities = {},
-			phases = {},
+			-- phases = {},
 			abilitiesHeroic = {},
-			phasesHeroic = {},
+			-- phasesHeroic = {},
 		}),
 		Boss:New({ -- Midnight Falls
 			bossIDs = {
@@ -59,9 +59,9 @@ Private.dungeonInstances[2913] = DungeonInstance:New({
 			dungeonEncounterID = 3183,
 			instanceID = 2913,
 			abilities = {},
-			phases = {},
+			-- phases = {},
 			abilitiesHeroic = {},
-			phasesHeroic = {},
+			-- phasesHeroic = {},
 		}),
 	},
 })

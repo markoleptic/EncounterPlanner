@@ -40,9 +40,9 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 			dungeonEncounterID = 3306,
 			instanceID = 2939,
 			abilities = {},
-			phases = {},
+			-- phases = {},
 			abilitiesHeroic = {},
-			phasesHeroic = {},
+			-- phasesHeroic = {},
 		}),
 	},
 })

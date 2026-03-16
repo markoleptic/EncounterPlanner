@@ -539,7 +539,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			dungeonEncounterID = 3178,
 			instanceID = 2912,
 			abilities = {},
-			phases = {},
+			-- phases = {},
 			abilitiesHeroic = {
 				[1244221] = BossAbility:New({ -- Dread Breath (Vaelgor)
 					phases = {
@@ -1576,9 +1576,9 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			dungeonEncounterID = 3181,
 			instanceID = 2912,
 			abilities = {},
-			phases = {},
+			-- phases = {},
 			abilitiesHeroic = {},
-			phasesHeroic = {},
+			-- phasesHeroic = {},
 		}),
 	},
 })

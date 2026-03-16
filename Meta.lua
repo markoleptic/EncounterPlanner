@@ -50,7 +50,7 @@
 ---@field icon integer Button image 2 from EJ_GetInstanceInfo.
 ---@field executeAndNil fun()|nil
 ---@field isRaid boolean|nil
----@field hasHeroic boolean|nil
+---@field hasHeroic boolean|nil Not all raids have heroic; Implemented starting with Manaforge Omega.
 ---@field isSplit boolean|nil Whether the dungeon is split into groups (Mega-dungeons).
 -- If split into groups (Mega-dungeons), this holds the actual dungeon instances, where the keys are map challenge mode
 -- IDs.
