@@ -131,7 +131,8 @@
 -- If defined, the ability will repeat at this interval starting from the last cast time.
 ---@field repeatInterval number|table<integer, number>|nil
 ---@field signifiesPhaseStart boolean|nil If defined, first cast denotes the start of the phase it occurs in.
----@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
+---@field signifiesPhaseEnd boolean|nil If defined, last duration completion denotes the end of the phase it occurs in.
+---@field castSignifiesPhaseEnd boolean|nil If defined, last cast completion denotes the end of the phase it occurs in.
 ---@field skipFirst boolean|nil If defined, the first occurrence of this boss ability phase will be skipped.
 -- If specified, casts will only be created if the phase occurrence number is in the table.
 ---@field phaseOccurrences table<integer, boolean>|table<integer, {min: number?, max: number?}>|nil
@@ -172,8 +173,9 @@
 ---@field effectEnd number The cast end plus the ability duration.
 ---@field frameLevel integer Frame level to use for the ability instance on the timeline.
 ---@field relativeCastTime number|nil If defined, the cast time from the trigger cast time.
----@field signifiesPhaseStart boolean|nil If defined, first cast denotes start of the phase it occurs in.
----@field signifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
+---@field signifiesPhaseStart boolean|nil If defined, first cast start denotes start of the phase it occurs in.
+---@field signifiesPhaseEnd boolean|nil If defined, last duration completion denotes end of the phase it occurs in.
+---@field castSignifiesPhaseEnd boolean|nil If defined, last cast completion denotes end of the phase it occurs in.
 -- A height and offset multiplier to use if perfectly overlapping with another cast of the same ability.
 ---@field overlaps {heightMultiplier:number, offset:number}|nil
 

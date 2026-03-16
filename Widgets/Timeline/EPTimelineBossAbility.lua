@@ -301,18 +301,12 @@ end
 ---@param longName string
 ---@param shortName string
 ---@param offset number
----@param width number
 ---@param lastInfo table<integer, LastPhaseIndicatorInfo>
-local function DrawBossPhaseIndicator(phaseNameFrame, phaseStart, index, longName, shortName, offset, width, lastInfo)
+local function DrawBossPhaseIndicator(phaseNameFrame, phaseStart, index, longName, shortName, offset, lastInfo)
 	local indicator = s.BossPhaseIndicators[index][phaseStart and 1 or 2]
 	local timelineFrame = s.BossAbilityTimeline.timelineFrame
 
 	local startHorizontalOffset = offset
-	if phaseStart then
-		startHorizontalOffset = startHorizontalOffset + k.PhaseIndicatorWidth
-	else
-		startHorizontalOffset = startHorizontalOffset + width - k.PhaseIndicatorWidth
-	end
 
 	indicator:SetPoint("TOP", timelineFrame, "TOPLEFT", startHorizontalOffset, 0)
 	indicator:SetPoint("BOTTOM", timelineFrame, "BOTTOMLEFT", startHorizontalOffset, 0)
@@ -551,13 +545,22 @@ function EPTimelineBossAbility.UpdateBossAbilityFrames(
 		if entry.signifiesPhaseStart and entry.bossPhaseName and entry.bossPhaseShortName then
 			local long, short = entry.bossPhaseName, entry.bossPhaseShortName
 			if long and short then
-				DrawBossPhaseIndicator(phaseNameFrame, true, index, long, short, horizontalOffset, width, lastInfo)
+				local indicatorOffset = horizontalOffset + k.PhaseIndicatorWidth
+				DrawBossPhaseIndicator(phaseNameFrame, true, index, long, short, indicatorOffset, lastInfo)
 			end
 		end
 		if entry.signifiesPhaseEnd then
 			local long, short = entry.nextBossPhaseName, entry.nextBossPhaseShortName
 			if long and short then
-				DrawBossPhaseIndicator(phaseNameFrame, false, index, long, short, horizontalOffset, width, lastInfo)
+				local indicatorOffset = horizontalOffset + width - k.PhaseIndicatorWidth
+				DrawBossPhaseIndicator(phaseNameFrame, false, index, long, short, indicatorOffset, lastInfo)
+			end
+		elseif entry.castSignifiesPhaseEnd then
+			local long, short = entry.nextBossPhaseName, entry.nextBossPhaseShortName
+			if long and short then
+				local castEndTimelinePosition = (entry.castEnd / s.TotalTimelineDuration) * timelineWidth
+				local indicatorOffset = castEndTimelinePosition + padding.x + k.PhaseIndicatorWidth
+				DrawBossPhaseIndicator(phaseNameFrame, false, index, long, short, indicatorOffset, lastInfo)
 			end
 		end
 

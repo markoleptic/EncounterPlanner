@@ -25,6 +25,8 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 	journalInstanceID = 1302,
 	instanceID = 2810,
 	customGroups = { "TheWarWithinSeasonThree" },
+	isRaid = true,
+	hasHeroic = true,
 	bosses = {
 		Boss:New({ -- Plexus Sentinel
 			bossIDs = {
@@ -185,15 +187,12 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 62.46 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[3] = BossAbilityPhase:New({
 							castTimes = { 95.67 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 						[5] = BossAbilityPhase:New({
 							castTimes = { 96.17 },
-							durationLastsUntilEndOfNextPhase = true,
 						}),
 					},
 					durationLastsUntilEndOfNextPhase = true,
@@ -2992,8 +2991,6 @@ Private.dungeonInstances[2810] = DungeonInstance:New({
 			},
 		}),
 	},
-	isRaid = true,
-	hasHeroic = true,
 	executeAndNil = function()
 		local dungeonInstance = Private.dungeonInstances[2810]
 		EJ_SelectInstance(dungeonInstance.journalInstanceID)

@@ -1538,39 +1538,32 @@ do
 			if castStart <= endTime then
 				local castEnd = castStart + (abilityPhase.castTime or ability.castTime)
 				local effectEnd = castEnd + (abilityPhase.duration or ability.duration)
-				if abilityPhase.signifiesPhaseStart and castIndex == 1 then
-					castEnd = min(castEnd, endTime)
-					if effectEnd >= endTime then
-						local newDuration = endTime - castEnd
-						effectEnd = castEnd + newDuration
-					end
-				end
 
-				local lastUntilEnd = abilityPhase.signifiesPhaseEnd
-					or ability.durationLastsUntilEndOfPhase
-					or ability.castTimeLastsUntilEndOfPhase
-				if lastUntilEnd and castIndex == #abilityPhase.castTimes then
-					if castEnd < endTime then
-						effectEnd = endTime -- Extend duration until end of phase
-					else
-						castEnd = endTime -- Clamp cast time to end of phase
-					end
-				end
-
-				if not abilityPhase.durationExtendsIntoNextPhase then
+				if ability.castTimeLastsUntilEndOfPhase then
+					castEnd = endTime
+				else
 					castEnd = min(castEnd, endTime)
 				end
-				if ability.durationLastsUntilEndOfNextPhase then
+
+				if ability.durationLastsUntilEndOfPhase then
+					effectEnd = endTime
+				elseif ability.durationLastsUntilEndOfNextPhase then
 					local nextPhaseEndTime = select(3, GetCurrentPhaseCountAndIndex(endTime + 1))
 					if nextPhaseEndTime > 0.0 then
 						effectEnd = nextPhaseEndTime
 					else
 						effectEnd = endTime
 					end
-				else
-					if not abilityPhase.durationExtendsIntoNextPhase then
-						effectEnd = min(effectEnd, endTime)
-					end
+				elseif not abilityPhase.durationExtendsIntoNextPhase then
+					effectEnd = min(effectEnd, endTime)
+				end
+
+				if spellID == 1246175 then
+					print("startTime", startTime)
+					print("endTime", endTime)
+					print("castStart", castStart)
+					print("castEnd", castEnd)
+					print("effectEnd", effectEnd)
 				end
 
 				castCallback(spellID, castStart, castEnd, effectEnd)
@@ -1655,23 +1648,23 @@ do
 							phaseOccurrence
 							and (not bossAbilityPhase.skipFirst or visitedPhaseCounts[bossPhaseIndex] > 1)
 						then
-							local lastCastIndex = #bossAbilityPhase.castTimes
-							local lastBossAbilityPhaseCastTime = bossAbilityPhase.castTimes[lastCastIndex]
-							local timeAfterLastCast = bossPhase.duration - lastBossAbilityPhaseCastTime
+							local finalCastIndex = #bossAbilityPhase.castTimes
+							local finalBossAbilityPhaseCastTime = bossAbilityPhase.castTimes[finalCastIndex]
+							local timeAfterFinalCast = bossPhase.duration - finalBossAbilityPhaseCastTime
 							if bossAbilityPhase.duration and bossAbilityPhase.castTime then
-								bossAbilityPhase.castTime = min(bossAbility.castTime, max(0, timeAfterLastCast))
-								bossAbilityPhase.duration = max(0, timeAfterLastCast - bossAbilityPhase.castTime)
+								bossAbilityPhase.castTime = min(bossAbility.castTime, max(0, timeAfterFinalCast))
+								bossAbilityPhase.duration = max(0, timeAfterFinalCast - bossAbilityPhase.castTime)
 							end
 
 							if bossAbility.durationLastsUntilEndOfPhase then
-								bossAbility.duration = max(0, timeAfterLastCast)
+								bossAbility.duration = max(0, timeAfterFinalCast)
 							elseif bossAbility.castTimeLastsUntilEndOfPhase then
-								bossAbility.castTime = max(0, timeAfterLastCast)
+								bossAbility.castTime = max(0, timeAfterFinalCast)
 							elseif bossAbility.durationLastsUntilEndOfNextPhase then
 								local nextBossPhaseIndex = orderedBossPhaseTable[bossPhaseOrderIndex + 1]
 								if nextBossPhaseIndex then
 									local nextPhaseDuration = phases[nextBossPhaseIndex].duration
-									bossAbility.duration = max(0, timeAfterLastCast + nextPhaseDuration)
+									bossAbility.duration = max(0, timeAfterFinalCast + nextPhaseDuration)
 								end
 							end
 
@@ -1838,6 +1831,10 @@ do
 								and currentPhaseCastIndex == 1,
 							signifiesPhaseEnd = bossAbilityPhase
 								and bossAbilityPhase.signifiesPhaseEnd
+								and nextBossPhaseName
+								and currentPhaseCastIndex == #bossAbilityPhase.castTimes,
+							castSignifiesPhaseEnd = bossAbilityPhase
+								and bossAbilityPhase.castSignifiesPhaseEnd
 								and nextBossPhaseName
 								and currentPhaseCastIndex == #bossAbilityPhase.castTimes,
 							overlaps = overlaps,

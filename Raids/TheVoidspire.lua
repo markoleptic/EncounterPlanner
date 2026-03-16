@@ -20,6 +20,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 	journalInstanceID = 1307,
 	instanceID = 2912,
 	customGroups = { "MidnightSeasonOne" },
+	isRaid = true,
+	hasHeroic = true,
 	bosses = {
 		Boss:New({ -- Averzian
 			bossIDs = {
@@ -498,6 +500,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 							repeatInterval = { 9.7, 110.0 },
 						}),
 					},
+					halfHeight = true,
 					duration = 60.0,
 					castTime = 0.0,
 					tankAbility = true,
@@ -714,7 +717,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 100.8 },
-							signifiesPhaseEnd = true,
+							castSignifiesPhaseEnd = true,
 							durationExtendsIntoNextPhase = true,
 						}),
 					},
@@ -756,7 +759,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 20.0 },
-							signifiesPhaseEnd = true,
+							castSignifiesPhaseEnd = true,
 							durationExtendsIntoNextPhase = true,
 						}),
 					},
@@ -1578,7 +1581,6 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			phasesHeroic = {},
 		}),
 	},
-	isRaid = true,
 })
 
 local dungeonInstance = Private.dungeonInstances[2912]
