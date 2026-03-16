@@ -350,6 +350,7 @@ do
 			assignment.time = random() * d
 			assignment.spellID = 1
 			assignment.text = "Timed " .. assignment.time
+			return assignment
 		end
 	end
 
