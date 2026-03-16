@@ -1500,14 +1500,6 @@ do
 					effectEnd = min(effectEnd, endTime)
 				end
 
-				if spellID == 1246175 then
-					print("startTime", startTime)
-					print("endTime", endTime)
-					print("castStart", castStart)
-					print("castEnd", castEnd)
-					print("effectEnd", effectEnd)
-				end
-
 				castCallback(spellID, castStart, castEnd, effectEnd)
 
 				self:HandleDependencies(
