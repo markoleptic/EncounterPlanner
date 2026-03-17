@@ -211,7 +211,12 @@ do
 		if a <= kTextAssignmentSpellID or b <= kTextAssignmentSpellID then
 			return a < b
 		else
-			return GetSpellName(a) < GetSpellName(b)
+			local nameA, nameB = GetSpellName(a), GetSpellName(b)
+			if nameA and nameB then
+				return nameA < nameB
+			else
+				return a < b
+			end
 		end
 	end
 	-- Creates a Timeline Assignment comparator function.
