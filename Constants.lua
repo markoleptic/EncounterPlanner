@@ -127,5 +127,10 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Update WoW version.
+-   Midnight Dungeon and Raids
+   -   Added first five bosses for The Voidspire.
+   -   Vaelgor and Ezzorak temporarily only has heroic available.
+   -   Added season one dungeons.
+   -   Some bosses, such as Crawth from Algethar Academy, were not added due to their inconsistent phase timings. They may be added in a future update with a disclaimer that assignments would be unreliable.
+-   Fixed a bug that could cause an error when sorting assignments.
 ]]
