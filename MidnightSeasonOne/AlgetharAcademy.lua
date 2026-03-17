@@ -148,129 +148,129 @@ Private.dungeonInstances[2526] = DungeonInstance:New({
 				}),
 			},
 		}),
-		Boss:New({ -- Crawth
-			bossIDs = { 191736 },
-			journalEncounterCreatureIDsToBossIDs = {
-				[5370] = 191736, -- Crawth
-			},
-			journalEncounterID = 2495,
-			dungeonEncounterID = 2564,
-			instanceID = 2526,
-			abilities = {
-				[376997] = BossAbility:New({ -- Savage Peck
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 5.0 },
-							repeatInterval = { 24.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 22.9 },
-							repeatInterval = { 24.0 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 32.8 },
-							repeatInterval = { 24.0 },
-						}),
-					},
-					duration = 10.0,
-					castTime = 4.0,
-					tankAbility = true,
-					allowedCombatLogEventTypes = {},
-				}),
-				[377004] = BossAbility:New({ -- Deafening Screech
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 14.0 },
-							repeatInterval = { 24.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 31.8 },
-							repeatInterval = { 24.0 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 41.8 },
-							repeatInterval = { 24.0 },
-						}),
-					},
-					duration = 8.0,
-					castTime = 2.5,
-					allowedCombatLogEventTypes = {},
-				}),
-				[377034] = BossAbility:New({ -- Overpowering Gust
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 20.0 },
-							repeatInterval = { 24.0 },
-						}),
-						[2] = BossAbilityPhase:New({
-							castTimes = { 37.8 },
-							repeatInterval = { 24.0 },
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 47.8 },
-							repeatInterval = { 24.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 3.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1276752] = BossAbility:New({ -- Ruinous Winds
-					phases = {
-						[2] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
-							signifiesPhaseEnd = true,
-						}),
-						[3] = BossAbilityPhase:New({
-							castTimes = { 0.0 },
-							signifiesPhaseStart = true,
-							signifiesPhaseEnd = true,
-						}),
-					},
-					duration = 0.0,
-					castTime = 20.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1285508] = BossAbility:New({ -- Blistering Fire
-					phases = {
-						[3] = BossAbilityPhase:New({
-							castTimes = { 15.9 },
-						}),
-					},
-					duration = 0.0,
-					durationLastsUntilEndOfPhase = true,
-					castTime = 00.0,
-					allowedCombatLogEventTypes = {},
-				}),
-			},
-			phases = {
-				[1] = BossPhase:New({
-					duration = 48.0,
-					defaultDuration = 48.0,
-					count = 1,
-					defaultCount = 1,
-					fixedCount = true,
-					name = "P1",
-				}),
-				[2] = BossPhase:New({
-					duration = 60.0,
-					defaultDuration = 60.0,
-					count = 1,
-					defaultCount = 1,
-					fixedCount = true,
-					name = "P2 (75% Health)",
-				}),
-				[3] = BossPhase:New({
-					duration = 72.0,
-					defaultDuration = 72.0,
-					count = 1,
-					defaultCount = 1,
-					fixedCount = true,
-					name = "P3 (45% Health)",
-				}),
-			},
-		}),
+		-- Boss:New({ -- Crawth
+		-- 	bossIDs = { 191736 },
+		-- 	journalEncounterCreatureIDsToBossIDs = {
+		-- 		[5370] = 191736, -- Crawth
+		-- 	},
+		-- 	journalEncounterID = 2495,
+		-- 	dungeonEncounterID = 2564,
+		-- 	instanceID = 2526,
+		-- 	abilities = {
+		-- 		[376997] = BossAbility:New({ -- Savage Peck
+		-- 			phases = {
+		-- 				[1] = BossAbilityPhase:New({
+		-- 					castTimes = { 5.0 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[2] = BossAbilityPhase:New({
+		-- 					castTimes = { 22.9 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[3] = BossAbilityPhase:New({
+		-- 					castTimes = { 32.8 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 			},
+		-- 			duration = 10.0,
+		-- 			castTime = 4.0,
+		-- 			tankAbility = true,
+		-- 			allowedCombatLogEventTypes = {},
+		-- 		}),
+		-- 		[377004] = BossAbility:New({ -- Deafening Screech
+		-- 			phases = {
+		-- 				[1] = BossAbilityPhase:New({
+		-- 					castTimes = { 14.0 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[2] = BossAbilityPhase:New({
+		-- 					castTimes = { 31.8 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[3] = BossAbilityPhase:New({
+		-- 					castTimes = { 41.8 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 			},
+		-- 			duration = 8.0,
+		-- 			castTime = 2.5,
+		-- 			allowedCombatLogEventTypes = {},
+		-- 		}),
+		-- 		[377034] = BossAbility:New({ -- Overpowering Gust
+		-- 			phases = {
+		-- 				[1] = BossAbilityPhase:New({
+		-- 					castTimes = { 20.0 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[2] = BossAbilityPhase:New({
+		-- 					castTimes = { 37.8 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 				[3] = BossAbilityPhase:New({
+		-- 					castTimes = { 47.8 },
+		-- 					repeatInterval = { 24.0 },
+		-- 				}),
+		-- 			},
+		-- 			duration = 0.0,
+		-- 			castTime = 3.0,
+		-- 			allowedCombatLogEventTypes = {},
+		-- 		}),
+		-- 		[1276752] = BossAbility:New({ -- Ruinous Winds
+		-- 			phases = {
+		-- 				[2] = BossAbilityPhase:New({
+		-- 					castTimes = { 0.0 },
+		-- 					signifiesPhaseStart = true,
+		-- 					signifiesPhaseEnd = true,
+		-- 				}),
+		-- 				[3] = BossAbilityPhase:New({
+		-- 					castTimes = { 0.0 },
+		-- 					signifiesPhaseStart = true,
+		-- 					signifiesPhaseEnd = true,
+		-- 				}),
+		-- 			},
+		-- 			duration = 0.0,
+		-- 			castTime = 20.0,
+		-- 			allowedCombatLogEventTypes = {},
+		-- 		}),
+		-- 		[1285508] = BossAbility:New({ -- Blistering Fire
+		-- 			phases = {
+		-- 				[3] = BossAbilityPhase:New({
+		-- 					castTimes = { 15.9 },
+		-- 				}),
+		-- 			},
+		-- 			duration = 0.0,
+		-- 			durationLastsUntilEndOfPhase = true,
+		-- 			castTime = 00.0,
+		-- 			allowedCombatLogEventTypes = {},
+		-- 		}),
+		-- 	},
+		-- 	phases = {
+		-- 		[1] = BossPhase:New({
+		-- 			duration = 48.0,
+		-- 			defaultDuration = 48.0,
+		-- 			count = 1,
+		-- 			defaultCount = 1,
+		-- 			fixedCount = true,
+		-- 			name = "P1",
+		-- 		}),
+		-- 		[2] = BossPhase:New({
+		-- 			duration = 60.0,
+		-- 			defaultDuration = 60.0,
+		-- 			count = 1,
+		-- 			defaultCount = 1,
+		-- 			fixedCount = true,
+		-- 			name = "P2 (75% Health)",
+		-- 		}),
+		-- 		[3] = BossPhase:New({
+		-- 			duration = 72.0,
+		-- 			defaultDuration = 72.0,
+		-- 			count = 1,
+		-- 			defaultCount = 1,
+		-- 			fixedCount = true,
+		-- 			name = "P3 (45% Health)",
+		-- 		}),
+		-- 	},
+		-- }),
 		Boss:New({ -- Echo of Doragosa
 			bossIDs = { 190609 },
 			journalEncounterCreatureIDsToBossIDs = {
