@@ -41,8 +41,137 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 			instanceID = 2939,
 			abilities = {},
 			-- phases = {},
-			abilitiesHeroic = {},
-			-- phasesHeroic = {},
+			abilitiesHeroic = {
+				[1252863] = BossAbility:New({ -- Insatiable
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 0.0 },
+							signifiesPhaseStart = true,
+							signifiesPhaseEnd = true,
+						}),
+					},
+					duration = 153.1,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1262289] = BossAbility:New({ -- Alndust Upheaval
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 13.7, 72.7 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245727] = BossAbility:New({ -- Alnshroud
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 9.4, 74.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246621] = BossAbility:New({ -- Caustic Phlegm
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 23.7, 26.4, 48.2, 21.8 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 3.6 },
+						}),
+					},
+					duration = 12.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245396] = BossAbility:New({ -- Consume
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 65.5, 74.5 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245452] = BossAbility:New({ -- Corrupted Devastation
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 9.5, 24.7, 23.8 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245406] = BossAbility:New({ -- Ravenous Dive
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 81.2 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1272726] = BossAbility:New({ -- Rending Tear
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 36.4, 72.7 },
+						}),
+					},
+					duration = 6.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258610] = BossAbility:New({ -- Rift Emergence
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 6.4, 74.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1257087] = BossAbility:New({ -- Consuming Miasma
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 32.4, 0.3, 49.7, 0.3, 35.4, 0.3 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = { 31.7, 0.2, 26.9, 0.2, 27.9, 0.2 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 0.0,
+					halfHeight = true,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phasesHeroic = {
+				[1] = BossPhase:New({
+					duration = 153.1,
+					defaultDuration = 153.1,
+					count = 2,
+					defaultCount = 2,
+					name = "P1",
+					repeatAfter = 2,
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 90.0,
+					defaultDuration = 90.0,
+					count = 2,
+					defaultCount = 2,
+					name = "P2",
+					repeatAfter = 1,
+					fixedDuration = true,
+				}),
+			},
 		}),
 	},
 })
