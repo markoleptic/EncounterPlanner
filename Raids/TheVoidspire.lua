@@ -49,7 +49,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249251] = BossAbility:New({ -- Dark Upheaval
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 4.0 },
+							castTimes = { 6.5 },
 							repeatInterval = { 48.0, 36.0, 102.0 },
 						}),
 					},
@@ -61,7 +61,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 32.0 },
-							repeatInterval = { 80.2, 105.8, 80.0 },
+							repeatInterval = { 80.0, 106.0, 80.0, 104.0 },
 						}),
 					},
 					duration = 0.0,
@@ -72,7 +72,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 39.5 },
-							repeatInterval = { 80.2, 105.8, 80.0 },
+							repeatInterval = { 80.0, 106.0, 80.0, 104.0 },
 						}),
 					},
 					duration = 0.0,
@@ -82,7 +82,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249714] = BossAbility:New({ -- Umbral Barrier
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 17.1 },
+							castTimes = { 17.0 },
 							repeatInterval = { 80.0, 106.0, 80.0, 104.0 },
 						}),
 					},
@@ -93,8 +93,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1251361] = BossAbility:New({ -- Shadow's Advance
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 94.0 },
-							repeatInterval = { 106.0, 80.0, 104.0 },
+							castTimes = { 94.0, 106.0, 80.0, 104.0 },
 						}),
 					},
 					duration = 0.0,
@@ -115,7 +114,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1262036] = BossAbility:New({ -- Void Rupture
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 17.6 },
+							castTimes = { 17.5 },
 							repeatInterval = { 80.0, 106.0, 80.0, 104.0 },
 						}),
 					},
@@ -158,8 +157,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			},
 			phases = {
 				[1] = BossPhase:New({
-					duration = 360.0,
-					defaultDuration = 360.0,
+					duration = 420.0,
+					defaultDuration = 420.0,
 				}),
 			},
 			abilitiesHeroic = {
@@ -271,16 +270,16 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			dungeonEncounterID = 3177,
 			instanceID = 2912,
 			abilities = {
-				-- [1258967] = BossAbility:New({ -- Focused Aggression UNCONFIRMED
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = { 361.0 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 10.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
+				[1258967] = BossAbility:New({ -- Focused Aggression
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 361.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 10.0,
+					allowedCombatLogEventTypes = {},
+				}),
 			},
 			phases = {
 				[1] = BossPhase:New({
@@ -387,55 +386,11 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 5.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1241770] = BossAbility:New({ -- Shadowclaw Slam
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 26.8 },
-							repeatInterval = { 109.7, 131.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
 				[1241836] = BossAbility:New({ -- Shadowclaw Slam
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 17.0 },
 							repeatInterval = { 240.7 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1244012] = BossAbility:New({ -- Shadowclaw Slam
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 17.0 },
-							repeatInterval = { 129.2, 111.5 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1244100] = BossAbility:New({ -- Shadowclaw Slam
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 36.5, 41.5 },
-							repeatInterval = { 87.7, 25.6, 85.9, 47.1 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 0.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				[1244101] = BossAbility:New({ -- Shadowclaw Slam
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 46.2, 22.0 },
-							repeatInterval = { 87.7, 44.9, 86.1, 27.6 },
 						}),
 					},
 					duration = 0.0,
@@ -498,13 +453,208 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 			journalEncounterID = 2735,
 			dungeonEncounterID = 3178,
 			instanceID = 2912,
-			abilities = {},
-			-- phases = {},
+			abilities = {
+				[1244221] = BossAbility:New({ -- Dread Breath (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 7.3, 65.0, 120.5, 57.0, 112.7, 67.4 },
+						}),
+					},
+					duration = 3.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245391] = BossAbility:New({ -- Gloom (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.3, 50.0, 50.0, 98.7, 49.0, 97.7, 50.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1265152] = BossAbility:New({ -- Impale (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								18.3,
+								25.0,
+								25.0,
+								21.2,
+								28.8,
+								68.7,
+								30.0,
+								20.0,
+								29.0,
+								25.0,
+								72.7,
+								21.0,
+								29.0,
+								21.0,
+							},
+						}),
+					},
+					duration = 3.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1249748] = BossAbility:New({ -- Midnight Flames (Both)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 128.3, 0.0, 170.8, 0.0 },
+						}),
+					},
+					duration = 25.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1270497] = BossAbility:New({ -- Shadowmark (~3.5s after first Midnight Flames)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 131.8, 7.4, 7.4, 7.5, 7.5, 144.5, 7.4, 7.4, 7.5, 7.5 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1258744] = BossAbility:New({ -- Midnight Manifestation (Xal'atath)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								5.3,
+								12.0,
+								12.0,
+								12.0,
+								12.0,
+								119.7,
+								12.0,
+								12.0,
+								12.0,
+								12.0,
+								119.7,
+								12.0,
+								12.0,
+								12.0,
+								12.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245645] = BossAbility:New({ -- Rakfang (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								16.3,
+								25.0,
+								25.0,
+								21.2,
+								28.8,
+								68.7,
+								30.0,
+								20.0,
+								29.0,
+								25.0,
+								72.7,
+								21.0,
+								29.0,
+								21.0,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					tankAbility = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1264467] = BossAbility:New({ -- Tail Lash (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								13.8,
+								27.5,
+								16.9,
+								33.2,
+								16.8,
+								80.8,
+								17.0,
+								33.0,
+								17.5,
+								32.5,
+								64.7,
+								33.0,
+								17.0,
+								39.6,
+								10.4,
+							},
+						}),
+					},
+					duration = 4.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1265131] = BossAbility:New({ -- Vaelwing (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = {
+								11.8,
+								27.5,
+								17.0,
+								33.2,
+								16.8,
+								80.7,
+								17.0,
+								33.0,
+								17.5,
+								32.5,
+								64.7,
+								33.0,
+								17.0,
+								39.6,
+								10.4,
+							},
+						}),
+					},
+					duration = 0.0,
+					castTime = 1.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1244917] = BossAbility:New({ -- Void Howl (Ezzorak)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 35.3, 40.0, 92.7, 35.0, 40.0, 40.0, 21.6, 66.1, 45.0, 35.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1262623] = BossAbility:New({ -- Nullbeam (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 30.3, 50.0, 97.7, 50.0, 50.0, 97.7, 53.7 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 450.0,
+					defaultDuration = 450.0,
+				}),
+			},
 			abilitiesHeroic = {
 				[1244221] = BossAbility:New({ -- Dread Breath (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 28.3, 20.0, 24.0, 16.0, 73.1, 49.8, 117.0, 6.5, 86.3, 76.1 },
+							castTimes = { 28.3, 20.0, 24.0, 16.0, 73.1, 49.8, 109.0, 63.2, 62.5 },
 						}),
 					},
 					duration = 3.0,
@@ -1507,11 +1657,7 @@ copyHeroicAbilityToMythic(2, 1241692)
 copyHeroicAbilityToMythic(2, 1254199)
 copyHeroicAbilityToMythic(2, 1241768)
 copyHeroicAbilityToMythic(2, 1241769)
-copyHeroicAbilityToMythic(2, 1241770)
 copyHeroicAbilityToMythic(2, 1241836)
-copyHeroicAbilityToMythic(2, 1244012)
-copyHeroicAbilityToMythic(2, 1244100)
-copyHeroicAbilityToMythic(2, 1244101)
 copyHeroicAbilityToMythic(2, 1241844)
 copyHeroicAbilityToMythic(2, 1260052)
 copyHeroicAbilityToMythic(2, 1265018)
@@ -1521,9 +1667,6 @@ copyHeroicPhasesToMythic(4)
 copyHeroicAbilityToMythic(4, 1254092)
 copyHeroicAbilityToMythic(4, 1246175)
 copyHeroicAbilityToMythic(4, 1243453)
-copyHeroicAbilityToMythic(4, 1260823)
-copyHeroicAbilityToMythic(4, 1254081)
 copyHeroicAbilityToMythic(4, 1271577)
-copyHeroicAbilityToMythic(4, 1253032)
 copyHeroicAbilityToMythic(4, 1250686)
 copyHeroicAbilityToMythic(4, 1260030)
