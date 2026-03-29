@@ -101,16 +101,6 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1255702] = BossAbility:New({ -- Void Fall
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 160.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 6.0,
-					allowedCombatLogEventTypes = {},
-				}),
 				[1260712] = BossAbility:New({ -- Oblivion's Wrath
 					phases = {
 						[1] = BossAbilityPhase:New({
@@ -176,7 +166,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249251] = BossAbility:New({ -- Dark Upheaval
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 4.2 },
+							castTimes = { 4.0 },
 							repeatInterval = { 36.0, 36.0, 79.0 },
 						}),
 					},
@@ -187,7 +177,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249266] = BossAbility:New({ -- Umbral Collapse
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 18.3 },
+							castTimes = { 20.0 },
 							repeatInterval = { 72.0, 79.0, 72.0, 77.0 },
 						}),
 					},
@@ -198,7 +188,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1260206] = BossAbility:New({ -- Umbral Collapse 2??
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 25.6 },
+							castTimes = { 27.5 },
 							repeatInterval = { 72.0, 79.0, 72.0, 77.0 },
 						}),
 					},
@@ -209,8 +199,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249714] = BossAbility:New({ -- Umbral Barrier
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 15.5 },
-							repeatInterval = { 71.5, 79.0, 72.0, 77.0 },
+							castTimes = { 15.0 },
+							repeatInterval = { 72.0, 79.0, 72.0, 77.0 },
 						}),
 					},
 					duration = 0.0,
@@ -221,28 +211,18 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 84.0 },
-							repeatInterval = { 79.0, 72.0, 77.0 },
+							repeatInterval = { 79.0, 72.0, 77.0, 72.0 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 3.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1255702] = BossAbility:New({ -- Void Fall
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 125.0 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 6.0,
-					allowedCombatLogEventTypes = {},
-				}),
 				[1260712] = BossAbility:New({ -- Oblivion's Wrath
 					phases = {
 						[1] = BossAbilityPhase:New({
 							castTimes = { 48.0 },
-							repeatInterval = { 18.1, 132.9 },
+							repeatInterval = { 18.0, 133.0, 18.0, 131.0 },
 						}),
 					},
 					duration = 0.0,
@@ -252,8 +232,8 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1262036] = BossAbility:New({ -- Void Rupture
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 16.0 },
-							repeatInterval = { 71.6, 79.0, 72.0, 77.0 },
+							castTimes = { 15.5 },
+							repeatInterval = { 72.0, 79.0, 72.0, 77.0 },
 						}),
 					},
 					duration = 0.0,
@@ -270,26 +250,6 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 3.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1270946] = BossAbility:New({ -- Desolation
-					phases = {
-						[1] = BossAbilityPhase:New({
-							castTimes = { 58.1, 150.9 },
-						}),
-					},
-					duration = 0.0,
-					castTime = 7.0,
-					allowedCombatLogEventTypes = {},
-				}),
-				-- [1251583] = BossAbility:New({ -- March of the Endless
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = { 336.6 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 3.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
 			},
 			phasesHeroic = {
 				[1] = BossPhase:New({
@@ -544,7 +504,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1244221] = BossAbility:New({ -- Dread Breath (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 13.3, 34.0, 35.0, 85.7, 45.0, 67.2, 57.6 },
+							castTimes = { 28.3, 20.0, 24.0, 16.0, 73.1, 49.8, 117.0, 6.5, 86.3, 76.1 },
 						}),
 					},
 					duration = 21.0,
@@ -554,7 +514,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1245391] = BossAbility:New({ -- Gloom (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 50.5, 98.6, 45.2, 44.8, 78.7 },
+							castTimes = { 50.4, 91.6, 50.0, 121.8, 62.5, 62.5 },
 						}),
 					},
 					duration = 21.0,
@@ -564,7 +524,22 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1265152] = BossAbility:New({ -- Impale (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 142.2, 25.0, 25.2, 27.4, 62.2, 32.6, 33.9 },
+							castTimes = {
+								14.5,
+								25.2,
+								25.0,
+								24.9,
+								50.6,
+								25.0,
+								25.0,
+								25.0,
+								64.6,
+								31.2,
+								37.5,
+								25.0,
+								31.2,
+								31.3,
+							},
 						}),
 					},
 					duration = 3.0,
@@ -574,17 +549,45 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249748] = BossAbility:New({ -- Midnight Flames (Both)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 115.4, 0.0, 132.3, 0.0 },
+							castTimes = { 113.3, 0.0, 117.6, 0.0, 239.7, 0.0 },
 						}),
 					},
 					duration = 25.0,
 					castTime = 5.0,
 					allowedCombatLogEventTypes = {},
 				}),
+				[1270497] = BossAbility:New({ -- Shadowmark (~3.36s after first Midnight Flames)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 116.7, 7.2, 7.2, 7.2, 96.0, 7.2, 7.2, 7.2 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 1.0,
+					allowedCombatLogEventTypes = {},
+				}),
 				[1258744] = BossAbility:New({ -- Midnight Manifestation (Xal'atath)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 7.3, 20.0, 20.0, 93.8, 20.0, 20.0, 92.2, 26.4, 25.9, 27.1 },
+							castTimes = {
+								5.3,
+								12.0,
+								12.0,
+								12.0,
+								12.0,
+								83.8,
+								12.0,
+								12.0,
+								12.0,
+								12.0,
+								83.6,
+								17.5,
+								17.5,
+								17.5,
+								17.5,
+								17.5,
+								17.5,
+							},
 						}),
 					},
 					duration = 0.0,
@@ -594,7 +597,22 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1245645] = BossAbility:New({ -- Rakfang (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 12.5, 25.1, 25.0, 25.0, 52.5, 25.0, 25.2, 27.4, 62.2, 33.0, 33.5 },
+							castTimes = {
+								12.5,
+								25.2,
+								25.0,
+								24.9,
+								50.6,
+								25.0,
+								25.0,
+								25.0,
+								64.6,
+								31.2,
+								37.5,
+								25.0,
+								31.2,
+								31.3,
+							},
 						}),
 					},
 					duration = 0.0,
@@ -605,7 +623,23 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1264467] = BossAbility:New({ -- Tail Lash (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 8.8, 25.1, 24.9, 31.5, 184.4, 32.7, 42.0, 27.1 },
+							castTimes = {
+								8.3,
+								26.0,
+								23.9,
+								25.0,
+								63.0,
+								25.2,
+								28.1,
+								21.8,
+								50.9,
+								31.2,
+								31.9,
+								30.6,
+								31.3,
+								31.2,
+								31.3,
+							},
 						}),
 					},
 					duration = 4.0,
@@ -615,7 +649,23 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1265131] = BossAbility:New({ -- Vaelwing (Vaelgor)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 6.3, 25.0, 25.0, 31.5, 58.6, 27.1, 23.4, 24.7, 50.7, 32.7, 42.1, 27.1 },
+							castTimes = {
+								6.3,
+								26.0,
+								24.0,
+								25.0,
+								63.0,
+								25.2,
+								28.1,
+								21.8,
+								50.9,
+								31.3,
+								31.9,
+								30.6,
+								31.3,
+								31.2,
+								31.3,
+							},
 						}),
 					},
 					duration = 0.0,
@@ -625,23 +675,23 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1244917] = BossAbility:New({ -- Void Howl (Ezzorak)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 25.5, 45.0, 73.6, 34.0, 35.0, 84.2, 59.7 },
+							castTimes = { 30.6, 45.0, 72.5, 24.0, 26.0, 24.0, 65.6, 51.2, 51.3, 56.3 },
 						}),
 					},
 					duration = 0.0,
 					castTime = 2.5,
 					allowedCombatLogEventTypes = {},
 				}),
-				-- [1262623] = BossAbility:New({ -- Nullbeam (Vaelgor) (TOO MUCH VARIANCE)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			castTimes = { 18.8 , 41.5 , 91.5 , 90.1 , 70.7 , 55.5 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
+				[1262623] = BossAbility:New({ -- Nullbeam (Vaelgor)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 10.3, 50.0, 121.6, 93.2, 63.1, 61.9, 62.5 },
+						}),
+					},
+					duration = 4.0,
+					castTime = 4.0,
+					allowedCombatLogEventTypes = {},
+				}),
 			},
 			phasesHeroic = {
 				[1] = BossPhase:New({
@@ -738,7 +788,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1260823] = BossAbility:New({ -- Despotic Command
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 27.8, 46.5 },
+							castTimes = { 27.8, 45.5 },
 						}),
 					},
 					duration = 12.0,
@@ -748,7 +798,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1254081] = BossAbility:New({ -- Fractured Projection
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 18.4, 45.4 },
+							castTimes = { 18.5, 45.5 },
 						}),
 					},
 					duration = 0.0,
@@ -793,7 +843,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				[1260030] = BossAbility:New({ -- Uncontainable Cosmos
+				[1260030] = BossAbility:New({ -- Umbral Beams
 					phases = {
 						[2] = BossAbilityPhase:New({
 							castTimes = { 0.0 },
@@ -1142,7 +1192,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1246162] = BossAbility:New({ -- Aura of Devotion (Bellamy)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 235.0, 174.0, 172.0 },
+							castTimes = { 35.0, 174.0, 172.0 },
 						}),
 					},
 					duration = 25.0,
@@ -1152,7 +1202,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1248451] = BossAbility:New({ -- Aura of Peace (Senn)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 133.2, 175.7, 264.3 },
+							castTimes = { 132.1, 177.1 },
 						}),
 					},
 					duration = 0.0,
@@ -1162,7 +1212,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1248449] = BossAbility:New({ -- Aura of Wrath (Lightblood)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							castTimes = { 83.0, 175.0, 169.0 },
+							castTimes = { 83.0, 175.0 },
 						}),
 					},
 					duration = 15.0,
@@ -1172,28 +1222,22 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1246497] = BossAbility:New({ -- Avenger's Shield (Bellamy)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
 							castTimes = {
-								12.8,
-								67.0,
-								43.0,
+								17.8,
+								65.0,
+								25.0,
+								12.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								53.0,
+								22.0,
 								17.0,
+								25.0,
+								15.0,
+								22.0,
 								20.0,
-								20.0,
-								23.0,
-								48.0,
-								41.0,
-								40.0,
-								20.0,
-								20.0,
-								41.0,
-								40.0,
-								67.0,
-								43.0,
-								17.0,
-								20.0,
-								20.0,
-								23.0,
 							},
 						}),
 					},
@@ -1204,23 +1248,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1258514] = BossAbility:New({ -- Blinding Light (Senn)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
-							castTimes = {
-								22.7,
-								32.4,
-								67.6,
-								48.5,
-								29.2,
-								23.2,
-								52.5,
-								70.7,
-								31.8,
-								32.7,
-								51.1,
-								32.7,
-								67.8,
-								48.1,
-							},
+							castTimes = { 22.1, 59.7, 87.9, 51.4, 62.7, 61.0, 52.8 },
 						}),
 					},
 					duration = 10.0,
@@ -1230,8 +1258,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1248644] = BossAbility:New({ -- Divine Toll (Bellamy)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
-							castTimes = { 38.1, 174.0, 172.0, 94.0 },
+							castTimes = { 38.1, 174.0, 174.0 },
 						}),
 					},
 					duration = 18.0,
@@ -1241,28 +1268,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1251812] = BossAbility:New({ -- Final Verdict (Lightblood)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
-							castTimes = {
-								33.3,
-								42.0,
-								40.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								92.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								106.0,
-								42.0,
-								40.0,
-								20.1,
-								20.0,
-								20.0,
-								20.0,
-							},
+							castTimes = { 33.3, 42.0, 40.0, 16.0, 24.0, 20.0, 20.0, 52.0, 60.0, 20.0, 23.0, 17.0 },
 						}),
 					},
 					duration = 0.0,
@@ -1273,27 +1279,20 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1251857] = BossAbility:New({ -- Judgment (Lightblood)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
 							castTimes = {
-								29.2,
+								26.0,
 								42.0,
-								40.0,
+								41.8,
+								14.2,
+								24.0,
 								20.0,
 								20.0,
+								52.0,
+								60.0,
 								20.0,
-								20.0,
-								52.1,
-								39.9,
-								20.0,
-								20.0,
-								40.0,
-								106.0,
-								42.0,
-								40.0,
-								19.9,
-								20.0,
-								20.1,
-								20.0,
+								23.0,
+								17.0,
+								54.0,
 							},
 						}),
 					},
@@ -1305,27 +1304,19 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1246736] = BossAbility:New({ -- Judgment (Lightblood)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
 							castTimes = {
 								30.0,
 								42.0,
 								40.0,
+								16.0,
+								24.0,
 								20.0,
 								20.0,
+								52.0,
+								60.0,
 								20.0,
-								20.0,
-								92.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								106.0,
-								42.0,
-								40.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
+								23.0,
+								17.0,
 							},
 						}),
 					},
@@ -1337,8 +1328,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1258662] = BossAbility:New({ -- Light Infused (Bellamy)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
-							castTimes = { 35.0, 48.0, 50.2, 75.8, 49.0, 50.9, 72.1, 46.0, 146.2 },
+							castTimes = { 35.0, 48.0, 49.1, 76.9, 49.0, 51.2, 73.8 },
 						}),
 					},
 					duration = 0.0,
@@ -1349,25 +1339,7 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1248674] = BossAbility:New({ -- Sacred Shield (Senn)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
-							castTimes = {
-								17.7,
-								32.6,
-								67.9,
-								47.5,
-								30.1,
-								22.6,
-								52.8,
-								70.2,
-								32.6,
-								32.6,
-								32.7,
-								18.3,
-								32.6,
-								67.9,
-								47.6,
-								30.2,
-							},
+							castTimes = { 17.7, 59.7, 87.2, 52.2, 62.3, 60.3, 54.5 },
 						}),
 					},
 					duration = 0.0,
@@ -1377,30 +1349,20 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1246749] = BossAbility:New({ -- Sacred Toll (Lightblood)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
 							castTimes = {
+								10.0,
+								13.0,
+								20.0,
+								20.0,
+								59.0,
 								23.0,
+								15.0,
+								45.0,
 								20.0,
+								72.0,
+								21.0,
+								39.0,
 								20.0,
-								62.0,
-								20.0,
-								40.0,
-								20.0,
-								20.0,
-								28.0,
-								44.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
-								46.0,
-								20.0,
-								20.0,
-								62.0,
-								20.0,
-								40.0,
 								20.0,
 							},
 						}),
@@ -1412,27 +1374,20 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1251859] = BossAbility:New({ -- Shield of the Righteous (Bellamy)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
 							castTimes = {
 								29.3,
 								42.0,
-								40.0,
-								20.0,
-								20.0,
+								41.8,
+								14.2,
+								24.0,
 								20.0,
 								20.0,
 								52.0,
-								40.0,
+								60.0,
 								20.0,
-								20.0,
-								40.0,
-								106.0,
-								42.0,
-								40.0,
-								20.0,
-								20.0,
-								20.0,
-								20.0,
+								23.0,
+								17.0,
+								54.0,
 							},
 						}),
 					},
@@ -1444,24 +1399,53 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 				[1249130] = BossAbility:New({ -- Trampling Charge (Senn)
 					phases = {
 						[1] = BossAbilityPhase:New({
-							-- Not all casts confirmed
+							castTimes = { 19.7, 59.7, 87.2, 52.2, 62.3, 60.2, 54.5 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 0.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1255738] = BossAbility:New({ -- Searing Radiance (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 47.8, 54.7, 79.7, 54.7, 132.5 },
+						}),
+					},
+					duration = 15.0,
+					castTime = 2.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1248710] = BossAbility:New({ -- Tyr's Wrath (Senn)
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 137.2, 177.1 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1246765] = BossAbility:New({ -- Divine Storm (Lightblood)
+					phases = {
+						[1] = BossAbilityPhase:New({
 							castTimes = {
-								20.7,
-								32.6,
-								67.9,
-								47.5,
-								30.1,
-								22.6,
-								52.8,
-								70.2,
-								32.6,
-								32.6,
-								32.7,
-								18.3,
-								32.6,
-								67.9,
-								47.6,
-								30.2,
+								18.0,
+								20.0,
+								20.0,
+								19.0,
+								43.0,
+								45.0,
+								15.0,
+								20.0,
+								20.0,
+								22.0,
+								50.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
+								20.0,
 							},
 						}),
 					},
@@ -1469,88 +1453,6 @@ Private.dungeonInstances[2912] = DungeonInstance:New({
 					castTime = 0.0,
 					allowedCombatLogEventTypes = {},
 				}),
-				-- [1255738] = BossAbility:New({ -- Searing Radiance (Senn)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = { 59.9, 52.3, 121.8 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 15.0,
-				-- 	castTime = 2.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
-				-- [1276639] = BossAbility:New({ -- Searing Radiance (Senn)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = { 10.1, 171.5, 159.5 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 15.0,
-				-- 	castTime = 2.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
-				-- [1272484] = BossAbility:New({ -- Tyr's Wrath (Senn)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = { 29.4, 158.7, 159.0 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 5.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
-				-- [1248710] = BossAbility:New({ -- Tyr's Wrath (Senn)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = { 139.3 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 5.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
-				-- [1246765] = BossAbility:New({ -- Divine Storm (Lightblood)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = {
-				-- 				15.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				72.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				36.0,
-				-- 				36.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 				18.0,
-				-- 			},
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
-				-- [1272310] = BossAbility:New({ -- Divine Storm (Lightblood)
-				-- 	phases = {
-				-- 		[1] = BossAbilityPhase:New({
-				-- 			-- Not all casts confirmed
-				-- 			castTimes = { 123.0, 162.0 },
-				-- 		}),
-				-- 	},
-				-- 	duration = 0.0,
-				-- 	castTime = 0.0,
-				-- 	allowedCombatLogEventTypes = {},
-				-- }),
 			},
 			phasesHeroic = {
 				[1] = BossPhase:New({
