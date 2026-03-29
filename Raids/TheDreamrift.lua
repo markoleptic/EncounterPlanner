@@ -39,8 +39,95 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 			journalEncounterID = 2795,
 			dungeonEncounterID = 3306,
 			instanceID = 2939,
-			abilities = {},
-			-- phases = {},
+			abilities = {
+				[1245396] = BossAbility:New({ -- Consume
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 65.5, 71.8 },
+						}),
+					},
+					duration = 10.0,
+					castTime = 2.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245452] = BossAbility:New({ -- Corrupted Devastation
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 10.4, 23.1, 24.3 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 5.0,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1245406] = BossAbility:New({ -- Ravenous Dive
+					phases = {
+						[2] = BossAbilityPhase:New({
+							castTimes = { 92.4 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.5,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1257087] = BossAbility:New({ -- Consuming Miasma
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 32.3, 0.2, 50.8, 0.2, 37.0, 0.2 },
+						}),
+						[2] = BossAbilityPhase:New({
+							castTimes = {
+								24.3,
+								0.1,
+								0.9,
+								0.1,
+								26.8,
+								0.2,
+								0.3,
+								0.2,
+								27.3,
+								0.1,
+								0.6,
+								0.2,
+							},
+						}),
+					},
+					duration = 10.0,
+					castTime = 0.0,
+					halfHeight = true,
+					allowedCombatLogEventTypes = {},
+				}),
+				[1264756] = BossAbility:New({ -- Rift Madness
+					phases = {
+						[1] = BossAbilityPhase:New({
+							castTimes = { 39.1, 0.0, 72.7, 0.0 },
+						}),
+					},
+					duration = 0.0,
+					castTime = 3.0,
+					allowedCombatLogEventTypes = {},
+				}),
+			},
+			phases = {
+				[1] = BossPhase:New({
+					duration = 157.1,
+					defaultDuration = 157.1,
+					count = 2,
+					defaultCount = 2,
+					name = "P1",
+					repeatAfter = 2,
+					fixedDuration = true,
+				}),
+				[2] = BossPhase:New({
+					duration = 96.9,
+					defaultDuration = 96.9,
+					count = 2,
+					defaultCount = 2,
+					name = "P2",
+					repeatAfter = 1,
+					fixedDuration = true,
+				}),
+			},
 			abilitiesHeroic = {
 				[1252863] = BossAbility:New({ -- Insatiable
 					phases = {
@@ -175,3 +262,19 @@ Private.dungeonInstances[2939] = DungeonInstance:New({
 		}),
 	},
 })
+
+local dungeonInstance = Private.dungeonInstances[2939]
+local bosses = dungeonInstance.bosses ---@cast bosses table<integer, Boss>
+
+---@param bossIndex integer
+---@param abilityID integer
+local function copyHeroicAbilityToMythic(bossIndex, abilityID)
+	bosses[bossIndex].abilities[abilityID] = bosses[bossIndex].abilitiesHeroic[abilityID]
+end
+
+copyHeroicAbilityToMythic(1, 1252863)
+copyHeroicAbilityToMythic(1, 1262289)
+copyHeroicAbilityToMythic(1, 1245727)
+copyHeroicAbilityToMythic(1, 1246621)
+copyHeroicAbilityToMythic(1, 1272726)
+copyHeroicAbilityToMythic(1, 1258610)
