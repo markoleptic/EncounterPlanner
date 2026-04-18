@@ -1292,11 +1292,60 @@ function Private.RepopulateTemplates(templates)
 	end
 end
 
+---@return EPEditBox|nil
+function Private.CreateGenericImportEditBox()
+	if not Private.importEditBox then
+		local importEditBox = AceGUI:Create("EPEditBox")
+		if Private.mainFrame then
+			importEditBox.frame:SetParent(Private.mainFrame.frame)
+		elseif Private.optionsMenu then
+			importEditBox.frame:SetParent(Private.optionsMenu.frame)
+		end
+		importEditBox.frame:SetFrameLevel(constants.frameLevels.kImportEditBoxFrameLevel)
+		importEditBox.frame:SetPoint("CENTER")
+		importEditBox:SetTitle(L["Import From Text"])
+		importEditBox:ShowOkayButton(true, L["Import"])
+		importEditBox.okayButton:SetEnabled(true)
+		importEditBox:SetCallback("OnRelease", function()
+			Private.importEditBox = nil
+		end)
+		importEditBox:SetCallback("CloseButtonClicked", function()
+			AceGUI:Release(Private.importEditBox)
+		end)
+		importEditBox:SetFocusAndCursorPosition(0)
+		Private.importEditBox = importEditBox
+		return importEditBox
+	end
+	return nil
+end
+
+---@return EPEditBox|nil
+function Private.CreateGenericExportEditBox()
+	if not Private.exportEditBox then
+		local exportEditBox = AceGUI:Create("EPEditBox")
+		if Private.mainFrame then
+			exportEditBox.frame:SetParent(Private.mainFrame.frame)
+		elseif Private.optionsMenu then
+			exportEditBox.frame:SetParent(Private.optionsMenu.frame)
+		end
+		exportEditBox.frame:SetFrameLevel(constants.frameLevels.kExportEditBoxFrameLevel)
+		exportEditBox.frame:SetPoint("CENTER")
+		exportEditBox:SetTitle(L["Export"])
+		exportEditBox:SetCallback("OnRelease", function()
+			Private.exportEditBox = nil
+		end)
+		exportEditBox:SetCallback("CloseButtonClicked", function()
+			AceGUI:Release(Private.exportEditBox)
+		end)
+		Private.exportEditBox = exportEditBox
+		return exportEditBox
+	end
+	return nil
+end
+
 do -- Plan Menu Button s.Handlers
 	local GetBossName = bossUtilities.GetBossName
 
-	local kExportEditBoxFrameLevel = constants.frameLevels.kExportEditBoxFrameLevel
-	local kImportEditBoxFrameLevel = constants.frameLevels.kImportEditBoxFrameLevel
 	local kNewPlanDialogFrameLevel = constants.frameLevels.kNewPlanDialogFrameLevel
 	local kNewTemplateDialogFrameLevel = constants.frameLevels.kNewTemplateDialogFrameLevel
 
@@ -1325,20 +1374,8 @@ do -- Plan Menu Button s.Handlers
 	end
 
 	local function CreateImportEditBox()
-		if not Private.importEditBox then
-			local importEditBox = AceGUI:Create("EPEditBox")
-			importEditBox.frame:SetParent(Private.mainFrame.frame)
-			importEditBox.frame:SetFrameLevel(kImportEditBoxFrameLevel)
-			importEditBox.frame:SetPoint("CENTER")
-			importEditBox:SetTitle(L["Import From Text"])
-			importEditBox:ShowOkayButton(true, L["Import"])
-			importEditBox.okayButton:SetEnabled(true)
-			importEditBox:SetCallback("OnRelease", function()
-				Private.importEditBox = nil
-			end)
-			importEditBox:SetCallback("CloseButtonClicked", function()
-				AceGUI:Release(Private.importEditBox)
-			end)
+		local importEditBox = Private.CreateGenericImportEditBox()
+		if importEditBox then
 			importEditBox:SetCallback("ValidatePlanName", function(widget, _, planName)
 				planName = planName:trim()
 				if planName == "" or AddOn.db.profile.plans[planName] then
@@ -1374,8 +1411,6 @@ do -- Plan Menu Button s.Handlers
 					end
 				end
 			end)
-			importEditBox:SetFocusAndCursorPosition(0)
-			Private.importEditBox = importEditBox
 		end
 	end
 
@@ -1444,27 +1479,16 @@ do -- Plan Menu Button s.Handlers
 	end
 
 	local function HandleExportPlanButtonClicked()
-		if not Private.exportEditBox then
-			local exportEditBox = AceGUI:Create("EPEditBox")
-			exportEditBox.frame:SetParent(Private.mainFrame.frame)
-			exportEditBox.frame:SetFrameLevel(kExportEditBoxFrameLevel)
-			exportEditBox.frame:SetPoint("CENTER")
-			exportEditBox:SetTitle(L["Export"])
-			exportEditBox:SetCallback("OnRelease", function()
-				Private.exportEditBox = nil
-			end)
-			exportEditBox:SetCallback("CloseButtonClicked", function()
-				AceGUI:Release(Private.exportEditBox)
-			end)
-			Private.exportEditBox = exportEditBox
-		end
-		local profile = AddOn.db.profile
-		local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
-		local onlyShowMe = profile.preferences.timelineRows.onlyShowMe
-		local text = Private:ExportPlanToNote(GetCurrentPlan(), cooldownAndChargeOverrides, onlyShowMe)
-		if text then
-			Private.exportEditBox:SetText(text)
-			Private.exportEditBox:HighlightTextAndFocus()
+		local exportEditBox = Private.CreateGenericExportEditBox()
+		if exportEditBox then
+			local profile = AddOn.db.profile
+			local cooldownAndChargeOverrides = profile.cooldownAndChargeOverrides
+			local onlyShowMe = profile.preferences.timelineRows.onlyShowMe
+			local text = Private:ExportPlanToNote(GetCurrentPlan(), cooldownAndChargeOverrides, onlyShowMe)
+			if text then
+				exportEditBox:SetText(text)
+				exportEditBox:HighlightTextAndFocus()
+			end
 		end
 	end
 

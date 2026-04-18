@@ -12,9 +12,9 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 
 local CreateFrame = CreateFrame
-local ipairs = ipairs
-local max = math.max
 local unpack = unpack
+
+local SetButtonWidths = Private.helpers.SetButtonWidths
 
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
@@ -36,21 +36,6 @@ local k = {
 	OtherPadding = { x = 10, y = 10 },
 	Title = L["Tutorial"],
 }
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		if child.type == "EPButton" then
-			maxWidth = max(maxWidth, child.frame:GetWidth())
-		end
-	end
-	for _, child in ipairs(container.children) do
-		if child.type == "EPButton" then
-			child:SetWidth(maxWidth)
-		end
-	end
-end
 
 ---@param self EPTutorial
 local function OnAcquire(self)

@@ -26,6 +26,7 @@ local unpack = unpack
 
 local PlanDiffType = Private.classes.PlanDiffType
 local DifficultyType = Private.classes.DifficultyType
+local SetButtonWidths = Private.helpers.SetButtonWidths
 
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1 },
@@ -196,17 +197,6 @@ local function GetOldAndNewValues(genericDiffEntry)
 		newValue = genericDiffEntry.remoteValue
 	end
 	return oldValue, newValue
-end
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
-	end
-	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
-	end
 end
 
 ---@param container EPContainer

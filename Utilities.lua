@@ -3674,3 +3674,87 @@ do
 		end
 	end
 end
+
+do
+	local GetSpellInfo = C_Spell.GetSpellInfo
+	local strsplittable = strsplittable
+	local join = string.join
+
+	---@param text string
+	---@param customSpells table<integer, CustomSpell>
+	---@return table<integer, CustomSpell>
+	function Utilities.ValidateImportCustomSpells(text, customSpells)
+		local validated = {}
+		for _, line in ipairs(strsplittable("\n", text)) do
+			local words = strsplittable(" ", line)
+			if #words == 4 then
+				local spellID = tonumber(words[1])
+				local classFileName = words[2]
+				if spellID and Utilities.IsValidClassFileName(classFileName) then
+					classFileName = classFileName:upper():gsub("%s", "")
+					local validRoles = Utilities.GetClassRoles(classFileName)
+					local rolesJoined = words[3]
+					local spellCategory = tonumber(words[4])
+					if spellCategory then
+						spellCategory = Clamp(
+							spellCategory,
+							Private.classes.SpellCategory.Core,
+							Private.classes.SpellCategory.Consumable
+						)
+						local spellInfo = GetSpellInfo(spellID)
+						if spellInfo then
+							if not customSpells[spellID] and not Private.spellDB.IsSpellRegistered(spellID) then
+								local roles = {}
+								for _, role in ipairs(strsplittable(",", rolesJoined)) do
+									if validRoles[role] then
+										roles[role] = true
+									end
+								end
+
+								if not next(roles) then
+									local unitClass = select(2, UnitClass("player"))
+									if classFileName == unitClass then
+										local role = select(5, GetSpecializationInfo(GetSpecialization()))
+										roles = { ["role:" .. role:lower()] = true }
+									else
+										local role = next(validRoles)
+										if role then
+											roles = { [role] = true }
+										end
+									end
+								end
+
+								validated[spellID] = {
+									classFileName = classFileName,
+									roles = roles,
+									spellCategory = spellCategory,
+								}
+							end
+						end
+					end
+				end
+			end
+		end
+		return validated
+	end
+
+	---@param customSpells table<integer, CustomSpell>
+	---@return string
+	function Utilities.CreateCustomSpellsExportString(customSpells)
+		local lines = {}
+		for spellID, customSpell in pairs(customSpells) do
+			local roles = {}
+			for roleName, boolValue in pairs(customSpell.roles) do
+				if boolValue == true then
+					tinsert(roles, roleName)
+				end
+			end
+			local rolesJoined = join(",", unpack(roles))
+			tinsert(
+				lines,
+				format("%d %s %s %d", spellID, customSpell.classFileName, rolesJoined, customSpell.spellCategory)
+			)
+		end
+		return join("\n", unpack(lines))
+	end
+end

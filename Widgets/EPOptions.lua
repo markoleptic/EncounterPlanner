@@ -28,6 +28,8 @@ local unpack = unpack
 local xpcall = xpcall
 local wipe = table.wipe
 
+local SetButtonWidths = Private.helpers.SetButtonWidths
+
 local function errorhandler(err)
 	return geterrorhandler()(err)
 end
@@ -88,6 +90,8 @@ local k = {
 	TankTexture = "|T" .. Private.constants.textures.kLfgPortraitRoles .. ":14:14:0:0:64:64:0:19:22:41|t",
 	Title = L["Preferences"],
 	TooltipBorderTexture = Private.constants.textures.kTooltipBorder,
+	ImportTexture = Private.constants.textures.kImport,
+	ExportTexture = Private.constants.textures.kExport,
 }
 k.LineBackdrop.insets.top = k.SpacingBetweenOptions / 2
 k.LineBackdrop.insets.bottom = k.SpacingBetweenOptions / 2
@@ -437,6 +441,32 @@ do
 		local customSpellsContainer = spellsObject.customSpellsContainer
 		SetRelativeCustomSpellEntryWidths(customSpellsContainer, customSpellsContainer.content:GetWidth())
 		SetRelativeCustomSpellEntryHeaderWidths()
+	end
+
+	---@param importCallback fun()
+	---@param exportCallback fun()
+	---@return EPContainer
+	local function CreateImportExportContainer(importCallback, exportCallback)
+		local buttonContainer = AceGUI:Create("EPContainer")
+		buttonContainer:SetLayout("EPHorizontalLayout")
+		buttonContainer:SetSpacing(4, 0)
+		buttonContainer:SetAlignment("center")
+		buttonContainer:SetSelfAlignment("center")
+
+		local importButton = AceGUI:Create("EPButton")
+		importButton:SetText(Private.utilities.AddIconBeforeText(k.ImportTexture, L["Import"]))
+		importButton:SetWidthFromText()
+		importButton:SetColor(unpack(k.NeutralButtonColor))
+		importButton:SetCallback("Clicked", importCallback)
+		local exportButton = AceGUI:Create("EPButton")
+		exportButton:SetText(Private.utilities.AddIconBeforeText(k.ExportTexture, L["Export"]))
+		exportButton:SetWidthFromText()
+		exportButton:SetColor(unpack(k.NeutralButtonColor))
+		exportButton:SetCallback("Clicked", exportCallback)
+
+		buttonContainer:AddChildren(importButton, exportButton)
+		SetButtonWidths(buttonContainer)
+		return buttonContainer
 	end
 
 	---@param cooldownOverrideContainer EPContainer
@@ -832,6 +862,7 @@ do
 		container:SetLayout("EPHorizontalLayout")
 		container:SetSpacing(k.SpacingBetweenLabelAndWidget, 0)
 		container:SetFullWidth(true)
+		container:SetUserData("spellID", spellID)
 
 		local spellIDLineEdit = AceGUI:Create("EPLineEdit")
 
@@ -929,6 +960,7 @@ do
 					local spellInfo = GetSpellInfo(textToNumber)
 					if spellInfo then
 						if not customSpells[textToNumber] and not Private.spellDB.IsSpellRegistered(textToNumber) then
+							container:SetUserData("spellID", textToNumber)
 							customSpellEntry.spellID = textToNumber
 							local unitClass = select(2, UnitClass("player"))
 							local role = select(5, GetSpecializationInfo(GetSpecialization()))
@@ -946,6 +978,7 @@ do
 							)
 						else
 							spellIDLineEdit:SetText(L["Duplicate"])
+							container:SetUserData("spellID", nil)
 						end
 					end
 				end
@@ -999,6 +1032,57 @@ do
 		end
 		local beforeWidget = customSpellsContainer.children[#customSpellsContainer.children]
 		customSpellsContainer:InsertChildren(beforeWidget, unpack(widgets))
+	end
+
+	local function InsertMissingSpellEntries()
+		local customSpellsContainer = spellsObject.customSpellsContainer
+		local children = customSpellsContainer.children
+
+		local existingSpellIDsToContainerIndices = {}
+		for i = 0, #children - 1 do
+			local spellID = children[i] and children[i].GetUserData and children[i]:GetUserData("spellID")
+			if spellID then
+				existingSpellIDsToContainerIndices[spellID] = i
+			end
+		end
+
+		-- Cache last widget before adding children
+		local beforeWidget = customSpellsContainer.children[#customSpellsContainer.children]
+
+		for spellID, customSpell in pairs(spellsObject.customSpells) do
+			if not existingSpellIDsToContainerIndices[spellID] then
+				local customSpellEntry = CreateCustomSpellEntry(customSpellsContainer, spellID, customSpell)
+				customSpellsContainer:AddChildNoDoLayout(customSpellEntry)
+			end
+		end
+
+		sort(customSpellsContainer.children, function(a, b)
+			if a == beforeWidget then
+				return false
+			end
+			if b == beforeWidget then
+				return true
+			end
+			local spellIDA = a.GetUserData and a:GetUserData("spellID")
+			local spellIDB = b.GetUserData and b:GetUserData("spellID")
+			local validANumber = type(spellIDA) == "number"
+			local validBNumber = type(spellIDB) == "number"
+			if validANumber and validBNumber then
+				local spellNameA = GetSpellName(spellIDA)
+				local spellNameB = GetSpellName(spellIDB)
+				if spellNameA and spellNameB then
+					return spellNameA < spellNameB
+				end
+			end
+			if validANumber then
+				return true
+			else
+				return false
+			end
+		end)
+
+		spellsObject.parentContainer:DoLayout()
+		spellsObject.UpdateRelativeWidths()
 	end
 
 	local function CreateCooldownOverrideTab()
@@ -1102,22 +1186,64 @@ do
 			AceGUI:Release(label)
 		end
 
-		local customSpellsContainer = spellsObject.customSpellsContainer
+		---@param text string
+		---@return boolean
+		local function ValidateImportCustomSpells(text)
+			local customSpells = spellsObject.customSpells
+			local valuesToAdd = Private.utilities.ValidateImportCustomSpells(text, customSpells)
+			for spellID, customSpell in pairs(valuesToAdd) do
+				customSpells[spellID] = customSpell
+			end
+
+			return next(valuesToAdd) ~= nil
+		end
+
+		local function importCallback()
+			local importEditBox = Private.CreateGenericImportEditBox()
+			if importEditBox then
+				importEditBox:SetCallback("OkayButtonClicked", function(widget)
+					local text = Private.importEditBox.editBox:GetText()
+					Private.importEditBox:Release()
+					if spellsObject.customSpells and ValidateImportCustomSpells(text) then
+						CopyAndSetCustomSpells()
+						InsertMissingSpellEntries()
+					end
+				end)
+			end
+		end
+
+		local function exportCallback()
+			local exportEditBox = Private.CreateGenericExportEditBox()
+			if exportEditBox then
+				exportEditBox:SetText(Private.utilities.CreateCustomSpellsExportString(spellsObject.customSpells))
+				exportEditBox:HighlightTextAndFocus()
+			end
+		end
+
+		local importExportContainer = CreateImportExportContainer(importCallback, exportCallback)
+
+		local buttonContainer = AceGUI:Create("EPContainer")
+		buttonContainer:SetLayout("EPVerticalLayout")
+		buttonContainer:SetSpacing(0, 4)
+
 		local addEntryButton = AceGUI:Create("EPButton")
 		addEntryButton:SetText("+")
 		addEntryButton:SetHeight(kDeleteButtonSize)
 		addEntryButton:SetWidth(kDeleteButtonSize)
 		addEntryButton:SetColor(unpack(k.NeutralButtonColor))
 		addEntryButton:SetCallback("Clicked", function()
+			local customSpellsContainer = spellsObject.customSpellsContainer
 			local container, lineEdit = CreateCustomSpellEntry(customSpellsContainer)
-			customSpellsContainer:InsertChildren(addEntryButton, container)
+			customSpellsContainer:InsertChildren(buttonContainer, container)
 			spellsObject.parentContainer:DoLayout()
 			spellsObject.UpdateRelativeWidths()
 			lineEdit:SetFocus()
 			lineEdit:HighlightText()
 		end)
 
-		customSpellsContainer:AddChild(addEntryButton)
+		buttonContainer:AddChildren(addEntryButton, importExportContainer)
+		spellsObject.customSpellsContainer:AddChild(buttonContainer)
+
 		AddSpellEntries()
 	end
 
@@ -1160,17 +1286,6 @@ do
 		self.realCustomSpellsRolesDropdown = nil
 		self.realCustomSpellsCategoryDropdown = nil
 		self.cooldownOverrideEntryContainers = nil
-	end
-end
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
-	end
-	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
 	end
 end
 

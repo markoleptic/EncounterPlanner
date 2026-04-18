@@ -8,11 +8,9 @@ local Type = "EPRosterEditor"
 local Version = 1
 
 local AceGUI = LibStub("AceGUI-3.0")
-local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local ipairs = ipairs
-local max = math.max
 local min = math.min
 local pairs = pairs
 local sort = table.sort
@@ -20,6 +18,8 @@ local tinsert = table.insert
 local tremove = table.remove
 local unpack = unpack
 local wipe = table.wipe
+
+local SetButtonWidths = Private.helpers.SetButtonWidths
 
 local k = {
 	DefaultFrameWidth = 500,
@@ -108,17 +108,6 @@ local k = {
 		},
 	},
 }
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
-	end
-	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
-	end
-end
 
 ---@param self EPRosterEditor
 ---@param tab EPRosterEditorTab

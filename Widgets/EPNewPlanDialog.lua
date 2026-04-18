@@ -17,6 +17,8 @@ local CreateFrame = CreateFrame
 local max = math.max
 local unpack = unpack
 
+local SetButtonWidths = Private.helpers.SetButtonWidths
+
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 0.9 },
 	BackdropColor = { 0, 0, 0, 0.9 },
@@ -41,17 +43,6 @@ local k = {
 	OtherPadding = { x = 10, y = 10 },
 	Title = L["Create New Plan"],
 }
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
-	end
-	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
-	end
-end
 
 ---@param self EPNewPlanDialog
 local function OnAcquire(self)

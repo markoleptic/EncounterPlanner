@@ -11,9 +11,9 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local UIParent = UIParent
 local CreateFrame = CreateFrame
-local ipairs = ipairs
-local max = math.max
 local unpack = unpack
+
+local SetButtonWidths = Private.helpers.SetButtonWidths
 
 local k = {
 	BackdropBorderColor = { 0.25, 0.25, 0.25, 1.0 },
@@ -33,17 +33,6 @@ local k = {
 	FramePadding = 15,
 	NeutralButtonColor = Private.constants.colors.kNeutralButtonActionColor,
 }
-
----@param container EPContainer
-local function SetButtonWidths(container)
-	local maxWidth = 0
-	for _, child in ipairs(container.children) do
-		maxWidth = max(maxWidth, child.frame:GetWidth())
-	end
-	for _, child in ipairs(container.children) do
-		child:SetWidth(maxWidth)
-	end
-end
 
 ---@param self EPMessageBox
 local function OnAcquire(self)

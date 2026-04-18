@@ -2830,4 +2830,102 @@ do
 			return "ApplyMyersDiff"
 		end
 	end
+
+	do
+		local ValidateImportCustomSpells = utilities.ValidateImportCustomSpells
+
+		function test.ValidateImportCustomSpells()
+			local expected = {
+				[1249251] = {
+					classFileName = "MAGE",
+					roles = { ["role:damager"] = true },
+					spellCategory = Private.classes.SpellCategory.Core,
+				},
+				[1249266] = {
+					classFileName = "DEMONHUNTER",
+					roles = { ["role:tank"] = true, ["role:damager"] = true },
+					spellCategory = Private.classes.SpellCategory.GroupUtility,
+				},
+				[1249714] = {
+					classFileName = "PRIEST",
+					roles = { ["role:healer"] = true },
+					spellCategory = Private.classes.SpellCategory.Consumable,
+				},
+			}
+
+			local customSpells = {}
+			local text = "1249251 MAGE role:damager 1\n1249266 DEMONHUNTER role:tank,role:damager 2\n"
+				.. "1249714 PRIEST role:healer 7"
+
+			local validated = ValidateImportCustomSpells(text, customSpells)
+			TestEqual(validated, expected, "Valid custom spells created")
+
+			customSpells[1249251] = Private.DeepCopy(expected[1249251])
+			customSpells[1249714] = Private.DeepCopy(expected[1249714])
+			validated = ValidateImportCustomSpells(text, customSpells)
+			TestEqual(validated[1249251], nil, "Duplicate spells not added 1")
+			TestEqual(validated[1249714], nil, "Duplicate spells not added 2")
+			TestEqual(validated[1249266], expected[1249266], "Duplicate spells not added 2")
+			customSpells = {}
+
+			text = "1249251 MAG role:damager 1"
+			TestEqual(#ValidateImportCustomSpells(text, customSpells), 0, "Invalid class file name")
+
+			text = "1249251"
+			TestEqual(#ValidateImportCustomSpells(text, customSpells), 0, "Invalid number of entries")
+
+			text = "1249251   "
+			TestEqual(#ValidateImportCustomSpells(text, customSpells), 0, "Invalid number of entries 2")
+
+			text = "1249251 MAGE  "
+			TestEqual(#ValidateImportCustomSpells(text, customSpells), 0, "Invalid number of entries 3")
+
+			text = "1249251 MAGE  1"
+			expected = {
+				[1249251] = {
+					classFileName = "MAGE",
+					roles = { ["role:damager"] = true },
+					spellCategory = Private.classes.SpellCategory.Core,
+				},
+			}
+			validated = ValidateImportCustomSpells(text, customSpells)
+			TestEqual(validated, expected, "Role is added if empty")
+
+			text = "1249251 MAGE role:healer,role:tank 1"
+			validated = ValidateImportCustomSpells(text, customSpells)
+			TestEqual(validated, expected, "Role is replaced if invalid")
+
+			return "ValidateImportCustomSpell"
+		end
+
+		local CreateCustomSpellsExportString = utilities.CreateCustomSpellsExportString
+
+		function test.CreateCustomSpellsExportString()
+			local expected = {
+				[1249251] = {
+					classFileName = "MAGE",
+					roles = { ["role:damager"] = true },
+					spellCategory = Private.classes.SpellCategory.Core,
+				},
+				[1249266] = {
+					classFileName = "DEMONHUNTER",
+					roles = { ["role:tank"] = true, ["role:damager"] = true },
+					spellCategory = Private.classes.SpellCategory.GroupUtility,
+				},
+				[1249714] = {
+					classFileName = "PRIEST",
+					roles = { ["role:healer"] = true },
+					spellCategory = Private.classes.SpellCategory.Consumable,
+				},
+			}
+
+			local customSpells = {}
+			local text = CreateCustomSpellsExportString(expected)
+
+			local validated = ValidateImportCustomSpells(text, customSpells)
+			TestEqual(validated, expected, "Custom spells exported and reimported")
+
+			return "CreateCustomSpellsExportString"
+		end
+	end
 end
