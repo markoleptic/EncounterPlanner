@@ -127,5 +127,5 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Added ability to import and export manually added spells.
+-   Added mythic Midnight Falls.
 ]]

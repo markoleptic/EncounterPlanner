@@ -1,5 +1,5 @@
-# [3.5.0](https://github.com/markoleptic/EncounterPlanner/tree/3.5.0) (2026-04-17)
+# [3.6.0](https://github.com/markoleptic/EncounterPlanner/tree/3.6.0) (2026-04-18)
 
-[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/3.4.0...3.5.0)
+[Full Changelog](https://github.com/markoleptic/EncounterPlanner/compare/3.5.0...3.6.0)
 
-- Added ability to import and export manually added spells.
+- Added mythic Midnight Falls.
