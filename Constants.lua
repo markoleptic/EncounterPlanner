@@ -127,5 +127,5 @@ if not isElevenDotTwo then
 end
 
 Private.constants.kPatchNotesText = [[
--   Added mythic Midnight Falls.
+-   Updated supported WoW versions.
 ]]

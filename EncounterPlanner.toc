@@ -1,6 +1,6 @@
-## Interface: 120001
-## Version: 3.6.0
-## X-Date: 2026-04-18
+## Interface: 120005, 120001
+## Version: 3.6.1
+## X-Date: 2026-04-21
 ## Title: Encounter Planner
 ## Notes: Assignment planning and reminder tool for mythic dungeon and raid boss encounters /ep
 ## Author: Markoleptic
